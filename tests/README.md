@@ -99,6 +99,23 @@ after a script exit refuse completed cleanup and retain desktop ownership. Recor
 desktop/canary, candidate, TRX and original host-exit evidence separately: desktop
 isolation is not a security sandbox, a coverage result or Office acceptance.
 
+The candidate script must explicitly prepare its runtime dependencies, including
+the Node executable required by JavaScript scenarios. A limited scheduled task
+does not inherit the development shell's extra PATH entries. Freeze the reviewed
+executable path/hash and add only its directory to the worker's process PATH.
+Office tests without their exact opt-in become inactive before native desktop
+checks; enabled private Word tests validate their desktop before COM activation.
+
+`VBAi.Desktop.Helper --probe-actions <generated desktop> <fresh absolute receipt>`
+prepares a complete synthetic action matrix for text, tabs, scope selection,
+native/custom buttons, a virtual ToolStrip item and modal closure. Invoke it only
+inside the isolated worker. It records each action once with independent readback;
+failed actions are not replayed. An action gap is not native acceptance and must
+block the corresponding Word UI phase. The basic launcher canary separately
+checks both populated and empty inventories on the owned desktop before starting
+any campaign. On the observed Windows 11 host an empty valid desktop returns
+false/error 0 without callbacks; errored or partial inventories remain refusals.
+
 Native Word isolation requires `VBAi_TEST_DESKTOP_NAME` and the reviewed installed
 `VBAi_TEST_WORD_EXE`. Its fixture must explicitly launch that binary on the private
 desktop and attach only its verified owned PID through NativeOM. Ordinary COM

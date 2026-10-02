@@ -1,5 +1,44 @@
 # Recorded validation
 
+## Inactive desktop managed campaign (2026-10-02)
+
+Source `22f739b5cb79914acf6786ff899d327001af3920` builds the complete prepared
+Q-024 bank and inactive desktop launcher with zero warnings/errors. Its complete
+default managed campaign reports **3,940 passed, 24 failed, 185 inactive, 4,149 total**,
+ending `2026-10-02T21:45:38.7780372Z`. Source stays clean and frozen assembly
+hashes remain exact. No coverage collector or native/provider opt-in is enabled.
+Product MVID is `fa74d014-ee7f-4efb-ba7e-d56c52771482`; product SHA-256 is
+`36E495C8E42D16CB32342F2F2DB4F52E1BFC4EBB2B120A5A20D30F64521E0509`;
+test SHA-256 is
+`AC158767EB7B223D03D7137FAD363B406285D5D2ED4C184D86B360AFC8D24713`.
+
+The actual testhost PID `13156` verifies its generated inactive desktop before
+any test, while the input desktop remains `Default`. The separate disposable
+canary verifies native/UIA identity and an owned button's addressed `BM_CLICK`,
+with its original exit code 0; no desktop switch occurs. This is test execution
+isolation, not Office acceptance. The failures comprise two missing Node PATH
+dependencies, twenty-one disabled Office scenarios that reach native desktop
+validation before their opt-in skip, and a session deletion test whose previous
+worker's version notification may still be queued on its STA. The latter needs
+explicit version/error/status evidence before attributing a product defect.
+Native Word registration and all Word qualification scenarios remain NOT_RUN.
+
+The campaign worker's original exit code 1 is observed. Its parent helper then
+retains its original handle and desktop after refusing a false inventory return.
+A separate read-only observation records a valid opened generated desktop,
+false/error 0 and no window callbacks. The retained task has not been forcibly
+stopped; this is not completed launcher cleanup. Evidence is under
+`artifacts/q024-private-batch-v2-20261002/`. The earlier basic UIA Invoke canary
+fails before any test on `8278611`; the legacy proxy attempts keyboard input on
+the inactive desktop. Its refusal and terminal task cleanup remain separately
+recorded in `artifacts/q024-private-batch-20261002/`.
+
+The preceding `a9e7609` managed run is interrupted during the desktop interference
+investigation and has no complete TRX; no Word trial or registration Apply occurs.
+Neither the interrupted run nor this failed managed campaign qualifies Q-024.
+Q-027 remains deferred. Corrections and the complete UI action matrix need a fresh
+frozen campaign before any new native acceptance claim.
+
 ## Word chat popup owner refusal and owner-menu control (2026-10-02)
 
 Source `8f5e16f323bcb832c7b1d4dc69418d8b6db58a7c` corrects target-thread

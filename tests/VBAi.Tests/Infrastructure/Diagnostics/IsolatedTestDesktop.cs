@@ -23,6 +23,7 @@ namespace VBAi.Tests.Integration
         [DllImport("user32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
         private static extern bool GetUserObjectInformationW(IntPtr handle, int index, StringBuilder value, uint size, out uint required);
         [DllImport("kernel32.dll")] internal static extern uint GetCurrentThreadId();
+        [DllImport("kernel32.dll")] private static extern void SetLastError(uint error);
         [DllImport("kernel32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
         private static extern bool CreateProcessW(string application, StringBuilder command, IntPtr processSecurity,
             IntPtr threadSecurity, bool inherit, uint flags, IntPtr environment, string directory,
@@ -74,13 +75,27 @@ namespace VBAi.Tests.Integration
             if (handle == IntPtr.Zero) throw new Win32Exception(Marshal.GetLastWin32Error());
             try
             {
+                if (!string.Equals(ObjectName(handle), name, StringComparison.Ordinal))
+                    throw new InvalidOperationException("The private desktop inventory handle has a different identity.");
                 int count = 0;
                 WindowVisitor visitor = (window, state) => ++count <= 8192;
-                if (!EnumDesktopWindows(handle, visitor, IntPtr.Zero))
-                    throw new InvalidOperationException("Private desktop window inventory is incomplete.");
-                return count != 0;
+                SetLastError(0);
+                bool completed = EnumDesktopWindows(handle, visitor, IntPtr.Zero);
+                int error = Marshal.GetLastWin32Error();
+                if (!string.Equals(ObjectName(handle), name, StringComparison.Ordinal))
+                    throw new InvalidOperationException("The private desktop inventory identity changed.");
+                return RequireWindowInventory(completed, count, error);
             }
             finally { CloseDesktop(handle); }
+        }
+
+        internal static bool RequireWindowInventory(bool completed, int count, int error)
+        {
+            // On the observed Windows 11 host an empty, valid desktop returns false/error 0,
+            // without calling the callback. Any partial inventory/error remains a refusal.
+            if (count < 0 || count > 8192 || (!completed && (count != 0 || error != 0)))
+                throw new InvalidOperationException("Private desktop window inventory is incomplete.");
+            return count != 0;
         }
 
         internal static string InputDesktopName()

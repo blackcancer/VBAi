@@ -1,6 +1,8 @@
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Web.Script.Serialization;
@@ -24,7 +26,9 @@ namespace VBAi.Desktop.Helper
         [STAThread]
         private static int Main(string[] args)
         {
+            Application.SetUnhandledExceptionMode(UnhandledExceptionMode.ThrowException);
             if (args.Length == 3 && args[0] == "--probe") return Probe(args[1], args[2]);
+            if (args.Length == 3 && args[0] == "--probe-actions") return ProbeActions(args[1], args[2]);
             if (args.Length != 4 || args[0] != "--run") return 2;
             string script = Path.GetFullPath(args[1]), output = Path.GetFullPath(args[2]), worker = Path.GetFullPath(args[3]);
             if (!Path.IsPathRooted(args[1]) || !File.Exists(script) || Path.GetExtension(script) != ".ps1" ||
@@ -46,6 +50,10 @@ namespace VBAi.Desktop.Helper
                 uint canaryExit = retainedChild.ExitCode();
                 retainedChild.Dispose(); retainedChild = null;
                 if (canaryExit != 0) throw new InvalidOperationException("Inactive-desktop UI canary failed; test script was not started.");
+                if (IsolatedTestDesktop.HasWindows(desktop))
+                    throw new InvalidOperationException("The canary exited while private windows remain; the campaign was not started.");
+                Write(output, "empty-desktop.json", new { Desktop = desktop, CanaryOriginalExit = canaryExit,
+                    WindowsPresent = false, Utc = Utc() });
                 string powershell = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Windows),
                     "System32", "WindowsPowerShell", "v1.0", "powershell.exe");
                 retainedChild = IsolatedTestDesktop.Launch(powershell,
@@ -121,6 +129,8 @@ namespace VBAi.Desktop.Helper
                         IntPtr hwnd = button.Handle; uint nativePid;
                         uint nativeThread = GetWindowThreadProcessId(hwnd, out nativePid);
                         IsolatedTestDesktop.RequireCurrent(expected);
+                        if (!IsolatedTestDesktop.HasWindows(expected))
+                            throw new InvalidOperationException("The private window inventory did not observe the shown canary.");
                         if (IsolatedTestDesktop.DesktopName(nativeThread) != expected)
                             throw new InvalidOperationException("The canary window is on a different desktop.");
                         reader = new Thread(() => {
@@ -158,7 +168,7 @@ namespace VBAi.Desktop.Helper
                 }
                 Write(Path.GetDirectoryName(receipt), Path.GetFileName(receipt), new { State = "PASS_CANARY_ONLY",
                     Observation = observation, ClickObserved = clicked, Action = "OwnedHwndBM_CLICK",
-                    UiAInvokeCalled = false, DesktopSwitches = 0, Utc = Utc() });
+                    ShownWindowInventoryProven = true, UiAInvokeCalled = false, DesktopSwitches = 0, Utc = Utc() });
                 return 0;
             }
             catch (Exception error)
@@ -167,6 +177,43 @@ namespace VBAi.Desktop.Helper
                     State = "CANARY_FAILED", Error = error.ToString(), Utc = Utc() });
                 return 1;
             }
+        }
+
+        private static int ProbeActions(string expected, string receipt)
+        {
+            if (!Path.IsPathRooted(receipt) || File.Exists(receipt) || !Directory.Exists(Path.GetDirectoryName(receipt))) return 3;
+            string steps = receipt + ".steps";
+            if (Directory.Exists(steps)) return 3;
+            Directory.CreateDirectory(steps);
+            var proven = new HashSet<string>(StringComparer.Ordinal);
+            string[] required = { "TextBox", "TabControl", "ComboBoxExpand", "ComboBoxSelect", "ComboBoxCollapse",
+                "NativeButton", "ChatActionButtonOptions", "VirtualGitItem", "OwnedForm" };
+            Exception failure = null; bool pending = false; int sequence = 0;
+            var worker = new Thread(() => {
+                try
+                {
+                    IsolatedTestDesktop.RequireCurrent(expected);
+                    PrivateUiActionCanary.Run(expected, value => {
+                        Write(steps, (++sequence).ToString("D4") + ".json", value);
+                        var fields = new JavaScriptSerializer().Deserialize<Dictionary<string, object>>(
+                            new JavaScriptSerializer().Serialize(value));
+                        if ((string)fields["Phase"] == "CanaryUiThreadPending") pending = true;
+                        if ((string)fields["Phase"] == "ActionReadback" && (bool)fields["Proven"])
+                            proven.Add((string)fields["Name"]);
+                    });
+                }
+                catch (Exception error) { failure = error; }
+            });
+            worker.SetApartmentState(ApartmentState.MTA); worker.Start();
+            // The parent retains the original handle if an accessibility provider does not return.
+            worker.Join();
+            if (pending) for (;;) Thread.Sleep(1000);
+            bool success = failure == null && required.All(proven.Contains);
+            Write(Path.GetDirectoryName(receipt), Path.GetFileName(receipt), new {
+                State = success ? "PASS_SYNTHETIC_ACTION_MATRIX_ONLY" : "ACTION_MATRIX_GAPS",
+                Desktop = expected, Required = required, Proven = proven.ToArray(), Missing = required.Except(proven).ToArray(),
+                Error = failure == null ? null : failure.ToString(), OfficeAcceptance = false, Utc = Utc() });
+            return success ? 0 : 1;
         }
 
         private static string Utc() => DateTime.UtcNow.ToString("o");

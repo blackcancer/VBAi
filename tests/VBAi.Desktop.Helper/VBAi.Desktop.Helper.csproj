@@ -4,7 +4,9 @@
     <GenerateProgramFile>false</GenerateProgramFile>
   </PropertyGroup>
   <ItemGroup>
+    <ProjectReference Include="..\..\src\VBAi\VBAi.csproj" />
     <Compile Include="..\VBAi.Tests\Infrastructure\Diagnostics\IsolatedTestDesktop.cs" Link="IsolatedTestDesktop.cs" />
+    <Reference Include="Accessibility" />
     <Reference Include="System.Web.Extensions" />
     <Reference Include="System.Windows.Forms" />
     <Reference Include="UIAutomationClient" />

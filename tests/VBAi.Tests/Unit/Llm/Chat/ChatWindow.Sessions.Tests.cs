@@ -479,9 +479,23 @@ namespace VBAi.Tests.Unit
             {
                 var deleted = Get<ChatSessionState>(window, "currentSession");
                 var previous = Get<ChatPersistenceWorker>(window, "persistenceWorker");
-                Assert.IsTrue(previous.Flush(5000)); previous.Dispose();
+                Get<System.Windows.Threading.DispatcherTimer>(window, "saveTimer").Stop();
+                Assert.IsTrue(previous.Flush(5000));
+                var persisted = Get<ChatSessionStore>(window, "sessionStore").List(deleted.Scope)
+                    .Single(item => item.Id == deleted.Id);
+                Assert.IsFalse(string.IsNullOrEmpty(persisted.StorageVersion));
+                var notificationBound = System.Diagnostics.Stopwatch.StartNew();
+                while (deleted.StorageVersion != persisted.StorageVersion && notificationBound.ElapsedMilliseconds < 5000)
+                {
+                    Application.DoEvents(); Thread.Sleep(1);
+                }
+                Assert.AreEqual(persisted.StorageVersion, deleted.StorageVersion,
+                    "Worker completion must reach the owning STA before a new worker captures its initial version.");
+                previous.Dispose();
                 int writes = 0;
+                Exception saveFailure = null;
                 using (var worker = new ChatPersistenceWorker(ChatWindow.HistoryPath(), (snapshot, version, error) => {
+                    if (error != null) Interlocked.CompareExchange(ref saveFailure, error, null);
                     if (Interlocked.Increment(ref writes) == 1) { inFlight.Set(); release.Wait(5000); }
                 }))
                 {
@@ -505,8 +519,11 @@ namespace VBAi.Tests.Unit
                     }
                     finally { release.Set(); }
                     CompleteOnSta(deletion);
+                    StringAssert.StartsWith(Get<Label>(window, "status").Text,
+                        UiText.Get("Conversation deleted from local history"));
                     CompleteScopeLoad(window);
                     Assert.IsTrue(worker.Flush(5000));
+                    Assert.IsNull(saveFailure, saveFailure?.ToString());
                     Assert.AreNotSame(deleted, Get<ChatSessionState>(window, "currentSession"));
                     Assert.AreEqual("temporary:next", Get<ChatSessionState>(window, "currentSession").Scope);
                     Assert.IsTrue(Get<TableLayoutPanel>(window, "rootLayout").Enabled);

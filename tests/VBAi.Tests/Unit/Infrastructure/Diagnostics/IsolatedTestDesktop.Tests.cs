@@ -42,6 +42,19 @@ namespace VBAi.Tests.Unit
         }
 
         [TestMethod]
+        public void EmptyValidatedDesktopIsDistinctFromAnErroredOrPartialInventory()
+        {
+            Assert.IsFalse(IsolatedTestDesktop.RequireWindowInventory(false, 0, 0));
+            Assert.IsFalse(IsolatedTestDesktop.RequireWindowInventory(true, 0, 0));
+            Assert.IsTrue(IsolatedTestDesktop.RequireWindowInventory(true, 1, 0));
+            Assert.IsTrue(IsolatedTestDesktop.RequireWindowInventory(true, 8192, 0));
+            foreach (int count in new[] { -1, 1, 8192, 8193 })
+                Assert.ThrowsException<InvalidOperationException>(() => IsolatedTestDesktop.RequireWindowInventory(false, count, 0));
+            Assert.ThrowsException<InvalidOperationException>(() => IsolatedTestDesktop.RequireWindowInventory(false, 0, 5));
+            Assert.ThrowsException<InvalidOperationException>(() => IsolatedTestDesktop.RequireWindowInventory(true, 8193, 0));
+        }
+
+        [TestMethod]
         public void OnlyGeneratedTestDesktopsAndBoundedNonNullArgumentsAreAccepted()
         {
             IsolatedTestDesktop.RequireName("VBAiTests_" + Guid.NewGuid().ToString("N"));

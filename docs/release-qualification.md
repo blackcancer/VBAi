@@ -7,7 +7,13 @@ are maintained only in [recorded validation](test-coverage.md).
 ## Current candidate checkpoint (2026-10-02)
 
 The active qualification focus is Q-024; Q-027 is deferred at the maintainer's
-request and retains its recorded open gates. Latest gated source `8f5e16f`,
+request and retains its recorded open gates. The grouped inactive-desktop managed
+campaign on `22f739b` finishes with environment/fixture failures and exact testhost
+desktop evidence. Native Word is NOT_RUN on that candidate; its launcher retains
+ownership after an empty-inventory refusal. Corrections need a fresh green gate
+and complete action-matrix proof before native Word. See
+[recorded validation](test-coverage.md#inactive-desktop-managed-campaign-2026-10-02).
+Latest green native gated source `8f5e16f`,
 product MVID `c22c9ff5-cf61-4dc4-8c88-0741a24753c8`, passes the actual installed
 Word owner-menu capture, exact local checkpoint and compare, preserving source,
 full references and saved bytes with normal original exit code 0. Its stated
