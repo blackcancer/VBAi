@@ -59,7 +59,7 @@ if ($Prepare) {
     $files += @{Path=$helper;Sha256=(Get-FileHash -LiteralPath $helper).Hash}
     $files += @{Path=$script;Sha256=(Get-FileHash -LiteralPath $script).Hash}
     $plan = @{Scope='Q-006 owned Excel evidence; not all-host release acceptance or historical crash causality';Repository=$repository;SourceCommit=(& git -C $repository rev-parse HEAD);
-        SourceStatus=(& git -C $repository status --porcelain);InstalledProduct=(Join-Path $InstalledDirectory 'VBAi.dll');ProductSha256=$hash;
+        SourceStatus=@(& git -C $repository status --porcelain);InstalledProduct=(Join-Path $InstalledDirectory 'VBAi.dll');ProductSha256=$hash;
         EvidenceRoot=$EvidenceRoot;BuildRoot=$build;TestAssembly=$testAssembly;HelperAssembly=$helper;CampaignScript=$script;FrozenFiles=$files;Scenarios=$scenarios;
         NoAutomaticRetries=$true;NoDesktopSwitch=$true;NoForceTermination=$true;PreparedUtc=[DateTime]::UtcNow.ToString('o')}
     Write-Json (Join-Path $EvidenceRoot 'q006-plan.json') $plan

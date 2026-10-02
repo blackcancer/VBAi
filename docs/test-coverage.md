@@ -4335,3 +4335,114 @@ Access/Publisher persistence and Publisher normal-exit acceptance were
 **NOT_RUN** for the corrected fixture. The later native attempts and failures
 are recorded separately above. The resource-guards candidate was not installed;
 the later installed candidate is identified in the current checkpoint.
+
+## Q-006 inactive-desktop Excel qualification (2026-10-02)
+
+This campaign belongs to `codex/q006-qualification`, in the dedicated worktree
+`E:/Développement/AddIn/CodexVBA/.worktrees/q006-qualification`. The parent
+checkout and its unrelated desktop-helper work were preserved. The installed
+product was frozen instead of rebuilt or registered:
+
+- Assembly: `E:/Développement/AddIn/CodexVBA/bin/Debug/net48/VBAi.dll`.
+- Loaded MVID: `d2c3601b-893d-4e84-b9e3-c172da7e2437`.
+- SHA-256: `C4D095D9427379AC8F2A82D047C8780637A0E815173241976F2C86664E777644`.
+- Host: Microsoft 365 Excel x64, executable version `16.0.20430.20092`.
+- Final durable harness source: `802fbc79fc3a46e4afe98f4d30792ead824ff748`.
+
+The focused `VBAi.Q006.Tests` project references the frozen assembly and builds
+under a separate output. The full test project initially could not compile
+against that installed assembly because an unrelated newer Git test references
+`FormFontObservation`. This is a compatibility failure in the first preparation,
+not a passing full suite. A separate full-source solution build at `0acc180`
+succeeded without warnings/errors in `artifacts/q006-source-build`; that rebuilt
+product was not installed or used for native acceptance. No coverage measurement
+was collected, and no suite-wide coverage percentage is claimed.
+
+Every campaign has a prepared `q006-plan.json`, frozen binary/script hashes,
+explicit filters/oracles and a one-shot `campaign.json`. Native operations use
+disposable projects only. Windows run on a generated inactive desktop under the
+same limited user, with original native child handles. Successful final isolation
+receipts record the input desktop as `Default`, no desktop switch, actual window
+desktop agreement, verified empty private window inventory and original worker
+exit. The canary proves owned `BM_CLICK` delivery plus UIA identity; it does not
+claim UIA Invoke or global keyboard automation.
+
+### Recorded attempts
+
+Paths below are relative to this worktree's `artifacts/`. Counts describe each
+actual attempt, including targeted repeats; they must not be summed as a single
+green suite. Unexecuted cases are not skips or passes.
+
+| Campaign / source | Executed results | Qualification outcome |
+| --- | --- | --- |
+| `q006-20261002-final`, base `a9e7609` plus recorded dirty sources | No tests | Dedicated harness builds; UIA Invoke canary fails before native campaign. |
+| `q006-20261002-native`, same base plus recorded dirty sources | Managed: 24 passed; native: 1 failed; remaining native: 7 NOT_RUN | Quoted Excel switches are treated as filenames; NativeOM startup never reaches the scalar operation. |
+| `q006-20261002-switch-corrected`, same base plus recorded dirty sources, subsequently committed in `75c1a2d` | Managed: 2 passed; native: 3 passed, 5 failed | Original scalar baseline passes. Extended numeric oracle fails on `^`; the other failures are the saved-seed prerequisite. Outer desktop inventory fails and retains its launcher. |
+| `q006-20261002-final-native`, `b1ed85a` | Managed: 2 passed, 1 failed; remaining native: 5 NOT_RUN | Inventory sentinel sees its own IME auxiliary windows; managed refusal prevents Excel launch. |
+| `q006-20261002-acceptance`, `90e7327` | Managed: 3 passed; native: 3 passed, 2 failed | ParamArray, Variant arrays and protection reopen pass. Extended scalar trace and incorrect persistence field fail. Original worker exits normally. |
+| `q006-20261002-bounded-final`, `0acc180` | Native: 4 passed, 0 failed, 0 skipped | Bounded type pages and fresh-process persistence pass; successful deployment reports prove insufficiently durable. Original worker exits normally. |
+| `q006-20261002-durable`, `802fbc7` | Native: 4 passed, 0 failed, 0 skipped | Same targeted cases pass with retained detailed reports, original worker exit and clean private inventory. |
+
+`q006-20261002/` retains the initial full-test build mismatch.
+`q006-20261002-prerequisite-corrected/` retains the `49ad561` compilation failure
+caused by a shadowed local; neither preparation launched a native test.
+In the clean-source plans, PowerShell serialized empty command output for
+`SourceStatus` as `{}`; the future runner records an explicit array. Earlier
+dirty-source plans retain their file status lists and actual frozen binary hashes.
+
+### Native acceptance evidence
+
+The original unsupported page, one-Long page and original complete declared page
+pass under the switch-corrected harness. Their host exit checks pass, but the
+outer launcher inventory failure stays separate failed isolation evidence.
+The later successful campaigns provide the following current scoped acceptance:
+
+| Scenario | Observed evidence |
+| --- | --- |
+| Extended declared scalars | Final PIDs 62736, 52436 and 16548. Pages offset/limit `0/4`, `4/4`, `8/6` cover Long, String, Boolean, Byte, Integer, LongLong, LongPtr, Single, Double, Currency and Date; array/Variant/object declarations are refused. Exact synthetic values, native observer counts, terminal correlation on the owning STA and unchanged source/selection/mode are asserted. Retained phase rows are 80, 80 and 63 respectively. |
+| ParamArray | Acceptance PID 53888. Empty, scalar, Null and array arguments retain arity/values and single-invocation counts. Request records and shutdown are retained. |
+| Variant arrays | Acceptance PID 51608. Vector/matrix values and bounds round-trip through native execution; polling does not replay invocation. |
+| Project protection | Acceptance PID 27560. Native lock configuration survives product Save and discard-close/reopen. |
+| Product persistence | Final save PID 19028, fresh reopen PID 47380. Pending edits make the host dirty; product Save reports invocation and clean saved state. Exact module/class/form sources and the retained Label caption survive a fresh read-only disk open with macros disabled and no helper Save. |
+
+Each listed native host has a retained `startup.json` reporting the exact loaded
+MVID and a `shutdown.json` with `Exited=true`, `ExitCode=0`, no Close/Quit error
+and `ForcedTermination=false`. The final persistence report is
+`q006-20261002-durable/save-fresh-reopen/hosts/b212f4e36c814ea5b301cb84cbcdc72f/q006-persistence.json`.
+Scalar request/value reports remain below each final `scalar-types-*/hosts`
+directory, independently of VSTest attachment cleanup. The workbook itself is
+retained below the save host's GUID directory. Its inert marker is never executed.
+
+### Failed evidence and remaining gates
+
+The unbounded extended scalar diagnostic is still a failed test. Its native
+response reads the expected values and preserves context, but the installed
+trace's 128-event limit discards terminal phases. The later bounded pages retain
+the strict terminal oracle; they neither erase that failure nor qualify terminal
+tracing for the single extended page. This is a diagnostic evidence limit, not
+an observed native stall in these attempts.
+
+The first failed startup PID 9192 displayed `/x.xlsx` and `/automation.xlsx`
+dialogs. Read-only private-desktop inventories proved the command-line cause.
+Each exact dialog received one local close request. A separately recorded,
+identity-guarded Quit against the sole saved macro-free seed did not observe exit
+within its bound. Its later disappearance is not promoted to normal-exit proof.
+That failed lifecycle remains failed. At the final inventory no test Excel host
+remained, but earlier launcher helpers PIDs 7296, 55560 and 65680 deliberately
+retain uncertain ownership; none was forcibly terminated.
+
+Q-006 remains **OPEN** for these distinct boundaries:
+
+- The historical `7b5f11d8` break-mode stall and subsequent `combase.dll`
+  access violation after external COM Reset have no established cause. Earlier
+  failure records, including the older Office version, remain historical evidence.
+- The complete extended page lacks terminal diagnostic trace evidence at the cap.
+- These reads cover explicitly supported declared candidates, not a complete
+  runtime-local inventory, arguments, globals or object/array/Variant evaluation.
+- Word, PowerPoint, Access, Publisher and SOLIDWORKS were not executed against
+  this frozen candidate in this campaign. Historical passes/failures remain tied
+  to their original candidates; SOLIDWORKS was neither selected nor launched.
+
+No current pass establishes causality for an earlier crash or acceptance for a
+different host. The reusable [testing procedure](../tests/README.md#q-006-inactive-desktop-excel-qualification)
+preserves refusals and uncertain ownership instead of replaying native work.
