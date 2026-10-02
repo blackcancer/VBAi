@@ -1,5 +1,41 @@
 # Recorded validation
 
+## Retained VBE lifecycle observation and managed gate (2026-10-02)
+
+Source `b6f13fb6c720a2e2d807a142db5baea4d00e2d5f` isolates the native Options
+fixture while preserving its exact value assertion and adds direct before/after
+text checks. Its isolated Debug build has zero warnings/errors. The complete
+default managed gate reports **3,894 passed, 0 failed, 203 inactive, 4,097 total**,
+ending `2026-10-02T17:12:17.8567007Z`. Native/provider opt-ins are cleared and no
+coverage collector is enabled. Product MVID is
+`988010f8-e080-4caa-a54d-11ab51d58016`; product SHA-256 is
+`301F346FCF219CCBE32EF2D1EB26CEFD578D4CF47FAC786914AFB2C305DE1E1B`;
+test SHA-256 is
+`3EE3B29298EF490E69905E154F1F7ADBA3B195A0BA98D782019D85349286299B`.
+Source and both hashes remain unchanged at the terminal record. The preceding
+aggregate ComboBox failure remains preserved; this pass does not establish its
+cause.
+
+The single native LabelButton lifecycle diagnostic reports **0 passed, 1 failed,
+0 skipped**. Owned Excel PID `66232`, version `16.0.20430.20092`, loads the
+expected candidate. Before replacement, the policy receipt records one inert
+workbook, EnableEvents false and AutomationSecurity 3. The one `Application.VBE`
+getter succeeds at `BeforeCopy` and its acquired lease is released. The sole
+planned Close/copy/Open completes with exact path/count/file-hash verification.
+The one getter at `AfterCopy` then fails with `0x800A03EC` on the same owner
+thread. `VBE.MainWindow`, baseline capture, manifest, menu, import and font
+transfer are NOT_RUN. The stages discriminate current access; they do not prove
+that the zero-workbook interval, UI lifetime or security is the cause.
+
+The original owned process exits normally with code zero, no Close/Quit errors,
+forced termination or replay. Source/copy bytes retain SHA-256
+`B5264F941E0FD398A9DE03B203DB7A31A6DB9FF939B894E7829A0203C76F4B73`.
+Temporary registration is restored with verified readback at
+`2026-10-02T17:14:20.7031010Z`; the installed DLL and host trust settings are
+unchanged. Evidence is under `artifacts/root-font-vbe-lifetime-controls-20261002/`.
+Q-027, default root font presence, Frame 8.27 fidelity, the complete control
+matrix, recovery and post-import persistence remain open.
+
 ## Retained VBE lifetime candidate managed control failure (2026-10-02)
 
 Source `f5248482f50a9de47d1494fc62385ac495b8a8e5` adds a disabled-by-default,

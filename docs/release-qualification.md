@@ -6,6 +6,18 @@ are maintained only in [recorded validation](test-coverage.md).
 
 ## Current candidate checkpoint (2026-10-02)
 
+Source `b6f13fb`, product MVID `988010f8-e080-4caa-a54d-11ab51d58016`, passes
+the complete default managed gate. Its single retained-copy Excel observation
+reads `Application.VBE` successfully while the inert initial workbook is open,
+with events disabled and AutomationSecurity 3. After the sole planned replacement
+and exact Open/path/count/hash checks, the getter fails with `0x800A03EC` on the
+same owner thread. No form capture, import or font transfer is reached. The cause
+remains unknown; startup bridge connection is not current getter acceptance.
+Normal original exit, unchanged source/copy bytes and registry restoration are
+verified. Q-027 and its complete root-font/Frame/control/recovery/persistence
+scope remain open. See
+[recorded validation](test-coverage.md#retained-vbe-lifecycle-observation-and-managed-gate-2026-10-02).
+
 The tests-only lifecycle source `f524848`, product MVID
 `4114e0c5-375c-4639-bbee-aae21302288a`, fails its complete default managed gate
 on an existing native-options ComboBox value assertion. Its embedded Git fixture

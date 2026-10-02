@@ -27,6 +27,14 @@ operation, language feature or UI surface.
 
 ### Current operation-specific refresh
 
+The gated source `b6f13fb` observes `Application.VBE` succeeding before the
+retained workbook replacement in owned Excel `16.0.20430.20092`, then failing
+with `0x800A03EC` after exact copy-open verification. Events/macros are disabled
+for opening; no security settings are relaxed. The lifecycle cause is unproven,
+and no form capture, import or transfer occurs. Normal original exit and restored
+registration are verified; Q-027 remains open. See
+[recorded validation](test-coverage.md#retained-vbe-lifecycle-observation-and-managed-gate-2026-10-02).
+
 The gated source `9ba099e` narrows the retained-copy Excel refusal to
 `Application.VBE`, with `0x800A03EC` recorded on the fixture owner thread.
 Excel `16.0.20430.20092` loads the expected candidate and verifies the copied
