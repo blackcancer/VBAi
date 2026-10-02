@@ -6,7 +6,22 @@ are maintained only in [recorded validation](test-coverage.md).
 
 ## Current candidate checkpoint (2026-10-02)
 
-The latest gated restoration source `7745e1c`, MVID
+The latest gated observation source `be9dcd8`, MVID
+`ab35c2ed-1c3d-47b4-9490-b26e0b8bc737`, SHA-256
+`B53848A4838BF20CD6077A2B73A3371F624B38593ED6356E370021B325B77DC2`,
+passes its complete default managed gate. Fresh owner-UI LabelButton trials
+observe the root binding already absent before diagnostic font getters and
+exact child-value readback without restored persistence. In the separate
+distinct-name trial, the child value reads Arial while both attached font
+objects still serialize Tahoma. Both imports fail exact comparison, with only
+the FRX differing. Both owned hosts exit normally, saved workbook bytes remain
+unchanged and temporary registration is restored. The child collection route
+has not updated the observed attached descriptor; the internal cause remains
+unproven. Q-027, the complete layout matrix, recovery, transfer and post-import
+reopen remain open. See
+[recorded validation](test-coverage.md#owner-thread-root-font-observation-and-distinct-child-name-2026-10-02).
+
+The earlier gated restoration source `7745e1c`, MVID
 `e5df96d3-56c3-4089-a8dd-d2b8785f2c5b`, SHA-256
 `93D21AD271ECD87A656047BBB533173E1E35CF4D5917076D5DB8D91C1FC71C93`,
 passes its complete default managed gate. Its first fresh owner-UI LabelButton
@@ -19,7 +34,7 @@ stay unchanged and temporary registration is restored. Q-027 stays open; no
 other layout, recovery or post-import reopen is qualified by this canary. See
 [recorded validation](test-coverage.md#root-font-child-value-import-canary-2026-10-02).
 
-The latest fully gated diagnostic source `e3d94bc`, MVID
+The earlier fully gated diagnostic source `e3d94bc`, MVID
 `8071360b-1c57-45fd-9ff9-5b575dee2576`, SHA-256
 `62A2209C1D3E659CBC6CE4A96CB0CB2768AFB73F31E096C19E65BDBE4A1832DB`,
 passes its complete managed gate. A fresh owner-dispatched LabelButton import

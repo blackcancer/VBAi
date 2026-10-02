@@ -27,7 +27,18 @@ operation, language feature or UI surface.
 
 ### Current operation-specific refresh
 
-The latest Q-027 scalar-child restoration source `7745e1c` passes its complete
+The latest Q-027 observation source `be9dcd8` passes its complete managed gate.
+Actual owner-UI LabelButton observations find the root font binding absent
+before diagnostic font getters. A separate temporary Arial child-name write
+reads back Arial while `Font.Object` and `Designer.Font` still serialize Tahoma.
+The child collection route therefore does not update the attached descriptor
+at that observed boundary. Both strict imports fail with only the FRX differing;
+owned hosts exit normally, saved files stay unchanged and registration is
+restored. Exact import, Frame font-size fidelity, recovery, transfer and
+post-import reopen remain unqualified. See
+[recorded validation](test-coverage.md#owner-thread-root-font-observation-and-distinct-child-name-2026-10-02).
+
+The earlier Q-027 scalar-child restoration source `7745e1c` passes its complete
 managed gate. The first actual owner-UI LabelButton import reaches final
 comparison, which still refuses the missing persisted root StdFont descriptor.
 Source files match, but the FRX differs. The original owned Excel exits normally,
@@ -35,7 +46,7 @@ saved disk bytes stay unchanged and temporary registration is restored. Scalar
 setter readback, exact import, recovery and post-import reopen remain unqualified.
 See [recorded validation](test-coverage.md#root-font-child-value-import-canary-2026-10-02).
 
-The latest Q-027 diagnostic source `e3d94bc` identifies the failing root font
+The earlier Q-027 diagnostic source `e3d94bc` identifies the failing root font
 operation as `VBIDE.Property.Object.set`. A separate read-only observation
 qualifies its Font.Value child getters and declaration metadata with exact
 state preservation and normal owned Excel exit. It does not qualify native

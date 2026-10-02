@@ -63,8 +63,9 @@ It preserves the final exact snapshot check. The separate `DistinctChildName`
 mode predeclares one temporary Arial child-name write before the ordinary target
 writes; it refuses an Arial target and is never a fallback after a failed trial.
 Capture-only and persistence scenarios cannot enable this diagnostic. Without
-the opt-in, there are no additional font getters, exports or writes. Prepared
-instrumentation is not native acceptance; see
+the opt-in, there are no additional font getters, exports or writes. Recorded
+instrumented trials reach terminal exact snapshot refusals; this diagnostic
+does not qualify native import or persistence. See
 [recorded validation](../docs/test-coverage.md).
 
 ### Disposable owner-import UserForm persistence qualification

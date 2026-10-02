@@ -1,5 +1,59 @@
 # Recorded validation
 
+## Owner-thread root font observation and distinct child name (2026-10-02)
+
+Frozen source `be9dcd8d402bd0a60d83d12cae21762371b00340` adds an explicitly armed
+disposable import diagnostic and its tests-only manifest producer. It also
+preserves primary failures and all COM cleanup failures in font restoration
+and its owner guard. The isolated Debug solution build has no warnings or errors.
+Product MVID is `ab35c2ed-1c3d-47b4-9490-b26e0b8bc737`, product SHA-256
+`B53848A4838BF20CD6077A2B73A3371F624B38593ED6356E370021B325B77DC2`, test SHA-256
+`8EDA4D6491710C516FF9D7DD9EA0AB04232B3379C7ADCAE8DEE2A60F656896F2`.
+
+The complete default managed gate records **3,763 passed, zero failed and 201
+opted-in scenarios not run, 3,964 total**, with unchanged frozen source and
+assembly hashes. Its terminal receipt completes at `2026-10-02T04:29:50.7988775Z`.
+Live opt-ins are cleared process-locally; no coverage collector is enabled.
+The prepared persistence scenarios are included in this candidate's managed
+gate, but their native save/reopen phases remain NOT_RUN.
+
+Two independently prepared owner-UI LabelButton trials use that same frozen
+candidate and managed gate, on Excel `16.0.20430.20092`. Each runs one import,
+with a fresh manifest, nonce and owned workbook. The native TRXs record
+**zero passed, two failed and zero skipped across the two separate trials**:
+
+| Trial | Actual host | Observation |
+| --- | --- | --- |
+| `ObserveWrites` | PID 47380, started `2026-10-02T04:30:55.2907221Z` | The exported FRX already lacks its root font binding before the diagnostic's font getters. All seven child puts read back their exact requested values, but the root binding stays absent. |
+| `DistinctChildName` | PID 19820, started `2026-10-02T04:37:01.3240224Z` | One predeclared Arial child-name put reads back Arial. At that boundary both `Font.Object` and `Designer.Font` still serialize the target Tahoma descriptor and have the same IUnknown identity. Restoring the target child values leaves the root binding absent. |
+
+The target root descriptor is `01000000900144420100065461686F6D61` (Tahoma,
+8.25 points, weight 400, charset 0). Attached font descriptors are observed via
+`IPersistStream.Save(false)`, without direct IFont metric getters. The distinct-name
+trial changes the child collection value while the observed attached font
+descriptor stays unchanged; it does not establish the internal reason for
+that separation. It is a separate planned operation, never a fallback or replay
+on the first failed workbook.
+
+Both final production comparisons refuse import. Independent snapshots confirm
+that only `EmbeddedForm.frx` differs. Each original owned Excel exits normally
+with code zero; no forced termination, import replay or recovery replay occurs.
+Saved workbook bytes remain unchanged: SHA-256
+`B5264F941E0FD398A9DE03B203DB7A31A6DB9FF939B894E7829A0203C76F4B73`
+for ObserveWrites and
+`28FEA462FA20BD91791B2C2EE6D65F856EA15554E339BE9592CD3FDA9988DB0B`
+for DistinctChildName. Both temporary registrations are restored from their
+independent snapshots. The installed DLL remains unchanged.
+
+Evidence is retained under `artifacts/root-font-owner-observation-20261002`
+(candidate manifest, full managed TRX, first native TRX and phase receipts)
+and `artifacts/root-font-owner-distinct-20261002` (second native TRX and phase
+receipts, explicitly referencing the first root's frozen candidate and gate).
+Each root has `native-independent-terminal-inspection.json` and verified
+registration restoration. This diagnostic does not qualify exact import, the
+complete layout matrix, Frame 8.27-point fidelity, recovery, remote transfer or
+post-import save/reopen. Q-027 remains open.
+
 ## Prepared owner-import save and fresh-process reopen gate (2026-10-02)
 
 Tests-only source `c0711cab5361c15712485e4a13b7d8f8fc6c48d0` adds a separate
