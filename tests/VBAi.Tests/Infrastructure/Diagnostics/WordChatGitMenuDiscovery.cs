@@ -17,7 +17,7 @@ namespace VBAi.Tests.Integration
 
         internal sealed class Candidate
         {
-            internal long PopupHandle, OwnerHandle;
+            internal long PopupHandle, OwnerHandle, GitItemNativeAncestor;
             internal int NativeProcessId, UiProcessId, GitItemProcessId;
             internal uint NativeThreadId;
             internal bool Visible, NewlyVisible;
@@ -37,7 +37,8 @@ namespace VBAi.Tests.Integration
                 row.NativeThreadId == threadId && row.OwnerHandle == expectedOwner &&
                 row.NativeClass != null && row.NativeClass.StartsWith("WindowsForms", StringComparison.Ordinal) &&
                 row.UiType == "ControlType.Menu" && row.MenuItemCount > 0 && row.MenuItemCount <= 64 &&
-                row.GitLabelMatches == 1 && row.EnabledGitMatches == 1 && row.GitItemProcessId == processId).ToArray();
+                row.GitLabelMatches == 1 && row.EnabledGitMatches == 1 && row.GitItemProcessId == processId &&
+                row.GitItemNativeAncestor == row.PopupHandle).ToArray();
             if (matches.Length != 1 || rows.Count(row => row.PopupHandle == matches[0].PopupHandle) != 1)
                 throw new InvalidOperationException("The owned Word chat Options popup has no unique localized Git item.");
             return matches[0];

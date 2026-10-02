@@ -35,6 +35,7 @@ namespace VBAi.Tests.Unit
             Action<WordChatGitMenuDiscovery.Candidate>[] changes = {
                 row => row.PopupHandle = 0, row => row.OwnerHandle++, row => row.NativeProcessId++,
                 row => row.UiProcessId++, row => row.GitItemProcessId++, row => row.NativeThreadId++,
+                row => row.GitItemNativeAncestor++,
                 row => row.Visible = false, row => row.NewlyVisible = false,
                 row => row.NativeClass = "OpusApp", row => row.UiType = "ControlType.Window",
                 row => row.MenuItemCount = 0, row => row.MenuItemCount = 65,
@@ -47,7 +48,7 @@ namespace VBAi.Tests.Unit
                 Assert.ThrowsException<InvalidOperationException>(() =>
                     WordChatGitMenuDiscovery.RequireUnique(new[] { popup }, ProcessId, ThreadId, Owner));
             }
-            var another = Exact(); another.PopupHandle++;
+            var another = Exact(); another.PopupHandle++; another.GitItemNativeAncestor++;
             Assert.ThrowsException<InvalidOperationException>(() =>
                 WordChatGitMenuDiscovery.RequireUnique(new[] { Exact(), another }, ProcessId, ThreadId, Owner));
             Assert.ThrowsException<InvalidOperationException>(() =>
@@ -57,7 +58,8 @@ namespace VBAi.Tests.Unit
         }
 
         private static WordChatGitMenuDiscovery.Candidate Exact() => new WordChatGitMenuDiscovery.Candidate {
-            PopupHandle = 50729498, OwnerHandle = Owner, NativeProcessId = ProcessId,
+            PopupHandle = 50729498, OwnerHandle = Owner, GitItemNativeAncestor = 50729498,
+            NativeProcessId = ProcessId,
             UiProcessId = ProcessId, GitItemProcessId = ProcessId, NativeThreadId = ThreadId,
             Visible = true, NewlyVisible = true, NativeClass = "WindowsForms10.Window.20808",
             UiType = "ControlType.Menu", MenuItemCount = 17, GitLabelMatches = 1, EnabledGitMatches = 1

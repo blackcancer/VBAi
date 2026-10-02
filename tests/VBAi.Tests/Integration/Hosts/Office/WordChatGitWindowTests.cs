@@ -498,7 +498,9 @@ namespace VBAi.Tests.Integration
                                 NativeClass = cls.ToString(), UiType = popup.Current.ControlType.ProgrammaticName,
                                 MenuItemCount = items.Length, GitLabelMatches = matching.Length,
                                 EnabledGitMatches = enabled.Length,
-                                GitItemProcessId = matching.Length == 1 ? matching[0].Current.ProcessId : 0
+                                GitItemProcessId = matching.Length == 1 ? matching[0].Current.ProcessId : 0,
+                                GitItemNativeAncestor = matching.Length == 1
+                                    ? NativeAncestorHandle(matching[0]).ToInt64() : 0
                             };
                             last.Add(candidate);
                             if (enabled.Length == 1) exactItems.Add(window.ToInt64(), enabled[0]);
@@ -524,11 +526,12 @@ namespace VBAi.Tests.Integration
                             item.PopupHandle, item.OwnerHandle, item.NativeProcessId, item.NativeThreadId,
                             item.UiProcessId, item.NativeClass, item.UiType, item.Visible, item.NewlyVisible,
                             item.MenuItemCount, item.GitLabelMatches, item.EnabledGitMatches,
-                            item.GitItemProcessId }).ToArray() });
+                            item.GitItemProcessId, item.GitItemNativeAncestor }).ToArray() });
                 }
                 if (gitItem == null) throw new InvalidOperationException("The exact chat GitHub menu item was not observed.");
                 context.Record(new { Phase = "ChatGitItemObserved", PopupHandle = gitPopupHandle.ToInt64(),
-                    LocalizedProductLabelMatched = true, ProcessId = gitItem.Current.ProcessId });
+                    LocalizedProductLabelMatched = true, ProcessId = gitItem.Current.ProcessId,
+                    NativeAncestorHandle = NativeAncestorHandle(gitItem).ToInt64() });
             }
 
             internal void RequireNoGitModal()
@@ -551,6 +554,7 @@ namespace VBAi.Tests.Integration
                         !WordChatGitMenuDiscovery.IsExactGitItem(gitItem.Current.Name,
                             UiText.Get("GitHub · synchronize VBA…"), gitItem.Current.ControlType.ProgrammaticName,
                             gitItem.Current.ProcessId, context.Fixture.ProcessId) ||
+                        NativeAncestorHandle(gitItem) != gitPopupHandle ||
                         !gitItem.Current.IsEnabled || gitItem.Current.IsOffscreen)
                         throw new InvalidOperationException("The exact localized Word chat Git menu item changed before invocation.");
                     context.Record(new { Phase = "ChatGitInvokeIntent", context.Label, CanonicalPath = context.Scope.Path,
