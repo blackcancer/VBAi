@@ -27,11 +27,20 @@ operation, language feature or UI surface.
 
 ### Current operation-specific refresh
 
+The gated PR integration source `3ff51bd` now verifies a retained synthetic
+workbook copy's Open/path/count/hash checks in Excel `16.0.20430.20092`.
+Before capture, COM `0x800A03EC` interrupts a source line containing both
+`Application.VBE` and `VBE.MainWindow`; the failing getter and cause are unknown.
+The owned host exits normally, source/copy bytes stay unchanged and registration
+is restored. The installed DLL is unchanged. No UserForm import or font transfer
+is exercised; Q-027 stays open. See
+[recorded validation](test-coverage.md#retained-userform-copy-vbe-access-refusal-2026-10-02).
+
 The retained-workbook Q-027 diagnostic source `6d3d802` passes its complete
 managed gate. A native Excel copy-open succeeds, then a fixture file-sharing
 error stops preparation before form capture or import. Normal owned exit,
 unchanged source/copy bytes and registry restoration are verified. The reader
-correction has managed regressions but no new native result; Q-027 remains open.
+correction has a later scoped native result above; that trial still stops before capture and Q-027 remains open.
 See [recorded validation](test-coverage.md#retained-userform-copy-preparation-failure-2026-10-02).
 
 The latest Q-027 diagnostic source `a5649c3` passes its complete managed gate.

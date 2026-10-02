@@ -93,7 +93,16 @@ namespace VBAi.Tests.Integration
             object editor = null, main = null, module = null, moduleCode = null, pane = null;
             try
             {
-                editor = ((dynamic)application).VBE; main = ((dynamic)editor).MainWindow;
+                if (retained)
+                {
+                    ObserveEmbeddedVbeRead("Application.VBE", () => editor = ((dynamic)application).VBE, evidence, ProcessId);
+                    ObserveEmbeddedVbeRead("VBE.MainWindow", () => main = ((dynamic)editor).MainWindow, evidence, ProcessId);
+                }
+                else
+                {
+                    editor = ((dynamic)application).VBE;
+                    main = ((dynamic)editor).MainWindow;
+                }
                 project = ((dynamic)workbook).VBProject; components = ((dynamic)project).VBComponents;
                 module = ((dynamic)components).Item("EmbeddedModule"); moduleCode = ((dynamic)module).CodeModule; pane = ((dynamic)moduleCode).CodePane;
                 Assert.AreEqual(IntPtr.Zero, embeddedGitProjectIdentity, "Only one embedded Git scope may own this fixture's identity lease.");
@@ -247,6 +256,30 @@ namespace VBAi.Tests.Integration
             var result = new VbaGitSnapshot(new VbaGitManifest { Components = manifest.ToArray(), References = scope.References }, files);
             evidence(new { Phase = "IndependentBridgeBaselineVerified", Files = EmbeddedGitSnapshotOracle.Describe(result) });
             return result;
+        }
+
+        /// <summary>Records one retained-copy VBE getter on its owner thread without retry or lease transfer.</summary>
+        internal static void ObserveEmbeddedVbeRead(string getter, Action read, Action<object> evidence, int processId)
+        {
+            if (read == null) throw new ArgumentNullException(nameof(read));
+            if (evidence == null) throw new ArgumentNullException(nameof(evidence));
+            int thread = System.Threading.Thread.CurrentThread.ManagedThreadId;
+            evidence(new { Phase = "VbeAccessIntent", Getter = getter, ProcessId = processId, OwnerThread = thread });
+            try { read(); }
+            catch (Exception error)
+            {
+                try
+                {
+                    evidence(new { Phase = "VbeAccessFailed", Getter = getter, ProcessId = processId,
+                        OwnerThread = thread, HResult = "0x" + unchecked((uint)error.HResult).ToString("X8"),
+                        ErrorType = error.GetType().FullName });
+                }
+                catch (Exception reportError) { error.Data["VbeAccessEvidenceError"] = reportError.ToString(); }
+                throw;
+            }
+            // The caller has already acquired and retained any returned COM lease.
+            // A receipt failure propagates through its existing finally/release path.
+            evidence(new { Phase = "VbeAccessReturned", Getter = getter, ProcessId = processId, OwnerThread = thread });
         }
 
         internal static string EmbeddedRawHash(string path)

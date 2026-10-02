@@ -6,6 +6,18 @@ are maintained only in [recorded validation](test-coverage.md).
 
 ## Current candidate checkpoint (2026-10-02)
 
+The gated PR integration source `3ff51bd` is exercised in an exact isolated
+checkout using the frozen product MVID `d5b638d6-56b4-4cd1-9d39-6b1fb9c5722e`.
+The retained workbook copy now passes Open/path/count/hash checks. Excel
+`16.0.20430.20092` then refuses a source line containing `Application.VBE` and
+`VBE.MainWindow` with HRESULT `0x800A03EC`; the precise getter and cause remain
+unknown. Baseline capture, manifest, menu, import and transfer are NOT_RUN.
+Original normal exit, unchanged workbook bytes and registry restoration are
+independently verified. A tests-only named-getter diagnostic has focused mirror
+regressions but still requires its complete gate and native observation. It
+preserves ForceDisable and does not reopen or retry. Q-027 stays open. See
+[recorded validation](test-coverage.md#retained-userform-copy-vbe-access-refusal-2026-10-02).
+
 The retained-workbook diagnostic source `6d3d802`, MVID
 `46bd53b3-7416-4530-bd86-bcbc251ca041`, passes its complete default managed gate.
 Its one Excel trial stops after opening the synthetic copy, when the fixture
@@ -15,7 +27,7 @@ bytes and restored registration are independently verified. The tests-only
 reader correction passes the complete default managed gate in the PR 19
 integration source `3ff51bd`, MVID `d5b638d6-56b4-4cd1-9d39-6b1fb9c5722e`.
 PR 19 is merged into main, and the local qualification branch is synchronized.
-The installed DLL is unchanged; the next native discriminator remains NOT_RUN.
+The installed DLL is unchanged; its subsequent native discriminator stops before baseline capture as recorded above.
 Q-027 stays open. See
 [PR integration validation](test-coverage.md#pr-19-integration-managed-gate-2026-10-02) and
 [recorded validation](test-coverage.md#retained-userform-copy-preparation-failure-2026-10-02).

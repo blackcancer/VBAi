@@ -1,5 +1,41 @@
 # Recorded validation
 
+## Retained UserForm copy VBE access refusal (2026-10-02)
+
+The fully gated PR integration source `3ff51bd`, product MVID
+`d5b638d6-56b4-4cd1-9d39-6b1fb9c5722e`, is exercised from an exact isolated
+checkout using the original frozen assemblies and complete managed TRX. Root
+`7a54beb` differs only in the two validation documents and merge history; no
+production/test input or DLL is rebuilt for this trial. The copied gate records
+retain the original TRX/terminal hashes and explicit provenance.
+
+The sole LabelButton diagnostic reports **0 passed, 1 failed, 0 skipped**.
+Excel `16.0.20430.20092`, owned PID `60776`, loads the expected candidate.
+The retained synthetic workbook copy passes Open, FullName, workbook-count and
+whole-file SHA-256 checks. The prior hash sharing failure is passed in this trial.
+Preparation then fails with COM HRESULT `0x800A03EC` at a line containing both
+`Application.VBE` and `VBE.MainWindow`. The precise failing getter and cause are
+unknown; neither `ForceDisable` nor host trust nor VBE lifetime is established
+as the cause. No baseline capture, diagnostic manifest, Git menu, import or
+font transfer occurs. Those operations remain NOT_RUN.
+
+The original owned host exits normally with exit code zero, no Close/Quit error,
+forced termination or retry. Source and copied workbook bytes retain SHA-256
+`B5264F941E0FD398A9DE03B203DB7A31A6DB9FF939B894E7829A0203C76F4B73`.
+Temporary HKCU registration is restored and read back independently; the installed
+DLL remains unchanged. Evidence and the independent terminal inspection are in
+`artifacts/worktrees/q027-gated-pr19/artifacts/root-font-post-pr19-20261002/`.
+The complete UserForm matrix, default explicit font, Frame 8.27, recovery and
+post-import persistence remain open.
+
+A tests-only follow-up separates the two getters and records one named
+intent/returned/failure sequence on the owner thread. It preserves the primary
+COM exception when failure recording also throws, keeps acquired leases with
+the caller and never retries a getter. The focused mirror run reports
+**8 passed, 0 failed** against the reviewed working patch based on `7a54beb`.
+This is fixture validation, not a causal repair or another native observation.
+The next complete managed gate and named-getter native trial remain pending.
+
 ## PR 19 integration managed gate (2026-10-02)
 
 Source `3ff51bd4350c480e716061a82a3429006dd4fc65` integrates PR 19 with the
