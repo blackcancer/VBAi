@@ -1,5 +1,51 @@
 # Recorded validation
 
+## Installed candidate and read-only UserForm surface (2026-10-02)
+
+Product source `608c002d66e2eb46c735252c7c40f8a7fb8cb3a2`, at documentation
+checkpoint `d6b79b7be396769547b55e3a17137c588584c24b`, has product MVID
+`d2c3601b-893d-4e84-b9e3-c172da7e2437`, SHA-256
+`C4D095D9427379AC8F2A82D047C8780637A0E815173241976F2C86664E777644` and test
+SHA-256 `D96F9C4277415845642376C2A609114225FDDC4FA3EE99D382FEA5035178F573`.
+Both complete runs preserve the exact clean source and binaries. No coverage
+collector is enabled.
+
+| Terminal managed evidence | Passed | Failed | Opt-ins not executed | Scope |
+| --- | ---: | ---: | ---: | --- |
+| `artifacts/qualification-history-candidate-20261002/managed.trx` | 3663 | 10 | 189 | Repository-local TEMP: four invalid Git working directories, four scratch-root failures, two deferred Access failures. |
+| `artifacts/qualification-history-candidate-default-temp-20261002-run2/managed.trx` | 3673 | 0 | 189 | Normal Windows TEMP outside the repository; complete gate passes. |
+
+The first default-TEMP command resolves a relative output path under the test
+project and finds no assembly. No test runs; its separate plan/console/terminal
+remain in `qualification-history-candidate-default-temp-20261002`. The initial
+Access timeout retains its thread-local pending guard, causing the second
+failure. Both pass in the subsequent complete run; the original continuation
+failure remains unexplained. No product lock is reset, deadline changed or
+native save replayed. A detached dispatcher helper is prepared, not executed.
+
+`artifacts/qualification-history-candidate-20261002/font-property-surface-run2`
+records owned visible Excel PID **60164**, started at
+`2026-10-02T00:11:38.8436205Z`, Office build `16.0.20430.20092`. Bridge connection,
+64-bit identity and installed path `bin/Debug/net48/VBAi.dll` prove the loaded
+MVID above. A disposable LabelButton form is created, saved and reopened. Its
+observation performs no import, property setter or macro execution. Original
+Close/Quit each return once; the retained original process handle reports exit
+code **0**, without forced termination. The earlier probe fails reflection
+argument binding before entering bootstrap; no host or export is created.
+
+The root component exposes Font. `Font.Object` and `Designer.Font` have the same
+IUnknown; `Font.Value` has another COM identity. Designer metadata declares
+PROPERTYPUTREF, but the component-property metadata provider is unavailable.
+No setter is verified. Retained FRM bytes are identical. The initial diagnostic
+omits production's CRLF normalization before parsing OleObjectBlob, incorrectly
+falling back to raw FRX comparison. `offline-analysis/frozen_snapshot_result.json`
+uses the frozen production snapshot and confirms equal meaningful FRX data at
+offset zero, with identical root Tahoma 8.25 StdFont descriptors. Raw differences
+are documented compressed-string padding and CFB slack. The original diagnostic
+report remains unchanged. This verifies the read-only surface and actual host
+loading only: import, font restoration, other layouts, recovery and post-import
+reopen remain unqualified. Historical failed imports below remain failed.
+
 ## Local conversation lifetime (2026-10-02)
 
 Source `608c002d66e2eb46c735252c7c40f8a7fb8cb3a2` integrates local conversation
@@ -27,12 +73,13 @@ The tested binaries were copied to the existing `bin/Debug/net48` installation
 path with all VBA hosts closed; previous binaries remain in
 `artifacts/session-history-validation/installed-backup`. `build-identity.json`
 and `deployment.json` in the same evidence directory record identity and scope.
-No registration changed or host launched; loading in an actual host remains a
-separate check. See [local data behavior](privacy.md#local-data).
+No registration changed or host launched during deployment. The subsequent
+read-only Excel trial above verifies host loading of this product, separately
+from conversation-feature acceptance. See [local data behavior](privacy.md#local-data).
 
 ## Q-027 UserForm follow-up (2026-10-02)
 
-Evidence is under `artifacts/native-qualification-20261001`. The current
+Evidence is under `artifacts/native-qualification-20261001`. The earlier frozen
 isolated source `420b3da88bfb3e042a7ab7ed3710fc9994382a26` builds product
 MVID `49d7c21c-f394-4d45-b55f-fd71f235e684`, SHA-256
 `E5D8234F1C817CFB585227E32B7C925EE7E1BE101202B2C7F95FEC20A4C9EF64`,
@@ -42,7 +89,7 @@ and test SHA-256
 built product MVID `246c0fc2-5753-4250-97ed-511982bc6906`, SHA-256
 `6C000FD20666FFA792F369BD11690000E950B331CCA227F04CD85D210824D3EC`
 (`owner-font-candidate.json`). That source adds guarded, owning-thread exact-font
-restoration without relaxing the FRX comparison. The current source corrects one
+restoration without relaxing the FRX comparison. That frozen source corrects one
 native accessibility ListBox external-selection cache and bounds owner names
 before path construction; it does not change font comparison semantics.
 

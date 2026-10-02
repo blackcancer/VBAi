@@ -6,7 +6,27 @@ are maintained only in [recorded validation](test-coverage.md).
 
 ## Current candidate checkpoint (2026-10-02)
 
-The Q-027 follow-up candidate is source `420b3da`, MVID
+The installed candidate is product source `608c002`, with documentation
+checkpoint `d6b79b7`, MVID `d2c3601b-893d-4e84-b9e3-c172da7e2437`, SHA-256
+`C4D095D9427379AC8F2A82D047C8780637A0E815173241976F2C86664E777644`.
+Its complete default managed gate passes with unchanged frozen binaries using
+the normal Windows temporary directory. The failed repository-local TEMP run
+and its deferred Access continuation failure remain separately recorded;
+the latter's original cause is not established.
+
+An owned, visible Excel read-only surface trial confirms the installed MVID and
+normal original-process exit. The saved/reopened root form exposes
+`VBComponent.Properties.Item("Font").Object`, with the same COM identity as
+`Designer.Font`. Corrected offline comparison preserves the root font descriptor
+and all meaningful exported resources after the reads. Raw string padding and
+CFB slack differ; the initial diagnostic comparison omitted production's line
+normalization. No import or font setter is exercised by this trial, so Q-027
+remains open. Exact counters, identities and evidence are in
+[recorded validation](test-coverage.md#installed-candidate-and-read-only-userform-surface-2026-10-02).
+
+### Earlier Q-027 import candidate
+
+The earlier Q-027 follow-up candidate is source `420b3da`, MVID
 `49d7c21c-f394-4d45-b55f-fd71f235e684`, SHA-256
 `E5D8234F1C817CFB585227E32B7C925EE7E1BE101202B2C7F95FEC20A4C9EF64`.
 It corrects the native accessibility ListBox selection cache and bounds owner
@@ -17,9 +37,11 @@ gate has a disk-full signature-size failure. The corrected selection fixture
 reaches actual owner-dispatched LabelButton import: sources match but the root
 FRX font descriptor is omitted, so exact comparison correctly refuses success.
 Original normal exit is verified for that case. A subsequent seed attachment
-failure blocks the other layouts. Q-027 remains open. The currently
-installed DLL has a separate read-only identity in [recorded validation](test-coverage.md#q-027-userform-follow-up-2026-10-02);
-its provenance is unknown and it is not the tested candidate.
+failure blocks the other layouts. Q-027 remains open. At that checkpoint the
+installed DLL had an unknown-provenance identity, separately recorded in
+[recorded validation](test-coverage.md#q-027-userform-follow-up-2026-10-02).
+That installation has since been backed up and replaced by the known candidate
+above; the earlier native import results are not reruns against that candidate.
 
 ### Earlier 2026-10-01 operation checkpoint
 
