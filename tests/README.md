@@ -85,12 +85,21 @@ or provider conversation; native acceptance must be recorded separately.
 `WordChatGitWindowTests` additionally requires `VBAi_RUN_WORD_CHAT_GIT_TESTS=1`.
 Run it separately on the same frozen-candidate contract. It maps the owned saved
 Word project through canonical bridge fields, selects its unique chat UI label,
-then invokes the actual chat GitHub menu item once. The Git modal must belong to
-the observed chat window and its VBE thread. Exact closure, unchanged Word
+then invokes the actual chat GitHub menu item once. Discovery uses a bounded native
+HWND inventory and the unique chat caption/control shape, with a content-free
+receipt before action. The Git modal must belong to the observed chat's verified
+top-level root and VBE thread. An anchored child chat resolves its native modal
+owner to the VBE root, following the
+[Win32 owner contract](https://learn.microsoft.com/en-us/windows/win32/winmsg/window-features#owned-windows).
+The exact root relationship is frozen before invocation and rechecked before
+closure. Exact closure, unchanged Word
 source/references/saved bytes and normal exit remain required; opening must not
 create a repository binding. No provider prompt, Git connection or import occurs.
 Both Word scenarios read reference identities through the owning-thread bridge;
 external testhost reference property getters are not part of this preparation.
+The existing `VBAi_TEST_WORD_EXIT_WAIT_BOUND_MS=15000` opt-in changes only the
+single read-only original-handle exit observation. Record that bound with the
+native result; it does not replay Close/Quit or make an earlier timeout successful.
 
 ### Disposable owner-import root-font observation
 
