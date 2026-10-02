@@ -62,6 +62,13 @@ readback and attached font descriptors using `IPersistStream.Save(false)`.
 It preserves the final exact snapshot check. The separate `DistinctChildName`
 mode predeclares one temporary Arial child-name write before the ordinary target
 writes; it refuses an Arial target and is never a fallback after a failed trial.
+The separate `AfterInitialCapture` mode defers the selected form's font delivery
+until the first post-import snapshot. It requires that only that form's FRX
+differs, then transfers one fresh exact StdFont to `Designer.Font` on the owning
+thread. It performs no child-value writes or diagnostic exports before that
+first capture, retains the imported component identity and preserves the final
+strict snapshot check. This is a predeclared experiment, not an automatic retry
+after an uncertain mutation. Native acceptance of this mode is not established.
 Capture-only and persistence scenarios cannot enable this diagnostic. Without
 the opt-in, there are no additional font getters, exports or writes. Recorded
 instrumented trials reach terminal exact snapshot refusals; this diagnostic

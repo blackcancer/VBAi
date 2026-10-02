@@ -240,7 +240,7 @@ namespace VBAi
                     catch (Exception receiptError) { throw new AggregateException("Root font observation failed while recording the exact comparison refusal.", error, receiptError); }
                     throw error;
                 }
-                }
+            }
             catch (Exception error) { deferredPrimary = error; throw; }
             finally
             {
