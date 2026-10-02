@@ -17,10 +17,25 @@ namespace VBAi.Tests.Integration
         private const uint NativeObjectModel = 0xFFFFFFF0;
         [DllImport("user32.dll")] private static extern bool EnumChildWindows(IntPtr parent, DialogWindowCallback callback, IntPtr state);
         [DllImport("oleacc.dll", EntryPoint = "AccessibleObjectFromWindow")]
-        private static extern int NativeAccessibleObjectFromWindow(IntPtr window, uint objectId, ref Guid iid, out object value);
+        private static extern int NativeAccessibleObjectFromWindow(IntPtr window, uint objectId, ref Guid iid,
+            [MarshalAs(UnmanagedType.Interface)] out object value);
 
         private IsolatedTestDesktop.NativeChild privateWordChild;
         private object privateWordSeed;
+
+        internal static string RequirePrivateWordDesktop(string kind, string required, string configured,
+            Action<string> requireCurrent)
+        {
+            if (requireCurrent == null) throw new ArgumentNullException(nameof(requireCurrent));
+            if (!string.IsNullOrEmpty(required) && !string.Equals(configured, required, StringComparison.Ordinal))
+                throw new InvalidOperationException("The qualification desktop and Word test desktop must match exactly.");
+            string selected = !string.IsNullOrEmpty(required) ? required : configured;
+            if (string.IsNullOrEmpty(selected)) return null;
+            if (!string.Equals(kind, "Word", StringComparison.Ordinal))
+                throw new InvalidOperationException("The private-desktop bootstrap is prepared only for owned Word qualification.");
+            requireCurrent(selected);
+            return selected;
+        }
 
         private void BootstrapPrivateWordDesktop(string desktopName)
         {
@@ -96,9 +111,15 @@ namespace VBAi.Tests.Integration
             }
             using (var package = Package.Open(path, FileMode.Open, FileAccess.Read))
             {
-                Assert.AreEqual(1, package.GetParts().Count(), "The seed DOCX must have exactly one content part and no macros.");
-                Assert.AreEqual(1, package.GetRelationships().Count());
-                Assert.AreEqual(contentType, package.GetParts().Single().ContentType);
+                var contentParts = package.GetParts().Where(part => !PackUriHelper.IsRelationshipPartUri(part.Uri)).ToArray();
+                Assert.AreEqual(1, contentParts.Length, "The seed DOCX must have exactly one content part and no macros.");
+                Assert.AreEqual(new Uri("/word/document.xml", UriKind.Relative), contentParts[0].Uri);
+                Assert.AreEqual(contentType, contentParts[0].ContentType);
+                var relationships = package.GetRelationships().ToArray();
+                Assert.AreEqual(1, relationships.Length);
+                Assert.AreEqual(relationship, relationships[0].RelationshipType);
+                Assert.AreEqual(TargetMode.Internal, relationships[0].TargetMode);
+                Assert.AreEqual(contentParts[0].Uri, relationships[0].TargetUri);
             }
         }
 

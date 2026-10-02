@@ -80,6 +80,10 @@ namespace VBAi.Tests.Integration
 
         private static OfficeVbeFixture Start(string kind, bool preserveStartupFailure, string requestedProgId = null, bool allowExistingHost = false)
         {
+            string isolatedDesktop = RequirePrivateWordDesktop(kind,
+                Environment.GetEnvironmentVariable("VBAi_QUALIFICATION_DESKTOP"),
+                Environment.GetEnvironmentVariable("VBAi_TEST_DESKTOP_NAME"), IsolatedTestDesktop.RequireCurrent);
+            bool privateWord = isolatedDesktop != null;
             if (Environment.GetEnvironmentVariable("VBAi_RUN_OFFICE_TESTS") != "1")
                 Assert.Inconclusive("Set VBAi_RUN_OFFICE_TESTS=1 to qualify installed Office hosts.");
             string executable = kind == "Word" ? "WINWORD" : kind == "PowerPoint" ? "POWERPNT" : kind == "Access" ? "MSACCESS" : "MSPUB";
@@ -97,10 +101,6 @@ namespace VBAi.Tests.Integration
             result.Root = Path.Combine(Path.GetFullPath(output), kind, Guid.NewGuid().ToString("N"));
             Directory.CreateDirectory(result.Root);
             result.DocumentPath = Path.Combine(result.Root, "Disposable" + (kind == "Word" ? ".docm" : kind == "PowerPoint" ? ".pptm" : kind == "Access" ? ".accdb" : ".pub"));
-            string isolatedDesktop = Environment.GetEnvironmentVariable("VBAi_TEST_DESKTOP_NAME");
-            bool privateWord = !string.IsNullOrEmpty(isolatedDesktop);
-            if (privateWord && kind != "Word")
-                throw new InvalidOperationException("The private-desktop bootstrap is prepared only for owned Word qualification.");
             try
             {
                 if (privateWord) result.BootstrapPrivateWordDesktop(isolatedDesktop);
