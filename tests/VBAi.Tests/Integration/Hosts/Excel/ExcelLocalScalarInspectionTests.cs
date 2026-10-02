@@ -71,7 +71,9 @@ namespace VBAi.Tests.Integration
             var phaseStartedUtc = DateTime.UtcNow;
             var host = ExcelVbeFixture.StartOwnedWithTrace(tracePath);
             string projectPath = host.File("ScalarPage" + offset + ".xlsm");
-            string report = Path.Combine(TestContext.TestResultsDirectory, "excel-scalar-page-" + offset + "-" + host.ProcessId + "-" + Path.GetFileName(host.Root) + ".json");
+            string reportDirectory = string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("VBAi_EXCEL_RESULTS"))
+                ? TestContext.TestResultsDirectory : host.Root;
+            string report = Path.Combine(reportDirectory, "excel-scalar-page-" + offset + "-" + host.ProcessId + "-" + Path.GetFileName(host.Root) + ".json");
             var evidence = new ExcelScalarQualificationEvidence(report, host.ProcessId, host.Root) { PhaseTracePath = tracePath };
             const string module = "ScalarPageAudit", procedure = "AuditPage";
             string source = "Option Explicit\r\nPublic Sub AuditPage()\r\n" +

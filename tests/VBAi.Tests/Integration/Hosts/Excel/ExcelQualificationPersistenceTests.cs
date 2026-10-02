@@ -79,10 +79,14 @@ namespace VBAi.Tests.Integration
                         Assert.AreEqual("Q006 persisted label", Convert.ToString(((dynamic)label).Caption));
                     }
                     finally { Release(label); Release(controls); Release(designer); Release(form); }
-                    File.WriteAllText(Path.Combine(TestContext.TestResultsDirectory, "q006-persistence.json"),
+                    string reportDirectory = string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("VBAi_EXCEL_RESULTS"))
+                        ? TestContext.TestResultsDirectory : reopened.Root;
+                    string report = Path.Combine(reportDirectory, "q006-persistence.json");
+                    File.WriteAllText(report,
                         new JavaScriptSerializer().Serialize(new { SavedPid = savedPid, ReopenedPid = reopened.ProcessId, Path = path,
                             ModuleSources = expected, Form = "Q006Form", Label = "Q006 persisted label", HelperSaveInvoked = false,
                             MacrosDisabledOnReopen = true, AssemblyMvid = typeof(VbeSession).Module.ModuleVersionId }));
+                    TestContext.AddResultFile(report);
                 }
                 finally
                 {
