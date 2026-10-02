@@ -17,6 +17,7 @@ namespace VBAi
         internal static void RequireOwner(object project)
         {
             object editor = null, main = null;
+            Exception primary = null;
             try
             {
                 editor = ((dynamic)project).VBE; main = ((dynamic)editor).MainWindow;
@@ -26,7 +27,8 @@ namespace VBAi
                     thread != GetCurrentThreadId() || Thread.CurrentThread.GetApartmentState() != ApartmentState.STA)
                     throw new InvalidOperationException("UserForm font restoration requires the actual owning VBE process and STA thread.");
             }
-            finally { Release(main); Release(editor); }
+            catch (Exception error) { primary = error; throw; }
+            finally { ReleaseOwnedReferences(new object[] { editor, main }, Release, primary); }
         }
 
         /// <summary>Preflights every declared font owner and root child before any delivery, with identity guards.</summary>
