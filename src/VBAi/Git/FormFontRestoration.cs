@@ -42,7 +42,17 @@ namespace VBAi
                 {
                     ValidateDescriptor(binding.Descriptor);
                     object current = designer;
-                    if (binding.OwnerPath.Length != 0)
+                    if (binding.OwnerPath.Length == 0)
+                    {
+                        if (binding.Type != 7)
+                            throw new InvalidOperationException("The root persisted font owner is not a UserForm.");
+                        object properties = ((dynamic)component).Properties; references.Add(properties);
+                        current = ((dynamic)properties).Item("Font"); references.Add(current);
+                        if (!string.Equals(Convert.ToString(((dynamic)current).Name), "Font", StringComparison.Ordinal) ||
+                            Convert.ToInt32(((dynamic)current).NumIndices) != 0)
+                            throw new InvalidOperationException("The imported UserForm Font property changed.");
+                    }
+                    else
                     {
                         string[] parts = binding.OwnerPath.Split('/');
                         if (parts.Length % 2 != 0 || parts.Length > 128)
@@ -69,7 +79,7 @@ namespace VBAi
                 for (int i = 0; i < bindings.Length; i++)
                 {
                     revalidate();
-                    Assign(owners[i], bindings[i].Descriptor);
+                    Assign(owners[i], bindings[i].Descriptor, bindings[i].OwnerPath.Length == 0);
                 }
             }
             finally { for (int i = references.Count - 1; i >= 0; i--) Release(references[i]); }
@@ -87,7 +97,7 @@ namespace VBAi
         }
 
         /// <summary>Loads the exact descriptor into a new local font, then transfers it once without metric getters.</summary>
-        private static void Assign(object owner, byte[] data)
+        private static void Assign(object owner, byte[] data, bool propertyObject)
         {
             var description = new FontDescription {
                 StructureSize = (uint)Marshal.SizeOf(typeof(FontDescription)),
@@ -107,7 +117,11 @@ namespace VBAi
                 ((PersistStream)font).Load(stream);
                 // Native outcome is never retried. The caller's complete snapshot
                 // comparison remains authoritative, including all font bytes.
-                ((dynamic)owner).Font = font;
+                // VBIDE object-valued properties use Property.Object, not Value.
+                // Use the component's documented object-valued property route
+                // for root fonts; nested owners use MSForms.Font.
+                if (propertyObject) ((dynamic)owner).Object = font;
+                else ((dynamic)owner).Font = font;
             }
             finally
             {
