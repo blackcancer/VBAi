@@ -31,7 +31,7 @@ namespace VBAi.Tests.Integration
             if (persistence || layout == null || !Layouts.Contains(layout))
                 throw new InvalidOperationException("Root font observation requires one declared import layout, not capture or persistence qualification.");
             string mode = environment(ModeVariable);
-            if (mode != "ObserveWrites" && mode != "DistinctChildName")
+            if (mode != "ObserveWrites" && mode != "DistinctChildName" && mode != "AfterInitialCapture")
                 throw new InvalidOperationException("An explicit supported root font observation mode is required.");
             string path = ExactPath(environment(ManifestVariable));
             RequirePath(path, Entry.Absent, metadata ?? File.GetAttributes);
@@ -44,7 +44,8 @@ namespace VBAi.Tests.Integration
             VbaGitSnapshot baseline, Guid expectedCandidate, Guid loadedCandidate, Guid nonce)
         {
             if (configuration == null) throw new ArgumentNullException(nameof(configuration));
-            if (configuration.Mode != "ObserveWrites" && configuration.Mode != "DistinctChildName")
+            if (configuration.Mode != "ObserveWrites" && configuration.Mode != "DistinctChildName" &&
+                configuration.Mode != "AfterInitialCapture")
                 throw new InvalidOperationException("Unsupported root font observation mode.");
             if (expectedCandidate == Guid.Empty || loadedCandidate != expectedCandidate || nonce == Guid.Empty)
                 throw new InvalidOperationException("Root font observation must bind the exact loaded candidate and a fresh nonce.");

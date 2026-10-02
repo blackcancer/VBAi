@@ -18,10 +18,11 @@ namespace VBAi.Tests.Unit
         }
 
         [TestMethod]
-        public void ExactDisposableTargetManifestAcceptsBothPredeclaredModesWithoutCreatingOutput()
+        public void ExactDisposableTargetManifestAcceptsAllPredeclaredModesWithoutCreatingOutput()
         {
             var target = Target();
-            foreach (string mode in new[] { FormFontObservation.ObserveWrites, FormFontObservation.DistinctChildName })
+            foreach (string mode in new[] { FormFontObservation.ObserveWrites, FormFontObservation.DistinctChildName,
+                FormFontObservation.AfterInitialCapture })
             {
                 var manifest = Valid(target, mode);
                 FormFontObservation.ValidateManifest(manifest, manifest.ProjectPath, target,
@@ -52,14 +53,67 @@ namespace VBAi.Tests.Unit
         }
 
         [TestMethod]
-        public void ObserveWritesRejectsAnyTemporaryName()
+        public void NonDistinctModesRejectAnyTemporaryName()
         {
             var target = Target();
-            var manifest = Valid(target, FormFontObservation.ObserveWrites);
-            manifest.TemporaryName = "Arial";
-            Assert.ThrowsException<InvalidOperationException>(() =>
-                FormFontObservation.ValidateManifest(manifest, manifest.ProjectPath, target,
-                    new HashSet<string>(StringComparer.Ordinal) { "Form1" }));
+            foreach (string mode in new[] { FormFontObservation.ObserveWrites, FormFontObservation.AfterInitialCapture })
+            {
+                var manifest = Valid(target, mode);
+                manifest.TemporaryName = "Arial";
+                Assert.ThrowsException<InvalidOperationException>(() =>
+                    FormFontObservation.ValidateManifest(manifest, manifest.ProjectPath, target,
+                        new HashSet<string>(StringComparer.Ordinal) { "Form1" }));
+            }
+        }
+
+        [TestMethod]
+        public void FirstPostImportCaptureIsRecordedBeforeOnePlannedTransfer()
+        {
+            var target = Target(); var observed = WithResource(target, DifferentResource());
+            var stages = new List<string>();
+            FormFontObservation.GateAfterInitialCapture(() => { stages.Add("capture"); return observed; }, target, "Form1",
+                (exact, onlyFrx) => { Assert.IsFalse(exact); Assert.IsTrue(onlyFrx); stages.Add("initial-result"); },
+                () => stages.Add("transfer"));
+            CollectionAssert.AreEqual(new[] { "capture", "initial-result", "transfer" }, stages.ToArray());
+        }
+
+        [TestMethod]
+        public void InitialExactOrUnrelatedDifferenceRefusesBeforeTransfer()
+        {
+            var target = Target(); var source = VbaGitSnapshot.Utf8.GetString(target.Files["Form1.frm"]);
+            var otherSource = new VbaGitSnapshot(target.Manifest, new Dictionary<string, byte[]> {
+                ["Form1.frm"] = VbaGitSnapshot.Utf8.GetBytes(source + "' Different source\n"),
+                ["Form1.frx"] = DifferentResource()
+            });
+            foreach (var initial in new[] { target, otherSource })
+            {
+                int captures = 0, records = 0, transfers = 0;
+                Assert.ThrowsException<InvalidOperationException>(() =>
+                    FormFontObservation.GateAfterInitialCapture(() => { captures++; return initial; }, target, "Form1",
+                        (exact, onlyFrx) => { records++; Assert.AreEqual(ReferenceEquals(initial, target), exact); },
+                        () => transfers++));
+                Assert.AreEqual(1, captures); Assert.AreEqual(1, records); Assert.AreEqual(0, transfers);
+            }
+        }
+
+        [TestMethod]
+        public void CaptureOrReceiptFailureNeverStartsTransferAndTransferFailureIsNotRetried()
+        {
+            var target = Target(); var observed = WithResource(target, DifferentResource());
+            foreach (string stage in new[] { "capture", "receipt", "transfer" })
+            {
+                var failure = new InvalidOperationException(stage); int transfers = 0;
+                try
+                {
+                    FormFontObservation.GateAfterInitialCapture(
+                        () => { if (stage == "capture") throw failure; return observed; }, target, "Form1",
+                        (exact, onlyFrx) => { if (stage == "receipt") throw failure; },
+                        () => { transfers++; throw failure; });
+                    Assert.Fail("The planned failure must be retained.");
+                }
+                catch (InvalidOperationException caught) { Assert.AreSame(failure, caught); }
+                Assert.AreEqual(stage == "transfer" ? 1 : 0, transfers);
+            }
         }
 
         [TestMethod]
@@ -87,6 +141,20 @@ namespace VBAi.Tests.Unit
                 ["Form1.frx"] = FormStreamPaddingTests.ContainerResourceBefore()
             };
             return new VbaGitSnapshot(new VbaGitManifest { References = "", Components = new[] { form } }, files);
+        }
+        private static VbaGitSnapshot WithResource(VbaGitSnapshot target, byte[] resource)
+        {
+            return new VbaGitSnapshot(target.Manifest, new Dictionary<string, byte[]> {
+                ["Form1.frm"] = target.Files["Form1.frm"], ["Form1.frx"] = resource
+            });
+        }
+        private static byte[] DifferentResource()
+        {
+            byte[] resource = FormStreamPaddingTests.ContainerResourceAfter();
+            // A retained CFB directory CLSID byte is significant in comparison;
+            // the form remains structurally parseable without assuming a root font.
+            resource[3048] ^= 1;
+            return resource;
         }
         private static FormFontObservation.Manifest Valid(VbaGitSnapshot target, string mode)
         {

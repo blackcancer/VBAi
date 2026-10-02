@@ -108,6 +108,7 @@ namespace VBAi.Tests.Unit
 
         [DataTestMethod]
         [DataRow("ObserveWrites", "")][DataRow("DistinctChildName", "Arial")]
+        [DataRow("AfterInitialCapture", "")]
         public void ActualBoundedRootFixtureBindsAllExactContractFieldsWithoutChangingBaseline(string mode, string temporaryFace)
         {
             WithCase((root, path, project) => {

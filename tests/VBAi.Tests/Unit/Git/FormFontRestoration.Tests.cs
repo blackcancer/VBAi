@@ -269,6 +269,40 @@ namespace VBAi.Tests.Unit
             Assert.AreSame(cleanup, error.InnerExceptions.Single());
         }
 
+        [TestMethod]
+        public void DeferredRootPlanChecksIdentityThenRecordsAndDeliversExactlyOnce()
+        {
+            byte[] descriptor = RootBinding().Descriptor;
+            var stages = new List<string>();
+            FormFontRestoration.DeliverDeferredRoot(descriptor, () => stages.Add("revalidate"),
+                data => { Assert.AreSame(descriptor, data); stages.Add("intent"); },
+                data => { Assert.AreSame(descriptor, data); stages.Add("Designer.Font.put"); },
+                () => stages.Add("returned"));
+            CollectionAssert.AreEqual(new[] { "revalidate", "intent", "Designer.Font.put", "returned" }, stages.ToArray());
+        }
+
+        [TestMethod]
+        public void DeferredRootPlanStopsAtFailedGuardReceiptOrNativeDeliveryWithoutRetry()
+        {
+            foreach (string failed in new[] { "revalidate", "intent", "Designer.Font.put" })
+            {
+                var stages = new List<string>(); var failure = new InvalidOperationException(failed);
+                try
+                {
+                    FormFontRestoration.DeliverDeferredRoot(RootBinding().Descriptor,
+                        () => { stages.Add("revalidate"); if (failed == "revalidate") throw failure; },
+                        data => { stages.Add("intent"); if (failed == "intent") throw failure; },
+                        data => { stages.Add("Designer.Font.put"); if (failed == "Designer.Font.put") throw failure; },
+                        () => stages.Add("returned"));
+                    Assert.Fail("The planned failure must stop the transfer.");
+                }
+                catch (InvalidOperationException caught) { Assert.AreSame(failure, caught); }
+                Assert.AreEqual(1, stages.Count(item => item == failed), failed);
+                Assert.IsFalse(stages.Contains("returned"), failed);
+                Assert.AreEqual(failed == "Designer.Font.put" ? 1 : 0, stages.Count(item => item == "Designer.Font.put"));
+            }
+        }
+
         private static object[] RootChildren(FakeChildren children)
         {
             return new[] { "Name", "Size", "Bold", "Italic", "Underline", "Strikethrough", "Weight", "Charset" }

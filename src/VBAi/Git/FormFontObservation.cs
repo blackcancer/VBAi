@@ -18,6 +18,7 @@ namespace VBAi
         internal const string ManifestVariable = "VBAi_TEST_ROOT_FONT_OBSERVATION_MANIFEST";
         internal const string ObserveWrites = "ObserveWrites";
         internal const string DistinctChildName = "DistinctChildName";
+        internal const string AfterInitialCapture = "AfterInitialCapture";
 
         internal sealed class Manifest
         {
@@ -34,9 +35,11 @@ namespace VBAi
 
         private readonly Manifest manifest;
         private int receipt;
+        private bool transferStarted;
         private FormFontObservation(Manifest value) { manifest = value; }
         internal string FormName { get { return manifest.FormName; } }
         internal bool HasDistinctName { get { return manifest.Mode == DistinctChildName; } }
+        internal bool IsAfterInitialCapture { get { return manifest.Mode == AfterInitialCapture; } }
         internal string TemporaryName { get { return HasDistinctName ? manifest.TemporaryName : null; } }
 
         internal static FormFontObservation TryBegin(string projectPath, VbaGitSnapshot target,
@@ -71,7 +74,8 @@ namespace VBAi
 
         internal static void ValidateManifest(Manifest value, string projectPath, VbaGitSnapshot target, ISet<string> changed)
         {
-            if (value == null || value.Mode != ObserveWrites && value.Mode != DistinctChildName ||
+            if (value == null || value.Mode != ObserveWrites && value.Mode != DistinctChildName &&
+                value.Mode != AfterInitialCapture ||
                 !Guid.TryParseExact(value.Nonce, "N", out _) || !Guid.TryParse(value.CandidateMvid, out Guid mvid) ||
                 mvid != typeof(FormFontObservation).Module.ModuleVersionId)
                 throw new InvalidOperationException("Root font observation identity or mode does not match this assembly.");
@@ -99,8 +103,56 @@ namespace VBAi
                 (!string.Equals(value.TemporaryName, "Arial", StringComparison.Ordinal) ||
                  string.Equals(value.TemporaryName, targetName, StringComparison.OrdinalIgnoreCase)))
                 throw new InvalidOperationException("Root font observation temporary face is invalid or not distinct.");
-            if (value.Mode == ObserveWrites && !string.IsNullOrEmpty(value.TemporaryName))
-                throw new InvalidOperationException("ObserveWrites cannot request a temporary face.");
+            if (value.Mode != DistinctChildName && !string.IsNullOrEmpty(value.TemporaryName))
+                throw new InvalidOperationException("This root font observation mode cannot request a temporary face.");
+        }
+
+        /// <summary>Requires every initial source, identity and reference byte except the selected FRX to match.</summary>
+        internal static bool SameExceptSelectedFrx(VbaGitSnapshot observed, VbaGitSnapshot target, string formName)
+        {
+            if (observed == null || target == null || string.IsNullOrEmpty(formName)) return false;
+            var actual = observed.ComparisonFiles(); var desired = target.ComparisonFiles();
+            string resource = formName + ".frx";
+            return actual.Count == desired.Count && actual.ContainsKey(resource) && desired.ContainsKey(resource) &&
+                actual.Where(item => item.Key != resource).All(item => desired.TryGetValue(item.Key, out byte[] bytes) &&
+                    item.Value.SequenceEqual(bytes));
+        }
+
+        internal void RunAfterInitialCapture(Func<VbaGitSnapshot> capture, VbaGitSnapshot target, Action transfer)
+        {
+            if (!IsAfterInitialCapture) throw new InvalidOperationException("Initial capture belongs only to the deferred mode.");
+            GateAfterInitialCapture(capture, target, FormName,
+                (exact, onlySelectedFrx) => Write("initial-post-import-capture",
+                    new { Exact = exact, OnlySelectedFrxDiffers = onlySelectedFrx }), transfer);
+        }
+
+        /// <summary>Records the first post-import capture before any deferred native transfer.</summary>
+        internal static void GateAfterInitialCapture(Func<VbaGitSnapshot> capture, VbaGitSnapshot target, string formName,
+            Action<bool, bool> record, Action transfer)
+        {
+            VbaGitSnapshot observed = capture();
+            bool exact = observed.SameAs(target);
+            bool onlySelectedFrx = SameExceptSelectedFrx(observed, target, formName);
+            record(exact, onlySelectedFrx);
+            if (exact || !onlySelectedFrx)
+                throw new InvalidOperationException("Deferred font transfer requires one nonexact post-import capture with only the selected FRX differing.");
+            transfer();
+        }
+
+        internal void BeforeDeferredTransfer(byte[] descriptor)
+        {
+            if (!IsAfterInitialCapture || transferStarted ||
+                !string.Equals(Hex(descriptor), manifest.TargetDescriptorHex, StringComparison.OrdinalIgnoreCase))
+                throw new InvalidOperationException("Deferred root font transfer is not the single declared target delivery.");
+            transferStarted = true;
+            Write("before-deferred-transfer", new { Owner = FormName, TargetDescriptorHex = Hex(descriptor),
+                Delivery = "one fresh StdFont IPersistStream.Load then Designer.Font.put" });
+        }
+
+        internal void DeferredTransferReturned()
+        {
+            if (!transferStarted) throw new InvalidOperationException("No deferred font transfer was started.");
+            Write("deferred-transfer-returned", new { Owner = FormName, NativeSetterReturned = true });
         }
 
         internal void BeforeDelivery(string field, object requested)

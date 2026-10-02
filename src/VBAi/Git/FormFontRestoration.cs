@@ -43,7 +43,8 @@ namespace VBAi
             try
             {
                 revalidate();
-                observation?.BeforeFontGetters(component, revalidate);
+                if (observation != null && !observation.IsAfterInitialCapture)
+                    observation.BeforeFontGetters(component, revalidate);
                 object designer = NativeRead<object>("VBComponent.Designer.get", () => ((dynamic)component).Designer); references.Add(designer);
                 foreach (var binding in bindings)
                 {
@@ -110,17 +111,38 @@ namespace VBAi
                     }
                     else
                     {
-                        if (observation != null)
-                            observation.Observe("before-write-after-preflight", component, designer, owners[i], rootProperties[i], revalidate);
-                        AssignRoot(rootProperties[i], bindings[i].Descriptor, revalidate, observation,
-                            () => observation.Observe("after-temporary-name", component, designer, owners[i], rootProperties[i], revalidate));
-                        if (observation != null)
-                            observation.Observe("after-root", component, designer, owners[i], rootProperties[i], revalidate);
+                        if (observation != null && observation.IsAfterInitialCapture)
+                        {
+                            DeliverDeferredRoot(bindings[i].Descriptor, revalidate,
+                                observation.BeforeDeferredTransfer,
+                                descriptor => AssignNested(designer, descriptor, "Designer.Font.set", revalidate),
+                                observation.DeferredTransferReturned);
+                            observation.Observe("after-deferred-transfer", component, designer, owners[i], rootProperties[i], revalidate);
+                        }
+                        else
+                        {
+                            if (observation != null)
+                                observation.Observe("before-write-after-preflight", component, designer, owners[i], rootProperties[i], revalidate);
+                            AssignRoot(rootProperties[i], bindings[i].Descriptor, revalidate, observation,
+                                () => observation.Observe("after-temporary-name", component, designer, owners[i], rootProperties[i], revalidate));
+                            if (observation != null)
+                                observation.Observe("after-root", component, designer, owners[i], rootProperties[i], revalidate);
+                        }
                     }
                 }
             }
             catch (Exception error) { primary = error; throw; }
             finally { ReleaseOwnedReferences(references, Release, primary); }
+        }
+
+        /// <summary>One predeclared attached-font delivery after the initial capture; no fallback or replay.</summary>
+        internal static void DeliverDeferredRoot(byte[] descriptor, Action revalidate, Action<byte[]> intent,
+            Action<byte[]> deliver, Action returned)
+        {
+            revalidate();
+            intent(descriptor);
+            deliver(descriptor);
+            returned();
         }
 
         /// <summary>Releases every acquired reference and retains the native failure before any cleanup failures.</summary>
@@ -197,7 +219,7 @@ namespace VBAi
         }
 
         /// <summary>Loads the exact descriptor into a new local font, then transfers it once to a nested owner.</summary>
-        private static void AssignNested(object owner, byte[] data)
+        private static void AssignNested(object owner, byte[] data, string setter = "MSForms.Font.set", Action revalidate = null)
         {
             var description = new FontDescription {
                 StructureSize = (uint)Marshal.SizeOf(typeof(FontDescription)),
@@ -207,6 +229,7 @@ namespace VBAi
             };
             IntPtr pointer = IntPtr.Zero; object font = null; IStream stream = null;
             string operation = "OleCreateFontIndirect";
+            Exception primary = null;
             try
             {
                 var iid = new Guid("BEF6E003-A874-101A-8BBA-00AA00300CAB");
@@ -224,7 +247,8 @@ namespace VBAi
                 ((PersistStream)font).Load(stream);
                 // Native outcome is never retried. The caller's complete snapshot
                 // comparison remains authoritative, including all font bytes.
-                operation = "MSForms.Font.set";
+                operation = setter;
+                revalidate?.Invoke();
                 ((dynamic)owner).Font = font;
             }
             catch (Exception error) when (error is COMException || error is NotSupportedException)
@@ -232,11 +256,16 @@ namespace VBAi
                 // COM interop can map an unsupported native operation to a managed
                 // NotSupportedException. Preserve the stage and original exception
                 // without attempting a second delivery.
-                throw NativeFailure(operation, error);
+                primary = NativeFailure(operation, error);
+                throw primary;
             }
+            catch (Exception error) { primary = error; throw; }
             finally
             {
-                try { Release(stream); } finally { try { Release(font); } finally { if (pointer != IntPtr.Zero) Marshal.Release(pointer); } }
+                ReleaseOwnedReferences(new object[] { pointer, font, stream }, value => {
+                    if (value is IntPtr acquired && acquired != IntPtr.Zero) Marshal.Release(acquired);
+                    else Release(value);
+                }, primary);
             }
         }
 

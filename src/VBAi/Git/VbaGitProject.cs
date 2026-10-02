@@ -122,89 +122,160 @@ namespace VBAi
                 throw new InvalidOperationException(UiText.Get("Document modules do not match. Sheets and host modules must already exist with the same names."));
 
             FormFontObservation observation = null;
-            using (var scratch = new Scratch())
+            object deferredImported = null;
+            FormStreamPadding.FormFontBinding[] deferredBindings = null;
+            Exception deferredPrimary = null;
+            try
             {
-                // Encode and materialize the entire import before touching the live project.
-                var formFonts = target.Manifest.Components.Where(component => component.Type == 3)
-                    .ToDictionary(component => component.Name, target.FormFonts, StringComparer.Ordinal);
-                foreach (var file in target.Files)
-                    File.WriteAllBytes(Path.Combine(scratch.Path, file.Key), file.Key.EndsWith(".frx", StringComparison.Ordinal) ? file.Value :
-                        NativeEncoding.GetBytes(VbaGitSnapshot.Utf8.GetString(file.Value).Replace("\n", "\r\n")));
-                dynamic project = CheckedProject();
-                var expectedFiles = expected.ComparisonFiles();
-                var targetFiles = target.ComparisonFiles();
-                var changed = new HashSet<string>(StringComparer.Ordinal);
-                foreach (var old in expected.Manifest.Components)
+                using (var scratch = new Scratch())
                 {
-                    var next = target.Manifest.Components.FirstOrDefault(x => x.Name == old.Name);
-                    bool same = next != null && next.Type == old.Type && next.HasResources == old.HasResources &&
-                        expectedFiles[old.FileName].SequenceEqual(targetFiles[next.FileName]) &&
-                        (!old.HasResources || expectedFiles[old.Name + ".frx"].SequenceEqual(targetFiles[next.Name + ".frx"]));
-                    if (same) continue;
-                    changed.Add(old.Name);
-                }
-                if (System.Runtime.InteropServices.Marshal.IsComObject((object)project) && formFonts.Any(pair =>
-                    pair.Value != null && pair.Value.Length != 0 && (changed.Contains(pair.Key) || !expected.Manifest.Components.Any(old => old.Name == pair.Key))))
-                    FormFontRestoration.RequireOwner((object)project);
-                observation = FormFontObservation.TryBegin(hostPath, target, changed, (object)project);
-                try
-                {
-                    beforeMutation?.Invoke();
-                    foreach (var old in expected.Manifest.Components.Where(old => changed.Contains(old.Name) && old.Type != 100))
-                        project.VBComponents.Remove(project.VBComponents.Item(old.Name));
-                    foreach (var next in target.Manifest.Components)
+                    // Encode and materialize the entire import before touching the live project.
+                    var formFonts = target.Manifest.Components.Where(component => component.Type == 3)
+                        .ToDictionary(component => component.Name, target.FormFonts, StringComparer.Ordinal);
+                    foreach (var file in target.Files)
+                        File.WriteAllBytes(Path.Combine(scratch.Path, file.Key), file.Key.EndsWith(".frx", StringComparison.Ordinal) ? file.Value :
+                            NativeEncoding.GetBytes(VbaGitSnapshot.Utf8.GetString(file.Value).Replace("\n", "\r\n")));
+                    dynamic project = CheckedProject();
+                    var expectedFiles = expected.ComparisonFiles();
+                    var targetFiles = target.ComparisonFiles();
+                    var changed = new HashSet<string>(StringComparer.Ordinal);
+                    foreach (var old in expected.Manifest.Components)
                     {
-                        if (!changed.Contains(next.Name) && expected.Manifest.Components.Any(x => x.Name == next.Name)) continue;
-                        if (next.Type == 100)
+                        var next = target.Manifest.Components.FirstOrDefault(x => x.Name == old.Name);
+                        bool same = next != null && next.Type == old.Type && next.HasResources == old.HasResources &&
+                            expectedFiles[old.FileName].SequenceEqual(targetFiles[next.FileName]) &&
+                            (!old.HasResources || expectedFiles[old.Name + ".frx"].SequenceEqual(targetFiles[next.Name + ".frx"]));
+                        if (same) continue;
+                        changed.Add(old.Name);
+                    }
+                    if (System.Runtime.InteropServices.Marshal.IsComObject((object)project) && formFonts.Any(pair =>
+                        pair.Value != null && pair.Value.Length != 0 && (changed.Contains(pair.Key) || !expected.Manifest.Components.Any(old => old.Name == pair.Key))))
+                        FormFontRestoration.RequireOwner((object)project);
+                    observation = FormFontObservation.TryBegin(hostPath, target, changed, (object)project);
+                    try
+                    {
+                        beforeMutation?.Invoke();
+                        foreach (var old in expected.Manifest.Components.Where(old => changed.Contains(old.Name) && old.Type != 100))
+                            project.VBComponents.Remove(project.VBComponents.Item(old.Name));
+                        foreach (var next in target.Manifest.Components)
                         {
-                            dynamic module = project.VBComponents.Item(next.Name).CodeModule;
-                            int count = (int)module.CountOfLines;
-                            if (count > 0) module.DeleteLines(1, count);
-                            string code = VbaGitSnapshot.Utf8.GetString(target.Files[next.FileName]);
-                            if (code.Length > 0) module.InsertLines(1, code.Replace("\n", "\r\n"));
-                        }
-                        else
-                        {
-                            // A failing COM call can still have applied. Do not retry or automatically re-import.
-                            dynamic imported = project.VBComponents.Import(Path.Combine(scratch.Path, next.FileName));
-                            if ((string)imported.Name != next.Name || (int)imported.Type != next.Type)
-                                throw new InvalidOperationException(UiText.Get("Unexpected identity after import: ") + next.Name + UiText.Get(". Use Restore."));
-                            if (next.Type == 3)
+                            if (!changed.Contains(next.Name) && expected.Manifest.Components.Any(x => x.Name == next.Name)) continue;
+                            if (next.Type == 100)
                             {
-                                RestoreFormImportCode((object)imported.CodeModule, VbaGitSnapshot.Utf8.GetString(target.Files[next.FileName]), () => {
-                                    dynamic current = CheckedProject();
-                                    if (!VbeProjectHostPath.SameProject((object)current.VBComponents.Item(next.Name), (object)imported))
-                                        throw new InvalidOperationException("The imported form identity changed before code readback.");
-                                });
-                                if (System.Runtime.InteropServices.Marshal.IsComObject((object)imported))
-                                    FormFontRestoration.Restore((object)imported, formFonts[next.Name],
-                                        () => RequireImportedForm(next.Name, (object)imported),
-                                        observation != null && observation.FormName == next.Name ? observation : null);
+                                dynamic module = project.VBComponents.Item(next.Name).CodeModule;
+                                int count = (int)module.CountOfLines;
+                                if (count > 0) module.DeleteLines(1, count);
+                                string code = VbaGitSnapshot.Utf8.GetString(target.Files[next.FileName]);
+                                if (code.Length > 0) module.InsertLines(1, code.Replace("\n", "\r\n"));
+                            }
+                            else
+                            {
+                                // A failing COM call can still have applied. Do not retry or automatically re-import.
+                                dynamic imported = project.VBComponents.Import(Path.Combine(scratch.Path, next.FileName));
+                                if (next.Type == 3 && observation != null && observation.IsAfterInitialCapture &&
+                                    observation.FormName == next.Name && System.Runtime.InteropServices.Marshal.IsComObject((object)imported))
+                                {
+                                    deferredImported = (object)imported;
+                                    deferredBindings = formFonts[next.Name];
+                                }
+                                if ((string)imported.Name != next.Name || (int)imported.Type != next.Type)
+                                    throw new InvalidOperationException(UiText.Get("Unexpected identity after import: ") + next.Name + UiText.Get(". Use Restore."));
+                                if (next.Type == 3)
+                                {
+                                    RestoreFormImportCode((object)imported.CodeModule, VbaGitSnapshot.Utf8.GetString(target.Files[next.FileName]), () => {
+                                        dynamic current = CheckedProject();
+                                        if (!VbeProjectHostPath.SameProject((object)current.VBComponents.Item(next.Name), (object)imported))
+                                            throw new InvalidOperationException("The imported form identity changed before code readback.");
+                                    });
+                                    if (System.Runtime.InteropServices.Marshal.IsComObject((object)imported) &&
+                                        (observation == null || !observation.IsAfterInitialCapture || observation.FormName != next.Name))
+                                        FormFontRestoration.Restore((object)imported, formFonts[next.Name],
+                                            () => RequireImportedForm(next.Name, (object)imported),
+                                            observation != null && observation.FormName == next.Name ? observation : null);
+                                }
                             }
                         }
                     }
+                    catch (Exception error)
+                    {
+                        try { observation?.Failure(error); }
+                        catch (Exception receiptError) { throw new AggregateException("Root font observation failed while recording the native failure.", error, receiptError); }
+                        throw;
+                    }
                 }
+                if (observation != null && observation.IsAfterInitialCapture)
+                {
+                    try
+                    {
+                        // This is the first post-import native snapshot. A mismatch in
+                        // the selected FRX is expected evidence, not a mutation failure.
+                        observation.RunAfterInitialCapture(Capture, target, () => {
+                            if (deferredImported == null || deferredBindings == null)
+                                throw new InvalidOperationException("The declared imported form has no deferred font binding.");
+                            RestoreDeferredFormFonts(observation, deferredImported, deferredBindings);
+                        });
+                    }
+                    catch (Exception error)
+                    {
+                        try { observation.Failure(error); }
+                        catch (Exception receiptError)
+                        {
+                            throw new AggregateException("Deferred font transfer failed while recording its native outcome.", error, receiptError);
+                        }
+                        throw;
+                    }
+                }
+                bool exact;
+                try { exact = Capture().SameAs(target); observation?.Complete(exact); }
                 catch (Exception error)
                 {
                     try { observation?.Failure(error); }
-                    catch (Exception receiptError) { throw new AggregateException("Root font observation failed while recording the native failure.", error, receiptError); }
+                    catch (Exception receiptError) { throw new AggregateException("Root font observation failed while recording the final comparison failure.", error, receiptError); }
                     throw;
                 }
-            }
-            bool exact;
-            try { exact = Capture().SameAs(target); observation?.Complete(exact); }
-            catch (Exception error)
+                if (!exact)
+                {
+                    var error = new InvalidOperationException(UiText.Get("The VBE did not preserve the imported sources exactly. Use Restore or check the project."));
+                    try { observation?.Failure(error); }
+                    catch (Exception receiptError) { throw new AggregateException("Root font observation failed while recording the exact comparison refusal.", error, receiptError); }
+                    throw error;
+                }
+                }
+            catch (Exception error) { deferredPrimary = error; throw; }
+            finally
             {
-                try { observation?.Failure(error); }
-                catch (Exception receiptError) { throw new AggregateException("Root font observation failed while recording the final comparison failure.", error, receiptError); }
-                throw;
+                if (deferredImported != null)
+                    FormFontRestoration.ReleaseOwnedReferences(new[] { deferredImported }, value => {
+                        if (System.Runtime.InteropServices.Marshal.IsComObject(value))
+                            System.Runtime.InteropServices.Marshal.ReleaseComObject(value);
+                    }, deferredPrimary);
             }
-            if (!exact)
+        }
+
+        /// <summary>Reacquires the one imported component after the first post-import capture.</summary>
+        private void RestoreDeferredFormFonts(FormFontObservation observation, object imported,
+            FormStreamPadding.FormFontBinding[] bindings)
+        {
+            dynamic project = CheckedProject();
+            FormFontRestoration.RequireOwner((object)project);
+            object components = null, current = null;
+            Exception primary = null;
+            try
             {
-                var error = new InvalidOperationException(UiText.Get("The VBE did not preserve the imported sources exactly. Use Restore or check the project."));
-                try { observation?.Failure(error); }
-                catch (Exception receiptError) { throw new AggregateException("Root font observation failed while recording the exact comparison refusal.", error, receiptError); }
-                throw error;
+                components = project.VBComponents;
+                current = ((dynamic)components).Item(observation.FormName);
+                if (!VbeProjectHostPath.SameProject(current, imported))
+                    throw new InvalidOperationException("The deferred imported UserForm identity changed after initial capture.");
+                FormFontRestoration.Restore(current, bindings,
+                    () => RequireImportedForm(observation.FormName, imported), observation);
+            }
+            catch (Exception error) { primary = error; throw; }
+            finally
+            {
+                FormFontRestoration.ReleaseOwnedReferences(new object[] { components, current }, value => {
+                    if (value != null && System.Runtime.InteropServices.Marshal.IsComObject(value))
+                        System.Runtime.InteropServices.Marshal.ReleaseComObject(value);
+                }, primary);
             }
         }
 
