@@ -3,6 +3,8 @@ using System.ComponentModel;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Text;
+using System.Threading;
+using System.Windows.Forms;
 
 namespace VBAi.Tests.Integration
 {
@@ -19,6 +21,7 @@ namespace VBAi.Tests.Integration
         [DllImport("user32.dll", SetLastError = true)] private static extern bool EnumDesktopWindows(IntPtr desktop, WindowVisitor visitor, IntPtr state);
         [DllImport("user32.dll", SetLastError = true)] private static extern IntPtr OpenInputDesktop(uint flags, bool inherit, uint access);
         [DllImport("user32.dll", SetLastError = true)] private static extern IntPtr GetThreadDesktop(uint threadId);
+        [DllImport("user32.dll", SetLastError = true)] private static extern bool SetThreadDesktop(IntPtr desktop);
         [DllImport("user32.dll")] private static extern IntPtr GetProcessWindowStation();
         [DllImport("user32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
         private static extern bool GetUserObjectInformationW(IntPtr handle, int index, StringBuilder value, uint size, out uint required);
@@ -70,15 +73,40 @@ namespace VBAi.Tests.Integration
         internal static bool HasWindows(string name)
         {
             RequireName(name);
-            IntPtr handle = OpenDesktopW(name, 0, false, 0x41);
+            IntPtr handle = OpenDesktopW(name, 0, false, DesktopAccess);
             if (handle == IntPtr.Zero) throw new Win32Exception(Marshal.GetLastWin32Error());
             try
             {
-                int count = 0;
-                WindowVisitor visitor = (window, state) => ++count <= 8192;
-                if (!EnumDesktopWindows(handle, visitor, IntPtr.Zero))
-                    throw new InvalidOperationException("Private desktop window inventory is incomplete.");
-                return count != 0;
+                bool hasWindows = true; Exception failure = null;
+                // A zero-window EnumDesktopWindows result is ambiguous. Establish one exact
+                // invisible sentinel on a fresh owner thread, then require its enumeration.
+                // SetThreadDesktop changes only this thread, never the user's input desktop.
+                var reader = new Thread(() => {
+                    NativeWindow sentinel = null;
+                    try
+                    {
+                        if (!SetThreadDesktop(handle)) throw new Win32Exception(Marshal.GetLastWin32Error());
+                        RequireCurrent(name);
+                        sentinel = new NativeWindow();
+                        sentinel.CreateHandle(new CreateParams { Caption = "Owned VBAi inventory sentinel" });
+                        int count = 0; bool found = false; bool bounded = true;
+                        WindowVisitor visitor = (window, state) => {
+                            if (window == sentinel.Handle) found = true;
+                            else count++;
+                            if (count > 8192) bounded = false;
+                            return bounded;
+                        };
+                        if (!EnumDesktopWindows(handle, visitor, IntPtr.Zero) || !bounded || !found)
+                            throw new InvalidOperationException("Private desktop inventory did not enumerate its exact sentinel; error " + Marshal.GetLastWin32Error());
+                        hasWindows = count != 0;
+                    }
+                    catch (Exception error) { failure = error; }
+                    finally { if (sentinel != null) sentinel.DestroyHandle(); }
+                }) { IsBackground = true };
+                reader.SetApartmentState(ApartmentState.STA); reader.Start();
+                if (!reader.Join(5000)) throw new InvalidOperationException("Private desktop inventory is pending; retain ownership.");
+                if (failure != null) throw new InvalidOperationException("Private desktop inventory failed.", failure);
+                return hasWindows;
             }
             finally { CloseDesktop(handle); }
         }

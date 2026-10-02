@@ -60,28 +60,28 @@ namespace VBAi.Tests.Integration
             if (!string.IsNullOrWhiteSpace(desktop))
             {
                 IsolatedTestDesktop.RequireCurrent(desktop);
-                var fixture = StartOwnedWithTrace(ExcelOwnedBootstrapPlan.RequireLocalAbsolutePath(
+                var privateFixture = StartOwnedWithTrace(ExcelOwnedBootstrapPlan.RequireLocalAbsolutePath(
                     Environment.GetEnvironmentVariable(VbeInspectionTrace.EnvironmentName)));
                 // Generic scenarios require the same unsaved-workbook precondition as COM
                 // activation. Retire only the verified macro-free seed, after loaded MVID checks.
-                fixture.PreserveForDiagnosticRecovery = true;
+                privateFixture.PreserveForDiagnosticRecovery = true;
                 try
                 {
-                    ((dynamic)fixture.workbook).Close(false);
-                    Release(fixture.workbook); fixture.workbook = null;
-                    fixture.workbook = ((dynamic)fixture.workbooks).Add();
-                    Assert.AreEqual(1, Convert.ToInt32(((dynamic)fixture.workbooks).Count));
-                    Assert.IsTrue(string.IsNullOrEmpty(Convert.ToString(((dynamic)fixture.workbook).Path)));
-                    fixture.WriteEvidence("private-unsaved-workbook.json", new {
-                        Desktop = desktop, fixture.ProcessId, Workbook = Convert.ToString(((dynamic)fixture.workbook).Name),
-                        SavedPath = Convert.ToString(((dynamic)fixture.workbook).Path), HelperSaveInvoked = false,
+                    ((dynamic)privateFixture.workbook).Close(false);
+                    Release(privateFixture.workbook); privateFixture.workbook = null;
+                    privateFixture.workbook = ((dynamic)privateFixture.workbooks).Add();
+                    Assert.AreEqual(1, Convert.ToInt32(((dynamic)privateFixture.workbooks).Count));
+                    Assert.IsTrue(string.IsNullOrEmpty(Convert.ToString(((dynamic)privateFixture.workbook).Path)));
+                    privateFixture.WriteEvidence("private-unsaved-workbook.json", new {
+                        Desktop = desktop, privateFixture.ProcessId, Workbook = Convert.ToString(((dynamic)privateFixture.workbook).Name),
+                        SavedPath = Convert.ToString(((dynamic)privateFixture.workbook).Path), HelperSaveInvoked = false,
                         SeedClosedWithoutSaving = true, Utc = DateTime.UtcNow.ToString("o") });
-                    fixture.PreserveForDiagnosticRecovery = false;
-                    return fixture;
+                    privateFixture.PreserveForDiagnosticRecovery = false;
+                    return privateFixture;
                 }
                 catch
                 {
-                    lock (retainedBootstraps) retainedBootstraps.Add(fixture);
+                    lock (retainedBootstraps) retainedBootstraps.Add(privateFixture);
                     throw; // Unknown Close/Add outcomes never authorize replay or cleanup.
                 }
             }

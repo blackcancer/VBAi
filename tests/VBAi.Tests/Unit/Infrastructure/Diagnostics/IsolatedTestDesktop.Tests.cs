@@ -8,6 +8,14 @@ namespace VBAi.Tests.Unit
     [TestClass, TestCategory("Unit")]
     public sealed class IsolatedTestDesktopTests
     {
+        [TestMethod]
+        public void EmptyPrivateDesktopInventoryObservesItsSentinelWithoutSwitchingInput()
+        {
+            string input = IsolatedTestDesktop.InputDesktopName();
+            string desktop = "VBAiTests_" + Guid.NewGuid().ToString("N");
+            using (IsolatedTestDesktop.Create(desktop)) Assert.IsFalse(IsolatedTestDesktop.HasWindows(desktop));
+            Assert.AreEqual(input, IsolatedTestDesktop.InputDesktopName());
+        }
         [DllImport("shell32.dll", CharSet = CharSet.Unicode)]
         private static extern IntPtr CommandLineToArgvW(string command, out int count);
         [DllImport("kernel32.dll")] private static extern IntPtr LocalFree(IntPtr memory);
