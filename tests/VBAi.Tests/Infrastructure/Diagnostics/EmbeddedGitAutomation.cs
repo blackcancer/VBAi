@@ -24,6 +24,8 @@ namespace VBAi.Tests.Integration
         [DllImport("user32.dll")] private static extern bool IsWindowVisible(IntPtr hwnd);
         [DllImport("user32.dll")] private static extern bool IsWindow(IntPtr hwnd);
         private readonly ExcelVbeFixture fixture;
+        private readonly Action requireOwner;
+        private readonly int processId;
         private readonly ExcelVbeFixture.EmbeddedGitScope scope;
         private readonly Action<object> record;
         private readonly Func<bool> stop;
@@ -34,7 +36,16 @@ namespace VBAi.Tests.Integration
         internal bool HasObservedWindow => windowPattern != null;
         private readonly HashSet<string> inventories = new HashSet<string>(StringComparer.Ordinal);
         internal EmbeddedGitAutomation(ExcelVbeFixture fixture, ExcelVbeFixture.EmbeddedGitScope scope, Action<object> record, Func<bool> stop)
-        { this.fixture = fixture; this.scope = scope; this.record = record; this.stop = stop; Protocol = new EmbeddedGitUiProtocol(record); }
+            : this(fixture.ProcessId, () => fixture.RequireEmbeddedProcess(scope), scope, record, stop)
+        { this.fixture = fixture; }
+
+        /// <summary>Shares the exact native modal protocol with an independently owned Office host.</summary>
+        internal EmbeddedGitAutomation(int processId, Action requireOwner, ExcelVbeFixture.EmbeddedGitScope scope,
+            Action<object> record, Func<bool> stop)
+        {
+            this.processId = processId; this.requireOwner = requireOwner ?? throw new ArgumentNullException(nameof(requireOwner));
+            this.scope = scope; this.record = record; this.stop = stop; Protocol = new EmbeddedGitUiProtocol(record);
+        }
 
         internal void OpenedWindow()
         {
@@ -42,11 +53,11 @@ namespace VBAi.Tests.Integration
             while (window == IntPtr.Zero && watch.ElapsedMilliseconds < 15000)
             {
                 if (stop()) throw new InvalidOperationException("Coordinator stopped discovery; no UI action is permitted.");
-                fixture.RequireEmbeddedProcess(scope); var matches = new List<IntPtr>(); int count = 0;
+                requireOwner(); var matches = new List<IntPtr>(); int count = 0;
                 Visitor visitor = (hwnd, unused) => {
                     if (++count > 4096) return false;
                     uint pid; uint tid = GetWindowThreadProcessId(hwnd, out pid);
-                    if (pid != fixture.ProcessId || tid != scope.ThreadId || GetWindow(hwnd, 4) != scope.VbeHandle) return true;
+                    if (pid != processId || tid != scope.ThreadId || GetWindow(hwnd, 4) != scope.VbeHandle) return true;
                     var text = new StringBuilder(256); GetWindowText(hwnd, text, text.Capacity);
                     var cls = new StringBuilder(256); GetClassName(hwnd, cls, cls.Capacity);
                     if (IsWindowVisible(hwnd) && text.ToString() == "GitHub · VBAi" && cls.ToString().StartsWith("WindowsForms", StringComparison.Ordinal)) matches.Add(hwnd);
@@ -59,7 +70,7 @@ namespace VBAi.Tests.Integration
             if (window == IntPtr.Zero) { Protocol.MarkUncertain("Modal menu has no observed GitWindow."); throw new TimeoutException("Owned embedded GitWindow did not become visible; no menu replay or cleanup."); }
             root = AutomationElement.FromHandle(window); Guard(root, window);
             windowPattern = Pattern<WindowPattern>(root, WindowPattern.Pattern);
-            record(new { Phase = "OwnedModalObserved", ProcessId = fixture.ProcessId, ThreadId = scope.ThreadId,
+            record(new { Phase = "OwnedModalObserved", ProcessId = processId, ThreadId = scope.ThreadId,
                 Handle = window.ToInt64(), Owner = scope.VbeHandle.ToInt64(), WindowPatternObserved = true });
         }
 
@@ -89,7 +100,8 @@ namespace VBAi.Tests.Integration
         /// <summary>Performs one version-guarded synthetic edit, then one actual owner-window checkpoint restore.</summary>
         internal void MutateAndRestoreCheckpoint(string nonce, string tabName)
         {
-            fixture.RequireEmbeddedProcess(scope);
+            if (fixture == null) throw new InvalidOperationException("UserForm mutation requires the owned Excel fixture.");
+            requireOwner();
             var treeReply = fixture.Command(new { Command = "form_tree", Project = scope.Path, Form = "EmbeddedForm" });
             if (treeReply == null) { Protocol.MarkUncertain("No terminal native tree response."); throw new InvalidOperationException("Native tree delivery is uncertain."); }
             Assert.AreEqual(true, treeReply["Ok"]);
@@ -108,7 +120,7 @@ namespace VBAi.Tests.Integration
             var list = Leaf("checkpointList"); RequireInteractive(list);
             var items = list.FindAll(TreeScope.Children, new PropertyCondition(AutomationElement.ControlTypeProperty, ControlType.ListItem))
                 .Cast<AutomationElement>().ToArray();
-            if (items.Length != 1 || items[0].Current.ProcessId != fixture.ProcessId || !items[0].Current.Name.Contains(nonce))
+            if (items.Length != 1 || items[0].Current.ProcessId != processId || !items[0].Current.Name.Contains(nonce))
                 throw new InvalidOperationException("The sole exact owned checkpoint item was not observed.");
             var select = Pattern<SelectionItemPattern>(items[0], SelectionItemPattern.Pattern);
             // WinForms can select the sole item while refilling the list during
@@ -146,7 +158,7 @@ namespace VBAi.Tests.Integration
                 Status = Text("status"), ReplayAttempts = 0 });
             var tabs = Leaf("tabs"); var tab = tabs.FindAll(TreeScope.Children,
                 new PropertyCondition(AutomationElement.ControlTypeProperty, ControlType.TabItem)).Cast<AutomationElement>()
-                .Single(item => item.Current.ProcessId == fixture.ProcessId && item.Current.Name == tabName);
+                .Single(item => item.Current.ProcessId == processId && item.Current.Name == tabName);
             var tabSelect = Pattern<SelectionItemPattern>(tab, SelectionItemPattern.Pattern);
             Protocol.EmitOnce("return-to-checkpoints", tabSelect.Select);
             Assert.IsTrue(tabSelect.Current.IsSelected); Protocol.Terminal("return-to-checkpoints", true, true);
@@ -159,7 +171,7 @@ namespace VBAi.Tests.Integration
             var tabs = Leaf("tabs"); var items = tabs.FindAll(TreeScope.Children,
                 new PropertyCondition(AutomationElement.ControlTypeProperty, ControlType.TabItem)).Cast<AutomationElement>().ToArray();
             if (items.Length < 1 || items.Length > 12) throw new InvalidOperationException("Bounded tab item inventory failed.");
-            var matches = items.Where(item => item.Current.ProcessId == fixture.ProcessId && item.Current.Name == tabName).ToArray();
+            var matches = items.Where(item => item.Current.ProcessId == processId && item.Current.Name == tabName).ToArray();
             if (matches.Length != 1) throw new InvalidOperationException("The exact observed Checkpoints tab is absent or ambiguous.");
             var selection = Pattern<SelectionItemPattern>(matches[0], SelectionItemPattern.Pattern);
             Guard(tabs, new IntPtr(tabs.Current.NativeWindowHandle));
@@ -192,7 +204,7 @@ namespace VBAi.Tests.Integration
             {
                 uint pid = 0; uint tid = GetWindowThreadProcessId(window, out pid);
                 bool exists = IsWindow(window);
-                if (!observed || !exists || pid != fixture.ProcessId || tid != scope.ThreadId)
+                if (!observed || !exists || pid != processId || tid != scope.ThreadId)
                 {
                     record(new { Phase = "WindowCloseObservation", Handle = window.ToInt64(), Exists = exists, ObservedPid = pid, ObservedTid = tid });
                     observed = true;
@@ -200,7 +212,7 @@ namespace VBAi.Tests.Integration
                 // A failed window query does not provide a valid owner PID. Confirm
                 // destruction explicitly; a live/reused handle still requires ownership.
                 if (tid == 0 && !exists) { Protocol.Terminal("window-close", true, true); return; }
-                EmbeddedGitUiProtocol.RequireOwner(fixture.ProcessId, scope.ThreadId, window.ToInt64(), (int)pid, tid, window.ToInt64());
+                EmbeddedGitUiProtocol.RequireOwner(processId, scope.ThreadId, window.ToInt64(), (int)pid, tid, window.ToInt64());
                 Thread.Sleep(50);
             }
             Protocol.MarkUncertain("Exact modal destruction was not observed.");
@@ -283,9 +295,9 @@ namespace VBAi.Tests.Integration
         private void Guard(AutomationElement item, IntPtr hwnd)
         {
             if (stop()) throw new InvalidOperationException("Coordinator deadline forbids any further UI action.");
-            fixture.RequireEmbeddedProcess(scope); uint pid; uint tid = GetWindowThreadProcessId(hwnd, out pid);
-            EmbeddedGitUiProtocol.RequireOwner(fixture.ProcessId, scope.ThreadId, hwnd.ToInt64(), (int)pid, tid, hwnd.ToInt64());
-            if (item.Current.ProcessId != fixture.ProcessId || unchecked((uint)item.Current.NativeWindowHandle) != unchecked((uint)hwnd.ToInt64()))
+            requireOwner(); uint pid; uint tid = GetWindowThreadProcessId(hwnd, out pid);
+            EmbeddedGitUiProtocol.RequireOwner(processId, scope.ThreadId, hwnd.ToInt64(), (int)pid, tid, hwnd.ToInt64());
+            if (item.Current.ProcessId != processId || unchecked((uint)item.Current.NativeWindowHandle) != unchecked((uint)hwnd.ToInt64()))
                 throw new InvalidOperationException("UIA provider identity differs from the exact native HWND.");
             if (window != IntPtr.Zero && GetWindow(window, 4) != scope.VbeHandle) throw new InvalidOperationException("Owned modal parent changed.");
         }

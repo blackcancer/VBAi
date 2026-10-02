@@ -65,6 +65,23 @@ repository root in a Windows development environment.
 
 ## Build and run
 
+### Owned Word embedded Git qualification
+
+`WordEmbeddedGitWindowTests` requires `VBAi_RUN_WORD_EMBEDDED_GIT_TESTS=1`,
+`VBAi_RUN_WORD_GIT_TESTS=1`, `VBAi_RUN_OFFICE_TESTS=1`, an absolute
+`VBAi_OFFICE_RESULTS`, and the exact retained synthetic repository manifest in
+`VBAi_TEST_GITHUB_MANIFEST`. Set `VBAi_TEST_EMBEDDED_GIT_MVID` and
+`VBAi_TEST_EMBEDDED_GIT_SHA256` to the frozen candidate. Run this case separately,
+with no existing Word process. It creates and saves an inert owned DOCM, exports
+an independent baseline through the installed bridge, then invokes the tagged
+production Git menu once. The MTA UI worker verifies the native PID, VBE thread
+and modal owner before fetching the pinned synthetic branch, creating an exact
+local checkpoint and comparing. No remote push, import or macro execution occurs.
+An uncertain menu/UI outcome retains the original host; known terminal closure
+permits normal teardown on its owning STA. Saved bytes, source, references and
+normal exit remain required. This scenario does not qualify the chat Git button
+or provider conversation; native acceptance must be recorded separately.
+
 ### Disposable owner-import root-font observation
 
 The existing owner-import scenario can be instrumented with
