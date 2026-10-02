@@ -118,7 +118,7 @@ namespace VBAi.Tests.Integration
                 ExcelVbeFixture.RequireMonacoCandidate(expected, typeof(VbeSession).Module.ModuleVersionId, context.Fixture.ProcessId, data);
                 Assert.AreEqual(hash, Sha(Convert.ToString(data["AssemblyPath"])), true, "Loaded installed bytes differ from the frozen candidate.");
                 context.Scope = context.Fixture.PrepareEmbeddedGitScope(context.Nonce, value => nativePending = value,
-                    context.Record, context.Plan.Layout, context.FontObservation?.SeedProfile);
+                    context.Record, context.Plan.Layout, context.FontObservation);
                 nativePending = false;
                 if (context.FontObservation != null)
                 {
@@ -127,6 +127,7 @@ namespace VBAi.Tests.Integration
                     RootFontObservationManifest.Publish(context.FontObservation, claim, Environment.GetEnvironmentVariable);
                     context.Record(new { Phase = "RootFontDiagnosticManifestPublished", ManifestPath = context.FontObservation.Path,
                         BaselineFontSeedProfile = context.FontObservation.SeedProfile,
+                        SourceWorkbook = context.FontObservation.SourceWorkbook,
                         Manifest = claim, NativeFontDelivery = "NOT_RUN", GetterOrExportRequestsAdded = 0 });
                 }
                 context.WorkbookSha256 = Sha(context.Scope.Path);

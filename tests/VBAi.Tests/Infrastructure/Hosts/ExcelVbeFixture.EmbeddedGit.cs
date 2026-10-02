@@ -29,11 +29,16 @@ namespace VBAi.Tests.Integration
 
         /// <summary>Prepares only the explicitly owned synthetic workbook; no macro is executed.</summary>
         internal EmbeddedGitScope PrepareEmbeddedGitScope(string marker, Action<bool> pending, Action<object> evidence,
-            string layout = null, string rootFontSeedProfile = null)
+            string layout = null, RootFontObservationManifest.Configuration fontObservation = null)
         {
+            string rootFontSeedProfile = fontObservation?.SeedProfile;
             if (rootFontSeedProfile != null && (layout == null ||
-                rootFontSeedProfile != RootFontObservationManifest.SyntheticExplicitArial9))
+                rootFontSeedProfile != RootFontObservationManifest.SyntheticExplicitArial9 &&
+                rootFontSeedProfile != RootFontObservationManifest.RetainedSyntheticTahoma825))
                 throw new InvalidOperationException("A synthetic root font seed requires one declared layout and profile.");
+            bool retained = rootFontSeedProfile == RootFontObservationManifest.RetainedSyntheticTahoma825;
+            if (retained && (layout != "LabelButton" || fontObservation?.SourceWorkbook == null))
+                throw new InvalidOperationException("The retained source requires its pinned LabelButton configuration.");
             string path = File("EmbeddedGit.xlsm");
             string cache = MacroGitRepository.ScopeDirectory(Path.GetFullPath(path));
             Assert.IsFalse(Directory.Exists(cache), "A fresh workbook must not inherit a previous document's Git cache.");
@@ -43,31 +48,46 @@ namespace VBAi.Tests.Integration
             ((dynamic)application).EnableEvents = false;
             ((dynamic)application).AutomationSecurity = 3;
             object project = null, components = null;
-            try
+            if (retained)
             {
-                project = ((dynamic)workbook).VBProject; components = ((dynamic)project).VBComponents;
-                foreach (var item in new[] { Tuple.Create("EmbeddedModule", 1), Tuple.Create("EmbeddedClass", 2) })
-                {
-                    object component = null, code = null;
-                    try
-                    {
-                        component = ((dynamic)components).Add(item.Item2); ((dynamic)component).Name = item.Item1;
-                        code = ((dynamic)component).CodeModule;
-                        ((dynamic)code).InsertLines(1, "Option Explicit\r\n' " + marker + " " + item.Item1 + "\r\n");
-                    }
-                    finally { Release(code); Release(component); }
-                }
+                evidence(new { Phase = "RetainedCopyIntent", SourceWorkbook = fontObservation.SourceWorkbook,
+                    SourceSha256 = RetainedRootFontWorkbook.SourceSha256, Destination = path,
+                    BaselineFontSeedProfile = rootFontSeedProfile, CorrelationNonce = marker,
+                    SourceMarker = RetainedRootFontWorkbook.SourceMarker });
+                OpenRetainedSyntheticWorkbook(fontObservation.SourceWorkbook, path, pending);
+                evidence(new { Phase = "RetainedCopyVerified", Destination = path,
+                    WorkbookSha256 = RetainedRootFontWorkbook.SourceSha256,
+                    SourceSha256 = RetainedRootFontWorkbook.SourceSha256,
+                    SourceMarker = RetainedRootFontWorkbook.SourceMarker });
             }
-            finally { Release(components); Release(project); }
-            if (layout == null) PrepareGitForm("EmbeddedForm", "Synthetic embedded Git form", marker, path);
             else
             {
-                if (rootFontSeedProfile != null)
-                    evidence(new { Phase = "BaselineFontSeedIntent", BaselineFontSeedProfile = rootFontSeedProfile,
-                        TargetDescriptorHex = BitConverter.ToString(RootFontObservationManifest.SyntheticArial9Descriptor()).Replace("-", ""),
-                        PlannedNativeDeliveryCount = 1 });
-                PrepareGitLayout("EmbeddedForm", layout, path, persistedBaseline: true,
-                    rootFontSeedProfile: rootFontSeedProfile);
+                try
+                {
+                    project = ((dynamic)workbook).VBProject; components = ((dynamic)project).VBComponents;
+                    foreach (var item in new[] { Tuple.Create("EmbeddedModule", 1), Tuple.Create("EmbeddedClass", 2) })
+                    {
+                        object component = null, code = null;
+                        try
+                        {
+                            component = ((dynamic)components).Add(item.Item2); ((dynamic)component).Name = item.Item1;
+                            code = ((dynamic)component).CodeModule;
+                            ((dynamic)code).InsertLines(1, "Option Explicit\r\n' " + marker + " " + item.Item1 + "\r\n");
+                        }
+                        finally { Release(code); Release(component); }
+                    }
+                }
+                finally { Release(components); Release(project); }
+                if (layout == null) PrepareGitForm("EmbeddedForm", "Synthetic embedded Git form", marker, path);
+                else
+                {
+                    if (rootFontSeedProfile != null)
+                        evidence(new { Phase = "BaselineFontSeedIntent", BaselineFontSeedProfile = rootFontSeedProfile,
+                            TargetDescriptorHex = BitConverter.ToString(RootFontObservationManifest.SyntheticArial9Descriptor()).Replace("-", ""),
+                            PlannedNativeDeliveryCount = 1 });
+                    PrepareGitLayout("EmbeddedForm", layout, path, persistedBaseline: true,
+                        rootFontSeedProfile: rootFontSeedProfile);
+                }
             }
             pending(false);
             object editor = null, main = null, module = null, moduleCode = null, pane = null;
@@ -85,8 +105,25 @@ namespace VBAi.Tests.Integration
                 var hwnd = new IntPtr(Convert.ToInt64(((dynamic)main).HWnd));
                 uint pid; uint tid = GetWindowThreadProcessId(hwnd, out pid);
                 Assert.AreEqual((uint)ProcessId, pid); Assert.AreNotEqual(0u, tid);
-                var scope = new EmbeddedGitScope { Path = path, Marker = marker, VbeHandle = hwnd, ThreadId = tid,
+                var scope = new EmbeddedGitScope { Path = path, Marker = retained ? RetainedRootFontWorkbook.SourceMarker : marker,
+                    VbeHandle = hwnd, ThreadId = tid,
                     Cache = cache, Layout = layout };
+                VbaGitSnapshot preGetter = null;
+                if (retained)
+                {
+                    RequireRetainedActiveProject(path, project, editor);
+                    var status = Command("status");
+                    Assert.IsTrue(Convert.ToBoolean(status["Ok"]), "The copied workbook lost the owner bridge connection.");
+                    RequireMonacoCandidate(typeof(VbeSession).Module.ModuleVersionId,
+                        typeof(VbeSession).Module.ModuleVersionId, ProcessId, VbeBridgeClient.Object(status["Data"]));
+                    preGetter = RetainedRootFontWorkbook.AttestFirstCapture(
+                        () => { VbaGitSnapshot snapshot = null; WithGitProject(path, git => snapshot = git.Capture()); return snapshot; },
+                        RetainedRootFontWorkbook.RequirePinnedBaseline,
+                        (snapshot, first) => evidence(new { Phase = "RetainedPreGetterCaptureExact", SourceMarker = scope.Marker,
+                            CorrelationNonce = marker, RootDescriptorHex = BitConverter.ToString(first).Replace("-", ""),
+                            ResourceBytes = snapshot.Files["EmbeddedForm.frx"].Length,
+                            SnapshotFiles = EmbeddedGitSnapshotOracle.Describe(snapshot) }));
+                }
                 if (layout != null)
                 {
                     scope.NativeLayout = ReadGitLayout("EmbeddedForm", layout);
@@ -95,7 +132,17 @@ namespace VBAi.Tests.Integration
                 }
                 scope.State = ReadEmbeddedState(scope, out scope.Code, out scope.Types, out scope.References);
                 scope.Baseline = ExportEmbeddedBaseline(scope, pending, evidence);
-                if (rootFontSeedProfile != null)
+                if (retained)
+                {
+                    byte[] reopened = RetainedRootFontWorkbook.RequirePinnedBaseline(scope.Baseline);
+                    Assert.IsTrue(preGetter.SameAs(scope.Baseline), "The retained baseline changed after scalar readback or bridge export.");
+                    Assert.AreEqual(RetainedRootFontWorkbook.SourceSha256, EmbeddedRawHash(path),
+                        "The copied workbook changed before menu execution.");
+                    evidence(new { Phase = "RetainedBridgeBaselineExact", SourceMarker = scope.Marker,
+                        CorrelationNonce = marker, RootDescriptorHex = BitConverter.ToString(reopened).Replace("-", ""),
+                        ResourceBytes = scope.Baseline.Files["EmbeddedForm.frx"].Length });
+                }
+                if (rootFontSeedProfile != null && !retained)
                 {
                     var rootForm = scope.Baseline.Manifest.Components.Single(item => item.Name == "EmbeddedForm" && item.Type == 3);
                     byte[] persisted = RootFontObservationManifest.RequireRoot(scope.Baseline.FormFonts(rootForm),
@@ -108,6 +155,61 @@ namespace VBAi.Tests.Integration
                 return scope;
             }
             finally { Release(pane); Release(moduleCode); Release(module); Release(components); Release(project); Release(main); Release(editor); }
+        }
+
+        /// <summary>Replaces only the fixture's empty owned workbook with one verified disposable copy.</summary>
+        private void OpenRetainedSyntheticWorkbook(string source, string path, Action<bool> pending)
+        {
+            RetainedRootFontWorkbook.RequirePinnedSource(source);
+            bool closeIssued = false, blankClosed = false, openIssued = false, openReturned = false;
+            try
+            {
+                closeIssued = true;
+                ((dynamic)workbook).Close(false);
+                blankClosed = true;
+                pending(false);
+                object blank = workbook; workbook = null;
+                Release(blank);
+                RetainedRootFontWorkbook.CopyCreateNew(source, path, Root,
+                    RetainedRootFontWorkbook.SourceSha256);
+                openIssued = true;
+                pending(true);
+                workbook = ((dynamic)workbooks).Open(path, 0, false);
+                openReturned = true;
+                pending(false);
+                Assert.AreEqual(path, Convert.ToString(((dynamic)workbook).FullName), true);
+                Assert.AreEqual(1, Convert.ToInt32(((dynamic)workbooks).Count));
+                Assert.AreEqual(RetainedRootFontWorkbook.SourceSha256, EmbeddedRawHash(path));
+            }
+            finally
+            {
+                // A COM Close/Open call may have applied despite an exception.
+                if (closeIssued && !blankClosed || openIssued && !openReturned)
+                    PreserveForDiagnosticRecovery = true;
+            }
+        }
+
+        /// <summary>Attests the copied project selected by the owned VBE before its first resource capture.</summary>
+        private static void RequireRetainedActiveProject(string path, object project, object editor)
+        {
+            object active = null;
+            Exception primary = null;
+            try
+            {
+                active = ((dynamic)editor).ActiveVBProject;
+                if (!VbeProjectHostPath.SameProject(project, active) ||
+                    !string.Equals(VbeProjectHostPath.Read(project), path, StringComparison.OrdinalIgnoreCase) ||
+                    Convert.ToInt32(((dynamic)project).Mode) != 2 ||
+                    Convert.ToInt32(((dynamic)project).Protection) != 0)
+                    throw new InvalidOperationException("The retained workbook is not the selected, editable copied project.");
+            }
+            catch (Exception error) { primary = error; throw; }
+            finally
+            {
+                FormFontRestoration.ReleaseOwnedReferences(new[] { active }, value => {
+                    if (value != null && Marshal.IsComObject(value)) Marshal.ReleaseComObject(value);
+                }, primary);
+            }
         }
 
         private VbaGitSnapshot ExportEmbeddedBaseline(EmbeddedGitScope scope, Action<bool> pending, Action<object> evidence,

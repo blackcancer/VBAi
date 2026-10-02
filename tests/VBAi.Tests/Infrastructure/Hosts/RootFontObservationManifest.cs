@@ -15,15 +15,17 @@ namespace VBAi.Tests.Integration
         internal const string ManifestVariable = "VBAi_TEST_ROOT_FONT_OBSERVATION_MANIFEST";
         internal const string ModeVariable = "VBAi_TEST_ROOT_FONT_OBSERVATION_MODE";
         internal const string SeedProfileVariable = "VBAi_TEST_ROOT_FONT_OBSERVATION_SEED_PROFILE";
+        internal const string SourceWorkbookVariable = "VBAi_TEST_ROOT_FONT_OBSERVATION_SOURCE_WORKBOOK";
         internal const string SyntheticExplicitArial9 = "SyntheticExplicitArial9";
+        internal const string RetainedSyntheticTahoma825 = "RetainedSyntheticTahoma825";
         private static readonly string[] Layouts = { "LabelButton", "TextBox", "ComboBox", "ListBox", "CheckBox", "OptionButton",
             "ToggleButton", "ScrollBar", "SpinButton", "TabStrip", "Image", "FrameMultiPage" };
 
         internal sealed class Configuration
         {
-            internal readonly string Path, Mode, SeedProfile;
-            internal Configuration(string path, string mode, string seedProfile)
-            { Path = path; Mode = mode; SeedProfile = seedProfile; }
+            internal readonly string Path, Mode, SeedProfile, SourceWorkbook;
+            internal Configuration(string path, string mode, string seedProfile, string sourceWorkbook = null)
+            { Path = path; Mode = mode; SeedProfile = seedProfile; SourceWorkbook = sourceWorkbook; }
         }
 
         /// <summary>Runs before bootstrap; an absent flag reads no other configuration or filesystem metadata.</summary>
@@ -37,12 +39,23 @@ namespace VBAi.Tests.Integration
             if (mode != "ObserveWrites" && mode != "DistinctChildName" && mode != "AfterInitialCapture")
                 throw new InvalidOperationException("An explicit supported root font observation mode is required.");
             string seedProfile = environment(SeedProfileVariable);
-            if (seedProfile != null && (mode != "AfterInitialCapture" || seedProfile != SyntheticExplicitArial9))
+            if (seedProfile != null && (mode != "AfterInitialCapture" ||
+                seedProfile != SyntheticExplicitArial9 && seedProfile != RetainedSyntheticTahoma825))
                 throw new InvalidOperationException("The synthetic root font seed is restricted to the declared deferred diagnostic profile.");
+            string sourceWorkbook = environment(SourceWorkbookVariable);
+            if (seedProfile == RetainedSyntheticTahoma825)
+            {
+                if (layout != "LabelButton")
+                    throw new InvalidOperationException("The retained synthetic workbook qualifies only LabelButton.");
+                sourceWorkbook = RetainedRootFontWorkbook.RequirePinnedSource(sourceWorkbook,
+                    metadata ?? File.GetAttributes);
+            }
+            else if (sourceWorkbook != null)
+                throw new InvalidOperationException("A retained source workbook requires the exact retained font profile.");
             string path = ExactPath(environment(ManifestVariable));
             RequirePath(path, Entry.Absent, metadata ?? File.GetAttributes);
             RequirePath(System.IO.Path.GetDirectoryName(path), Entry.Directory, metadata ?? File.GetAttributes);
-            return new Configuration(path, mode, seedProfile);
+            return new Configuration(path, mode, seedProfile, sourceWorkbook);
         }
 
         /// <summary>Builds only managed data. It neither exports a form nor claims native font delivery.</summary>
@@ -64,6 +77,8 @@ namespace VBAi.Tests.Integration
                 !baseline.Files.TryGetValue(forms[0].FileName, out byte[] source) || source == null || source.Length == 0 ||
                 !baseline.Files.TryGetValue("EmbeddedForm.frx", out byte[] resource) || resource == null || resource.Length == 0)
                 throw new InvalidOperationException("One resource-bearing EmbeddedForm with exact source bytes is required.");
+            if (configuration.SeedProfile == RetainedSyntheticTahoma825)
+                RetainedRootFontWorkbook.RequirePinnedBaseline(baseline);
             byte[] descriptor = RequireRoot(baseline.FormFonts(forms[0]), configuration.Mode, configuration.SeedProfile);
             return new Dictionary<string, object> {
                 ["ProjectPath"] = projectPath, ["FormName"] = "EmbeddedForm", ["TargetFormSha256"] = Sha(source),
@@ -84,8 +99,10 @@ namespace VBAi.Tests.Integration
             if (mode == "DistinctChildName" && string.Equals(Encoding.ASCII.GetString(roots[0].Descriptor, 11,
                 roots[0].Descriptor[10]), "Arial", StringComparison.OrdinalIgnoreCase))
                 throw new InvalidOperationException("DistinctChildName requires the fixed Arial face to differ from the target.");
-            if (seedProfile != null && (seedProfile != SyntheticExplicitArial9 || mode != "AfterInitialCapture" ||
-                !roots[0].Descriptor.SequenceEqual(SyntheticArial9Descriptor())))
+            if (seedProfile != null && (mode != "AfterInitialCapture" ||
+                seedProfile == SyntheticExplicitArial9 && !roots[0].Descriptor.SequenceEqual(SyntheticArial9Descriptor()) ||
+                seedProfile == RetainedSyntheticTahoma825 && !roots[0].Descriptor.SequenceEqual(RetainedRootFontWorkbook.Tahoma825Descriptor()) ||
+                seedProfile != SyntheticExplicitArial9 && seedProfile != RetainedSyntheticTahoma825))
                 throw new InvalidOperationException("The saved and reopened synthetic root font differs from the declared exact seed.");
             return (byte[])roots[0].Descriptor.Clone();
         }
@@ -112,8 +129,11 @@ namespace VBAi.Tests.Integration
             if (configuration == null) throw new ArgumentNullException(nameof(configuration));
             if (environment(OptIn) != "1" || environment(ModeVariable) != configuration.Mode ||
                 environment(SeedProfileVariable) != configuration.SeedProfile ||
+                environment(SourceWorkbookVariable) != configuration.SourceWorkbook ||
                 !string.Equals(environment(ManifestVariable), configuration.Path, StringComparison.Ordinal))
                 throw new InvalidOperationException("Root font diagnostic configuration changed after the inherited bootstrap preflight.");
+            if (configuration.SeedProfile == RetainedSyntheticTahoma825)
+                RetainedRootFontWorkbook.RequirePinnedSource(configuration.SourceWorkbook, metadata ?? File.GetAttributes);
             var inspect = metadata ?? File.GetAttributes;
             RequirePath(configuration.Path, Entry.Absent, inspect);
             RequirePath(System.IO.Path.GetDirectoryName(configuration.Path), Entry.Directory, inspect);

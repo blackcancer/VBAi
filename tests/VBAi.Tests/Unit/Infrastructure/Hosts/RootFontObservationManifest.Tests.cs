@@ -63,6 +63,31 @@ namespace VBAi.Tests.Unit
         }
 
         [TestMethod]
+        public void RetainedSourceRequiresItsExactDeferredProfileAndPinnedBytesBeforeBootstrap()
+        {
+            WithCase((root, path, project) => {
+                string source = Path.Combine(root, "source.xlsm");
+                File.WriteAllText(source, "inert, but not the pinned workbook");
+                Func<string, string> retained = key => key == RootFontObservationManifest.SourceWorkbookVariable ? source :
+                    EnvironmentFor(path, "AfterInitialCapture", RootFontObservationManifest.RetainedSyntheticTahoma825)(key);
+                Assert.ThrowsException<InvalidOperationException>(() => RootFontObservationManifest.Prepare(
+                    retained, "LabelButton", false));
+                Assert.ThrowsException<InvalidOperationException>(() => RootFontObservationManifest.Prepare(
+                    retained, "TextBox", false));
+                Assert.ThrowsException<InvalidOperationException>(() => RootFontObservationManifest.Prepare(
+                    key => key == RootFontObservationManifest.SourceWorkbookVariable ? null : retained(key),
+                    "LabelButton", false));
+                Assert.ThrowsException<InvalidOperationException>(() => RootFontObservationManifest.Prepare(
+                    key => key == RootFontObservationManifest.SeedProfileVariable ? null : retained(key),
+                    "LabelButton", false));
+                Assert.ThrowsException<InvalidOperationException>(() => RootFontObservationManifest.Prepare(
+                    key => key == RootFontObservationManifest.ModeVariable ? "ObserveWrites" : retained(key),
+                    "LabelButton", false));
+                Assert.IsFalse(File.Exists(path));
+            });
+        }
+
+        [TestMethod]
         public void SyntheticSeedRequiresExactReopenedRootDescriptorAndNeverInventsOne()
         {
             byte[] expected = { 1, 0, 0, 0, 144, 1, 144, 95, 1, 0, 5, 65, 114, 105, 97, 108 };
