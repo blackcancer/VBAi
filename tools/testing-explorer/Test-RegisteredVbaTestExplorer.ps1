@@ -51,7 +51,10 @@ if (-not $ExecuteOwnedFixture) {
     return
 }
 
-Add-Type -AssemblyName UIAutomationClient, UIAutomationTypes, WindowsBase, System.Drawing
+Add-Type -AssemblyName UIAutomationClient, UIAutomationTypes, UIAutomationClientsideProviders, WindowsBase, System.Drawing
+# PowerShell can expose HWNDs as opaque panes until the framework's standard proxies are loaded.
+# This registration is local to this diagnostic client; it does not change COM or Windows registry settings.
+$uiaProviders = [Reflection.Assembly]::Load('UIAutomationClientsideProviders, Version=4.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35')
 Add-Type -ReferencedAssemblies @(
     [System.Windows.Automation.AutomationElement].Assembly.Location,
     [System.Windows.Automation.AutomationProperty].Assembly.Location,
@@ -196,14 +199,15 @@ function Get-OwnedExplorerElement {
     return $element
 }
 
-function Find-ExplorerElement([System.Windows.Automation.ControlType]$Type, [string[]]$Names) {
+function Find-ExplorerElement([System.Windows.Automation.ControlType[]]$Type, [string[]]$Names) {
     $element = Get-OwnedExplorerElement
-    $condition = New-Object System.Windows.Automation.PropertyCondition ([System.Windows.Automation.AutomationElement]::ControlTypeProperty, $Type)
+    $conditions = @($Type | ForEach-Object { [System.Windows.Automation.PropertyCondition]::new([System.Windows.Automation.AutomationElement]::ControlTypeProperty, $_) })
+    $condition = if ($conditions.Count -eq 1) { $conditions[0] } else { [System.Windows.Automation.OrCondition]::new([System.Windows.Automation.Condition[]]$conditions) }
     $matches = @()
     foreach ($child in $element.FindAll([System.Windows.Automation.TreeScope]::Descendants, $condition)) {
         if ($child.Current.ProcessId -eq $script:actualPid -and $Names -ccontains $child.Current.Name) { $matches += $child }
     }
-    Require ($matches.Count -eq 1) ('Expected one exact owned explorer control: ' + ($Names -join ' / '))
+    Require ($matches.Count -eq 1) ('Expected one exact owned explorer control; found ' + $matches.Count + ': ' + ($Names -join ' / '))
     return $matches[0]
 }
 
@@ -214,11 +218,21 @@ function Read-ExplorerReport([string]$TabKey, [string]$ReportKey) {
     Require ($null -ne $selection) 'Report tab does not expose SelectionItemPattern.'
     $selection.Select()
     Require ($selection.Current.IsSelected) 'Native report tab selection failed.'
-    $box = Find-ExplorerElement ([System.Windows.Automation.ControlType]::Edit) $script:uiNames[$ReportKey]
+    $box = Find-ExplorerElement @([System.Windows.Automation.ControlType]::Edit, [System.Windows.Automation.ControlType]::Document) $script:uiNames[$ReportKey]
     Require (-not $box.Current.IsOffscreen) 'Report text is not visible after native tab selection.'
-    $value = $box.GetCurrentPattern([System.Windows.Automation.ValuePattern]::Pattern)
-    Require ($null -ne $value -and $value.Current.IsReadOnly) 'Native report must expose a read-only ValuePattern.'
-    return [string]$value.Current.Value
+    [object]$value = $null
+    if ($box.TryGetCurrentPattern([System.Windows.Automation.ValuePattern]::Pattern, [ref]$value)) {
+        Require ($value.Current.IsReadOnly) 'Native report ValuePattern must be read-only.'
+        return [string]$value.Current.Value
+    }
+    # The standard WinForms provider exposes read-only multiline edits as documents with TextPattern.
+    [object]$textPattern = $null
+    Require ($box.TryGetCurrentPattern([System.Windows.Automation.TextPattern]::Pattern, [ref]$textPattern)) 'Native report must expose ValuePattern or TextPattern.'
+    $range = $textPattern.DocumentRange
+    Require ($range.GetAttributeValue([System.Windows.Automation.TextPattern]::IsReadOnlyAttribute) -eq $true) 'Native report TextPattern must be read-only.'
+    $content = $range.GetText(1048577)
+    Require ($content.Length -le 1048576) 'Native report exceeds the bounded qualification reader.'
+    return [string]$content
 }
 
 try {
@@ -227,6 +241,7 @@ try {
     [void][VBAiExplorerWindowProbe]::GetWindowThreadProcessId([IntPtr][long]$application.Hwnd, [ref]$actualPid)
     Require ($actualPid -gt 0 -and $existing -notcontains [int]$actualPid) 'Excel reused an existing PID; no workbook will be created and that process will not be closed.'
     $owned = $true; $ownedProcess = Get-Process -Id $actualPid
+    [void]$ownedProcess.get_Handle() # Retain the exact native process for exit-code observation.
     $report.Pid = [int]$actualPid; $report.ExcelVersion = [string]$application.Version
     $application.Visible = $true
     $vbe = $application.VBE
@@ -523,7 +538,12 @@ End Sub
         $bounds = New-Object VBAiExplorerWindowProbe+Rect
         Require ([VBAiExplorerWindowProbe]::IsWindow($window) -and $windowPid -eq $actualPid) 'Explorer HWND does not belong to the owned Excel PID.'
         Require ([VBAiExplorerWindowProbe]::GetWindowRect($window, [ref]$bounds) -and $bounds.Right -gt $bounds.Left -and $bounds.Bottom -gt $bounds.Top) 'Explorer window bounds are invalid.'
-        $report.ExplorerWindow = @{ Hwnd = [long]$window; Pid = $windowPid; Docked = $opened.Docked; Bounds = $bounds }
+        Add-Type -AssemblyName System.Windows.Forms
+        $firstOpenArea = [System.Windows.Forms.Screen]::FromHandle($window).WorkingArea
+        $firstOpenWidth = $bounds.Right - $bounds.Left
+        $firstOpenHeight = $bounds.Bottom - $bounds.Top
+        Require ($firstOpenWidth -ge [Math]::Min(820, $firstOpenArea.Width) -and $firstOpenHeight -ge [Math]::Min(480, $firstOpenArea.Height)) 'First native explorer opening is too small to use.'
+        $report.ExplorerWindow = @{ Hwnd = [long]$window; Pid = $windowPid; Docked = $opened.Docked; Bounds = $bounds; FirstOpenUsable = $true; FirstOpenWidth = $firstOpenWidth; FirstOpenHeight = $firstOpenHeight; WorkingArea = $firstOpenArea }
     } else { throw 'show_vba_test_explorer must return Hwnd for independent native-window qualification.' }
 
     # Showing the same explorer twice must reuse the exact owned native window.
@@ -531,9 +551,20 @@ End Sub
     Save-Evidence 'explorer-window-reused.json' $shownAgain
     Require ([long]$shownAgain.Hwnd -eq [long]$window) 'Second show created a different explorer HWND.'
     [void](Get-OwnedExplorerElement)
+    # Initialize UIA against the exact owned HWND before installing the standard client proxies.
+    [System.Windows.Automation.ClientSettings]::RegisterClientSideProviderAssembly($uiaProviders.GetName())
     $report.ExplorerWindow.Reused = $true
     $uiNames = Get-UiNames
     Save-Evidence 'native-ui-resource-names.json' $uiNames
+    $uiInventory = @()
+    foreach ($child in (Get-OwnedExplorerElement).FindAll([System.Windows.Automation.TreeScope]::Descendants, [System.Windows.Automation.Condition]::TrueCondition)) {
+        Require ($child.Current.ProcessId -eq $actualPid) 'Foreign UIAutomation descendant; explorer action refused.'
+        $uiInventory += [pscustomobject]@{ Name = $child.Current.Name; Type = $child.Current.ControlType.ProgrammaticName;
+            Hwnd = $child.Current.NativeWindowHandle; AutomationId = $child.Current.AutomationId;
+            ClassName = $child.Current.ClassName; IsOffscreen = $child.Current.IsOffscreen; IsEnabled = $child.Current.IsEnabled; Patterns = @($child.GetSupportedPatterns() | ForEach-Object ProgrammaticName) }
+        if ($uiInventory.Count -ge 256) { break }
+    }
+    Save-Evidence 'native-ui-descendants.json' $uiInventory
     $runButton = Find-ExplorerElement ([System.Windows.Automation.ControlType]::Button) $uiNames['Run visible scope']
     Require (-not $runButton.Current.IsOffscreen -and $runButton.Current.IsEnabled) 'Run visible scope must be visible and enabled in the exact owned explorer.'
     $invoke = $runButton.GetCurrentPattern([System.Windows.Automation.InvokePattern]::Pattern)
@@ -621,6 +652,7 @@ End Sub
 } catch {
     $scenarioError = $_; $report.Result = 'FAILED'; $report.Error = $_.Exception.ToString()
 } finally {
+    $cleanupUnsettled = $nativeExecutionUnsettled
     $report.Cleanup = [ordered]@{ NativeExecutionUnsettled = $nativeExecutionUnsettled; CloseAttempted = $false; CloseReturned = $false; QuitAttempted = $false; QuitReturned = $false }
     # Close only after rechecking the COM application's current HWND ownership.
     if ($owned -and $null -ne $application -and -not $nativeExecutionUnsettled) {
@@ -640,9 +672,64 @@ End Sub
             $application.Quit()
             $report.Cleanup.QuitReturned = $true
             $report.Cleanup.QuitReturnedUtc = [DateTime]::UtcNow.ToString('o')
-        } catch { $cleanupErrors += $_.Exception.Message }
+        } catch {
+            $cleanupErrors += $_.Exception.Message
+            $cleanupUnsettled = $true
+            $report.Cleanup.CleanupOutcomeUnsettled = $true
+        }
     } elseif ($owned -and $nativeExecutionUnsettled) {
         $cleanupErrors += 'Native execution remains pending or uncertain; Close/Quit were not attempted. Inspect the exact owned PID before recovery.'
+    }
+    if ($owned -and $cleanupUnsettled) {
+        # Keep this client alive: interpreter exit would also drop its RCWs and process handle.
+        # Observe only the captured process handle; never reopen a PID or retry a native mutation.
+        $report.Result = 'FAILED'
+        $report.NormalExit = $false
+        $report.WaitForExitReturned = $null
+        $report.HasExited = $null
+        $report.ExitCode = $null
+        $report.Cleanup.RetainedOwnership = $true
+        $report.Cleanup.OwnedProcessId = $ownedProcess.Id
+        $report.Cleanup.ComReferencesRetained = $true
+        $report.Cleanup.ProcessHandleRetained = $true
+        $report.Cleanup.ReleasedOwnedComReferences = 0
+        $report.Cleanup.RetentionStartedUtc = [DateTime]::UtcNow.ToString('o')
+        $cleanupErrors += 'Native outcome is unsettled. Ownership is retained until the exact owned process exits externally; no Close/Quit retry is permitted.'
+        $retentionMarker = [ordered]@{ RetainedOwnership = $true; OwnedProcessId = $ownedProcess.Id; NativeExecutionUnsettled = $nativeExecutionUnsettled; CleanupOutcomeUnsettled = $cleanupUnsettled; StartedUtc = $report.Cleanup.RetentionStartedUtc }
+        $report.CleanupErrors = $cleanupErrors
+        try { Save-Evidence 'qualification.json' $report }
+        catch { $cleanupErrors += ('Retention qualification could not be persisted: ' + $_.Exception.Message) }
+        try { Save-Evidence 'retained-ownership.json' $retentionMarker }
+        catch { $cleanupErrors += ('Retention marker could not be persisted: ' + $_.Exception.Message) }
+        Write-Output ("Ownership retained for exact owned PID {0}. This client will remain alive until that process exits. Evidence: {1}" -f $ownedProcess.Id, $root)
+        $ownedExitObserved = $false
+        $retentionObservationError = $null
+        while (-not $ownedExitObserved) {
+            try {
+                if ($ownedProcess.get_HasExited()) {
+                    $report.HasExited = $true
+                    $report.ExitCode = $ownedProcess.get_ExitCode()
+                    $report.Cleanup.RetainedProcessExitObservedUtc = [DateTime]::UtcNow.ToString('o')
+                    $retentionMarker.ExitObservedUtc = $report.Cleanup.RetainedProcessExitObservedUtc
+                    $retentionMarker.ExitCode = $report.ExitCode
+                    $ownedExitObserved = $true
+                }
+            } catch {
+                # Observation failure cannot authorize dropping ownership or ending this client.
+                if ($retentionObservationError -cne $_.Exception.Message) {
+                    $retentionObservationError = $_.Exception.Message
+                    $cleanupErrors += ('Retained owned process exit could not be observed: ' + $retentionObservationError)
+                    $report.Cleanup.ProcessObservationError = $retentionObservationError
+                    $report.CleanupErrors = $cleanupErrors
+                    try { Save-Evidence 'qualification.json' $report } catch { }
+                }
+            }
+            if (-not $ownedExitObserved) { Start-Sleep -Seconds 1 }
+        }
+        # Exit permits releasing references to the dead process, but never resolves the unknown run/cleanup.
+        $report.Cleanup.RetainedOwnershipReleasedAfterExit = $true
+        try { Save-Evidence 'retained-ownership.json' $retentionMarker }
+        catch { $cleanupErrors += ('Final retention evidence could not be persisted: ' + $_.Exception.Message) }
     }
     $releasedReferences = 0
     foreach ($item in @($workbookCode, $workbookModule, $productionCode, $production, $code, $module, $components, $project, $beforeSaveCell, $ownedCells, $ownedSheet, $ownedSheets, $workbook, $workbooks, $vbeWindow, $vbe, $application)) {
@@ -655,25 +742,32 @@ End Sub
     $workbookCode = $null; $workbookModule = $null; $productionCode = $null; $production = $null; $code = $null; $module = $null; $components = $null; $project = $null; $beforeSaveCell = $null; $ownedCells = $null; $ownedSheet = $null; $ownedSheets = $null; $workbook = $null; $workbooks = $null; $vbeWindow = $null; $vbe = $null; $application = $null
     [GC]::Collect(); [GC]::WaitForPendingFinalizers(); [GC]::Collect()
     if ($ownedProcess) {
-        $report.WaitForExitReturned = $null
-        $report.HasExited = $null
-        $report.ExitCode = $null
-        $report.NormalExit = $false
-        try {
-            $report.Cleanup.WaitForExitStartedUtc = [DateTime]::UtcNow.ToString('o')
-            $exited = $ownedProcess.WaitForExit(15000)
-            $ownedProcess.Refresh()
-            $report.WaitForExitReturned = $exited
-            $report.HasExited = $ownedProcess.HasExited
-            $report.ExitCode = if ($report.HasExited) { $ownedProcess.ExitCode } else { $null }
-            $report.Cleanup.WaitForExitFinishedUtc = [DateTime]::UtcNow.ToString('o')
-            $report.NormalExit = $report.HasExited -and $report.ExitCode -eq 0
-            if (-not $report.HasExited) { $cleanupErrors += 'Owned Excel is still running after the observation deadline; it was not killed.' }
-            elseif ($report.ExitCode -ne 0) { $cleanupErrors += ('Owned Excel exited with code ' + $report.ExitCode + '; it was not killed.') }
-        } catch {
-            $report.Cleanup.ProcessObservationError = $_.Exception.Message
-            $cleanupErrors += ('Owned Excel exit status could not be verified: ' + $_.Exception.Message)
-        } finally { $ownedProcess.Dispose() }
+        if ($owned -and $cleanupUnsettled) {
+            $report.Cleanup.ComReferencesRetained = $false
+            $ownedProcess.Dispose()
+            $report.Cleanup.ProcessHandleRetained = $false
+            # NormalExit intentionally remains false even when the externally observed exit code is zero.
+        } else {
+            $report.WaitForExitReturned = $null
+            $report.HasExited = $null
+            $report.ExitCode = $null
+            $report.NormalExit = $false
+            try {
+                $report.Cleanup.WaitForExitStartedUtc = [DateTime]::UtcNow.ToString('o')
+                $exited = $ownedProcess.WaitForExit(15000)
+                $ownedProcess.Refresh()
+                $report.WaitForExitReturned = $exited
+                $report.HasExited = $ownedProcess.get_HasExited()
+                $report.ExitCode = if ($report.HasExited) { $ownedProcess.get_ExitCode() } else { $null }
+                $report.Cleanup.WaitForExitFinishedUtc = [DateTime]::UtcNow.ToString('o')
+                $report.NormalExit = $report.HasExited -and $report.ExitCode -eq 0
+                if (-not $report.HasExited) { $cleanupErrors += 'Owned Excel is still running after the observation deadline; it was not killed.' }
+                elseif ($report.ExitCode -ne 0) { $cleanupErrors += ('Owned Excel exited with code ' + $report.ExitCode + '; it was not killed.') }
+            } catch {
+                $report.Cleanup.ProcessObservationError = $_.Exception.Message
+                $cleanupErrors += ('Owned Excel exit status could not be verified: ' + $_.Exception.Message)
+            } finally { $ownedProcess.Dispose() }
+        }
     }
     $report.CleanupErrors = $cleanupErrors
     $report.FinishedUtc = [DateTime]::UtcNow.ToString('o')

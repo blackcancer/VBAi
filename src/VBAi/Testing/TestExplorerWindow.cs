@@ -13,6 +13,7 @@ namespace VBAi
     internal sealed partial class TestExplorerWindow : Form
     {
         private IVbaTestExplorerService service;
+        private readonly System.Drawing.Size initialNativeSize;
         private VbaTestCatalog catalog;
         private readonly Dictionary<string, VbaTestResult> results = new Dictionary<string, VbaTestResult>(StringComparer.Ordinal);
         private readonly Dictionary<string, string> resultRevisions = new Dictionary<string, string>(StringComparer.Ordinal);
@@ -38,6 +39,7 @@ namespace VBAi
         public TestExplorerWindow()
         {
             InitializeComponent();
+            initialNativeSize = Size;
             Icon = VbeWindowIcons.Icon("assistant");
             UiText.Apply(this, components);
             // UiText.Apply also attaches the shared theme for the form lifetime.
@@ -53,6 +55,26 @@ namespace VBAi
             }
             Disposed += RunWindowDisposed;
             UpdateButtons();
+        }
+
+        /// <summary>Repairs only an unusable native site while preserving a readable restored VBE layout.</summary>
+        internal void EnsureUsableNativePlacement(ChatToolWindow container, object nativeWindow, IWin32Window owner)
+        {
+            System.Drawing.Size siteSize;
+            if (container == null || !container.TryGetNativeSiteSize(out siteSize) ||
+                (siteSize.Width >= MinimumSize.Width && siteSize.Height >= MinimumSize.Height)) return;
+
+            dynamic window = nativeWindow;
+            dynamic frame = window.LinkedWindowFrame;
+            // Native frame bounds can be large even when its docked client site has collapsed.
+            if (frame != null) frame.LinkedWindows.Remove(window);
+            var area = Screen.FromHandle(owner.Handle).WorkingArea;
+            int width = Math.Min(initialNativeSize.Width, area.Width);
+            int height = Math.Min(initialNativeSize.Height, area.Height);
+            window.Width = width;
+            window.Height = height;
+            window.Left = area.Left + Math.Max(0, (area.Width - width) / 2);
+            window.Top = area.Top + Math.Max(0, (area.Height - height) / 2);
         }
 
         internal void Configure(IVbaTestExplorerService explorerService)

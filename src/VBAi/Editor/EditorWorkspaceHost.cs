@@ -59,6 +59,8 @@ namespace VBAi
         private void Resize()
         {
             if (editor.IsDisposed || !IsWindow(workspace)) { timer.Stop(); return; }
+            // Explicit native inspections and test dispatches retain visibility, ordering and focus.
+            if (VbeDebugInspection.IsActive) { ResizeBounds(); return; }
             try
             {
                 dynamic active = ((dynamic)vbe).ActiveWindow;

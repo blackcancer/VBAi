@@ -44,6 +44,25 @@ namespace VBAi.Tests.Unit
         }
 
         [TestMethod]
+        public void ForceDisableIsAConfirmedRefusalBeforeTargetResolutionOrNativeInvocation()
+        {
+            using (var fixture = new Fixture())
+            {
+                fixture.Application.AutomationSecurity = 3;
+                var refusal = Assert.ThrowsException<InvalidOperationException>(() => fixture.Resolve());
+                StringAssert.Contains(refusal.Message, "ForceDisable");
+                Assert.AreEqual(3, fixture.Application.AutomationSecurity);
+                Assert.AreEqual(0, fixture.Invocations);
+                fixture.Application.AutomationSecurity = 2;
+                var target = fixture.Resolve();
+                fixture.Application.AutomationSecurity = 3;
+                Assert.ThrowsException<InvalidOperationException>(() => fixture.Host.Invoke(target, "Support", "Run", null));
+                Assert.AreEqual(3, fixture.Application.AutomationSecurity);
+                Assert.AreEqual(0, fixture.Invocations);
+            }
+        }
+
+        [TestMethod]
         public void ApplicationWindowReaderUsesTheExactApplicationAndRefusesZeroOrFailedProof()
         {
             using (var fixture = new Fixture())
@@ -228,6 +247,7 @@ namespace VBAi.Tests.Unit
 
         public sealed class Application
         {
+            public int AutomationSecurity = 2; // msoAutomationSecurityByUI; the transport must not change it.
             public Presentations Presentations { get; } = new Presentations();
         }
         public sealed class Presentations : List<Presentation>

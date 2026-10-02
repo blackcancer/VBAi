@@ -135,8 +135,9 @@ An empty denominator is unavailable, not a successful percentage.
 ## Measured procedure coverage
 
 The implementation can collect **procedure-entry coverage on a separate Excel,
-Word or PowerPoint document copy**. These paths still require native qualification; implemented code
-is not production acceptance. Statement and branch coverage are unavailable.
+Word or PowerPoint document copy**. Native acceptance is recorded per operation,
+document format and candidate in [recorded validation](test-coverage.md); adapter
+availability alone does not qualify an entire host. Statement and branch coverage are unavailable.
 Pass rate, discovered test count and .NET coverage are different metrics.
 
 Use **Run selected with coverage** or **Run visible scope with coverage**. The
@@ -155,18 +156,39 @@ instrumented by measurement.
 | Word | Copies the saved `.docm`, `.dotm`, `.doc` or `.dot` file without saving the original. Full source/reference comparison refuses unsaved VBA edits that are absent from the copy. AutoOpen, document open/close handlers, application events and the Normal template are not disabled; no Excel-style `EnableEvents` boundary or trust-policy change is introduced. |
 | PowerPoint | `SaveCopyAs` creates `coverage.pptm` using macro-enabled presentation format 25. Saved `.pptm`, `.ppsm`, `.potm`, `.ppt`, `.pps` and `.pot` documents are accepted; presentation add-ins are excluded. PowerPoint has no Excel-style `EnableEvents` boundary: application-level open and before-close handlers may execute. |
 
+Word returned values use the published `_Application.Run` interface with all 30
+optional by-reference slots. Only zero or two explicit arguments are accepted;
+unused slots contain `Type.Missing`. Word resolves `Module.Procedure` only after
+the adapter proves that exactly one loaded VBE project exposes that module and
+that its COM identity is the exact owned project. The proof is repeated after
+activating the owned document. A collision, unreadable project, changed identity
+or ambiguous filename refuses dispatch.
+
+The generated coverage reset and snapshot functions accept two ignored optional
+arguments. Word supplies them explicitly to preserve the Boolean and Boolean-array
+returns observed at the native boundary; Excel and PowerPoint retain their
+zero-argument calls. This adaptation applies only to the generated coverage
+functions and never changes a user's procedure signature.
+
+The adapter refuses `AutomationSecurity` set to `ForceDisable` before dispatch or
+copy creation; it never changes the host policy. The
+[Word signature](https://learn.microsoft.com/en-us/dotnet/api/microsoft.office.interop.word._application.run?view=word-pia)
+and [file-opening policy](https://learn.microsoft.com/en-us/office/vba/api/word.application.automationsecurity)
+describe these host boundaries.
+
 All three adapters validate separate document, project and path identities. They run
 the copy in the same host application with its privileges and environment. This
 is not an external-system sandbox: tests and application-level handlers can
 affect other documents, files, databases or external systems. A close failure or
 cancellation can leave the copy open; inspect uncertain outcomes before acting.
 Word's returned-value adapter activates only the exact owned document, revalidates
-its project/path and active context, then invokes the document-qualified
+its project/path, active context and unique module ownership, then invokes the module-qualified
 `Application.Run` with zero or two positional arguments. Activation or macro
 completion failures are uncertain and never trigger automatic retry. A Word
 measurement requires `Document.Saved=true`, checked before copying and again
 after copying and opening. Save all document changes before requesting coverage.
-Native Word and PowerPoint qualification remains pending.
+See [recorded validation](test-coverage.md) for the observed Word DOCM and
+PowerPoint measurement scopes and their exact candidate identities.
 
 The metric is distinct entered eligible production procedures divided by eligible
 production procedures. Tests, fixtures and framework support are explicitly

@@ -33,8 +33,11 @@ namespace VBAi
             try {
                 Validate(catalog);
                 var target = Host.ResolveTarget(ResolveLive(catalog.Project.Id), catalog.Project.HostPath);
-                if (target is VbaTestWordValuesHost.OwnedTarget word && !((bool)((dynamic)word.Document).Saved))
-                    return "Save all Word document changes before collecting coverage from its saved-file copy.";
+                try {
+                    if (target is VbaTestWordValuesHost.OwnedTarget word && !((bool)((dynamic)word.Document).Saved))
+                        return "Save all Word document changes before collecting coverage from its saved-file copy.";
+                }
+                finally { ReleaseReturnedTarget(target, false); }
             }
             catch (Exception error) { return error.Message; }
             return null;
@@ -166,7 +169,11 @@ namespace VBAi
                 try
                 {
                     if (ownedClone && !run.OutcomeUnknown) clone.Dispose();
-                    else if (clone != null && run.Coverage != null) run.Coverage.Diagnostics.Add("The copy was retained open because ownership or native completion could not be verified: " + clone.Path);
+                    else if (clone != null && run.Coverage != null)
+                    {
+                        if (Host is VbaTestWordValuesHost) VbaTestWordValuesHost.RetainAcquired(clone);
+                        run.Coverage.Diagnostics.Add("The copy was retained open because ownership or native completion could not be verified: " + clone.Path);
+                    }
                 }
                 catch (Exception error) { run.Error = (run.Error == null ? "" : run.Error + Environment.NewLine) + "The coverage copy could not be closed: " + error.Message;
                     run.OutcomeUnknown |= error is VbaTestInvocationException invocation && invocation.Uncertain;
@@ -186,15 +193,22 @@ namespace VBAi
         {
             guard(); copy.Validate(catalog);
             object target = copy.Host.ResolveTarget(copy.ResolveLive(catalog.Project.Id), catalog.Project.HostPath);
-            guard(); copy.Validate(catalog);
-            try {
-                var returned = copy.Host.Invoke(target, VbaCoverageInstrumentation.ModuleName, procedure, new object[0]);
-                RequireOwner(); guard(); copy.Validate(catalog);
-                return returned;
+            bool uncertain = false;
+            try
+            {
+                guard(); copy.Validate(catalog);
+                try {
+                    var returned = copy.Host.Invoke(target, VbaCoverageInstrumentation.ModuleName, procedure, new object[0]);
+                    RequireOwner(); guard(); copy.Validate(catalog);
+                    return returned;
+                }
+                catch (Exception error) {
+                    uncertain = true;
+                    throw new VbaTestInvocationException("Coverage runtime completion is uncertain: " + error.Message, true, error);
+                }
             }
-            catch (Exception error) { throw new VbaTestInvocationException("Coverage runtime completion is uncertain: " + error.Message, true, error); }
+            finally { ReleaseReturnedTarget(target, uncertain); }
         }
-
         private static string CanonicalPath(string path) => Path.GetFullPath(path).TrimEnd(Path.DirectorySeparatorChar).ToUpperInvariant();
 
         private static void WriteCloneModule(dynamic project, string name, string source, bool create)

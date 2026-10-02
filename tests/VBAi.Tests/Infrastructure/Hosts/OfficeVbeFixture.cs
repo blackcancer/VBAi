@@ -47,6 +47,7 @@ namespace VBAi.Tests.Integration
             internal volatile bool ReviewedSupportSaveAllowed;
             internal Thread Thread;
             internal Exception Failure;
+            internal AccessDiscardLease Discard;
             internal readonly HashSet<IntPtr> InvokedDialogs = new HashSet<IntPtr>();
             internal OwnedDialogWorker(Process hostProcess, string kind) { HostProcess = hostProcess; ProcessId = hostProcess.Id; Kind = kind; }
             internal bool HostAlive { get { try { return !HostProcess.HasExited; } catch (InvalidOperationException) { return false; } } }
@@ -236,6 +237,7 @@ namespace VBAi.Tests.Integration
                     }
                 }
             }
+            TrackCreatedAccessDiscardObject(name, request, reply);
             return reply;
         }
         /// <summary>Requires a successful command and returns its object result.</summary>
@@ -528,6 +530,7 @@ namespace VBAi.Tests.Integration
             Assert.IsTrue(worker.Thread.Join(2000),
                 "The owned " + worker.Kind + " dialog worker did not stop; no new worker or reopen is permitted. PID=" + worker.ProcessId);
             Assert.IsNull(worker.Failure, worker.Failure?.Message);
+            worker.Discard?.RequireDismissed();
             Assert.IsFalse(worker.InvokedDialogs.Any(window => OwnedDialogControl(worker, window, "#32770", null) && IsWindowVisible(window)),
                 "An owned Access save dialog remains after handler shutdown; no fresh mutation or reopen is permitted.");
             dialogWorker = null;
@@ -711,7 +714,10 @@ namespace VBAi.Tests.Integration
                     PrepareOwnedShutdown();
                     if (Kind == "Access" || Kind == "Publisher")
                     {
-                        RequireOwnedDocument(); nativeIdentityVerified = true;
+                        if (Kind == "Access" && adapterOnly) RequireAccessDiscardDocument();
+                        else if (Kind == "Publisher" && publisherTestCleanupSources != null) RequirePublisherTestCleanupDocument();
+                        else RequireOwnedDocument();
+                        nativeIdentityVerified = true;
                         if (Kind == "Access" && !adapterOnly && allowSupportSavePrompt)
                             RevalidateReviewedSupportBeforeAccessClose();
                         else StopOwnedDialogHandler();
@@ -720,19 +726,19 @@ namespace VBAi.Tests.Integration
                     else if (Kind == "PowerPoint") { if (document != null) { ((dynamic)document).Saved = -1; ((dynamic)document).Close(); } }
                     else if (Kind == "Access")
                     {
-                        if (adapterOnly)
+                        if (adapterOnly) CloseAccessDatabaseDiscarding();
+                        else
                         {
+                            ((dynamic)application).CloseCurrentDatabase();
                             StopAccessSaveDialogHandler();
-                            CloseAccessObjectsWithoutSaving();
                         }
-                        ((dynamic)application).CloseCurrentDatabase();
-                        StopAccessSaveDialogHandler();
                         QuitOwnedOnce(() => ((dynamic)application).Quit(2));
                     }
                     else if (Kind == "Publisher")
                     {
                         Assert.IsNotNull(document, "The owned Publisher document must be identified before Quit.");
-                        RequireSoleOwnedSavedPublisherBeforeQuit();
+                        if (publisherTestCleanupSources == null) RequireSoleOwnedSavedPublisherBeforeQuit();
+                        else RequireReviewedPublisherTestCleanup();
                         QuitOwnedOnce(() => ((dynamic)application).Quit());
                     }
                 }
@@ -743,19 +749,20 @@ namespace VBAi.Tests.Integration
                     return;
                 }
             }
-            try { Release(document); } catch (Exception error) { RecordCleanupFailure(error.Message); }
+            bool externalReferencesReleased = true;
+            try { Release(document); } catch (Exception error) { externalReferencesReleased = false; RecordCleanupFailure(error.Message); }
             document = null;
             if (owned && nativeIdentityVerified && Kind != "Access" && Kind != "Publisher")
                 try { QuitOwnedOnce(() => { if (Kind == "Word") ((dynamic)application).Quit(0); else ((dynamic)application).Quit(); }); }
                 catch (Exception error) { RetainUncertainOffice(); RecordCleanupFailure(error.Message); return; }
-            try { Release(application); } catch (Exception error) { RecordCleanupFailure(error.Message); }
+            try { Release(application); } catch (Exception error) { externalReferencesReleased = false; RecordCleanupFailure(error.Message); }
             application = null;
             var process = ownedProcess;
             if (process != null)
                 try
                     {
                         int exitCode = 0;
-                        bool exited = shutdownEvidence.ObserveExit(() => WaitForOwnedExit(process, OwnedExitWaitMilliseconds),
+                        bool exited = shutdownEvidence.ObserveExit(() => WaitForShutdownExit(process, Convert.ToInt32(shutdownEvidence.Record["WaitBoundMilliseconds"]), externalReferencesReleased),
                             () => { exitCode = ReadOwnedExitCode(process); return exitCode; }, process.Dispose, FlushShutdownEvidence);
                         if (!exited)
                         {
@@ -876,7 +883,7 @@ namespace VBAi.Tests.Integration
         /// <summary>Closes only loaded objects of the verified disposable Access database with explicit acSaveNo.</summary>
         private void CloseAccessObjectsWithoutSaving()
         {
-            RequireOwnedDocument();
+            RequireAccessDiscardDocument();
             object current = null, commands = null;
             try
             {
@@ -906,7 +913,7 @@ namespace VBAi.Tests.Integration
                     finally { Release(collection); }
                     foreach (string name in names)
                     {
-                        RequireOwnedDocument();
+                        RequireAccessDiscardDocument();
                         ((dynamic)commands).Close(kind, name, 2); // acSaveNo; never allow a close helper to persist the test edit.
                         object verificationCollection = null, closedObject = null;
                         try

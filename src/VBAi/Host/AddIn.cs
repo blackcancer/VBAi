@@ -276,6 +276,7 @@ public void OnConnection(object application, int connectMode, object addInInstan
                     }
                     ((dynamic)nativeTestWindow).Visible = true;
                     if (testExplorerWindow.TopLevel) nativeTestControl.Attach(testExplorerWindow);
+                    testExplorerWindow.EnsureUsableNativePlacement(nativeTestControl, nativeTestWindow, VbeOwner());
                     ((dynamic)nativeTestWindow).SetFocus();
                 }
                 catch (Exception dockingError)

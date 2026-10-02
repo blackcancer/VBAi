@@ -185,7 +185,7 @@ namespace VBAi
                 if (support == null) return "Review and install the project-local test support module before running tests.";
                 if (Canonical(support.Source) != Canonical(VbaTestRuntimeSource.Generate(catalog))) return "The test support module is outdated or changed. Review its update before running tests.";
                 Validate(catalog);
-                if (returnedValues) Host.ResolveTarget(ResolveLive(catalog.Project.Id), catalog.Project.HostPath);
+                if (returnedValues) ReleaseReturnedTarget(Host.ResolveTarget(ResolveLive(catalog.Project.Id), catalog.Project.HostPath), false);
                 else
                 {
                     string registration = NativeRuntimeReason();
@@ -220,13 +220,14 @@ namespace VBAi
             dispatcher.BeginInvoke(new Action(() => {
                 if (completion.Task.IsCompleted) return;
                 bool invoked = false;
+                object target = null;
                 try
                 {
                     entry.ExecutionGuard?.Invoke();
                     Validate(catalog);
                     string reason = ExecutionUnavailableReason(catalog);
                     if (reason != null) throw new VbaTestInvocationException(reason, false);
-                    object target = Host.ResolveTarget(ResolveLive(catalog.Project.Id), catalog.Project.HostPath);
+                    target = Host.ResolveTarget(ResolveLive(catalog.Project.Id), catalog.Project.HostPath);
                     Validate(catalog);
                     entry.ExecutionGuard?.Invoke();
                     if (entry.Stop.IsCancellationRequested && phase != "TestCleanup" && phase != "ModuleCleanup")
@@ -236,18 +237,30 @@ namespace VBAi
                     object returned = Host.Invoke(target, VbaTestRuntimeSource.ModuleName, VbaTestRuntimeSource.DispatcherProcedure, new object[] { procedure.Module, procedure.Procedure });
                     var result = VbaTestRuntimeSource.Decode(procedure, returned);
                     result.Phase = phase;
+                    ReleaseReturnedTarget(target, false); target = null;
                     completion.TrySetResult(result);
                 }
                 catch (Exception error)
                 {
                     if (invoked) outcomeUnknown = true;
-                    completion.TrySetException(new VbaTestInvocationException(error.Message, invoked, error));
+                    Exception failure = error;
+                    try { ReleaseReturnedTarget(target, invoked); }
+                    catch (Exception releaseError) { failure = new AggregateException(error.Message + Environment.NewLine + releaseError.Message, error, releaseError); }
+                    completion.TrySetException(new VbaTestInvocationException(failure.Message, invoked, failure));
                 }
                 finally { pendingCalls.Remove(pending); }
             }));
             return completion.Task;
         }
 
+        private static void ReleaseReturnedTarget(object target, bool uncertain)
+        {
+            if (target is VbaTestWordValuesHost.OwnedTarget word)
+            {
+                if (uncertain) word.RetainOnUncertain();
+                word.Dispose();
+            }
+        }
         public Task<VbaTestRun> RunAsync(VbaTestCatalog catalog, IReadOnlyList<VbaTestDescriptor> tests,
             Action<VbaTestResult> onResult, CancellationToken cancellation)
         { return BeginRun(catalog, tests, onResult, cancellation, null); }
@@ -278,6 +291,8 @@ namespace VBAi
             {
                 try
                 {
+                    // Return the query before native copy preparation enters the owning thread.
+                    if (measureCoverage) await AwaitOwner(QueueCoverageStart());
                     Action<VbaTestResult> publish = result => {
                         entry.Run.Results.Add(result);
                         if (result.Outcome == VbaTestOutcome.OutcomeUnknown) entry.Run.OutcomeUnknown = true;
@@ -305,7 +320,16 @@ namespace VBAi
             executionGuard?.Invoke();
             var task = BeginRun(catalog, selected, null, CancellationToken.None, executionGuard, measureCoverage);
             var entry = active ?? runs.Values.Single(item => ReferenceEquals(item.Completion, task));
-            return RunStatus(selector, entry.Run.Id, "compact");
+            // Do not re-enter COM discovery after publishing the preparation continuation.
+            return ReportRunStatus(catalog, entry.Run.Id, entry, "compact", 0, 0);
+        }
+
+        private Task<bool> QueueCoverageStart()
+        {
+            var completion = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+            try { continuationDispatcher.BeginInvoke(new Action(() => completion.TrySetResult(true))); }
+            catch (Exception error) { completion.TrySetException(error); }
+            return completion.Task;
         }
 
         internal object RunStatus(string selector, string id, string format, int offset = 0, int limit = 0)
@@ -314,6 +338,11 @@ namespace VBAi
             VbaTestReports.PageLimit(offset, limit);
             var catalog = DiscoverSelector(selector);
             if (!runs.TryGetValue(id ?? "", out RunEntry entry) || entry.ProjectId != catalog.Project.Id) throw new InvalidOperationException("Unknown test run in this project/session.");
+            return ReportRunStatus(catalog, id, entry, format, offset, limit);
+        }
+
+        private static object ReportRunStatus(VbaTestCatalog catalog, string id, RunEntry entry, string format, int offset, int limit)
+        {
             return new { Query = id, entry.State, Pending = entry.State == "Running" || entry.State == "StopRequested",
                 Stale = catalog.Project.Revision != entry.Run.Revision,
                 Report = format == "human" ? (object)VbaTestReports.HumanPage(entry.Run, offset, limit) : new System.Web.Script.Serialization.JavaScriptSerializer()

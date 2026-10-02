@@ -92,28 +92,38 @@ namespace VBAi
             if (!ReferenceEquals(active, call) || call.Completion.Task.IsCompleted) return;
             try
             {
-                Validate(call.Catalog);
-                call.Project = resolveProject(call.Catalog);
-                var support = call.Catalog.Project.Modules.Single(module => string.Equals(module.Name, VbaTestRuntimeSource.ModuleName, StringComparison.OrdinalIgnoreCase));
-                object prepared = Probe.Prepare(vbe, call.Project, support.Source);
-                // Showing a pane can pump messages. Revalidate all authority after selection.
-                Validate(call.Catalog);
-                if (Probe is NativeProbe nativeProbe && !nativeProbe.SameIdentity(call.Project, resolveProject(call.Catalog)))
-                    throw new InvalidOperationException("The selected project identity changed during native preparation.");
-                Probe.Revalidate(vbe, call.Project, prepared);
-                sink.Arm(call.Project, string.IsNullOrEmpty(call.Catalog.Project.HostPath) ? call.Catalog.Project.Id : call.Catalog.Project.HostPath,
-                    VbaTestRuntimeSource.Version, call.Catalog.Project.Revision, runId(), call.Test, call.Phase, signature(call.Catalog));
-                call.Armed = true;
-                Probe.Revalidate(vbe, call.Project, prepared);
-                executionGuard();
-                sink.BeginNative();
-                call.Invoked = true;
-                call.Clock.Restart();
-                call.Exposure = VbaTestRuntime.Expose(sink);
-                // Never infer macro success from Execute returning: callback and Design mode are required.
-                Probe.Execute(prepared);
-                Observe(call);
-                if (!call.Completion.Task.IsCompleted) call.Polling = StartPolling(() => Observe(call));
+                // Native selection can pump editor callbacks; reserve it through dispatch and immediate observation.
+                using (new VbeDebugInspection())
+                {
+                    Validate(call.Catalog);
+                    call.Project = resolveProject(call.Catalog);
+                    var support = call.Catalog.Project.Modules.Single(module => string.Equals(module.Name, VbaTestRuntimeSource.ModuleName, StringComparison.OrdinalIgnoreCase));
+                    object prepared = Probe.Prepare(vbe, call.Project, support.Source);
+                    // Showing a pane can pump messages. Revalidate all authority after selection.
+                    Validate(call.Catalog);
+                    if (Probe is NativeProbe nativeProbe)
+                    {
+                        if (!nativeProbe.SameIdentity(call.Project, resolveProject(call.Catalog)))
+                            throw new InvalidOperationException("The selected project identity changed during native preparation.");
+                        nativeProbe.RevalidateBeforeArming(vbe, call.Project, prepared);
+                        // Focus activation can pump callbacks: verify all authority again before arming.
+                        Validate(call.Catalog);
+                    }
+                    Probe.Revalidate(vbe, call.Project, prepared);
+                    sink.Arm(call.Project, string.IsNullOrEmpty(call.Catalog.Project.HostPath) ? call.Catalog.Project.Id : call.Catalog.Project.HostPath,
+                        VbaTestRuntimeSource.Version, call.Catalog.Project.Revision, runId(), call.Test, call.Phase, signature(call.Catalog));
+                    call.Armed = true;
+                    Probe.Revalidate(vbe, call.Project, prepared);
+                    executionGuard();
+                    sink.BeginNative();
+                    call.Invoked = true;
+                    call.Clock.Restart();
+                    call.Exposure = VbaTestRuntime.Expose(sink);
+                    // Never infer macro success from Execute returning: callback and Design mode are required.
+                    Probe.Execute(prepared);
+                    Observe(call);
+                    if (!call.Completion.Task.IsCompleted) call.Polling = StartPolling(() => Observe(call));
+                }
             }
             catch (Exception error) { Finish(call, error); }
         }
@@ -218,8 +228,19 @@ namespace VBAi
                 throw new InvalidOperationException("The exact selected project is not active before native dispatch.");
             dynamic window = ((dynamic)expectedPane).Window;
             object activeWindow = (object)editor.ActiveWindow;
-            if (activeWindow == null || !identity((object)window, activeWindow) || (int)window.Type != 0 || !(bool)window.Visible)
-                throw new InvalidOperationException("The exact support code window does not own native focus before dispatch.");
+            bool available = activeWindow != null, matches = available && identity((object)window, activeWindow);
+            int type = (int)window.Type;
+            bool visible = (bool)window.Visible;
+            if (!available || !matches || type != 0 || !visible)
+                throw new InvalidOperationException("The exact support code window does not own native focus before dispatch. Observed focus: activeWindowAvailable="
+                    + available + "; activeWindowMatches=" + matches + "; supportWindowType=" + type + "; supportWindowVisible=" + visible + ".");
+            ValidateNativePaneSelection(editorObject, moduleObject, expectedPane, expectedLine, identity);
+        }
+
+        private static void ValidateNativePaneSelection(object editorObject, object moduleObject,
+            object expectedPane, int expectedLine, Func<object, object, bool> identity)
+        {
+            dynamic editor = editorObject;
             dynamic pane = editor.ActiveCodePane;
             if (pane == null || !identity(expectedPane, (object)pane) || !identity(moduleObject, (object)pane.CodeModule))
                 throw new InvalidOperationException("The support code pane no longer owns the native run selection.");
@@ -449,6 +470,7 @@ namespace VBAi
                 internal object Editor, Project, Module, Pane, Control;
                 internal string Source, Caption, AfterShow, AfterFocus;
                 internal int Line;
+                internal bool FocusRecoveryAttempted;
                 internal VbaNativeTestWindowFocus.Target NativeFocus;
             }
 
@@ -508,10 +530,16 @@ namespace VBAi
                 RequireOwner(editorObject);
                 dynamic control = editor.CommandBars.FindControl(1, 186);
                 ValidateNativeRunControl((object)control);
-                return new Prepared { Editor = editorObject, Project = projectObject, Module = module, Pane = pane, Control = control, Source = source, Caption = (string)control.Caption, Line = line, AfterShow = afterShow, AfterFocus = afterFocus, NativeFocus = nativeFocus };
+                return new Prepared { Editor = editorObject, Project = projectObject, Module = module, Pane = pane, Control = control, Source = source, Caption = (string)control.Caption, Line = line, AfterShow = afterShow, AfterFocus = afterFocus, NativeFocus = nativeFocus, FocusRecoveryAttempted = nativeFocus != null };
             }
 
             public void Revalidate(object editorObject, object projectObject, object prepared)
+            { Revalidate(editorObject, projectObject, prepared, false); }
+
+            internal void RevalidateBeforeArming(object editorObject, object projectObject, object prepared)
+            { Revalidate(editorObject, projectObject, prepared, true); }
+
+            private void Revalidate(object editorObject, object projectObject, object prepared, bool allowFocusRecovery)
             {
                 RequireOwner(editorObject);
                 var plan = (Prepared)prepared;
@@ -521,14 +549,32 @@ namespace VBAi
                     if (identity(candidate, projectObject)) { found = true; break; }
                 if (!found || (int)project.Mode != 2 || ReadSource(plan.Module) != plan.Source)
                     throw new InvalidOperationException("The selected project, mode or support source changed before native dispatch.");
+                string initialFocusRefusal = null;
                 try
                 {
-                    ValidateNativePaneContext(editorObject, projectObject, plan.Module, plan.Pane, plan.Line, identity);
+                    try { ValidateNativePaneContext(editorObject, projectObject, plan.Module, plan.Pane, plan.Line, identity); }
+                    catch (InvalidOperationException focusError)
+                    {
+                        initialFocusRefusal = focusError.Message;
+                        if (!allowFocusRecovery || plan.FocusRecoveryAttempted) throw;
+                        object handle = ((dynamic)plan.Pane).Window.HWnd;
+                        if (handle == null || Convert.ToInt64(handle) != 0) throw;
+                        // Only lost window focus may be repaired before arming. Changed selection or authority must refuse.
+                        ValidateNativeFocusTarget(editorObject, projectObject, plan.Module, plan.Pane, plan.Line, identity);
+                        ValidateNativePaneSelection(editorObject, plan.Module, plan.Pane, plan.Line, identity);
+                        if ((int)project.Mode != 2 || ReadSource(plan.Module) != plan.Source)
+                            throw new InvalidOperationException("The selected mode or support source changed before native focus recovery.");
+                        plan.FocusRecoveryAttempted = true;
+                        plan.NativeFocus = EnsureNativePaneFocus(editorObject, projectObject, plan.Module, plan.Pane, plan.Line, windows, identity);
+                        if ((int)project.Mode != 2 || ReadSource(plan.Module) != plan.Source)
+                            throw new InvalidOperationException("The selected mode or support source changed during native focus recovery.");
+                    }
                     ValidateRecoveredNativeFocus(editorObject, plan.Pane, windows, plan.NativeFocus);
                 }
                 catch (Exception error)
                 {
                     throw new InvalidOperationException(error.Message
+                        + (initialFocusRefusal == null ? "" : " Initial focus refusal: " + initialFocusRefusal)
                         + DescribeNativeSelection(editorObject, projectObject, plan.Module, plan.Pane, plan.Line)
                         + " Immediately after Show: " + plan.AfterShow + " Immediately after Focus: " + plan.AfterFocus, error);
                 }
