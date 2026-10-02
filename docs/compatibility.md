@@ -27,6 +27,14 @@ operation, language feature or UI surface.
 
 ### Current operation-specific refresh
 
+The latest Q-027 scalar-child restoration source `7745e1c` passes its complete
+managed gate. The first actual owner-UI LabelButton import reaches final
+comparison, which still refuses the missing persisted root StdFont descriptor.
+Source files match, but the FRX differs. The original owned Excel exits normally,
+saved disk bytes stay unchanged and temporary registration is restored. Scalar
+setter readback, exact import, recovery and post-import reopen remain unqualified.
+See [recorded validation](test-coverage.md#root-font-child-value-import-canary-2026-10-02).
+
 The latest Q-027 diagnostic source `e3d94bc` identifies the failing root font
 operation as `VBIDE.Property.Object.set`. A separate read-only observation
 qualifies its Font.Value child getters and declaration metadata with exact

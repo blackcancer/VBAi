@@ -1,5 +1,41 @@
 # Recorded validation
 
+## Root Font child Value import canary (2026-10-02)
+
+Frozen source `7745e1c5018b7570a5ced6ef7e34c88676e799a2` implements root-font
+restoration through prevalidated scalar child Value writes, revalidating native
+project/component identity before each delivery. Weight is last and Size is an
+exact Decimal. The isolated solution build has no warnings or errors. Product
+MVID is `e5df96d3-56c3-4089-a8dd-d2b8785f2c5b`, product SHA-256
+`93D21AD271ECD87A656047BBB533173E1E35CF4D5917076D5DB8D91C1FC71C93`, test SHA-256
+`2D07B5814F1690AB87844BFC33D51F65DBD43BE23E9883C502493D2E70209812`.
+Clean source and frozen binary hashes remain unchanged through both gates.
+
+| Terminal TRX under `artifacts/font-value-restoration-20261002` | Passed | Failed | Opt-ins not executed | Scope |
+| --- | ---: | ---: | ---: | --- |
+| `managed/managed.trx` | 3686 | 0 | 189 | Complete default managed gate; no coverage collector. |
+| `native-labelbutton-diagnostic/native.trx` | 0 | 1 | 0 | One fresh actual owner-UI LabelButton checkpoint import. |
+
+Owned Excel PID **48328** loads the exact candidate. The import passes the
+child-write phase without a reported setter error, then fails the final
+`VbaGitProject.Apply` comparison. This does not prove individual setter readback.
+An independent snapshot also fails, differing only in `EmbeddedForm.frx`; all
+source files and the form header match. Frozen-parser inspection of the retained
+checkpoint and after-import Git blobs finds the root Tahoma 8.25 StdFont binding
+present before import and absent afterward. The resource length changes from
+3096 to 2584 bytes. The cause of this persistence failure is not established;
+the comparison is not relaxed and no recovery action or import is replayed.
+
+The original process exits normally with code zero, without forced termination.
+The saved owned workbook hash remains
+`AF1A0D6342F3DAF436D2307008E76F0D0B4DEB769992B301E0D77989E98CBEEC`.
+Guarded registration restore verifies the exact owned snapshot, and installed
+files remain unchanged. Independent terminal inspection and offline font
+bindings are retained beside the original failed receipts. No existing
+SOLIDWORKS process is targeted. This canary does not replace the earlier complete
+failed matrix; Q-027, other layouts, recovery, transfer and post-import reopen
+remain unqualified.
+
 ## Root Font operation and read-only child observation (2026-10-02)
 
 Frozen source `e3d94bc72ccbde31838f8041423b231f683769d3` captures mapped

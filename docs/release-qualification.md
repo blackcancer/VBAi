@@ -6,6 +6,19 @@ are maintained only in [recorded validation](test-coverage.md).
 
 ## Current candidate checkpoint (2026-10-02)
 
+The latest gated restoration source `7745e1c`, MVID
+`e5df96d3-56c3-4089-a8dd-d2b8785f2c5b`, SHA-256
+`93D21AD271ECD87A656047BBB533173E1E35CF4D5917076D5DB8D91C1FC71C93`,
+passes its complete default managed gate. Its first fresh owner-UI LabelButton
+import passes the scalar-child phase without a reported setter error, but
+fails exact snapshot comparison. Independent snapshot and frozen-parser
+inspection confirm that only the FRX differs and the root StdFont binding
+still disappears. Setter readback and the cause of this persistence failure
+remain unknown. The original owned Excel exits normally, saved workbook bytes
+stay unchanged and temporary registration is restored. Q-027 stays open; no
+other layout, recovery or post-import reopen is qualified by this canary. See
+[recorded validation](test-coverage.md#root-font-child-value-import-canary-2026-10-02).
+
 The latest fully gated diagnostic source `e3d94bc`, MVID
 `8071360b-1c57-45fd-9ff9-5b575dee2576`, SHA-256
 `62A2209C1D3E659CBC6CE4A96CB0CB2768AFB73F31E096C19E65BDBE4A1832DB`,
