@@ -38,6 +38,7 @@ namespace VBAi.Tests.Integration
 
         private void RunInstalledOwner(string layout, bool persistence = false)
         {
+            var fontObservation = RootFontObservationManifest.Prepare(Environment.GetEnvironmentVariable, layout, persistence);
             if (Environment.GetEnvironmentVariable("VBAi_RUN_EMBEDDED_GIT_UI_TESTS") != "1" ||
                 Environment.GetEnvironmentVariable("VBAi_RUN_USERFORM_GITHUB_TESTS") != "1" ||
                 Environment.GetEnvironmentVariable("VBAi_RUN_EXCEL_TESTS") != "1")
@@ -54,7 +55,7 @@ namespace VBAi.Tests.Integration
             string hash = Environment.GetEnvironmentVariable("VBAi_TEST_EMBEDDED_GIT_SHA256");
             Assert.AreEqual(typeof(VbeSession).Module.ModuleVersionId, expected, "Tests must reference the exact frozen product candidate.");
             Assert.AreEqual(hash, Sha(typeof(VbeSession).Assembly.Location), true);
-            var context = new RunContext(Path.Combine(root, "embedded-git-" + Guid.NewGuid().ToString("N")), plan);
+            var context = new RunContext(Path.Combine(root, "embedded-git-" + Guid.NewGuid().ToString("N")), plan) { FontObservation = fontObservation };
             context.Record(new { Phase = "Preflight", ExpectedMvid = expected.ToString("D"), ExpectedSha256 = hash,
                 Remote = plan.Remote, Branch = plan.Branch, BranchCommit = plan.Commit,
                 Layout = layout, Scope = persistence ? "Owner-dispatched checkpoint import, one Save, normal exit, independent read-only fresh-process reopen; no remote push or recovery replay." : layout == null ? "Owner-dispatched capture/checkpoint only." : "Owner-dispatched persisted UserForm checkpoint import with exact native snapshot and font readback; no remote push, recovery replay or save/reopen acceptance." });
@@ -118,6 +119,14 @@ namespace VBAi.Tests.Integration
                 Assert.AreEqual(hash, Sha(Convert.ToString(data["AssemblyPath"])), true, "Loaded installed bytes differ from the frozen candidate.");
                 context.Scope = context.Fixture.PrepareEmbeddedGitScope(context.Nonce, value => nativePending = value, context.Record, context.Plan.Layout);
                 nativePending = false;
+                if (context.FontObservation != null)
+                {
+                    var claim = RootFontObservationManifest.Build(context.FontObservation, context.Output, context.Scope.Path,
+                        context.Scope.Baseline, expected, Guid.Parse(Convert.ToString(data["AssemblyModuleVersionId"])), Guid.NewGuid());
+                    RootFontObservationManifest.Publish(context.FontObservation, claim, Environment.GetEnvironmentVariable);
+                    context.Record(new { Phase = "RootFontDiagnosticManifestPublished", ManifestPath = context.FontObservation.Path,
+                        Manifest = claim, NativeFontDelivery = "NOT_RUN", GetterOrExportRequestsAdded = 0 });
+                }
                 context.WorkbookSha256 = Sha(context.Scope.Path);
                 context.Record(new { Phase = "Prepared", ProcessId = context.Fixture.ProcessId, context.Scope.ThreadId,
                     VbeHandle = context.Scope.VbeHandle.ToInt64(), context.Scope.Path, context.Scope.Cache,
@@ -269,6 +278,7 @@ namespace VBAi.Tests.Integration
             internal readonly ManualResetEventSlim Ready = new ManualResetEventSlim(), StartMenu = new ManualResetEventSlim(), UiReady = new ManualResetEventSlim(), MenuIntent = new ManualResetEventSlim(), UiDone = new ManualResetEventSlim(), OwnerDone = new ManualResetEventSlim();
             internal ExcelVbeFixture Fixture;
             internal ExcelVbeFixture.EmbeddedGitScope Scope;
+            internal RootFontObservationManifest.Configuration FontObservation;
             internal string WorkbookSha256;
             internal Exception OwnerError, UiError;
             internal volatile bool Stop, Retain, MenuEmitted, ModalClosed;
