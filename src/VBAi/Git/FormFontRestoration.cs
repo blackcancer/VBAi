@@ -30,7 +30,8 @@ namespace VBAi
         }
 
         /// <summary>Preflights every declared font owner and root child before any delivery, with identity guards.</summary>
-        internal static void Restore(object component, FormStreamPadding.FormFontBinding[] bindings, Action revalidate)
+        internal static void Restore(object component, FormStreamPadding.FormFontBinding[] bindings, Action revalidate,
+            FormFontObservation observation = null)
         {
             if (bindings == null || bindings.Length == 0) return;
             var references = new List<object>();
@@ -39,6 +40,7 @@ namespace VBAi
             try
             {
                 revalidate();
+                observation?.BeforeFontGetters(component, revalidate);
                 object designer = NativeRead<object>("VBComponent.Designer.get", () => ((dynamic)component).Designer); references.Add(designer);
                 foreach (var binding in bindings)
                 {
@@ -103,7 +105,15 @@ namespace VBAi
                         revalidate();
                         AssignNested(owners[i], bindings[i].Descriptor);
                     }
-                    else AssignRoot(rootProperties[i], bindings[i].Descriptor, revalidate);
+                    else
+                    {
+                        if (observation != null)
+                            observation.Observe("before-write-after-preflight", component, designer, owners[i], rootProperties[i], revalidate);
+                        AssignRoot(rootProperties[i], bindings[i].Descriptor, revalidate, observation,
+                            () => observation.Observe("after-temporary-name", component, designer, owners[i], rootProperties[i], revalidate));
+                        if (observation != null)
+                            observation.Observe("after-root", component, designer, owners[i], rootProperties[i], revalidate);
+                    }
                 }
             }
             finally { for (int i = references.Count - 1; i >= 0; i--) Release(references[i]); }
@@ -124,7 +134,17 @@ namespace VBAi
         private static readonly Type[] ChildTypes = { typeof(string), typeof(decimal), typeof(bool), typeof(bool), typeof(bool), typeof(bool), typeof(short), typeof(short) };
 
         /// <summary>Delivers each declared scalar once on the owning STA; Weight follows all style fields.</summary>
-        private static void AssignRoot(object[] children, byte[] data, Action revalidate)
+        private static void AssignRoot(object[] children, byte[] data, Action revalidate,
+            FormFontObservation observation, Action afterTemporary)
+        {
+            AssignRootCore(children, data, revalidate, observation?.TemporaryName,
+                observation == null ? null : new Action<string, object>(observation.BeforeDelivery),
+                observation == null ? null : new Action<string, object, object>(observation.AfterDelivery), afterTemporary);
+        }
+
+        /// <summary>One predeclared delivery per field; the diagnostic may prepend one distinct Name value.</summary>
+        internal static void AssignRootCore(object[] children, byte[] data, Action revalidate, string temporaryName,
+            Action<string, object> beforeDelivery, Action<string, object, object> afterDelivery, Action afterTemporary)
         {
             object[] values = {
                 Encoding.ASCII.GetString(data, 11, data[10]),
@@ -136,13 +156,25 @@ namespace VBAi
                 (short)BitConverter.ToUInt16(data, 4),
                 BitConverter.ToInt16(data, 1)
             };
+            if (temporaryName != null)
+            {
+                revalidate();
+                beforeDelivery?.Invoke("Name.temporary", temporaryName);
+                try { ((dynamic)children[0]).Value = temporaryName; }
+                catch (Exception error) when (error is COMException || error is NotSupportedException)
+                { throw NativeFailure("VBIDE.Property.Value.set(Font.Name.temporary)", error); }
+                afterDelivery?.Invoke("Name.temporary", temporaryName, children[0]);
+                afterTemporary?.Invoke();
+            }
             foreach (int index in new[] { 0, 1, 7, 3, 4, 5, 6 })
             {
                 revalidate();
                 string operation = "VBIDE.Property.Value.set(Font." + ChildNames[index] + ")";
+                beforeDelivery?.Invoke(ChildNames[index], values[index]);
                 try { ((dynamic)children[index]).Value = values[index]; }
                 catch (Exception error) when (error is COMException || error is NotSupportedException)
                 { throw NativeFailure(operation, error); }
+                afterDelivery?.Invoke(ChildNames[index], values[index], children[index]);
             }
         }
 

@@ -197,6 +197,55 @@ namespace VBAi.Tests.Unit
             Assert.AreEqual(0, component.DesignerFontSetterCalls);
         }
 
+        [TestMethod]
+        public void PlannedDistinctChildNameDeliversTemporaryThenTargetOnceAndConfirmsEachTerminal()
+        {
+            var children = new FakeChildren();
+            object[] properties = RootChildren(children);
+            var receipts = new List<string>(); int checks = 0;
+            FormFontRestoration.AssignRootCore(properties, RootBinding().Descriptor, () => checks++, "Arial",
+                (field, value) => receipts.Add("before:" + field),
+                (field, value, property) => {
+                    Assert.AreEqual(value, ((FakeChild)property).Value, field);
+                    receipts.Add("after:" + field);
+                }, () => receipts.Add("after-temporary-snapshot"));
+            CollectionAssert.AreEqual(new[] { "Name", "Name", "Size", "Charset", "Italic", "Underline", "Strikethrough", "Weight" },
+                children.Writes.ToArray());
+            CollectionAssert.AreEqual(new[] { "before:Name.temporary", "after:Name.temporary", "after-temporary-snapshot",
+                "before:Name", "after:Name", "before:Size", "after:Size", "before:Charset", "after:Charset",
+                "before:Italic", "after:Italic", "before:Underline", "after:Underline",
+                "before:Strikethrough", "after:Strikethrough", "before:Weight", "after:Weight" }, receipts.ToArray());
+            Assert.AreEqual(8, checks);
+            Assert.AreEqual(0, children.Child("Bold").SetterCalls);
+        }
+
+        [TestMethod]
+        public void FailedOrUnconfirmedTemporaryNameStopsBeforeTargetWithoutFallback()
+        {
+            foreach (bool setterFails in new[] { true, false })
+            {
+                var children = new FakeChildren();
+                object[] properties = RootChildren(children);
+                var failure = InjectedComFailure();
+                if (setterFails) children.Child("Name").SetterFailure = failure;
+                Exception error = Assert.ThrowsException<InvalidOperationException>(() =>
+                    FormFontRestoration.AssignRootCore(properties, RootBinding().Descriptor, () => { }, "Arial",
+                        (field, value) => { },
+                        (field, value, property) => { if (!setterFails) throw new InvalidOperationException("Temporary readback failed."); },
+                        () => Assert.Fail("No snapshot after uncertain temporary setter.")));
+                if (setterFails) AssertComProvenance((InvalidOperationException)error,
+                    "VBIDE.Property.Value.set(Font.Name.temporary)", failure);
+                CollectionAssert.AreEqual(new[] { "Name" }, children.Writes.ToArray());
+                Assert.AreEqual(1, children.Child("Name").SetterCalls);
+            }
+        }
+
+        private static object[] RootChildren(FakeChildren children)
+        {
+            return new[] { "Name", "Size", "Bold", "Italic", "Underline", "Strikethrough", "Weight", "Charset" }
+                .Select(name => (object)children.Child(name)).ToArray();
+        }
+
         private static FormStreamPadding.FormFontBinding RootBinding()
         {
             return FormStreamPadding.ReadFontBindings(FormStreamPaddingTests.ContainerStreamsBefore(),

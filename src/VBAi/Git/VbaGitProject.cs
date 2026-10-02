@@ -121,6 +121,7 @@ namespace VBAi
             if (!beforeDocs.SequenceEqual(afterDocs))
                 throw new InvalidOperationException(UiText.Get("Document modules do not match. Sheets and host modules must already exist with the same names."));
 
+            FormFontObservation observation = null;
             using (var scratch = new Scratch())
             {
                 // Encode and materialize the entire import before touching the live project.
@@ -145,6 +146,9 @@ namespace VBAi
                 if (System.Runtime.InteropServices.Marshal.IsComObject((object)project) && formFonts.Any(pair =>
                     pair.Value != null && pair.Value.Length != 0 && (changed.Contains(pair.Key) || !expected.Manifest.Components.Any(old => old.Name == pair.Key))))
                     FormFontRestoration.RequireOwner((object)project);
+                observation = FormFontObservation.TryBegin(hostPath, target, changed, (object)project);
+                try
+                {
                 beforeMutation?.Invoke();
                 foreach (var old in expected.Manifest.Components.Where(old => changed.Contains(old.Name) && old.Type != 100))
                     project.VBComponents.Remove(project.VBComponents.Item(old.Name));
@@ -173,12 +177,35 @@ namespace VBAi
                                     throw new InvalidOperationException("The imported form identity changed before code readback.");
                             });
                             if (System.Runtime.InteropServices.Marshal.IsComObject((object)imported))
-                                FormFontRestoration.Restore((object)imported, formFonts[next.Name], () => RequireImportedForm(next.Name, (object)imported));
+                                FormFontRestoration.Restore((object)imported, formFonts[next.Name],
+                                    () => RequireImportedForm(next.Name, (object)imported),
+                                    observation != null && observation.FormName == next.Name ? observation : null);
                         }
                     }
                 }
+                }
+                catch (Exception error)
+                {
+                    try { observation?.Failure(error); }
+                    catch (Exception receiptError) { throw new AggregateException("Root font observation failed while recording the native failure.", error, receiptError); }
+                    throw;
+                }
             }
-            if (!Capture().SameAs(target)) throw new InvalidOperationException(UiText.Get("The VBE did not preserve the imported sources exactly. Use Restore or check the project."));
+            bool exact;
+            try { exact = Capture().SameAs(target); observation?.Complete(exact); }
+            catch (Exception error)
+            {
+                try { observation?.Failure(error); }
+                catch (Exception receiptError) { throw new AggregateException("Root font observation failed while recording the final comparison failure.", error, receiptError); }
+                throw;
+            }
+            if (!exact)
+            {
+                var error = new InvalidOperationException(UiText.Get("The VBE did not preserve the imported sources exactly. Use Restore or check the project."));
+                try { observation?.Failure(error); }
+                catch (Exception receiptError) { throw new AggregateException("Root font observation failed while recording the exact comparison refusal.", error, receiptError); }
+                throw error;
+            }
         }
 
         /// <summary>Balances fresh identity readback references without releasing the imported component lease.</summary>
