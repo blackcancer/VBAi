@@ -30,6 +30,8 @@ namespace VBAi.Tests.Integration
         private bool owned;
         // Retain a process handle before shutdown so even a fast crash remains observable.
         private Process ownedProcess;
+        // This fixture owns and releases the optional embedded-project identity lease.
+        private IntPtr embeddedGitProjectIdentity;
 
         /// <summary>Crée une fixture avant son initialisation par <see cref="Start"/>.</summary>
         private ExcelVbeFixture() { }
@@ -54,6 +56,13 @@ namespace VBAi.Tests.Integration
         {
             if (Environment.GetEnvironmentVariable("VBAi_RUN_EXCEL_TESTS") != "1")
                 Assert.Inconclusive("Excel automation is opt-in. Set VBAi_RUN_EXCEL_TESTS=1.");
+            string desktop = Environment.GetEnvironmentVariable("VBAi_TEST_DESKTOP_NAME");
+            if (!string.IsNullOrWhiteSpace(desktop))
+            {
+                IsolatedTestDesktop.RequireCurrent(desktop);
+                return StartOwnedWithTrace(ExcelOwnedBootstrapPlan.RequireLocalAbsolutePath(
+                    Environment.GetEnvironmentVariable(VbeInspectionTrace.EnvironmentName)));
+            }
             var excelType = Type.GetTypeFromProgID("Excel.Application");
             if (excelType == null) Assert.Inconclusive("Excel.Application is unavailable.");
             var existing = Process.GetProcessesByName("EXCEL");
@@ -251,6 +260,13 @@ namespace VBAi.Tests.Integration
                     }
                 }
             else writeDiagnostics();
+            if (privateDesktopChild != null)
+            {
+                Assert.IsTrue(privateDesktopChild.Wait(0), "The original private launch handle must observe exit.");
+                Assert.AreEqual(0u, privateDesktopChild.ExitCode(), "The original private launch exited abnormally.");
+                privateDesktopChild.Dispose();
+                privateDesktopChild = null;
+            }
             if (closeFailure != null || quitFailure != null || evidenceFailure != null)
                 throw new AggregateException("Excel Close/Quit reported errors; shutdown.json preserves diagnostics.",
                     new[] { closeFailure, quitFailure, evidenceFailure }.Where(error => error != null));
