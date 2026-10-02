@@ -61,6 +61,7 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\src\VBAi\VBAi.csproj" />
+    <ProjectReference Include="..\VBAi.Desktop.Helper\VBAi.Desktop.Helper.csproj" />
     <ProjectReference Include="..\VBAi.Providers.Smoke\VBAi.Providers.Smoke.csproj" ReferenceOutputAssembly="false" />
   </ItemGroup>
   <Target Name="CopyProviderFixture" AfterTargets="Build">

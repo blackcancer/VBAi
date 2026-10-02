@@ -11,6 +11,7 @@ using System.Threading;
 using System.Web.Script.Serialization;
 using System.Windows.Automation;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+using VBAi.Desktop.Helper;
 
 namespace VBAi.Tests.Integration
 {
@@ -406,12 +407,26 @@ namespace VBAi.Tests.Integration
                 if (!SelectedLabel(scopeSelection, context.Label))
                 {
                     Pattern<ExpandCollapsePattern>(scopePicker, ExpandCollapsePattern.Pattern).Expand();
-                    var entries = scopePicker.FindAll(TreeScope.Descendants,
-                        new AndCondition(new PropertyCondition(AutomationElement.ControlTypeProperty, ControlType.ListItem),
-                            new PropertyCondition(AutomationElement.NameProperty, context.Label))).Cast<AutomationElement>().ToArray();
-                    if (entries.Length != 1 || entries[0].Current.ProcessId != context.Fixture.ProcessId)
-                        throw new InvalidOperationException("The unique canonical Word chat scope has no selectable UI item.");
-                    Pattern<SelectionItemPattern>(entries[0], SelectionItemPattern.Pattern).Select();
+                    AutomationElement selected;
+                    if (PrivateDesktopUiAction.Enabled)
+                    {
+                        string desktop = Environment.GetEnvironmentVariable("VBAi_QUALIFICATION_DESKTOP");
+                        IsolatedTestDesktop.RequireCurrent(desktop);
+                        selected = NativeComboListDiscovery.RequireExactItem(
+                            UiHandle(scopePicker.Current.NativeWindowHandle), context.Label,
+                            context.Fixture.ProcessId, context.Scope.ThreadId, desktop,
+                            IsolatedTestDesktop.DesktopName, context.Record);
+                    }
+                    else
+                    {
+                        var entries = scopePicker.FindAll(TreeScope.Descendants,
+                            new AndCondition(new PropertyCondition(AutomationElement.ControlTypeProperty, ControlType.ListItem),
+                                new PropertyCondition(AutomationElement.NameProperty, context.Label))).Cast<AutomationElement>().ToArray();
+                        if (entries.Length != 1 || entries[0].Current.ProcessId != context.Fixture.ProcessId)
+                            throw new InvalidOperationException("The unique canonical Word chat scope has no selectable UI item.");
+                        selected = entries[0];
+                    }
+                    Pattern<SelectionItemPattern>(selected, SelectionItemPattern.Pattern).Select();
                     Pattern<ExpandCollapsePattern>(scopePicker, ExpandCollapsePattern.Pattern).Collapse();
                 }
                 var watch = Stopwatch.StartNew(); int stable = 0;

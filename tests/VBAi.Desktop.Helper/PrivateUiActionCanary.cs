@@ -117,6 +117,88 @@ namespace VBAi.Desktop.Helper
             throw new InvalidOperationException("Virtual item has no bounded native ancestor.");
         }
 
+        private static AutomationElement ObserveExactPopupItem(IntPtr popup, int processId,
+            Action<object> receipt)
+        {
+            var clock = Stopwatch.StartNew();
+            object last = null; AutomationElement selected = null;
+            while (clock.Elapsed < TimeSpan.FromMilliseconds(1500))
+            {
+                try
+                {
+                    var root = AutomationElement.FromHandle(popup);
+                    var nodes = new List<AutomationElement>(); var pending = new Queue<AutomationElement>();
+                    pending.Enqueue(root);
+                    while (pending.Count != 0)
+                    {
+                        if (nodes.Count + pending.Count > 128)
+                            throw new InvalidOperationException("Synthetic popup raw UIA tree bound exceeded.");
+                        var node = pending.Dequeue(); nodes.Add(node);
+                        for (var child = TreeWalker.RawViewWalker.GetFirstChild(node); child != null;
+                            child = TreeWalker.RawViewWalker.GetNextSibling(child))
+                        {
+                            if (nodes.Count + pending.Count >= 128)
+                                throw new InvalidOperationException("Synthetic popup raw UIA tree bound exceeded.");
+                            pending.Enqueue(child);
+                        }
+                    }
+                    var shapes = nodes.Select(node => new {
+                        Role = node.Current.ControlType.ProgrammaticName,
+                        ExactLabel = string.Equals(node.Current.Name, GitLabel, StringComparison.Ordinal),
+                        Pid = node.Current.ProcessId, Hwnd = node.Current.NativeWindowHandle,
+                        NativeAncestor = NativeAncestor(node).ToInt64(),
+                        Enabled = node.Current.IsEnabled, Offscreen = node.Current.IsOffscreen
+                    }).ToArray();
+                    var exact = nodes.Where(node => node.Current.ControlType == ControlType.MenuItem &&
+                        node.Current.Name == GitLabel && node.Current.ProcessId == processId &&
+                        node.Current.IsEnabled && !node.Current.IsOffscreen &&
+                        node.Current.NativeWindowHandle == 0 && NativeAncestor(node) == popup).ToArray();
+                    last = new { Popup = popup.ToInt64(), RootRole = root.Current.ControlType.ProgrammaticName,
+                        RootPid = root.Current.ProcessId, RawCount = nodes.Count,
+                        Roles = shapes.GroupBy(shape => shape.Role).Select(group => new { Role = group.Key, Count = group.Count() }).ToArray(),
+                        ExactLabelCount = shapes.Count(shape => shape.ExactLabel), EligibleCount = exact.Length,
+                        ExactShapes = shapes.Where(shape => shape.ExactLabel).ToArray() };
+                    if (root.Current.ControlType == ControlType.Menu && root.Current.ProcessId == processId && exact.Length == 1)
+                    { selected = exact[0]; break; }
+                }
+                catch (Exception error)
+                {
+                    last = new { Popup = popup.ToInt64(), ErrorType = error.GetType().FullName,
+                        HResult = "0x" + unchecked((uint)error.HResult).ToString("X8") };
+                }
+                Thread.Sleep(25); // Read-only UIA settlement; no default action is issued here.
+            }
+            Guid iid = IAccessibleId; IAccessible accessibility = null;
+            object msaa = null;
+            try
+            {
+                int hr = AccessibleObjectFromWindow(popup, ObjidClient, ref iid, out accessibility);
+                if (hr == 0 && accessibility != null)
+                {
+                    int count = accessibility.accChildCount;
+                    if (count < 0 || count > 64) throw new InvalidOperationException("Synthetic popup MSAA bound exceeded.");
+                    var children = new List<object>();
+                    for (int child = 1; child <= count; child++)
+                    {
+                        string name = null; object role = null;
+                        try { name = accessibility.get_accName(child); role = accessibility.get_accRole(child); }
+                        catch (COMException error)
+                        { children.Add(new { Child = child, ErrorHResult = "0x" + unchecked((uint)error.ErrorCode).ToString("X8") }); continue; }
+                        children.Add(new { Child = child, Role = Convert.ToString(role),
+                            ExactLabel = string.Equals(name, GitLabel, StringComparison.Ordinal) });
+                    }
+                    msaa = new { HResult = "0x00000000", ChildCount = count, Children = children.ToArray() };
+                }
+                else msaa = new { HResult = "0x" + unchecked((uint)hr).ToString("X8") };
+            }
+            catch (Exception error)
+            { msaa = new { ErrorType = error.GetType().FullName, HResult = "0x" + unchecked((uint)error.HResult).ToString("X8") }; }
+            finally { if (accessibility != null && Marshal.IsComObject(accessibility)) Marshal.ReleaseComObject(accessibility); }
+            receipt(new { Phase = "VirtualPopupDiscovery", UiA = last, Msaa = msaa,
+                Selected = selected != null, ActionDelivered = false });
+            return selected;
+        }
+
         private sealed class Observation
         {
             internal readonly bool Proven;
@@ -253,7 +335,7 @@ namespace VBAi.Desktop.Helper
                     receipt(new { Phase = "CanaryReady", ProcessId = process, UiThreadId = uiThread,
                         RootHandle = rootHandle.ToInt64(), Desktop = expectedDesktop,
                         Actions = ActionMap });
-                    RunActions(form, root, rootHandle, uiThread, (int)process, receipt);
+                    RunActions(form, root, rootHandle, uiThread, (int)process, expectedDesktop, receipt);
                 }
                 finally
                 {
@@ -274,7 +356,7 @@ namespace VBAi.Desktop.Helper
         }
 
         private static void RunActions(CanaryForm form, AutomationElement root, IntPtr rootHandle,
-            uint uiThread, int processId, Action<object> receipt)
+            uint uiThread, int processId, string expectedDesktop, Action<object> receipt)
         {
             Probe(receipt, "TextBox", () => {
             var text = One(root, "CanaryText", processId);
@@ -308,17 +390,22 @@ namespace VBAi.Desktop.Helper
                 () => new Observation(expand.Current.ExpandCollapseState == ExpandCollapseState.Expanded,
                     new { State = expand.Current.ExpandCollapseState.ToString() })))
             {
-                var entries = combo.FindAll(TreeScope.Descendants,
-                    new PropertyCondition(AutomationElement.NameProperty, "Scope B")).Cast<AutomationElement>()
-                    .Where(item => item.Current.ControlType == ControlType.ListItem && item.Current.ProcessId == processId).ToArray();
-                if (entries.Length != 1) receipt(new { Phase = "ActionGap", Name = "ComboBoxSelect", Reason = "Exact list item absent or ambiguous." });
-                else Once(receipt, "ComboBoxSelect", "SelectionItemPattern.Select",
-                    () => Pattern<SelectionItemPattern>(entries[0], SelectionItemPattern.Pattern).Select(),
-                    () => { int selected = (int)form.Invoke((Func<int>)(() => form.Combo.SelectedIndex));
-                        return new Observation(selected == 1, new { SelectedIndex = selected }); });
-                Once(receipt, "ComboBoxCollapse", "ExpandCollapsePattern.Collapse", expand.Collapse,
-                    () => new Observation(expand.Current.ExpandCollapseState == ExpandCollapseState.Collapsed,
-                        new { State = expand.Current.ExpandCollapseState.ToString() }));
+                try
+                {
+                    AutomationElement entry = NativeComboListDiscovery.RequireExactItem(
+                        new IntPtr(combo.Current.NativeWindowHandle), "Scope B", processId, uiThread,
+                        expectedDesktop, thread => ObjectName(GetThreadDesktop(thread)), receipt);
+                    Once(receipt, "ComboBoxSelect", "SelectionItemPattern.Select",
+                        () => Pattern<SelectionItemPattern>(entry, SelectionItemPattern.Pattern).Select(),
+                        () => { int selected = (int)form.Invoke((Func<int>)(() => form.Combo.SelectedIndex));
+                            return new Observation(selected == 1, new { SelectedIndex = selected }); });
+                }
+                finally
+                {
+                    Once(receipt, "ComboBoxCollapse", "ExpandCollapsePattern.Collapse", expand.Collapse,
+                        () => new Observation(expand.Current.ExpandCollapseState == ExpandCollapseState.Collapsed,
+                            new { State = expand.Current.ExpandCollapseState.ToString() }));
+                }
             }
             else receipt(new { Phase = "ActionGap", Name = "ComboBoxSelectAndCollapse", Reason = "Expand not proved; no dependent action." });
             });
@@ -343,15 +430,11 @@ namespace VBAi.Desktop.Helper
             if (opened && (bool)form.Invoke((Func<bool>)(() => form.OptionsMenu.Visible)))
             {
                 IntPtr popup = (IntPtr)form.Invoke((Func<IntPtr>)(() => form.OptionsMenu.Handle));
-                var popupElement = AutomationElement.FromHandle(popup);
-                var items = popupElement.FindAll(TreeScope.Descendants,
-                    new PropertyCondition(AutomationElement.ControlTypeProperty, ControlType.MenuItem))
-                    .Cast<AutomationElement>().Where(item => item.Current.Name == GitLabel &&
-                        item.Current.ProcessId == processId).ToArray();
-                if (items.Length != 1 || popupElement.Current.ControlType != ControlType.Menu)
+                var gitItem = ObserveExactPopupItem(popup, processId, receipt);
+                if (gitItem == null)
                     receipt(new { Phase = "ActionGap", Name = "VirtualGitItem", Reason = "Exact popup/menu item absent or ambiguous." });
                 else Once(receipt, "VirtualGitItem", "IAccessible.accDoDefaultAction",
-                    () => DefaultActionOnce(rootHandle, popup, items[0], uiThread, processId),
+                    () => DefaultActionOnce(rootHandle, popup, gitItem, uiThread, processId),
                     () => { int count = (int)form.Invoke((Func<int>)(() => form.GitClicks));
                         return new Observation(count == 1, new { Clicks = count }); });
             }
