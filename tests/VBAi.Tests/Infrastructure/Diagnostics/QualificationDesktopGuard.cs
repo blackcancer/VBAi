@@ -20,8 +20,7 @@ namespace VBAi.Tests.Integration
             string actual = IsolatedTestDesktop.DesktopName(thread), input = IsolatedTestDesktop.InputDesktopName();
             IsolatedTestDesktop.RequireObserved(expected, actual, input);
             string evidence = Environment.GetEnvironmentVariable("VBAi_QUALIFICATION_DESKTOP_EVIDENCE");
-            if (string.IsNullOrEmpty(evidence) || !Path.IsPathRooted(evidence) || !Directory.Exists(evidence))
-                throw new InvalidOperationException("A campaign-owned desktop evidence directory is required.");
+            RequireEvidence(evidence);
             string receipt = Path.Combine(evidence, "testhost-" + Process.GetCurrentProcess().Id + "-" + Guid.NewGuid().ToString("N") + ".json");
             using (var file = new FileStream(receipt, FileMode.CreateNew, FileAccess.Write, FileShare.Read))
             using (var writer = new StreamWriter(file, new UTF8Encoding(false)))
@@ -30,6 +29,12 @@ namespace VBAi.Tests.Integration
                     ThreadId = thread, TestAssemblyMvid = typeof(QualificationDesktopGuard).Module.ModuleVersionId,
                     Utc = DateTime.UtcNow.ToString("o") }));
             context.AddResultFile(receipt);
+        }
+
+        internal static void RequireEvidence(string evidence)
+        {
+            if (string.IsNullOrEmpty(evidence) || !Path.IsPathRooted(evidence) || !Directory.Exists(evidence))
+                throw new InvalidOperationException("A campaign-owned desktop evidence directory is required.");
         }
     }
 }
