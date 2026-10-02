@@ -12,8 +12,12 @@ Its one Excel trial stops after opening the synthetic copy, when the fixture
 hash reader conflicts with Excel's file sharing. Baseline capture, menu, import
 and font transfer are NOT_RUN. Original normal exit, unchanged source/copy
 bytes and restored registration are independently verified. The tests-only
-reader correction has focused managed regressions; its full gate and native
-discriminator remain pending. Q-027 stays open. See
+reader correction passes the complete default managed gate in the PR 19
+integration source `3ff51bd`, MVID `d5b638d6-56b4-4cd1-9d39-6b1fb9c5722e`.
+PR 19 is merged into main, and the local qualification branch is synchronized.
+The installed DLL is unchanged; the next native discriminator remains NOT_RUN.
+Q-027 stays open. See
+[PR integration validation](test-coverage.md#pr-19-integration-managed-gate-2026-10-02) and
 [recorded validation](test-coverage.md#retained-userform-copy-preparation-failure-2026-10-02).
 
 The latest gated diagnostic source `a5649c3`, MVID

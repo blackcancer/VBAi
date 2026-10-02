@@ -1,5 +1,39 @@
 # Recorded validation
 
+## PR 19 integration managed gate (2026-10-02)
+
+Source `3ff51bd4350c480e716061a82a3429006dd4fc65` integrates PR 19 with the
+native qualification branch. Conflict resolution preserves the adapter-only
+exit observation bound and the Word-only message pump and diagnostic override.
+Their mirror tests cover the combined policy. An initial focused run failed
+because its new Access discard fixture still expected the former default bound;
+that expectation was corrected before the complete gate.
+
+The isolated Debug solution build has zero warnings and errors. The complete
+default VSTest suite reports **3,868 passed, 0 failed, 203 inactive, 4,071 total**.
+Native and authenticated-provider opt-ins are cleared process-locally, and no
+coverage collector is enabled. Product MVID is
+`d5b638d6-56b4-4cd1-9d39-6b1fb9c5722e`; product SHA-256 is
+`E7E06C9E4DAF5BDD8B62B2490B5EA04606AC83A1E9DC1C8E95256D0399DD4FB5`;
+test assembly SHA-256 is
+`3B0654213877C7704CAC6DE5E682E3E2CD7F066D840FB8CE3A8799C5E1093837`.
+Both hashes remain unchanged after the gate. Evidence is under
+`artifacts/pr19-integration-20261002/complete-managed-durable-pwsh/`.
+
+The interrupted initial complete-suite attempt produced no terminal TRX and
+counts as unverified. The first durable wrapper stopped before VSTest because
+Windows PowerShell could not resolve `Get-FileHash`; the successful wrapper uses
+PowerShell 7. Those attempts remain separate from the completed gate.
+
+PR 19 is merged into GitHub main at
+`4b382b96b8f4e8f8615fa65bb41ab570d35eacd3`. Local synchronization at `ad7f9f4`
+changes history only; production and test files are identical to the gated source.
+The installed DLL and registration are unchanged. This managed gate includes the
+shared-read workbook hashing correction, but does not execute a new UserForm
+import, font transfer, save/reopen, Office testing subsystem or SOLIDWORKS trial.
+Q-027 and the other native release gates remain open; the earlier native results
+below retain their original candidate identities.
+
 ## Retained UserForm copy preparation failure (2026-10-02)
 
 Frozen source `6d3d802c37ae13cbd2f706621bd9d78fce3fc70f` adds a tests-only
