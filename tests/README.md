@@ -76,6 +76,20 @@ root font before the initial SaveAs, records its intent and requires the exact
 descriptor in the saved/reopened baseline before publishing the manifest. An
 absent profile keeps the default preparation unchanged. A successful explicit
 profile would not qualify default Tahoma serialization or Frame 8.27 fidelity.
+The separate `RetainedSyntheticTahoma825` profile is restricted to LabelButton
+and `AfterInitialCapture`. Its
+`VBAi_TEST_ROOT_FONT_OBSERVATION_SOURCE_WORKBOOK` must identify the retained
+synthetic `EmbeddedGit.xlsm` from the declared observation artifact, with
+SHA-256 `B5264F941E0FD398A9DE03B203DB7A31A6DB9FF939B894E7829A0203C76F4B73`.
+The fixture normally closes its empty owned workbook, creates one fresh copy,
+and opens it with events and macros disabled. It does not save, replace code
+markers or seed a font. Before scalar font readback or menu emission, it must
+capture the pinned component/source/resource hashes and explicit Tahoma 8.25
+root descriptor. Independent bridge export must then remain exact. A new
+UI correlation nonce is separate from the retained synthetic source marker.
+Wrong paths/hashes, occupied destinations, reparse points or an implicit-default
+baseline are refused; an uncertain native Close/Open preserves the host.
+This is a prepared discriminator, not proof of root restoration or Frame fidelity.
 Capture-only and persistence scenarios cannot enable this diagnostic. Without
 the opt-in, there are no additional font getters, exports or writes. Recorded
 instrumented trials reach terminal exact snapshot refusals; this diagnostic
