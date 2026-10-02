@@ -164,7 +164,7 @@ namespace VBAi.Desktop.Helper
                 }
                 catch (Exception error)
                 {
-                    last = new { Popup = popup.ToInt64(), ErrorType = error.GetType().FullName,
+                    last = new { Popup = popup.ToInt64(), ErrorType = error.GetType().FullName, Error = error.Message,
                         HResult = "0x" + unchecked((uint)error.HResult).ToString("X8") };
                 }
                 Thread.Sleep(25); // Read-only UIA settlement; no default action is issued here.
@@ -193,7 +193,7 @@ namespace VBAi.Desktop.Helper
                 else msaa = new { HResult = "0x" + unchecked((uint)hr).ToString("X8") };
             }
             catch (Exception error)
-            { msaa = new { ErrorType = error.GetType().FullName, HResult = "0x" + unchecked((uint)error.HResult).ToString("X8") }; }
+            { msaa = new { ErrorType = error.GetType().FullName, Error = error.Message, HResult = "0x" + unchecked((uint)error.HResult).ToString("X8") }; }
             finally { if (accessibility != null && Marshal.IsComObject(accessibility)) Marshal.ReleaseComObject(accessibility); }
             receipt(new { Phase = "VirtualPopupDiscovery", UiA = last, Msaa = msaa,
                 Selected = selected != null, ActionDelivered = false });
@@ -222,7 +222,7 @@ namespace VBAi.Desktop.Helper
                 try { immediate = readback(); }
                 catch (Exception readbackError) { readbackErrorType = readbackError.GetType().FullName; }
                 receipt(new { Phase = "ActionFailedOrUncertain", Name = name, Method = method,
-                    ErrorType = error.GetType().FullName, HResult = "0x" + unchecked((uint)error.HResult).ToString("X8"),
+                    ErrorType = error.GetType().FullName, Error = error.Message, HResult = "0x" + unchecked((uint)error.HResult).ToString("X8"),
                     ImmediateState = immediate == null ? null : immediate.State,
                     ImmediateReadbackProven = immediate != null && immediate.Proven,
                     ReadbackErrorType = readbackErrorType, Attempts = 1, Replay = false });
@@ -242,7 +242,7 @@ namespace VBAi.Desktop.Helper
             }
             catch (Exception error)
             {
-                receipt(new { Phase = "ReadbackUnavailable", Name = name, ErrorType = error.GetType().FullName,
+                receipt(new { Phase = "ReadbackUnavailable", Name = name, ErrorType = error.GetType().FullName, Error = error.Message,
                     HResult = "0x" + unchecked((uint)error.HResult).ToString("X8"), Replay = false });
                 return false;
             }
@@ -351,7 +351,7 @@ namespace VBAi.Desktop.Helper
                     }
                     catch (Exception error)
                     {
-                        receipt(new { Phase = "CanaryCleanupFailed", ErrorType = error.GetType().FullName,
+                        receipt(new { Phase = "CanaryCleanupFailed", ErrorType = error.GetType().FullName, Error = error.Message,
                             HResult = "0x" + unchecked((uint)error.HResult).ToString("X8"), ForceTermination = false });
                     }
                     if (!ui.Join(TimeSpan.FromSeconds(10)))
@@ -435,6 +435,16 @@ namespace VBAi.Desktop.Helper
             if (opened && (bool)form.Invoke((Func<bool>)(() => form.OptionsMenu.Visible)))
             {
                 IntPtr popup = (IntPtr)form.Invoke((Func<IntPtr>)(() => form.OptionsMenu.Handle));
+                IntPtr owner = GetWindow(popup, GwOwner);
+                var popupClass = new StringBuilder(128); var ownerClass = new StringBuilder(128);
+                GetClassName(popup, popupClass, popupClass.Capacity); GetClassName(owner, ownerClass, ownerClass.Capacity);
+                uint ownerPid; uint ownerThread = GetWindowThreadProcessId(owner, out ownerPid);
+                receipt(new { Phase = "SyntheticPopupOwnerObserved", Root = rootHandle.ToInt64(),
+                    Popup = popup.ToInt64(), PopupClass = popupClass.ToString(), Owner = owner.ToInt64(),
+                    OwnerClass = ownerClass.ToString(), OwnerPid = ownerPid, OwnerThread = ownerThread,
+                    OwnerLive = IsWindow(owner), OwnerVisible = IsWindowVisible(owner),
+                    OwnerParent = GetParent(owner).ToInt64(), OwnerOwner = GetWindow(owner, GwOwner).ToInt64(),
+                    OwnerStyle = GetWindowLong(owner, -16), OwnerExStyle = GetWindowLong(owner, -20) });
                 var gitItem = ObserveExactPopupItem(popup, processId, receipt);
                 if (gitItem == null)
                     receipt(new { Phase = "ActionGap", Name = "VirtualGitItem", Reason = "Exact popup/menu item absent or ambiguous." });
@@ -460,7 +470,7 @@ namespace VBAi.Desktop.Helper
             catch (Exception error)
             {
                 receipt(new { Phase = "ActionPreflightGap", Name = name,
-                    ErrorType = error.GetType().FullName,
+                    ErrorType = error.GetType().FullName, Error = error.Message,
                     HResult = "0x" + unchecked((uint)error.HResult).ToString("X8"),
                     ActionDelivered = false, Replay = false });
             }
