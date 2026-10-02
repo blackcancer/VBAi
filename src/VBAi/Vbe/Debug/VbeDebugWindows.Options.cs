@@ -281,6 +281,32 @@ namespace VBAi
                 /// <param name="name">Libellé UI Automation du contrôle.</param>
                 /// <returns><see langword="true"/> si le nom correspond à une liste Code Colors prise en charge.</returns>
         private static bool IsCodeColorList(string name) => new[] { "code colors", "couleurs du code", "color text", "texte couleur" }.Contains(NormalizeOptionName(name));
+
+        /// <summary>Writes one owned native checkbox without a focus-dependent UIA Toggle provider.</summary>
+        private static void WriteOptionsCheckbox(IntPtr dialog, IntPtr button, bool desired)
+        {
+            Action guard = () => {
+                GuardOptionsOwnedWindow(dialog, button, "Button");
+                int kind = OptionsComboStyle(button, -16) & 0xf;
+                if (!IsWindowVisible(button) || !OptionsWindowEnabled(button) || (kind != 2 && kind != 3))
+                    throw new InvalidOperationException("The exact native Options checkbox is unavailable or not a two-state checkbox.");
+            };
+            SetOptionsCheckbox(desired,
+                () => { guard(); return SendMessageInt(button, 0xF0, IntPtr.Zero, IntPtr.Zero).ToInt32(); },
+                () => { guard(); SendMessageInt(button, BmClick, IntPtr.Zero, IntPtr.Zero); });
+        }
+
+        /// <summary>Requires exact before/after native state and never retries an uncertain click.</summary>
+        internal static void SetOptionsCheckbox(bool desired, Func<int> read, Action click)
+        {
+            if (read == null || click == null) throw new ArgumentException("Native read and click are required.");
+            int before = read(), expected = desired ? 1 : 0;
+            if (before != 0 && before != 1) throw new InvalidOperationException("An indeterminate or unreadable option is not writable.");
+            if (before == expected) return;
+            click();
+            if (read() != expected)
+                throw new InvalidOperationException("The native checkbox did not retain the requested state; do not retry automatically.");
+        }
                 /// <summary>Reconnaît uniquement les libellés des trois palettes de catégorie.</summary>
                 /// <param name="name">Libellé UI Automation du contrôle.</param>
                 /// <returns><see langword="true"/> si le nom correspond à une palette de couleur prise en charge.</returns>

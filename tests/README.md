@@ -447,6 +447,28 @@ qualifies only the documented refusal; it does not qualify a font-size mutation.
 The evidence root is one-shot. Failed, pending or uncertain work must not be
 replayed; preserve its receipts and exact host ownership for recovery.
 
+Preparation with `-Scenario Margin` selects the separate checkbox-only native
+method and a reduced matrix (read stability, real margin transition, complete
+restoration and normal exit). A pass qualifies that diagnostic, not full Format.
+`tools/tests/Set-Q026Candidate.ps1` temporarily changes only the existing per-user
+x64 add-in CodeBase and matching version entry, with an explicit fresh backup.
+It refuses loaded VBE hosts or an unexpected assembly/original CodeBase. Restore
+the original registration after all test-owned hosts have exited normally; the
+script refuses to overwrite a registration changed by another task.
+
+For a retained Q-026 host, `tools/probes/Observe-Q026Host.ps1` defaults to an
+independent PID/start/desktop window inventory, without bridge calls or input.
+Its explicit `-CancelObservationPath` recovery targets only the captured owned
+Options dialog and sends Cancel once on that desktop. It must not be used to
+replay an uncertain cancellation. `Recover-Q026Preferences.ps1` compensates only
+the captured positively committed entries with fresh revisions and exact
+readbacks; any failed guard or unknown reply stops further dispatch. A complete
+baseline hash and all tab structures must match before
+`Close-Q026RecoveredHost.ps1` can close the sole saved disposable seed and Quit
+once. Recovery receipts do not convert a failed native TRX into acceptance, and
+their newly captured process handle does not prove the lost campaign handle's
+shutdown lifecycle. These helpers do not recover arbitrary user documents.
+
 The SOLIDWORKS workflow must not create or kill an application instance on the
 user's behalf. A host fixture can use its own native save helper; that result does
 not automatically qualify VBAi's `save_host_document` adapter.

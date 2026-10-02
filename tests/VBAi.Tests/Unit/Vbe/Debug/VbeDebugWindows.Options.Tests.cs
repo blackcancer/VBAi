@@ -616,7 +616,7 @@ namespace VBAi.Tests.Unit
         }
 
         [TestMethod]
-        public void NativeOptionsWriteRealUiaPatternsAndRefuseMissingPatternsOrReadOnlyValues()
+        public void NativeOptionsRefusesHandlelessCheckboxAndPreservesOtherUiaPatterns()
         {
             var root=new AutomationNode{Name="Options",Kind=System.Windows.Automation.ControlType.Window};
             root.Add(new AutomationNode{Name="Editor",Kind=System.Windows.Automation.ControlType.TabItem}.With(System.Windows.Automation.SelectionItemPattern.Pattern));
@@ -628,9 +628,8 @@ namespace VBAi.Tests.Unit
             {
                 BindOwnedOptionsDialog(scene, host);
                 var native=Native<VbeDebugWindows.IWritableOptionsProbe>("NativeOptionsProbe");native.Tabs(host.Handle);
-                native.Write(host.Handle,0,check.Name,"ControlType.CheckBox",true);Assert.AreEqual(System.Windows.Automation.ToggleState.On,check.ToggleState);
-                native.Write(host.Handle,0,check.Name,"ControlType.CheckBox",true);Assert.AreEqual(System.Windows.Automation.ToggleState.On,check.ToggleState);
-                native.Write(host.Handle,0,check.Name,"ControlType.CheckBox",false);Assert.AreEqual(System.Windows.Automation.ToggleState.Off,check.ToggleState);
+                Assert.ThrowsException<InvalidOperationException>(() => native.Write(host.Handle,0,check.Name,"ControlType.CheckBox",true));
+                Assert.AreEqual(System.Windows.Automation.ToggleState.Off,check.ToggleState, "A handleless checkbox must not fall back to UIA Toggle.");
                 native.Write(host.Handle,0,radio.Name,"ControlType.RadioButton",true);Assert.IsTrue(radio.Selected);
                 native.Write(host.Handle,0,edit.Name,"ControlType.Edit",8);Assert.AreEqual("8",edit.Text);
                 check.ToggleState=System.Windows.Automation.ToggleState.Indeterminate;Assert.ThrowsException<InvalidOperationException>(()=>native.Write(host.Handle,0,check.Name,"ControlType.CheckBox",true));check.ToggleState=System.Windows.Automation.ToggleState.Off;
@@ -649,6 +648,29 @@ namespace VBAi.Tests.Unit
                 var slider=root.Add(new AutomationNode{Name="Slider",Kind=System.Windows.Automation.ControlType.Slider});Assert.ThrowsException<InvalidOperationException>(()=>native.Write(host.Handle,0,slider.Name,"ControlType.Slider",8));
             }
         }
+        [TestMethod]
+        public void NativeCheckboxUsesOwnedWin32ButtonAndNeverTheUiaToggleProvider()
+        {
+            using (var fixture = new OwnedNativeOptionsControls())
+            {
+                IntPtr button = IntPtr.Zero;
+                fixture.Host.Invoke(owner => button = OptionsFixtureCreate(0, "Button", "", 0x50000003,
+                    10, 10, 160, 25, owner, new IntPtr(540), IntPtr.Zero, IntPtr.Zero));
+                Assert.AreNotEqual(IntPtr.Zero, button);
+                var node = fixture.Root.Add(new AutomationNode { Name = "Margin Indicator Bar", Kind = ControlType.CheckBox,
+                    NativeHandle = button.ToInt32(), ToggleState = ToggleState.Off }.With(TogglePattern.Pattern));
+                var probe = Native<VbeDebugWindows.IWritableOptionsProbe>("NativeOptionsProbe");
+                probe.Tabs(fixture.Host.Handle);
+                probe.Write(fixture.Host.Handle, 0, node.Name, "ControlType.CheckBox", true);
+                Assert.AreEqual(1, OptionsFixtureInteger(button, 0xF0, IntPtr.Zero, IntPtr.Zero).ToInt32());
+                Assert.AreEqual(ToggleState.Off, node.ToggleState, "The fake provider must never receive Toggle.");
+                probe.Write(fixture.Host.Handle, 0, node.Name, "ControlType.CheckBox", true);
+                probe.Write(fixture.Host.Handle, 0, node.Name, "ControlType.CheckBox", false);
+                Assert.AreEqual(0, OptionsFixtureInteger(button, 0xF0, IntPtr.Zero, IntPtr.Zero).ToInt32());
+                Assert.AreEqual(2, fixture.Notifications.Count(x => x.Item1 == 540), "Only the two real transitions notify the parent.");
+            }
+        }
+
         [TestMethod]
         public void NativeOptionsAcceptChecksEveryOkButtonBoundaryBeforeSendingOwnedClick()
         {

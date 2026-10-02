@@ -3,7 +3,8 @@ param(
     [switch]$Prepare,
     [string]$EvidenceRoot,
     [string]$InstalledDirectory,
-    [string]$PlanPath = (Join-Path $PSScriptRoot 'q026-plan.json')
+    [string]$PlanPath = (Join-Path $PSScriptRoot 'q026-plan.json'),
+    [ValidateSet('FullFormat','Margin')][string]$Scenario = 'FullFormat'
 )
 $ErrorActionPreference = 'Stop'
 function Write-Json($path, $value) {
@@ -33,12 +34,18 @@ if ($Prepare) {
     $files = @(Get-ChildItem -LiteralPath ([IO.Path]::GetDirectoryName($test)) -File | Where-Object {$_.Extension -in @('.dll','.exe','.config')} | ForEach-Object { @{Path=$_.FullName;Sha256=(Get-FileHash -LiteralPath $_.FullName).Hash} })
     $files += @{Path=$helper;Sha256=(Get-FileHash -LiteralPath $helper).Hash}
     $files += @{Path=$script;Sha256=(Get-FileHash -LiteralPath $script).Hash}
-    $plan = @{Scope='Q-026 owned Excel Format mutation/restoration; not all-host qualification';Repository=$repository;
+    $nativeMethod=if($Scenario -eq 'Margin'){'NativeMarginCheckboxRoundTripAndRestoreCompleteOptionsVersion'}else{'NativeFormatChoicesRoundTripAndRestoreCompleteOptionsVersion'}
+    $matrix=Get-Content -LiteralPath (Join-Path $PSScriptRoot 'q026-scenarios.json') -Raw -Encoding UTF8 | ConvertFrom-Json
+    if($Scenario -eq 'Margin'){
+        $matrix.Cases=@($matrix.Cases | Where-Object {$_.Id -in @('read-stability','margin','complete-restoration','normal-exit')})
+        $matrix.Scope='Owned disposable Excel margin-checkbox diagnostic only; not the full Format matrix'
+    }
+    $plan = @{Scope=('Q-026 owned Excel '+$Scenario+' mutation/restoration; not all-host qualification');Scenario=$Scenario;Repository=$repository;
         SourceCommit=(& git -C $repository rev-parse HEAD);SourceStatus=@(& git -C $repository status --porcelain);
         InstalledProduct=$installed;ProductSha256=$hash;ProductMvid=([Reflection.Assembly]::ReflectionOnlyLoadFrom($installed)).ManifestModule.ModuleVersionId.ToString('D');
         EvidenceRoot=$EvidenceRoot;TestAssembly=$test;HelperAssembly=$helper;FrozenFiles=$files;
-        Matrix=(Get-Content -LiteralPath (Join-Path $PSScriptRoot 'q026-scenarios.json') -Raw | ConvertFrom-Json);
-        NativeMethod='VBAi.Tests.Integration.Hosts.Excel.ExcelFormatOptionsTests.NativeFormatChoicesRoundTripAndRestoreCompleteOptionsVersion';
+        Matrix=$matrix;
+        NativeMethod=('VBAi.Tests.Integration.Hosts.Excel.ExcelFormatOptionsTests.'+$nativeMethod);
         QuietHostPeriodSeconds=30;NoNativeReplay=$true;NoForceTermination=$true;PreparedUtc=[DateTime]::UtcNow.ToString('o')}
     Write-Json (Join-Path $EvidenceRoot 'q026-plan.json') $plan
     Write-Output ('Prepared '+$EvidenceRoot)

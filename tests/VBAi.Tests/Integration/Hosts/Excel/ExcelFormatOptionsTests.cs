@@ -28,6 +28,13 @@ namespace VBAi.Tests.Integration.Hosts.Excel
 
         [STATestMethod]
         public void NativeFormatChoicesRoundTripAndRestoreCompleteOptionsVersion()
+        { RunQualification(false); }
+
+        [STATestMethod]
+        public void NativeMarginCheckboxRoundTripAndRestoreCompleteOptionsVersion()
+        { RunQualification(true); }
+
+        private void RunQualification(bool marginOnly)
         {
             if (Environment.GetEnvironmentVariable("VBAi_RUN_EXCEL_TESTS") != "1")
                 Assert.Inconclusive("Excel automation is opt-in. Set VBAi_RUN_EXCEL_TESTS=1.");
@@ -47,10 +54,10 @@ namespace VBAi.Tests.Integration.Hosts.Excel
                     if (!string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("VBAi_TEST_DESKTOP_NAME")))
                         Environment.SetEnvironmentVariable(VbeInspectionTrace.EnvironmentName, trace);
                     return ExcelVbeFixture.StartOwnedWithTrace(trace);
-                }, QualifyReadyHost);
+                }, host => QualifyReadyHost(host, marginOnly));
         }
 
-        private void QualifyReadyHost(ExcelVbeFixture host)
+        private void QualifyReadyHost(ExcelVbeFixture host, bool marginOnly)
         {
             // No using/finally Dispose: uncertainty must retain this exact fixture and all owning COM references.
             DateTime startUtc = DateTime.MinValue;
@@ -65,7 +72,7 @@ namespace VBAi.Tests.Integration.Hosts.Excel
             var lifecycle = new ExcelFormatOptionsQualification(host.ProcessId, host.Command,
                 () => ObserveOptionsClosure(host.ProcessId, startUtc), () => RetainHost(host),
                 () => { host.Dispose(); AttachEvidence(host, startUtc, "ShutdownVerified", host.ShutdownDiagnostics); },
-                (phase, data) => AttachEvidence(host, startUtc, phase, data), verifyReadStability: true);
+                (phase, data) => AttachEvidence(host, startUtc, phase, data), verifyReadStability: true, marginOnly: marginOnly);
             lifecycle.Run();
         }
 

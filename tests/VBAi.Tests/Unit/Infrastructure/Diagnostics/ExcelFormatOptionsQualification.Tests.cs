@@ -13,6 +13,30 @@ namespace VBAi.Tests.Unit
     [TestClass, TestCategory("Unit")]
     public sealed class ExcelFormatOptionsQualificationTests
     {
+        [TestMethod]
+        public void FocusedMarginQualificationChangesAndRestoresOnlyTheRealCheckbox()
+        {
+            var probe = new Probe();
+            probe.Create(verifyReadStability: true, marginOnly: true).Run();
+            Assert.AreEqual(2, probe.Writes, "One transition and its single restoration are required.");
+            Assert.AreEqual("On", probe.Values["Margin Indicator Bar"]);
+            Assert.AreEqual(1, probe.Cleanup);
+            Assert.IsFalse(probe.Phases.Contains("FontIntent"));
+            Assert.IsFalse(probe.Phases.Contains("StaleVersionIntent"));
+            Assert.IsTrue(probe.Phases.Contains("BaselineRestored"));
+        }
+
+        [TestMethod]
+        public void ChangedCompleteTabsCannotPassRestorationWithAnUnchangedRevision()
+        {
+            var probe = new Probe { SemanticFault = "CompleteRestorationReadbackIntent" };
+            var runner = probe.Create();
+            Assert.IsNotNull(Failure(runner.Run));
+            Assert.IsTrue(runner.HostRetained);
+            Assert.AreEqual(0, probe.Cleanup);
+            Assert.IsFalse(probe.Phases.Contains("BaselineRestored"));
+        }
+
         private sealed class Probe
         {
             internal bool EmptySizes, CleanupFault, PreservationFault;
@@ -26,7 +50,7 @@ namespace VBAi.Tests.Unit
                 ["Normal Text.Foreground"] = "Black", ["Normal Text.Background"] = "White", ["Normal Text.Indicator"] = "Blue",
                 ["Keyword Text.Foreground"] = "Black", ["Keyword Text.Background"] = "White", ["Keyword Text.Indicator"] = "Blue" };
             internal string Category = "Normal Text", BaselineVersion;
-            internal ExcelFormatOptionsQualification Create(bool verifyReadStability = false)
+            internal ExcelFormatOptionsQualification Create(bool verifyReadStability = false, bool marginOnly = false)
             {
                 BaselineVersion = Version();
                 return new ExcelFormatOptionsQualification(42, Dispatch, ObserveClosure,
@@ -35,7 +59,7 @@ namespace VBAi.Tests.Unit
                     (phase, data) => {
                         Phases.Add(phase); Evidence.Add(Tuple.Create(phase, data));
                         if (EvidenceFault == phase) { EvidenceFault = null; throw new IOException("evidence failed at " + phase); }
-                    }, verifyReadStability);
+                    }, verifyReadStability, marginOnly);
             }
             private IDictionary<string, object> Dispatch(object raw)
             {

@@ -617,13 +617,8 @@ namespace VBAi
                 if (type == "ControlType.ComboBox" && selected.Current.NativeWindowHandle != 0 &&
                     ClassName(new IntPtr(selected.Current.NativeWindowHandle)) == "ComboBox")
                     WriteOptionsCombo(new IntPtr(selected.Current.NativeWindowHandle), (string)value);
-                else if (type == "ControlType.CheckBox" && selected.TryGetCurrentPattern(TogglePattern.Pattern, out object toggle))
-                {
-                    var pattern = (TogglePattern)toggle;
-                    if (pattern.Current.ToggleState == ToggleState.Indeterminate) throw new InvalidOperationException("An indeterminate option is not writable.");
-                    bool desired = (bool)value;
-                    if ((pattern.Current.ToggleState == ToggleState.On) != desired) pattern.Toggle();
-                }
+                else if (type == "ControlType.CheckBox")
+                    WriteOptionsCheckbox(dialog, new IntPtr(selected.Current.NativeWindowHandle), (bool)value);
                 else if (type == "ControlType.RadioButton" && selected.TryGetCurrentPattern(SelectionItemPattern.Pattern, out object selection))
                     ((SelectionItemPattern)selection).Select();
                 else if (type == "ControlType.Edit" && !selected.Current.IsPassword && selected.TryGetCurrentPattern(ValuePattern.Pattern, out object input))

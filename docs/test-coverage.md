@@ -997,6 +997,50 @@ Once that owner finishes recovery, the frozen worker additionally requires
 30 continuous seconds without another VBE host before its own Excel launch.
 Q-026 remains **OPEN / native NOT_RUN** at this preparation checkpoint.
 
+### Q-026 native Format failure and recovery (2026-10-03)
+
+The frozen `180aee8` campaign subsequently executed the complete Format method
+once on the inactive desktop `VBAiTests_24227bdb782d40e087294b262600a190`.
+Excel PID 32152, start `2026-10-02T22:42:37.0468311Z`, version
+`16.0.20430.20092`, loaded the preparation candidate identified above.
+`artifacts/q026-20261003-native/native/format.trx` records **0 passed, 1 failed,
+0 skipped**. Durable receipts verify baseline read stability, font and three
+normal-text palettes, another-category foreground, and the empty-size refusal
+with independently observed closure and unchanged complete state. The margin
+write then returned `Ok=false` / an invalid-object-state error; its Options
+dialog remained open. No margin retry, stale-revision trial, automatic
+compensation or campaign Close/Quit followed that unknown write outcome.
+Full restoration and qualification are therefore failed in that TRX.
+
+Independent recovery captured the exact owned Options dialog, cancelled it once
+on a private-desktop thread and verified its absence. An initial default-desktop
+cancellation guard refused before any native message; that refusal was not a
+lost cancellation. The first compensation attempt likewise refused before any
+write because Windows PowerShell interpreted a UTF-8 receipt as ANSI. With
+explicit UTF-8 decoding, `recovery-utf8/terminal.json` proves the five positively
+committed entries returned to baseline, including every tab/category/catalogue
+and revision `544477535d391a457fc66947a3ddb3da7ffb430e6212289c6586a6fcb65f3e05`.
+The failed margin remained at its original `On` value and was not replayed.
+`recovery-shutdown.json` records one disposable-seed Close, one returned Quit
+and normal exit 0 without forced termination. This uses a fresh recovery handle;
+it does not qualify the original campaign's retained-handle shutdown.
+
+The corrective source replaces Options-checkbox UIA Toggle with a guarded
+two-state Win32 Button read/click/read sequence. A matching value sends no click;
+an unreadable initial state refuses before dispatch; a failed or unmatched
+readback never triggers another click. The initial isolated-build
+`q026-checkbox-fix-tests/checkbox-guards.trx` records **11 passed, 0 failed,
+0 skipped** for the pure transition/failure contracts. The broader private-desktop regression
+record `q026-checkbox-dispatch-unit-v2/results/checkbox-native-guards.trx` has
+**201 passed, 1 failed, 0 skipped**: its new synthetic button fixture exposed an
+ambiguous duplicate accessible name. After correcting only that fixture,
+`q026-checkbox-dispatch-unit-v3/results/checkbox-focus.trx` records **80 passed,
+0 failed, 0 skipped**, including the real Win32 transitions and lifecycle guards.
+The solution builds without warnings/errors in `q026-checkbox-candidate`.
+These are local control/managed tests, not acceptance of the repaired Excel path.
+The new checkbox-only Excel method must pass on a fresh owned host before a
+complete Format qualification is attempted. Q-026 remains **OPEN** here.
+
 ### Q-026 offline snapshot review (2026-10-03)
 
 Branch `codex/q026-qualification` starts from `origin/main` at `4b382b9`,

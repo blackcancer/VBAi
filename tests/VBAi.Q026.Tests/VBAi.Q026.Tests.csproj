@@ -24,6 +24,7 @@
     <Compile Include="..\VBAi.Tests\Infrastructure\Hosts\ExcelOwnedBootstrapPlan.cs;..\VBAi.Tests\Infrastructure\Hosts\ExcelOwnedProcessImage.cs;..\VBAi.Tests\Infrastructure\Hosts\VbeBridgeClient.cs" />
     <Compile Include="..\VBAi.Tests\Infrastructure\Diagnostics\IsolatedTestDesktop.cs;..\VBAi.Tests\Infrastructure\Diagnostics\NativeTeardownTraceGate.cs;..\VBAi.Tests\Infrastructure\Diagnostics\ExcelFormatOptionsQualification.cs" />
     <Compile Include="..\VBAi.Tests\Unit\Infrastructure\Diagnostics\IsolatedTestDesktop.Tests.cs;..\VBAi.Tests\Unit\Infrastructure\Diagnostics\ExcelFormatOptionsQualification.Tests.cs" />
+    <Compile Include="..\VBAi.Tests\Unit\Vbe\Debug\VbeDebugWindows.Options.Checkbox.Tests.cs" />
     <Compile Include="..\VBAi.Tests\Integration\Hosts\Excel\ExcelFormatOptionsTests.cs" />
   </ItemGroup>
   <Target Name="RequireFrozenProduct" BeforeTargets="ResolveReferences">

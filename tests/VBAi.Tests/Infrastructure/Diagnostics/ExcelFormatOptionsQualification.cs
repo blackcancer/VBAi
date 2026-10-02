@@ -18,16 +18,16 @@ namespace VBAi.Tests.Integration
         private readonly Action preserve, cleanup;
         private readonly Action<string, object> evidence;
         private readonly int processId;
-        private readonly bool verifyReadStability;
+        private readonly bool verifyReadStability, marginOnly;
         private readonly List<Tuple<string, string, object, string>> ledger = new List<Tuple<string, string, object, string>>();
         private IDictionary<string, object> baseline;
         internal bool HostRetained { get; private set; }
 
         internal ExcelFormatOptionsQualification(int processId, Func<object, IDictionary<string, object>> dispatch,
             Func<IDictionary<string, object>> observeClosure, Action preserve, Action cleanup, Action<string, object> evidence,
-            bool verifyReadStability = false)
+            bool verifyReadStability = false, bool marginOnly = false)
         { this.processId = processId; this.dispatch = dispatch; this.observeClosure = observeClosure;
-            this.preserve = preserve; this.cleanup = cleanup; this.evidence = evidence; this.verifyReadStability = verifyReadStability; }
+            this.preserve = preserve; this.cleanup = cleanup; this.evidence = evidence; this.verifyReadStability = verifyReadStability; this.marginOnly = marginOnly; }
 
         /// <summary>Validate the Format opt-in before preparation, then hand off only a successfully owned bootstrap.</summary>
         internal static void RunOwned<T>(bool enabled, string ownedResults, string evidenceRoot, string inheritedDiagnosticManifest,
@@ -66,7 +66,7 @@ namespace VBAi.Tests.Integration
 
         private void Matrix()
         {
-            evidence("ScenarioMatrix", Scenarios);
+            evidence("ScenarioMatrix", marginOnly ? new[] { "margin indicator", "full options version restored" } : Scenarios);
             baseline = Read("Baseline");
             evidence("BaselineComplete", baseline);
             if (verifyReadStability)
@@ -79,6 +79,7 @@ namespace VBAi.Tests.Integration
                 evidence("BaselineStabilityVerified", new { Before = baseline, After = stable, PreferenceWrites = 0 });
             }
             var format = Format(baseline); string tab = (string)format["Tab"];
+            if (marginOnly) { Margin(tab); return; }
             var font = Find(format, "Font", "Police :");
             string alternate = Choices(font).FirstOrDefault(x => x != (string)font["Value"] &&
                 new[] { "Consolas (Occidental)", "Consolas (Western)", "Consolas", "Courier New (Occidental)", "Courier New (Western)", "Courier New" }.Contains(x));
@@ -117,15 +118,20 @@ namespace VBAi.Tests.Integration
             string colour = Choices(foreground).First(x => x != (string)foreground["Value"]);
             Write("OtherCategory", tab, (string)foreground["Name"], colour, otherCategory);
             Assert.AreEqual(colour, CategoryPalette(Format(Read("OtherCategoryReadback")), otherCategory, (string)foreground["Name"])["Value"]);
+            Margin(tab);
+            var beforeStale = Read("BeforeStaleRefusal");
+            Assert.AreNotEqual(Version(baseline), Version(beforeStale), "The stale scenario needs a genuinely changed complete revision.");
+            Refusal("StaleVersion", new { Command = "set_vbe_option", Pane = tab, Property = font["Name"], Value = font["Value"],
+                ExpectedOptionsVersion = Version(baseline) }, beforeStale, "VBE options changed since inspection; read them again.");
+        }
+
+        private void Margin(string tab)
+        {
             var margin = Find(Format(Read("MarginCatalogue")), "Margin Indicator Bar", "Barre des indicateurs en marge");
             Assert.IsTrue(Equals(margin["Value"], "On") || Equals(margin["Value"], "Off"), "The native margin value must be exact On/Off.");
             bool nextMargin = !Equals(margin["Value"], "On");
             Write("Margin", tab, (string)margin["Name"], nextMargin, null);
             Assert.AreEqual(nextMargin ? "On" : "Off", Find(Format(Read("MarginReadback")), (string)margin["Name"])["Value"]);
-            var beforeStale = Read("BeforeStaleRefusal");
-            Assert.AreNotEqual(Version(baseline), Version(beforeStale), "The stale scenario needs a genuinely changed complete revision.");
-            Refusal("StaleVersion", new { Command = "set_vbe_option", Pane = tab, Property = font["Name"], Value = font["Value"],
-                ExpectedOptionsVersion = Version(baseline) }, beforeStale, "VBE options changed since inspection; read them again.");
         }
 
         private void Restore()
@@ -145,6 +151,9 @@ namespace VBAi.Tests.Integration
             }
             var restored = Read("CompleteRestorationReadback");
             Assert.AreEqual(Version(baseline), Version(restored), "Every category and preference must return to the complete baseline revision.");
+            var json = new System.Web.Script.Serialization.JavaScriptSerializer();
+            Assert.AreEqual(json.Serialize(baseline["Tabs"]), json.Serialize(restored["Tabs"]),
+                "Every recorded tab, catalogue and palette must match the complete baseline, independently of its hash.");
             evidence("BaselineRestored", new { BaselineVersion = Version(baseline), Readback = restored });
         }
 
