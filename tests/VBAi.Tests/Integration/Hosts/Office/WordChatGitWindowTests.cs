@@ -221,6 +221,7 @@ namespace VBAi.Tests.Integration
             private SelectionPattern scopeSelection;
             private WindowPattern gitWindow;
             private WordChatWindowDiscovery.OwnerIdentity modalOwner;
+            private WordChatGitMenuDiscovery.OwnerShape exactScopePickerOwner;
             internal WordChatGitAutomation(Context context) { this.context = context; }
 
             private IntPtr[] OwnedTopWindows()
@@ -473,6 +474,15 @@ namespace VBAi.Tests.Integration
                 modalOwner = ReadModalOwner();
                 long expected = WordChatWindowDiscovery.RequireModalOwner(modalOwner,
                     context.Fixture.ProcessId, context.Scope.ThreadId);
+                if (PrivateDesktopUiAction.Enabled)
+                {
+                    IntPtr pickerHandle = UiHandle(scopePicker.Current.NativeWindowHandle);
+                    Guard(pickerHandle);
+                    if (!IsChild(context.ChatHandle, pickerHandle))
+                        throw new InvalidOperationException("The exact scope picker left its owned chat before popup discovery.");
+                    exactScopePickerOwner = ReadPopupOwner(pickerHandle);
+                    context.Record(new { Phase = "ExactScopePickerOwnerFrozen", Owner = OwnerEvidence(exactScopePickerOwner) });
+                }
                 context.Record(new { Phase = "ChatModalOwnerPreflight", modalOwner.VbeHandle, modalOwner.VbeRoot,
                     modalOwner.ChatHandle, modalOwner.ChatRoot, modalOwner.ChatOwner,
                     modalOwner.ChatWithinVbe, ExpectedModalOwner = expected,
@@ -561,12 +571,12 @@ namespace VBAi.Tests.Integration
                             if (enabled.Length == 1) exactItems.Add(window.ToInt64(), enabled[0]);
                         }
                         var eligible = last.Where(item => WordChatGitMenuDiscovery.HasStrictPopupOwner(item,
-                                context.Fixture.ProcessId, context.Scope.ThreadId, expectedOwner) && item.NewlyVisible &&
+                                context.Fixture.ProcessId, context.Scope.ThreadId, expectedOwner, exactScopePickerOwner) && item.NewlyVisible &&
                             item.GitLabelMatches == 1 && item.EnabledGitMatches == 1).ToArray();
                         if (eligible.Length > 0)
                         {
                             var selected = WordChatGitMenuDiscovery.RequireUnique(last, context.Fixture.ProcessId,
-                                context.Scope.ThreadId, expectedOwner);
+                                context.Scope.ThreadId, expectedOwner, exactScopePickerOwner);
                             gitPopupHandle = new IntPtr(selected.PopupHandle);
                             selectedPopup = selected;
                             gitItem = exactItems[selected.PopupHandle];
@@ -614,9 +624,11 @@ namespace VBAi.Tests.Integration
                     long currentPopupOwner = GetWindow(gitPopupHandle, 4).ToInt64();
                     string currentPopupClass = NativeClass(gitPopupHandle);
                     var currentOwner = ReadPopupOwner(new IntPtr(currentPopupOwner));
+                    if (exactScopePickerOwner != null && !IsChild(context.ChatHandle, new IntPtr(exactScopePickerOwner.Handle)))
+                        throw new InvalidOperationException("The frozen scope picker left its owned chat before Git invocation.");
                     WordChatGitMenuDiscovery.RequireUnchangedPopupOwner(selectedPopup, currentPopupClass,
                         currentPopupOwner, currentOwner,
-                        context.Fixture.ProcessId, context.Scope.ThreadId, expectedRoot);
+                        context.Fixture.ProcessId, context.Scope.ThreadId, expectedRoot, exactScopePickerOwner);
                     if (!IsWindowVisible(gitPopupHandle) ||
                         AutomationElement.FromHandle(gitPopupHandle).Current.ControlType.ProgrammaticName != selectedPopup.UiType ||
                         !NativeToolStripPopupIdentity.Matches(selectedPopup.UiType, currentPopupClass) ||

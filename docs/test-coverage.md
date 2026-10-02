@@ -29,6 +29,20 @@ The role correction keeps exact native class, identity, frozen owner, virtual
 item and unique MSAA MenuItem checks; it requires fresh complete matrix and
 managed gates before Word qualification. Q-024 remains open; Q-027 is deferred.
 
+Follow-up synthetic matrices on `6538b416ef6197ed19dcdb8f99b0bbb6519f5bde`
+and `2234c9e66fc2b91035842acb361737811a5ba7d4` each report **8 proven, 1 gap,
+9 required**, ending respectively `2026-10-02T22:27:42.1026442Z` and
+`2026-10-02T22:31:14.4015098Z`. They discover the exact ToolBar popup and refuse
+its child owner before MSAA delivery; the synthetic Git click count stays zero.
+The latter observation identifies the already selected owned ComboBox as that
+owner, live and visible with the same PID/UI thread and owned form parent.
+The correction freezes only that exact scope picker instead of admitting
+arbitrary children. All other ownership and modal-root checks remain required.
+Both original children exit normally with code 1. Artifacts are under
+`artifacts/q024-private-batch-v5-20261003/` and
+`artifacts/q024-private-batch-v6-20261003/`. Neither is an Office or full managed
+execution; the complete updated matrices and managed gate remain required.
+
 ## Inactive desktop managed campaign (2026-10-02)
 
 Source `22f739b5cb79914acf6786ff899d327001af3920` builds the complete prepared

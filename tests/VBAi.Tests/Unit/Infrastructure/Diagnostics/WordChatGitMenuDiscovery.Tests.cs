@@ -13,6 +13,46 @@ namespace VBAi.Tests.Unit
         private const long Owner = 46473454;
 
         [TestMethod]
+        public void PrivatePopupMayUseOnlyItsFrozenExactScopePickerAsChildOwner()
+        {
+            var picker = ScopePickerOwner();
+            var popup = Exact(); popup.OwnerHandle = picker.Handle; popup.OwnerShape = Copy(picker);
+            Assert.ThrowsException<InvalidOperationException>(() =>
+                WordChatGitMenuDiscovery.RequireUnique(new[] { popup }, ProcessId, ThreadId, Owner));
+            Assert.AreSame(popup, WordChatGitMenuDiscovery.RequireUnique(new[] { popup }, ProcessId, ThreadId, Owner, picker));
+            WordChatGitMenuDiscovery.RequireUnchangedPopupOwner(popup, popup.NativeClass, picker.Handle,
+                Copy(picker), ProcessId, ThreadId, Owner, picker);
+            Action<WordChatGitMenuDiscovery.OwnerShape>[] changes = {
+                row => row.Handle++, row => row.Parent++, row => row.Root++, row => row.Owner = Owner,
+                row => row.ProcessId++, row => row.ThreadId++, row => row.Live = false,
+                row => row.Visible = false, row => row.Style = 0, row => row.ExStyle++,
+                row => row.ClassName = "WindowsForms10.BUTTON.app.0.123_r6_ad1"
+            };
+            foreach (var change in changes)
+            {
+                var now = Copy(picker); change(now);
+                popup = Exact(); popup.OwnerHandle = now.Handle; popup.OwnerShape = now;
+                Assert.ThrowsException<InvalidOperationException>(() =>
+                    WordChatGitMenuDiscovery.RequireUnique(new[] { popup }, ProcessId, ThreadId, Owner, picker));
+                popup = Exact(); popup.OwnerHandle = picker.Handle; popup.OwnerShape = Copy(picker);
+                Assert.ThrowsException<InvalidOperationException>(() =>
+                    WordChatGitMenuDiscovery.RequireUnchangedPopupOwner(popup, popup.NativeClass, now.Handle,
+                        now, ProcessId, ThreadId, Owner, picker));
+            }
+            popup = Exact(); popup.OwnerHandle = picker.Handle; popup.OwnerShape = Copy(picker);
+            var anotherPicker = Copy(picker); anotherPicker.Handle++;
+            Assert.ThrowsException<InvalidOperationException>(() =>
+                WordChatGitMenuDiscovery.RequireUnique(new[] { popup }, ProcessId, ThreadId, Owner, anotherPicker));
+        }
+
+        private static WordChatGitMenuDiscovery.OwnerShape ScopePickerOwner()
+            => new WordChatGitMenuDiscovery.OwnerShape {
+                Handle = 53155074, Parent = Owner, Root = Owner, Owner = 0,
+                ProcessId = ProcessId, ThreadId = ThreadId, Live = true, Visible = true,
+                ClassName = "WindowsForms10.COMBOBOX.app.0.123_r6_ad1", Style = 0x40000000, ExStyle = 0
+            };
+
+        [TestMethod]
         public void LegacyToolbarPopupRetainsEveryExactOwnerAndVirtualItemConstraint()
         {
             var popup = HiddenOwner();

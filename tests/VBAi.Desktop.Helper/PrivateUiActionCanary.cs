@@ -256,7 +256,7 @@ namespace VBAi.Desktop.Helper
                 throw new InvalidOperationException("Bounded BM_CLICK returned no terminal send result.");
         }
 
-        private static void DefaultActionOnce(IntPtr root, IntPtr popup, AutomationElement virtualItem,
+        private static void DefaultActionOnce(IntPtr root, IntPtr exactPicker, IntPtr popup, AutomationElement virtualItem,
             uint threadId, int processId)
         {
             uint pid; uint tid = GetWindowThreadProcessId(popup, out pid);
@@ -280,8 +280,11 @@ namespace VBAi.Desktop.Helper
                 (GetWindowLong(owner, -16) & 0x40000000) == 0 &&
                 ownerClass.ToString().StartsWith("WindowsForms10.Window.0", StringComparison.Ordinal) &&
                 domain > 0 && ownerClass.ToString().EndsWith(popupClass.ToString().Substring(domain), StringComparison.Ordinal);
+            Guard(root, exactPicker, threadId, processId);
+            bool exactPickerOwner = owner == exactPicker && IsChild(root, owner) && IsWindowVisible(owner) &&
+                ownerClass.ToString().StartsWith("WindowsForms10.COMBOBOX.app.", StringComparison.Ordinal);
             if (owner == IntPtr.Zero || !IsWindow(owner) || ownerPid != processId || ownerTid != threadId ||
-                (owner != root && !exactHiddenWinFormsOwner))
+                (owner != root && !exactHiddenWinFormsOwner && !exactPickerOwner))
                 throw new InvalidOperationException("The synthetic popup owner is not an exact owned top window.");
             Guid iid = IAccessibleId; IAccessible accessibility = null;
             try
@@ -449,7 +452,7 @@ namespace VBAi.Desktop.Helper
                 if (gitItem == null)
                     receipt(new { Phase = "ActionGap", Name = "VirtualGitItem", Reason = "Exact popup/menu item absent or ambiguous." });
                 else Once(receipt, "VirtualGitItem", "IAccessible.accDoDefaultAction",
-                    () => DefaultActionOnce(rootHandle, popup, gitItem, uiThread, processId),
+                    () => DefaultActionOnce(rootHandle, form.Combo.Handle, popup, gitItem, uiThread, processId),
                     () => { int count = (int)form.Invoke((Func<int>)(() => form.GitClicks));
                         return new Observation(count == 1, new { Clicks = count }); });
             }

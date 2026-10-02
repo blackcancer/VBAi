@@ -125,6 +125,11 @@ WinForms dropdown class, retaining the unique newly visible popup, frozen owner
 shape, localized virtual MenuItem and ancestor checks. Its MSAA default action
 requires a unique exact-label child with MenuItem role 12; discovery does not
 authorize a different toolbar or a repeated action.
+After private scope selection, the Options popup may be owned by that exact
+native ComboBox child. Only the previously frozen scope-picker HWND/class and
+complete native owner metadata are admitted, with its chat ancestry rechecked;
+other children remain refusals. This does not change the Git modal's separately
+verified VBE-root owner.
 
 Native Word isolation requires `VBAi_TEST_DESKTOP_NAME` and the reviewed installed
 `VBAi_TEST_WORD_EXE`. Its fixture must explicitly launch that binary on the private
