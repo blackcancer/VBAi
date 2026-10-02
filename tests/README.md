@@ -405,6 +405,14 @@ The formatting-options scenario can additionally use an absolute
 before/after evidence independently of VSTest attachment retention, including
 successful runs. It creates a unique subdirectory and never retries a failed
 mutation to gather evidence.
+
+For Q-026 investigation, `tools/probes/inspect_q026_options.py <before.json>
+<after.json> --output <fresh-report.json>` compares recorded complete snapshots
+offline. It preserves catalogue order, palette fields and value types, and refuses
+truncated, ambiguous or incomplete receipts. It neither invokes a host nor proves
+native restoration. The [prepared Q-026 scenario matrix](../tools/tests/q026-scenarios.json)
+records the native cases and stop rules; its planned status is not execution proof.
+
 The SOLIDWORKS workflow must not create or kill an application instance on the
 user's behalf. A host fixture can use its own native save helper; that result does
 not automatically qualify VBAi's `save_host_document` adapter.
