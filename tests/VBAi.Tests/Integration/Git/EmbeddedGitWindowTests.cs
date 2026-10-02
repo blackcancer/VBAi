@@ -144,7 +144,7 @@ namespace VBAi.Tests.Integration
                 context.Record(new { Phase = "NativeStatePreserved", StateSha256 = ShaText(context.Scope.State) });
                 if (context.Plan.Persistence)
                 {
-                    context.Fixture.SaveEmbeddedImportedForm(context.Scope, value => {
+                    context.Fixture.SaveEmbeddedImportedForm(context.Scope, context.Plan.Remote, context.Plan.Branch, context.Plan.Commit, value => {
                         if (value && context.Stop) { context.Fixture.PreserveMonacoNativeOutcome(); throw new InvalidOperationException("Coordinator stopped before the next persistence dispatch."); }
                         nativePending = value;
                     }, context.Record);
@@ -204,6 +204,8 @@ namespace VBAi.Tests.Integration
                 automation.Checkpoint(context.Plan.Remote, context.Plan.Branch, context.Nonce, context.Plan.TabName);
                 if (context.Plan.Layout != null) automation.MutateAndRestoreCheckpoint(context.Nonce, context.Plan.TabName);
                 automation.CompareOnce();
+                if (context.Plan.Persistence)
+                    context.Fixture.AttestEmbeddedSelectedRepository(context.Scope, context.Plan.Remote, context.Plan.Branch, context.Plan.Commit, context.Record);
             }
             catch (Exception error) { context.UiError = error; }
             finally

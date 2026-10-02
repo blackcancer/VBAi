@@ -24,6 +24,7 @@ namespace VBAi.Tests.Integration
             internal VbaGitSnapshot Baseline;
             internal string Layout;
             internal IDictionary<string, object> NativeLayout, NativeFonts;
+            internal EmbeddedGitRepositoryBinding SelectedRepository;
         }
 
         /// <summary>Prepares only the explicitly owned synthetic workbook; no macro is executed.</summary>

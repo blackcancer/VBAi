@@ -13,17 +13,21 @@ namespace VBAi.Tests.Integration
         internal string EmbeddedProcessStartedUtc => Convert.ToString(startupEvidence["HostStartedUtc"]);
 
         /// <summary>Saves once after a terminal import, retaining an uncertain Save without retry or cleanup.</summary>
-        internal void SaveEmbeddedImportedForm(EmbeddedGitScope scope, Action<bool> pending, Action<object> evidence)
+        internal void SaveEmbeddedImportedForm(EmbeddedGitScope scope, string remote, string branch, string selectedCommit,
+            Action<bool> pending, Action<object> evidence)
         {
             Assert.AreEqual(ApartmentState.STA, Thread.CurrentThread.GetApartmentState());
             RequireEmbeddedProcess(scope);
-            // Use the production observer: a missing marker is terminal, inaccessible
-            // metadata is an error, and an existing directory also means pending recovery.
-            var repository = new MacroGitRepository(scope.Cache, "qualification-read-only-recovery-observer");
             try
             {
-                if (repository.RecoveryPending)
-                    throw new InvalidOperationException("Pending recovery prohibits post-import Save and fresh-process acceptance.");
+                if (scope.SelectedRepository == null) throw new InvalidOperationException("The terminal UI did not attest its selected bare repository; Save is refused.");
+                var repository = scope.SelectedRepository.RequireReadyForSave(scope.Cache, remote, branch);
+                Assert.AreEqual(selectedCommit, repository.Resolve("refs/remotes/origin/selected"), "The selected authorized repository revision changed before Save.");
+                evidence(new { Phase = "SelectedRepositoryBeforeSaveVerified", scope.SelectedRepository.RepositoryPath,
+                    Remote = remote, Branch = branch, SelectedCommit = selectedCommit,
+                    BindingSha256 = EmbeddedRawHash(Path.Combine(scope.Cache, "binding.json")),
+                    ConfigSha256 = EmbeddedRawHash(Path.Combine(scope.SelectedRepository.RepositoryPath, "config")),
+                    HeadSha256 = EmbeddedRawHash(Path.Combine(scope.SelectedRepository.RepositoryPath, "HEAD")), RecoveryPending = false });
             }
             catch { PreserveMonacoNativeOutcome(); throw; }
             object project = null;
@@ -53,6 +57,20 @@ namespace VBAi.Tests.Integration
             }
             finally { if (identity != IntPtr.Zero) Marshal.Release(identity); Release(project); }
             VerifyEmbeddedSavedForm(scope, pending, evidence, false);
+        }
+
+        /// <summary>Attests the exact repository actually linked by the terminal owner UI; no initialization or remote command occurs.</summary>
+        internal void AttestEmbeddedSelectedRepository(EmbeddedGitScope scope, string remote, string branch, string selectedCommit,
+            Action<object> evidence)
+        {
+            var proof = EmbeddedGitRepositoryBinding.Capture(scope.Cache, remote, branch);
+            var repository = new MacroGitRepository(proof.RepositoryPath, branch);
+            Assert.AreEqual(selectedCommit, repository.Resolve("refs/remotes/origin/selected"));
+            scope.SelectedRepository = proof;
+            evidence(new { Phase = "SelectedRepositoryTerminalUiProof", proof.RepositoryPath, Remote = remote, Branch = branch,
+                SelectedCommit = selectedCommit, BindingSha256 = EmbeddedRawHash(Path.Combine(scope.Cache, "binding.json")),
+                ConfigSha256 = EmbeddedRawHash(Path.Combine(proof.RepositoryPath, "config")),
+                HeadSha256 = EmbeddedRawHash(Path.Combine(proof.RepositoryPath, "HEAD")) });
         }
 
         /// <summary>Attests the actual installed bytes and host PID before reading a reopened synthetic project.</summary>
