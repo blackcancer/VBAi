@@ -285,7 +285,15 @@ namespace VBAi.Desktop.Helper
             });
 
             Probe(receipt, "TabControl", () => {
-            var tab = One(root, "CanarySecondTab", processId);
+            var tabs = One(root, "CanaryTabs", processId);
+            IntPtr tabsHandle = new IntPtr(tabs.Current.NativeWindowHandle);
+            Guard(rootHandle, tabsHandle, uiThread, processId);
+            var matches = tabs.FindAll(TreeScope.Children,
+                new PropertyCondition(AutomationElement.ControlTypeProperty, ControlType.TabItem))
+                .Cast<AutomationElement>().Where(item => item.Current.Name == "Second" && item.Current.ProcessId == processId).ToArray();
+            if (matches.Length != 1 || NativeAncestor(matches[0]) != tabsHandle)
+                throw new InvalidOperationException("The exact virtual second tab is absent or ambiguous.");
+            var tab = matches[0];
             Once(receipt, "TabControl", "SelectionItemPattern.Select",
                 () => Pattern<SelectionItemPattern>(tab, SelectionItemPattern.Pattern).Select(),
                 () => { bool selected = (bool)form.Invoke((Func<bool>)(() => form.Tabs.SelectedIndex == 1));
