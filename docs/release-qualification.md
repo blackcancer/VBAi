@@ -6,6 +6,16 @@ are maintained only in [recorded validation](test-coverage.md).
 
 ## Current candidate checkpoint (2026-10-02)
 
+The retained-workbook diagnostic source `6d3d802`, MVID
+`46bd53b3-7416-4530-bd86-bcbc251ca041`, passes its complete default managed gate.
+Its one Excel trial stops after opening the synthetic copy, when the fixture
+hash reader conflicts with Excel's file sharing. Baseline capture, menu, import
+and font transfer are NOT_RUN. Original normal exit, unchanged source/copy
+bytes and restored registration are independently verified. The tests-only
+reader correction has focused managed regressions; its full gate and native
+discriminator remain pending. Q-027 stays open. See
+[recorded validation](test-coverage.md#retained-userform-copy-preparation-failure-2026-10-02).
+
 The latest gated diagnostic source `a5649c3`, MVID
 `736dae63-1922-44b8-8f0f-65740b87e76d`, SHA-256
 `423CC1AD64D0B1A4E25E0EB8CCC8C821B56E7AB03CFF21C79F498CBA45C95A4F`,

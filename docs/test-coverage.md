@@ -1,5 +1,42 @@
 # Recorded validation
 
+## Retained UserForm copy preparation failure (2026-10-02)
+
+Frozen source `6d3d802c37ae13cbd2f706621bd9d78fce3fc70f` adds a tests-only
+retained synthetic Tahoma 8.25 workbook profile with pinned file, source,
+component and meaningful FRX hashes. Isolated Debug build has zero warnings
+and errors. Product MVID `46bd53b3-7416-4530-bd86-bcbc251ca041`, product SHA-256
+`B12D678C897734065727EFF0B9D496A7C313774F2BE774C675E0A5F0BDA8EC56`, test SHA-256
+`C6BE07CF8559B3AA7CB09E63DA93BA93F570E8BCD7BC4EA8B294AF82DF896BA7`.
+The complete default managed gate records **3,778 passed, zero failed, 201
+opted-in scenarios not run, 3,979 total**, ending
+`2026-10-02T06:38:44.2444439Z`, with unchanged source and assembly hashes.
+No coverage collector or live opt-in is enabled for that gate.
+
+One actual Excel `16.0` trial, PID 32404, records **zero passed,
+one failed and zero skipped**. The retained copy opens, then the fixture's
+`EmbeddedRawHash` fails at `File.OpenRead`: its share mode conflicts with
+Excel's existing writer. This is a preparation error, before baseline resource
+capture, diagnostic manifest publication, Git menu, import or font delivery.
+Those native font phases are NOT_RUN. The original Excel closes normally,
+with exit code zero and no Close/Quit error or forced termination. Both source
+and disposable copy remain SHA-256
+`B5264F941E0FD398A9DE03B203DB7A31A6DB9FF939B894E7829A0203C76F4B73`.
+The scheduled task is terminal and removed. Registration is restored from
+`registration-before-a600ad1d2f1b4fe198aef4659cd3421a.clixml`; independent
+CodeBase readback and the unchanged installed DLL hash are verified.
+
+Evidence: `artifacts/root-font-retained-copy-20261002`, including original TRXs,
+startup/shutdown and `preflight-sharing-terminal-inspection.json` (SHA-256
+`6A21E0E52A55DD87D413226D3AB948D6A363BE10A85E0E7D7F7C70A767C09A74`).
+An earlier orchestration manifest decoded an accented PowerShell 5 script
+literal as ANSI. Its retained replacement recomputes the exact source path
+before registration/native execution; source revision and DLL bytes stay fixed.
+The fixture correction uses a read-only stream with `FileShare.ReadWrite`, with
+regressions for a live owned writer, unchanged bytes, released handles and
+missing-file provenance. The original native failure remains failed; no font
+repair or Q-027 acceptance follows from the managed fixture correction.
+
 ## Explicit root font import and diagnostic gate refusal (2026-10-02)
 
 Frozen source `a5649c33dfba200965a81ab6be62b6794ef617e2` adds a tests-only,

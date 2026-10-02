@@ -27,6 +27,13 @@ operation, language feature or UI surface.
 
 ### Current operation-specific refresh
 
+The retained-workbook Q-027 diagnostic source `6d3d802` passes its complete
+managed gate. A native Excel copy-open succeeds, then a fixture file-sharing
+error stops preparation before form capture or import. Normal owned exit,
+unchanged source/copy bytes and registry restoration are verified. The reader
+correction has managed regressions but no new native result; Q-027 remains open.
+See [recorded validation](test-coverage.md#retained-userform-copy-preparation-failure-2026-10-02).
+
 The latest Q-027 diagnostic source `a5649c3` passes its complete managed gate.
 Its explicit Arial 9.00 baseline and actual owner-dispatched LabelButton import
 have exact initial and independent snapshots and matching native readback.
