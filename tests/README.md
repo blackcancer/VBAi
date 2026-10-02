@@ -115,6 +115,17 @@ The existing `VBAi_TEST_WORD_EXIT_WAIT_BOUND_MS=15000` opt-in changes only the
 single read-only original-handle exit observation. Record that bound with the
 native result; it does not replay Close/Quit or make an earlier timeout successful.
 
+The separate `WordChatGitWindowTests` observes the Options popup after the
+owned Word chat selects its canonical saved project. A native Menu popup may be
+owned by the observed VBE root or by a hidden, standalone WinForms drop-down
+owner on the same process and UI thread. The hidden owner must share the popup's
+WinForms application-domain class suffix, have no native parent or owner, and
+carry the observed tool-window and window-edge styles. Its exact native shape is
+checked again before the Git item is invoked. The Git modal retains its separate
+VBE-root ownership rule. WinForms defines a distinct
+[drop-down owner window](https://referencesource.microsoft.com/System.Windows.Forms/winforms/Managed/System/WinForms/ToolStrip.cs.html)
+and [uses it for top-level drop-downs](https://github.com/dotnet/winforms/blob/main/src/System.Windows.Forms/System/Windows/Forms/Controls/ToolStrips/ToolStripDropDown.cs).
+
 ### Disposable owner-import root-font observation
 
 The existing owner-import scenario can be instrumented with

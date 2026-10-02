@@ -209,11 +209,14 @@ namespace VBAi.Tests.Integration
             [DllImport("user32.dll")] private static extern bool IsWindowVisible(IntPtr window);
             [DllImport("user32.dll")] private static extern IntPtr GetWindow(IntPtr window, uint command);
             [DllImport("user32.dll")] private static extern IntPtr GetAncestor(IntPtr window, uint flags);
+            [DllImport("user32.dll")] private static extern IntPtr GetParent(IntPtr window);
+            [DllImport("user32.dll", EntryPoint = "GetWindowLongPtrW")] private static extern IntPtr GetWindowLongPtr(IntPtr window, int index);
             [DllImport("user32.dll", CharSet = CharSet.Unicode)] private static extern int GetClassName(IntPtr window, StringBuilder text, int capacity);
             [DllImport("user32.dll", CharSet = CharSet.Unicode)] private static extern int GetWindowText(IntPtr window, StringBuilder text, int capacity);
             private readonly Context context;
             private AutomationElement chat, scopePicker, gitItem, git;
             private IntPtr gitPopupHandle;
+            private WordChatGitMenuDiscovery.Candidate selectedPopup;
             private SelectionPattern scopeSelection;
             private WindowPattern gitWindow;
             private WordChatWindowDiscovery.OwnerIdentity modalOwner;
@@ -233,6 +236,32 @@ namespace VBAi.Tests.Integration
                         NativeLastError = !result.ApiReturned && !result.GlobalBoundHit
                             ? (int?)Marshal.GetLastWin32Error() : null }));
             }
+
+            private static string NativeClass(IntPtr window)
+            {
+                var value = new StringBuilder(128);
+                GetClassName(window, value, value.Capacity);
+                return value.ToString();
+            }
+
+            private static WordChatGitMenuDiscovery.OwnerShape ReadPopupOwner(IntPtr handle)
+            {
+                uint pid; uint tid = GetWindowThreadProcessId(handle, out pid);
+                return new WordChatGitMenuDiscovery.OwnerShape {
+                    Handle = handle.ToInt64(), Live = IsWindow(handle), ProcessId = (int)pid, ThreadId = tid,
+                    ClassName = NativeClass(handle), Visible = IsWindowVisible(handle),
+                    Parent = GetParent(handle).ToInt64(), Root = GetAncestor(handle, 2).ToInt64(),
+                    Owner = GetWindow(handle, 4).ToInt64(),
+                    Style = unchecked((uint)GetWindowLongPtr(handle, -16).ToInt64()),
+                    ExStyle = unchecked((uint)GetWindowLongPtr(handle, -20).ToInt64())
+                };
+            }
+
+            private static object OwnerEvidence(WordChatGitMenuDiscovery.OwnerShape owner)
+                => owner == null ? null : new {
+                    owner.Handle, owner.Live, owner.ProcessId, owner.ThreadId, owner.ClassName,
+                    owner.Visible, owner.Parent, owner.Root, owner.Owner, owner.Style, owner.ExStyle
+                };
 
             private static AutomationElement[] Descendants(AutomationElement root, string id)
                 => root.FindAll(TreeScope.Descendants, new PropertyCondition(AutomationElement.AutomationIdProperty, id))
@@ -479,8 +508,8 @@ namespace VBAi.Tests.Integration
                             if (pid != context.Fixture.ProcessId || tid != context.Scope.ThreadId ||
                                 !IsWindowVisible(window)) continue;
                             nativeVisible++;
-                            var cls = new StringBuilder(128); GetClassName(window, cls, cls.Capacity);
-                            if (!cls.ToString().StartsWith("WindowsForms", StringComparison.Ordinal)) continue;
+                            string cls = NativeClass(window);
+                            if (!cls.StartsWith("WindowsForms", StringComparison.Ordinal)) continue;
                             var popup = AutomationElement.FromHandle(window);
                             if (popup.Current.ControlType != ControlType.Menu) continue;
                             var items = popup.FindAll(TreeScope.Descendants,
@@ -495,23 +524,26 @@ namespace VBAi.Tests.Integration
                                 PopupHandle = window.ToInt64(), OwnerHandle = GetWindow(window, 4).ToInt64(),
                                 NativeProcessId = (int)pid, NativeThreadId = tid, UiProcessId = popup.Current.ProcessId,
                                 Visible = true, NewlyVisible = !visibleBefore.Contains(window),
-                                NativeClass = cls.ToString(), UiType = popup.Current.ControlType.ProgrammaticName,
+                                NativeClass = cls, UiType = popup.Current.ControlType.ProgrammaticName,
                                 MenuItemCount = items.Length, GitLabelMatches = matching.Length,
                                 EnabledGitMatches = enabled.Length,
                                 GitItemProcessId = matching.Length == 1 ? matching[0].Current.ProcessId : 0,
                                 GitItemNativeAncestor = matching.Length == 1
                                     ? NativeAncestorHandle(matching[0]).ToInt64() : 0
                             };
+                            candidate.OwnerShape = ReadPopupOwner(new IntPtr(candidate.OwnerHandle));
                             last.Add(candidate);
                             if (enabled.Length == 1) exactItems.Add(window.ToInt64(), enabled[0]);
                         }
-                        var eligible = last.Where(item => item.OwnerHandle == expectedOwner && item.NewlyVisible &&
+                        var eligible = last.Where(item => WordChatGitMenuDiscovery.HasStrictPopupOwner(item,
+                                context.Fixture.ProcessId, context.Scope.ThreadId, expectedOwner) && item.NewlyVisible &&
                             item.GitLabelMatches == 1 && item.EnabledGitMatches == 1).ToArray();
                         if (eligible.Length > 0)
                         {
                             var selected = WordChatGitMenuDiscovery.RequireUnique(last, context.Fixture.ProcessId,
                                 context.Scope.ThreadId, expectedOwner);
                             gitPopupHandle = new IntPtr(selected.PopupHandle);
+                            selectedPopup = selected;
                             gitItem = exactItems[selected.PopupHandle];
                         }
                         else Thread.Sleep(50);
@@ -526,12 +558,16 @@ namespace VBAi.Tests.Integration
                             item.PopupHandle, item.OwnerHandle, item.NativeProcessId, item.NativeThreadId,
                             item.UiProcessId, item.NativeClass, item.UiType, item.Visible, item.NewlyVisible,
                             item.MenuItemCount, item.GitLabelMatches, item.EnabledGitMatches,
-                            item.GitItemProcessId, item.GitItemNativeAncestor }).ToArray() });
+                            item.GitItemProcessId, item.GitItemNativeAncestor,
+                            Owner = OwnerEvidence(item.OwnerShape) }).ToArray() });
                 }
                 if (gitItem == null) throw new InvalidOperationException("The exact chat GitHub menu item was not observed.");
                 context.Record(new { Phase = "ChatGitItemObserved", PopupHandle = gitPopupHandle.ToInt64(),
                     LocalizedProductLabelMatched = true, ProcessId = gitItem.Current.ProcessId,
-                    NativeAncestorHandle = NativeAncestorHandle(gitItem).ToInt64() });
+                    NativeAncestorHandle = NativeAncestorHandle(gitItem).ToInt64(),
+                    PopupNativeClass = selectedPopup.NativeClass,
+                    PopupOwnerHandle = selectedPopup.OwnerHandle,
+                    PopupOwner = OwnerEvidence(selectedPopup.OwnerShape) });
             }
 
             internal void RequireNoGitModal()
@@ -547,9 +583,15 @@ namespace VBAi.Tests.Integration
                     RequireSameModalOwner(new IntPtr(WordChatWindowDiscovery.RequireModalOwner(modalOwner,
                         context.Fixture.ProcessId, context.Scope.ThreadId)));
                     Guard(gitPopupHandle);
+                    long expectedRoot = WordChatWindowDiscovery.RequireModalOwner(modalOwner,
+                        context.Fixture.ProcessId, context.Scope.ThreadId);
+                    long currentPopupOwner = GetWindow(gitPopupHandle, 4).ToInt64();
+                    string currentPopupClass = NativeClass(gitPopupHandle);
+                    var currentOwner = ReadPopupOwner(new IntPtr(currentPopupOwner));
+                    WordChatGitMenuDiscovery.RequireUnchangedPopupOwner(selectedPopup, currentPopupClass,
+                        currentPopupOwner, currentOwner,
+                        context.Fixture.ProcessId, context.Scope.ThreadId, expectedRoot);
                     if (!IsWindowVisible(gitPopupHandle) ||
-                        GetWindow(gitPopupHandle, 4).ToInt64() != WordChatWindowDiscovery.RequireModalOwner(
-                            modalOwner, context.Fixture.ProcessId, context.Scope.ThreadId) ||
                         AutomationElement.FromHandle(gitPopupHandle).Current.ControlType != ControlType.Menu ||
                         !WordChatGitMenuDiscovery.IsExactGitItem(gitItem.Current.Name,
                             UiText.Get("GitHub · synchronize VBA…"), gitItem.Current.ControlType.ProgrammaticName,
@@ -557,6 +599,9 @@ namespace VBAi.Tests.Integration
                         NativeAncestorHandle(gitItem) != gitPopupHandle ||
                         !gitItem.Current.IsEnabled || gitItem.Current.IsOffscreen)
                         throw new InvalidOperationException("The exact localized Word chat Git menu item changed before invocation.");
+                    context.Record(new { Phase = "ChatOptionsOwnerRevalidated", PopupHandle = gitPopupHandle.ToInt64(),
+                        PopupNativeClass = currentPopupClass, PopupOwnerHandle = currentPopupOwner,
+                        PopupOwner = OwnerEvidence(currentOwner), GitItemNativeAncestor = NativeAncestorHandle(gitItem).ToInt64() });
                     context.Record(new { Phase = "ChatGitInvokeIntent", context.Label, CanonicalPath = context.Scope.Path,
                         ChatHandle = context.ChatHandle.ToInt64() });
                     context.ActionIssued = true;

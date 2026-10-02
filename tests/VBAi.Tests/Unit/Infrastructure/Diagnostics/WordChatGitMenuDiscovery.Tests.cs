@@ -30,10 +30,81 @@ namespace VBAi.Tests.Unit
         }
 
         [TestMethod]
+        public void HiddenStandaloneWinFormsDropDownOwnerMatchesOnlyTheExactPopupDomain()
+        {
+            var popup = HiddenOwner();
+            Assert.AreSame(popup, WordChatGitMenuDiscovery.RequireUnique(new[] { popup }, ProcessId, ThreadId, Owner));
+            WordChatGitMenuDiscovery.RequireUnchangedPopupOwner(popup, popup.NativeClass,
+                popup.OwnerHandle, Copy(popup.OwnerShape), ProcessId, ThreadId, Owner);
+            Action<WordChatGitMenuDiscovery.Candidate>[] changes = {
+                row => row.OwnerShape.Live = false,
+                row => row.OwnerShape.ProcessId++, row => row.OwnerShape.ThreadId++,
+                row => row.OwnerShape.Visible = true, row => row.OwnerShape.Parent = Owner,
+                row => row.OwnerShape.Root = Owner, row => row.OwnerShape.Owner = Owner,
+                row => row.OwnerShape.Style |= 0x40000000,
+                row => row.OwnerShape.ExStyle &= ~0x00000080u,
+                row => row.OwnerShape.ExStyle &= ~0x00000100u,
+                row => row.OwnerShape.ClassName = "OpusApp",
+                row => row.OwnerShape.ClassName = "WindowsForms10.Window.0.app.other",
+                row => row.OwnerShape.Handle++
+            };
+            foreach (var change in changes)
+            {
+                popup = HiddenOwner(); change(popup);
+                Assert.ThrowsException<InvalidOperationException>(() =>
+                    WordChatGitMenuDiscovery.RequireUnique(new[] { popup }, ProcessId, ThreadId, Owner));
+            }
+        }
+
+        [TestMethod]
+        public void ExactVbeRootPopupOwnerAlsoRequiresLiveSameProcessAndThread()
+        {
+            var popup = Exact();
+            WordChatGitMenuDiscovery.RequireUnchangedPopupOwner(popup, popup.NativeClass,
+                popup.OwnerHandle, Copy(popup.OwnerShape), ProcessId, ThreadId, Owner);
+            Action<WordChatGitMenuDiscovery.OwnerShape>[] changes = {
+                row => row.Live = false, row => row.ProcessId++, row => row.ThreadId++,
+                row => row.Root++
+            };
+            foreach (var change in changes)
+            {
+                popup = Exact(); change(popup.OwnerShape);
+                Assert.ThrowsException<InvalidOperationException>(() =>
+                    WordChatGitMenuDiscovery.RequireUnique(new[] { popup }, ProcessId, ThreadId, Owner));
+            }
+        }
+
+        [TestMethod]
+        public void FrozenPopupOwnerMetadataMustRemainExactBeforeInvocation()
+        {
+            var popup = HiddenOwner();
+            Action<WordChatGitMenuDiscovery.OwnerShape>[] changes = {
+                row => row.Style++, row => row.ExStyle++, row => row.ClassName += "changed",
+                row => row.ProcessId++, row => row.ThreadId++, row => row.Visible = true,
+                row => row.Parent = Owner, row => row.Owner = Owner, row => row.Root = Owner,
+                row => row.Live = false, row => row.Handle++
+            };
+            foreach (var change in changes)
+            {
+                var now = Copy(popup.OwnerShape); change(now);
+                Assert.ThrowsException<InvalidOperationException>(() =>
+                    WordChatGitMenuDiscovery.RequireUnchangedPopupOwner(popup, popup.NativeClass,
+                        popup.OwnerHandle, now, ProcessId, ThreadId, Owner));
+            }
+            Assert.ThrowsException<InvalidOperationException>(() =>
+                WordChatGitMenuDiscovery.RequireUnchangedPopupOwner(popup, "WindowsForms10.Window.20808.app.other",
+                    popup.OwnerHandle, Copy(popup.OwnerShape), ProcessId, ThreadId, Owner));
+            Assert.ThrowsException<InvalidOperationException>(() =>
+                WordChatGitMenuDiscovery.RequireUnchangedPopupOwner(popup, popup.NativeClass,
+                    popup.OwnerHandle + 1, Copy(popup.OwnerShape), ProcessId, ThreadId, Owner));
+        }
+
+        [TestMethod]
         public void ForeignStaleOrAmbiguousPopupNeverAuthorizesGitInvocation()
         {
             Action<WordChatGitMenuDiscovery.Candidate>[] changes = {
-                row => row.PopupHandle = 0, row => row.OwnerHandle++, row => row.NativeProcessId++,
+                row => row.PopupHandle = 0, row => row.OwnerHandle = 0, row => row.OwnerHandle++,
+                row => row.OwnerShape = null, row => row.NativeProcessId++,
                 row => row.UiProcessId++, row => row.GitItemProcessId++, row => row.NativeThreadId++,
                 row => row.GitItemNativeAncestor++,
                 row => row.Visible = false, row => row.NewlyVisible = false,
@@ -62,7 +133,32 @@ namespace VBAi.Tests.Unit
             NativeProcessId = ProcessId,
             UiProcessId = ProcessId, GitItemProcessId = ProcessId, NativeThreadId = ThreadId,
             Visible = true, NewlyVisible = true, NativeClass = "WindowsForms10.Window.20808",
-            UiType = "ControlType.Menu", MenuItemCount = 17, GitLabelMatches = 1, EnabledGitMatches = 1
+            UiType = "ControlType.Menu", MenuItemCount = 17, GitLabelMatches = 1, EnabledGitMatches = 1,
+            OwnerShape = new WordChatGitMenuDiscovery.OwnerShape {
+                Handle = Owner, Live = true, ProcessId = ProcessId, ThreadId = ThreadId, Root = Owner
+            }
         };
+
+        private static WordChatGitMenuDiscovery.Candidate HiddenOwner()
+        {
+            var popup = Exact();
+            popup.OwnerHandle = 115086426;
+            popup.NativeClass = "WindowsForms10.Window.20808.app.0.3475548_r8_ad1";
+            popup.OwnerShape = new WordChatGitMenuDiscovery.OwnerShape {
+                Handle = popup.OwnerHandle, Live = true, ProcessId = ProcessId, ThreadId = ThreadId,
+                ClassName = "WindowsForms10.Window.0.app.0.3475548_r8_ad1", Visible = false,
+                Parent = 0, Root = popup.OwnerHandle, Owner = 0,
+                Style = 79691776, ExStyle = 384
+            };
+            return popup;
+        }
+
+        private static WordChatGitMenuDiscovery.OwnerShape Copy(WordChatGitMenuDiscovery.OwnerShape value)
+            => new WordChatGitMenuDiscovery.OwnerShape {
+                Handle = value.Handle, Live = value.Live, ProcessId = value.ProcessId,
+                ThreadId = value.ThreadId, ClassName = value.ClassName, Visible = value.Visible,
+                Parent = value.Parent, Root = value.Root, Owner = value.Owner,
+                Style = value.Style, ExStyle = value.ExStyle
+            };
     }
 }
