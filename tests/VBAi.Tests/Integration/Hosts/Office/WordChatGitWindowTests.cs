@@ -536,7 +536,7 @@ namespace VBAi.Tests.Integration
                             string cls = NativeClass(window);
                             if (!cls.StartsWith("WindowsForms", StringComparison.Ordinal)) continue;
                             var popup = AutomationElement.FromHandle(window);
-                            if (popup.Current.ControlType != ControlType.Menu) continue;
+                            if (!NativeToolStripPopupIdentity.Matches(popup.Current.ControlType.ProgrammaticName, cls)) continue;
                             var items = popup.FindAll(TreeScope.Descendants,
                                 new PropertyCondition(AutomationElement.ControlTypeProperty, ControlType.MenuItem))
                                 .Cast<AutomationElement>().ToArray();
@@ -618,7 +618,8 @@ namespace VBAi.Tests.Integration
                         currentPopupOwner, currentOwner,
                         context.Fixture.ProcessId, context.Scope.ThreadId, expectedRoot);
                     if (!IsWindowVisible(gitPopupHandle) ||
-                        AutomationElement.FromHandle(gitPopupHandle).Current.ControlType != ControlType.Menu ||
+                        AutomationElement.FromHandle(gitPopupHandle).Current.ControlType.ProgrammaticName != selectedPopup.UiType ||
+                        !NativeToolStripPopupIdentity.Matches(selectedPopup.UiType, currentPopupClass) ||
                         !WordChatGitMenuDiscovery.IsExactGitItem(gitItem.Current.Name,
                             UiText.Get("GitHub · synchronize VBA…"), gitItem.Current.ControlType.ProgrammaticName,
                             gitItem.Current.ProcessId, context.Fixture.ProcessId) ||

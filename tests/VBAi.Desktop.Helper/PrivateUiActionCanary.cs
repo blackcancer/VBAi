@@ -127,6 +127,7 @@ namespace VBAi.Desktop.Helper
                 try
                 {
                     var root = AutomationElement.FromHandle(popup);
+                    var nativeClass = new StringBuilder(128); GetClassName(popup, nativeClass, nativeClass.Capacity);
                     var nodes = new List<AutomationElement>(); var pending = new Queue<AutomationElement>();
                     pending.Enqueue(root);
                     while (pending.Count != 0)
@@ -153,12 +154,12 @@ namespace VBAi.Desktop.Helper
                         node.Current.Name == GitLabel && node.Current.ProcessId == processId &&
                         node.Current.IsEnabled && !node.Current.IsOffscreen &&
                         node.Current.NativeWindowHandle == 0 && NativeAncestor(node) == popup).ToArray();
-                    last = new { Popup = popup.ToInt64(), RootRole = root.Current.ControlType.ProgrammaticName,
+                    last = new { Popup = popup.ToInt64(), NativeClass = nativeClass.ToString(), RootRole = root.Current.ControlType.ProgrammaticName,
                         RootPid = root.Current.ProcessId, RawCount = nodes.Count,
                         Roles = shapes.GroupBy(shape => shape.Role).Select(group => new { Role = group.Key, Count = group.Count() }).ToArray(),
                         ExactLabelCount = shapes.Count(shape => shape.ExactLabel), EligibleCount = exact.Length,
                         ExactShapes = shapes.Where(shape => shape.ExactLabel).ToArray() };
-                    if (root.Current.ControlType == ControlType.Menu && root.Current.ProcessId == processId && exact.Length == 1)
+                    if (NativeToolStripPopupIdentity.Matches(root.Current.ControlType.ProgrammaticName, nativeClass.ToString()) && root.Current.ProcessId == processId && exact.Length == 1)
                     { selected = exact[0]; break; }
                 }
                 catch (Exception error)
@@ -270,6 +271,9 @@ namespace VBAi.Desktop.Helper
             var popupClass = new StringBuilder(128); var ownerClass = new StringBuilder(128);
             GetClassName(popup, popupClass, popupClass.Capacity);
             GetClassName(owner, ownerClass, ownerClass.Capacity);
+            if (!NativeToolStripPopupIdentity.Matches(
+                AutomationElement.FromHandle(popup).Current.ControlType.ProgrammaticName, popupClass.ToString()))
+                throw new InvalidOperationException("The exact synthetic popup role or native class changed before action.");
             int domain = popupClass.ToString().IndexOf(".app.", StringComparison.Ordinal);
             bool exactHiddenWinFormsOwner = owner != root && !IsWindowVisible(owner) &&
                 GetParent(owner) == IntPtr.Zero && GetWindow(owner, GwOwner) == IntPtr.Zero &&
@@ -289,7 +293,8 @@ namespace VBAi.Desktop.Helper
                 int exactChild = 0, count = accessibility.accChildCount;
                 if (count < 1 || count > 64) throw new InvalidOperationException("Bounded MSAA popup children unavailable.");
                 for (int child = 1; child <= count; child++)
-                    if (string.Equals(accessibility.get_accName(child), GitLabel, StringComparison.Ordinal))
+                    if (string.Equals(accessibility.get_accName(child), GitLabel, StringComparison.Ordinal) &&
+                        Convert.ToInt32(accessibility.get_accRole(child)) == 12)
                     {
                         if (exactChild != 0) throw new InvalidOperationException("Ambiguous exact MSAA Git item.");
                         exactChild = child;

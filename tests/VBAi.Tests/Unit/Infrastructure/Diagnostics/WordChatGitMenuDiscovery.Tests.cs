@@ -13,6 +13,27 @@ namespace VBAi.Tests.Unit
         private const long Owner = 46473454;
 
         [TestMethod]
+        public void LegacyToolbarPopupRetainsEveryExactOwnerAndVirtualItemConstraint()
+        {
+            var popup = HiddenOwner();
+            popup.UiType = "ControlType.ToolBar";
+            Assert.AreSame(popup, WordChatGitMenuDiscovery.RequireUnique(new[] { popup }, ProcessId, ThreadId, Owner));
+            Action<WordChatGitMenuDiscovery.Candidate>[] changes = {
+                row => row.NativeClass = "WindowsForms10.Window.0.app.0.3475548_r8_ad1",
+                row => row.OwnerShape.ProcessId++, row => row.OwnerShape.ThreadId++,
+                row => row.OwnerShape.Visible = true, row => row.NewlyVisible = false,
+                row => row.GitLabelMatches = 2, row => row.EnabledGitMatches = 0,
+                row => row.GitItemNativeAncestor++, row => row.GitItemProcessId++
+            };
+            foreach (var change in changes)
+            {
+                popup = HiddenOwner(); popup.UiType = "ControlType.ToolBar"; change(popup);
+                Assert.ThrowsException<InvalidOperationException>(() =>
+                    WordChatGitMenuDiscovery.RequireUnique(new[] { popup }, ProcessId, ThreadId, Owner));
+            }
+        }
+
+        [TestMethod]
         public void UniqueLocalizedVirtualGitItemBelongsToExactNewNativeMenuPopup()
         {
             var popup = Exact();

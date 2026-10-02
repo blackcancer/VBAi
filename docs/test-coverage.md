@@ -1,5 +1,34 @@
 # Recorded validation
 
+## Inactive desktop action discovery (2026-10-03)
+
+Frozen source `da34b3bfa987c94ec29469039cdf30273ab3350b` builds with zero
+warnings/errors. Its complete synthetic action matrix reports **8 proven, 1 gap,
+9 required**, ending `2026-10-02T22:21:13.4881213Z`. Product MVID is
+`6f73a96e-e8a5-4317-a857-242106dd8430`; product SHA-256 is
+`6DF0A350B494505E83E31CAA770094295E741F23D459D7932EFAB0CDFB61F93D`;
+test SHA-256 is
+`292437A297EB9C2FECD9416F49C860AFCE9E1297B298AA08C5DD3AFE4F67F3AC`.
+The matrix PID `51756`, UI thread `65676`, and original launcher receipt all bind
+the same inactive desktop; the input desktop stays `Default` and no switch occurs.
+Text, tabs, expanded native-list discovery, exact scope selection/collapse,
+native/custom buttons and owned form closure succeed. The virtual Git item is
+not invoked: the exact `ContextMenuStrip` root exposes `ControlType.ToolBar`,
+while the bank requires `Menu`. Its unique enabled virtual `MenuItem`, exact
+popup ancestor and MSAA child role 12 are observed before any delivery.
+Original child exit code 1 is observed normally. Evidence is under
+`artifacts/q024-private-batch-v4-20261003/`; this is synthetic execution only,
+not Word acceptance or a managed-suite result.
+
+The preceding source `718d0b5` matrix reports **7 proven, 2 discovery gaps,
+9 required**, ending `2026-10-02T22:02:19.0207112Z`; original child exit code 1
+and normal task removal are recorded separately under
+`artifacts/q024-private-batch-v3-20261002/`. Its native combo list item and popup
+role were not yet discovered. Neither matrix starts Office or applies registration.
+The role correction keeps exact native class, identity, frozen owner, virtual
+item and unique MSAA MenuItem checks; it requires fresh complete matrix and
+managed gates before Word qualification. Q-024 remains open; Q-027 is deferred.
+
 ## Inactive desktop managed campaign (2026-10-02)
 
 Source `22f739b5cb79914acf6786ff899d327001af3920` builds the complete prepared

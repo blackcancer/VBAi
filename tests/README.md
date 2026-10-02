@@ -116,6 +116,16 @@ checks both populated and empty inventories on the owned desktop before starting
 any campaign. On the observed Windows 11 host an empty valid desktop returns
 false/error 0 without callbacks; errored or partial inventories remain refusals.
 
+Discover an expanded ComboBox's list through its exact `GetComboBoxInfo` list
+HWND, then require the unique enabled UIA ListItem under that HWND, the same
+process/thread and private desktop. A dropdown need not expose its items as
+descendants of the ComboBox itself. A WinForms Options popup may expose Menu or
+the legacy ToolBar UIA role. The latter is accepted only with the exact native
+WinForms dropdown class, retaining the unique newly visible popup, frozen owner
+shape, localized virtual MenuItem and ancestor checks. Its MSAA default action
+requires a unique exact-label child with MenuItem role 12; discovery does not
+authorize a different toolbar or a repeated action.
+
 Native Word isolation requires `VBAi_TEST_DESKTOP_NAME` and the reviewed installed
 `VBAi_TEST_WORD_EXE`. Its fixture must explicitly launch that binary on the private
 desktop and attach only its verified owned PID through NativeOM. Ordinary COM
@@ -155,7 +165,7 @@ top-level root and VBE thread. An anchored child chat resolves its native modal
 owner to the VBE root, following the
 [Win32 owner contract](https://learn.microsoft.com/en-us/windows/win32/winmsg/window-features#owned-windows).
 Git ToolStrip items may expose no AutomationId or leaf HWND. The bank selects the
-exact localized product label only inside the unique newly visible native Menu
+exact localized product label only inside the unique newly visible native Options
 popup, verifies its PID/thread/owner and rechecks the virtual item's native
 ancestor before invocation. Inventory receipts contain identities and match
 counts, without menu/conversation contents.

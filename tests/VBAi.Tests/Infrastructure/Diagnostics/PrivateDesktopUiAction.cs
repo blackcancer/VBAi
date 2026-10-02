@@ -3,6 +3,7 @@ using System.Runtime.InteropServices;
 using System.Text;
 using System.Windows.Automation;
 using Accessibility;
+using VBAi.Desktop.Helper;
 
 namespace VBAi.Tests.Integration
 {
@@ -103,12 +104,11 @@ namespace VBAi.Tests.Integration
                     item.Current.ProcessId, (int)pid, thread, expectedProcessId, expectedThreadId,
                     item.Current.NativeWindowHandle, unchecked((long)(uint)NativeAncestor(item).ToInt64()),
                     unchecked((long)(uint)popup.ToInt64()),
-                    item.Current.IsEnabled, item.Current.IsOffscreen, IsWindowVisible(popup)) ||
-                AutomationElement.FromHandle(popup).Current.ControlType != ControlType.Menu)
+                    item.Current.IsEnabled, item.Current.IsOffscreen, IsWindowVisible(popup)))
                 throw new InvalidOperationException("The exact owned virtual Git item changed before delivery.");
             var cls = new StringBuilder(128);
             if (GetClassName(popup, cls, cls.Capacity) == 0 ||
-                !cls.ToString().StartsWith("WindowsForms10.Window.", StringComparison.Ordinal))
+                !NativeToolStripPopupIdentity.Matches(AutomationElement.FromHandle(popup).Current.ControlType.ProgrammaticName, cls.ToString()))
                 throw new InvalidOperationException("The exact owned Git popup is not a WinForms menu.");
             Guid iid = IAccessibleId; IAccessible accessible = null;
             Exception actionError = null;
@@ -121,7 +121,8 @@ namespace VBAi.Tests.Integration
                 int count = accessible.accChildCount, exactChild = 0;
                 if (count < 1 || count > 64) throw new InvalidOperationException("Bounded Git popup MSAA child inventory refused.");
                 for (int child = 1; child <= count; child++)
-                    if (string.Equals(accessible.get_accName(child), expectedLabel, StringComparison.Ordinal))
+                    if (string.Equals(accessible.get_accName(child), expectedLabel, StringComparison.Ordinal) &&
+                        Convert.ToInt32(accessible.get_accRole(child)) == 12)
                     {
                         if (exactChild != 0) throw new InvalidOperationException("Ambiguous exact MSAA Git child.");
                         exactChild = child;

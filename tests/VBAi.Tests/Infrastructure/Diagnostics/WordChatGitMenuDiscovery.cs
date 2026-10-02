@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using VBAi.Desktop.Helper;
 
 namespace VBAi.Tests.Integration
 {
@@ -89,8 +90,7 @@ namespace VBAi.Tests.Integration
             var matches = rows.Where(row => row.PopupHandle != 0 && row.Visible && row.NewlyVisible &&
                 row.NativeProcessId == processId && row.UiProcessId == processId &&
                 row.NativeThreadId == threadId && HasStrictPopupOwner(row, processId, threadId, expectedOwner) &&
-                row.NativeClass != null && row.NativeClass.StartsWith("WindowsForms", StringComparison.Ordinal) &&
-                row.UiType == "ControlType.Menu" && row.MenuItemCount > 0 && row.MenuItemCount <= 64 &&
+                NativeToolStripPopupIdentity.Matches(row.UiType, row.NativeClass) && row.MenuItemCount > 0 && row.MenuItemCount <= 64 &&
                 row.GitLabelMatches == 1 && row.EnabledGitMatches == 1 && row.GitItemProcessId == processId &&
                 row.GitItemNativeAncestor == row.PopupHandle).ToArray();
             if (matches.Length != 1 || rows.Count(row => row.PopupHandle == matches[0].PopupHandle) != 1)

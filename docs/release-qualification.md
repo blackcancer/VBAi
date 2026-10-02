@@ -7,7 +7,13 @@ are maintained only in [recorded validation](test-coverage.md).
 ## Current candidate checkpoint (2026-10-02)
 
 The active qualification focus is Q-024; Q-027 is deferred at the maintainer's
-request and retains its recorded open gates. The grouped inactive-desktop managed
+request and retains its recorded open gates. The latest completed inactive-desktop
+matrix on `da34b3b` proves native combo-list discovery and exact scope selection,
+but refuses the legacy ToolBar accessibility role of the Options popup before
+Git delivery. No Office host starts and no registration is applied. The focused
+role correction needs a fresh complete matrix and managed gate; see
+[recorded validation](test-coverage.md#inactive-desktop-action-discovery-2026-10-03).
+The grouped inactive-desktop managed
 campaign on `22f739b` finishes with environment/fixture failures and exact testhost
 desktop evidence. Native Word is NOT_RUN on that candidate; its launcher retains
 ownership after an empty-inventory refusal. Corrections need a fresh green gate
