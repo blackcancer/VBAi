@@ -16,6 +16,8 @@ if ($Prepare) {
     $repository = (Resolve-Path -LiteralPath (Join-Path $PSScriptRoot '../..')).Path
     $installed = Join-Path $InstalledDirectory 'VBAi.dll'
     if (-not [IO.Path]::IsPathRooted($InstalledDirectory) -or -not (Test-Path -LiteralPath $installed)) { throw 'A frozen installed candidate is required.' }
+    $InstalledDirectory=(Resolve-Path -LiteralPath $InstalledDirectory).Path
+    $installed=(Resolve-Path -LiteralPath $installed).Path
     [IO.Directory]::CreateDirectory($EvidenceRoot) | Out-Null
     $build = Join-Path $EvidenceRoot 'build'
     $product = Join-Path $build 'VBAi/Debug/net48'
