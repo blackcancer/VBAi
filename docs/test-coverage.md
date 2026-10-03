@@ -1,5 +1,152 @@
 # Recorded validation
 
+## Q024 resumption and PR20 integration (2026-10-03)
+
+### Published integration candidate
+
+The native qualification branch is published to `main` at `ace85bb`. PR 20 is
+merged and published at `3aa99fbd49d757552b5102ba57afd22e5f0b105a`. Its isolated
+solution and separate frozen-product Q006 harness builds have zero warnings/errors.
+The complete default managed gate reports **3,973 passed, 0 failed, 211 inactive,
+4,184 total**, ending `2026-10-03T09:13:12.6485873Z`. Its complete synthetic action
+matrix proves **9 actions with no gaps**. The actual testhost is PID `34572`,
+thread `41664`, on `VBAiTests_5cf6c9fca4684dca8501d3f4b3c75478`; input is
+`Default`. Original campaign exits and limited-task exits are code 0, and completed
+tasks are removed with receipts. Source and hashes remain exact in the frozen
+checkout. Evidence is under `artifacts/q024-pr20-v11-20261003/`.
+
+Product MVID is `960f6df0-edc5-448c-9e4c-06905968560d`; product SHA-256 is
+`2EB84138C796603B8231262FE49C2CB3849BE9008541F7C810D3A111AE7E5B5A`;
+test SHA-256 is
+`FB25475A1861B24A19428B71B66360628C45EB6977DD8AD027FE82B40CF70253`;
+helper SHA-256 is
+`9468A0D9034C28FB9412DD2F7E1B0AB60B84FD9BC1A4427FD6F1634411C1B565`.
+The merge retains the later Q024 bounded inventory, desktop diagnostics,
+addressed canary action and action matrix instead of replacing them with the
+older Q006 launcher implementations. It includes Q006's literal Excel switches,
+scoped harness and native scenario bank. This is not new Q006 runtime acceptance.
+
+### Literal Word switch candidate and retained native refusal
+
+Source `78f9378dc510d176a278ec6ee3c5def430ff84d7` keeps the single Word `/a`
+switch literal, quotes the macro-free seed path and records the requested raw
+command line. Its isolated build has zero warnings/errors. The complete default
+managed gate reports **3,973 passed, 0 failed, 211 inactive, 4,184 total**, ending
+`2026-10-03T09:18:35.8459195Z`. Its complete synthetic matrix proves **9 actions
+with no gaps**. Actual testhost PID `31328`, thread `34748`, records
+`VBAiTests_26d8eb7773ea44919ad12ad1492b1b7b`, input `Default`. Original and
+limited campaign exits are code 0; source, hashes and completed-task removal are
+verified. Evidence is under `artifacts/q024-word-launch-v12-20261003/`.
+
+Product MVID is `80cbf317-0a65-4def-a227-aff32f7e7545`; product SHA-256 is
+`B0652E15117CC867BE1B71DD235F103954DA107A0A55B00F9E413DA1618DCC74`;
+test SHA-256 is
+`CF2495F0FFD9F86A91473BAD2CC20A0AC71B44F4529BECB3CC282FA855038D06`;
+helper SHA-256 is
+`48B4E251C4F86F544E830DB367A219669EA09E70737A86E2B95FA8B0CCB237E5`.
+Native/provider opt-ins and coverage collection are off in both default gates.
+
+After explicit maintainer authorization, terminal Q026 receipts and an empty
+Office inventory, the independent limited-user Preview and HKCU Apply are
+verified with a unique immutable registration backup. The grouped native bank
+runs once: **0 passed, 1 failed, 2 inactive, 3 total**. Word PID `16696` refuses
+the document/root identity check before NativeOM, VBE, chat or Git. Its launched
+primary thread `44796` has the expected desktop name; this no longer reproduces
+the earlier unavailable primary-thread observation. The recorded product MVID
+is an expected candidate, not a loaded add-in observation.
+
+A read-only probe on `VBAiTests_4b7f6841ebbe43d8b3b50dfd37fefb8e` later finds
+one `_WwG` child `3218062` under visible `OpusApp` root `9966012`, both belonging
+to that PID and thread on the exact inactive desktop. Both are then visible.
+The failure did not record the initial native flags, so startup visibility is a
+hypothesis rather than a proved original cause. No Git action is replayed.
+
+Separate normal release verifies the sole saved owned macro-free DOCX, its
+immutable bytes and exact process generation before one process-local macro
+suppression and one `Quit(0)`. Its newly retained recovery query handle observes
+Word exit code 0, with unchanged seed bytes and no forced termination. This is
+cleanup evidence, not the original launch-handle exit or qualification acceptance.
+The recovery child also exits normally. HKCU restoration matches the exact prior
+snapshot at `2026-10-03T09:29:25.4128054Z`, allowing Q026 to resume. The original
+native campaign's passive retention loop remains infrastructure retained after
+its failed outcome; complete infrastructure cleanup is not claimed.
+
+### Startup readiness candidate
+
+Source `eb0032846a25f9fc4cffa960c400b962a9481777` builds with zero
+warnings/errors. All scenarios are implemented before the affected mirror bank
+runs together: **31 passed, 0 failed, 0 inactive, 31 total**, ending
+`2026-10-03T09:36:28.2831293Z`. Its original and limited child exits are code 0.
+This is the complete affected desktop/readiness mirror bank, not the full default
+suite or Word runtime acceptance. Evidence is under
+`artifacts/q024-readiness-v13-20261003/`.
+
+The bank covers hidden document/root combinations, exact process/root/class/UI
+thread/desktop identity, ambiguous or failed inventories, visibility transition,
+deadline, original process exit and preservation of observation failures. Only a
+positively owned hidden startup window may be observed again, within the existing
+bound. The final visible identity guard remains mandatory before NativeOM. Native
+metadata is durably recorded before each readiness decision.
+
+The complete default managed gate reports **3,977 passed, 0 failed, 211 inactive,
+4,188 total**, with terminal receipt `2026-10-03T09:53:53.1486149Z`. Its complete
+synthetic matrix proves **9 actions with no gaps**. The actual worker and child
+exit receipts preserve `VBAiTests_3467ea38251642d19077aa84e092f62e`, input
+`Default`, no desktop switch, and normal original and limited exits. Completed
+managed and matrix tasks are removed. Exact frozen source and hashes are verified.
+Product MVID is `5ef9f4bc-2aba-490f-8824-bd041b82fa34`; product SHA-256 is
+`F5FC1CF92530638407219E88BA8FEDEAF820D1290EFF09D8153F97948A875B72`;
+test SHA-256 is
+`049E7BF73F5B188E5CA49476E10A06D196975B91D44D238B2ECBF22DACD59F7D`;
+helper SHA-256 is
+`8513430482D4DFFDEF57DBBD40203BA8C1E6127E95A37A8AD8A2660F8FEF6A66`.
+Native/provider opt-ins and the coverage collector are off in this default gate.
+
+After independent limited-user Preview and backed-up HKCU Apply, the complete
+Word bank runs once: **0 passed, 1 failed, 2 inactive, 3 total**, with terminal
+receipt `2026-10-03T09:55:58.4638794Z`. Word PID `2956`, UI thread `444`, records
+its exact `_WwG` child/root initially hidden, then visible on
+`VBAiTests_aa6db6041e0d437183dd34a02347b85b`. NativeOM attachment verifies the
+launched application, active window and sole exact seed document. This proves
+the new bounded readiness path, not the cause of the preceding unrecorded flags.
+Startup then fails while `File.OpenRead` hashes that seed with sharing incompatible
+with Word's open write lease. VBE/add-in loading, Chat/Git and their acceptance
+oracles are not reached. The expected candidate MVID is not loaded-add-in proof.
+
+Separate one-shot normal release verifies the saved sole owned DOCX and exact
+process generation, suppresses macros only in that process, issues one `Quit(0)`
+and observes normal exit through a retained recovery query handle at
+`2026-10-03T09:58:11.8642732Z`. Seed bytes remain unchanged. Exact prior HKCU
+restoration is verified at `2026-10-03T09:58:41.1855796Z`, and no Word or Excel
+remains. This is recovery evidence, not original test-host exit acceptance.
+The failed native campaign retains passive infrastructure without replay or force.
+
+### Open Word seed fingerprint correction
+
+Source `3d88c6eb6fb74b935b20183cec7192081a3dd9ab` builds in an immutable checkout
+with zero warnings/errors. It fingerprints the macro-free seed before launching
+Word, reuses that fingerprint in the launch receipt, and verifies unchanged bytes
+using a read-only stream with read/write sharing after attachment. Executable
+fingerprinting keeps ordinary read-only sharing. All sharing, identity, byte
+preservation and refusal scenarios are implemented before the complete affected
+mirror bank runs together: **34 passed, 0 failed, 0 inactive, 34 total**, with
+terminal receipt `2026-10-03T10:05:37.2690438Z`. Original and limited child exits
+are code 0 on `VBAiTests_553555f56b9e46c4bfad03e2318a1fc5`, input `Default`.
+Frozen source and test hash remain exact. Evidence is under
+`artifacts/q024-seed-share-v14-20261003/`.
+
+Product MVID is `2894cccc-2c7d-4377-a7cb-84e4c741f0ab`; product SHA-256 is
+`7AC0658C9EB21477E5B1D977CC80BCFBC0F2AB40E281FC9EF127E468B3F91CDE`;
+test SHA-256 is
+`68D4EB45C2F10C15E73D02315751429AA3CEA7C5A68AB60F5E4A976C1C809153`;
+helper SHA-256 is
+`B25FEB9257081E01BD28FE7E50F77B736F75D973748904B8A961947F72CF9AF4`.
+This is the affected mirror bank, not a full default gate or native acceptance.
+The full default gate, matrix, registration Apply and native bank for this new
+source remain NOT_RUN. Office and prior COM registration are released for Q026;
+no further native trial is launched in that shared-host handoff. Q024 stays open,
+Q027 remains deferred and the release is not qualified.
+
 ## Complete inactive desktop gate (2026-10-03)
 
 Frozen source `7b0c221c179de611e7bab29428a4d4cd4f26834a` builds with zero

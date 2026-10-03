@@ -6,6 +6,33 @@ are maintained only in [recorded validation](test-coverage.md).
 
 ## Current candidate checkpoint (2026-10-03)
 
+The native qualification branch and PR 20 are published on `main` at `3aa99fb`.
+That integration and the literal Word switch candidate `78f9378` each pass their
+complete default managed gate and complete synthetic UI action matrix with exact
+frozen source and normal campaign exits. The fresh Word bank on `78f9378` refuses
+the document/root identity before NativeOM, VBE, chat or Git. A later read-only
+inventory finds the exact owned windows visible; the original flags were not
+recorded, so the proposed startup-readiness cause remains unproved. Its separate
+one-shot normal release observes Word exit through a retained recovery query
+handle, unchanged seed bytes and exact HKCU restoration. No native action is
+replayed, and the passive failed campaign infrastructure remains retained.
+Source `eb00328` implements the bounded ownership-validated readiness wait and
+passes the complete affected mirror bank, default managed gate and synthetic
+matrix. Its fresh native bank verifies the owned window's hidden-to-visible
+transition and attaches the exact sole Word seed through NativeOM, then fails
+on the seed fingerprint's incompatible file sharing before VBE, Chat or Git.
+Separate normal release verifies Word exit and unchanged seed bytes; exact HKCU
+restoration is verified and Office is released for Q026. The failed passive
+campaign infrastructure remains retained, without force or action replay.
+Source `3d88c6e` captures the fingerprint before launch and checks unchanged seed
+bytes with read/write sharing through a read-only stream. Its isolated build and
+complete affected mirror bank pass. Its full default gate, synthetic matrix,
+registration Apply and native bank remain NOT_RUN during the Q026 host handoff.
+Q024 stays open, Q027 remains deferred. See
+[recorded validation](test-coverage.md#q024-resumption-and-pr20-integration-2026-10-03).
+
+The preceding checkpoint follows as historical candidate evidence.
+
 The active qualification focus is Q-024; Q-027 is deferred at the maintainer's
 request and retains its recorded open gates. Source `7b0c221` passes its
 complete default managed gate and full synthetic UI action matrix on inactive
