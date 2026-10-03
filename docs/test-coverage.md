@@ -1105,6 +1105,56 @@ add-in. Execution checks that value before native launch. No Office trust
 setting or registered identity is changed. The next diagnostic must verify
 actual loaded-candidate identity before any preference scenario is accepted.
 
+### Q-026 current native acceptance (2026-10-03)
+
+Source `9400d654a11affaa931271cc4efcdc4dde05a80c` freezes both final campaigns
+on clean branch `codex/q026-qualification`. Both use product MVID
+`24d4809c-d427-4412-b746-793d59fc056a`, SHA-256
+`37D06CC3D25CC455A3AE6F128756921003577188E1B740882CF17A25DCD6AC48`, and
+Excel `16.0.20430.20092`. The loaded native MVID and all frozen file hashes were
+verified independently of registration readback.
+
+| Campaign / recorded artifact | Actual result | Exact scope |
+| --- | --- | --- |
+| `artifacts/q026-margin-native-v5/managed/managed.trx` | 81 passed, 0 failed, 0 skipped | Focused managed gate, not the full repository suite |
+| `artifacts/q026-margin-native-v5/native/format.trx` | 1 passed, 0 failed, 0 skipped | Fresh owned Excel PID 44076, start `2026-10-03T08:36:34.7590580Z`; real On-to-Off margin transition, independent readbacks, exact complete restoration and normal exit |
+| `artifacts/q026-full-native-v3/managed/managed.trx` | 81 passed, 0 failed, 0 skipped | Same focused managed gate for the independently launched complete campaign |
+| `artifacts/q026-full-native-v3/native/format.trx` | 1 passed, 0 failed, 0 skipped | Fresh owned Excel PID 22396, start `2026-10-03T08:44:40.2579485Z`; full planned Format matrix, refusals, restoration and normal exit |
+
+The complete campaign verifies initial full-state stability; font, foreground,
+background and indicator mutations; another category's foreground; a real margin
+transition; and an intentionally stale revision refusal. Its size catalogue is
+empty: only the expected refusal is accepted, **not a size mutation**. Both
+refusals have independently observed dialog absence and structurally unchanged
+complete readbacks. All six positively committed entries were restored in
+reverse order, with explicit categories and fresh revisions. No uncertain native
+action was replayed.
+
+The independent `complete-restoration-independent.json` comparisons find every
+tab, control, catalogue and palette equal to baseline, with revision
+`544477535d391a457fc66947a3ddb3da7ffb430e6212289c6586a6fcb65f3e05` and matching
+PID/start/MVID metadata within each campaign. The margin comparison finds only
+`/Tabs/1/Controls/11/Value` changed On to Off. The separate full-campaign font
+comparison finds only `/Tabs/1/Controls/8/Value` changed. The restored margin
+snapshot also matches the next fresh Excel's complete initial snapshot; this is
+an actual observation across normal exit and a new host, not a restart claim
+derived from `CommitRequested` alone.
+
+Each fixture retains its original native launch handle and asserts its normal
+exit independently of the separately queried process. Both shutdown receipts
+record exit 0, returned Close/Quit and no forced termination. Both private desktop
+terminals report original-worker exit 0 with input desktop `Default` and no
+desktop switches. Terminal qualification receipts have no primary, restoration
+or shutdown error. No SOLIDWORKS or other-host acceptance is implied.
+
+`artifacts/q026-release.json` records release at `2026-10-03T09:15:13.5259898Z`,
+after owned Excel exit and absence of competing hosts. The limited-context
+restore verified the exact prior Q-024 CodeBase and LoadBehavior DWORD 0.
+The current instrumented Format matrix is **ACCEPTED**. Q-026's historical
+stale-revision cause remains **UNPROVEN**: the old failed run is not converted
+to a pass by these new results, and its stricter causal-closure criterion remains
+open. Further blind repetitions would not supply its missing historical receipts.
+
 ### Q-026 offline snapshot review (2026-10-03)
 
 Branch `codex/q026-qualification` starts from `origin/main` at `4b382b9`,
