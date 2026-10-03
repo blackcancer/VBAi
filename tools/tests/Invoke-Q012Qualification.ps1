@@ -7,6 +7,7 @@ param(
     [Parameter(Mandatory=$true)][string]$DesktopHelperAssembly,
     [string]$TestProject,
     [ValidateSet('All','Access','Publisher')][string]$HostScope='All',
+    [ValidateRange(1,15)][int[]]$ScenarioNumbers=(1..15),
     [string]$BlockedHostReason='Host excluded by the reviewed plan; prior outcomes are not promoted to acceptance.',
     [ValidateSet('Debug','Release')][string]$Configuration='Debug',
     [switch]$Execute
@@ -20,7 +21,7 @@ if(-not $TestProject){$TestProject=Join-Path $repo 'tests/VBAi.Tests/VBAi.Tests.
 $registrationScript=Join-Path $repo 'tools/testing-explorer/Set-TestExplorerCandidate.ps1'
 $testAssembly=Join-Path $BuildOutputRoot ('VBAi.Tests/'+$Configuration+'/net48/VBAi.Tests.dll')
 $unitNames=@('VbeOtherHostPersistenceTests','OfficeProjectReopenIdentityTests','OfficePublisherStartupBindingTests',
-    'OfficeVbeFixturePublisherTestCleanupTests','OfficeMetadataMutationEvidenceTests','VbeScalarPropertyTests','IsolatedTestDesktopTests','OfficeVbeFixtureDesktopTests','OfficeVbeFixtureDesktopStartupRecoveryTests')
+    'OfficeVbeFixturePublisherTestCleanupTests','OfficeMetadataMutationEvidenceTests','VbeScalarPropertyTests','IsolatedTestDesktopTests','OfficeVbeFixtureDesktopTests','OfficeVbeFixtureDesktopStartupRecoveryTests','OfficeVbeFixturePublisherOwnershipTests','AccessSaveConfirmationTests','LlmVbeToolsBoundaryTests')
 $unitFilter=($unitNames | ForEach-Object {'FullyQualifiedName~VBAi.Tests.Unit.'+$_}) -join '|'
 $scenarioRows=@(
     'Access|OfficeAdapterOnlyQualificationTests|Access16ActiveModuleOnlyAdapterSaveReopen',
@@ -44,6 +45,9 @@ foreach($row in $scenarioRows){
     $parts=$row.Split('|')
     $scenarios+=[pscustomobject][ordered]@{Number=$scenarios.Count+1;Host=$parts[0];Method=$parts[2];
         FullyQualifiedName='VBAi.Tests.Integration.'+$parts[1]+'.'+$parts[2]}
+}
+if($ScenarioNumbers.Count -eq 0 -or @($ScenarioNumbers | Select-Object -Unique).Count -ne $ScenarioNumbers.Count){
+    throw 'Select at least one distinct planned scenario number; duplicates are refused.'
 }
 function Write-Report([string]$Path,$Value){
     [IO.File]::WriteAllText($Path,(ConvertTo-Json -InputObject $Value -Depth 100),[Text.UTF8Encoding]::new($false))
@@ -187,7 +191,7 @@ if(-not $Execute){
         GitExecutable=$gitExecutable;GitExecutableSha256=(Hash-File $gitExecutable);
         SourceFiles=@(Source-Snapshot);BinaryFiles=@(Binary-Snapshot);UnitFilter=$unitFilter;NativeScenarios=$scenarios;
         ExistingAccess=@(Host-Inventory 'Access');ExistingPublisher=@(Host-Inventory 'Publisher');
-        HostScope=$HostScope;BlockedHostReason=$BlockedHostReason;
+        HostScope=$HostScope;BlockedHostReason=$BlockedHostReason;SelectedScenarioNumbers=@($ScenarioNumbers);
         NativeInvocationLimit=1;NativeSaveReplay=$false;ForceTermination=$false;InputDesktopFallback=$false;MetadataGetterProbe=$false;
         Scope='Existing ACCDB/PUB save; no first SaveAs, macro execution, trust changes or signatures.'}
     Write-Report $planPath $plan
@@ -202,6 +206,7 @@ if($plan.Format -cne 'VBAi.Q012.Campaign.1' -or $plan.Repository -cne $repo -or
     $plan.TestAssembly -cne $testAssembly -or $plan.Configuration -cne $Configuration -or
     $plan.DesktopHelperAssembly -cne $DesktopHelperAssembly -or $plan.EvidenceDirectory -cne $EvidenceDirectory -or
     $plan.HostScope -cne $HostScope -or $plan.BlockedHostReason -cne $BlockedHostReason -or
+    (Canonical-Json @($plan.SelectedScenarioNumbers)) -cne (Canonical-Json @($ScenarioNumbers)) -or
     $plan.UnitFilter -cne $unitFilter -or (Canonical-Json @($plan.NativeScenarios)) -cne (Canonical-Json $scenarios)){
     throw 'Plan identity or fixed scenario inventory changed.'
 }
@@ -221,7 +226,7 @@ $claimPath=Join-Path $EvidenceDirectory 'execution-claim.json'
 $claim=[IO.File]::Open($claimPath,[IO.FileMode]::CreateNew,[IO.FileAccess]::Write,[IO.FileShare]::Read)
 $claim.Dispose()
 Write-Report $claimPath @{State='CLAIMED_ONCE';PlanSha256=(Hash-File $planPath);Pid=$PID;Desktop=$desktop;Utc=[DateTime]::UtcNow.ToString('o')}
-$summary=[ordered]@{State='RUNNING';CandidateMvid=$mvid;CandidateSha256=$plan.CandidateSha256;Desktop=$desktop;
+$summary=[ordered]@{State='RUNNING';FullMatrixQualified=$false;CandidateMvid=$mvid;CandidateSha256=$plan.CandidateSha256;Desktop=$desktop;
     Unit=$null;Scenarios=@();RegistrationApply=$null;RegistrationRestore=$null;Failure=$null;CompletedUtc=$null}
 $summaryPath=Join-Path $EvidenceDirectory 'summary.json'
 $pattern='^VBAi_RUN_|^VBAi_TEST_|^VBAi_OFFICE_RESULTS$|^VBAi_SOLIDWORKS_PID$|^VBAI_EDITOR_|^VBAI_NATIVE_'
@@ -246,7 +251,9 @@ try{
             Require-Frozen $plan
             $desktopType.GetMethod('RequireCurrent',$flags).Invoke($null,@($desktop)) | Out-Null
             $existing=@(Host-Inventory $scenario.Host)
-            if($HostScope -ne 'All' -and $scenario.Host -ne $HostScope){
+            if($scenario.Number -notin $ScenarioNumbers){
+                $summary.Scenarios+=@{Scenario=$scenario;State='NOT_RUN';Reason='Outside the frozen diagnostic selection';InvocationCount=0}
+            }elseif($HostScope -ne 'All' -and $scenario.Host -ne $HostScope){
                 $summary.Scenarios+=@{Scenario=$scenario;State='BLOCKED';Reason=$BlockedHostReason;InvocationCount=0}
             }elseif($existing.Count){
                 $summary.Scenarios+=@{Scenario=$scenario;State='BLOCKED';Reason='Existing/retained same-host process; ownership would refuse';Processes=$existing;InvocationCount=0}
@@ -259,7 +266,10 @@ try{
             Write-Report $summaryPath $summary
         }
         Require-Frozen $plan
-        $summary.State=if(@($summary.Scenarios | Where-Object {$_.State -ne 'PASS'}).Count){'FAILED_OR_BLOCKED'}else{'PASS'}
+        $selectedResults=@($summary.Scenarios | Where-Object {$_.Scenario.Number -in $ScenarioNumbers})
+        $summary.State=if($selectedResults.Count -ne $ScenarioNumbers.Count -or @($selectedResults | Where-Object {$_.State -ne 'PASS'}).Count){
+            'FAILED_OR_BLOCKED'
+        }elseif($ScenarioNumbers.Count -lt $scenarios.Count){'DIAGNOSTIC_PASS'}else{'PASS'}
     }
 }catch{
     $summary.State='FAILED';$summary.Failure=$_.Exception.ToString()
@@ -279,9 +289,12 @@ try{
         if($variable.Name -notin $desktopVariables){Remove-Item -LiteralPath ('Env:\'+$variable.Name)}
     }
     foreach($variable in $variables){Set-Item -LiteralPath ('Env:\'+$variable.Name) -Value $variable.Value}
+    $summary.FullMatrixQualified=($summary.State -eq 'PASS' -and
+        $applyAttempted -and $summary.RegistrationRestore.Restored -eq $true -and
+        $summary.RegistrationRestore.Verified -eq $true)
     $summary.CompletedUtc=[DateTime]::UtcNow.ToString('o')
     Write-Report $summaryPath $summary
 }
 Write-Output ('Q012 '+$summary.State+': '+$summaryPath)
-if($summary.State -ne 'PASS'){exit 1}
+if($summary.State -notin @('PASS','DIAGNOSTIC_PASS')){exit 1}
 exit 0

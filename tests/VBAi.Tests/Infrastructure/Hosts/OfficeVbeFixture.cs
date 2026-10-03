@@ -147,6 +147,7 @@ namespace VBAi.Tests.Integration
                 else
                 {
                     result.RecordPublisherActivationCanary();
+                    if (desktop != null) result.RequireApplicationOwner();
                     result.document = app.NewDocument();
                     result.RequirePublisherPublication("AfterNewDocumentBeforeBootstrapSave", false);
                     result.ShowPublisherWindow();
@@ -426,6 +427,7 @@ namespace VBAi.Tests.Integration
                 else if (Kind == "Publisher")
                 {
                     Project = null;
+                    if (privateDesktop != null) RequireApplicationOwner();
                     document = app.Open(DocumentPath, false, false);
                     RequirePublisherPublication("AfterFreshDiskOpen", true);
                     ShowPublisherWindow();
@@ -694,6 +696,11 @@ namespace VBAi.Tests.Integration
 
         private void RequireApplicationOwner()
         {
+            if (Kind == "Publisher" && privateDesktop != null && document == null)
+            {
+                RecheckPrivatePublisherOwnership();
+                return;
+            }
             object window = null;
             try
             {
@@ -809,6 +816,8 @@ namespace VBAi.Tests.Integration
                 catch (Exception error) { RetainUncertainOffice(); RecordCleanupFailure(error.Message); return; }
             try { Release(application); } catch (Exception error) { externalReferencesReleased = false; RecordCleanupFailure(error.Message); }
             application = null;
+            try { ClosePrivatePublisherOwnershipAfterQuit(externalReferencesReleased); }
+            catch (Exception error) { RetainUncertainOffice(); RecordCleanupFailure(error.ToString()); return; }
             var process = ownedProcess;
             if (process != null)
                 try

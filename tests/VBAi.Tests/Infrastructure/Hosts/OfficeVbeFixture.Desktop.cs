@@ -180,6 +180,8 @@ namespace VBAi.Tests.Integration
         private void StartPrivateOfficeHost(string desktop)
         {
             IsolatedTestDesktop.RequireCurrent(desktop);
+            if (publisherOwnership != null || publisherOwnershipUnknown != IntPtr.Zero)
+                throw new InvalidOperationException("A retained Publisher ownership probe refuses a new native launch before observed original exit.");
             showPrivateAccess = null;
             string executable = RequirePrivateOfficeExecutable(Kind, desktop,
                 privateExecutable ?? Environment.GetEnvironmentVariable("VBAi_TEST_" + Kind.ToUpperInvariant() + "_EXE"));
@@ -224,14 +226,16 @@ namespace VBAi.Tests.Integration
                     {
                         candidate = Marshal.GetActiveObject(progId); // ROT read only: never CoCreateInstance.
                         application = candidate;
-                        RequireApplicationOwner();
+                        if (Kind == "Publisher") BindPrivatePublisherOwnership();
+                        else RequireApplicationOwner();
                         RequirePrivateHostDesktop(true);
                         steps.Add(new { PrivateDesktopApplicationAttached = true, ProcessId, Desktop = desktop,
                             Attachment = "ExistingROT", ProgId = progId, ElapsedMilliseconds = watch.ElapsedMilliseconds });
                         FlushAdapterEvidence();
                         attached = true;
                     }
-                    catch (COMException error) when (error.ErrorCode == unchecked((int)0x800401E3) || error.ErrorCode == unchecked((int)0x80010001))
+                    catch (COMException error) when ((Kind != "Publisher" || publisherOwnership == null) &&
+                        (error.ErrorCode == unchecked((int)0x800401E3) || error.ErrorCode == unchecked((int)0x80010001)))
                     {
                         application = null;
                         if (candidate != null) Marshal.ReleaseComObject(candidate);
@@ -265,6 +269,9 @@ namespace VBAi.Tests.Integration
         {
             if (privateDesktopChild == null) return;
             if (!privateDesktopChild.Wait(0)) throw new InvalidOperationException("The original private host handle cannot be released before observed exit.");
+            if (publisherOwnershipUnknown != IntPtr.Zero) { Marshal.Release(publisherOwnershipUnknown); publisherOwnershipUnknown = IntPtr.Zero; }
+            publisherOwnership = null;
+            publisherOwnershipChild = null;
             privateDesktopChild.Dispose(); privateDesktopChild = null;
         }
     }

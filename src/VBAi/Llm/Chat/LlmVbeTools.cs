@@ -536,10 +536,25 @@ namespace VBAi
                             return json.Serialize(Response.Failure("VBE edit policy changed before Save."));
                     }
                     string saveBoundProject = BoundProject;
-                    result = name == "status"
+                    if (name == "save_host_document" && asyncSave)
+                    {
+                        // Save can yield before a host-native confirmation. Preserve the original
+                        // approval and binding, but revalidate current permissions at every mutation.
+                        request.RevalidateSaveAuthorization = () => {
+                            ValidateScope?.Invoke();
+                            GuardMode(name);
+                            if (!string.Equals(saveBoundProject, BoundProject, StringComparison.OrdinalIgnoreCase))
+                                throw new InvalidOperationException("The conversation project binding changed during Save.");
+                            GuardProject(name, arguments);
+                            GuardLegacyEditorMutation(name);
+                            if (settings.VbeEditApproval != "Automatic" && !(settings.VbeEditApproval == "AskEachTime" && editApproved))
+                                throw new InvalidOperationException("VBE edit policy changed while Save was pending.");
+                        };
+                        try { result = Response.Success(await SaveHostDocumentNative(request)); }
+                        finally { request.RevalidateSaveAuthorization = null; }
+                    }
+                    else result = name == "status"
                         ? Response.Success(ScopedLiveSnapshot())
-                        : name == "save_host_document" && asyncSave
-                        ? Response.Success(await SaveHostDocumentNative(request))
                         : IsTestingTool(name)
                         ? ExecuteTestingRequest(request, name, arguments, editApproved, testingBoundProject)
                         : Execute(request);

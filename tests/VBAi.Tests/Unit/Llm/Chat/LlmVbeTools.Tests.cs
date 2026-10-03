@@ -170,6 +170,124 @@ namespace VBAi.Tests.Unit
         }
 
         [DataTestMethod]
+        [DataRow("readOnly", false)][DataRow("readOnly", true)]
+        [DataRow("binding", false)][DataRow("binding", true)]
+        [DataRow("askEachTime", false)][DataRow("unknownPolicy", false)]
+        [DataRow("scope", false)][DataRow("mode", false)]
+        public void DeferredSaveAuthorizationBlocksConfirmationAfterRevocation(string revoked, bool catalog)
+        {
+            var previous = System.Threading.SynchronizationContext.Current;
+            var context = new SaveQueueContext();
+            System.Threading.SynchronizationContext.SetSynchronizationContext(context);
+            try
+            {
+                var fixture = new ToolFixture(); fixture.Tools.BoundProject = "P";
+                bool scopeValid = true; int saves = 0, confirmations = 0, dialogs = 0;
+                fixture.Tools.ValidateScope = () => { if (!scopeValid) throw new InvalidOperationException("Scope revoked"); };
+                fixture.Tools.ShowApproval = (dialog, owner) => { dialogs++; return System.Windows.Forms.DialogResult.Yes; };
+                Request captured = null;
+                var ready = new System.Threading.Tasks.TaskCompletionSource<object>();
+                fixture.Tools.SaveHostDocumentNative = async request => {
+                    captured = request; Assert.IsNotNull(request.RevalidateSaveAuthorization);
+                    request.RevalidateSaveAuthorization(); saves++; // Simulates the original ID3 mutation.
+                    await ready.Task;
+                    try { request.RevalidateSaveAuthorization(); }
+                    catch (InvalidOperationException)
+                    {
+                        return new { SaveInvoked = true, Verified = false, Uncertain = true,
+                            Reason = "Authorization was revoked before native confirmation; no replay." };
+                    }
+                    confirmations++;
+                    return new { SaveInvoked = true, Verified = true, Uncertain = false };
+                };
+                string arguments = Json.Serialize(new { Project = "P", ExpectedProjectVersion = "version", ExpectedHostPath = @"C:\fixture\Owned.accdb" });
+                if (catalog) arguments = Json.Serialize(new { ToolName = "save_host_document", ArgumentsJson = arguments });
+                var pending = fixture.Tools.InvokeAsync(catalog ? "invoke_tool" : "save_host_document", arguments);
+                context.Drain(); Assert.AreEqual(1, saves); Assert.IsFalse(pending.IsCompleted);
+                if (revoked == "readOnly") fixture.Settings.VbeEditApproval = "ReadOnly";
+                if (revoked == "askEachTime") fixture.Settings.VbeEditApproval = "AskEachTime";
+                if (revoked == "unknownPolicy") fixture.Settings.VbeEditApproval = "Other";
+                if (revoked == "binding") fixture.Tools.BoundProject = "Other";
+                if (revoked == "scope") scopeValid = false;
+                if (revoked == "mode") fixture.Tools.Mode = ChatMode.Plan;
+                ready.SetResult(null); context.Drain();
+                string result = pending.GetAwaiter().GetResult();
+                Success(result, "original save remains uncertain after " + revoked);
+                StringAssert.Contains(result, "\"Uncertain\":true");
+                Assert.AreEqual(0, confirmations); Assert.AreEqual(1, saves); Assert.AreEqual(0, dialogs);
+                Assert.IsNull(captured.RevalidateSaveAuthorization, "The runtime authorization must end with the native await.");
+            }
+            finally { System.Threading.SynchronizationContext.SetSynchronizationContext(previous); }
+        }
+
+        [DataTestMethod]
+        [DataRow("Automatic")][DataRow("AskEachTime")]
+        public void DeferredSaveConfirmationReusesOriginalApprovalWithoutAnotherDialog(string policy)
+        {
+            var fixture = new ToolFixture(); fixture.Tools.BoundProject = "P"; fixture.Settings.VbeEditApproval = policy;
+            int approvals = 0, checks = 0, confirmations = 0;
+            Request captured = null;
+            fixture.Tools.ShowApproval = (dialog, owner) => { approvals++; return System.Windows.Forms.DialogResult.Yes; };
+            fixture.Tools.SaveHostDocumentNative = request => {
+                captured = request; Assert.IsNotNull(request.RevalidateSaveAuthorization);
+                request.RevalidateSaveAuthorization(); checks++;
+                request.RevalidateSaveAuthorization(); checks++; confirmations++;
+                return System.Threading.Tasks.Task.FromResult<object>(new { SaveInvoked = true, Verified = true });
+            };
+            Success(InvokeSaveContract(fixture, Json.Serialize(new { Project = "P", ExpectedProjectVersion = "version",
+                ExpectedHostPath = @"C:\fixture\Owned.accdb" })), "authorized native confirmation");
+            Assert.AreEqual(policy == "AskEachTime" ? 1 : 0, approvals);
+            Assert.AreEqual(2, checks); Assert.AreEqual(1, confirmations); Assert.IsNull(captured.RevalidateSaveAuthorization);
+        }
+
+        [TestMethod]
+        public void DeferredSaveAuthorizationClearsOnNativeFailure()
+        {
+            var fixture = new ToolFixture(); fixture.Tools.BoundProject = "P"; Request captured = null; int saves = 0;
+            fixture.Tools.SaveHostDocumentNative = request => {
+                captured = request; Assert.IsNotNull(request.RevalidateSaveAuthorization);
+                request.RevalidateSaveAuthorization(); saves++;
+                return System.Threading.Tasks.Task.FromException<object>(new InvalidOperationException("Original native failure"));
+            };
+            Failed(InvokeSaveContract(fixture, Json.Serialize(new { Project = "P", ExpectedProjectVersion = "version",
+                ExpectedHostPath = @"C:\fixture\Owned.accdb" })), "native failure");
+            Assert.AreEqual(1, saves); Assert.IsNull(captured.RevalidateSaveAuthorization);
+        }
+
+        [TestMethod]
+        public void SaveRuntimeAuthorizationIsNotPartOfTheJsonProtocol()
+        {
+            var request = new Request { Command = "save_host_document", Project = "P" };
+            request.RevalidateSaveAuthorization = () => Assert.Fail("Serialization cannot invoke a runtime authorization.");
+            string serialized = Json.Serialize(request);
+            Assert.IsFalse(serialized.Contains("RevalidateSaveAuthorization"));
+            var parsed = Json.Deserialize<Request>("{\"Command\":\"save_host_document\",\"RevalidateSaveAuthorization\":true}");
+            Assert.IsNull(parsed.RevalidateSaveAuthorization, "JSON cannot install a runtime delegate.");
+            Assert.IsNull(typeof(Request).GetField("RevalidateSaveAuthorization"));
+            Assert.IsNull(typeof(Request).GetProperty("RevalidateSaveAuthorization"));
+        }
+
+        [DataTestMethod]
+        [DataRow(false)][DataRow(true)]
+        public void SaveRuntimeAuthorizationCannotBeSuppliedAsToolArgument(bool catalog)
+        {
+            var fixture = new ToolFixture(); fixture.Tools.BoundProject = "P"; int saves = 0;
+            fixture.Tools.SaveHostDocumentNative = request => { saves++; return System.Threading.Tasks.Task.FromResult<object>(new { Saved = true }); };
+            string arguments = Json.Serialize(new { Project = "P", ExpectedProjectVersion = "version",
+                ExpectedHostPath = @"C:\fixture\Owned.accdb", RevalidateSaveAuthorization = true });
+            var previous = System.Threading.SynchronizationContext.Current;
+            var context = new SaveQueueContext(); System.Threading.SynchronizationContext.SetSynchronizationContext(context);
+            try
+            {
+                if (catalog) arguments = Json.Serialize(new { ToolName = "save_host_document", ArgumentsJson = arguments });
+                var pending = fixture.Tools.InvokeAsync(catalog ? "invoke_tool" : "save_host_document", arguments);
+                context.Drain(); Failed(pending.GetAwaiter().GetResult(), "runtime authorization is not a wire argument");
+                Assert.AreEqual(0, saves);
+            }
+            finally { System.Threading.SynchronizationContext.SetSynchronizationContext(previous); }
+        }
+
+        [DataTestMethod]
         [DataRow("project")]
         [DataRow("mode")]
         [DataRow("policy")]

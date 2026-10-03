@@ -27,7 +27,48 @@ operation, language feature or UI surface.
 
 ### Current operation-specific refresh
 
-The Q-012 inactive-desktop campaign bound to source `a9e7609` and the pending
+The frozen Q-012 D3 candidate refreshes Access module/class adapter Save with
+the final pre-confirmation deadline guard included. The normal approved French
+confirmation is queued once; its modal disappears, saved state is verified,
+and an independent fresh process reads exact source from disk. Original and
+fresh processes exit normally. The native case exercises normal completion;
+deadline refusal branches have focused managed evidence.
+
+The production guard requires the exact native VBE process/UI thread, qualified
+French controls, approved Type1/Type2 module/class objects, complete selection
+and unchanged approved context/runtime authorization. Unknown, preexisting,
+changed or ambiguous prompts remain refused. Queuing is separate from saved
+state and fresh-process persistence acceptance.
+
+Publisher D3 bootstrap observes a complete owned command-bar inventory, but its
+first exact CommandBar NativeOM interface query returns E_NOINTERFACE.
+It stops before a typed cast, NativeOM Application getter/identity comparison,
+publication creation or Save, without fallback or retry. This does not prove
+the interface is absent on every bar/version or explain the broader startup
+cause. Remaining Publisher scenarios are blocked. Earlier Publisher/VBE
+acceptance retains its recorded candidate and operation limits.
+
+D3 does not rerun the other Access scenarios. D2 acceptance for active-module
+source, reference additions by GUID/file, reference removal and Description
+retains its exact candidate scope and normal fresh-process lifecycle evidence.
+D2 HelpFile exact fresh readback and HelpContextID setter failures remain open;
+neither is repaired or reclassified by D3.
+
+Private/input desktop inventories and temporary registration restoration are
+verified. All owned Office processes and the helper are subsequently closed.
+Publisher's forced cleanup has subsequent absence evidence but no persisted
+exit-code receipt; it does not qualify normal exit or persistence. Q-012 remains
+PARTIAL. Separate post-D3 script-only checks verify the runner's final verdict
+requires overall PASS and verified registration restoration; they add no native
+acceptance and do not change assembly source. Later source edits require separate
+validation. Exact counters,
+binary identity, failure boundaries and cleanup receipts are in
+[recorded validation](test-coverage.md#q-012-final-boundary-and-typed-publisher-refresh-2026-10-03).
+The [D2 matrix](test-coverage.md#q-012-access-confirmation-and-native-matrix-2026-10-03)
+and [D1 diagnosis](test-coverage.md#q-012-access-save-confirmation-and-publisher-ownership-diagnostic-2026-10-03)
+retain their original outcomes.
+
+The earlier Q-012 inactive-desktop campaign bound to source `a9e7609` and the pending
 test-infrastructure manifest refreshes Access active-module-only adapter Save:
 the original owned process exits normally, a distinct fresh process reads the
 exact disk content, and final normal exit is observed. The broader module/class
@@ -39,7 +80,7 @@ inventory does not identify a causal fix. The inactive desktop has verified
 window isolation and restored temporary COM registration. Separately authorized
 forced cleanup closes the retained Access process and helper without replaying
 Save or Quit; it does not qualify normal exit, disk consistency or native reopen.
-No production repair is established. This does not replace the earlier accepted
+That earlier campaign established no production repair. This does not replace the earlier accepted
 reference, metadata, module/class/form or shared-VBE scopes below, nor establish
 whole-host compatibility. Q-012 remains PARTIAL. See
 [recorded validation](test-coverage.md#q-012-inactive-desktop-persistence-campaign-2026-10-03)
@@ -374,8 +415,8 @@ binary, not the later edits listed in the coverage summary.
 | Excel x64 | Earlier builds covered load/bridge, save, protection, debugger inspection, Monaco, palette and Ollama tool read. On candidate 353d, `scalar-excel-native` passes complete UserForm fitting, arrays and persistence with normal exits. Independent scroll-only and generic scalar trials also pass: project Description, module Name with unchanged code, and Label BackColor verified through native getters and a reviewed designer capture. | Q-025's tested fitting/scalar paths are corrected; earlier crashes and abnormal exits remain recorded. This does not qualify every control, all Git workflows or other hosts. Format-options revision drift remains Q-026 despite a later successful rerun and verified preference restoration. |
 | Word, Office 16 x64 | `office-accepted` verifies disposable DOCM editing, references, module/class/form content and adapter-only save/reopen; PID 35984 exited normally. On 353d, two-document native evidence (local artifact: `artifacts/qualification-v1/word-git-native/353-native-03/hosts/Word/2cb46193741e415ab5773c1539745096/qualification.json`) verifies same-name project resolution by canonical document paths, native selection, refusal of the old Git binding after owned SaveAs, and unchanged source in the other document; PID 50144 exited normally. | The path contract preserves raw `VBProject.FileName` and uses PID/IUnknown-matched `Document.FullName`. Complete Git remains blocked (**Q-024**): production Capture receives 0x800AC35C during export into GitTemporary, despite successful byte-identical bridge/external exports to artifact paths. The suite remains failed. Native chat/Git UI opening, every SaveAs/cancellation path and template support are not qualified; `Normal` was not modified. |
 | PowerPoint, Office 16 x64 | `office-accepted`, disposable `.pptm`: shared VBE scenarios and VBAi adapter save passed, with `Verified=true`, `Uncertain=false`, followed by close/reopen without a helper save and module/class/form readback. Owned PID `50432` exited with code 0. | This supersedes the earlier trust-blocked save observation. It qualifies the tested existing-document save path, not every SaveAs, event cancellation, execution or Git workflow. |
-| Access, Office 16 x64 | `office-accepted`, disposable `.accdb`: shared VBE inspection/editing, references, compilation, an MSForms UserForm and native-helper save/reopen passed. Owned PIDs `36512` and `57496` exited with code 0. | The existing-document adapter now has scoped v5 module/class, Description and reference-addition save/reopen acceptance above; HelpFile, HelpContextID and reference-removal acceptance remain incomplete. Access matches CurrentProject.FullName to a unique injected-VBE project and uses stable Application/PID and mapped/selected-project guards before the built-in VBE Save command for the exact active project. It does not compile implicitly or invent a document Saved flag; first SaveAs is unavailable. |
-| Publisher, Office 16 x64 | `office-accepted`, disposable `.pub`: shared VBE inspection/editing, references, compilation, UserForm and native-helper save/reopen passed. Owned PIDs `30152` and `27104` exited with code 0. | The follow-up source includes an existing-document adapter; native adapter save/reopen remains `NOT_QUALIFIED`. Publisher matches Document.FullName to a unique injected-VBE project and invokes Document.Save once after final identity/path/format/writable checks. First SaveAs is unavailable. |
+| Access, Office 16 x64 | `office-accepted`, disposable `.accdb`: shared VBE inspection/editing, references, compilation, an MSForms UserForm and native-helper save/reopen passed. Owned PIDs `36512` and `57496` exited with code 0. | D3 qualifies normal module/class adapter Save with the final confirmation deadline guard, exact fresh-process source readback and normal exits. D2 active-module, reference additions by GUID/file, reference removal and Description acceptance retains its exact candidate scope. HelpFile fresh metadata readback and the HelpContextID setter remain unqualified. Access matches CurrentProject.FullName to a unique injected-VBE project and uses stable Application/PID and mapped/selected-project guards before VBE Save. Its qualified French multi-object prompt requires approved Type1/Type2 objects, complete selection and revalidated context/runtime authorization before a single queued confirmation. It does not compile implicitly or invent a document Saved flag; first SaveAs is unavailable. |
+| Publisher, Office 16 x64 | `office-accepted`, disposable `.pub`: shared VBE inspection/editing, references, compilation, UserForm and native-helper save/reopen passed. Owned PIDs `30152` and `27104` exited with code 0. | Earlier existing-document adapter acceptance retains its recorded operation/candidate limits. D3 bootstrap refuses the first exact CommandBar NativeOM query with E_NOINTERFACE before typed cast, NativeOM Application getter, publication creation or Save; this is not a host-wide interface verdict. Publisher matches Document.FullName to a unique injected-VBE project and invokes Document.Save once after final identity/path/format/writable checks. First SaveAs is unavailable. |
 | Classic Outlook, Office 16 x64 | `outlook-accepted`: startup, exact loaded MVID/PID, project inventory, explicit-project debug state and VBE environment passed using the existing profile. Owned PID `37044` exited with code 0. | Read-only metadata qualification only. No profile was configured, mail read/sent, or user VBA code modified. Persistence, macro execution and full Outlook UI workflows remain unqualified. |
 | New Outlook for Windows | Installed; **NOT_APPLICABLE** to the VBE add-in. | Microsoft documents that [new Outlook does not support VBA/macros](https://learn.microsoft.com/en-us/microsoft-365-apps/outlook/get-started/vba-alternatives). |
 | OneNote desktop | Installed; **NOT_APPLICABLE** to the VBE add-in. | Its [documented Application interface](https://learn.microsoft.com/en-us/office/client-developer/onenote/application-interface-onenote) exposes content/window automation, not a VBE host. COM registration alone does not establish VBE compatibility. |

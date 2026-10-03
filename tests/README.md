@@ -16,6 +16,15 @@ and frozen `-BlockedHostReason` can preserve a proven prerequisite failure witho
 repeating that unchanged host bootstrap; every excluded row stays BLOCKED. No native mutation or
 cleanup is replayed to obtain a pass.
 
+`-ScenarioNumbers` can freeze a smaller diagnostic selection from the numbered
+matrix. Each number must be distinct; unselected rows remain NOT_RUN with zero
+invocations. A selected-case pass does not qualify the full matrix. Use a fresh
+plan/evidence directory for a changed hypothesis or instrumentation, retaining
+the original failures and avoiding a replay of already accepted cases.
+Its terminal state is `DIAGNOSTIC_PASS` only when all selected cases pass;
+`FullMatrixQualified` remains false unless the complete matrix passes and the
+exact temporary COM registration is restored and verified at the terminal gate.
+
 Build the solution with an isolated `BuildOutputRoot`. Prepare with absolute
 `-CandidateAssembly`, `-BuildOutputRoot`, `-EvidenceDirectory` and
 `-DesktopHelperAssembly` paths using Windows PowerShell 5.1 x64. The helper is

@@ -224,7 +224,7 @@ namespace VBAi.Tests.Unit
         }
 
         /// <summary>Checks the final built-in command boundary against the exact approved pane and component.</summary>
-        [DataTestMethod, DataRow("unchanged"), DataRow("pane"), DataRow("component"), DataRow("closed")]
+        [DataTestMethod, DataRow("unchanged"), DataRow("pane"), DataRow("component"), DataRow("closed"), DataRow("beforeSaveGuard")]
         public void AccessNativeCommandRechecksApprovedSelectionImmediatelyBeforeItsSingleInvocation(string change)
         {
             var editor = new AsyncAccessEditor();
@@ -245,6 +245,10 @@ namespace VBAi.Tests.Unit
             if (change == "pane") editor.ActiveCodePane = new AsyncAccessPane { CodeModule = new AsyncAccessCode { Parent = component } };
             if (change == "component") editor.ActiveCodePane.CodeModule.Parent = new object();
             if (change == "closed") editor.ActiveCodePane = null;
+            if (change == "beforeSaveGuard") native.AccessBeforeSave = () => {
+                Assert.IsFalse(native.SaveInvocationStarted);
+                throw new InvalidOperationException("An owned modal or revoked authorization prevents the command.");
+            };
             if (change == "unchanged")
             {
                 native.Save(document, false, project.FileName, 12);
@@ -255,6 +259,194 @@ namespace VBAi.Tests.Unit
                 Assert.ThrowsException<InvalidOperationException>(() => native.Save(document, false, project.FileName, 12));
                 Assert.AreEqual(0, editor.CommandBars.Control.Executions);
                 Assert.IsFalse(native.SaveInvocationStarted);
+            }
+        }
+
+        /// <summary>One synthetic confirmation must yield before the original Save receives verified saved-state evidence.</summary>
+        [STATestMethod]
+        public void AccessConfirmationQueuesOnceAndStillRequiresFullOwnerThreadSavedVerification()
+        {
+            var f = new AsyncAccessFixture();
+            var confirmation = AttachAccessConfirmation(f);
+            confirmation.AfterEnqueue = () => f.Probe.Project.Saved = true;
+            dynamic result = CompleteAccessSave(f.Service.SaveHostDocumentAsync(f.Probe.Request()));
+            Assert.IsTrue((bool)result.Verified); Assert.IsFalse((bool)result.Uncertain);
+            Assert.AreEqual(1, f.Probe.Attempts); Assert.AreEqual(1, confirmation.ConfirmEntries);
+            Assert.AreEqual(1, (int)result.ConfirmationAttempts);
+            Assert.IsTrue((bool)result.ConfirmationQueued); Assert.IsFalse((bool)result.ConfirmationPending);
+            Assert.IsFalse((bool)result.PersistenceReopenVerified);
+            Assert.IsTrue(confirmation.ObserveEntries >= 2, "Enqueue must be followed by another read-only observation.");
+            Assert.AreEqual(1, confirmation.PrepareEntries);
+        }
+
+        /// <summary>A preexisting prompt is refused before the original native Save, without attaching to an earlier uncertain operation.</summary>
+        [STATestMethod]
+        public void AccessPreexistingConfirmationRefusesBeforeOriginalSaveOrEnqueue()
+        {
+            var f = new AsyncAccessFixture();
+            var confirmation = AttachAccessConfirmation(f);
+            confirmation.PreparationFailure = new InvalidOperationException("Preexisting owned save prompt");
+            Assert.ThrowsException<InvalidOperationException>(() => CompleteAccessSave(f.Service.SaveHostDocumentAsync(f.Probe.Request())));
+            Assert.AreEqual(0, f.Probe.Attempts); Assert.AreEqual(0, confirmation.ObserveEntries);
+            Assert.AreEqual(0, confirmation.ConfirmEntries); Assert.AreEqual(0, confirmation.ConfirmationAttempts);
+            Assert.IsFalse(confirmation.ConfirmationQueued);
+        }
+
+        /// <summary>Changes inside the confirmation boundary must be caught before its one possible native enqueue.</summary>
+        [STATestMethod]
+        [DataRow("owner"), DataRow("pid"), DataRow("source"), DataRow("references"), DataRow("metadata")]
+        [DataRow("mode"), DataRow("protected"), DataRow("path"), DataRow("projectpath"), DataRow("readonly")]
+        [DataRow("pane"), DataRow("activeproject"), DataRow("format"), DataRow("application")]
+        [DataRow("authorization")]
+        public void AccessConfirmationRevalidatesApprovedContextBeforeAnyEnqueue(string change)
+        {
+            var f = new AsyncAccessFixture();
+            var confirmation = AttachAccessConfirmation(f);
+            object application = f.Probe;
+            f.Probe.ReadApplication = () => application;
+            var request = f.Probe.Request();
+            if (change == "authorization")
+                request.RevalidateSaveAuthorization = () => {
+                    if (f.Probe.Attempts != 0) throw new InvalidOperationException("Save authorization was revoked before confirmation.");
+                };
+            confirmation.BeforeContextCheck = () => {
+                switch (change)
+                {
+                    case "owner": f.Probe.Owner++; break;
+                    case "pid": f.Probe.ProcessId++; break;
+                    case "source": f.Probe.Component.CodeModule.Source += "' intervening source"; break;
+                    case "references": f.Probe.Project.References.Add(new AsyncAccessReference()); break;
+                    case "metadata": f.Probe.Project.Description = "Intervening metadata"; break;
+                    case "mode": f.Probe.Project.Mode = 1; break;
+                    case "protected": f.Probe.Project.Protection = 1; break;
+                    case "path": f.Probe.Observation.Path = @"C:\fixture\Other.accdb"; break;
+                    case "projectpath": f.Probe.Project.FileName = @"C:\fixture\Other.accdb"; break;
+                    case "readonly": f.Probe.Observation.ReadOnly = true; break;
+                    case "pane": f.Editor.ActiveCodePane = new AsyncAccessPane { CodeModule = new AsyncAccessCode { Parent = f.Probe.Component } }; break;
+                    case "activeproject": f.Editor.ActiveVBProject = new object(); break;
+                    case "format": f.Probe.Observation.Format = 99; break;
+                    case "application": application = new object(); break;
+                }
+            };
+            dynamic result = CompleteAccessSave(f.Service.SaveHostDocumentAsync(request));
+            Assert.IsFalse((bool)result.Verified, change); Assert.IsTrue((bool)result.Uncertain, change);
+            Assert.AreEqual(1, f.Probe.Attempts, "The original ID3 Save is never replayed.");
+            Assert.AreEqual(1, confirmation.ConfirmEntries, "Exercise the immediate confirmation-context guard.");
+            Assert.AreEqual(0, confirmation.ConfirmationAttempts, "No native enqueue occurs after context refusal.");
+            Assert.AreEqual(0, (int)result.ConfirmationAttempts);
+            Assert.IsFalse((bool)result.ConfirmationQueued); Assert.IsTrue((bool)result.ConfirmationPending);
+            Assert.IsFalse(string.IsNullOrWhiteSpace((string)result.Reason));
+        }
+
+        /// <summary>Queued confirmation is not persistence; a remaining prompt or unsaved project must expire without another action.</summary>
+        [STATestMethod]
+        [DataRow(true), DataRow(false)]
+        public void AccessQueuedConfirmationWithoutSavedCompletionRemainsUncertain(bool promptRemains)
+        {
+            var f = new AsyncAccessFixture();
+            var confirmation = AttachAccessConfirmation(f);
+            f.Service.AccessSaveVerificationTimeout = TimeSpan.FromMilliseconds(80);
+            confirmation.PromptRemainsAfterEnqueue = promptRemains;
+            if (promptRemains) confirmation.AfterEnqueue = () => f.Probe.Project.Saved = true;
+            dynamic result = CompleteAccessSave(f.Service.SaveHostDocumentAsync(f.Probe.Request()));
+            Assert.IsFalse((bool)result.Verified); Assert.IsTrue((bool)result.Uncertain);
+            Assert.AreEqual(1, f.Probe.Attempts); Assert.AreEqual(1, confirmation.ConfirmEntries);
+            Assert.AreEqual(1, (int)result.ConfirmationAttempts);
+            Assert.IsTrue((bool)result.ConfirmationQueued);
+            Assert.AreEqual(promptRemains, (bool)result.ConfirmationPending);
+        }
+
+        /// <summary>A verification deadline already elapsed before confirmation must never enqueue a late native action.</summary>
+        [STATestMethod]
+        public void AccessConfirmationDeadlineBeforeConfirmNeverQueuesOrRetries()
+        {
+            var f = new AsyncAccessFixture();
+            var confirmation = AttachAccessConfirmation(f);
+            f.Service.AccessSaveVerificationTimeout = TimeSpan.FromMilliseconds(1);
+            dynamic result = CompleteAccessSave(f.Service.SaveHostDocumentAsync(f.Probe.Request()));
+            Assert.IsFalse((bool)result.Verified); Assert.IsTrue((bool)result.Uncertain);
+            Assert.AreEqual(1, f.Probe.Attempts); Assert.AreEqual(0, confirmation.ConfirmEntries);
+            Assert.AreEqual(0, (int)result.ConfirmationAttempts);
+            Assert.IsFalse((bool)result.ConfirmationQueued); Assert.IsTrue((bool)result.ConfirmationPending);
+        }
+
+        /// <summary>A known failure from the initial native call cannot be converted into another native confirmation.</summary>
+        [STATestMethod]
+        public void AccessInitialNativeFailureNeverObservesOrConfirmsItsPrompt()
+        {
+            var f = new AsyncAccessFixture();
+            var confirmation = AttachAccessConfirmation(f);
+            f.Probe.Failure = "native error";
+            dynamic result = CompleteAccessSave(f.Service.SaveHostDocumentAsync(f.Probe.Request()));
+            Assert.IsFalse((bool)result.Verified); Assert.IsTrue((bool)result.Uncertain);
+            StringAssert.Contains((string)result.Reason, "Native save failed after invocation");
+            Assert.AreEqual(1, f.Probe.Attempts); Assert.AreEqual(0, confirmation.ObserveEntries);
+            Assert.AreEqual(0, confirmation.ConfirmEntries); Assert.AreEqual(0, confirmation.ConfirmationAttempts);
+            Assert.IsFalse(confirmation.ConfirmationQueued);
+        }
+
+        /// <summary>Injects a purely synthetic modal boundary; none of its numeric window tokens refer to native windows.</summary>
+        private static FakeAccessConfirmation AttachAccessConfirmation(AsyncAccessFixture fixture)
+        {
+            var confirmation = new FakeAccessConfirmation();
+            fixture.Service.AccessSaveConfirmationFactory = (window, pid, components) => {
+                Assert.AreEqual(new IntPtr(77), window); Assert.AreEqual(fixture.Probe.ProcessId, pid);
+                int count = 0;
+                foreach (var component in components)
+                {
+                    Assert.AreEqual(fixture.Probe.Component.Name, component.Name);
+                    Assert.AreEqual(1, component.Type); count++;
+                }
+                Assert.AreEqual(1, count); return confirmation;
+            };
+            fixture.Probe.AfterInvocation = () => {
+                fixture.Probe.Observation.Format = 12; fixture.Probe.Observation.Saved = null;
+                fixture.Probe.Project.Saved = false;
+            };
+            return confirmation;
+        }
+
+        /// <summary>Observes real service approval checks while replacing only dialog reads and enqueue with owned-STA counters.</summary>
+        private sealed class FakeAccessConfirmation : VbeProjectComponents.IAccessSaveConfirmation
+        {
+            private readonly int ownerThread = Thread.CurrentThread.ManagedThreadId;
+            private readonly VbeProjectComponents.AccessSaveConfirmationCandidate candidate;
+            internal int PrepareEntries, ObserveEntries, ConfirmEntries;
+            internal Exception PreparationFailure;
+            internal Action BeforeContextCheck, AfterEnqueue;
+            internal bool PromptRemainsAfterEnqueue;
+            public int ConfirmationAttempts { get; private set; }
+            public bool ConfirmationQueued { get; private set; }
+            public bool ConfirmationPending { get; private set; }
+            internal FakeAccessConfirmation()
+            {
+                candidate = new VbeProjectComponents.AccessSaveConfirmationCandidate(this,
+                    new VbeProjectComponents.AccessSaveDialogSnapshot {
+                        Window = new IntPtr(1), ProcessId = 42, ThreadId = 7,
+                        Controls = new[] { new VbeProjectComponents.AccessSaveDialogControl { Id = 1, Window = new IntPtr(2) } }
+                    }, "synthetic-owner-thread-candidate");
+            }
+            public void Prepare()
+            {
+                Assert.AreEqual(ownerThread, Thread.CurrentThread.ManagedThreadId); PrepareEntries++;
+                if (PreparationFailure != null) throw PreparationFailure;
+            }
+            public void RequireBeforeSave() { Assert.AreEqual(ownerThread, Thread.CurrentThread.ManagedThreadId); }
+            public VbeProjectComponents.AccessSaveConfirmationCandidate Observe()
+            {
+                Assert.AreEqual(ownerThread, Thread.CurrentThread.ManagedThreadId); ObserveEntries++;
+                ConfirmationPending = !ConfirmationQueued || PromptRemainsAfterEnqueue;
+                return ConfirmationPending ? candidate : null;
+            }
+            public void Confirm(VbeProjectComponents.AccessSaveConfirmationCandidate value, Action revalidateApprovedContext, Action requireDeliveryDeadline = null)
+            {
+                Assert.AreEqual(ownerThread, Thread.CurrentThread.ManagedThreadId); Assert.AreSame(candidate, value);
+                Assert.AreEqual(0, ConfirmEntries, "No synthetic confirmation call may be repeated."); ConfirmEntries++;
+                BeforeContextCheck?.Invoke();
+                revalidateApprovedContext();
+                requireDeliveryDeadline?.Invoke();
+                ConfirmationAttempts = 1; ConfirmationQueued = true;
+                AfterEnqueue?.Invoke();
             }
         }
 
