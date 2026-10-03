@@ -1155,6 +1155,88 @@ stale-revision cause remains **UNPROVEN**: the old failed run is not converted
 to a pass by these new results, and its stricter causal-closure criterion remains
 open. Further blind repetitions would not supply its missing historical receipts.
 
+### Q-026 historical binary diagnostic (2026-10-03)
+
+The original failed Format test retained a complete initial baseline in
+`qualification-v1/activated-excel`, revision
+`544477535d391a457fc66947a3ddb3da7ffb430e6212289c6586a6fcb65f3e05`, file SHA-256
+`EA0C00167ECB4431DA0E06FA1D0EAA386722D63B7E5EBF1B7B7F062A7F196DDF`.
+Its test fixture checked the loaded product MVID before that capture. The frozen
+original product is MVID `5cc513d1-5569-4835-bf6c-cf70a18274fb`, SHA-256
+`A12378FB826CAAD6C0BBE79BF09C52332760E6C32FDB4F65138876CB90F5F167`.
+Portable-PDB document checksums match the relevant options implementation and
+Format test at source `5c860a3`; `q026-original-source-provenance.json` retains
+those hashes. The exception stack points to the test's catch/rethrow line,
+not to a particular preference. Later recovery snapshots show font and normal
+text foreground changes, but are not the two snapshots compared at the failing
+revision guard. Those guard snapshots remain unavailable.
+
+Source `eb89a3a` introduces a test-only, opt-in CLR collector for the unchanged
+historical binary. `q026-historical-trace-preflight/trial-08/preflight.json`
+verifies a complete synthetic options graph, exact request fields, debugger
+detach and normal helper exit. This preflight activates no Office host, performs
+no target function evaluation and changes no preference. Framed captures are
+decoded offline and can be hashed using the original .NET Framework
+JavaScriptSerializer/UTF-8/SHA-256 algorithm. Empty or incomplete traces cannot
+establish revision drift.
+
+| Source / retained artifact | Actual result | Scope |
+| --- | --- | --- |
+| `eb89a3a`, `q026-historical-prefix-campaign-v1` | Prelaunch refused; no native scenario | Canonical registered path differed from a noncanonical plan path; guarded registration release, no preference writes |
+| `e1e158c`, `q026-historical-prefix-campaign-v2/managed/managed.trx` | 71 passed, 0 failed, 0 skipped | Historical-compatible managed subset; excludes the later native-checkbox implementation |
+| `e1e158c`, `q026-historical-prefix-campaign-v2/native/format.trx` | 0 passed, 1 failed, 0 skipped | Owned Excel PID 37156, start `2026-10-03T10:23:57.9740740Z`; scenario stopped before palettes when immediate native enumeration still found Options |
+| `7203f492`, `q026-recovery-validation/managed/managed.trx` | 71 passed, 0 failed, 0 skipped | Same historical-compatible subset; both diagnostic projects build without warnings or errors |
+| `7203f492`, `tools/probes/tests/test_read_q026_clr_guard.py` | 6 passed, 0 failed | Offline framing, Unicode, truncation and collector-error checks; no native acceptance |
+| `7203f492`, `q026-historical-prefix-campaign-v3/managed/managed.trx` | 71 passed, 0 failed, 0 skipped | Historical-compatible managed subset on the frozen original product |
+| `7203f492`, `q026-historical-prefix-campaign-v3/native/format.trx` | 1 passed, 0 failed, 0 skipped | Owned Excel PID 39752, start `2026-10-03T10:46:21.2979545Z`; font, honest size refusal and foreground/background/indicator without Query, four reverse compensations, complete restoration and original-host-handle exit 0 |
+
+The failed native prefix loaded the exact historical MVID on inactive desktop
+`VBAiTests_6bcc4563e670469d823b4ece448ef906`. Its sole positively confirmed
+preference change was the font. The expected size refusal occurred before any
+size write; independent enumeration found a visible owned Options dialog at
+that instant. A later read-only enumeration verified its absence without Cancel
+or further input. The detached trace contains no complete stale-guard capture.
+The first recovery precheck stopped before any write because it counted both
+the size label and combo box. The corrected precheck selected the unique editable
+control and verified its unchanged baseline value before the font compensation.
+
+`recovery-font-once-v2/terminal.json` verifies the complete baseline revision and
+tab structure after one positively confirmed font compensation, with no replay
+of the failed size operation. `recovery-shutdown.json` records one returned
+seed Close, one returned Quit and normal exit 0 through a fresh recovery handle;
+it is not original-launch-handle lifecycle acceptance. The debugger detached
+normally with exit 0. `registration-release.json` records release at
+`2026-10-03T10:43:09.3011741Z`, restoring the prior Q-024 CodeBase and autoload
+setting. The old desktop helper recorded retained private handles after the
+failed campaign; the recovery issued no forced termination. Source `7203f492` allows future
+helpers to release retained handles after independently observing original-child
+exit and an empty private desktop, without replaying native cleanup.
+
+The subsequent prefix starts from the same complete baseline on inactive
+desktop `VBAiTests_5eedf5ed3b2b4e4b8d3579cbf532a4e2`. Its size refusal observes
+Options still present, then absent after 54 ms across two native enumerations,
+without bridge requests or input in between. All three palette changes preserve
+the observed normal-text category. The independent
+`complete-restoration-independent.json` comparison verifies complete Tabs and
+revision equality, with identical recorded PID/start/MVID metadata. Its terminal
+has no primary, restoration or shutdown error; the fixture verifies exit 0 on
+the original Excel launch handle. The CLR collector detaches normally with exit
+0 and yields no stale-guard capture. The product SHA-256 remains unchanged.
+`q026-historical-wrapper-v3.json` verifies guarded registration restoration and
+absence of Excel at `2026-10-03T11:06:59.0147355Z`.
+
+This diagnostic prefix includes additional independent reads, a debugger and
+inactive-desktop isolation; it does not reproduce the original run's timing or
+qualify the original full matrix on the old product. Both external scheduled
+launchers lack a terminal receipt and later report `0xC000013A`; their stopping
+cause and original-worker normal exit remain unverified. This is separate from
+the native test runner's verified result and original Excel-handle exit. No
+cleanup is replayed and no global keyboard input or desktop switch is used.
+
+Q-026's historical causal criterion remains **OPEN**. Delayed Options closure
+does not establish why the original complete revision differed, and recovery
+does not turn the failed native prefix into a pass.
+
 ### Q-026 offline snapshot review (2026-10-03)
 
 Branch `codex/q026-qualification` starts from `origin/main` at `4b382b9`,
