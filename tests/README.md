@@ -492,6 +492,10 @@ was a read with no terminal response. The exact frozen product must be loaded;
 the complete snapshot may differ from the original baseline only in a positively
 committed supported font. This path does not replay the lost read or transfer
 an unknown mutation. The original failed qualification remains failed.
+An empty commit ledger and null failed request can be released only for the
+recorded pre-dispatch isolation stop, with its immediately preceding competitor
+observation and a fresh complete baseline comparison. No compensation is sent.
+Unknown null requests and incomplete states are refused.
 
 Optional `VBAi_TEST_Q026_CLR_TRACE_PLAN` enables test-only capture of the
 historical revision guard. Prefer a separately verified plan with

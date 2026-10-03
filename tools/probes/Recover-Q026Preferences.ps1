@@ -76,6 +76,18 @@ try {
         if(($normalized.Tabs | ConvertTo-Json -Depth 100 -Compress) -cne ($baseline.Data.Tabs | ConvertTo-Json -Depth 100 -Compress)){throw 'State differs from baseline beyond the positively committed font; no compensation.'}
         Save 'separate-host-precheck.json' @{FailedCommand='read_vbe_options';OriginalHostAbsent=$true;
             BaselineEqualAfterFontNormalization=$true;OriginalBaselineVersion=$baseline.Data.OptionsVersion;Readback=$current}
+    } elseif($null -eq $ledger.Data.Request -and @($ledger.Data.CommittedRestoreEntries).Count -eq 0){
+        $isolationFiles=@(Get-ChildItem -LiteralPath $phaseRoots[0].FullName -Filter '*-HostExclusivityObservation-*.json' | Sort-Object Name)
+        if(-not $isolationFiles.Count){throw 'No known isolation-stop observation; no recovery dispatch.'}
+        $isolation=Get-Content -LiteralPath $isolationFiles[-1].FullName -Raw -Encoding UTF8 | ConvertFrom-Json
+        if($isolation.Sequence+1 -ne $ledger.Sequence -or -not $isolation.Data.OwnedAlive -or
+            @($isolation.Data.Competitors).Count -eq 0 -or -not $isolation.Data.BeforeDispatch -or
+            $ledger.Data.Error -notmatch '^System.InvalidOperationException: The owned Excel identity or exclusive VBE-host interval changed;' -or
+            $current.OptionsVersion -cne $baseline.Data.OptionsVersion -or
+            ($current.Tabs | ConvertTo-Json -Depth 100 -Compress) -cne ($baseline.Data.Tabs | ConvertTo-Json -Depth 100 -Compress)){
+            throw 'Known stop before dispatch and complete unchanged baseline required; no compensation.'
+        }
+        Save 'isolation-stop-precheck.json' @{BeforeDispatch=$true;CommittedEntries=0;CompleteBaselineEqual=$true;CompensationWrites=0}
     } else {
         $failedControl=@($current.Tabs | Where-Object {$_.Tab -ceq $ledger.Data.Request.Pane} | ForEach-Object {$_.Controls} | Where-Object {$_.Name -ceq $ledger.Data.Request.Property -and $_.Type -ne 'ControlType.Text'})
         $baselineControl=@($baseline.Data.Tabs | Where-Object {$_.Tab -ceq $ledger.Data.Request.Pane} | ForEach-Object {$_.Controls} | Where-Object {$_.Name -ceq $ledger.Data.Request.Property -and $_.Type -ne 'ControlType.Text'})

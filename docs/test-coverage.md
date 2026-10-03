@@ -1316,6 +1316,37 @@ also documents common VBE settings, supporting the need for an exclusive host
 interval. These references guide the investigation; they do not prove either
 the original stale revision or this later crash. Q-026 remains **OPEN**.
 
+### Q-026 targeted native capture interrupted by another host (2026-10-03)
+
+Source `35d3c429070e4b184d8811b8035a1bb5b67c6d99` freezes
+`q026-historical-prefix-campaign-v5` on the unchanged historical product. Its
+managed subset records **75 passed, 0 failed, 0 skipped**, and its native
+scenario records **0 passed, 1 failed, 0 skipped**. Excel PID 10228, start
+`2026-10-03T17:26:47.2289879Z`, is owned on inactive desktop
+`VBAiTests_2caea500bf17437faa8129082c137de8`.
+
+The nonmutating guard warmup verifies the known refusal, actual dialog absence
+and a complete unchanged readback. The collector binds the exact native
+stale-guard branch and reaches ARMED with `ExactGuardILBreakpoint` mode.
+The matrix captures its complete baseline, then the next exclusivity observation
+finds competing Access PID 41756, start `2026-10-03T17:28:41.747923Z`.
+The campaign stops before the font pre-write read and before every matrix
+preference write. The positive commit ledger is empty; no unknown native
+operation is replayed. The collector detaches normally with exit 0. This real
+guard stop validates the protection, not the historical cause or the interrupted
+matrix. The external GUI helper retains the private desktop until recovery.
+
+After Access disappears, `isolation-stop-preferences/terminal.json` verifies a
+fresh complete baseline read on that same owned Excel, with no compensation
+write. `isolation-stop-shutdown.json` records one returned Close, one returned
+Quit and exit 0 through a fresh recovery handle; it is not original-campaign
+handle proof. `isolation-stop-release.json` confirms host and previous
+registration release at `2026-10-03T17:33:11.8109153Z`. The original-worker
+terminal exits with code 1 and keeps the native scenario failed. Recovery uses
+the narrowly checked pre-dispatch isolation-stop path subsequently added to
+`Recover-Q026Preferences.ps1`. An exclusive interval has been requested before
+another native attempt. Q-026 remains **OPEN**.
+
 ### Q-026 offline snapshot review (2026-10-03)
 
 Branch `codex/q026-qualification` starts from `origin/main` at `4b382b9`,
