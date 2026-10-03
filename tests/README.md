@@ -4,6 +4,62 @@ The test suite covers the shared VBE core, provider protocols, storage, editor
 services and selected host integrations. A passing local suite is not a claim
 that every feature works in every application that embeds the VBE.
 
+## Q-006 inactive-desktop Excel qualification
+
+`tools/tests/Invoke-Q006Qualification.ps1 -Prepare` builds a deliberately scoped
+`tests/VBAi.Q006.Tests` harness against an explicit installed candidate directory.
+It does not rebuild/register the product or overwrite the installed DLL. The
+plan retains the source revision/status, candidate and harness hashes, exact
+scenario filters, acceptance oracles and fresh evidence paths before execution.
+This separate friend assembly is not a replacement for the full solution suite.
+
+```powershell
+$q006Root = Join-Path $PWD 'artifacts/q006-new-campaign'
+& tools/tests/Invoke-Q006Qualification.ps1 -Prepare `
+  -EvidenceRoot $q006Root -InstalledDirectory '<absolute installed net48 directory>'
+& tools/tests/Invoke-IsolatedTests.ps1 `
+  -ScriptPath (Join-Path $q006Root 'Invoke-FrozenQ006.ps1') `
+  -HelperAssembly (Join-Path $q006Root 'build/VBAi.Desktop.Helper/Debug/net48/VBAi.Desktop.Helper.exe') `
+  -EvidenceDirectory (Join-Path $q006Root 'isolation')
+```
+
+The wrapper creates a one-shot task at the current user's limited privilege level.
+Its helper owns a generated `WinSta0/VBAiTests_<guid>` desktop and starts the
+worker and Excel there with original native process handles. It never switches
+the input desktop. The UI canary reads UI Automation identity and posts `BM_CLICK`
+only to its own verified button; it does not use UIA Invoke or global input.
+The fixture checks the actual application window's desktop and loaded assembly
+MVID before native work. This isolates windows and focus, not user/profile data.
+
+Execution refuses an existing Excel process and a previously used campaign
+ledger. It records each scenario once and stops subsequent work when a host
+remains, no terminal report exists, or managed preflight fails. A known assertion
+failure with verified host exit can be followed by the next independent planned
+scenario. `-ScenarioIds` prepares a specific subset after a diagnosed harness
+change; there is no automatic retry of a native command or failed campaign.
+
+The scalar cases require exact synthetic values, declared-candidate refusals,
+identity/source/selection/mode preservation and terminal native phases. The
+extended type matrix uses bounded pages to fit the installed diagnostic trace
+budget. Its single full-page diagnostic remains strict and available separately;
+missing terminal evidence cannot pass. The persistence case uses product Save,
+discard-close and normal exit before read-only disk reopening in a fresh owned
+process with macros disabled. Expected module/class/form sources and the Label
+are fixed before Save. Neither reopen nor cleanup invokes helper Save.
+
+Successful detailed reports live in the retained host directories under
+`VBAi_EXCEL_RESULTS`, independently of VSTest deployment cleanup. Keep plans,
+TRX files, phase traces, request ledgers, startup and shutdown receipts together.
+The helper closes its handles/desktop only after original child exit and verified
+empty window inventory. An invisible inventory sentinel distinguishes a valid
+empty desktop from an enumeration failure. Uncertain ownership retains the
+launcher without forced termination or cleanup replay. Any later diagnostic
+intervention must retain the failed lifecycle result.
+
+See the [Q-006 results](../docs/test-coverage.md#q-006-inactive-desktop-excel-qualification-2026-10-02)
+for candidate identity, observed passes, failed preparations and remaining gates.
+SOLIDWORKS is outside this autonomous campaign.
+
 ## Settled Word scope collection (qualification only)
 
 `VBAi_TEST_WORD_SETTLED_SCOPE_GC=1` enables a disabled-by-default testhost

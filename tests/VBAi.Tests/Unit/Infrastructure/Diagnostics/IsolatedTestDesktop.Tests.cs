@@ -32,6 +32,13 @@ namespace VBAi.Tests.Unit
         }
 
         [TestMethod]
+        public void OfficeSwitchesRemainLiteralWhileDocumentPathsRemainQuoted()
+        {
+            Assert.AreEqual("\"C:\\Office\\EXCEL.EXE\" /x /automation \"E:\\Owned folder\\seed.xlsx\"",
+                IsolatedTestDesktop.CommandLine("C:\\Office\\EXCEL.EXE", new[] { "/x", "/automation", "E:\\Owned folder\\seed.xlsx" }));
+        }
+
+        [TestMethod]
         public void AnInactiveExactDesktopIsRequiredWithoutFallbackToTheInputDesktop()
         {
             string expected = "VBAiTests_" + Guid.NewGuid().ToString("N");

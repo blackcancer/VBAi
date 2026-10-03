@@ -1,0 +1,37 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <IsTestProject>true</IsTestProject>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+    <GenerateProgramFile>false</GenerateProgramFile>
+    <!-- Reuse the product's existing friend assembly identity for this scoped harness. -->
+    <AssemblyName>VBAi.Tests</AssemblyName>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.14.1" />
+    <PackageReference Include="MSTest.TestAdapter" Version="3.7.1" />
+    <PackageReference Include="MSTest.TestFramework" Version="3.7.1" />
+    <Reference Include="VBAi"><HintPath>$(FrozenProductDirectory)\VBAi.dll</HintPath></Reference>
+    <Reference Include="System.Web.Extensions" />
+    <Reference Include="System.Windows.Forms" />
+    <Reference Include="System.Drawing" />
+    <Reference Include="WindowsBase" />
+    <Reference Include="Microsoft.CSharp" />
+    <Reference Include="Accessibility" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="..\VBAi.Tests\Infrastructure\Hosts\ExcelVbeFixture.cs;..\VBAi.Tests\Infrastructure\Hosts\ExcelVbeFixture.Evidence.cs;..\VBAi.Tests\Infrastructure\Hosts\ExcelVbeFixture.OwnedBootstrap.cs;..\VBAi.Tests\Infrastructure\Hosts\ExcelVbeFixture.TeardownTrace.cs;..\VBAi.Tests\Infrastructure\Hosts\ExcelVbeFixture.Designers.cs;..\VBAi.Tests\Infrastructure\Hosts\ExcelVbeFixture.Signature.cs" />
+    <Compile Include="..\VBAi.Tests\Infrastructure\Hosts\ExcelOwnedBootstrapPlan.cs;..\VBAi.Tests\Infrastructure\Hosts\ExcelOwnedProcessImage.cs;..\VBAi.Tests\Infrastructure\Hosts\ExcelScalarQualificationEvidence.cs;..\VBAi.Tests\Infrastructure\Hosts\VbeBridgeClient.cs;..\VBAi.Tests\Infrastructure\Hosts\OfficeOwnedShutdownEvidence.cs" />
+    <Compile Include="..\VBAi.Tests\Infrastructure\Diagnostics\IsolatedTestDesktop.cs;..\VBAi.Tests\Infrastructure\Diagnostics\NativeTeardownTraceGate.cs;..\VBAi.Tests\Infrastructure\Diagnostics\ExcelOptionsQualification.cs" />
+    <Compile Include="..\VBAi.Tests\Infrastructure\Fixtures\Ui\SharedUiFixture.cs;..\VBAi.Tests\Infrastructure\Fixtures\Vbe\Debug\ProcedureScalarContracts.Fixture.cs" />
+    <Compile Include="..\VBAi.Tests\Unit\Infrastructure\Diagnostics\IsolatedTestDesktop.Tests.cs;..\VBAi.Tests\Unit\Infrastructure\Hosts\OfficeOwnedShutdownEvidence.Tests.cs" />
+    <Compile Include="..\VBAi.Tests\Unit\Vbe\Debug\VbaLocalScalarCandidates.Tests.cs;..\VBAi.Tests\Unit\Vbe\Debug\VbeDebug.LocalScalars.Tests.cs;..\VBAi.Tests\Unit\Vbe\Debug\VbaProcedureValues.Tests.cs" />
+    <Compile Include="..\VBAi.Tests\Integration\Hosts\Excel\ExcelLocalScalarInspectionTests.cs;..\VBAi.Tests\Integration\Hosts\Excel\ExcelProcedureValuesTests.cs;..\VBAi.Tests\Integration\Hosts\Excel\ExcelQualificationPersistenceTests.cs;..\VBAi.Tests\Integration\Hosts\Excel\ExcelIdeSurfaceTests.cs" />
+  </ItemGroup>
+  <Target Name="RequireFrozenProduct" BeforeTargets="ResolveReferences">
+    <Error Condition="'$(FrozenProductDirectory)' == '' Or !Exists('$(FrozenProductDirectory)\VBAi.dll')" Text="An explicit frozen VBAi candidate directory is required." />
+  </Target>
+  <Target Name="CopyFrozenDependencies" AfterTargets="Build">
+    <ItemGroup><FrozenDependencies Include="$(FrozenProductDirectory)\*.dll" /></ItemGroup>
+    <Copy SourceFiles="@(FrozenDependencies)" DestinationFolder="$(TargetDir)" SkipUnchangedFiles="true" />
+  </Target>
+</Project>

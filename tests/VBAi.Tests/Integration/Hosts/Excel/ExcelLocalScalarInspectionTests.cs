@@ -34,8 +34,34 @@ namespace VBAi.Tests.Integration
             RunDiagnosticPage(0, 6);
         }
 
+        [STATestMethod, TestCategory("ExcelScalarDiagnostics")]
+        public void InstalledBridgeReadsEverySupportedDeclaredScalarTypeWithNativePhaseEvidence()
+        {
+            RunDiagnosticPage(0, 14, true);
+        }
+
+        // Each page stays below the installed trace's 128-event bound. The full-page
+        // diagnostic above remains available and must not pass without terminal evidence.
+        [STATestMethod, TestCategory("ExcelScalarDiagnostics")]
+        public void InstalledBridgeReadsSupportedScalarFirstPageWithNativePhaseEvidence()
+        {
+            RunDiagnosticPage(0, 4, true);
+        }
+
+        [STATestMethod, TestCategory("ExcelScalarDiagnostics")]
+        public void InstalledBridgeReadsSupportedScalarSecondPageWithNativePhaseEvidence()
+        {
+            RunDiagnosticPage(4, 4, true);
+        }
+
+        [STATestMethod, TestCategory("ExcelScalarDiagnostics")]
+        public void InstalledBridgeReadsSupportedScalarLastPageWithNativePhaseEvidence()
+        {
+            RunDiagnosticPage(8, 6, true);
+        }
+
         /// <summary>Uses one owned host and one inspection request; uncertain native work retains the host.</summary>
-        private void RunDiagnosticPage(int offset, int limit)
+        private void RunDiagnosticPage(int offset, int limit, bool allTypes = false)
         {
             string tracePath = Environment.GetEnvironmentVariable(VbeInspectionTrace.EnvironmentName);
             if (string.IsNullOrWhiteSpace(tracePath))
@@ -45,14 +71,33 @@ namespace VBAi.Tests.Integration
             var phaseStartedUtc = DateTime.UtcNow;
             var host = ExcelVbeFixture.StartOwnedWithTrace(tracePath);
             string projectPath = host.File("ScalarPage" + offset + ".xlsm");
-            string report = Path.Combine(TestContext.TestResultsDirectory, "excel-scalar-page-" + offset + "-" + host.ProcessId + "-" + Path.GetFileName(host.Root) + ".json");
+            string reportDirectory = string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("VBAi_EXCEL_RESULTS"))
+                ? TestContext.TestResultsDirectory : host.Root;
+            string report = Path.Combine(reportDirectory, "excel-scalar-page-" + offset + "-" + host.ProcessId + "-" + Path.GetFileName(host.Root) + ".json");
             var evidence = new ExcelScalarQualificationEvidence(report, host.ProcessId, host.Root) { PhaseTracePath = tracePath };
             const string module = "ScalarPageAudit", procedure = "AuditPage";
-            const string source = "Option Explicit\r\nPublic Sub AuditPage()\r\n" +
+            string source = "Option Explicit\r\nPublic Sub AuditPage()\r\n" +
                 "    Dim auditCount As Long\r\n    Dim auditText As String\r\n    Dim auditFlag As Boolean\r\n" +
                 "    Dim auditValues(1 To 2) As Long\r\n    Dim auditUnknown As Variant\r\n    Dim auditObject As Object\r\n" +
                 "    auditCount = 42\r\n    auditText = \"VBAi scalar page probe\"\r\n    auditFlag = True\r\n" +
                 "    auditValues(1) = 7\r\n    auditUnknown = Empty\r\n    Stop\r\nEnd Sub";
+            string[] names = { "auditCount", "auditText", "auditFlag", "auditValues", "auditUnknown", "auditObject" };
+            string[] types = { "Long", "String", "Boolean", "Long", "Variant", "Object" };
+            string[] skipReasons = { null, null, null, "ArrayDeclaration", "NonScalarOrVariantType", "NonScalarOrVariantType" };
+            int eligible = 3;
+            if (allTypes)
+            {
+                names = new[] { "auditCount", "auditText", "auditFlag", "auditByte", "auditInteger", "auditLongLong", "auditLongPtr", "auditSingle", "auditDouble", "auditCurrency", "auditDate", "auditValues", "auditUnknown", "auditObject" };
+                types = new[] { "Long", "String", "Boolean", "Byte", "Integer", "LongLong", "LongPtr", "Single", "Double", "Currency", "Date", "Long", "Variant", "Object" };
+                eligible = 11;
+                skipReasons = Enumerable.Repeat<string>(null, eligible).Concat(new[] { "ArrayDeclaration", "NonScalarOrVariantType", "NonScalarOrVariantType" }).ToArray();
+                source = "Option Explicit\r\nPublic Sub AuditPage()\r\n" + string.Join("\r\n", names.Select((name, index) =>
+                    "    Dim " + name + (index == eligible ? "(1 To 2)" : "") + " As " + types[index])) +
+                    "\r\n    auditCount = 42\r\n    auditText = \"VBAi scalar page probe\"\r\n    auditFlag = True" +
+                    "\r\n    auditByte = 200\r\n    auditInteger = -1234\r\n    auditLongLong = 4294967296^\r\n    auditLongPtr = 4294967296^" +
+                    "\r\n    auditSingle = 1.5\r\n    auditDouble = 1.25\r\n    auditCurrency = 12.5\r\n    auditDate = DateSerial(2026, 11, 23)" +
+                    "\r\n    auditValues(1) = 7\r\n    auditUnknown = Empty\r\n    Stop\r\nEnd Sub";
+            }
             var json = new JavaScriptSerializer();
             bool bridgeAvailable = true, inspectionPending = false, executionPending = false, canClose = true;
             Func<object, IDictionary<string, object>> send = request => {
@@ -115,16 +160,13 @@ namespace VBAi.Tests.Integration
                 Assert.AreEqual("DeclaredScalarCandidatesOnly", inspected["Coverage"]);
                 Assert.IsNull(inspected["Error"], "No partial scalar failure may be accepted as a completed page.");
                 Assert.AreEqual(false, inspected["RuntimeInventoryComplete"]);
-                Assert.AreEqual(6, Convert.ToInt32(inspected["TotalCandidates"]));
-                Assert.AreEqual(3, Convert.ToInt32(inspected["EligibleCandidates"]));
+                Assert.AreEqual(names.Length, Convert.ToInt32(inspected["TotalCandidates"]));
+                Assert.AreEqual(eligible, Convert.ToInt32(inspected["EligibleCandidates"]));
                 Assert.AreEqual(offset, Convert.ToInt32(inspected["Offset"]));
                 Assert.AreEqual(limit, Convert.ToInt32(inspected["Items"] == null ? 0 : ((object[])inspected["Items"]).Length));
-                if (offset + limit >= 6) Assert.IsNull(inspected["NextOffset"]);
+                if (offset + limit >= names.Length) Assert.IsNull(inspected["NextOffset"]);
                 else Assert.AreEqual(offset + limit, Convert.ToInt32(inspected["NextOffset"]));
                 var rows = ((object[])inspected["Items"]).Select(VbeBridgeClient.Object).ToArray();
-                string[] names = { "auditCount", "auditText", "auditFlag", "auditValues", "auditUnknown", "auditObject" };
-                string[] types = { "Long", "String", "Boolean", "Long", "Variant", "Object" };
-                string[] skipReasons = { null, null, null, "ArrayDeclaration", "NonScalarOrVariantType", "NonScalarOrVariantType" };
                 CollectionAssert.AreEqual(names.Skip(offset).Take(limit).ToArray(), rows.Select(row => (string)row["Name"]).ToArray());
                 for (int index = 0; index < rows.Length; index++)
                 {
@@ -136,7 +178,7 @@ namespace VBAi.Tests.Integration
                     Assert.AreEqual(9, Convert.ToInt32(row["Column"]));
                     Assert.IsNull(row["Error"], names[candidate]);
                     Assert.AreEqual(skipReasons[candidate], row["SkipReason"], names[candidate]);
-                    if (candidate >= 3)
+                    if (candidate >= eligible)
                     {
                         Assert.AreEqual("Skipped", row["Status"]);
                         Assert.IsNull(row["Value"]);
@@ -148,6 +190,23 @@ namespace VBAi.Tests.Integration
                         if (candidate == 1) Assert.AreEqual("\"VBAi scalar page probe\"", row["Value"]);
                         // The installed French VBE can display True as Vrai; neither False nor a missing value passes.
                         if (candidate == 2) Assert.IsTrue(new[] { "True", "Vrai" }.Contains(Convert.ToString(row["Value"])), json.Serialize(row));
+                        if (candidate >= 3 && candidate <= 9)
+                        {
+                            decimal[] expected = { 200m, -1234m, 4294967296m, 4294967296m, 1.5m, 1.25m, 12.5m };
+                            string displayedNumber = Convert.ToString(row["Value"]);
+                            if (types[candidate] == "LongLong" || types[candidate] == "LongPtr") displayedNumber = displayedNumber.TrimEnd('^');
+                            Assert.AreEqual(expected[candidate - 3], decimal.Parse(displayedNumber.Replace(',', '.'),
+                                System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture), json.Serialize(row));
+                        }
+                        if (candidate == 10)
+                        {
+                            DateTime value;
+                            string displayed = Convert.ToString(row["Value"]).Trim('#');
+                            bool parsed = DateTime.TryParse(displayed, System.Globalization.CultureInfo.GetCultureInfo("fr-FR"), System.Globalization.DateTimeStyles.None, out value) ||
+                                DateTime.TryParse(displayed, System.Globalization.CultureInfo.GetCultureInfo("en-US"), System.Globalization.DateTimeStyles.None, out value);
+                            Assert.IsTrue(parsed, json.Serialize(row));
+                            Assert.AreEqual(new DateTime(2026, 11, 23), value.Date);
+                        }
                     }
                 }
                 Assert.AreEqual(true, inspected["SelectionRestored"]);
@@ -161,7 +220,7 @@ namespace VBAi.Tests.Integration
                 Assert.AreEqual(original["Sha256"], unchanged["Sha256"]);
                 var phases = ReadTerminalPhases(tracePath, host.ProcessId, phaseStartedUtc);
                 evidence.PhaseEvidence = phases;
-                AssertScalarPagePhases(phases, Math.Max(0, Math.Min(offset + limit, 3) - offset));
+                AssertScalarPagePhases(phases, Math.Max(0, Math.Min(offset + limit, eligible) - offset));
             }, () =>
             {
                 // File reads cannot replay native work, including when the bridge is unavailable.

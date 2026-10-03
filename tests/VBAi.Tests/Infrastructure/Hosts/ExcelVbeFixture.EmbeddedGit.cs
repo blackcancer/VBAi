@@ -13,7 +13,6 @@ namespace VBAi.Tests.Integration
     internal sealed partial class ExcelVbeFixture
     {
         // Keep native identity alive across readbacks even when temporary shared RCWs are released.
-        private IntPtr embeddedGitProjectIdentity;
         internal sealed class EmbeddedGitScope
         {
             internal string Path, Cache, State, Marker, References;
