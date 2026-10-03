@@ -178,6 +178,10 @@ is a recorded diagnostic: an unavailable name provides no placement proof, and
 an observed different desktop refuses. Attachment requires the unique `_WwG`
 document child under an owned visible `OpusApp` root, the exact launched PID and
 actual UI thread's named inactive desktop, before the first NativeOM/COM call.
+The receipt also records the requested raw command line. The single Word `/a`
+switch stays literal and only the macro-free seed path is quoted, following
+[Microsoft's Office command-line syntax](https://support.microsoft.com/en-us/office/lifecycle/command-line-switches-for-microsoft-office-products).
+That requested string is not evidence of startup behavior or cleared recovery state.
 Discovery uses a bounded inventory of the exact named desktop; duplicate document
 windows, partial enumeration, foreign identities or an unavailable actual UI
 desktop refuse without activation or native replay. The only open document must

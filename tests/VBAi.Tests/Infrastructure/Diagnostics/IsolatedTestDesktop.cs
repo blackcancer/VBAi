@@ -251,9 +251,9 @@ namespace VBAi.Tests.Integration
             if (arguments == null) throw new ArgumentNullException(nameof(arguments));
             var command = new StringBuilder(Quote(executable));
             foreach (string argument in arguments)
-                // Excel parses these switches from the raw command line. Preserve the
-                // qualified literal switches while still quoting every document argument.
-                command.Append(' ').Append(argument == "/x" || argument == "/automation" ? argument : Quote(argument));
+                // Office parses switches from the raw command line. Keep only these
+                // exact reviewed switches literal; quote every document and other argument.
+                command.Append(' ').Append(argument == "/x" || argument == "/automation" || argument == "/a" ? argument : Quote(argument));
             if (command.Length >= 32767) throw new ArgumentException("Process command exceeds the Windows bound.");
             return command.ToString();
         }

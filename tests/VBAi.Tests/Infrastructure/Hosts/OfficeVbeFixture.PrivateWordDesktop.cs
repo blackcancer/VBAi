@@ -101,6 +101,7 @@ namespace VBAi.Tests.Integration
                 LaunchThreadId = privateWordChild.ThreadId,
                 OriginalLaunchProcessHandle = privateWordChild.ProcessHandle.ToInt64(),
                 Desktop = desktop, Executable = executable, ExecutableSha256 = hash,
+                RequestedCommandLine = IsolatedTestDesktop.CommandLine(executable, WordPrivateArguments(seed)),
                 SeedPath = seed, SeedSha256 = HashOwnedFile(seed),
                 OwnershipVerified = false, ComCalls = 0, UiActions = 0,
                 ExpectedAssemblyMvid = typeof(VbeSession).Module.ModuleVersionId.ToString("D"),

@@ -136,6 +136,9 @@ namespace VBAi.Tests.Unit
             Assert.AreEqual(1, existsCalls); Assert.AreEqual(1, hashCalls);
             CollectionAssert.AreEqual(new[] { "/a", @"C:\Owned\NativeObjectModelSeed.docx" },
                 OfficeVbeFixture.WordPrivateArguments(@"C:\Owned\NativeObjectModelSeed.docx"));
+            Assert.AreEqual("\"" + Executable + "\" /a \"C:\\Owned folder\\NativeObjectModelSeed.docx\"",
+                IsolatedTestDesktop.CommandLine(Executable,
+                    OfficeVbeFixture.WordPrivateArguments(@"C:\Owned folder\NativeObjectModelSeed.docx")));
         }
 
         [TestMethod]

@@ -36,6 +36,11 @@ namespace VBAi.Tests.Unit
         {
             Assert.AreEqual("\"C:\\Office\\EXCEL.EXE\" /x /automation \"E:\\Owned folder\\seed.xlsx\"",
                 IsolatedTestDesktop.CommandLine("C:\\Office\\EXCEL.EXE", new[] { "/x", "/automation", "E:\\Owned folder\\seed.xlsx" }));
+            Assert.AreEqual("\"C:\\Office\\WINWORD.EXE\" /a \"E:\\Owned folder\\seed.docx\"",
+                IsolatedTestDesktop.CommandLine("C:\\Office\\WINWORD.EXE", new[] { "/a", "E:\\Owned folder\\seed.docx" }));
+            foreach (string argument in new[] { "/a ", "/aOther", "/automationOther", "/xOther", "/a\" /mUntrusted", "" })
+                Assert.AreEqual("\"owned.exe\" " + IsolatedTestDesktop.Quote(argument),
+                    IsolatedTestDesktop.CommandLine("owned.exe", new[] { argument }));
         }
 
         [TestMethod]
