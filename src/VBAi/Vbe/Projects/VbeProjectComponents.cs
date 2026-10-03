@@ -543,7 +543,7 @@ namespace VBAi
             if (string.Equals(request.Property, "Name", StringComparison.OrdinalIgnoreCase)) return RenameSavedExcelProject(request);
             dynamic project = GetDesignProject(request.Project);
             AssertProjectVersion(request, project);
-            SetScalar((object)project, request.Property, request.Value);
+            if (!TrySetAccessHelpContext(request, (object)project)) SetScalar((object)project, request.Property, request.Value);
             return ProjectProperties(request.Project);
         }
 

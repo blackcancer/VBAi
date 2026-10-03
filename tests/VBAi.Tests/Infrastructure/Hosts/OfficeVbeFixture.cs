@@ -158,6 +158,7 @@ namespace VBAi.Tests.Integration
                 var status = result.Data("status");
                 Assert.AreEqual(typeof(VbeSession).Module.ModuleVersionId.ToString("D"), status["AssemblyModuleVersionId"], "Another add-in build is installed.");
                 Assert.AreEqual(result.ProcessId, Convert.ToInt32(status["HostProcessId"]));
+                if (kind == "Access" && desktop != null) Assert.AreEqual(true, status["Connected"], "Private Access add-in connection must be confirmed by its exact bridge.");
                 var projects = result.Items("list_projects");
                 result.BindStartupProject(projects);
                 result.Items("list_modules");
@@ -437,6 +438,7 @@ namespace VBAi.Tests.Integration
                 var status = Data("status");
                 Assert.AreEqual(typeof(VbeSession).Module.ModuleVersionId.ToString("D"), status["AssemblyModuleVersionId"]);
                 Assert.AreEqual(ProcessId, Convert.ToInt32(status["HostProcessId"]));
+                if (Kind == "Access" && privateDesktop != null) Assert.AreEqual(true, status["Connected"], "Fresh private Access add-in connection must be confirmed by its exact bridge.");
                 if (Kind != "Access") BindStartupProject(Items("list_projects"));
                 RequireOwnedDocument();
                 steps.Add(new { ReopenFromDisk = adapterOnly, HelperSaveInvoked = !adapterOnly, PreviousProcessId = previousPid, ProcessId, DocumentPath });
@@ -653,6 +655,7 @@ namespace VBAi.Tests.Integration
                     editor = ((dynamic)application).VBE;
                     window = ((dynamic)editor).MainWindow;
                     ((dynamic)window).Visible = true;
+                    ConnectPrivateAccessAddIn(editor, window);
                 }
                 else
                 {

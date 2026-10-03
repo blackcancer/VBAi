@@ -17,6 +17,47 @@ namespace VBAi.Tests.Unit
     /// <summary>Vérifie l’historique, la persistance locale et la réparation des conversations.</summary>
     public sealed partial class ChatWindowStateTests
     {
+        [STATestMethod, TestCategory("Unit")]
+        public void CachedMetadataScopeRefreshesBusyUiSelectionWithoutReadingTheHost()
+        {
+            using (var runtime = new RuntimeScope())
+            using (var window = LoadedWindow(runtime.Session))
+            {
+                var tools = Get<LlmVbeTools>(window, "tools");
+                var originalSession = Get<ChatSessionState>(window, "currentSession");
+                string originalBound = tools.BoundProject;
+                object other = AddScope(window, @"C:\Owned\Other.xlsm");
+                Set(window, "busy", true);
+                Get<ComboBox>(window, "scopePicker").SelectedItem = other;
+                Assert.AreEqual(originalBound, tools.BoundProject, "Busy scope switching leaves the old binding cached until guarded.");
+                int reads = 0; runtime.Host = request => { reads++; throw new InvalidOperationException("No host read is permitted here."); };
+                tools.ValidateCachedScope();
+                Assert.AreEqual(@"C:\Owned\Other.xlsm", tools.BoundProject); Assert.AreEqual(0, reads);
+                Assert.AreSame(originalSession, Get<ChatSessionState>(window, "currentSession"));
+                Set(window, "busy", false);
+            }
+        }
+
+        [STATestMethod, TestCategory("Unit")]
+        public void CachedMetadataScopeRefusesUnavailableLoadingAndMissingSelectionWithoutHostReads()
+        {
+            using (var runtime = new RuntimeScope())
+            using (var window = LoadedWindow(runtime.Session))
+            {
+                var tools = Get<LlmVbeTools>(window, "tools"); int reads = 0;
+                runtime.Host = request => { reads++; throw new InvalidOperationException("No host read is permitted here."); };
+                foreach (string flag in new[] { "sessionViewUnavailable", "loadingScope" })
+                {
+                    Set(window, flag, true);
+                    Assert.ThrowsException<InvalidOperationException>(() => tools.ValidateCachedScope());
+                    Set(window, flag, false);
+                }
+                Set(window, "busy", true); Get<ComboBox>(window, "scopePicker").SelectedIndex = -1;
+                Assert.ThrowsException<InvalidOperationException>(() => tools.ValidateCachedScope());
+                Assert.AreEqual(0, reads); Set(window, "busy", false);
+            }
+        }
+
         private static void UseLiveProjectCatalogue(RuntimeScope runtime)
         {
             runtime.Host = request => request.Command == "list_projects"

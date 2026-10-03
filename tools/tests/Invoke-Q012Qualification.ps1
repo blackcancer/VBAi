@@ -10,6 +10,7 @@ param(
     [ValidateRange(1,15)][int[]]$ScenarioNumbers=(1..15),
     [string]$BlockedHostReason='Host excluded by the reviewed plan; prior outcomes are not promoted to acceptance.',
     [ValidateSet('Debug','Release')][string]$Configuration='Debug',
+    [switch]$MetadataGetterProbe,
     [switch]$Execute
 )
 $ErrorActionPreference='Stop'
@@ -21,8 +22,11 @@ if(-not $TestProject){$TestProject=Join-Path $repo 'tests/VBAi.Tests/VBAi.Tests.
 $registrationScript=Join-Path $repo 'tools/testing-explorer/Set-TestExplorerCandidate.ps1'
 $testAssembly=Join-Path $BuildOutputRoot ('VBAi.Tests/'+$Configuration+'/net48/VBAi.Tests.dll')
 $unitNames=@('VbeOtherHostPersistenceTests','OfficeProjectReopenIdentityTests','OfficePublisherStartupBindingTests',
-    'OfficeVbeFixturePublisherTestCleanupTests','OfficeMetadataMutationEvidenceTests','VbeScalarPropertyTests','IsolatedTestDesktopTests','OfficeVbeFixtureDesktopTests','OfficeVbeFixtureDesktopStartupRecoveryTests','OfficeVbeFixturePublisherOwnershipTests','AccessSaveConfirmationTests','LlmVbeToolsBoundaryTests')
-$unitFilter=($unitNames | ForEach-Object {'FullyQualifiedName~VBAi.Tests.Unit.'+$_}) -join '|'
+    'OfficeVbeFixturePublisherTestCleanupTests','OfficeMetadataMutationEvidenceTests','VbeScalarPropertyTests','AccessHelpContextDispatchTests','AccessHelpContextProjectTests','IsolatedTestDesktopTests','OfficeVbeFixtureDesktopTests','OfficeVbeFixtureDesktopAddInConnectionTests','OfficeVbeFixtureDesktopStartupRecoveryTests','OfficeVbeFixturePublisherOwnershipTests','AccessSaveConfirmationTests','LlmVbeToolsBoundaryTests','ChatWindowStateTests')
+$unitFilter=($unitNames | ForEach-Object {
+    $selector='FullyQualifiedName~VBAi.Tests.Unit.'+$_
+    if($_ -ceq 'ChatWindowStateTests'){$selector+'.CachedMetadata'}else{$selector}
+}) -join '|'
 $scenarioRows=@(
     'Access|OfficeAdapterOnlyQualificationTests|Access16ActiveModuleOnlyAdapterSaveReopen',
     'Access|OfficeAdapterOnlyQualificationTests|Access16ModuleAndClassAdapterSaveReopen',
@@ -192,7 +196,7 @@ if(-not $Execute){
         SourceFiles=@(Source-Snapshot);BinaryFiles=@(Binary-Snapshot);UnitFilter=$unitFilter;NativeScenarios=$scenarios;
         ExistingAccess=@(Host-Inventory 'Access');ExistingPublisher=@(Host-Inventory 'Publisher');
         HostScope=$HostScope;BlockedHostReason=$BlockedHostReason;SelectedScenarioNumbers=@($ScenarioNumbers);
-        NativeInvocationLimit=1;NativeSaveReplay=$false;ForceTermination=$false;InputDesktopFallback=$false;MetadataGetterProbe=$false;
+        NativeInvocationLimit=1;NativeSaveReplay=$false;ForceTermination=$false;InputDesktopFallback=$false;MetadataGetterProbe=[bool]$MetadataGetterProbe;
         Scope='Existing ACCDB/PUB save; no first SaveAs, macro execution, trust changes or signatures.'}
     Write-Report $planPath $plan
     Write-Output ('PREPARED: '+$planPath)
@@ -206,6 +210,7 @@ if($plan.Format -cne 'VBAi.Q012.Campaign.1' -or $plan.Repository -cne $repo -or
     $plan.TestAssembly -cne $testAssembly -or $plan.Configuration -cne $Configuration -or
     $plan.DesktopHelperAssembly -cne $DesktopHelperAssembly -or $plan.EvidenceDirectory -cne $EvidenceDirectory -or
     $plan.HostScope -cne $HostScope -or $plan.BlockedHostReason -cne $BlockedHostReason -or
+    $plan.MetadataGetterProbe -ne [bool]$MetadataGetterProbe -or
     (Canonical-Json @($plan.SelectedScenarioNumbers)) -cne (Canonical-Json @($ScenarioNumbers)) -or
     $plan.UnitFilter -cne $unitFilter -or (Canonical-Json @($plan.NativeScenarios)) -cne (Canonical-Json $scenarios)){
     throw 'Plan identity or fixed scenario inventory changed.'
@@ -247,6 +252,7 @@ try{
         $summary.RegistrationApply=& $registrationScript -CandidateAssemblyPath $CandidateAssembly -ExpectedMvid ([Guid]$mvid) -Apply -ReportPath $backup
         Write-Report $summaryPath $summary
         $env:VBAi_RUN_OFFICE_TESTS='1';$env:VBAi_TEST_ACCESS_EXE=$plan.AccessExecutable;$env:VBAi_TEST_PUBLISHER_EXE=$plan.PublisherExecutable
+        if($MetadataGetterProbe){$env:VBAi_RUN_OFFICE_METADATA_GETTER_PROBE='1'}
         foreach($scenario in $scenarios){
             Require-Frozen $plan
             $desktopType.GetMethod('RequireCurrent',$flags).Invoke($null,@($desktop)) | Out-Null

@@ -48,6 +48,22 @@ the interface is absent on every bar/version or explain the broader startup
 cause. Remaining Publisher scenarios are blocked. Earlier Publisher/VBE
 acceptance retains its recorded candidate and operation limits.
 
+The scalar COM setter now explicitly requests value PROPERTYPUT. The later
+narrow Access HelpContextID native-dispatch candidate proves the connected
+PID/MVID, then returns DISP_E_EXCEPTION despite changing the live value to 321.
+Descriptor, CLR and raw getters agree; this partial mutation remains failed,
+with final adapter Save/fresh persistence not tested and normal original exit
+observed. Its final guards validate identity/revision, actual chat UI selection
+and permissions without a late host scope read. The candidate is not a setter
+repair or release acceptance. Earlier CLR/startup refusals remain separate. Separate
+Publisher diagnostics identify IAccessible metadata on both inspected NativeOM
+dispatches, then fail the original application's reverse CommandBars getter.
+Installed Publisher metadata also rejects Application.VBE as an absent contract.
+These diagnostics do not qualify publication creation, adapter Save or normal exit.
+Owned hosts are closed at each campaign terminal. HelpFile's offline ANSI byte
+matches do not establish its active ACE VBA record. These latest limits are in
+[recorded validation](test-coverage.md); Q-012 remains PARTIAL.
+
 D3 does not rerun the other Access scenarios. D2 acceptance for active-module
 source, reference additions by GUID/file, reference removal and Description
 retains its exact candidate scope and normal fresh-process lifecycle evidence.

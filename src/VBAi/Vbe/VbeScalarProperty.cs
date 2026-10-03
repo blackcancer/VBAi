@@ -59,6 +59,10 @@ namespace VBAi
         /// <summary>Identifies native COM targets; replaceable by isolated dispatch contract tests.</summary>
         internal static Func<object, bool> NativeObject = Marshal.IsComObject;
 
+        /// <summary>Isolates reflection dispatch so tests can observe the one attempted scalar PROPERTYPUT.</summary>
+        internal static Action<object, string, BindingFlags, object> NativeSetterInvocation = (target, name, flags, value) =>
+            target.GetType().InvokeMember(name, flags, null, target, new[] { value }, CultureInfo.InvariantCulture);
+
         /// <summary>Preserves managed descriptors while routing native properties through the CLR COM binder.</summary>
         /// <param name="target">Validated property owner.</param>
         /// <param name="descriptor">Descriptor used by the caller for validation and readback.</param>
@@ -77,8 +81,9 @@ namespace VBAi
         {
             try
             {
-                target.GetType().InvokeMember(name, BindingFlags.SetProperty | BindingFlags.Public | BindingFlags.Instance,
-                    null, target, new[] { value }, CultureInfo.InvariantCulture);
+                // SetProperty requests both PUT and PUTREF for COM. These validated scalars are value setters;
+                // request PROPERTYPUT alone without trying another mutation if its result is uncertain.
+                NativeSetterInvocation(target, name, BindingFlags.PutDispProperty | BindingFlags.Public | BindingFlags.Instance, value);
             }
             catch (TargetInvocationException error) when (error.InnerException != null)
             {

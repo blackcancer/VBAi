@@ -6,6 +6,86 @@ namespace VBAi.Tests.Unit
     public sealed partial class LlmVbeToolsBoundaryTests
     {
         [DataTestMethod]
+        [DataRow("policy")][DataRow("binding")][DataRow("mode")]
+        public void FinalMetadataAuthorizationUsesOnlyCachedGuardsAfterHostScopeRead(string changed)
+        {
+            var fixture = new ToolFixture(); fixture.Tools.BoundProject = "P"; int scopeReads = 0, writes = 0, cachedReads = 0, beforeFinal = -1; Request captured = null;
+            string actualSelection = "P";
+            fixture.Tools.ValidateScope = () => scopeReads++;
+            fixture.Tools.ValidateCachedScope = () => { cachedReads++; fixture.Tools.BoundProject = actualSelection; };
+            fixture.Tools.Execute = request => {
+                if (request.Command != "set_project_property") return VBAi.Tests.Infrastructure.VbeToolBoundaryFixture.Execute(request);
+                captured = request;
+                request.RevalidateProjectPropertyAuthorization(true);
+                beforeFinal = scopeReads;
+                if (changed == "policy") fixture.Settings.VbeEditApproval = "ReadOnly";
+                if (changed == "binding") actualSelection = "Other"; // The UI selector changes while the previous BoundProject remains cached.
+                if (changed == "mode") fixture.Tools.Mode = ChatMode.Plan;
+                try { request.RevalidateProjectPropertyAuthorization(false); writes++; }
+                finally { Assert.AreEqual(beforeFinal, scopeReads, "The final phase must not dispatch another host scope read."); }
+                return Response.Success(new { Changed = true });
+            };
+            Failed(fixture.Tools.InvokeAsync("set_project_property", Json.Serialize(new { Project = "P", Property = "HelpContextID", Value = 321, ExpectedProjectVersion = "version" })).GetAwaiter().GetResult(), "cached guard revoked");
+            Assert.AreEqual(0, writes); Assert.IsNull(captured.RevalidateProjectPropertyAuthorization);
+            Assert.AreEqual(1, cachedReads);
+            Assert.AreEqual(beforeFinal, scopeReads, "Final authorization cannot hide an extra host read inside an error response.");
+        }
+
+        [DataTestMethod]
+        [DataRow("policy", false)][DataRow("binding", false)][DataRow("mode", false)][DataRow("scope", false)]
+        [DataRow("policy", true)][DataRow("binding", true)]
+        public void ProjectMetadataAuthorizationRefusesRevokedDirectAndCatalogWrites(string changed, bool catalog)
+        {
+            var fixture = new ToolFixture(); fixture.Tools.BoundProject = "P"; int writes = 0; bool scope = true, callbackSeen = false; Request captured = null;
+            fixture.Tools.ValidateScope = () => { if (!scope) throw new InvalidOperationException("Scope revoked"); };
+            fixture.Tools.Execute = request => {
+                if (request.Command != "set_project_property") return VBAi.Tests.Infrastructure.VbeToolBoundaryFixture.Execute(request);
+                captured = request; Assert.IsNotNull(request.RevalidateProjectPropertyAuthorization);
+                callbackSeen = request.RevalidateProjectPropertyAuthorization != null;
+                if (changed == "policy") fixture.Settings.VbeEditApproval = "ReadOnly";
+                if (changed == "binding") fixture.Tools.BoundProject = "Other";
+                if (changed == "mode") fixture.Tools.Mode = ChatMode.Plan;
+                if (changed == "scope") scope = false;
+                request.RevalidateProjectPropertyAuthorization(true); request.RevalidateProjectPropertyAuthorization(false); writes++; return Response.Success(new { Changed = true });
+            };
+            string arguments = Json.Serialize(new { Project = "P", Property = "HelpContextID", Value = 321, ExpectedProjectVersion = "version" });
+            if (catalog) arguments = Json.Serialize(new { ToolName = "set_project_property", ArgumentsJson = arguments });
+            Failed(fixture.Tools.InvokeAsync(catalog ? "invoke_tool" : "set_project_property", arguments).GetAwaiter().GetResult(), "revoked metadata authorization");
+            Assert.AreEqual(0, writes); Assert.IsNotNull(captured); Assert.IsNull(captured.RevalidateProjectPropertyAuthorization);
+            Assert.IsTrue(callbackSeen, "The refusal must come from the installed runtime guard.");
+        }
+
+        [DataTestMethod]
+        [DataRow("Automatic", false)][DataRow("AskEachTime", false)][DataRow("Automatic", true)]
+        public void ProjectMetadataAuthorizationReusesApprovalAndClearsAfterOriginalDispatch(string policy, bool failed)
+        {
+            var fixture = new ToolFixture(); fixture.Tools.BoundProject = "P"; fixture.Settings.VbeEditApproval = policy;
+            int approvals = 0, writes = 0; Request captured = null;
+            fixture.Tools.ShowApproval = (dialog, owner) => { approvals++; return System.Windows.Forms.DialogResult.Yes; };
+            fixture.Tools.Execute = request => {
+                if (request.Command != "set_project_property") return VBAi.Tests.Infrastructure.VbeToolBoundaryFixture.Execute(request);
+                captured = request; Assert.IsNotNull(request.RevalidateProjectPropertyAuthorization);
+                request.RevalidateProjectPropertyAuthorization(true); request.RevalidateProjectPropertyAuthorization(false); writes++;
+                if (failed) throw new InvalidOperationException("Original setter failed");
+                return Response.Success(new { Changed = true });
+            };
+            string result = fixture.Tools.InvokeAsync("set_project_property", Json.Serialize(new { Project = "P", Property = "HelpContextID", Value = 321, ExpectedProjectVersion = "version" })).GetAwaiter().GetResult();
+            if (failed) Failed(result, "original metadata failure"); else Success(result, "metadata approval");
+            Assert.AreEqual(1, writes); Assert.AreEqual(policy == "AskEachTime" ? 1 : 0, approvals); Assert.IsNull(captured.RevalidateProjectPropertyAuthorization);
+        }
+
+        [TestMethod]
+        public void MetadataAuthorizationCannotBeSerializedOrInstalledByJson()
+        {
+            var request = new Request { Command = "set_project_property" };
+            request.RevalidateProjectPropertyAuthorization = validateScope => Assert.Fail("Serialization must not invoke authorization.");
+            Assert.IsFalse(Json.Serialize(request).Contains("RevalidateProjectPropertyAuthorization"));
+            Assert.IsNull(Json.Deserialize<Request>("{\"Command\":\"set_project_property\",\"RevalidateProjectPropertyAuthorization\":true}").RevalidateProjectPropertyAuthorization);
+            Assert.IsNull(typeof(Request).GetField("RevalidateProjectPropertyAuthorization"));
+            Assert.IsNull(typeof(Request).GetProperty("RevalidateProjectPropertyAuthorization"));
+        }
+
+        [DataTestMethod]
         [DataRow(false, false)][DataRow(true, false)][DataRow(false, true)][DataRow(true, true)]
         public void ScalarFailurePhaseSurvivesDirectAndCatalogResponsesWithoutRetry(bool catalog, bool readback)
         {

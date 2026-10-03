@@ -47,6 +47,8 @@ namespace VBAi
         /// <summary>Obtient ou définit le contrôle de portée appelé avant un outil.</summary>
         /// <value>Action de validation facultative.</value>
         public Action ValidateScope { get; set; }
+        /// <summary>Validates cached conversation selection/privacy without host or COM reads.</summary>
+        internal Action ValidateCachedScope;
         /// <summary>Obtient ou définit l’identifiant du projet auquel les outils sont limités.</summary>
         /// <value>Nom ou chemin du projet lié à la conversation.</value>
         public string BoundProject { get; set; }
@@ -82,6 +84,12 @@ namespace VBAi
         private void GuardMode(string name)
         {
             ValidateScope?.Invoke();
+            GuardModeLocal(name);
+        }
+
+        /// <summary>Checks cached chat mode without reading or dispatching to the host.</summary>
+        private void GuardModeLocal(string name)
+        {
             if (!restoring && Mode != ChatMode.Agent && !ReadOnlyTools.Contains(name))
                 throw new InvalidOperationException(UiText.Get("Mode ") + Mode + UiText.Get(" does not allow this editing or execution tool: ") + name);
         }
@@ -552,6 +560,22 @@ namespace VBAi
                         };
                         try { result = Response.Success(await SaveHostDocumentNative(request)); }
                         finally { request.RevalidateSaveAuthorization = null; }
+                    }
+                    else if (name == "set_project_property")
+                    {
+                        string metadataBoundProject = BoundProject;
+                        request.RevalidateProjectPropertyAuthorization = validateScope => {
+                            if (validateScope) ValidateScope?.Invoke();
+                            else ValidateCachedScope?.Invoke();
+                            GuardModeLocal(name);
+                            if (!string.Equals(metadataBoundProject, BoundProject, StringComparison.OrdinalIgnoreCase))
+                                throw new InvalidOperationException("The conversation project binding changed during metadata dispatch.");
+                            GuardProject(name, arguments); GuardLegacyEditorMutation(name);
+                            if (settings.VbeEditApproval != "Automatic" && !(settings.VbeEditApproval == "AskEachTime" && editApproved))
+                                throw new InvalidOperationException("VBE edit policy changed before metadata mutation.");
+                        };
+                        try { result = Execute(request); }
+                        finally { request.RevalidateProjectPropertyAuthorization = null; }
                     }
                     else result = name == "status"
                         ? Response.Success(ScopedLiveSnapshot())

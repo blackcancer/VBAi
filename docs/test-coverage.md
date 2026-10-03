@@ -1,5 +1,146 @@
 # Recorded validation
 
+## Q-012 current Access metadata candidate (2026-10-03)
+
+D6 is bound to source `188d50c32835a3efe5f06caa475a5df1f8c4adb6` plus its
+frozen pending-source manifest on `codex/q012-office-20261002`. Product MVID is
+`c6100492-0933-4923-9026-7f466bed44a7`, SHA-256
+`5C97CA688347BFF16CE79623395FA556D1690FB97EB1AF106E039DB1E0E82A79`.
+Test assembly SHA-256 is
+`21145CE645F49F79BDA0071AEFE7445FE8E8B155B3855B2C78D87989AADE4E41`.
+The isolated solution build succeeds without warnings or errors. Native plan
+SHA-256 is `9B27F3B5841EAD61F2C2B4B9F316A7454F0E79865FC55FE0FF007802783125D4`.
+
+| Gate | Result | Scope |
+| --- | --- | --- |
+| Focused managed gate | 454 passed, 0 failed | Includes the two selected cached-scope UI cases. |
+| Native adapter matrix | 1 failed, 14 NOT_RUN | Only row 14, Access HelpContextID, selected; one scenario invocation. |
+| Complete default managed gate | 4,151 passed, 0 failed, 205 skipped, 4,356 total | No native opt-ins; one complete run, runner exit 0. |
+
+Independent static review finds no blocker in the scoped implementation; this
+does not prove native acceptance. The new Access-only dispatch validates the
+VBProject I4 GET/PROPERTYPUT contract, identity, revision, owning VBE UI thread
+and current authorization before one Invoke. The final cached authorization
+refreshes the actual chat selection without another host read. Failed outcomes
+never trigger an alternative setter or mutation replay. This candidate is
+**not a qualified native setter repair**.
+
+Original Access PID `30876`, start `2026-10-03T10:36:48.7539228Z`, is verified
+on `VBAiTests_2b8deda63259404896e22f3f54a288fe`. Bridge status proves Connected,
+the exact PID and loaded D6 MVID. The already connected add-in requires no
+Connect setter. Sequence 28 requests HelpContextID 321 with revision
+`60c46597f373f9af72089b1c92c38c989e2d42d47ab67f476b935d7195ffce9d`.
+The terminal response fails with HRESULT `0x80020009` (DISP_E_EXCEPTION),
+EXCEPINFO scode `0xEC2B11D8`, without a deferred callback.
+
+The planned read-only post-failure probe observes **0 to 321**: descriptor, CLR
+and raw getters agree, and Saved changes from true to false. This establishes
+a partial live mutation despite a failed call. The getter canary does not prove
+production PUT buffer integrity; PUT integrity observations are not serialized
+in the failure receipt. The failure remains a failure. Adapter Save after this
+mutation and fresh-process persistence are **NOT_RUN**; the earlier disposable
+baseline save is preparation. The read-only probe is enabled in the frozen plan;
+setter probes remain disabled. No causal setter workaround is established.
+
+One original Quit returns; normal Access exit code 0 is observed at
+`2026-10-03T10:36:59.3861225Z`. Native terminal state is `FAILED_OR_BLOCKED`,
+with verified registration restoration. Worker `300` and helper `34000` exit
+naturally with code 1. Their Ready task is removed; no owned Office process
+remains. Input desktop stays Default with zero switches. The cleanup receipt's
+initial `Addins` lookup is not comparable to the fixture's `Addins64` snapshots.
+The separate corrected read-only receipt observes HKCU Addins64 DWord 3 and
+no HKLM key; neither registry key nor the original receipt is rewritten.
+
+The complete managed gate finishes at `2026-10-03T10:55:49.4002221Z`, console
+duration 13 m 43 s. Its terminal receipt confirms the candidate bytes and all
+**1,047 frozen C# files unchanged**; this inventory is not a coverage denominator.
+The 205 individual NotExecuted TRX rows establish skipped scenarios, despite
+the aggregate notExecuted counter being zero. The child PATH includes the
+existing Node runtime, SHA-256
+`3602F2BB1A10F2CBAB4C36886218A33C1AB3DB87290E73B033C46C77147D0237`;
+no global PATH or native opt-in is changed.
+
+The managed worker runs on `VBAiTests_3882889fd8f147749f28f4bf738feeca` and
+records test exit 0. Helper/campaign and outer limited-task terminal receipts
+are missing. Helper `38640`, worker `10888` and their testhost `8196` are
+subsequently absent; the task is Ready with result `0xC000013A` and is removed.
+No termination is sent. The cause remains unproven: passing tests do not prove
+normal helper exit or a complete helper lifecycle. No Office process remains.
+
+Evidence under `artifacts/q012-20261003`: `d6-access-i4`,
+`desktop-d6-access-i4`, `d6-build.log`, `d6-loadbehavior-correction.json`,
+`managed-i4-final`, `desktop-managed-i4-final/cleanup.json`,
+`scalar-native-independent-review` and `scalar-native-dispatch-review`.
+Q-012 remains **PARTIAL**. HelpFile and Publisher remain separate open gates;
+no coverage measurement is taken.
+
+## Q-012 preceding scalar and connection gates (2026-10-03)
+
+D4 and D5 use product MVID `ca41e0b5-6894-44b1-9f47-1054e0d0ffc0`, SHA-256
+`5CF152C779E14F323011E1DB014380FE77EBB25A96A448F9EEC0E7CB462A49A5`,
+from the same source HEAD plus their respective frozen pending manifests.
+D4 test SHA-256 is
+`AFE292C6E4AA5167C6334A1D2CA0FD6995BA686B7C00542B373E51D9FFE178B6`;
+D5's later fixture-only assembly SHA-256 is
+`15FFF58AAE670C86D9BFF7D09E14567420E8D4E8BF9FCC5E96ED3CB16D3AD5B1`.
+
+| Candidate / gate | Result | Native limit |
+| --- | --- | --- |
+| D4 focused | 385 passed, 0 failed | Explicit scalar PROPERTYPUT; no native repair acceptance. |
+| D4 native | 1 failed, 14 NOT_RUN | Initial status timeout before setter; loaded MVID unproven. |
+| D4 complete default managed | 4,082 passed, 0 failed, 205 skipped, 4,287 total | Exit 0; no native opt-ins. |
+| D5 focused | 400 passed, 0 failed | Later test assembly; product bytes unchanged. |
+| D5 native | 1 failed, 14 NOT_RUN | One claimed Connect succeeds; native HelpContextID setter fails. |
+
+D4's default run freezes 1,043 C# files without drift and uses the same Node
+runtime above. Its helper lifecycle also lacks terminal receipts; Ready task
+result `0xC000013A` is not normal-exit proof. The task is removed and its helper
+and worker are absent. D4 native original Access `20856` and helper `42828`
+require checked forced cleanup; normal exit and persistence are unqualified.
+The separate read-only loading preflight observes Access `35712` disconnected
+before and after VBE visibility, without bridge request or Connect setter.
+It is forced closed once; helper `20176` exits normally and its task is removed.
+
+D5 proves the original Access `45900` and loaded product MVID after one guarded
+Connect setter. Sequence 27's value-PROPERTYPUT fails with HRESULT `0xE19D7318`;
+the post-setter value is **NOT_OBSERVED**, Save/reopen **NOT_RUN**. One Quit
+produces normal original exit 0; worker and helper exit naturally with code 1.
+Registration restoration is verified and the Ready task is removed. The later
+HKCU LoadBehavior observation differs from its in-process snapshot without
+a fixture/root registry write; no causal attribution or rewrite is inferred.
+These prior gates do not qualify D6 or later assemblies.
+
+Evidence under `artifacts/q012-20261003`: `d4-scalar`, `desktop-d4-scalar`,
+`access-load-preflight`, `desktop-access-load-preflight`, `managed-scalar-final`,
+`desktop-managed-scalar-final`, `managed-scalar-source-check.json`,
+`d5-owned-connect`, `desktop-d5-owned-connect` and `d5-product-copy.json`.
+
+## Q-012 remaining Publisher and HelpFile prerequisites (2026-10-03)
+
+The finite two-bar Publisher diagnostic obtains accessible IDispatch objects,
+but both exact CommandBar queries fail with `0x80004002` and Application name
+binding with `0x80020006`. No property Invoke, document creation or Save occurs.
+The separate reverse-association trial dismisses only the exact owned recovery
+question once; normal mode remains unproven. Application.CommandBars then fails
+with `0x8004002F` before Count/Item, NativeOM, document creation or Save.
+Publisher `9160` and `46788` are each forced closed once through checked owned
+handles, their helper tasks removed, and no owned Office process remains.
+Forced cleanup and interface diagnostics do not qualify normal exit or persistence.
+
+Installed Publisher metadata exposes no Application.VBE member; valid downstream
+VBIDE MainWindow/HWnd metadata cannot supply this missing association. No guessed
+API or native worker is introduced for that hypothesis. The offline HelpFile
+inspection preserves the disposable ACE database hash and finds matching path
+bytes in PROJECT-like blocks, without identifying an active VBA stream. It does
+not prove persistence or justify heuristic decoding of a malformed live value.
+The Publisher matrix is not replayed behind failed prerequisites.
+
+Evidence under `artifacts/q012-20261003`: `publisher-dispatch-probe-v2`,
+`desktop-publisher-dispatch-probe-v2`, `publisher-commandbars-probe`,
+`desktop-publisher-commandbars-probe`, `publisher-vbe-association-review` and
+`access-helpfile-storage-review`. These diagnostics expand no native acceptance.
+
+
 ## Q-012 Publisher raw-dispatch diagnostic refusal (2026-10-03)
 
 A single separately claimed diagnostic starts a disposable owned Publisher

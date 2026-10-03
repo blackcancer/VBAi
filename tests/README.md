@@ -25,6 +25,13 @@ Its terminal state is `DIAGNOSTIC_PASS` only when all selected cases pass;
 `FullMatrixQualified` remains false unless the complete matrix passes and the
 exact temporary COM registration is restored and verified at the terminal gate.
 
+`-MetadataGetterProbe` explicitly freezes the existing read-only Access metadata
+diagnostic into a selected campaign. It compares descriptor, CLR and raw getters
+at the planned mutation/save/reopen phases, including observation after a failed
+setter. That observation cannot promote a failed or uncertain mutation to success.
+The getter opt-in is enabled only after the focused managed gate; setter probes
+remain disabled and no additional metadata write or Save is introduced.
+
 Build the solution with an isolated `BuildOutputRoot`. Prepare with absolute
 `-CandidateAssembly`, `-BuildOutputRoot`, `-EvidenceDirectory` and
 `-DesktopHelperAssembly` paths using Windows PowerShell 5.1 x64. The helper is
@@ -47,6 +54,15 @@ before mutation. The live hidden sentinel must be observed on the private deskto
 no owned host window may appear on the input desktop. Foreign thread-desktop
 queries are not used as proof. Ordinary Office tests without
 `VBAi_TEST_DESKTOP_NAME` retain their existing behavior.
+
+Private Access bootstrap explicitly observes the registered `VBAi.AddIn` VBE
+entry and, when disconnected, requests its host-managed connection once.
+Exact ProgID/GUID, original COM/process/window identities, fixture STA and
+private/input inventories must remain valid. Read-only LoadBehavior observations
+must remain unchanged, and unknown visible modals or a disabled VBE refuse the
+subsequent bridge/scenario work. A true Connect readback is not candidate
+acceptance: the existing bridge PID and MVID checks remain mandatory. Failed or
+uncertain connection is retained without reconnecting or changing trust policy.
 
 Access starts as an explicitly owned normal application and attaches through ROT;
 Publisher preserves its registered `/Automation -Embedding` server arguments.
