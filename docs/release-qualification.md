@@ -7,19 +7,25 @@ are maintained only in [recorded validation](test-coverage.md).
 ## Current candidate checkpoint (2026-10-03)
 
 The active qualification focus is Q-024; Q-027 is deferred at the maintainer's
-request and retains its recorded open gates. Source `8ad5ecf` passes its
+request and retains its recorded open gates. Source `7b0c221` passes its
 complete default managed gate and full synthetic UI action matrix on inactive
-desktops, with unchanged source/hashes and normal original child exits. This
-does not qualify Word. After other campaigns release their hosts, registration
-Apply and the grouped native Word bank run once. Startup fails before NativeOM,
+desktops, including the complete added mirror bank, with exact source/hashes and
+normal original child exits. Registration Apply and Word remain NOT_RUN on this
+corrected bank while the preceding owned Word and passive read-only recovery
+worker are retained. Releasing that worker requires maintainer confirmation.
+This does not qualify Word. On preceding source `8ad5ecf`, after other campaigns
+release their hosts, registration Apply and the grouped native bank run once.
+Startup fails before NativeOM,
 VBE or Chat/Git at the launched primary thread's unavailable desktop identity.
 Read-only diagnostics on the exact private desktop prove the actual Word UI
 thread's placement and find an unexpected older disposable DOCM alongside the
-inert seed. Their origin and the primary-thread refusal remain unresolved.
+inert seed. A read-only resiliency probe finds a reference to that DOCM under
+Word DocumentRecovery, supporting a recovery hypothesis; startup causation and
+the primary-thread refusal remain unresolved.
 Word and its desktop are retained; a normal-recovery preflight fails before any
 Quit or macro-suppression action. The concurrent registration write is recorded
-separately and has not been replayed by this campaign. Corrections and all mirror
-scenarios are prepared before grouped execution. See
+separately and has not been replayed by this campaign. The corrected normal
+recovery is prepared without clearing recovery entries or changing trust. See
 [recorded validation](test-coverage.md#complete-inactive-desktop-gate-2026-10-03).
 The preceding completed inactive-desktop
 matrix on `da34b3b` proves native combo-list discovery and exact scope selection,

@@ -2,6 +2,46 @@
 
 ## Complete inactive desktop gate (2026-10-03)
 
+Frozen source `7b0c221c179de611e7bab29428a4d4cd4f26834a` builds with zero
+warnings/errors. Its complete default managed gate reports **3,972 passed,
+0 failed, 206 inactive, 4,178 total**, ending `2026-10-03T01:08:38.3578833Z`.
+The TRX outcome is Completed; source remains clean and frozen hashes are exact.
+All twelve added mirror methods pass in this complete run. They cover durable
+launch/identity ordering, every phase refusal, separate thread-desktop errors,
+actual document/root ownership, late or ambiguous windows, callback/native/name
+recheck failures and complete/partial/bounded document inventories. Native/provider
+opt-ins and the coverage collector are disabled.
+
+Product MVID is `96f9b70e-662f-4551-89b5-ff7400bdb2a8`; product SHA-256 is
+`84616C0329641EDD8DC49DBDE8D3550052F23EBA6FA22C113C0CA873CFAAF022`;
+test SHA-256 is
+`810FE522D86026428280102EC51B4B47FE89F5413DB57F1E8A26E66EE9792EBE`;
+helper SHA-256 is
+`1A5956A32909CEE8CABFAEA25EA5644A55F1BE4DE37A72DB6C2092016CED713F`.
+Actual testhost PID `35416`, thread `23220`, records test assembly MVID
+`1f825b63-9094-4ef5-9b26-b3a145ba1073` and the exact inactive desktop
+`VBAiTests_c157cf5bbb8c4decbd7ffbdf6a70a847`; input stays `Default`.
+
+The complete synthetic action matrix again reports **9 proven, 0 gaps,
+9 required**, with its limited terminal ending `2026-10-03T00:54:35.0686708Z`.
+Its desktop is `VBAiTests_10ad4fc25ae648e2a6f9b0c5750d08f3`. All original
+campaign children exit normally with code 0; both terminal tasks are removed
+with receipts. Independent frozen-candidate checks accept the complete managed
+and synthetic evidence. These results are under
+`artifacts/q024-private-batch-v10-20261003/`; a clean frozen checkout retains
+their source. This is not Office acceptance or a new coverage measurement.
+
+Registration Apply and native Word are NOT_RUN on this corrected bank. The
+preceding retained Word and failed recovery's read-only worker still prevent
+new native execution. A corrected normal-recovery plan is prepared with shared
+file hashes; stopping the earlier passive worker requires maintainer confirmation.
+The read-only Word resiliency probe finds an exact reference to the older owned
+DOCM under `DocumentRecovery`, supporting a recovery hypothesis without proving
+startup causation. No recovery registry entry or trust setting is changed.
+Q-024 remains open and Q-027 deferred.
+
+### Preceding native preflight (2026-10-03)
+
 Frozen source `8ad5ecf79f151c4633fe1d7dc002d60890e93cb8` builds with zero
 warnings/errors. Its complete default managed gate reports **3,960 passed,
 0 failed, 206 inactive, 4,166 total**, ending `2026-10-03T00:04:35.2224999Z`.
