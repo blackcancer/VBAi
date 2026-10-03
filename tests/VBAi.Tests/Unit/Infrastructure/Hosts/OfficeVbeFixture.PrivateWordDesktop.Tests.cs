@@ -5,6 +5,7 @@ using System.IO.Packaging;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.InteropServices;
+using System.Security.Cryptography;
 using System.Text;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using VBAi.Tests.Integration;
@@ -16,6 +17,61 @@ namespace VBAi.Tests.Unit
     {
         private const string Executable = @"C:\Program Files\Microsoft Office\root\Office16\WINWORD.EXE";
         private static readonly string Hash = new string('A', 64);
+
+        [TestMethod]
+        public void OpenOwnedWordSeedAllowsExistingWriteLeaseButNeverChangesItsBytes()
+        {
+            string path = Path.Combine(Path.GetTempPath(), "VBAi-WordSeedHash-" + Guid.NewGuid().ToString("N") + ".docx");
+            byte[] bytes = Encoding.UTF8.GetBytes("Known inert owned seed bytes");
+            File.WriteAllBytes(path, bytes);
+            string expected;
+            using (var sha = SHA256.Create()) expected = BitConverter.ToString(sha.ComputeHash(bytes)).Replace("-", "");
+            try
+            {
+                using (var wordLease = new FileStream(path, FileMode.Open, FileAccess.ReadWrite, FileShare.ReadWrite))
+                {
+                    Assert.ThrowsException<IOException>(() => { using (File.OpenRead(path)) { } });
+                    Assert.AreEqual(expected, OfficeVbeFixture.RequireUnchangedOpenWordSeed(path, expected.ToLowerInvariant()));
+                    Assert.AreEqual(0L, wordLease.Position);
+                    Assert.AreEqual((long)bytes.Length, wordLease.Length);
+                }
+                CollectionAssert.AreEqual(bytes, File.ReadAllBytes(path));
+            }
+            finally { File.Delete(path); }
+        }
+
+        [TestMethod]
+        public void OpenOwnedWordSeedRefusesChangedBytesAndMalformedPrelaunchIdentity()
+        {
+            string path = Path.Combine(Path.GetTempPath(), "VBAi-WordSeedHash-" + Guid.NewGuid().ToString("N") + ".docx");
+            byte[] bytes = Encoding.UTF8.GetBytes("Changed seed content");
+            File.WriteAllBytes(path, bytes);
+            try
+            {
+                Assert.ThrowsException<InvalidOperationException>(() => OfficeVbeFixture.RequireUnchangedOpenWordSeed(path, Hash));
+                foreach (string expected in new[] { null, "", "ABC", new string('Z', 64) })
+                    Assert.ThrowsException<ArgumentException>(() => OfficeVbeFixture.RequireUnchangedOpenWordSeed(path, expected));
+                foreach (string invalidPath in new[] { null, "", "relative.docx" })
+                    Assert.ThrowsException<ArgumentException>(() => OfficeVbeFixture.RequireUnchangedOpenWordSeed(invalidPath, Hash));
+                CollectionAssert.AreEqual(bytes, File.ReadAllBytes(path));
+            }
+            finally { File.Delete(path); }
+        }
+
+        [TestMethod]
+        public void OpenOwnedWordSeedPropagatesMissingAndExclusiveLeaseFailuresWithoutReplay()
+        {
+            string path = Path.Combine(Path.GetTempPath(), "VBAi-WordSeedHash-" + Guid.NewGuid().ToString("N") + ".docx");
+            Assert.ThrowsException<FileNotFoundException>(() => OfficeVbeFixture.RequireUnchangedOpenWordSeed(path, Hash));
+            File.WriteAllBytes(path, new byte[] { 1, 2, 3 });
+            try
+            {
+                using (var exclusive = new FileStream(path, FileMode.Open, FileAccess.ReadWrite, FileShare.None))
+                    Assert.ThrowsException<IOException>(() => OfficeVbeFixture.RequireUnchangedOpenWordSeed(path, Hash));
+                CollectionAssert.AreEqual(new byte[] { 1, 2, 3 }, File.ReadAllBytes(path));
+            }
+            finally { File.Delete(path); }
+        }
 
         [TestMethod]
         public void DisabledOfficeOptInIsInconclusiveBeforeAnyPrivateDesktopObservation()

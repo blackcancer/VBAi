@@ -55,13 +55,14 @@ namespace VBAi.Tests.Integration
                 expectedHash, File.Exists, HashOwnedFile);
             string seed = Path.Combine(Root, "NativeObjectModelSeed.docx");
             WriteMacroFreeSeed(seed);
+            string seedHash = HashOwnedFile(seed);
             // /a prevents automatic loading of Normal/global templates before NativeOM attachment.
             // Use one documented switch; splash windows remain on the inactive desktop.
             // The only file argument is the freshly created macro-free DOCX in this owned results directory.
             privateWordChild = IsolatedTestDesktop.Launch(executable, WordPrivateArguments(seed), Root, desktopName);
             ProcessId = privateWordChild.ProcessId;
             PreparePrivateWordLaunch(desktopName, privateWordChild.ThreadId,
-                () => PersistPrivateWordLaunch(seed, executable, expectedHash, desktopName),
+                () => PersistPrivateWordLaunch(seed, seedHash, executable, expectedHash, desktopName),
                 () => {
                     Assert.IsFalse(privateWordChild.Wait(0), "Original Word exited before its identity capture.");
                     CaptureOwnedProcess();
@@ -87,22 +88,23 @@ namespace VBAi.Tests.Integration
                     FlushAdapterEvidence();
                 },
                 () => AttachOnlyLaunchedWordNativeObjectModel(seed, desktopName));
+            string observedSeedHash = RequireUnchangedOpenWordSeed(seed, seedHash);
             owned = true;
             privateWordSeed = document;
             steps.Add(new { ApplicationOwnershipVerifiedBeforeMutation = true, Method = "LaunchedPrivateWordNativeObjectModel",
                 ProcessId, LaunchThreadId = privateWordChild.ThreadId, Desktop = desktopName,
-                SeedPath = seed, SeedSha256 = HashOwnedFile(seed), Executable = executable,
+                SeedPath = seed, SeedSha256 = observedSeedHash, Executable = executable,
                 ExecutableSha256 = expectedHash.ToUpperInvariant(), ForceTermination = false });
         }
 
-        private void PersistPrivateWordLaunch(string seed, string executable, string hash, string desktop)
+        private void PersistPrivateWordLaunch(string seed, string seedHash, string executable, string hash, string desktop)
         {
             var receipt = new { Phase = "PrivateWordCreateProcessReturned", ProcessId,
                 LaunchThreadId = privateWordChild.ThreadId,
                 OriginalLaunchProcessHandle = privateWordChild.ProcessHandle.ToInt64(),
                 Desktop = desktop, Executable = executable, ExecutableSha256 = hash,
                 RequestedCommandLine = IsolatedTestDesktop.CommandLine(executable, WordPrivateArguments(seed)),
-                SeedPath = seed, SeedSha256 = HashOwnedFile(seed),
+                SeedPath = seed, SeedSha256 = seedHash,
                 OwnershipVerified = false, ComCalls = 0, UiActions = 0,
                 ExpectedAssemblyMvid = typeof(VbeSession).Module.ModuleVersionId.ToString("D"),
                 Utc = DateTime.UtcNow.ToString("o") };
@@ -190,6 +192,21 @@ namespace VBAi.Tests.Integration
         {
             using (var file = File.OpenRead(path)) using (var sha = SHA256.Create())
                 return BitConverter.ToString(sha.ComputeHash(file)).Replace("-", "");
+        }
+
+        /// <summary>Reads the open owned seed without writing and requires its bytes to match the prelaunch fingerprint.</summary>
+        internal static string RequireUnchangedOpenWordSeed(string path, string expectedHash)
+        {
+            if (string.IsNullOrWhiteSpace(path) || !Path.IsPathRooted(path) || expectedHash == null ||
+                expectedHash.Length != 64 || expectedHash.Any(value => !Uri.IsHexDigit(value)))
+                throw new ArgumentException("An absolute owned seed path and prelaunch SHA-256 are required.");
+            string observed;
+            using (var file = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
+            using (var sha = SHA256.Create())
+                observed = BitConverter.ToString(sha.ComputeHash(file)).Replace("-", "");
+            if (!string.Equals(observed, expectedHash, StringComparison.OrdinalIgnoreCase))
+                throw new InvalidOperationException("The owned macro-free Word seed bytes changed after launch.");
+            return observed;
         }
 
         private IntPtr[] LaunchedWordDocumentWindows(string desktop)

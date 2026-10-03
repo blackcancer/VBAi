@@ -192,6 +192,11 @@ windows, partial enumeration, foreign identities or an unavailable actual UI
 desktop refuse without activation or native replay. The only open document must
 still be the exact macro-free seed. A recovered older disposable document does
 not satisfy that condition and is retained for a separate diagnosis.
+The seed fingerprint is captured before launch. Once Word owns the file, the
+fixture reads it with read/write sharing and requires the same fingerprint; it
+never writes through that stream. Sharing violations, missing files and changed
+bytes remain failures without retries. Executable fingerprinting retains its
+ordinary read-only sharing behavior.
 
 Discover an expanded ComboBox's list through its exact `GetComboBoxInfo` list
 HWND, then require the unique enabled UIA ListItem under that HWND, the same
