@@ -89,6 +89,12 @@ try {
     $record.RegistrationIdentity=[Security.Principal.WindowsIdentity]::GetCurrent().Name
     Write-Json $ledger $record
     if(-not $codeBase -or ([Uri]$codeBase).LocalPath -ine $plan.InstalledProduct){throw 'Registered CodeBase differs from the frozen installed candidate; no host launched.'}
+    $load=$registry.OpenSubKey('Software\Microsoft\VBA\VBE\6.0\Addins64\VBAi.AddIn')
+    try {
+        $record.AddInLoadBehavior=if($load){$load.GetValue('LoadBehavior')}else{$null}
+        Write-Json $ledger $record
+        if($record.AddInLoadBehavior -ne 3){throw 'The installed add-in is not enabled for native loading; no host launched.'}
+    } finally {if($load){$load.Dispose()}}
 } catch {
     $record.NativeState='PRELAUNCH_REFUSED';$record.PrelaunchError=$_.ToString()
     Write-Json $ledger $record

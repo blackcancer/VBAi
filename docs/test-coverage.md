@@ -1089,6 +1089,22 @@ verified the same seed hash. The fresh recovery handle does not qualify the
 original failed campaign's shutdown lifecycle. All Excel processes were absent
 after recovery. The next native diagnostic remains separately **NOT_RUN** here.
 
+At source `af7f352`, `q026-margin-native-v4` recorded **81 managed passed,
+0 failed, 0 skipped** and **0 native passed, 1 failed, 0 skipped**. Owned Excel
+PID `15268`, start `2026-10-03T08:30:50.6679365Z`, failed terminally before Format
+dispatch because the bridge was unavailable. Independent limited-context
+inspection then found the existing VBAi LoadBehavior DWORD was 0. This run did
+not test the repaired preference path. Its `bootstrap-shutdown.json` verifies
+one returned seed Close, one returned Quit and fresh-handle normal recovery
+exit 0; all earlier failed results remain failed.
+
+The qualification activation helper now supports an explicit, reversible
+autoload opt-in, preserving the observed DWORD 0 in
+`q026-limited-registration-v3.clixml` before enabling only the installed VBAi
+add-in. Execution checks that value before native launch. No Office trust
+setting or registered identity is changed. The next diagnostic must verify
+actual loaded-candidate identity before any preference scenario is accepted.
+
 ### Q-026 offline snapshot review (2026-10-03)
 
 Branch `codex/q026-qualification` starts from `origin/main` at `4b382b9`,
