@@ -437,6 +437,9 @@ requires a verified private-desktop worker, passing managed guards and a continu
 30-second interval without another Excel, Word, PowerPoint, Access, Publisher or
 SOLIDWORKS process. Preferences can be shared across desktops: a host retained by
 another qualification must be recovered by its owner before this campaign starts.
+A quiet process inventory can also be a gap between cases in another native
+batch. Obtain that batch owner's explicit release before scheduling Q-026;
+the automated 30-second interval does not establish that the batch has ended.
 The campaign waits without terminating another process or switching desktops.
 It checks the per-user x64 CodeBase before launching its owned disposable Excel.
 

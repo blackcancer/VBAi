@@ -1384,6 +1384,34 @@ handle. Host and previous registration release complete at
 GUI worker exits with code 1 and preserves the failed native scenario; the
 separate recovery GUI worker exits with code 0. No forced termination occurs.
 
+### Q-026 inter-case gap and normal release (2026-10-03)
+
+Source `047d8c7b011c688e6e7f8064d407278fdd1b85fc` freezes
+`q026-historical-prefix-campaign-v7` on unchanged historical MVID
+`5cc513d1-5569-4835-bf6c-cf70a18274fb`. The focused managed subset records
+**75 passed, 0 failed, 0 skipped**; the native scenario records
+**0 passed, 1 failed, 0 skipped**. The campaign first waits for Q-012 Access
+PID 191444, then observes a quiet inventory interval and starts before the
+user's response establishes that Q-012 is still running. A quiet interval
+between native cases is not release of the other qualification batch.
+
+Owned Excel PID 136028, start `2026-10-03T20:46:39.6119508Z`, runs on inactive
+desktop `VBAiTests_7d0d627923dc4fe7aa8f8446504ca342`. Its guard warmup and
+complete baseline are verified. Publisher PID 104540, start
+`2026-10-03T20:48:21.0478323Z`, appears during that baseline read. The next
+pre-dispatch observation stops before the font pre-write read and all matrix
+preference writes, with an empty commit ledger. The collector detaches normally
+with exit 0; no natural stale-guard capture occurs.
+
+After that Publisher process disappears, a fresh complete recovery read equals
+the retained baseline, with no compensation. One Close and one Quit return;
+the fresh recovery handle observes normal exit 0. Host and prior registration
+release complete at `2026-10-03T20:50:50.7553273Z`. The original GUI worker
+exits 1 and the separate recovery worker exits 0; no process is forcibly ended.
+The failed native scenario is preserved. No further native campaign is scheduled
+pending the user's explicit confirmation that Q-012 has ended. Q-026 remains
+**OPEN** for the historical causal criterion.
+
 ### Q-026 offline snapshot review (2026-10-03)
 
 Branch `codex/q026-qualification` starts from `origin/main` at `4b382b9`,
