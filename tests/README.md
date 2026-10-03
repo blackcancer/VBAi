@@ -25,6 +25,38 @@ Its terminal state is `DIAGNOSTIC_PASS` only when all selected cases pass;
 `FullMatrixQualified` remains false unless the complete matrix passes and the
 exact temporary COM registration is restored and verified at the terminal gate.
 
+`-StopOnNativeFailure` blocks later selected cases after the first native failure.
+`-NativeScenarioTimeoutSeconds` applies a VSTest hang deadline to each selected
+native case, without creating dumps. `-ManagedGateTimeoutSeconds` independently
+bounds the focused managed gate's hang wait. A deadline termination does not prove normal
+Office shutdown; inspect the retained ownership and cleanup receipts. Defaults
+preserve the original behavior. Rows 16 and 17 exercise the explicit native
+General HelpFile and HelpContextID paths; rows 13 and 15 retain their distinct
+legacy COM results. Row 18 separately exercises accented HelpFile text
+representable by the observed ANSI control. Row 19 verifies refusal before
+writing unsupported Unicode; its retained modal remains a failed cleanup scope,
+with no Save or fresh reopen. Run that deliberate refusal last and perform
+separately guarded cleanup. Row 16 retains the original Unicode persistence
+test; it is not replaced by the narrower accented-path scenario.
+Rows 20 and 21 apply the shared native General persistence scenario to an owned
+Access database, for compatible HelpFile text and HelpContextID respectively.
+They observe host trust without enabling content or changing trust policy.
+The runner hashes the full source/binary inventory before
+each actual invocation and at the terminal gate, avoiding repeated hashing for
+unselected rows that cannot dispatch.
+
+The desktop helper checks the creator lease's native close result and records
+the attempt before entering `CloseDesktop`. Failed closes retain the owned
+handle and their original error; disposal never repeats that native call.
+Successful terminal publication follows sentinel shutdown and verified creator
+lease release. Remaining host windows or an uncertain close retain ownership
+and require separately guarded cleanup. This does not make forced host exits
+normal shutdown acceptance.
+
+Publisher fixture Open requires verified process-local
+`AutomationSecurity=ForceDisable`. It never enables macro content, changes a
+global trust policy or retries an uncertain Open. An unfamiliar modal is refused.
+
 `-MetadataGetterProbe` explicitly freezes the existing read-only Access metadata
 diagnostic into a selected campaign. It compares descriptor, CLR and raw getters
 at the planned mutation/save/reopen phases, including observation after a failed
@@ -65,7 +97,17 @@ acceptance: the existing bridge PID and MVID checks remain mandatory. Failed or
 uncertain connection is retained without reconnecting or changing trust policy.
 
 Access starts as an explicitly owned normal application and attaches through ROT;
-Publisher preserves its registered `/Automation -Embedding` server arguments.
+Publisher also uses an explicitly owned normal GUI launch with no arguments.
+Its registered server command/arguments are recorded only and never executed;
+manual server arguments do not perform COM class activation. Before the first
+disposable NewDocument/Open, the application association is explicitly provisional:
+empty prelaunch inventory, sole retained original Publisher process, exact native
+handle/image/session, application interface/canonical identity, fixture STA and
+private/input/sentinel proofs must agree. A failed or uncertain first creation/open
+has no retry, fallback or adoption. The returned publication must then be the exact
+retained, active and sole canonical document with an owned native window before
+any baseline SaveAs, bridge or scenario work. Final ownership is not inferred
+from ROT attachment alone.
 Access records Boolean `UserControl` and `Visible` once outside ROT discovery.
 An already visible instance needs no visibility setter; hidden automation permits
 one setter, while a hidden user-controlled instance refuses. The decision is bound

@@ -60,6 +60,7 @@ namespace VBAi.Tests.Integration
         internal void RequirePublisherPublication(string phase, bool requireSavedPath)
         {
             commandContainment.RequireTerminal();
+            if (publisherBootstrap != null) RecheckPrivatePublisherBootstrap();
             object active = null, collection = null, sole = null, appWindow = null;
             var proof = new Dictionary<string, object> { ["PublisherStartupCanary"] = phase, ["ProcessId"] = ProcessId,
                 ["ExpectedDocumentPath"] = DocumentPath, ["RequireSavedPath"] = requireSavedPath,
@@ -83,6 +84,7 @@ namespace VBAi.Tests.Integration
                 Assert.AreEqual(1, count, "Publisher must expose exactly one publication; recovered documents are retained without mutation.");
                 sole = ((dynamic)collection)[1];
                 var only = CapturePublication(sole); proof["SoleDocument"] = only;
+                RequirePublisherDocumentIdentities(retained.IUnknown, selected.IUnknown, only.IUnknown);
                 var windows = new[] { retained.Window, selected.Window, only.Window, applicationWindow };
                 Assert.IsTrue(windows.All(w => w.Handle != 0 && w.ProcessId == (uint)ProcessId),
                     "The document and application windows must belong to the retained Publisher PID. A child is observed, never adopted.");
@@ -97,7 +99,22 @@ namespace VBAi.Tests.Integration
                     else
                         Assert.AreEqual(retained.FullName, identity.FullName, true, "The returned new publication is not the active sole publication.");
                 }
+                if (publisherBootstrap != null)
+                    publisherBootstrap.ConfirmNativePublication(() => {
+                        var nativeWindows = new List<PublisherOwnerWindow>();
+                        foreach (var window in windows)
+                        {
+                            var native = ReadPrivatePublisherOwnerWindow(new IntPtr(window.Handle));
+                            if (native.Process != (uint)ProcessId || native.RootProcess != (uint)ProcessId || native.Thread == 0 || native.RootThread == 0 || native.Root == IntPtr.Zero)
+                                throw new InvalidOperationException("Publisher publication has no exact original-process native root/thread proof.");
+                            nativeWindows.Add(native);
+                        }
+                        proof["NativeWindows"] = PublisherOwnershipProbe.EvidenceValue(nativeWindows.ToArray());
+                        RecheckPrivatePublisherBootstrap();
+                        proof["CanonicalApplicationIUnknown"] = ReadPrivatePublisherBootstrapIdentity();
+                    });
                 proof["Verified"] = true;
+                proof["CanonicalDocumentIdentityVerified"] = true;
             }
             catch (Exception error)
             {

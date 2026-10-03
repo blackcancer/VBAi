@@ -16,7 +16,7 @@ namespace VBAi.Desktop.Helper
         [DllImport("user32.dll")] private static extern IntPtr GetForegroundWindow();
         [DllImport("user32.dll", SetLastError = true)] private static extern IntPtr SendMessageTimeoutW(IntPtr window, uint message, IntPtr wparam, IntPtr lparam, uint flags, uint milliseconds, out IntPtr result);
         [DllImport("user32.dll")] private static extern uint GetWindowThreadProcessId(IntPtr window, out uint pid);
-        private static IDisposable retainedDesktop;
+        private static IsolatedTestDesktop.DesktopLease retainedDesktop;
         private static IsolatedTestDesktop.NativeChild retainedChild;
         private static DesktopSentinel retainedSentinel;
 
@@ -67,27 +67,43 @@ namespace VBAi.Desktop.Helper
                 Write(output, "sentinel-inventory.json", new { Desktop = desktop, SentinelObserved = true,
                     SentinelWindow = retainedSentinel.Window.ToInt64(), OtherWindows = 0,
                     OriginalChildExitObserved = true, Utc = Utc() });
-                retainedSentinel.CloseOnce();
-                Write(output, "sentinel-exit.json", new { Desktop = desktop, OriginalThreadExitObserved = true,
-                    NativeCloseAttempts = 1, DesktopSwitches = 0, Utc = Utc() });
-                retainedSentinel = null;
-                retainedChild.Dispose(); retainedChild = null;
-                retainedDesktop.Dispose(); retainedDesktop = null;
-                Write(output, "terminal.json", new { State = "ORIGINAL_CHILD_EXIT_OBSERVED", ExitCode = code,
-                    Desktop = desktop, InputDesktop = IsolatedTestDesktop.InputDesktopName(),
-                    DesktopSwitches = 0, OwnedForegroundObservations = 0, Utc = Utc() });
+                IsolatedTestDesktop.CompleteOwnedShutdown(() =>
+                {
+                    retainedSentinel.CloseOnce();
+                    Write(output, "sentinel-exit.json", new { Desktop = desktop, OriginalThreadExitObserved = true,
+                        NativeCloseAttempts = 1, DesktopSwitches = 0, Utc = Utc() });
+                    retainedSentinel = null;
+                }, retainedDesktop, () =>
+                {
+                    retainedChild.Dispose(); retainedChild = null;
+                }, () =>
+                {
+                    Write(output, "terminal.json", new { State = "ORIGINAL_CHILD_EXIT_OBSERVED", ExitCode = code,
+                        Desktop = desktop, InputDesktop = IsolatedTestDesktop.InputDesktopName(),
+                        DesktopCloseAttempted = retainedDesktop.CloseAttempted, DesktopCloseSucceeded = retainedDesktop.CloseSucceeded,
+                        DesktopCloseError = retainedDesktop.CloseError,
+                        DesktopSwitches = 0, OwnedForegroundObservations = 0, Utc = Utc() });
+                });
+                retainedDesktop = null;
                 return unchecked((int)code);
             }
             catch (Exception error)
             {
-                Write(output, "failure.json", new { State = retainedChild == null && retainedSentinel == null ? "REFUSED" : "RETAINED_UNCERTAIN",
+                Exception closeFailure;
+                bool retain = IsolatedTestDesktop.PrepareRefusal(retainedDesktop,
+                    retainedChild != null || retainedSentinel != null, out closeFailure);
+                Write(output, "failure.json", new { State = retain ? "RETAINED_UNCERTAIN" : "REFUSED",
                     Desktop = desktop, ProcessId = retainedChild == null ? 0 : retainedChild.ProcessId,
                     SentinelWindow = retainedSentinel == null ? 0L : retainedSentinel.Window.ToInt64(),
+                    DesktopHandle = retainedDesktop == null ? 0L : retainedDesktop.Handle.ToInt64(),
+                    DesktopCloseAttempted = retainedDesktop != null && retainedDesktop.CloseAttempted,
+                    DesktopCloseSucceeded = retainedDesktop != null && retainedDesktop.CloseSucceeded,
+                    DesktopCloseError = retainedDesktop == null ? 0 : retainedDesktop.CloseError,
+                    DesktopCloseFailure = closeFailure == null ? null : closeFailure.ToString(),
                     Error = error.ToString(), CleanupReplayed = false, Utc = Utc() });
-                // A UI/exit uncertainty is not permission to stop a host or drop its original query handle.
-                if (retainedChild != null || retainedSentinel != null)
-                    for (;;) Thread.Sleep(1000);
-                if (retainedDesktop != null) { retainedDesktop.Dispose(); retainedDesktop = null; }
+                // A child, sentinel or failed desktop close retains ownership without any close replay.
+                if (retain) for (;;) Thread.Sleep(1000);
+                retainedDesktop = null;
                 return 1;
             }
         }

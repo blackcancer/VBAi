@@ -1,4 +1,5 @@
 using System;
+using System.ComponentModel;
 using System.Runtime.InteropServices;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using VBAi.Tests.Integration;
@@ -11,6 +12,146 @@ namespace VBAi.Tests.Unit
         [DllImport("shell32.dll", CharSet = CharSet.Unicode)]
         private static extern IntPtr CommandLineToArgvW(string command, out int count);
         [DllImport("kernel32.dll")] private static extern IntPtr LocalFree(IntPtr memory);
+
+        [TestMethod]
+        public void SuccessfulDesktopCloseIsClaimedBeforeDeliveryAndRepeatedDisposeHasNoNativeCall()
+        {
+            int calls = 0; bool claimedBeforeCall = false;
+            IsolatedTestDesktop.DesktopLease lease = null;
+            lease = new IsolatedTestDesktop.DesktopLease(new IntPtr(123), handle =>
+            {
+                calls++; claimedBeforeCall = lease.CloseAttempted;
+                return new IsolatedTestDesktop.DesktopCloseResult(true, 0);
+            });
+            lease.Dispose(); lease.Dispose();
+            Assert.AreEqual(1, calls);
+            Assert.IsTrue(claimedBeforeCall);
+            Assert.IsTrue(lease.CloseAttempted);
+            Assert.IsTrue(lease.CloseSucceeded);
+            Assert.AreEqual(0, lease.CloseError);
+            Assert.AreEqual(IntPtr.Zero, lease.Handle);
+            Assert.IsNull(lease.CloseFailure);
+        }
+
+        [TestMethod]
+        public void FailedDesktopClosePreservesOriginalErrorHandleAndFailureWithoutNativeRetry()
+        {
+            int calls = 0; IntPtr original = new IntPtr(123);
+            var lease = new IsolatedTestDesktop.DesktopLease(original, handle =>
+            {
+                calls++;
+                return new IsolatedTestDesktop.DesktopCloseResult(false, 170);
+            });
+            var first = Assert.ThrowsException<Win32Exception>(() => lease.Dispose());
+            var second = Assert.ThrowsException<Win32Exception>(() => lease.Dispose());
+            Assert.AreEqual(1, calls);
+            Assert.AreEqual(170, first.NativeErrorCode);
+            Assert.AreSame(first, second);
+            Assert.AreSame(first, lease.CloseFailure);
+            Assert.AreEqual(170, lease.CloseError);
+            Assert.IsTrue(lease.CloseAttempted);
+            Assert.IsFalse(lease.CloseSucceeded);
+            Assert.AreEqual(original, lease.Handle);
+        }
+
+        [TestMethod]
+        public void OwnedShutdownPublishesTerminalOnlyAfterBothClosesAndOriginalChildRelease()
+        {
+            string order = ""; bool childHeld = true, closeObservedChildHeld = false;
+            var lease = new IsolatedTestDesktop.DesktopLease(new IntPtr(123), handle =>
+            {
+                closeObservedChildHeld = childHeld; order += "desktop;";
+                return new IsolatedTestDesktop.DesktopCloseResult(true, 0);
+            });
+            IsolatedTestDesktop.CompleteOwnedShutdown(() => order += "sentinel;", lease,
+                () => { childHeld = false; order += "child;"; }, () => order += "terminal;");
+            Assert.IsTrue(closeObservedChildHeld);
+            Assert.IsTrue(lease.CloseSucceeded);
+            Assert.IsFalse(childHeld);
+            Assert.AreEqual("sentinel;desktop;child;terminal;", order);
+        }
+
+        [TestMethod]
+        public void DesktopCloseFailureAfterObservedChildExitRetainsHandleAndCannotPublishSuccess()
+        {
+            int closes = 0, childReleases = 0, terminals = 0; bool sentinelClosed = false;
+            var lease = new IsolatedTestDesktop.DesktopLease(new IntPtr(123), handle =>
+            {
+                closes++;
+                return new IsolatedTestDesktop.DesktopCloseResult(false, 170);
+            });
+            // The original child's exit has been observed; its retained handle must survive close failure.
+            var failure = Assert.ThrowsException<Win32Exception>(() => IsolatedTestDesktop.CompleteOwnedShutdown(
+                () => sentinelClosed = true, lease, () => childReleases++, () => terminals++));
+            Assert.IsTrue(sentinelClosed);
+            Assert.AreEqual(0, childReleases);
+            Assert.AreEqual(0, terminals);
+            Exception closeFailure;
+            Assert.IsTrue(IsolatedTestDesktop.PrepareRefusal(lease, true, out closeFailure));
+            Assert.AreSame(failure, closeFailure);
+            // Desktop uncertainty alone must also retain ownership if another path released its child reference.
+            Assert.IsTrue(IsolatedTestDesktop.PrepareRefusal(lease, false, out closeFailure));
+            Assert.AreSame(failure, closeFailure);
+            Assert.AreEqual(1, closes);
+            Assert.AreEqual(new IntPtr(123), lease.Handle);
+        }
+
+        [TestMethod]
+        public void FailedSentinelClosePreventsCreatorLeaseCloseChildReleaseAndTerminalPublication()
+        {
+            int closes = 0, childReleases = 0, terminals = 0;
+            var lease = new IsolatedTestDesktop.DesktopLease(new IntPtr(123), handle =>
+            {
+                closes++;
+                return new IsolatedTestDesktop.DesktopCloseResult(true, 0);
+            });
+            Assert.ThrowsException<InvalidOperationException>(() => IsolatedTestDesktop.CompleteOwnedShutdown(
+                () => { throw new InvalidOperationException("Original sentinel close failed."); }, lease,
+                () => childReleases++, () => terminals++));
+            Exception closeFailure;
+            Assert.IsTrue(IsolatedTestDesktop.PrepareRefusal(lease, true, out closeFailure));
+            Assert.IsNull(closeFailure);
+            Assert.IsFalse(lease.CloseAttempted);
+            Assert.AreEqual(0, closes);
+            Assert.AreEqual(0, childReleases);
+            Assert.AreEqual(0, terminals);
+            Assert.AreEqual(new IntPtr(123), lease.Handle);
+        }
+
+        [TestMethod]
+        public void EarlyRefusalWithoutChildOrSentinelClosesUnattemptedLeaseExactlyOnce()
+        {
+            int closes = 0;
+            var lease = new IsolatedTestDesktop.DesktopLease(new IntPtr(123), handle =>
+            {
+                closes++;
+                return new IsolatedTestDesktop.DesktopCloseResult(true, 0);
+            });
+            Exception closeFailure;
+            Assert.IsFalse(IsolatedTestDesktop.PrepareRefusal(lease, false, out closeFailure));
+            Assert.IsNull(closeFailure);
+            Assert.IsFalse(IsolatedTestDesktop.PrepareRefusal(lease, false, out closeFailure));
+            Assert.AreEqual(1, closes);
+            Assert.IsTrue(lease.CloseSucceeded);
+        }
+
+        [TestMethod]
+        public void FailedEarlyRefusalCloseKeepsDesktopUncertaintyAndNeverReplaysDelivery()
+        {
+            int closes = 0;
+            var lease = new IsolatedTestDesktop.DesktopLease(new IntPtr(123), handle =>
+            {
+                closes++;
+                return new IsolatedTestDesktop.DesktopCloseResult(false, 6);
+            });
+            Exception first, second;
+            Assert.IsTrue(IsolatedTestDesktop.PrepareRefusal(lease, false, out first));
+            Assert.IsTrue(IsolatedTestDesktop.PrepareRefusal(lease, false, out second));
+            Assert.AreSame(first, second);
+            Assert.AreEqual(6, ((Win32Exception)first).NativeErrorCode);
+            Assert.AreEqual(1, closes);
+            Assert.AreEqual(new IntPtr(123), lease.Handle);
+        }
 
         [TestMethod]
         public void ArgumentsRoundTripUnicodeEmptyQuotesAndTrailingSlashesWithoutShellEvaluation()

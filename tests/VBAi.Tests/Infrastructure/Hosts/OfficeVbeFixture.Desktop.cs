@@ -7,6 +7,7 @@ using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Threading;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+using Microsoft.Win32;
 
 namespace VBAi.Tests.Integration
 {
@@ -29,17 +30,56 @@ namespace VBAi.Tests.Integration
             return Path.GetFullPath(executable);
         }
 
-        /// <summary>Uses an owned manual Access instance and the registered Publisher server mode without COM activation.</summary>
+        /// <summary>Uses an owned normal GUI process; manual embedding mode did not initialize Publisher publication operations.</summary>
         internal static string[] PrivateOfficeArguments(string kind)
         {
             // Access supports GetObject attachment to a running instance:
             // https://learn.microsoft.com/en-us/office/client-developer/access/desktop-database-reference/automation-with-microsoft-access
             // Explicit -Embedding did not expose a ROT object in the frozen private-desktop campaign.
             if (kind == "Access") return new string[0];
-            if (kind == "Publisher") return new[] { "/Automation", "-Embedding" };
+            if (kind == "Publisher") return new string[0];
             throw new InvalidOperationException("Private Office arguments require Access or Publisher.");
         }
 
+        /// <summary>Separates the observed registered server command from the selected normal-GUI launch.</summary>
+        internal static string RegisteredPublisherServerArguments(string executable, string commandLine)
+        {
+            if (string.IsNullOrWhiteSpace(executable) || string.IsNullOrWhiteSpace(commandLine) || commandLine.Length > 8192 ||
+                commandLine.IndexOf('\0') >= 0 || commandLine.IndexOf('\r') >= 0 || commandLine.IndexOf('\n') >= 0)
+                throw new InvalidOperationException("Publisher registered server command is absent or malformed; no guessed arguments are recorded.");
+            string observed = commandLine.Trim();
+            foreach (string prefix in new[] { IsolatedTestDesktop.Quote(executable), executable })
+                if (observed.StartsWith(prefix, StringComparison.OrdinalIgnoreCase) &&
+                    (observed.Length == prefix.Length || char.IsWhiteSpace(observed[prefix.Length])))
+                    return observed.Substring(prefix.Length).Trim();
+            throw new InvalidOperationException("Publisher registered server image differs from the reviewed installed image; no arguments are inferred.");
+        }
+
+        private void RecordPrivatePublisherLaunchMode(string executable, string[] selectedArguments)
+        {
+            if (Kind != "Publisher") return;
+            if (selectedArguments == null || selectedArguments.Length != 0)
+                throw new InvalidOperationException("This frozen Publisher hypothesis requires exactly zero command-line arguments.");
+            using (var classes = RegistryKey.OpenBaseKey(RegistryHive.ClassesRoot, RegistryView.Registry64))
+            using (var clsidKey = classes.OpenSubKey(@"Publisher.Application\CLSID", false))
+            {
+                string clsid = clsidKey?.GetValue(null, null, RegistryValueOptions.DoNotExpandEnvironmentNames) as string;
+                Guid id;
+                if (!Guid.TryParse(clsid, out id) || id != new Guid("0002123d-0000-0000-c000-000000000046"))
+                    throw new InvalidOperationException("The installed Publisher.Application class identity is unverified; no launch is permitted.");
+                using (var server = classes.OpenSubKey(@"CLSID\" + id.ToString("B") + @"\LocalServer32", false))
+                {
+                    string command = server?.GetValue(null, null, RegistryValueOptions.DoNotExpandEnvironmentNames) as string;
+                    string registeredArguments = RegisteredPublisherServerArguments(executable, command);
+                    steps.Add(new { PublisherPrivateLaunchMode = "NormalGUIExplicitCreateProcess",
+                        ObservedRegisteredServerCommand = command, ObservedRegisteredServerArguments = registeredArguments,
+                        RegistryView = "Registry64", SelectedArguments = selectedArguments,
+                        HistoricalManualEmbeddingArguments = new[] { "/Automation", "-Embedding" },
+                        ComActivationCalled = false, ComActivationFallbackAllowed = false, RegisteredServerCommandExecuted = false });
+                    FlushAdapterEvidence();
+                }
+            }
+        }
         /// <summary>Records one read-only getter without retrying discovery or a native mutation after failure.</summary>
         internal static bool ObservePrivateAccessAutomationGetter(string property, Func<object> read,
             Action<IDictionary<string, object>> record)
@@ -180,13 +220,21 @@ namespace VBAi.Tests.Integration
         private void StartPrivateOfficeHost(string desktop)
         {
             IsolatedTestDesktop.RequireCurrent(desktop);
-            if (publisherOwnership != null || publisherOwnershipUnknown != IntPtr.Zero)
+            if (publisherOwnership != null || publisherOwnershipUnknown != IntPtr.Zero || publisherBootstrap != null || publisherBootstrapUnknown != IntPtr.Zero)
                 throw new InvalidOperationException("A retained Publisher ownership probe refuses a new native launch before observed original exit.");
             showPrivateAccess = null;
             string executable = RequirePrivateOfficeExecutable(Kind, desktop,
                 privateExecutable ?? Environment.GetEnvironmentVariable("VBAi_TEST_" + Kind.ToUpperInvariant() + "_EXE"));
             if (!File.Exists(executable)) throw new FileNotFoundException("The reviewed installed Office executable does not exist.", executable);
             string expectedProcess = Kind == "Access" ? "MSACCESS" : "MSPUB";
+            if (Kind == "Publisher")
+            {
+                var publisherBefore = ReadCompletePublisherProcessIds();
+                if (publisherBefore.Length != 0) throw new InvalidOperationException("A complete empty Publisher process inventory is required before the sole private launch.");
+                publisherBootstrapEmptyBefore = true;
+                steps.Add(new { PublisherBootstrapPrelaunchProcessIds = publisherBefore, Complete = true });
+                FlushAdapterEvidence();
+            }
             var existing = Process.GetProcessesByName(expectedProcess);
             try { Assert.AreEqual(0, existing.Length, "Existing Office processes refuse private qualification before launch or activation."); }
             finally { foreach (var process in existing) process.Dispose(); }
@@ -195,6 +243,7 @@ namespace VBAi.Tests.Integration
             using (var sha = SHA256.Create())
             using (var file = File.OpenRead(executable)) executableHash = BitConverter.ToString(sha.ComputeHash(file)).Replace("-", "");
             string[] arguments = PrivateOfficeArguments(Kind);
+            RecordPrivatePublisherLaunchMode(executable, arguments);
             steps.Add(new { PrivateDesktopLaunchIntent = true, Desktop = desktop, Executable = executable,
                 ExecutableSha256 = executableHash, Arguments = arguments, StartAttempts = 1, ComActivationAllowed = false });
             FlushAdapterEvidence();
@@ -226,7 +275,7 @@ namespace VBAi.Tests.Integration
                     {
                         candidate = Marshal.GetActiveObject(progId); // ROT read only: never CoCreateInstance.
                         application = candidate;
-                        if (Kind == "Publisher") BindPrivatePublisherOwnership();
+                        if (Kind == "Publisher") BindPrivatePublisherBootstrap();
                         else RequireApplicationOwner();
                         RequirePrivateHostDesktop(true);
                         steps.Add(new { PrivateDesktopApplicationAttached = true, ProcessId, Desktop = desktop,
@@ -234,7 +283,7 @@ namespace VBAi.Tests.Integration
                         FlushAdapterEvidence();
                         attached = true;
                     }
-                    catch (COMException error) when ((Kind != "Publisher" || publisherOwnership == null) &&
+                    catch (COMException error) when ((Kind != "Publisher" || (candidate == null && publisherOwnership == null && publisherBootstrap == null)) &&
                         (error.ErrorCode == unchecked((int)0x800401E3) || error.ErrorCode == unchecked((int)0x80010001)))
                     {
                         application = null;
@@ -270,6 +319,7 @@ namespace VBAi.Tests.Integration
             if (privateDesktopChild == null) return;
             if (!privateDesktopChild.Wait(0)) throw new InvalidOperationException("The original private host handle cannot be released before observed exit.");
             if (publisherOwnershipUnknown != IntPtr.Zero) { Marshal.Release(publisherOwnershipUnknown); publisherOwnershipUnknown = IntPtr.Zero; }
+            ReleaseExitedPrivatePublisherBootstrap();
             publisherOwnership = null;
             publisherOwnershipChild = null;
             privateDesktopChild.Dispose(); privateDesktopChild = null;

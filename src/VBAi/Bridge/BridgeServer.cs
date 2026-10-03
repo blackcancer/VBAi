@@ -91,6 +91,8 @@ namespace VBAi
         internal Func<Request, Task<object>> InspectLocalScalarsNative;
         /// <summary>Saves and observes completion while yielding to the owning VBE STA.</summary>
         internal Func<Request, Task<object>> SaveHostDocumentNative;
+        /// <summary>Runs the guarded native General operation on the VBE UI thread.</summary>
+        internal Func<Request, bool, Task<object>> ProjectGeneralNative;
         /// <summary>Demande la sauvegarde de signature au document hôte.</summary>
         internal Func<string, object> PersistSignature;
         /// <summary>Crée le canal local avec la sécurité de l’utilisateur courant.</summary>
@@ -123,6 +125,7 @@ namespace VBAi
             ReadImmediateNative = request => session.ReadImmediateAsync(request);
             InspectLocalScalarsNative = request => session.InspectLocalScalarsAsync(request);
             SaveHostDocumentNative = request => session.SaveHostDocumentAsync(request);
+            ProjectGeneralNative = (request, write) => session.ProjectGeneralAsync(request, write);
             PersistSignature = project => session.PersistProjectSignature(project);
             pipeName = "VBAi." + processId;
             OpenPipe = security => new NamedPipeServerStream(pipeName, PipeDirection.InOut, 1,
@@ -154,9 +157,11 @@ namespace VBAi
                             string line = BridgeRequestReader.ReadAsync(pipe, MaxRequestBytes, RequestReadTimeout).GetAwaiter().GetResult();
                             var json = new JavaScriptSerializer { MaxJsonLength = 10 * 1024 * 1024 };
                             Response response;
+                            Action releaseAdmission = null;
                             try
                             {
                                 var request = json.Deserialize<Request>(line);
+                                releaseAdmission = AdmitSessionRequest(request);
                                 if (request != null && request.Command == PathVisibilityDiagnostic.CommandName)
                                 {
                                     PathVisibilityDiagnostic.RequireParameterFree(line);
@@ -200,6 +205,30 @@ namespace VBAi
                                             enter();
                                         }))));
                                     }
+                                }
+                                else if (request != null && (request.Command == "read_project_general" || request.Command == "set_project_general"))
+                                {
+                                    var completion = new TaskCompletionSource<Response>(TaskCreationOptions.RunContinuationsAsynchronously);
+                                    dispatcher.BeginInvoke(new Action(async () => {
+                                        int ownerThread = Thread.CurrentThread.ManagedThreadId;
+                                        string command = request.Command, project = request.Project;
+                                        string version = request.ExpectedProjectVersion, options = request.ExpectedOptionsVersion;
+                                        string property = request.Property, caption = request.ControlCaption;
+                                        object value = request.Value;
+                                        request.RevalidateProjectPropertyAuthorization = live => {
+                                            if (dispatcher.IsDisposed || !dispatcher.IsHandleCreated || dispatcher.InvokeRequired ||
+                                                Thread.CurrentThread.ManagedThreadId != ownerThread ||
+                                                Thread.CurrentThread.GetApartmentState() != ApartmentState.STA ||
+                                                request.Command != command || request.Project != project ||
+                                                request.ExpectedProjectVersion != version || request.ExpectedOptionsVersion != options || request.ExpectedMode != 2 ||
+                                                request.Property != property || request.ControlCaption != caption || !object.Equals(request.Value, value))
+                                                throw new InvalidOperationException("Original bridge General request/UI context changed.");
+                                        };
+                                        try { completion.TrySetResult(Response.Success(await ProjectGeneralNative(request, command == "set_project_general"))); }
+                                        catch (Exception ex) { completion.TrySetResult(Response.Failure(ex.Message)); }
+                                        finally { request.RevalidateProjectPropertyAuthorization = null; }
+                                    }));
+                                    response = completion.Task.GetAwaiter().GetResult();
                                 }
                                 else if (request != null && request.Command == "save_host_document")
                                 {
@@ -361,6 +390,10 @@ namespace VBAi
                             {
                                 response = Response.Failure(VbeScalarProperty.FormatFailure(ex));
                             }
+                            finally
+                            {
+                                if (releaseAdmission != null) dispatcher.Invoke(releaseAdmission);
+                            }
                             string payload;
                             try { payload = json.Serialize(response); }
                             catch (Exception error)
@@ -376,6 +409,22 @@ namespace VBAi
                 catch (ObjectDisposedException) { break; }
                 finally { listener = null; }
             }
+        }
+
+        // Native worker routes bypass Execute. Hold their session admission until
+        // dispatch settles, so General cannot enter between the STA check and a
+        // worker native call. General claims its own in-flight state on the STA.
+        private Action AdmitSessionRequest(Request request)
+        {
+            if (request?.Command == "status" || session == null) return null;
+            return (Action)dispatcher.Invoke(new Func<Action>(() => {
+                if (dispatcher.IsDisposed || !dispatcher.IsHandleCreated || dispatcher.InvokeRequired ||
+                    Thread.CurrentThread.GetApartmentState() != ApartmentState.STA)
+                    throw new InvalidOperationException("Bridge admission requires its owning VBE UI STA.");
+                session.RequireGeneralSettled();
+                if (request?.Command == "read_project_general" || request?.Command == "set_project_general") return null;
+                return session.AdmitBridgeOperation();
+            }));
         }
 
         /// <summary>Demande l’arrêt de l’écoute et ferme la connexion en cours pour débloquer l’attente.</summary>

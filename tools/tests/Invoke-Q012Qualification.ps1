@@ -7,7 +7,10 @@ param(
     [Parameter(Mandatory=$true)][string]$DesktopHelperAssembly,
     [string]$TestProject,
     [ValidateSet('All','Access','Publisher')][string]$HostScope='All',
-    [ValidateRange(1,15)][int[]]$ScenarioNumbers=(1..15),
+    [ValidateRange(1,21)][int[]]$ScenarioNumbers=(1..15),
+    [switch]$StopOnNativeFailure,
+    [ValidateRange(0,3600)][int]$NativeScenarioTimeoutSeconds=0,
+    [ValidateRange(0,3600)][int]$ManagedGateTimeoutSeconds=0,
     [string]$BlockedHostReason='Host excluded by the reviewed plan; prior outcomes are not promoted to acceptance.',
     [ValidateSet('Debug','Release')][string]$Configuration='Debug',
     [switch]$MetadataGetterProbe,
@@ -21,10 +24,13 @@ $repo=(Resolve-Path -LiteralPath (Split-Path (Split-Path $PSScriptRoot -Parent) 
 if(-not $TestProject){$TestProject=Join-Path $repo 'tests/VBAi.Tests/VBAi.Tests.csproj'}
 $registrationScript=Join-Path $repo 'tools/testing-explorer/Set-TestExplorerCandidate.ps1'
 $testAssembly=Join-Path $BuildOutputRoot ('VBAi.Tests/'+$Configuration+'/net48/VBAi.Tests.dll')
-$unitNames=@('VbeOtherHostPersistenceTests','OfficeProjectReopenIdentityTests','OfficePublisherStartupBindingTests',
-    'OfficeVbeFixturePublisherTestCleanupTests','OfficeMetadataMutationEvidenceTests','VbeScalarPropertyTests','AccessHelpContextDispatchTests','AccessHelpContextProjectTests','IsolatedTestDesktopTests','OfficeVbeFixtureDesktopTests','OfficeVbeFixtureDesktopAddInConnectionTests','OfficeVbeFixtureDesktopStartupRecoveryTests','OfficeVbeFixturePublisherOwnershipTests','AccessSaveConfirmationTests','LlmVbeToolsBoundaryTests','ChatWindowStateTests')
+$unitNames=@('VbeProjectGeneralOperationTests','VbeProjectGeneralNativeTests','VbeProjectGeneralProjectTests',
+    'VbeDebugGeneralCommandTests','LlmVbeToolsProjectGeneralTests','BridgeServerTests','VbeSessionContractTests',
+    'VbeOtherHostPersistenceTests','OfficeProjectReopenIdentityTests','OfficePublisherStartupBindingTests',
+    'OfficeVbeFixturePublisherTestCleanupTests','OfficeVbeFixturePublisherBootstrapTests','OfficeMetadataMutationEvidenceTests','VbeScalarPropertyTests','AccessHelpContextDispatchTests','AccessHelpContextProjectTests','IsolatedTestDesktopTests','OfficeVbeFixtureDesktopTests','OfficeVbeFixtureDesktopAddInConnectionTests','OfficeVbeFixtureDesktopStartupRecoveryTests','OfficeVbeFixturePublisherOwnershipTests','AccessSaveConfirmationTests','LlmVbeToolsBoundaryTests','ChatWindowStateTests')
 $unitFilter=($unitNames | ForEach-Object {
     $selector='FullyQualifiedName~VBAi.Tests.Unit.'+$_
+    if($_ -in @('BridgeServerTests','VbeSessionContractTests')){return $selector+'.General'}
     if($_ -ceq 'ChatWindowStateTests'){$selector+'.CachedMetadata'}else{$selector}
 }) -join '|'
 $scenarioRows=@(
@@ -42,7 +48,13 @@ $scenarioRows=@(
     'Access|OfficeAdapterOnlyMetadataQualificationTests|Access16HelpFilePathAdapterSaveReopen',
     'Publisher|OfficeAdapterOnlyMetadataQualificationTests|PublisherHelpFilePathAdapterSaveReopen',
     'Access|OfficeAdapterOnlyMetadataQualificationTests|Access16HelpContextIdAdapterSaveReopen',
-    'Publisher|OfficeAdapterOnlyMetadataQualificationTests|PublisherHelpContextIdAdapterSaveReopen'
+    'Publisher|OfficeAdapterOnlyMetadataQualificationTests|PublisherHelpContextIdAdapterSaveReopen',
+    'Publisher|PublisherGeneralQualificationTests|PublisherNativeHelpFileSaveReopen',
+    'Publisher|PublisherGeneralQualificationTests|PublisherNativeHelpContextSaveReopen',
+    'Publisher|PublisherGeneralQualificationTests|PublisherNativeAnsiHelpFileSaveReopen',
+    'Publisher|PublisherGeneralQualificationTests|PublisherNativeUnicodeHelpFileRefusedBeforeWrite',
+    'Access|AccessGeneralQualificationTests|AccessNativeAnsiHelpFileSaveReopen',
+    'Access|AccessGeneralQualificationTests|AccessNativeHelpContextSaveReopen'
 )
 $scenarios=@()
 foreach($row in $scenarioRows){
@@ -119,6 +131,10 @@ function Run-Tests([string]$Filter,[string]$Directory,[string]$Name,[bool]$Singl
     $arguments=@('test',$TestProject,'-c',$Configuration,'--no-build','--no-restore',
         ('-p:BuildOutputRoot='+$BuildOutputRoot),'-p:BuildProjectReferences=false','--filter',$Filter,
         '--logger',('trx;LogFileName='+$Name+'.trx'),'--results-directory',$Directory)
+    $hangTimeout=if($Single){$NativeScenarioTimeoutSeconds}else{$ManagedGateTimeoutSeconds}
+    if($hangTimeout -gt 0){
+        $arguments+=@('--blame-hang-timeout',($hangTimeout.ToString()+'s'),'--blame-hang-dump-type','none')
+    }
     Write-Report (Join-Path $Directory 'invocation-intent.json') @{Filter=$Filter;InvocationCount=1;StartingUtc=[DateTime]::UtcNow.ToString('o');Arguments=$arguments;Desktop=$env:VBAi_TEST_DESKTOP_NAME}
     & $plan.Dotnet @arguments *> $log
     $code=$LASTEXITCODE
@@ -196,6 +212,8 @@ if(-not $Execute){
         SourceFiles=@(Source-Snapshot);BinaryFiles=@(Binary-Snapshot);UnitFilter=$unitFilter;NativeScenarios=$scenarios;
         ExistingAccess=@(Host-Inventory 'Access');ExistingPublisher=@(Host-Inventory 'Publisher');
         HostScope=$HostScope;BlockedHostReason=$BlockedHostReason;SelectedScenarioNumbers=@($ScenarioNumbers);
+        StopOnNativeFailure=[bool]$StopOnNativeFailure;NativeScenarioTimeoutSeconds=$NativeScenarioTimeoutSeconds;
+        ManagedGateTimeoutSeconds=$ManagedGateTimeoutSeconds;
         NativeInvocationLimit=1;NativeSaveReplay=$false;ForceTermination=$false;InputDesktopFallback=$false;MetadataGetterProbe=[bool]$MetadataGetterProbe;
         Scope='Existing ACCDB/PUB save; no first SaveAs, macro execution, trust changes or signatures.'}
     Write-Report $planPath $plan
@@ -204,6 +222,12 @@ if(-not $Execute){
 }
 if(-not(Test-Path -LiteralPath $planPath -PathType Leaf)){throw 'Prepare the reviewed frozen plan first.'}
 $plan=Get-Content -LiteralPath $planPath -Raw -Encoding UTF8 | ConvertFrom-Json
+$plannedStopOnFailure=$false
+$plannedNativeTimeout=0
+$plannedManagedTimeout=0
+if($null -ne $plan.PSObject.Properties['StopOnNativeFailure']){$plannedStopOnFailure=[bool]$plan.StopOnNativeFailure}
+if($null -ne $plan.PSObject.Properties['NativeScenarioTimeoutSeconds']){$plannedNativeTimeout=[int]$plan.NativeScenarioTimeoutSeconds}
+if($null -ne $plan.PSObject.Properties['ManagedGateTimeoutSeconds']){$plannedManagedTimeout=[int]$plan.ManagedGateTimeoutSeconds}
 if($plan.Format -cne 'VBAi.Q012.Campaign.1' -or $plan.Repository -cne $repo -or
     $plan.CandidateAssembly -cne $CandidateAssembly -or $plan.CandidateMvid -cne $mvid -or
     $plan.BuildOutputRoot -cne $BuildOutputRoot -or $plan.TestProject -cne $TestProject -or
@@ -211,6 +235,8 @@ if($plan.Format -cne 'VBAi.Q012.Campaign.1' -or $plan.Repository -cne $repo -or
     $plan.DesktopHelperAssembly -cne $DesktopHelperAssembly -or $plan.EvidenceDirectory -cne $EvidenceDirectory -or
     $plan.HostScope -cne $HostScope -or $plan.BlockedHostReason -cne $BlockedHostReason -or
     $plan.MetadataGetterProbe -ne [bool]$MetadataGetterProbe -or
+    $plannedStopOnFailure -ne [bool]$StopOnNativeFailure -or $plannedNativeTimeout -ne $NativeScenarioTimeoutSeconds -or
+    $plannedManagedTimeout -ne $ManagedGateTimeoutSeconds -or
     (Canonical-Json @($plan.SelectedScenarioNumbers)) -cne (Canonical-Json @($ScenarioNumbers)) -or
     $plan.UnitFilter -cne $unitFilter -or (Canonical-Json @($plan.NativeScenarios)) -cne (Canonical-Json $scenarios)){
     throw 'Plan identity or fixed scenario inventory changed.'
@@ -253,21 +279,30 @@ try{
         Write-Report $summaryPath $summary
         $env:VBAi_RUN_OFFICE_TESTS='1';$env:VBAi_TEST_ACCESS_EXE=$plan.AccessExecutable;$env:VBAi_TEST_PUBLISHER_EXE=$plan.PublisherExecutable
         if($MetadataGetterProbe){$env:VBAi_RUN_OFFICE_METADATA_GETTER_PROBE='1'}
+        $nativeFailureScenario=$null
         foreach($scenario in $scenarios){
-            Require-Frozen $plan
-            $desktopType.GetMethod('RequireCurrent',$flags).Invoke($null,@($desktop)) | Out-Null
-            $existing=@(Host-Inventory $scenario.Host)
             if($scenario.Number -notin $ScenarioNumbers){
                 $summary.Scenarios+=@{Scenario=$scenario;State='NOT_RUN';Reason='Outside the frozen diagnostic selection';InvocationCount=0}
+            }elseif($null -ne $nativeFailureScenario){
+                $summary.Scenarios+=@{Scenario=$scenario;State='BLOCKED';Reason=('Campaign stopped after native scenario '+$nativeFailureScenario+' failed; no repeat before its cause is resolved');InvocationCount=0}
             }elseif($HostScope -ne 'All' -and $scenario.Host -ne $HostScope){
                 $summary.Scenarios+=@{Scenario=$scenario;State='BLOCKED';Reason=$BlockedHostReason;InvocationCount=0}
-            }elseif($existing.Count){
-                $summary.Scenarios+=@{Scenario=$scenario;State='BLOCKED';Reason='Existing/retained same-host process; ownership would refuse';Processes=$existing;InvocationCount=0}
             }else{
+                # Full source/binary checks guard actual invocations and the final result.
+                # Unselected rows cannot dispatch and need no repeated repository hashing.
+                Require-Frozen $plan
+                $desktopType.GetMethod('RequireCurrent',$flags).Invoke($null,@($desktop)) | Out-Null
+                $existing=@(Host-Inventory $scenario.Host)
+                if($existing.Count){
+                    $summary.Scenarios+=@{Scenario=$scenario;State='BLOCKED';Reason='Existing/retained same-host process; ownership would refuse';Processes=$existing;InvocationCount=0}
+                    Write-Report $summaryPath $summary
+                    continue
+                }
                 $directory=Join-Path $EvidenceDirectory ('native/'+$scenario.Number.ToString('00')+'-'+$scenario.Method)
                 $env:VBAi_OFFICE_RESULTS=Join-Path $directory 'host-evidence'
                 $result=Run-Tests ('FullyQualifiedName='+$scenario.FullyQualifiedName) $directory 'native' $true
                 $summary.Scenarios+=@{Scenario=$scenario;State=$result.State;Result=$result;RemainingProcesses=@(Host-Inventory $scenario.Host);InvocationCount=1}
+                if($StopOnNativeFailure -and $result.State -ne 'PASS'){$nativeFailureScenario=$scenario.Number}
             }
             Write-Report $summaryPath $summary
         }

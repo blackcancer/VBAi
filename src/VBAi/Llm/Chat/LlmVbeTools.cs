@@ -33,7 +33,7 @@ namespace VBAi
             "discover_vba_tests", "preview_vba_test_support", "vba_test_run_status", "navigate_vba_test", "vba_test_coverage", "show_vba_test_explorer",
             "discover_tools", "invoke_tool", "monaco_open", "monaco_read", "monaco_navigate",
             "procedure_values_status", "preview_procedure_rename", "preview_class_member_rename", "read_project_protection", "open_native_ide_dialog", "preview_fit_form_content", "read_navigation_surface", "change_navigation_surface", "list_macros", "project_collection_state", "open_project_help", "certificate_trust", "verify_vba_signature_file", "preview_parameter_rename", "preview_local_rename", "toolbar_controls", "procedure_run_status", "form_clipboard_state", "list_toolbars", "read_runtime_forms", "read_code_clipboard", "native_code_history_state", "form_run_status", "list_object_browser", "select_object_browser", "read_object_browser", "code_pane_layout", "editor_layout", "window_layout", "project_symbols", "navigate_code", "code_bookmark", "preview_form_layout", "preview_code_edit", "status", "read_user_file", "list_projects", "list_modules", "list_references", "list_reference_types", "list_type_members", "read_module", "debug_state", "debug_windows", "debug_dialog", "debug_item", "read_debug_options", "read_vbe_options", "compile_project", "open_debug_pane", "list_commands", "select_code", "select_code_range",
-            "project_properties", "project_persistence_status", "project_signature_status", "read_project_signature_dialog", "list_signing_certificates", "component_properties", "component_property_value", "vbe_windows", "vbe_environment", "list_addins", "focus_vbe_window", "window_linkage", "code_panes", "open_object_browser", "list_procedures", "find_code", "inspect_code_file", "select_procedure", "list_forms",
+            "project_properties", "read_project_general", "project_persistence_status", "project_signature_status", "read_project_signature_dialog", "list_signing_certificates", "component_properties", "component_property_value", "vbe_windows", "vbe_environment", "list_addins", "focus_vbe_window", "window_linkage", "code_panes", "open_object_browser", "list_procedures", "find_code", "inspect_code_file", "select_procedure", "list_forms",
             "git_status", "git_history", "git_branches", "git_checkpoints", "git_conflicts", "git_conflict_read", "git_commit_read", "git_pull_requests",
             "form_state", "form_tree", "form_list_items", "form_properties", "form_control_properties", "form_event_catalog",
             "list_form_control_types", "open_form"
@@ -115,6 +115,7 @@ namespace VBAi
             ReadImmediateNative = request => session.ReadImmediateAsync(request);
             InspectLocalScalarsNative = request => session.InspectLocalScalarsAsync(request);
             SaveHostDocumentNative = request => session.SaveHostDocumentAsync(request);
+            ProjectGeneralNative = (request, write) => session.ProjectGeneralAsync(request, write);
             CanRecoverDesignerCut = request => session.CanRecoverFormCut(request);
             PersistSignature = project => session.PersistProjectSignature(project);
             this.owner = owner;
@@ -263,7 +264,7 @@ namespace VBAi
             Definition("insert_code_file", "Insert up to 256 KiB of local VBA source text at StartLine in a design-mode module. Path must be an absolute path explicitly supplied by the user; the file is read locally and its bytes are not included in tool arguments. BOM or ASCII is auto-detected; a non-ASCII file without BOM requires explicit SourceEncoding from inspection or known provenance. Supported values: utf-8, utf-16le, utf-16be, windows-1252, system-ansi. Non-ASCII characters are checked in VBE after insertion, with rollback on mismatch. Requires current ExpectedSha256 and VBE edit policy. Returns source file SHA-256, encoding, inserted line count and new module SHA-256; compilation is separate.",
                 new[] { "Project", "Module", "Path", "StartLine", "ExpectedSha256" },
                 "Project", "Module", "Path", "StartLine", "ExpectedSha256", "SourceEncoding"),
-            Definition("project_properties", "Read all exposed VBProject properties, component identities and a project revision.",
+            Definition("project_properties", "Read exposed COM VBProject properties, component identities and a project revision. COM HelpFile readback can be malformed in some Office hosts; use read_project_general for exact native General text. Keep this project revision for dispatch guards; native OptionsVersion is separate.",
                 new[] { "Project" }, "Project"),
             Definition("project_persistence_status", "Read VBProject.Saved and the exact Excel workbook, Word document, PowerPoint presentation, existing SOLIDWORKS SWP host project (Type=100), or standalone SWP project (Type=101) state. Documents are matched by native project identity and host PID. Unsupported hosts remain unavailable. Word/PowerPoint and SWP runtime qualification is pending. This does not write to disk.",
                 new[] { "Project" }, "Project"),
@@ -402,8 +403,8 @@ namespace VBAi
         /// <returns>JSON d’une réponse réussie ou d’erreur.</returns>
         public string Invoke(string name, string arguments)
         {
-            if (name == "save_host_document")
-                return json.Serialize(Response.Failure("save_host_document requires InvokeAsync."));
+            if (name == "save_host_document" || IsProjectGeneralTool(name))
+                return json.Serialize(Response.Failure(name + " requires InvokeAsync."));
             // The synchronous path never reaches an await: native Save is async-only.
             return InvokeCoreAsync(name, arguments, false).GetAwaiter().GetResult();
         }
@@ -499,6 +500,7 @@ namespace VBAi
                     return json.Serialize(Response.Failure("L'utilisateur doit fournir explicitement le chemin absolu du fichier."));
                 var normalized = new Dictionary<string, object>(values) { ["Command"] = name };
                 var request = json.Deserialize<Request>(json.Serialize(normalized));
+                if (IsProjectGeneralTool(name)) ValidateProjectGeneralRequest(request);
                 // All newly registered tools are treated as edits unless explicitly classified as read-only.
                 bool edit = !ReadOnlyTools.Contains(name);
                 if (edit && settings.VbeEditApproval == "ReadOnly")
@@ -560,6 +562,11 @@ namespace VBAi
                         };
                         try { result = Response.Success(await SaveHostDocumentNative(request)); }
                         finally { request.RevalidateSaveAuthorization = null; }
+                    }
+                    else if (IsProjectGeneralTool(name))
+                    {
+                        if (!asyncSave) return json.Serialize(Response.Failure(name + " requires InvokeAsync."));
+                        result = await InvokeProjectGeneralAsync(name, arguments, request, editApproved);
                     }
                     else if (name == "set_project_property")
                     {
@@ -738,7 +745,7 @@ namespace VBAi
             if (IsCatalogTool(name)) return await InvokeCatalogAsync(name, arguments);
             // Unwind the WebView callback before potentially modal native Save. The
             // regular Invoke pipeline below revalidates schema, scope and approval.
-            if (name == "save_host_document") await Task.Yield();
+            if (name == "save_host_document" || IsProjectGeneralTool(name)) await Task.Yield();
             if (name.StartsWith("monaco_", StringComparison.Ordinal)) return await InvokeMonacoAsync(name, arguments);
             try
             {

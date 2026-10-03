@@ -10,19 +10,38 @@ namespace VBAi.Tests.Unit
     [TestClass, TestCategory("Unit")]
     public sealed class OfficeVbeFixtureDesktopTests
     {
-        /// <summary>Access uses owned manual attachment; Publisher retains its automation launch contract without activation.</summary>
+        /// <summary>Normal Publisher GUI mode is a changed bootstrap hypothesis; no automation/embedding switches are selected.</summary>
         [TestMethod]
-        public void PrivateOfficeArgumentsUseManualAccessAndPublisherAutomationWithoutSharedArrays()
+        public void PrivateOfficeArgumentsUseNormalGuiWithoutAutomationEmbeddingOrFallback()
         {
             CollectionAssert.AreEqual(new string[0], OfficeVbeFixture.PrivateOfficeArguments("Access"));
-            CollectionAssert.AreEqual(new[] { "/Automation", "-Embedding" }, OfficeVbeFixture.PrivateOfficeArguments("Publisher"));
-            var changed = OfficeVbeFixture.PrivateOfficeArguments("Publisher");
-            changed[0] = "changed";
-            CollectionAssert.AreEqual(new[] { "/Automation", "-Embedding" }, OfficeVbeFixture.PrivateOfficeArguments("Publisher"));
+            var first = OfficeVbeFixture.PrivateOfficeArguments("Publisher");
+            CollectionAssert.AreEqual(new string[0], first);
+            Assert.AreNotSame(first, OfficeVbeFixture.PrivateOfficeArguments("Publisher"));
             foreach (string host in new[] { "Word", "PowerPoint", "Excel", "", null })
                 Assert.ThrowsException<InvalidOperationException>(() => OfficeVbeFixture.PrivateOfficeArguments(host));
         }
 
+        [DataTestMethod]
+        [DataRow("\"C:\\Office\\MSPUB.EXE\" /Automation", "/Automation")]
+        [DataRow("C:\\Office\\MSPUB.EXE /Automation -Embedding", "/Automation -Embedding")]
+        [DataRow("\"C:\\Office\\MSPUB.EXE\"", "")]
+        public void RegisteredPublisherArgumentsAreObservedSeparatelyFromEmptySelectedArguments(string command, string expected)
+        {
+            Assert.AreEqual(expected, OfficeVbeFixture.RegisteredPublisherServerArguments(@"C:\Office\MSPUB.EXE", command));
+            CollectionAssert.AreEqual(new string[0], OfficeVbeFixture.PrivateOfficeArguments("Publisher"));
+        }
+
+        [DataTestMethod]
+        [DataRow("\"C:\\Other\\MSPUB.EXE\" /Automation")]
+        [DataRow("C:\\Office\\MSPUB.EXEX /Automation")]
+        [DataRow("")]
+        [DataRow(null)]
+        [DataRow("\"C:\\Office\\MSPUB.EXE\" /Automation\n-Embedding")]
+        public void RegisteredPublisherArgumentsNeverInferAnotherImageOrMalformedCommand(string command)
+        {
+            Assert.ThrowsException<InvalidOperationException>(() => OfficeVbeFixture.RegisteredPublisherServerArguments(@"C:\Office\MSPUB.EXE", command));
+        }
         /// <summary>Getter receipts are written before and after exactly one read, with no environment or native mutation.</summary>
         [DataTestMethod, DataRow("UserControl"), DataRow("Visible")]
         public void PrivateAccessAutomationGetterRecordsOneExactBooleanRead(string property)

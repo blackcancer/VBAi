@@ -1,10 +1,9 @@
 using System;
 using System.Collections.Generic;
+using System.Reflection;
 using System.Runtime.InteropServices;
-using System.Runtime.InteropServices.ComTypes;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using VBAi;
-using TYPEKIND = System.Runtime.InteropServices.ComTypes.TYPEKIND;
 
 namespace VBAi.Tests.Unit
 {
@@ -13,60 +12,52 @@ namespace VBAi.Tests.Unit
     {
         internal sealed class Calls : VbeProjectComponents.IAccessHelpContextCalls
         {
-            internal int Preparations, Invocations, Owners, Disposals, Member = 117, Result;
+            internal int Preparations, Invocations, Owners, Disposals, Value;
+            internal int RefuseOwnerAt;
             internal Action OnPrepare, OnInvoke;
             internal Exception PrepareError, InvokeError, DisposeError;
-            internal string Corruption;
-            internal int Value;
-            internal readonly List<IntPtr> Freed = new List<IntPtr>();
-            internal VbeProjectComponents.AccessHelpContextExceptionInfo ExceptionInfo;
-            public int Prepare() { Preparations++; OnPrepare?.Invoke(); if (PrepareError != null) throw PrepareError; return Member; }
-            public void RequireOwner() { Owners++; if (Corruption == "owner" && Owners == 2) throw new InvalidOperationException("Owner changed"); }
-            public int Invoke(int member, ushort flags, IntPtr result, ref VbeProjectComponents.AccessHelpContextParameters parameters, IntPtr exception, out uint argumentError)
+            internal readonly List<string> Events = new List<string>();
+            public void Prepare()
             {
-                Invocations++; argumentError = 0;
-                Assert.AreEqual(117, member); Assert.AreEqual((ushort)4, flags, "Only scalar PROPERTYPUT is permitted.");
-                Assert.AreEqual(IntPtr.Zero, result, "A PROPERTYPUT supplies no result VARIANT.");
-                Assert.AreEqual((uint)1, parameters.ArgumentCount); Assert.AreEqual((uint)1, parameters.NamedArgumentCount);
-                Assert.AreEqual(-3, Marshal.ReadInt32(parameters.NamedArguments));
-                Assert.AreEqual((short)3, Marshal.ReadInt16(parameters.Arguments));
-                Assert.AreEqual((short)0, Marshal.ReadInt16(parameters.Arguments, 2));
-                Value = Marshal.ReadInt32(parameters.Arguments, 8);
-                Marshal.StructureToPtr(ExceptionInfo, exception, false);
-                if (Corruption == "argument") Marshal.WriteInt32(parameters.Arguments, 8, Value + 1);
-                if (Corruption == "variantBoundary") Marshal.WriteInt64(parameters.Arguments, 24, 0);
-                if (Corruption == "exceptionBoundary") Marshal.WriteInt64(exception, 64, 0);
-                if (Corruption == "named") Marshal.WriteInt32(parameters.NamedArguments, -4);
-                if (Corruption == "parameters") parameters.ArgumentCount = 2;
-                OnInvoke?.Invoke();
-                if (InvokeError != null) throw InvokeError;
-                return Result;
+                Preparations++; Events.Add("prepare"); OnPrepare?.Invoke();
+                if (PrepareError != null) throw PrepareError;
             }
-            public void FreeExceptionString(IntPtr text) { Freed.Add(text); }
-            public void Dispose() { Disposals++; if (DisposeError != null) throw DisposeError; }
+            public void RequireOwner()
+            {
+                Owners++; Events.Add("owner");
+                if (Owners == RefuseOwnerAt) throw new InvalidOperationException("Original native owner or canonical identity changed");
+            }
+            public void Set(int value)
+            {
+                Invocations++; Value = value; Events.Add("set"); OnInvoke?.Invoke();
+                if (InvokeError != null) throw InvokeError;
+            }
+            public void Dispose() { Disposals++; Events.Add("dispose"); if (DisposeError != null) throw DisposeError; }
         }
 
         [TestMethod]
-        public void ExactX64LayoutsMatchTheNativeScalarContract()
+        public void OfficialImportedProjectDeclaresInt32SetterWithHresultTranslation()
         {
-            VbeProjectComponents.RequireAccessHelpContextAbi();
-            Assert.AreEqual(24, Marshal.SizeOf(typeof(VbeProjectComponents.AccessHelpContextParameters)));
-            Assert.AreEqual(64, Marshal.SizeOf(typeof(VbeProjectComponents.AccessHelpContextExceptionInfo)));
-            var names = new[] { "Code", "Reserved", "Source", "Description", "HelpFile", "HelpContext", "ReservedPointer", "DeferredCallback", "Scode" };
-            var offsets = new[] { 0, 2, 8, 16, 24, 32, 40, 48, 56 };
-            for (int i = 0; i < names.Length; i++) Assert.AreEqual(offsets[i], Marshal.OffsetOf(typeof(VbeProjectComponents.AccessHelpContextExceptionInfo), names[i]).ToInt32());
-            Assert.AreEqual(0, Marshal.OffsetOf(typeof(VbeProjectComponents.AccessHelpContextParameters), "Arguments").ToInt32());
-            Assert.AreEqual(8, Marshal.OffsetOf(typeof(VbeProjectComponents.AccessHelpContextParameters), "NamedArguments").ToInt32());
-            Assert.AreEqual(16, Marshal.OffsetOf(typeof(VbeProjectComponents.AccessHelpContextParameters), "ArgumentCount").ToInt32());
-            Assert.AreEqual(20, Marshal.OffsetOf(typeof(VbeProjectComponents.AccessHelpContextParameters), "NamedArgumentCount").ToInt32());
+            Type contract = VbeProjectComponents.AccessHelpContextInterfaceType;
+            Assert.AreEqual(new Guid("EEE00915-E393-11D1-BB03-00C04FB6C4A6"), contract.GUID);
+            Assert.IsTrue(contract.IsImport); Assert.IsTrue(contract.IsInterface);
+            MethodInfo setter = contract.GetMethod("set_HelpContextID");
+            Assert.IsNotNull(setter); Assert.AreEqual(typeof(void), setter.ReturnType);
+            Assert.AreEqual(1, setter.GetParameters().Length);
+            Assert.AreEqual(typeof(int), setter.GetParameters()[0].ParameterType);
+            Assert.IsTrue(setter.GetParameters()[0].IsIn);
+            Assert.AreEqual(117, ((DispIdAttribute)Attribute.GetCustomAttribute(setter, typeof(DispIdAttribute))).Value);
+            Assert.AreEqual((MethodImplAttributes)0, setter.GetMethodImplementationFlags() & MethodImplAttributes.PreserveSig,
+                "The imported Void setter must translate a failing native HRESULT into an exception.");
         }
 
         [DataTestMethod]
         [DataRow(0)][DataRow(321)][DataRow(int.MinValue)][DataRow(int.MaxValue)]
-        public void Int32PutUsesExactPackingOneEntryAndFinalGuard(int value)
+        public void TypedInt32SetterReceivesExactValueAfterPreparationAndFinalGuard(int value)
         {
             var calls = new Calls(); var dispatch = new VbeProjectComponents.AccessHelpContextDispatch(calls); int guards = 0;
-            dispatch.Put(value, () => { guards++; Assert.AreEqual(1, calls.Preparations); Assert.AreEqual(0, calls.Invocations); });
+            dispatch.Put(value, () => { guards++; calls.Events.Add("authorize"); Assert.AreEqual(1, calls.Preparations); Assert.AreEqual(0, calls.Invocations); });
+            CollectionAssert.AreEqual(new[] { "owner", "prepare", "authorize", "owner", "set", "dispose" }, calls.Events.ToArray());
             Assert.AreEqual(value, calls.Value); Assert.AreEqual(1, guards); Assert.AreEqual(1, dispatch.InvokeEntries);
             Assert.AreEqual(1, calls.Invocations); Assert.AreEqual(1, calls.Disposals);
             Assert.ThrowsException<InvalidOperationException>(() => dispatch.Put(value, () => { }));
@@ -74,69 +65,87 @@ namespace VBAi.Tests.Unit
         }
 
         [DataTestMethod]
-        [DataRow("binding")][DataRow("preparation")][DataRow("owner")][DataRow("authorization")]
-        public void ReadonlyPreparationAndFinalRefusalsNeverInvokeOrReplay(string refusal)
+        [DataRow("cast")][DataRow("preparation")][DataRow("initialOwner")][DataRow("finalOwner")][DataRow("authorization")]
+        public void ReadonlyPreparationAndFinalRefusalsNeverSetOrReplay(string refusal)
         {
-            var calls = new Calls(); if (refusal == "binding") calls.Member = 118;
-            if (refusal == "preparation") calls.PrepareError = new InvalidOperationException("No type information");
-            if (refusal == "owner") calls.Corruption = "owner";
-            var dispatch = new VbeProjectComponents.AccessHelpContextDispatch(calls);
-            Assert.ThrowsException<InvalidOperationException>(() => dispatch.Put(321, () => { if (refusal == "authorization") throw new InvalidOperationException("Revoked"); }));
+            var calls = new Calls();
+            if (refusal == "cast") calls.PrepareError = new InvalidCastException("The original project does not expose the imported interface");
+            if (refusal == "preparation") calls.PrepareError = new COMException("Canonical QI preparation failed", unchecked((int)0x80004002));
+            if (refusal == "initialOwner") calls.RefuseOwnerAt = 1;
+            if (refusal == "finalOwner") calls.RefuseOwnerAt = 2;
+            var dispatch = new VbeProjectComponents.AccessHelpContextDispatch(calls); Exception observed = null;
+            try { dispatch.Put(321, () => { if (refusal == "authorization") throw new InvalidOperationException("Revoked"); }); }
+            catch (Exception error) { observed = error; }
+            Assert.IsNotNull(observed);
+            if (calls.PrepareError != null) Assert.AreSame(calls.PrepareError, observed);
             Assert.AreEqual(0, dispatch.InvokeEntries); Assert.AreEqual(0, calls.Invocations); Assert.AreEqual(1, calls.Disposals);
-            Assert.ThrowsException<InvalidOperationException>(() => dispatch.Put(321, () => { })); Assert.AreEqual(1, calls.Preparations);
+            int preparations = calls.Preparations;
+            Assert.ThrowsException<InvalidOperationException>(() => dispatch.Put(321, () => { }));
+            Assert.AreEqual(preparations, calls.Preparations); Assert.AreEqual(1, calls.Disposals);
         }
 
-        [DataTestMethod]
-        [DataRow("argument")][DataRow("variantBoundary")][DataRow("exceptionBoundary")][DataRow("named")][DataRow("parameters")]
-        public void CorruptedNativeBoundaryNeverFreesOutputPointersOrReplays(string corruption)
+        [TestMethod]
+        public void MissingFinalAuthorizationConsumesTheWriteWithoutPreparationOrSetter()
         {
-            var calls = new Calls { Corruption = corruption, ExceptionInfo = new VbeProjectComponents.AccessHelpContextExceptionInfo { Description = new IntPtr(123) } };
-            var dispatch = new VbeProjectComponents.AccessHelpContextDispatch(calls);
-            var error = Assert.ThrowsException<InvalidOperationException>(() => dispatch.Put(321, () => { }));
-            Assert.IsTrue(error.Data.Contains("AccessHelpContextOutputCleanup")); Assert.AreEqual(0, calls.Freed.Count);
-            Assert.AreEqual(1, dispatch.InvokeEntries); Assert.ThrowsException<InvalidOperationException>(() => dispatch.Put(321, () => { })); Assert.AreEqual(1, calls.Invocations);
+            var calls = new Calls(); var dispatch = new VbeProjectComponents.AccessHelpContextDispatch(calls);
+            Assert.ThrowsException<ArgumentNullException>(() => dispatch.Put(321, null));
+            Assert.AreEqual(0, calls.Owners); Assert.AreEqual(0, calls.Preparations); Assert.AreEqual(0, calls.Invocations);
+            Assert.AreEqual(0, dispatch.InvokeEntries); Assert.AreEqual(1, calls.Disposals);
+            Assert.ThrowsException<InvalidOperationException>(() => dispatch.Put(321, () => { }));
         }
 
         [DataTestMethod]
         [DataRow(false)][DataRow(true)]
-        public void FailedHresultStaysOriginalEvenWithUntrustedOutputAndCleanupFailure(bool corrupt)
+        public void FailedTypedSetterKeepsOriginalHresultEvenAfterPartialMutationOrCleanupFailure(bool partialMutation)
         {
             const int hr = unchecked((int)0x80020009);
-            var calls = new Calls { Result = hr, Corruption = corrupt ? "argument" : null, DisposeError = new InvalidOperationException("cleanup"),
-                ExceptionInfo = new VbeProjectComponents.AccessHelpContextExceptionInfo { Source = new IntPtr(123), Description = new IntPtr(123), HelpFile = new IntPtr(456), Scode = hr } };
+            var original = new COMException("Original setter failure", hr); bool changed = false;
+            var calls = new Calls { InvokeError = original, DisposeError = new InvalidOperationException("cleanup") };
+            calls.OnInvoke = () => changed = partialMutation;
             var dispatch = new VbeProjectComponents.AccessHelpContextDispatch(calls);
-            var error = Assert.ThrowsException<COMException>(() => dispatch.Put(321, () => { }));
-            Assert.AreEqual(hr, error.HResult); Assert.AreEqual(corrupt ? 0 : 2, calls.Freed.Count, "Aliased BSTRs are freed once only when outputs remain trusted.");
-            Assert.IsTrue(error.Data.Contains("AccessHelpContextCleanupFailure"));
+            Assert.AreSame(original, Assert.ThrowsException<COMException>(() => dispatch.Put(321, () => { })));
+            Assert.AreEqual(hr, original.HResult); Assert.AreEqual(partialMutation, changed);
+            Assert.IsTrue(original.Data.Contains("AccessHelpContextCleanupFailure")); Assert.AreEqual(1, dispatch.InvokeEntries);
             Assert.ThrowsException<InvalidOperationException>(() => dispatch.Put(321, () => { })); Assert.AreEqual(1, calls.Invocations);
         }
 
         [TestMethod]
-        public void ThrownInvokePreservesOriginalErrorAndDoesNotTrustOrFreeItsOutput()
+        public void CleanupFailureAfterSetterReturnRemainsUncertainAndCannotReplay()
         {
-            var original = new COMException("Original unknown native return", unchecked((int)0xE19D7318));
-            var calls = new Calls { InvokeError = original, ExceptionInfo = new VbeProjectComponents.AccessHelpContextExceptionInfo { Description = new IntPtr(123) } };
-            var dispatch = new VbeProjectComponents.AccessHelpContextDispatch(calls);
-            Assert.AreSame(original, Assert.ThrowsException<COMException>(() => dispatch.Put(321, () => { })));
-            Assert.AreEqual(0, calls.Freed.Count); Assert.IsTrue(original.Data.Contains("AccessHelpContextOutputCleanup"));
-            Assert.AreEqual(1, calls.Disposals); Assert.ThrowsException<InvalidOperationException>(() => dispatch.Put(321, () => { })); Assert.AreEqual(1, calls.Invocations);
+            var original = new InvalidOperationException("Identity reference cleanup failed");
+            var calls = new Calls { DisposeError = original }; var dispatch = new VbeProjectComponents.AccessHelpContextDispatch(calls);
+            Assert.AreSame(original, Assert.ThrowsException<InvalidOperationException>(() => dispatch.Put(321, () => { })));
+            Assert.AreEqual(1, dispatch.InvokeEntries); Assert.AreEqual(1, calls.Invocations); Assert.AreEqual(1, calls.Disposals);
+            Assert.ThrowsException<InvalidOperationException>(() => dispatch.Put(321, () => { })); Assert.AreEqual(1, calls.Disposals);
         }
 
-        [DataTestMethod]
-        [DataRow("guid")][DataRow("kind")][DataRow("getter")][DataRow("setter")][DataRow("putrefOrDuplicate")]
-        public void OnlyObservedVBProjectInt32TypeContractIsAccepted(string changed)
+        [TestMethod]
+        public void PreparationFailureKeepsItsOriginalErrorWhenCleanupAlsoFails()
         {
-            Guid actual = new Guid("EEE00915-E393-11D1-BB03-00C04FB6C4A6");
-            VbeProjectComponents.RequireAccessHelpContextTypeContract(actual, TYPEKIND.TKIND_DISPATCH, true, true, false);
-            Assert.ThrowsException<InvalidOperationException>(() => VbeProjectComponents.RequireAccessHelpContextTypeContract(
-                changed == "guid" ? Guid.Empty : actual, changed == "kind" ? TYPEKIND.TKIND_INTERFACE : TYPEKIND.TKIND_DISPATCH,
-                changed != "getter", changed != "setter", changed == "putrefOrDuplicate"));
+            var original = new InvalidCastException("Unsupported original project interface");
+            var calls = new Calls { PrepareError = original, DisposeError = new COMException("cleanup") };
+            var dispatch = new VbeProjectComponents.AccessHelpContextDispatch(calls);
+            Assert.AreSame(original, Assert.ThrowsException<InvalidCastException>(() => dispatch.Put(321, () => { })));
+            Assert.IsTrue(original.Data.Contains("AccessHelpContextCleanupFailure"));
+            Assert.AreEqual(0, dispatch.InvokeEntries); Assert.AreEqual(0, calls.Invocations); Assert.AreEqual(1, calls.Disposals);
         }
     }
 
     [TestClass]
     public sealed class AccessHelpContextProjectTests
     {
+        [DataTestMethod]
+        [DataRow("MSACCESS", true)][DataRow("msaccess", true)]
+        [DataRow("MSPUB", true)][DataRow("mspub", true)]
+        [DataRow("EXCEL", false)][DataRow("WINWORD", false)]
+        [DataRow("POWERPNT", false)][DataRow("OUTLOOK", false)]
+        [DataRow("SLDWORKS", false)][DataRow("MSPUB.exe", false)]
+        [DataRow("", false)][DataRow(null, false)]
+        public void OnlyAccessAndPublisherNativeProjectsUseTheTypedMetadataRoute(string processName, bool expected)
+        {
+            Assert.AreEqual(expected, VbeProjectComponents.IsAccessHelpContextHost(processName));
+        }
+
         public sealed class Project : VbeProjectComponentsTests.FakeProject
         {
             public int Protection { get; set; }
@@ -173,7 +182,7 @@ namespace VBAi.Tests.Unit
         }
 
         [TestMethod]
-        public void OriginalAccessProjectUsesRawWriteAndExactRetentionReadback()
+        public void OriginalAccessProjectUsesTypedWriteAndExactRetentionReadback()
         {
             var fixture = new Fixture(); var request = fixture.Request(); int checks = 0;
             request.RevalidateProjectPropertyAuthorization = validateScope => checks++;
@@ -271,6 +280,35 @@ namespace VBAi.Tests.Unit
         {
             var fixture = new Fixture(); var request = fixture.Request(); request.Value = long.MaxValue;
             Assert.ThrowsException<OverflowException>(() => fixture.Service.SetProjectProperty(request)); Assert.AreEqual(0, fixture.Calls.Preparations);
+        }
+
+        [DataTestMethod]
+        [DataRow("321")][DataRow(321L)][DataRow(321.0)]
+        public void ExistingScalarConversionFeedsTheTypedInt32Setter(object value)
+        {
+            var fixture = new Fixture(); var request = fixture.Request(); request.Value = value;
+            fixture.Service.SetProjectProperty(request);
+            Assert.AreEqual(321, fixture.Calls.Value); Assert.AreEqual(1, fixture.Calls.Invocations);
+            Assert.AreEqual(321, fixture.Project.HelpContextID);
+        }
+
+        [TestMethod]
+        public void FailedTypedProjectSetterRetainsPartialMutationAsFailureWithoutReadbackOrFallback()
+        {
+            var fixture = new Fixture(); var request = fixture.Request();
+            var original = new COMException("Failed declared setter after mutation", unchecked((int)0x80020009));
+            fixture.Calls.InvokeError = original;
+            int postMutationReads = 0;
+            fixture.Calls.OnInvoke = () => {
+                fixture.Project.HelpContextID = fixture.Calls.Value;
+                fixture.Project.OnReadContext = () => postMutationReads++;
+            };
+            Assert.AreSame(original, Assert.ThrowsException<COMException>(() => fixture.Service.SetProjectProperty(request)));
+            Assert.AreEqual(1, original.Data["AccessHelpContextInvokeEntries"]);
+            StringAssert.Contains(VbeScalarProperty.FormatFailure(original), "SetterInvocation");
+            Assert.AreEqual(0, postMutationReads); Assert.AreEqual(1, fixture.Calls.Invocations);
+            fixture.Project.OnReadContext = null;
+            Assert.AreEqual(321, fixture.Project.HelpContextID, "A changed property does not override the failed native outcome.");
         }
     }
 }

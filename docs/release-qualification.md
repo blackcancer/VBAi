@@ -6,86 +6,87 @@ are maintained only in [recorded validation](test-coverage.md).
 
 ## Q-012 inactive-desktop checkpoint (2026-10-03)
 
-**Q-012 remains PARTIAL.** The latest narrow Access HelpContextID dispatch
-candidate proves the exact connected PID and loaded MVID, then its one native
-PROPERTYPUT returns DISP_E_EXCEPTION despite changing the live value from 0 to
-321. The planned descriptor, CLR and raw getters agree on that partial mutation.
-The failed HRESULT remains a failure: final adapter Save and fresh reopen are
-not executed. The original exits normally. This does not qualify or repair the
-setter. Earlier CLR and startup refusals remain separately recorded.
+**Q-012 remains PARTIAL.** The earlier typed-VBIDE candidate refreshes Access
+active-module and module/class adapter Save, reference addition by GUID/file,
+reference removal and Description. Each accepted operation proves the exact
+connected PID and loaded candidate, adapter-only final Save, independent fresh
+disk readback and normal original/fresh process exits. The French multi-object
+confirmation retains its identity, revision, source, selected-object, runtime
+authorization and deadline guards; unknown prompts/locales remain unqualified.
 
-The new guard validates original project identity after the final revision read,
-performs full chat scope reads beforehand, and checks the actual UI selection
-and current permissions locally immediately before mutation. Focused managed
-tests exercise these refusals and one-call behavior. They do not replace native
-persistence evidence; the dispatch candidate remains unqualified for release.
+HelpContextID now uses the official embedded VBIDE PIA declaration instead of
+manual native dispatch structures. The borrowed typed project must retain its
+canonical identity and owning UI STA; full authorization precedes final cached
+UI selection/permission checks, and only one setter is allowed. The native
+Access setter still returns a failed HRESULT after changing the live value from
+0 to 321. Descriptor, CLR and raw getters agree and Saved becomes false.
+This is a failed partial mutation, with final adapter Save and fresh reopen
+NOT_RUN. Neither the typed declaration nor managed guard tests qualify a repair.
 
-Two separately frozen Publisher diagnostics identify the accessible dispatch
-objects returned by the observed native bars, then test the original
-application's reverse CommandBars association. Those native dispatches expose
-IAccessible metadata, fail the exact CommandBar query and lack the Application
-name. The reverse CommandBars getter fails before a returned bar or HWND
-association. Installed Publisher metadata also exposes no Application.VBE member,
-so that proposed association is rejected without a native attempt. Publication
-creation and adapter Save remain blocked. The exact
-French recovery No choice is delivered once with dismissal observed, without
-claiming normal mode. Owned hosts and helpers are absent after campaign cleanup;
-normal versus forced exits and helper lifecycle limits remain separate evidence.
+Read-only inspection of the registered VBIDE type library and official PIA
+finds matching interfaces, DISPIDs and setter signatures. No ABI mismatch or
+permission to ignore a failed HRESULT is established. Read-only Access probes
+observe a trusted new baseline and an untrusted reopened synthetic database;
+the altered HelpFile value is also returned by the official typed getter.
+The original bytes remain unchanged. Trust is a correlation, not a proven cause;
+the comparison that enables content on the exact disposable document requires
+maintainer approval. No global trust policy or trusted location is changed,
+and no heuristic string conversion is introduced.
 
-The offline HelpFile scan preserves the disposable database and finds exact
-ANSI path bytes, but does not establish the active ACE VBA PROJECT record.
-HelpFile remains open; no heuristic conversion is introduced. Exact candidate
-identities, counters, startup diagnostics and lifecycle receipts are centralized
-in [recorded validation](test-coverage.md).
+Publisher now starts as an explicitly owned normal GUI process on the inactive
+desktop. The registered server command is observed only; it is not invoked or
+treated as a COM activation handshake. Provisional bootstrap requires an empty
+process inventory followed by the sole retained original Publisher process,
+exact application interface/canonical identity and private-desktop proofs.
+One disposable publication is created; retained, active and sole document
+identities plus the native window establish final ownership before baseline
+SaveAs. A subsequent connected campaign proves Publisher adapter-only Save,
+fresh source/class/UserForm-state persistence, reference addition by GUID/file,
+reference removal and Description, with normal original/fresh process exits.
+The fixture disables macros for its owned programmatic Open and verifies that
+process-local setting. No global trust policy is changed. Publisher HelpFile
+fresh COM readback remains malformed; HelpContextID fails with an uncertain
+setter outcome. Neither metadata failure is promoted to acceptance.
 
-The earlier frozen D3 candidate qualifies normal Access
-module/class adapter Save with its final pre-confirmation deadline guard
-included. The approved French multi-object confirmation is queued once,
-its modal disappears, saved state is verified and independent fresh-process
-disk readback preserves exact source. Both processes exit normally.
-The native trial exercises normal completion; deadline refusal branches have
-focused managed evidence.
+The separate native General path also fails its first Unicode HelpFile trial:
+the ANSI edit replaces Japanese characters with question marks. Exact readback
+stops the operation before OK or Save. A representability preflight now guards
+the owning control using the host process code page; this implementation change
+does not establish unsupported Unicode persistence. Subsequent Access native
+General HelpFile with compatible accents and HelpContextID pass single adapter
+Save and independent fresh-process readback with normal exits. Publisher's
+earlier native HelpContextID write and adapter Save verify, but that campaign's
+fresh activation fails before bridge request emission. The bridge-admission
+candidate subsequently proves fresh read-only General/source/reference readback
+of the saved publication, with normal close and no loading or trust writes.
+The standard NewDocument fixture still fails before bridge request emission,
+blocking the compatible HelpFile and Unicode-refusal trials. Access's native
+General cases pass on the new candidate, despite a separately recorded aggregate
+binary-inventory refusal caused by a concurrent test's PNG artifact. See the
+[bridge admission evidence](test-coverage.md#q-012-bridge-admission-candidate-2026-10-03).
 
-The product guard requires the exact native VBE process/UI thread, qualified
-French controls and a complete selected list of approved Type1/Type2 objects.
-Approved identity, revision, source, selection and runtime authorization must
-remain valid before confirmation. Preexisting, unknown, changed or ambiguous
-dialogs are refused. A queued response does not replace saved-state or
-fresh-process persistence verification; other locales/prompt shapes remain
-unqualified.
+A separate read-only probe reaches the exact owned VBE, but its first selected
+CommandBar NativeOM request returns E_NOINTERFACE. It stops without another bar,
+fallback, Connect setter, bridge call or macro execution; its original Publisher
+exits normally. This does not establish the interface's absence on every bar.
+The subsequent standard-IDispatch NativeOM probe observes IAccessible on each
+owned bar, without a supported CommandBar route. A manager UI probe expires
+during bounded menu discovery before any Load write or bridge request; this
+does not establish a trust-policy refusal.
 
-Publisher D3 bootstrap inventories its owned command-bar windows completely,
-then the first exact CommandBar NativeOM interface query returns E_NOINTERFACE.
-No typed cast, NativeOM Application getter/identity comparison, publication
-creation or Save is reached. No fallback or retry occurs. This does not
-establish absence of the interface on all bars/versions or a broader causal
-repair. Remaining Publisher scenarios are blocked; earlier scoped Publisher/VBE
-acceptance remains bound to its recorded candidate.
-
-Other Access scenarios are NOT_RUN on D3. D2 active-module, reference additions
-by GUID/file, reference removal and Description acceptance remains valid for
-its exact candidate, including strict fresh-disk readback and normal exits.
-HelpFile exact fresh metadata readback and HelpContextID setter failure remain
-open with possible partial mutation; D3 does not repair or qualify either.
-No heuristic conversion or uncertain-operation retry follows from those failures.
-
-Successful private/input window and sentinel inventories preserve the inactive
-desktop boundary, and temporary COM registration restoration is verified.
-All owned Office processes and the helper are closed. Separate authorized
-Publisher cleanup makes its original termination attempt and then observes
-absence, but an exit-code receipt is not persisted after a subsequent helper
-identity-format refusal. No Publisher exit code or normal exit is inferred.
-Helper forced exit is observed, and the Ready limited task is removed.
-Cleanup does not qualify Publisher persistence or normal shutdown.
-
-D3 is bound to its frozen manifest. After D3, the campaign runner's final verdict
-requires overall PASS and verified registration restoration; separate script-only
-checks validate that rule without native execution or assembly-source changes.
-Later product, fixture or runner edits require separate validation. There is no release-wide acceptance or new
-coverage measurement. Binary identities, counters, failure boundaries and
-cleanup receipts are centralized in
-[recorded validation](test-coverage.md#q-012-final-boundary-and-typed-publisher-refresh-2026-10-03).
-D2 and D1 remain separately recorded historical evidence.
+All owned Access/Publisher processes are closed after each settled campaign.
+The failed earlier Publisher campaigns require separately recorded forced
+cleanup; that does not qualify normal shutdown. Temporary registration is
+restored and verified. The original complete default managed suite has a
+session-deletion failure. Its test preparation race is corrected and a separate
+complete managed run passes; the original failed gate remains recorded. The
+current guarded General candidate separately passes its complete managed gate.
+Its helper subsequently disappears without a terminal close receipt and the
+scheduled task reports interruption; normal helper lifecycle is unqualified.
+Exact manifests, binary identities, test results, lifecycle receipts and the
+remaining metadata/Publisher blockers are in
+[recorded validation](test-coverage.md#q-012-typed-vbide-and-normal-publisher-candidate-2026-10-03).
+No release-wide acceptance or coverage measurement is claimed.
 
 ## Earlier candidate checkpoint (2026-10-02)
 
@@ -659,7 +660,7 @@ operation can pass a refusal test while the capability remains unqualified.
 | Q-009 | P2 | NuGet runtime license/notice payloads were absent from the build output. | Deliver exact upstream texts with provenance and verify output hashes. | Payload added and final Debug/Release delivery hashes verified. |
 | Q-010 | P3 | WebView2 creates persistent per-PID profiles without a retention policy. | Define ownership and safe cleanup only after browser processes exit; preserve active/private state. | CLOSED for the newly owned editor-profile lifecycle on candidate `9924660b`: each editor has a unique environment folder; retirement and its matching BrowserProcessExited notification are both required before asynchronous cleanup. Detached real WebView2 acceptance verifies one editor can close and remove its profile while a second remains usable. Unknown legacy profiles, missing exit evidence, links and locked files are retained; no automatic legacy purge or crash recovery deletion is claimed. See recorded validation. |
 | Q-011 | P1 gate | Word/PowerPoint adapter acceptance required project-access prerequisites. | Run verified adapter-only save/reopen under a maintainer-approved host configuration. | CLOSED for adapter-only save/reopen on candidate `7b5f11d8`: Word and PowerPoint preserve the pending module/class sources and form/Label, with no post-adapter helper Save, verified disk readback and normal host exit. This scope does not explain the older Word form-creation failure or qualify every host operation. Exact evidence is in test-coverage.md. |
-| Q-012 | P1 gate | Access/Publisher host-document save adapters lack complete current native acceptance. | Qualify each required adapter and normal fresh-process lifecycle, or explicitly narrow the release contract. | PARTIAL. The [inactive-desktop checkpoint](#q-012-inactive-desktop-checkpoint-2026-10-03) preserves candidate-specific Access active-module, module/class, reference and Description acceptance. D6 proves connected PID/MVID, then its narrow HelpContextID dispatch returns DISP_E_EXCEPTION despite an observed 0-to-321 live mutation. Final adapter Save/reopen remain NOT_RUN; no failed HRESULT is promoted to success. Final identity/revision and actual cached UI-scope/permission guards have focused managed evidence, but the dispatch candidate is not a qualified repair. HelpFile exact fresh readback remains open. Publisher NativeOM bars fail the exact CommandBar query and expose IAccessible; reverse CommandBars fails and installed Application.VBE is absent. Publication creation/Save remain blocked without a broader causal claim. Earlier Publisher/VBE scopes are preserved. Owned hosts are closed after every terminal campaign. Exact binary identities, counters, normal/forced lifecycle scope, restoration and artifacts are in [recorded validation](test-coverage.md). |
+| Q-012 | P1 gate | Access/Publisher host-document save adapters lack complete current native acceptance. | Qualify each required adapter and normal fresh-process lifecycle, or explicitly narrow the release contract. | PARTIAL. The [current checkpoint](#q-012-inactive-desktop-checkpoint-2026-10-03) refreshes Access source/reference/Description adapter persistence with normal fresh-process exits. Typed HelpContextID still fails after partial live mutation; HelpFile exact fresh readback remains open. Publisher normal launch now reaches disposable creation/baseline SaveAs/VBE, but its bridge connection and adapter persistence remain blocked. Failed HRESULTs, visible VBE and baseline saves are not promoted to acceptance. The full managed failure and all normal/forced cleanup evidence are retained in [recorded validation](test-coverage.md). |
 | Q-013 | P1 gate | Classic Outlook initially had no configured profile. | Qualify a read-only scenario in an explicitly configured classic profile without modifying mail or production VBA. | CLOSED for read-only startup/metadata: `outlook-accepted/native.trx`, MVID `ce19a20c-9708-4c17-b998-f3415b8e6303`; exact PID, project inventory, scoped debug state and environment passed, normal exit 0. No account configured by automation, no mail read/sent or VBA mutation. |
 | Q-014 | P1 gate | SOLIDWORKS versions require independent native acceptance. | Qualify load, UI, disposable module/form operations, compile/debug, persistence and cleanup in each explicitly selected version. | PARTIAL. Historical aaf3 existing-Type100 save and saved-copy module/class/form readback passed independently in 2019 SP5 and 2025, with normal exits (Q-021); historical designer-resize failure remains recorded. Preceding `d5e25e25` passes 2019 load, copied native Edit Macro/source/form readback, Monaco return-to-code and designer/code resize. Later live class-source drift remains unproven and unmodified. Its ExitApp stalled at native heap corruption 0xc0000374; authorized forced/debugger cleanup is not normal shutdown, and exit code is NOT_OBSERVED. Preceding `f9a36c85` passes 2025 load, disposable module/class/form preparation, compile and verified Save. One synthetic run and a separate native reload verify marker/source/label, but the original whole-file-preservation trial fails. Monaco code rendering and resize/restoration pass with a stale closed-project warning still visible. Owned 2025 cleanup exits normally after backup and one ExitApp; complete lifecycle/debugger/assistant acceptance remains open. |
 | Q-015 | P2 gate | The initial instrumented suite timed out on post-step observation; its direct relationship to Q-005 is not proven. | Repeat the complete suite on the corrected source and retain failures/skips honestly. | CLOSED for current source `8f2315d` / installed `d8f31d57`: the complete instrumented suite passes with unchanged product hash and independently verified individual TRX outcomes. Preceding Monaco-status source `d7a1c75` / `6a74af33` and earlier product `2e75161` / `f9a36c85` with tests `f0874e6` retain separate completed passes. The original v5 complete run remains failed with explained fixture-packaging/Git-path defects. Exact counters, below-target managed coverage and terminal evidence are in recorded validation. Native/provider opt-ins remain separate gates; a later product binary requires its own full run, and historical observation-timeout causes remain unproven. |

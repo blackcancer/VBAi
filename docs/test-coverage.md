@@ -1,5 +1,271 @@
 # Recorded validation
 
+## Q-012 bridge admission candidate (2026-10-03)
+
+The `access-general-dispatchguard`, `general-full-managed-dispatchguard` and
+`publisher-general-dispatchguard` plans bind source
+`d24960ee61025465e698c2256ebb79ffa74668f9` plus frozen pending manifests on
+`codex/q012-office-20261002`. Product MVID is
+`9ebf1c44-8429-4632-b49f-c3398f4bc8f6`, SHA-256
+`465BB0AAE0F4443E53C290965A760642810FB2B00C3E85EA6E82DBE29E3A5A87`.
+Test assembly SHA-256 is
+`F2E950311A19F9176CB22D8F198D795AD127585443310E278F8BF5007DFE657E`;
+helper SHA-256 remains
+`96E990FCE811B9F59966B93FF2EE78F91BB55A7368D72D4309A283A21CC3ECE7`.
+
+| Gate | Result | Scope |
+| --- | --- | --- |
+| Complete managed suite | 4,356 passed, 0 failed, 211 not executed; 4,567 total | Native opt-ins disabled; frozen compiled source and existing binary hashes unchanged. Individual TRX results determine not-executed count. |
+| Access focused gate | 656 passed, 0 failed, 0 skipped | Existing General/host guards. New bridge admission tests are included in the complete suite, outside this focused filter. |
+| Access native General HelpFile and HelpContextID, rows 20/21 | Both PASS | Single adapter Save, fresh-process exact General/source/reference readback and normal original/fresh exits for each operation. |
+| Access overall campaign terminal | FAILED | Final strict binary inventory finds an added PNG from the concurrent managed suite; all frozen existing binary hashes remain unchanged. The failed terminal is preserved. |
+| Publisher read-only existing-file diagnostic | PASS | Exact new candidate, fresh General 321/all fields/options version, module/class hashes and references match the previously saved candidate's file. Source and opened copy remain unchanged; normal close. No new adapter Save acceptance is inferred. |
+| Publisher focused gate | 656 passed, 0 failed, 0 skipped | Same compiled candidate. |
+| Publisher native row 17 | FAIL | NewDocument and preparatory SaveAs verify, then startup status fails before request emission, native General writes or adapter Save. |
+| Publisher native rows 18/19 | BLOCKED, zero invocations | Stop after startup failure in row 17. |
+
+The admission fix prevents direct native bridge routes from bypassing General's
+pending/uncertain state. An owning-STA admission token remains held until worker
+dispatch settles, excluding concurrent General entry without moving native
+worker calls to the UI thread. Tests cover pending/quarantined refusals, managed
+status availability and token release after successful and failed worker calls.
+
+Access's failed aggregate terminal is an inventory failure, not a failing native
+test. The added `VBAi.Tests/Debug/net48/github-settings.png` is produced by the
+linked GitHub settings smoke test, which saves into its assembly base directory.
+No existing planned binary hash changes. Access/helper shutdown is normal,
+registration restoration verifies and exact task removal requires no force.
+The unused build-copy variant is not executed. No native case is replayed to
+hide the failed aggregate receipt.
+
+The complete managed worker writes an exit-0 terminal with unchanged compiled
+source and existing binary hashes. Its helper and worker subsequently disappear
+without a helper terminal receipt; the exact scheduled task reports
+`0xC000013A`. The interruption's cause is unknown. This does not invalidate the
+individual TRX outcomes, but checked helper close and normal lifecycle acceptance
+are not established for that run. No test rerun or normal-close claim is made.
+Task-only cleanup verifies the original worker/helper PIDs absent and sentinel
+invalid, then removes the exact Ready task with no process termination. Its
+receipt retains the unknown interruption and `DesktopCloseVerified=false`.
+
+The existing-file Publisher diagnostic is
+`publisher-general-manager-readonlyselection`. Native list selection is verified,
+Load is already checked, and the sole manager action is Cancel. There are no
+Load/Connect/startup/registry writes, macro execution or trust changes. The
+candidate's bridge starts before any manager action, so this run does not show
+that the manager repaired activation. `fresh-disk-comparison.json` records the
+independent comparison. Exact task removal follows normal host/helper close.
+
+The subsequent standard Publisher fixture fails on a newly created publication,
+before native metadata operations. The failed first cleanup extracts no original
+identity and refuses without any native termination. Corrected launch-and-canary
+evidence retains that refusal, records no invented query handle, and permits one
+exact host/helper termination after registration restoration. The task is
+removed; forced exits do not qualify normal startup, shutdown or persistence.
+
+Independent read-only compound-file inspection finds an empty `/VBA` storage
+in the new-publication startup failure's saved file, whereas the successful
+existing-file input contains `PROJECT`, `dir`, `_VBA_PROJECT` and its document,
+module and class streams. This establishes different serialized VBA inputs,
+not the state of the live project after ShowVbe or a causal autoload fix. The
+initial SaveAs precedes ShowVbe in the failing fixture. No trust or registration
+change is justified by this observation.
+
+Evidence is under `C:\Users\init-\Documents\Codex\q012-20261003-next` in the
+named campaign directories and corresponding `desktop-*` receipts. Q-012 remains
+**PARTIAL**. No coverage measurement or whole-host acceptance follows.
+
+## Q-012 guarded General and Access persistence (2026-10-03)
+
+The `publisher-general-ansiguard` and `access-general-ansiguard` plans bind
+source `d24960ee61025465e698c2256ebb79ffa74668f9` plus their frozen pending
+manifests on `codex/q012-office-20261002`. Product MVID is
+`46f52ddc-3dac-46d5-88f1-ba853e163644`. Each plan records exact product,
+test and helper binary hashes; later fixture changes do not inherit these gates.
+
+| Gate | Result | Scope |
+| --- | --- | --- |
+| Publisher focused managed gate | 656 passed, 0 failed, 0 skipped | Includes strict text representation and checked desktop-close regressions. |
+| Access focused managed gate | 656 passed, 0 failed, 0 skipped | Same frozen source and binary candidate. |
+| Access native General HelpFile, row 20 | PASS | Exact accented path, single adapter Save, independent fresh-process General/source/reference readback, normal original/fresh exits. |
+| Access native General HelpContextID, row 21 | PASS | Exact value 321, single adapter Save, independent fresh-process General/source/reference readback, normal original/fresh exits. |
+| Publisher native General HelpContextID, row 17 | FAIL | Original native write and adapter Save verified; original exits normally. Fresh add-in bridge connection unavailable before request emission. |
+| Publisher compatible HelpFile and Unicode refusal, rows 18/19 | BLOCKED, zero invocations | Stop after row 17. |
+| Complete managed suite for this candidate | 4,353 passed, 0 failed, 211 not executed; 4,564 total | Native opt-ins disabled; frozen compiled source and binaries unchanged. Not-executed count comes from individual TRX results. |
+
+The complete gate is `general-full-managed-fixed`. Product SHA-256 is
+`61A747E1DE546FDDC2819B426099DA2DDB77306E588868DA6D238CDA2B1B1994`,
+test assembly SHA-256 is
+`5E2F6CF1419CDE52B841E44EF07B2F051942D001252CBE3958768FB10A652062`,
+and helper SHA-256 is
+`96E990FCE811B9F59966B93FF2EE78F91BB55A7368D72D4309A283A21CC3ECE7`.
+Its terminal receipt verifies unchanged compiled source and binaries, normal
+worker exit and successful checked creator-desktop close. The earlier
+`general-full-managed` attempt refused source drift before any test command;
+it is not an executed failing test suite. The exact source formatting was
+restored before the accepted run. No native acceptance follows from this gate.
+
+Access's terminal gate is `DIAGNOSTIC_PASS`, with `FullMatrixQualified=false`.
+Both cases compare all General fields and synthetic module/class hashes and
+references. They do not invoke the legacy COM metadata setters, normalize the
+malformed COM HelpFile getter, enable macro content, change trust policy or
+qualify compiled CHM help content. Earlier failed scalar metadata paths remain
+failed; the explicit native General path has separate acceptance.
+
+The Access helper observes original worker exit code 0, sentinel thread exit
+and absence of remaining host windows, followed by one successful creator
+`CloseDesktop` with error 0. The input desktop remains Default with no switches
+or owned foreground observations. Registration restoration is verified; exact
+task removal uses no forced host/helper termination. No Access remains.
+
+Publisher's original PID `183824` verifies native HelpContextID 321 after one
+field write and one OK. Its sole adapter Save reports verified, certain and
+code-preserved. The original process exits normally with code 0. Fresh PID
+`182060` opens the disposable publication, but all pipe connection attempts
+fail before any `status` request is emitted. The add-in load log contains no
+construction/connection/bridge entry for that fresh PID. Its AddIn.Connect and
+LoadBehavior are not observed in this campaign, so their values are unknown.
+Independent Astra high review identifies this as a fresh activation gap, not
+a native General timeout or a reason to repeat the metadata write.
+
+The Publisher helper correctly retains ownership while that fresh host still
+has windows; creator-desktop close is not attempted. Guarded cleanup terminates
+the exact fresh host and helper once each, without Save or Quit, after verified
+registration restoration. Their task is removed and no Publisher remains.
+This forced fresh exit does not qualify shutdown or disk readback.
+
+Two subsequent read-only API diagnostics use the same compiled candidate.
+`publisher-general-nativeom-dispatch` queries each of the three exact owned
+VBE command bars once through `OBJID_NATIVEOM` and standard `IID_IDispatch`.
+Every successful return identifies `IAccessible`, not a CommandBar object;
+no Application getter or AddIn.Connect setter is invoked. This proves no
+supported route through those observed objects, not universal API absence.
+
+`publisher-general-manager-readonly` opens a verified copy of the publication
+saved by the normally exited original process. Its fixed 45-second budget
+expires during MSAA exploration after expansion of the Add-Ins popup, before
+the manager or any bridge request. The observed popup is not unavailable;
+the manager command's post-expansion enabled state remains unobserved. There
+are no Load writes, metadata writes or saves. Both diagnostics dispose their
+fixtures normally, verify registration restoration and checked desktop close,
+and remove their exact tasks without forced host/helper termination.
+
+The subsequent `publisher-general-manager-menuroles` diagnostic preserves
+complete child-role discovery and reads names only for actual menu items. It
+reaches the exact manager before its fixed deadline. Its historical load gate
+then refuses the read-only scenario because load authorization is deliberately
+false. MSAA selection and the checked Load control are observed, but the new
+native selection getters, Cancel and bridge readback are not reached. There
+are no Load, Connect, metadata or Save writes. The unsettled manager retains
+the original host for separately guarded cleanup; this harness refusal does
+not establish a product activation or selection defect.
+Cleanup verifies registration restoration and the exact original launch,
+birth, image and private-desktop ownership before terminating that host and
+retained helper once each. The exact task is removed, no Publisher remains,
+and no Save or Quit is replayed. These forced exits are not normal shutdown
+or fresh-disk acceptance.
+
+Evidence is under `C:\Users\init-\Documents\Codex\q012-20261003-next`:
+`publisher-general-ansiguard`, `access-general-ansiguard` and their corresponding
+`desktop-*` lifecycle/cleanup receipts, `general-full-managed-fixed`,
+`publisher-general-nativeom-dispatch` and `publisher-general-manager-readonly`.
+Q-012 remains **PARTIAL**; no code
+coverage measurement is taken.
+
+## Q-012 native General candidate and desktop API investigation (2026-10-03)
+
+The `publisher-general-approvalfix` campaign is bound to source
+`d24960ee61025465e698c2256ebb79ffa74668f9` plus its frozen pending-source
+manifest on `codex/q012-office-20261002`. Product MVID is
+`6f0ca8b6-a167-4237-b939-3a72435b1bef`, SHA-256
+`D84D6BECE1AB0B80133A187B99137D21C1B906F806BC120A9297E77AFA7DA3EA`.
+
+| Gate | Result | Scope |
+| --- | --- | --- |
+| Focused managed gate | 637 passed, 0 failed, 0 skipped | General operation, native controls, project guards, debugger command, assistant approvals, bridge/session boundaries and previous focused cases. |
+| Native General HelpFile, row 16 | Failed | One field write; exact readback mismatch; no OK, adapter Save or fresh reopen. |
+| Native General HelpContextID, row 17 | BLOCKED, zero invocations | Stopped after the HelpFile failure. |
+| Complete managed suite for this candidate | NOT_RUN | Earlier complete-suite acceptance belongs to a different candidate. |
+
+The original Publisher process is `159512`, started
+`2026-10-03T19:19:40.2424286Z`. A bounded read-only Win32 snapshot confirms
+that the five General edit controls are ANSI. The HelpFile value contains
+`Owned help été_??_ß.chm` instead of the requested Japanese characters; the
+other four values match their baseline. This is actual native character loss,
+not successful Unicode persistence. The write receipt reports one field
+attempt, retained-modal uncertainty, no retry and no persistence proof.
+
+Temporary registration restoration is verified. Guarded cleanup observes the
+original Publisher and helper exits after one forced termination each, removes
+their exact limited task, and confirms no Publisher remains. It sends no Save
+or Quit and never inspects or launches Access. Forced termination is not normal
+shutdown acceptance.
+
+Earlier General managed attempts remain aborted evidence: the original
+contract/preparation failure and the later approval-dialog synchronization
+context hang do not qualify the suite. The corrected focused gate pumps an
+explicit bounded test context on its owning thread; production STA dispatch
+is unchanged by that test correction.
+
+A separate real Win32 probe, without Office, observes successful single
+`CloseDesktop` calls in two MTA cases: creator close and close after creator
+exit. The parent and input desktop stay Default; borrowed handles are never
+closed. These cases do not prove the helper's STA lifecycle, global desktop
+destruction or correctness of an unchecked close. Independent Astra high
+review recommends recording close attempt/result and retaining failed ownership
+without a native close retry. Later source changes require a new candidate gate.
+
+Evidence is under `C:\Users\init-\Documents\Codex\q012-20261003-next`:
+`publisher-general-approvalfix`, `desktop-publisher-general-approvalfix`,
+`publisher-general-approvalfix/native-ui-snapshot.json` and
+`desktop-close-api-results.json`. Q-012 remains **PARTIAL**; no code coverage
+measurement is taken.
+
+## Q-012 typed VBIDE and normal Publisher candidate (2026-10-03)
+
+These results are bound to source `d24960ee61025465e698c2256ebb79ffa74668f9`
+plus each frozen pending-source manifest on `codex/q012-office-20261002`.
+The tested product MVID is `49d558b2-d62b-4a83-8db3-e327e0391dcd`, SHA-256
+`0EB259BC6B36A3ED83101886EA44AF69720D4E781C3289C26D6321C9AF529055`.
+Later native General work is a different candidate and does not inherit this acceptance.
+
+| Gate | Result | Candidate-specific limit |
+| --- | --- | --- |
+| Original complete managed run | 4,201 passed, 1 failed, 205 skipped | Session deletion test preparation race; original failure retained. |
+| Corrected complete managed run | 4,202 passed, 0 failed, 205 skipped | Test SHA-256 `86FFB9049C3320F4CBF4253A05AAB46C9D26AE0DAA4DDA120AFFEF2BC2793EDB`; native opt-ins disabled. |
+| Publisher security focused gate | 532 passed, 0 failed | Test SHA-256 `C26E11385BF8E7FEFD1F0C243614118B31CCAB04CBC23C7EB794B084A43B4CAB`. |
+| Publisher connected native bank | 5 passed, 1 failed, 1 blocked | Selected rows 7–11 and 13 passed/failed respectively; row 15 stopped before invocation. |
+| Separate Publisher HelpContextID | 1 failed | Only previously unexecuted row 15; no repetition of accepted native rows. |
+
+The accepted Publisher operations are adapter-only Save with fresh module,
+class and UserForm-state readback, reference addition by GUID/file, reference
+removal and Description. They prove the connected candidate, one final adapter
+Save, independent fresh-process disk readback and normal original/fresh exits.
+The security-bank plan SHA-256 is
+`8805B09D9DB9378E429B5EB784D4A6C6022EC551D41C73E52F3FFF997132F5E6`.
+It uses a private Windows desktop, process-local ForceDisable before synthetic
+Open, stop after the first native failure and a native hang deadline without dumps.
+
+Publisher HelpFile fresh metadata readback expects `C` but receives `U+3A43`.
+The failure is preserved without heuristic Unicode decoding. Its processes exit
+normally. The separate HelpContextID setter fails with HRESULT `0xA04FF470`;
+final Save and fresh reopen are not executed. Its retained original process and
+helper require guarded forced cleanup. Forced cleanup is not normal-exit proof.
+Both campaigns verify temporary registration restoration. Their limited tasks
+are removed and no owned Access or Publisher remains after cleanup.
+
+A real, read-only PrintWindow capture proves the retained Publisher VBE,
+code pane and docked assistant are visible on the private desktop. White WPF
+regions may reflect capture/compositor limitations; this is not complete UI or
+UserForm Designer acceptance. The capture invokes no COM, keyboard action or
+desktop switch. Q-012 remains **PARTIAL**; no coverage measurement is taken.
+
+Evidence is under `C:\Users\init-\Documents\Codex\q012-20261003-next`:
+`publisher-disabled-bank`, `publisher-helpcontext-single`, their desktop/cleanup
+receipts, `publisher-disabled-ui-capture/result`, and the complete managed-run
+receipts. The later journal regression build succeeds, but has a different
+test assembly and is not covered by the earlier full managed result.
+
 ## Q-012 current Access metadata candidate (2026-10-03)
 
 D6 is bound to source `188d50c32835a3efe5f06caa475a5df1f8c4adb6` plus its

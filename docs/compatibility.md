@@ -27,62 +27,67 @@ operation, language feature or UI surface.
 
 ### Current operation-specific refresh
 
-The frozen Q-012 D3 candidate refreshes Access module/class adapter Save with
-the final pre-confirmation deadline guard included. The normal approved French
-confirmation is queued once; its modal disappears, saved state is verified,
-and an independent fresh process reads exact source from disk. Original and
-fresh processes exit normally. The native case exercises normal completion;
-deadline refusal branches have focused managed evidence.
+The earlier Q-012 typed-VBIDE candidate refreshes Access active-module,
+module/class, reference addition by GUID/file, reference removal and Description
+adapter Save. Accepted operations prove the exact connected PID/loaded candidate,
+final adapter-only Save, independent fresh-process disk readback and normal exits.
+The French multi-object confirmation keeps its project/source/selection,
+authorization and deadline guards; unknown prompts/locales remain refused.
 
-The production guard requires the exact native VBE process/UI thread, qualified
-French controls, approved Type1/Type2 module/class objects, complete selection
-and unchanged approved context/runtime authorization. Unknown, preexisting,
-changed or ambiguous prompts remain refused. Queuing is separate from saved
-state and fresh-process persistence acceptance.
+Access HelpContextID uses the official embedded PIA declaration with canonical
+project identity, UI STA, revision and final cached selection/permission checks.
+Its one native setter still fails after a live 0-to-321 partial mutation; final
+Save/fresh reopen are NOT_RUN. Matching registered type-library/PIA declarations
+do not establish a repair. Access HelpFile's malformed reopened value also
+appears through the official typed getter. Read-only probes observe different
+document trust states without establishing causality or changing trust policy.
+Exact HelpFile fresh readback and HelpContextID persistence through these COM
+metadata paths remain open; the explicit native General path is qualified below.
 
-Publisher D3 bootstrap observes a complete owned command-bar inventory, but its
-first exact CommandBar NativeOM interface query returns E_NOINTERFACE.
-It stops before a typed cast, NativeOM Application getter/identity comparison,
-publication creation or Save, without fallback or retry. This does not prove
-the interface is absent on every bar/version or explain the broader startup
-cause. Remaining Publisher scenarios are blocked. Earlier Publisher/VBE
-acceptance retains its recorded candidate and operation limits.
+Publisher's private bootstrap uses an explicit normal GUI launch. Its observed
+registered server arguments are diagnostic only. Empty/sole process inventories,
+the retained native process and application canonical identity permit one
+provisional disposable NewDocument/Open; exact retained/active/sole document
+and native window identities then establish final ownership. Native creation,
+baseline SaveAs and VBE display succeed. The subsequent connected campaign
+proves adapter-only Save and independent fresh-process readback for source,
+class and UserForm state, reference addition by GUID/file, reference removal
+and Description. Original and fresh processes exit normally. Before opening
+an owned disposable publication, the fixture verifies process-local
+AutomationSecurity=ForceDisable; it changes no global trust policy and enables
+no macro content. Publisher HelpFile fresh COM readback is malformed and the
+HelpContextID COM setter fails with an uncertain result. Those metadata
+operations remain failed; they are not normalized into successful mutations.
+Stored UserForm structure is not proof of Designer rendering or runtime behavior.
 
-The scalar COM setter now explicitly requests value PROPERTYPUT. The later
-narrow Access HelpContextID native-dispatch candidate proves the connected
-PID/MVID, then returns DISP_E_EXCEPTION despite changing the live value to 321.
-Descriptor, CLR and raw getters agree; this partial mutation remains failed,
-with final adapter Save/fresh persistence not tested and normal original exit
-observed. Its final guards validate identity/revision, actual chat UI selection
-and permissions without a late host scope read. The candidate is not a setter
-repair or release acceptance. Earlier CLR/startup refusals remain separate. Separate
-Publisher diagnostics identify IAccessible metadata on both inspected NativeOM
-dispatches, then fail the original application's reverse CommandBars getter.
-Installed Publisher metadata also rejects Application.VBE as an absent contract.
-These diagnostics do not qualify publication creation, adapter Save or normal exit.
-Owned hosts are closed at each campaign terminal. HelpFile's offline ANSI byte
-matches do not establish its active ACE VBA record. These latest limits are in
-[recorded validation](test-coverage.md); Q-012 remains PARTIAL.
+The separate native General HelpFile trial observes ANSI character replacement
+before OK or Save. Its exact-readback guard retains the failed original modal;
+it proves neither Unicode support nor persistence. The new owning-control
+representability preflight refuses values the host code page cannot preserve.
+The explicit native General path subsequently qualifies Access HelpFile with
+compatible accents and HelpContextID, including single adapter Save and
+independent fresh-process readback. It does not qualify the legacy COM setters
+or unsupported Unicode paths. Publisher's earlier native HelpContextID write
+and adapter Save verify, while that campaign's fresh bridge connection fails.
+The bridge-admission candidate subsequently reads the saved publication in a
+fresh process and verifies General, source and references without changing it.
+That existing-file diagnostic does not establish a new adapter Save acceptance.
+Its standard NewDocument fixture still fails before bridge request emission;
+compatible HelpFile and Unicode-refusal cases remain blocked. See the
+[bridge admission evidence](test-coverage.md#q-012-bridge-admission-candidate-2026-10-03).
 
-D3 does not rerun the other Access scenarios. D2 acceptance for active-module
-source, reference additions by GUID/file, reference removal and Description
-retains its exact candidate scope and normal fresh-process lifecycle evidence.
-D2 HelpFile exact fresh readback and HelpContextID setter failures remain open;
-neither is repaired or reclassified by D3.
-
-Private/input desktop inventories and temporary registration restoration are
-verified. All owned Office processes and the helper are subsequently closed.
-Publisher's forced cleanup has subsequent absence evidence but no persisted
-exit-code receipt; it does not qualify normal exit or persistence. Q-012 remains
-PARTIAL. Separate post-D3 script-only checks verify the runner's final verdict
-requires overall PASS and verified registration restoration; they add no native
-acceptance and do not change assembly source. Later source edits require separate
-validation. Exact counters,
-binary identity, failure boundaries and cleanup receipts are in
-[recorded validation](test-coverage.md#q-012-final-boundary-and-typed-publisher-refresh-2026-10-03).
-The [D2 matrix](test-coverage.md#q-012-access-confirmation-and-native-matrix-2026-10-03)
+Owned Office processes are closed after every terminal campaign. Normal and
+forced lifecycle outcomes remain separate, and temporary registration
+restoration is verified. The original full managed session-deletion failure is
+preserved; its test-preparation correction passes a separately recorded full
+managed run. The current guarded General candidate also passes its own complete
+managed gate. Its helper lifecycle remains unqualified after an interruption
+without a close receipt. These managed results do not qualify native metadata paths. Q-012 stays
+PARTIAL. Candidate identities, counters and lifecycle evidence are centralized in
+[recorded validation](test-coverage.md#q-012-typed-vbide-and-normal-publisher-candidate-2026-10-03).
+The earlier [D2 matrix](test-coverage.md#q-012-access-confirmation-and-native-matrix-2026-10-03)
 and [D1 diagnosis](test-coverage.md#q-012-access-save-confirmation-and-publisher-ownership-diagnostic-2026-10-03)
-retain their original outcomes.
+retain their candidate-specific outcomes.
 
 The earlier Q-012 inactive-desktop campaign bound to source `a9e7609` and the pending
 test-infrastructure manifest refreshes Access active-module-only adapter Save:

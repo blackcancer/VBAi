@@ -236,7 +236,7 @@ namespace VBAi.Tests.Integration
                 throw new InvalidOperationException("Test execution requires its exact inactive desktop; there is no input-desktop fallback.");
         }
 
-        internal static IDisposable Create(string name)
+        internal static DesktopLease Create(string name)
         {
             RequireName(name);
             if (!string.Equals(ObjectName(GetProcessWindowStation()), "WinSta0", StringComparison.OrdinalIgnoreCase))
@@ -290,11 +290,89 @@ namespace VBAi.Tests.Integration
             return new NativeChild(child.Process, child.Thread, (int)child.ProcessId, child.ThreadId);
         }
 
-        private sealed class DesktopLease : IDisposable
+        internal struct DesktopCloseResult
         {
+            internal readonly bool Succeeded;
+            internal readonly int Error;
+            internal DesktopCloseResult(bool succeeded, int error) { Succeeded = succeeded; Error = error; }
+        }
+
+        /// <summary>Owns only a Create/OpenDesktop handle; a failed native close is recorded and never replayed.</summary>
+        internal sealed class DesktopLease : IDisposable
+        {
+            private readonly object gate = new object();
+            private readonly Func<IntPtr, DesktopCloseResult> close;
             private IntPtr handle;
-            internal DesktopLease(IntPtr handle) { this.handle = handle; }
-            public void Dispose() { if (handle != IntPtr.Zero) { CloseDesktop(handle); handle = IntPtr.Zero; } }
+            internal IntPtr Handle { get { lock (gate) return handle; } }
+            internal bool CloseAttempted { get; private set; }
+            internal bool CloseSucceeded { get; private set; }
+            internal int CloseError { get; private set; }
+            internal Exception CloseFailure { get; private set; }
+            internal DesktopLease(IntPtr handle) : this(handle, CloseNative) { }
+            internal DesktopLease(IntPtr handle, Func<IntPtr, DesktopCloseResult> close)
+            {
+                if (handle == IntPtr.Zero) throw new ArgumentException("An owned desktop handle is required.", nameof(handle));
+                this.handle = handle;
+                this.close = close ?? throw new ArgumentNullException(nameof(close));
+            }
+            private static DesktopCloseResult CloseNative(IntPtr handle)
+            {
+                bool succeeded = CloseDesktop(handle);
+                int error = succeeded ? 0 : Marshal.GetLastWin32Error();
+                return new DesktopCloseResult(succeeded, error);
+            }
+            public void Dispose()
+            {
+                lock (gate)
+                {
+                    if (CloseAttempted)
+                    {
+                        if (!CloseSucceeded) throw CloseFailure;
+                        return;
+                    }
+                    CloseAttempted = true; // Claim before the single native call, including exceptional delivery.
+                    try
+                    {
+                        DesktopCloseResult result = close(handle);
+                        CloseError = result.Error;
+                        if (!result.Succeeded) throw new Win32Exception(result.Error, "The single CloseDesktop attempt failed; its owned handle is retained without retry.");
+                        CloseSucceeded = true;
+                        handle = IntPtr.Zero;
+                    }
+                    catch (Exception error)
+                    {
+                        CloseFailure = error;
+                        var nativeError = error as Win32Exception;
+                        if (nativeError != null) CloseError = nativeError.NativeErrorCode;
+                        throw;
+                    }
+                }
+            }
+        }
+
+        /// <summary>Terminal publication follows verified closes; the original child handle stays held until then.</summary>
+        internal static void CompleteOwnedShutdown(Action closeSentinel, DesktopLease desktop, Action releaseChild, Action publishTerminal)
+        {
+            if (closeSentinel == null || desktop == null || releaseChild == null || publishTerminal == null)
+                throw new ArgumentNullException("Owned shutdown requires its complete close/release/publication contract.");
+            closeSentinel();
+            desktop.Dispose();
+            releaseChild();
+            publishTerminal();
+        }
+
+        /// <summary>An early refusal may close an unattempted lease once only after no child or sentinel remains.</summary>
+        internal static bool PrepareRefusal(DesktopLease desktop, bool retainedOwners, out Exception closeFailure)
+        {
+            closeFailure = null;
+            if (!retainedOwners && desktop != null && !desktop.CloseAttempted)
+            {
+                try { desktop.Dispose(); }
+                catch (Exception error) { closeFailure = error; }
+            }
+            if (desktop != null && !desktop.CloseSucceeded && closeFailure == null)
+                closeFailure = desktop.CloseFailure;
+            return retainedOwners || (desktop != null && !desktop.CloseSucceeded);
         }
 
         internal sealed class NativeChild : IDisposable

@@ -18,6 +18,187 @@ namespace VBAi.Tests.Unit
     public sealed partial class BridgeServerTests
     {
         [STATestMethod]
+        public void PendingGeneralBlocksBridgeNativeRoutesBeforeAnyEntry()
+        {
+            AssertGeneralBlocksBridgeNativeRoutes("generalInFlight");
+        }
+
+        [STATestMethod]
+        public void UncertainGeneralBlocksBridgeNativeRoutesBeforeAnyEntry()
+        {
+            AssertGeneralBlocksBridgeNativeRoutes("generalQuarantined");
+        }
+
+        private static void AssertGeneralBlocksBridgeNativeRoutes(string stateField)
+        {
+            using (var dispatcher = new Control())
+            {
+                var handle = dispatcher.Handle;
+                var session = new VbeSession(new FakeVbe());
+                int id = Guid.NewGuid().GetHashCode() & int.MaxValue;
+                using (var server = new BridgeServer(dispatcher, session, id))
+                {
+                    int nativeEntries = 0, asyncEntries = 0, executeEntries = 0;
+                    Func<object> entered = () => { nativeEntries++; return new { Native = true }; };
+                    server.Native.Capture = _ => entered();
+                    server.Native.ReadNavigationSurface = _ => entered();
+                    server.Native.ChangeNavigationSurface = _ => entered();
+                    server.Native.ListObjectBrowser = _ => entered();
+                    server.Native.SelectObjectBrowser = _ => entered();
+                    server.Native.ReadRuntimeForms = entered;
+                    server.Native.ReadObjectBrowser = entered;
+                    server.Native.ReadDebugDialog = entered;
+                    server.Native.ChangeDebugItem = _ => entered();
+                    server.Native.RespondDebugDialog = _ => entered();
+                    server.Native.EnsureNoCompileDialog = () => { nativeEntries++; };
+                    server.Native.SelectWatch = _ => entered();
+                    server.Native.EnsureNoDebugOptionsDialog = () => { nativeEntries++; };
+                    server.Native.EnsureNoProjectPropertiesDialog = () => { nativeEntries++; };
+                    server.Native.EnsureNoSignatureDialog = () => { nativeEntries++; };
+                    server.Native.ExecuteImmediate = (_, __) => entered();
+                    server.ReadImmediateNative = _ => { asyncEntries++; return Task.FromResult<object>(null); };
+                    server.InspectLocalScalarsNative = server.ReadImmediateNative;
+                    server.SaveHostDocumentNative = server.ReadImmediateNative;
+                    server.ProjectGeneralNative = (_, __) => { asyncEntries++; return Task.FromResult<object>(null); };
+                    server.Execute = request => { executeEntries++; return session.Execute(request); };
+                    server.Start();
+                    Assert.AreEqual(true, SendWithMessagePump(id, "{\"Command\":\"debug_windows\"}")["Ok"]);
+                    Assert.AreEqual(1, nativeEntries, "A settled session must retain the native route.");
+                    nativeEntries = 0;
+                    typeof(VbeSession).GetField(stateField, System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic).SetValue(session, true);
+                    foreach (string command in new[] {
+                        "debug_windows", "read_navigation_surface", "change_navigation_surface", "list_object_browser",
+                        "select_object_browser", "read_runtime_forms", "read_object_browser", "debug_dialog", "debug_item",
+                        "respond_debug_dialog", "immediate_execute", "compile_project", "add_watch", "edit_watch", "quick_watch",
+                        "remove_watch", "read_debug_options", "read_vbe_options", "set_vbe_option", "read_project_protection",
+                        "set_project_protection", "read_project_signature_dialog", "sign_project", "read_immediate",
+                        "inspect_local_scalars", "save_host_document", "read_project_general", "set_project_general",
+                        "list_projects", "diagnostic_path_visibility" })
+                    {
+                        var result = SendWithMessagePump(id, "{\"Command\":\"" + command + "\"}");
+                        Assert.AreEqual(false, result["Ok"], command);
+                        StringAssert.Contains((string)result["Error"], "pending or uncertain", command);
+                    }
+                    Assert.AreEqual(0, nativeEntries);
+                    Assert.AreEqual(0, asyncEntries);
+                    Assert.AreEqual(0, executeEntries, "Refusal must precede every native or session dispatch.");
+                    var status = SendWithMessagePump(id, "{\"Command\":\"status\"}");
+                    Assert.AreEqual(true, status["Ok"]);
+                    Assert.AreEqual(true, ((IDictionary<string, object>)status["Data"])["Connected"]);
+                    Assert.AreEqual(1, executeEntries, "Only managed status remains available.");
+                }
+            }
+        }
+
+        [STATestMethod]
+        public void NativeBridgeAdmissionExcludesGeneralUntilWorkerReturnsOrThrows()
+        {
+            using (var dispatcher = new Control())
+            {
+                var handle = dispatcher.Handle;
+                int owner = Thread.CurrentThread.ManagedThreadId;
+                var session = new VbeSession(new FakeVbe());
+                int id = Guid.NewGuid().GetHashCode() & int.MaxValue;
+                using (var server = new BridgeServer(dispatcher, session, id))
+                {
+                    int entries = 0;
+                    bool fail = false;
+                    server.Native.Capture = _ => {
+                        entries++;
+                        Assert.AreNotEqual(owner, Thread.CurrentThread.ManagedThreadId,
+                            "Native accessibility work must retain its existing worker thread.");
+                        dispatcher.Invoke(new Action(() => {
+                            var error = Assert.ThrowsException<InvalidOperationException>(() =>
+                                session.ProjectGeneralAsync(null, false).GetAwaiter().GetResult());
+                            StringAssert.Contains(error.Message, "bridge operation is pending");
+                        }));
+                        if (fail) throw new InvalidOperationException("native read failed after admission");
+                        return new { Native = true };
+                    };
+                    server.Start();
+                    foreach (bool throwFromNative in new[] { false, true })
+                    {
+                        fail = throwFromNative;
+                        var result = SendWithMessagePump(id, "{\"Command\":\"debug_windows\"}");
+                        Assert.AreEqual(!throwFromNative, result["Ok"]);
+                        if (throwFromNative) StringAssert.Contains((string)result["Error"], "native read failed after admission");
+                        // Admission is released on both paths: validation now reaches
+                        // the ordinary missing-request guard, without touching COM.
+                        Assert.ThrowsException<ArgumentException>(() =>
+                            session.ProjectGeneralAsync(null, false).GetAwaiter().GetResult());
+                    }
+                    Assert.AreEqual(2, entries);
+                }
+            }
+        }
+
+        [STATestMethod]
+        public void GeneralDispatchRetainsOwnerAuthorizationAcrossAwaitWithoutRetry()
+        {
+            using (var dispatcher = new Control())
+            {
+                var handle = dispatcher.Handle;
+                int owner = Thread.CurrentThread.ManagedThreadId;
+                int id = Guid.NewGuid().GetHashCode() & int.MaxValue;
+                using (var server = new BridgeServer(dispatcher, null, id))
+                {
+                    int calls = 0;
+                    Request retained = null;
+                    server.ProjectGeneralNative = async (request, write) => {
+                        retained = request;
+                        calls++;
+                        Assert.AreEqual(owner, Thread.CurrentThread.ManagedThreadId);
+                        Assert.AreEqual(write, request.Command == "set_project_general");
+                        Assert.IsNotNull(request.RevalidateProjectPropertyAuthorization);
+                        request.RevalidateProjectPropertyAuthorization(true);
+                        await Task.Yield();
+                        Assert.AreEqual(owner, Thread.CurrentThread.ManagedThreadId);
+                        request.RevalidateProjectPropertyAuthorization(false);
+                        return new { Uncertain = write, MutationInvoked = write, RetryAllowed = false };
+                    };
+                    server.Execute = _ => { Assert.Fail("General must not use synchronous dispatch."); return null; };
+                    server.Start();
+                    foreach (string command in new[] { "read_project_general", "set_project_general" })
+                    {
+                        var result = SendWithMessagePump(id, "{\"Command\":\"" + command + "\",\"Project\":\"P\",\"ExpectedMode\":2,\"ExpectedProjectVersion\":\"v\"}");
+                        Assert.AreEqual(true, result["Ok"]);
+                        Assert.AreEqual(command == "set_project_general", ((IDictionary<string, object>)result["Data"])["Uncertain"]);
+                        Assert.IsNull(retained.RevalidateProjectPropertyAuthorization);
+                    }
+                    Assert.AreEqual(2, calls);
+                }
+            }
+        }
+
+        [STATestMethod]
+        public void GeneralBridgeRefusesChangedOriginalRequestBeforeNativeMutation()
+        {
+            using (var dispatcher = new Control())
+            {
+                var handle = dispatcher.Handle;
+                int id = Guid.NewGuid().GetHashCode() & int.MaxValue;
+                using (var server = new BridgeServer(dispatcher, null, id))
+                {
+                    int calls = 0;
+                    Request retained = null;
+                    server.ProjectGeneralNative = async (request, write) => {
+                        retained = request; calls++;
+                        await Task.Yield();
+                        request.ControlCaption = "Another command";
+                        request.RevalidateProjectPropertyAuthorization(false);
+                        Assert.Fail("Changed native command caption must be refused.");
+                        return null;
+                    };
+                    server.Start();
+                    var result = SendWithMessagePump(id, "{\"Command\":\"set_project_general\",\"Project\":\"P\",\"ExpectedMode\":2,\"ControlCaption\":\"Original\"}");
+                    Assert.AreEqual(false, result["Ok"]);
+                    Assert.AreEqual(1, calls);
+                    Assert.IsNull(retained.RevalidateProjectPropertyAuthorization);
+                }
+            }
+        }
+
+        [STATestMethod]
         public void HostSaveDispatchRunsOnOwnerThreadAndReturnsUncertainResultWithoutRetry()
         {
             using (var dispatcher = new Control())

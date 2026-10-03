@@ -148,7 +148,7 @@ namespace VBAi.Tests.Integration
                 {
                     result.RecordPublisherActivationCanary();
                     if (desktop != null) result.RequireApplicationOwner();
-                    result.document = app.NewDocument();
+                    result.document = result.InvokePrivatePublisherBootstrap("NewDocument", () => (object)app.NewDocument());
                     result.RequirePublisherPublication("AfterNewDocumentBeforeBootstrapSave", false);
                     result.ShowPublisherWindow();
                 }
@@ -366,6 +366,7 @@ namespace VBAi.Tests.Integration
         internal void SaveNative()
         {
             RequireUsableOwnedHost();
+            RequirePrivatePublisherNativePublication();
             if (document != null && File.Exists(DocumentPath)) ((dynamic)document).Save();
             else if (Kind == "Word") ((dynamic)document).SaveAs2(DocumentPath, 13);
             else if (Kind == "PowerPoint") ((dynamic)document).SaveAs(DocumentPath, 25);
@@ -429,7 +430,7 @@ namespace VBAi.Tests.Integration
                 {
                     Project = null;
                     if (privateDesktop != null) RequireApplicationOwner();
-                    document = app.Open(DocumentPath, false, false);
+                    document = InvokePrivatePublisherBootstrap("Open", () => (object)app.Open(DocumentPath, false, false));
                     RequirePublisherPublication("AfterFreshDiskOpen", true);
                     ShowPublisherWindow();
                 }
@@ -640,6 +641,7 @@ namespace VBAi.Tests.Integration
         private void ShowPublisherWindow()
         {
             RequirePrivateHostDesktop(true);
+            RequirePrivatePublisherNativePublication();
             object window = null;
             try { window = ((dynamic)application).ActiveWindow; ((dynamic)window).Visible = true; }
             finally { Release(window); }
@@ -647,6 +649,7 @@ namespace VBAi.Tests.Integration
         private void ShowVbe()
         {
             RequirePrivateHostDesktop(true);
+            RequirePrivatePublisherNativePublication();
             object bars = null, editor = null, window = null;
             try
             {
@@ -701,7 +704,8 @@ namespace VBAi.Tests.Integration
         {
             if (Kind == "Publisher" && privateDesktop != null && document == null)
             {
-                RecheckPrivatePublisherOwnership();
+                if (publisherBootstrap != null) RecheckPrivatePublisherBootstrap();
+                else RecheckPrivatePublisherOwnership();
                 return;
             }
             object window = null;
@@ -819,7 +823,7 @@ namespace VBAi.Tests.Integration
                 catch (Exception error) { RetainUncertainOffice(); RecordCleanupFailure(error.Message); return; }
             try { Release(application); } catch (Exception error) { externalReferencesReleased = false; RecordCleanupFailure(error.Message); }
             application = null;
-            try { ClosePrivatePublisherOwnershipAfterQuit(externalReferencesReleased); }
+            try { ClosePrivatePublisherOwnershipAfterQuit(externalReferencesReleased); ClosePrivatePublisherBootstrapAfterQuit(externalReferencesReleased); }
             catch (Exception error) { RetainUncertainOffice(); RecordCleanupFailure(error.ToString()); return; }
             var process = ownedProcess;
             if (process != null)

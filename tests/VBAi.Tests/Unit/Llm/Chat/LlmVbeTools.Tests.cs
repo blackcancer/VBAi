@@ -932,9 +932,10 @@ namespace VBAi.Tests.Unit
             {
                 var function = Dict(Dict(Json.DeserializeObject(Json.Serialize(definition)))["function"]);
                 string name = (string)function["name"];
-                if (name == "read_immediate" || name == "inspect_local_scalars")
+                if (name == "read_immediate" || name == "inspect_local_scalars" ||
+                    name == "read_project_general" || name == "set_project_general")
                 {
-                    // Their awaited validation/dispatch matrix is in LlmVbeAsyncValidationTests.
+                    // Awaited validation/dispatch matrices cover these asynchronous commands separately.
                     string refused = tools.Invoke(name, "{}");
                     Failed(refused, name);
                     StringAssert.Contains(refused, "requires InvokeAsync");
