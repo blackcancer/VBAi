@@ -9,10 +9,14 @@ $plan=Get-Content -LiteralPath (Join-Path $EvidenceRoot 'q026-plan.json') -Raw -
 $phaseRoots=@(Get-ChildItem -LiteralPath (Join-Path $EvidenceRoot 'native/phases') -Directory)
 if($phaseRoots.Count -ne 1){throw 'Exactly one native phase directory is required.'}
 $retained=@(Get-ChildItem -LiteralPath $phaseRoots[0].FullName -Filter '*-HostRetained-*.json')
-$baselineFile=@(Get-ChildItem -LiteralPath $phaseRoots[0].FullName -Filter '*-BaselineComplete-*.json')
-if($retained.Count -ne 1 -or $baselineFile.Count -ne 1){throw 'Complete baseline and committed-entry ledger are required.'}
+if($retained.Count -ne 1){throw 'Exactly one committed-entry ledger is required.'}
 $ledger=Get-Content -LiteralPath $retained[0].FullName -Raw -Encoding UTF8 | ConvertFrom-Json
-$baseline=Get-Content -LiteralPath $baselineFile[0].FullName -Raw -Encoding UTF8 | ConvertFrom-Json
+. (Join-Path $PSScriptRoot 'Resolve-Q026RecoveryBaseline.ps1')
+$records=@(Get-ChildItem -LiteralPath $phaseRoots[0].FullName -Filter 'options-*.json' | ForEach-Object {
+    Get-Content -LiteralPath $_.FullName -Raw -Encoding UTF8 | ConvertFrom-Json
+})
+$resolvedBaseline=Resolve-Q026RecoveryBaseline -Records $records -Ledger $ledger -ProductMvid $plan.ProductMvid
+$baseline=$resolvedBaseline.Record
 $closed=Get-Content -LiteralPath $ClosureReceipt -Raw -Encoding UTF8 | ConvertFrom-Json
 $originalProcessId=$ledger.ProcessId
 $originalStartUtc=$ledger.ProcessStartUtc
@@ -58,6 +62,7 @@ function Control($state,$entry){
 }
 Save 'claim.json' @{State='EXPLICIT_RECOVERY_ONCE';ProcessId=$ledger.ProcessId;ProcessStartUtc=$ledger.ProcessStartUtc;
     ProductMvid=$plan.ProductMvid;OriginalProcessId=$originalProcessId;OriginalProcessStartUtc=$originalStartUtc;
+    BaselineKind=$resolvedBaseline.Kind;
     SeparateOwnedRecoveryHost=[bool]$RecoveryHostStartup;FailedMutationReplayed=$false;NativeQualification='FAILED';CleanupAllowed=$false}
 try {
     Guard

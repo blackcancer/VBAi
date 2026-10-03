@@ -496,6 +496,17 @@ An empty commit ledger and null failed request can be released only for the
 recorded pre-dispatch isolation stop, with its immediately preceding competitor
 observation and a fresh complete baseline comparison. No compensation is sent.
 Unknown null requests and incomplete states are refused.
+If the same isolation stop occurs after the verified nonmutating guard warmup
+but before the scenario baseline, `Resolve-Q026RecoveryBaseline.ps1` accepts
+only the complete unchanged warmup readback for that exact PID/start/MVID.
+Both warmup receipts and the immediate competitor observation are required;
+intervening native dispatch, uncertain responses or positive commits refuse
+this path. The recovery still requires a fresh full comparison after competing
+hosts have exited. Offline evidence gates can be run without Office:
+
+```powershell
+powershell.exe -NoProfile -File tools/probes/tests/Test-Q026RecoveryBaseline.ps1
+```
 
 Optional `VBAi_TEST_Q026_CLR_TRACE_PLAN` enables test-only capture of the
 historical revision guard. Prefer a separately verified plan with

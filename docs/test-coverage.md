@@ -1347,6 +1347,34 @@ the narrowly checked pre-dispatch isolation-stop path subsequently added to
 `Recover-Q026Preferences.ps1`. An exclusive interval has been requested before
 another native attempt. Q-026 remains **OPEN**.
 
+### Q-026 reserved-slot interruption before the scenario baseline (2026-10-03)
+
+Source `f9a6d9a80d82a107d12146207f9a82bbcb82de15` freezes
+`q026-historical-prefix-campaign-v6` on the same unchanged historical product.
+Its managed subset records **75 passed, 0 failed, 0 skipped**; the native
+scenario records **0 passed, 1 failed, 0 skipped**. Owned Excel PID 33088,
+start `2026-10-03T17:43:45.2020947Z`, runs on inactive desktop
+`VBAiTests_9e52898a7a24477ba494469fbcd7991d` with the exact frozen loaded MVID.
+
+The nonmutating warmup captures complete revision `544477535d391a457fc66947a3ddb3da7ffb430e6212289c6586a6fcb65f3e05`,
+verifies the expected stale refusal, dialog absence and unchanged full readback.
+The collector arms the exact guard branch. Publisher PID 40760, start
+`2026-10-03T17:45:17.9813208Z`, then appears during the explicitly reserved
+interval. The immediate pre-dispatch observation stops the scenario before its
+baseline read, with a null failed request and an empty commit ledger. No
+preference write is issued. Collector detachment is verified with exit 0; no
+natural stale-guard capture occurs. The owned host and registration are retained
+pending competing-host release and an independently verified normal shutdown.
+
+The recovery validator now narrowly supports this earlier stop using the exact
+complete verified warmup readback. The matching offline PowerShell evidence
+gates record **17 passed, 0 failed**, with no Office activation or native
+dispatch (`q026-warmup-recovery-gates.json`). They refuse foreign PID/start/MVID,
+missing or changed structures despite equal hashes, uncertain replies, known
+writes, intervening native dispatch, positive ledgers, unknown requests/errors,
+unverified closure and ambiguous receipts. The native failure stays failed;
+Q-026 remains **OPEN**.
+
 ### Q-026 offline snapshot review (2026-10-03)
 
 Branch `codex/q026-qualification` starts from `origin/main` at `4b382b9`,
