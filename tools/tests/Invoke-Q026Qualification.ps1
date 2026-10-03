@@ -78,12 +78,21 @@ do {
     Start-Sleep -Milliseconds 1000
 } while($quiet.Elapsed.TotalSeconds -lt $plan.QuietHostPeriodSeconds)
 # Read registry metadata only; refuse another candidate before any host launch.
+$record.NativeState='VERIFYING_REGISTRATION';Write-Json $ledger $record
 $registry=[Microsoft.Win32.RegistryKey]::OpenBaseKey([Microsoft.Win32.RegistryHive]::CurrentUser,[Microsoft.Win32.RegistryView]::Registry64)
 $key=$registry.OpenSubKey('Software\Classes\CLSID\{8E854243-087F-4D6C-9E0E-8622B0E50883}\InprocServer32')
 try {
     if(-not $key){throw 'The reviewed per-user x64 registration is absent.'}
     $codeBase=[string]$key.GetValue('CodeBase')
+    $record.RegisteredCodeBase=$codeBase
+    $record.ExpectedInstalledProduct=$plan.InstalledProduct
+    $record.RegistrationIdentity=[Security.Principal.WindowsIdentity]::GetCurrent().Name
+    Write-Json $ledger $record
     if(-not $codeBase -or ([Uri]$codeBase).LocalPath -ine $plan.InstalledProduct){throw 'Registered CodeBase differs from the frozen installed candidate; no host launched.'}
+} catch {
+    $record.NativeState='PRELAUNCH_REFUSED';$record.PrelaunchError=$_.ToString()
+    Write-Json $ledger $record
+    throw
 } finally {if($key){$key.Dispose()};$registry.Dispose()}
 if(@(Get-Process EXCEL,WINWORD,POWERPNT,MSACCESS,MSPUB,SLDWORKS -ErrorAction SilentlyContinue).Count){throw 'A competing host appeared after the quiet period; no launch.'}
 $env:VBAi_RUN_EXCEL_TESTS='1'

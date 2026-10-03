@@ -456,6 +456,13 @@ x64 add-in CodeBase and matching version entry, with an explicit fresh backup.
 It refuses loaded VBE hosts or an unexpected assembly/original CodeBase. Restore
 the original registration after all test-owned hosts have exited normally; the
 script refuses to overwrite a registration changed by another task.
+Apply and restore registration in the same user/token context as the limited
+private-desktop worker. An elevated shell's successful readback does not prove
+the worker sees that CodeBase. The campaign records the worker's actual value
+and refuses a mismatch before launching Excel. Reserve the entire activation,
+native execution and restoration interval: an empty host inventory alone is
+insufficient if another qualification is about to launch. The isolated worker
+also records script exceptions in `worker-error.json` without replaying cleanup.
 
 For a retained Q-026 host, `tools/probes/Observe-Q026Host.ps1` defaults to an
 independent PID/start/desktop window inventory, without bridge calls or input.

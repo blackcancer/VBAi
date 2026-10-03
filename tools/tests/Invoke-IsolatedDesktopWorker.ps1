@@ -22,5 +22,12 @@ $input=$desktopType.GetMethod('InputDesktopName',$flags).Invoke($null,@())
 @{ExpectedDesktop=$ExpectedDesktop;ActualDesktop=$actual;InputDesktop=$input;WorkerPid=$PID;ThreadId=$thread;DesktopSwitches=0;Utc=[DateTime]::UtcNow.ToString('o')} |
     ConvertTo-Json | Set-Content -LiteralPath $ProofPath -Encoding UTF8
 $env:VBAi_TEST_DESKTOP_NAME=$ExpectedDesktop
-& $ScriptPath
-exit $LASTEXITCODE
+try {
+    & $ScriptPath
+    exit $LASTEXITCODE
+} catch {
+    @{State='SCRIPT_FAILED';Error=$_.ToString();Position=$_.InvocationInfo.PositionMessage;
+        ScriptStackTrace=$_.ScriptStackTrace;Utc=[DateTime]::UtcNow.ToString('o')} |
+        ConvertTo-Json | Set-Content -LiteralPath (Join-Path ([IO.Path]::GetDirectoryName($ProofPath)) 'worker-error.json') -Encoding UTF8
+    exit 1
+}

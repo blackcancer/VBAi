@@ -1041,6 +1041,26 @@ These are local control/managed tests, not acceptance of the repaired Excel path
 The new checkbox-only Excel method must pass on a fresh owned host before a
 complete Format qualification is attempted. Q-026 remains **OPEN** here.
 
+### Q-026 corrected-candidate prelaunch guards (2026-10-03)
+
+Source `5ab57ea84beebd47934ba5fc2da8e639bc2d050a` prepared a margin-only
+diagnostic with candidate MVID `24d4809c-d427-4412-b746-793d59fc056a`, SHA-256
+`37D06CC3D25CC455A3AE6F128756921003577188E1B740882CF17A25DCD6AC48`.
+The separate `q026-margin-native/managed/managed.trx` and
+`q026-margin-native-v2/managed/managed.trx` each record **81 passed, 0 failed,
+0 skipped** for their focused managed gate. Both workers then exited with code
+1 before any native launch. The diagnostic worker receipt in the second run
+identifies a registered-CodeBase mismatch; no Excel or preference write occurred.
+An independent limited-worker observation saw the original product path,
+although the development shell read the candidate path. This is a registration
+context observation, not a proven explanation of historical Options revision drift.
+
+The development-context registration was restored from its exact backup.
+A subsequent limited-context activation refused before mutation because another
+campaign had just opened Word PID `42988`. Its ownership remains with that
+campaign; Q-026 neither closes it nor overwrites its registration. The repaired
+Excel path remains **NOT_RUN** pending an exclusive native-test interval.
+
 ### Q-026 offline snapshot review (2026-10-03)
 
 Branch `codex/q026-qualification` starts from `origin/main` at `4b382b9`,
