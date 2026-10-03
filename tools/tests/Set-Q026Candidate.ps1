@@ -23,7 +23,8 @@ try {
         $dll=Join-Path $CandidateDirectory 'VBAi.dll'
         if(-not [IO.Path]::IsPathRooted($CandidateDirectory) -or -not (Test-Path -LiteralPath $dll) -or -not [IO.Path]::IsPathRooted($ExpectedCurrentProduct)){throw 'Reviewed absolute candidate and original product paths required.'}
         $assembly=[Reflection.Assembly]::ReflectionOnlyLoadFrom($dll);$version=$assembly.GetName().Version.ToString()
-        $applied=([Uri][IO.Path]::GetFullPath($dll)).AbsoluteUri
+        # Match the repository's managed-COM installer representation, including Unicode paths.
+        $applied='file:///'+([IO.Path]::GetFullPath($dll)).Replace([char]92,[char]47)
         $entries=@()
         foreach($path in @($server,($server+'\'+$version))){
             $key=$registry.OpenSubKey($path)

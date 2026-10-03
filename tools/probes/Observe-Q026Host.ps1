@@ -1,7 +1,7 @@
 #requires -Version 5.1
 param([Parameter(Mandatory=$true)][string]$EvidenceRoot,
     [Parameter(Mandatory=$true)][string]$OutputPath,
-    [string]$CancelObservationPath)
+    [string]$CancelObservationPath,[switch]$ReadDialogText)
 $ErrorActionPreference='Stop'
 if (-not [IO.Path]::IsPathRooted($OutputPath) -or (Test-Path -LiteralPath $OutputPath)) { throw 'A fresh absolute receipt is required.' }
 $hostRoot=@(Get-ChildItem -LiteralPath (Join-Path $EvidenceRoot 'native/hosts') -Directory)
@@ -23,6 +23,8 @@ public static class Q026HostObservation {
  [DllImport("user32.dll")] static extern bool CloseDesktop(IntPtr d);
  delegate bool Visitor(IntPtr h,IntPtr p);
  [DllImport("user32.dll",SetLastError=true)] static extern bool EnumWindows(Visitor v,IntPtr p);
+ [DllImport("user32.dll",SetLastError=true)] static extern bool EnumChildWindows(IntPtr h,Visitor v,IntPtr p);
+ [DllImport("user32.dll",CharSet=CharSet.Unicode,SetLastError=true)] static extern IntPtr SendMessageTimeoutW(IntPtr h,uint m,UIntPtr w,StringBuilder l,uint f,uint t,out UIntPtr r);
  [DllImport("user32.dll")] static extern uint GetWindowThreadProcessId(IntPtr h,out uint p);
  [DllImport("user32.dll",CharSet=CharSet.Unicode)] static extern int GetClassNameW(IntPtr h,StringBuilder s,int c);
  [DllImport("user32.dll",CharSet=CharSet.Unicode)] static extern int GetWindowTextW(IntPtr h,StringBuilder s,int c);
@@ -58,6 +60,7 @@ public static class Q026HostObservation {
    if(!thread.Join(10000)) throw new InvalidOperationException("Cancellation observation exceeded deadline; retain without replay.");
    if(error!=null)throw error;
  }
+ public static bool IncludeDialogText;
  public static object[] Read(string desktop,int pid,string start) {
    using(var process=Process.GetProcessById(pid)) {
      if(process.ProcessName!="EXCEL" || process.StartTime.ToUniversalTime()!=DateTime.Parse(start).ToUniversalTime()) throw new InvalidOperationException("Owned PID/start mismatch.");
@@ -75,7 +78,24 @@ public static class Q026HostObservation {
          var cls=new StringBuilder(256); var title=new StringBuilder(4096);
          if(GetClassNameW(h,cls,cls.Capacity)==0) throw new InvalidOperationException("Owned class unreadable.");
          GetWindowTextW(h,title,title.Capacity);
-         rows.Add(new {Handle=h.ToInt64(),ProcessId=owner,Class=cls.ToString(),Title=title.ToString(),Visible=IsWindowVisible(h)}); return true;
+         var children=new List<object>(); Exception childError=null;
+         if(IncludeDialogText && cls.ToString()=="#32770") {
+           EnumChildWindows(h,(child,unused)=> {
+             try {
+               if(children.Count>=32) throw new InvalidOperationException("Dialog control inventory exceeds the bound.");
+               uint childOwner;GetWindowThreadProcessId(child,out childOwner);
+               if(childOwner!=pid) throw new InvalidOperationException("Dialog child ownership changed.");
+               var childClass=new StringBuilder(256);GetClassNameW(child,childClass,childClass.Capacity);
+               var text=new StringBuilder(4096);UIntPtr result;
+               if(SendMessageTimeoutW(child,0x000D,new UIntPtr(4096),text,3,100,out result)==IntPtr.Zero)
+                 throw new InvalidOperationException("Dialog text read did not complete; no input sent.");
+               if(result.ToUInt64()>=4095) throw new InvalidOperationException("Dialog text exceeds the bound.");
+               children.Add(new {Handle=child.ToInt64(),Class=childClass.ToString(),Text=text.ToString()});return true;
+             } catch(Exception failure) {childError=failure;return false;}
+           },IntPtr.Zero);
+           if(childError!=null) throw childError;
+         }
+         rows.Add(new {Handle=h.ToInt64(),ProcessId=owner,Class=cls.ToString(),Title=title.ToString(),Visible=IsWindowVisible(h),Children=children.ToArray()}); return true;
        },IntPtr.Zero);
        if(!ok) throw new Win32Exception(Marshal.GetLastWin32Error());
      } catch(Exception e) {error=e;} finally {if(reader!=IntPtr.Zero)DestroyWindow(reader);if(d!=IntPtr.Zero)CloseDesktop(d);}
@@ -115,6 +135,7 @@ if($CancelObservationPath){
     }
     if(-not $closed){throw 'Captured cancellation closure not observed; retain without replay.'}
 }
+[Q026HostObservation]::IncludeDialogText=[bool]$ReadDialogText
 $windows=@([Q026HostObservation]::Read($desktop,$startup.ProcessId,$startup.HostStartedUtc))
 @{ObservedUtc=[DateTime]::UtcNow.ToString('o');ProcessId=$startup.ProcessId;ProcessStartUtc=$startup.HostStartedUtc;
     Desktop=$desktop;Windows=$windows;OptionsDialogAbsent=(@($windows | Where-Object {$_.Class -eq '#32770'}).Count -eq 0);

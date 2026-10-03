@@ -1061,6 +1061,34 @@ campaign had just opened Word PID `42988`. Its ownership remains with that
 campaign; Q-026 neither closes it nor overwrites its registration. The repaired
 Excel path remains **NOT_RUN** pending an exclusive native-test interval.
 
+### Q-026 candidate loading diagnostic (2026-10-03)
+
+The subsequent `q026-margin-native-v3` campaign at source `639b488` used the
+same corrected candidate identified above. Its managed gate recorded **81 passed,
+0 failed, 0 skipped**. The native TRX recorded **0 passed, 1 failed, 0 skipped**:
+owned Excel PID `26764`, start `2026-10-03T08:16:27.2217572Z`, remained in add-in
+loading before any preference dispatch. An independently read VBA dialog said
+the add-in could not load and offered its removal. Explicit recovery answered
+No once, preserving registration; bootstrap then failed terminally because the
+bridge was unavailable. No Format scenario is qualified by that run.
+
+The independent class-activation diagnostic returned HRESULT `0x80070002` and
+loaded no VBAi assembly with the helper's percent-encoded CodeBase. The helper
+now matches `Install-VBAi.ps1` and the other repository registration tools by
+preserving the unescaped Unicode `file:///` path. After guarded restoration and
+reapplication, `q026-class-activation-v2.json` recorded successful activation of
+the exact candidate MVID and path; its private worker exited normally. This
+diagnoses the qualification helper's loading error, not historical revision drift.
+
+`q026-margin-native-v3/bootstrap-shutdown.json` records normal recovery exit 0,
+one returned seed Close and one returned Quit, without termination. This
+bootstrap-only recovery required terminal worker/boot failure, no preference
+receipts, dialog absence, the exact saved seed and its unchanged SHA-256. An
+earlier exclusive file-hash read refused before Close; the shared read then
+verified the same seed hash. The fresh recovery handle does not qualify the
+original failed campaign's shutdown lifecycle. All Excel processes were absent
+after recovery. The next native diagnostic remains separately **NOT_RUN** here.
+
 ### Q-026 offline snapshot review (2026-10-03)
 
 Branch `codex/q026-qualification` starts from `origin/main` at `4b382b9`,

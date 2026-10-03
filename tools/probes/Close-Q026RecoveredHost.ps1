@@ -1,16 +1,41 @@
 #requires -Version 5.1
 param([Parameter(Mandatory=$true)][string]$EvidenceRoot,
-    [Parameter(Mandatory=$true)][string]$RecoveryRoot,
-    [Parameter(Mandatory=$true)][string]$OutputPath)
+    [string]$RecoveryRoot,
+    [Parameter(Mandatory=$true)][string]$OutputPath,[string]$BootstrapClosureObservation)
 $ErrorActionPreference='Stop'
 if(-not [IO.Path]::IsPathRooted($OutputPath) -or (Test-Path -LiteralPath $OutputPath) -or (Test-Path -LiteralPath ($OutputPath+'.progress.json'))){throw 'Fresh one-shot shutdown output required.'}
-$recovered=Get-Content -LiteralPath (Join-Path $RecoveryRoot 'terminal.json') -Raw -Encoding UTF8 | ConvertFrom-Json
-if($recovered.State -ne 'PREFERENCES_RECOVERED' -or $recovered.Qualified -ne $false -or $recovered.HostShutdownInvoked){throw 'Settled complete recovery required; this does not qualify the failed native test.'}
 $root=@(Get-ChildItem -LiteralPath (Join-Path $EvidenceRoot 'native/hosts') -Directory)
 if($root.Count -ne 1){throw 'One owned host required.'}
 $startup=Get-Content -LiteralPath (Join-Path $root[0].FullName 'startup.json') -Raw -Encoding UTF8 | ConvertFrom-Json
 $desktop=(Get-Content -LiteralPath (Join-Path $EvidenceRoot 'isolation/desktop/desktop-plan.json') -Raw -Encoding UTF8 | ConvertFrom-Json).Desktop
-if($recovered.ProcessId -ne $startup.ProcessId -or $recovered.ProcessStartUtc -ne $startup.HostStartedUtc -or -not $startup.Owned){throw 'Recovered launch identity mismatch.'}
+if(-not $startup.Owned){throw 'Owned launch required.'}
+if($BootstrapClosureObservation){
+    if($RecoveryRoot){throw 'Bootstrap-only closure cannot stand in for preference recovery.'}
+    $boot=Get-Content -LiteralPath (Join-Path $root[0].FullName 'owned-bootstrap.json') -Raw -Encoding UTF8 | ConvertFrom-Json
+    $campaign=Get-Content -LiteralPath (Join-Path $EvidenceRoot 'campaign.json') -Raw -Encoding UTF8 | ConvertFrom-Json
+    $worker=Get-Content -LiteralPath (Join-Path $EvidenceRoot 'isolation/desktop/campaign-exit.json') -Raw -Encoding UTF8 | ConvertFrom-Json
+    $closed=Get-Content -LiteralPath $BootstrapClosureObservation -Raw -Encoding UTF8 | ConvertFrom-Json
+    $preferenceReceipts=@(Get-ChildItem -LiteralPath (Join-Path $EvidenceRoot 'native/phases') -Recurse -Filter 'options-*.json')
+    if($boot.Phase -ne 'FailedPreserved' -or $boot.FailedAtPhase -ne 'ExactNativeApplicationAndSeedAttached' -or
+        $boot.ProcessId -ne $startup.ProcessId -or $boot.ProcessStartUtc -ne $startup.HostStartedUtc -or
+        $boot.BootstrapCloseAttempts -ne 0 -or $boot.BootstrapQuitAttempts -ne 0 -or $boot.ForceTerminationAttempts -ne 0 -or
+        $boot.LoadedAssemblyMvid -or $preferenceReceipts.Count -ne 0 -or
+        $campaign.NativeState -ne 'FAILED_OR_SKIPPED' -or $campaign.NativeExitCode -ne 1 -or $worker.ExitCode -ne 1 -or
+        $closed.ProcessId -ne $startup.ProcessId -or $closed.ProcessStartUtc -ne $startup.HostStartedUtc -or
+        $closed.Desktop -ne $desktop -or -not $closed.ObservationOnly -or -not $closed.EnumerationSucceeded -or -not $closed.OptionsDialogAbsent){
+        throw 'Terminal bootstrap failure before all preference dispatch and independent dialog absence required.'
+    }
+    $seedStream=[IO.FileStream]::new($boot.Seed,[IO.FileMode]::Open,[IO.FileAccess]::Read,[IO.FileShare]::ReadWrite)
+    $sha=[Security.Cryptography.SHA256]::Create()
+    try {$seedHash=[BitConverter]::ToString($sha.ComputeHash($seedStream)).Replace('-','')}
+    finally {$sha.Dispose();$seedStream.Dispose()}
+    if($seedHash -ine $boot.SeedSha256){throw 'Disposable bootstrap seed changed.'}
+} else {
+    if(-not $RecoveryRoot){throw 'Settled preference recovery required.'}
+    $recovered=Get-Content -LiteralPath (Join-Path $RecoveryRoot 'terminal.json') -Raw -Encoding UTF8 | ConvertFrom-Json
+    if($recovered.State -ne 'PREFERENCES_RECOVERED' -or $recovered.Qualified -ne $false -or $recovered.HostShutdownInvoked){throw 'Settled complete recovery required; this does not qualify the failed native test.'}
+    if($recovered.ProcessId -ne $startup.ProcessId -or $recovered.ProcessStartUtc -ne $startup.HostStartedUtc){throw 'Recovered launch identity mismatch.'}
+}
 Add-Type -ReferencedAssemblies System.dll,System.Core.dll,System.Web.Extensions.dll -TypeDefinition @'
 using System;
 using System.Collections.Generic;
@@ -38,9 +63,10 @@ public static class Q026RecoveryShutdown {
  static object Get(object o,string name,params object[] args){return o.GetType().InvokeMember(name,BindingFlags.GetProperty|BindingFlags.IgnoreCase,null,o,args);}
  static object Call(object o,string name,params object[] args){return o.GetType().InvokeMember(name,BindingFlags.InvokeMethod|BindingFlags.IgnoreCase,null,o,args);}
  static void Release(object o){if(o!=null && Marshal.IsComObject(o))Marshal.FinalReleaseComObject(o);}
- public static void Run(string desktop,int pid,string start,string seed,string executable,string output) {
+ public static void Run(string desktop,int pid,string start,string seed,string executable,string output,bool bootstrapOnly) {
   var state=new Dictionary<string,object>{{"ProcessId",pid},{"ProcessStartUtc",start},{"Desktop",desktop},{"Qualified",false},{"ForcedTermination",false},{"CloseEntries",0},{"QuitEntries",0},{"State","IDENTITY_GUARD"}};
   Action persist=()=>File.WriteAllText(output+".progress.json",new JavaScriptSerializer().Serialize(state),new UTF8Encoding(false));
+  state["RecoveryKind"]=bootstrapOnly?"BootstrapFailureNoPreferenceDispatch":"CompletePreferenceRecovery";
   persist();Exception failure=null;int stopDispatch=0;
   Action requireDispatch=()=>{if(Interlocked.CompareExchange(ref stopDispatch,0,0)!=0)throw new InvalidOperationException("Shutdown deadline expired; no further native action.");};
   var process=Process.GetProcessById(pid);IntPtr handle=process.Handle;
@@ -83,11 +109,11 @@ public static class Q026RecoveryShutdown {
   if(!thread.Join(30000)){Interlocked.Exchange(ref stopDispatch,1);state["State"]="RETAINED_PENDING_COM";persist();for(;;)Thread.Sleep(1000);}
   if(failure!=null){state["State"]="RETAINED_SHUTDOWN_ERROR";state["Error"]=failure.ToString();persist();for(;;)Thread.Sleep(1000);}
   if(!process.WaitForExit(15000)){state["State"]="RETAINED_EXIT_NOT_OBSERVED";persist();for(;;)Thread.Sleep(1000);}
-  state["ExitCode"]=process.ExitCode;state["State"]=process.ExitCode==0?"RECOVERED_HOST_NORMAL_EXIT":"ABNORMAL_EXIT";persist();
+  state["ExitCode"]=process.ExitCode;state["State"]=process.ExitCode==0?(bootstrapOnly?"BOOTSTRAP_FAILURE_HOST_NORMAL_EXIT":"RECOVERED_HOST_NORMAL_EXIT"):"ABNORMAL_EXIT";persist();
   File.WriteAllText(output,new JavaScriptSerializer().Serialize(state),new UTF8Encoding(false));process.Dispose();
   if(Convert.ToInt32(state["ExitCode"])!=0)throw new InvalidOperationException("Owned Excel exited abnormally; failed qualification remains failed.");
  }
 }
 '@
-[Q026RecoveryShutdown]::Run($desktop,$startup.ProcessId,$startup.HostStartedUtc,$startup.InitialWorkbook.FullName,$startup.HostExecutable,$OutputPath)
+[Q026RecoveryShutdown]::Run($desktop,$startup.ProcessId,$startup.HostStartedUtc,$startup.InitialWorkbook.FullName,$startup.HostExecutable,$OutputPath,[bool]$BootstrapClosureObservation)
 Get-Content -LiteralPath $OutputPath -Raw -Encoding UTF8

@@ -463,6 +463,10 @@ and refuses a mismatch before launching Excel. Reserve the entire activation,
 native execution and restoration interval: an empty host inventory alone is
 insufficient if another qualification is about to launch. The isolated worker
 also records script exceptions in `worker-error.json` without replaying cleanup.
+The helper uses the installer's unescaped `file:///` CodeBase representation;
+URI percent encoding is not substituted for the repository's COM registration
+format. Check actual class activation before opening a host after a path-format
+change; a matching registry string alone is insufficient loading evidence.
 
 For a retained Q-026 host, `tools/probes/Observe-Q026Host.ps1` defaults to an
 independent PID/start/desktop window inventory, without bridge calls or input.
@@ -476,6 +480,14 @@ baseline hash and all tab structures must match before
 once. Recovery receipts do not convert a failed native TRX into acceptance, and
 their newly captured process handle does not prove the lost campaign handle's
 shutdown lifecycle. These helpers do not recover arbitrary user documents.
+`Observe-Q026Host.ps1 -ReadDialogText` optionally reads a bounded inventory of
+owned dialog controls without input. A terminal bootstrap failure before any
+preference dispatch may use `Close-Q026RecoveredHost.ps1
+-BootstrapClosureObservation <receipt>` instead of a preference-recovery
+receipt. This separate path requires the recorded failed bootstrap, worker exit,
+no Format phase receipts, independently observed dialog absence and the unchanged
+saved disposable seed. It closes that seed and quits once; its receipt remains
+unqualified and does not certify the failed campaign's original process handle.
 
 The SOLIDWORKS workflow must not create or kill an application instance on the
 user's behalf. A host fixture can use its own native save helper; that result does
