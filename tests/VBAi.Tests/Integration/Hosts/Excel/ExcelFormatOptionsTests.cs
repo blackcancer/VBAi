@@ -74,15 +74,19 @@ namespace VBAi.Tests.Integration.Hosts.Excel
                 throw;
             }
             Q026OptionsGuardTrace trace = null;
-            try { trace = Q026OptionsGuardTrace.StartIfRequested(host, startUtc, evidenceDirectory); }
-            catch { RetainHost(host); throw; }
             var lifecycle = new ExcelFormatOptionsQualification(host.ProcessId, host.Command,
                 () => ObserveOptionsClosureSettled(host, startUtc), () => RetainHost(host),
                 () => { trace?.Dispose(); host.Dispose(); AttachEvidence(host, startUtc, "ShutdownVerified", host.ShutdownDiagnostics); },
                 (phase, data) => AttachEvidence(host, startUtc, phase, data), verifyReadStability: !historicalPalettePrefix, marginOnly: marginOnly,
-                historicalPalettePrefix: historicalPalettePrefix);
+                historicalPalettePrefix: historicalPalettePrefix, verifyExclusiveHost: () => VerifyExclusiveHost(host, startUtc));
             Exception primary = null, detach = null;
-            try { lifecycle.Run(); } catch (Exception error) { primary = error; }
+            bool runStarted = false;
+            try {
+                if (Q026OptionsGuardTrace.NeedsGuardWarmupIfRequested()) lifecycle.WarmGuardForBreakpoint();
+                trace = Q026OptionsGuardTrace.StartIfRequested(host, startUtc, evidenceDirectory);
+                runStarted = true;
+                lifecycle.Run();
+            } catch (Exception error) { primary = error; if (!runStarted) RetainHost(host); }
             try { trace?.Dispose(); } catch (Exception error) { detach = error; RetainHost(host); }
             if (primary != null && detach != null) throw new AggregateException("Format qualification and CLR detachment failures are both retained.", primary, detach);
             if (primary != null) System.Runtime.ExceptionServices.ExceptionDispatchInfo.Capture(primary).Throw();
@@ -112,6 +116,25 @@ namespace VBAi.Tests.Integration.Hosts.Excel
             AttachEvidence(host, expectedStartUtc, "ClosureObservation", new { First = first, Last = last,
                 Observations = observations, ElapsedMilliseconds = timer.ElapsedMilliseconds, NativeInput = 0, BridgeRequests = 0 });
             return last;
+        }
+
+        private void VerifyExclusiveHost(ExcelVbeFixture host, DateTime startUtc)
+        {
+            var competitors = new List<object>();
+            bool ownedAlive = false;
+            foreach (var name in new[] { "EXCEL", "WINWORD", "POWERPNT", "MSACCESS", "MSPUB", "SLDWORKS" })
+                foreach (var process in Process.GetProcessesByName(name))
+                    using (process)
+                    {
+                        DateTime actualStart = process.StartTime.ToUniversalTime();
+                        if (process.Id == host.ProcessId && name == "EXCEL" && actualStart == startUtc && !process.HasExited)
+                            ownedAlive = true;
+                        else competitors.Add(new { ProcessId = process.Id, Name = name, ProcessStartUtc = actualStart.ToString("o") });
+                    }
+            AttachEvidence(host, startUtc, "HostExclusivityObservation", new { OwnedAlive = ownedAlive, Competitors = competitors,
+                BeforeDispatch = true, NativeInput = 0, BridgeRequests = 0 });
+            if (!ownedAlive || competitors.Count != 0)
+                throw new InvalidOperationException("The owned Excel identity or exclusive VBE-host interval changed; retain without further native dispatch.");
         }
 
         private static IDictionary<string, object> ObserveOptionsClosure(int processId, DateTime expectedStartUtc)

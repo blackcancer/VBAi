@@ -14,6 +14,11 @@ namespace VBAi.Tests.OptionsTrace
     {
         private static int Main()
         {
+            // Compile the guard without invoking it, so SOS can bind the exact IL
+            // breakpoint before the one synthetic request. No native probe runs.
+            var guard = typeof(VbeDebugWindows).GetMethods(BindingFlags.Static | BindingFlags.NonPublic)
+                .Single(method => method.Name == "SetVbeOption" && method.GetParameters().Length == 2);
+            RuntimeHelpers.PrepareMethod(guard.MethodHandle);
             using (var own = Process.GetCurrentProcess())
                 Console.WriteLine("READY " + own.Id + " " + own.StartTime.ToUniversalTime().ToString("o"));
             var capture = typeof(VbeDebugWindows).GetMethod("CaptureOptionsTabs", BindingFlags.Static | BindingFlags.NonPublic);

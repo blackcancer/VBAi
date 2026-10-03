@@ -2,18 +2,32 @@
 param(
  [Parameter(Mandatory)][string]$HelperPath,
  [Parameter(Mandatory)][string]$OutputRoot,
- [string]$CdbPath='D:\Windows Kits\10\Debuggers\x64\cdb.exe'
+ [string]$CdbPath='D:\Windows Kits\10\Debuggers\x64\cdb.exe',
+ [int]$GuardILOffset=-1
 )
 $ErrorActionPreference='Stop'
 if(-not [IO.Path]::IsPathRooted($HelperPath) -or -not [IO.Path]::IsPathRooted($OutputRoot) -or
  [IO.Path]::GetFileName($HelperPath) -ne 'VBAi.Tests.exe' -or (Test-Path -LiteralPath $OutputRoot)) {throw 'A frozen helper and fresh absolute output directory are required.'}
 $helper=Resolve-Path -LiteralPath $HelperPath
 $debugger=Resolve-Path -LiteralPath $CdbPath
+$product=Join-Path ([IO.Path]::GetDirectoryName($helper.Path)) 'VBAi.dll'
+$productAssembly=[Reflection.Assembly]::LoadFrom($product)
+if($GuardILOffset -ge 0){
+    $guard=@($productAssembly.GetType('VBAi.VbeDebugWindows',$true).GetMethods([Reflection.BindingFlags]'Static,NonPublic') |
+        Where-Object {$_.Name -eq 'SetVbeOption' -and $_.GetParameters().Count -eq 2})
+    if($guard.Count -ne 1){throw 'Unique frozen guard overload required.'}
+    $il=$guard[0].GetMethodBody().GetILAsByteArray()
+    if($GuardILOffset -gt ($il.Length-5) -or $il[$GuardILOffset] -ne 0x72 -or
+        $guard[0].Module.ResolveString([BitConverter]::ToInt32($il,$GuardILOffset+1)) -cne 'VBE options changed since inspection; read them again.'){
+        throw 'Guard IL offset does not identify the exact stale-revision branch; no launch.'
+    }
+}
 [IO.Directory]::CreateDirectory($OutputRoot) | Out-Null
 $report=[ordered]@{State='PREPARING';Scope='Synthetic CLR guard only; no Office, COM activation, native preference or historical-cause proof';
  HelperPath=$helper.Path;HelperSha256=(Get-FileHash -LiteralPath $helper.Path).Hash;
  CdbPath=$debugger.Path;CdbSha256=(Get-FileHash -LiteralPath $debugger.Path).Hash;
- NativePreferenceWrites=0;ForcedTerminations=0}
+ NativePreferenceWrites=0;ForcedTerminations=0;ProductMvid=$productAssembly.ManifestModule.ModuleVersionId.ToString('D');
+ ProductSha256=(Get-FileHash $product).Hash;TraceMode=$(if($GuardILOffset -ge 0){'ExactGuardILBreakpoint'}else{'FirstChanceClrException'});GuardILOffset=$GuardILOffset}
 function Checkpoint{$report|ConvertTo-Json -Depth 8|Set-Content -LiteralPath (Join-Path $OutputRoot 'preflight.json') -Encoding UTF8}
 function Start-Owned($path,$arguments){
  $info=[Diagnostics.ProcessStartInfo]::new($path,$arguments);$info.UseShellExecute=$false;$info.CreateNoWindow=$true
@@ -45,7 +59,9 @@ try{
  $provider=Join-Path ([IO.Path]::GetDirectoryName($debugger.Path)) 'winext/JsProvider.dll'
  if(-not (Test-Path -LiteralPath $script) -or -not (Test-Path -LiteralPath $provider)){throw 'Installed CLR trace script/provider is unavailable.'}
  $report.TraceScriptSha256=(Get-FileHash -LiteralPath $script).Hash
- $text='.logopen /u "'+$log.Replace('\','/')+'"'+"`n.loadby sos clr`n.load `""+$provider.Replace('\','/')+"`"`n.scriptload `""+$script.Replace('\','/')+"`"`nsxe -c `".echo Q026_CLR_EXCEPTION;!pe;!clrstack -a;dx @`$scriptContents.capture();gn`" clr`n.echo Q026_CLR_TRACE_ARMED`ng`n"
+ $traceCommands="sxe -c `".echo Q026_CLR_EXCEPTION;!pe;!clrstack -a;dx @`$scriptContents.capture();gn`" clr"
+ if($GuardILOffset -ge 0){$traceCommands="sxd clr`ndx @`$scriptContents.configure("+$target.Id+")`ndx @`$scriptContents.armGuardBreakpoint("+$GuardILOffset+")"}
+ $text='.logopen /u "'+$log.Replace('\','/')+'"'+"`n.loadby sos clr`n.load `""+$provider.Replace('\','/')+"`"`n.scriptload `""+$script.Replace('\','/')+"`"`n"+$traceCommands+"`n.echo Q026_CLR_TRACE_ARMED`ng`n"
  [IO.File]::WriteAllText($commands,$text,[Text.Encoding]::GetEncoding(1252))
  $cdb=Start-Owned $debugger.Path ('-pd -p '+$target.Id+' -netsyms:no -cf "'+$commands+'"')
  $report.DebuggerProcessId=$cdb.Id;$out=$cdb.StandardOutput.ReadToEndAsync();$err=$cdb.StandardError.ReadToEndAsync()
@@ -57,15 +73,17 @@ try{
  $present=$false
  if(-not (Test-Path -LiteralPath $log) -or (Get-Content -LiteralPath $log -Raw -Encoding Unicode) -notmatch 'Q026_CLR_TRACE_ARMED' -or
   -not [Q026ClrTraceNative]::CheckRemoteDebuggerPresent($target.Handle,[ref]$present) -or -not $present){throw 'CLR trace did not arm; no synthetic request sent.'}
+ if($GuardILOffset -ge 0 -and (Get-Content -LiteralPath $log -Raw -Encoding Unicode) -notmatch ('Q026_GUARD_IL_ARMED offset='+$GuardILOffset+' breakpoint=')){throw 'The exact guard IL breakpoint did not arm; no synthetic request sent.'}
  $report.AttachmentObserved=$true;$report.SyntheticRequests=1;Checkpoint
  $target.StandardInput.WriteLine('OBSERVE');$target.StandardInput.Flush()
  if((Read-OwnedLine $target) -ne 'GUARD_REJECTED'){throw 'Synthetic guard did not refuse.'}
  $captured=Get-Content -LiteralPath $log -Raw -Encoding Unicode
  $report.GuardMessageCaptured=$captured -match 'VBE options changed since inspection'
+ if($GuardILOffset -ge 0){$report.ExactGuardILCaptured=$captured -match 'ExactGuardILBreakpoint.OwningGuardFrame.HeapReadOnly'}
  $report.GuardStackCaptured=$captured -match 'SetVbeOption'
  $report.GuardLocalsCaptured=$captured -match 'LOCALS:'
  $report.GuardSnapshotCaptured=$captured -match 'Q026_GUARD_END '
- if(-not $report.GuardMessageCaptured -or -not $report.GuardStackCaptured -or -not $report.GuardLocalsCaptured -or -not $report.GuardSnapshotCaptured){throw 'CLR guard message/stack/locals/snapshot capture is incomplete.'}
+ if((-not $report.GuardMessageCaptured -and -not $report.ExactGuardILCaptured) -or -not $report.GuardStackCaptured -or -not $report.GuardLocalsCaptured -or -not $report.GuardSnapshotCaptured){throw 'CLR guard site/stack/locals/snapshot capture is incomplete.'}
  $lines=$captured -split "`r?`n"
  $begins=@($lines|Where-Object {$_ -match '^Q026_GUARD_BEGIN '}|ForEach-Object {$_.Substring('Q026_GUARD_BEGIN '.Length)|ConvertFrom-Json})
  $ends=@($lines|Where-Object {$_ -match '^Q026_GUARD_END '}|ForEach-Object {$_.Substring('Q026_GUARD_END '.Length)|ConvertFrom-Json})
@@ -79,7 +97,15 @@ try{
  }
  if($text.Length -ne $begins[0].Length){throw 'The guard capture is incomplete.'}
  $state=$text.ToString()|ConvertFrom-Json
- $report.FullSyntheticTabsEqual=($state.Tabs|ConvertTo-Json -Depth 30 -Compress) -ceq ($expectedJson|ConvertFrom-Json|ConvertTo-Json -Depth 30 -Compress)
+ # Windows PowerShell can decorate a root array with ETS properties during a
+ # ConvertFrom-Json/ConvertTo-Json pipeline. Compare the actual JSON graphs using
+ # the same bounded .NET Framework serializer as the original revision algorithm.
+ Add-Type -AssemblyName System.Web.Extensions
+ $serializer=[Web.Script.Serialization.JavaScriptSerializer]::new()
+ $serializer.MaxJsonLength=2*1024*1024
+ $decoded=$serializer.DeserializeObject($text.ToString())
+ $expectedGraph=$serializer.DeserializeObject($expectedJson)
+ $report.FullSyntheticTabsEqual=$serializer.Serialize($decoded['Tabs']) -ceq $serializer.Serialize($expectedGraph)
  $report.ExpectedVersionVerified=$state.Request.ExpectedOptionsVersion -ceq ('0'*64)
  $report.GuardValueVerified=$state.Request.Value -ceq 'Synthetic alternate'
  $state|ConvertTo-Json -Depth 30|Set-Content -LiteralPath (Join-Path $OutputRoot 'captured-guard.json') -Encoding UTF8

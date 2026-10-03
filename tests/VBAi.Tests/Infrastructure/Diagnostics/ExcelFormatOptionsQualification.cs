@@ -21,14 +21,26 @@ namespace VBAi.Tests.Integration
         private readonly bool verifyReadStability, marginOnly, historicalPalettePrefix;
         private readonly List<Tuple<string, string, object, string>> ledger = new List<Tuple<string, string, object, string>>();
         private IDictionary<string, object> baseline;
+        private readonly Action verifyExclusiveHost;
         internal bool HostRetained { get; private set; }
+
+        /// <summary>Compile the unchanged native guard through one known refusal, before attaching its exact IL breakpoint.</summary>
+        internal void WarmGuardForBreakpoint()
+        {
+            var before = Read("GuardBreakpointWarmupBefore");
+            Refusal("GuardBreakpointWarmup", new { Command = "set_vbe_option", Pane = (string)Format(before)["Tab"],
+                Property = "__Q026_READ_ONLY_GUARD_WARMUP__", Value = "No preference mutation",
+                ExpectedOptionsVersion = new string('0', 64) }, before, "VBE options changed since inspection; read them again.");
+            evidence("GuardBreakpointWarmupVerified", new { NativePreferenceWrites = 0, FailedMutationReplayed = false });
+        }
 
         internal ExcelFormatOptionsQualification(int processId, Func<object, IDictionary<string, object>> dispatch,
             Func<IDictionary<string, object>> observeClosure, Action preserve, Action cleanup, Action<string, object> evidence,
-            bool verifyReadStability = false, bool marginOnly = false, bool historicalPalettePrefix = false)
+            bool verifyReadStability = false, bool marginOnly = false, bool historicalPalettePrefix = false,
+            Action verifyExclusiveHost = null)
         { this.processId = processId; this.dispatch = dispatch; this.observeClosure = observeClosure;
             this.preserve = preserve; this.cleanup = cleanup; this.evidence = evidence; this.verifyReadStability = verifyReadStability; this.marginOnly = marginOnly;
-            this.historicalPalettePrefix = historicalPalettePrefix; }
+            this.historicalPalettePrefix = historicalPalettePrefix; this.verifyExclusiveHost = verifyExclusiveHost; }
 
         /// <summary>Validate the Format opt-in before preparation, then hand off only a successfully owned bootstrap.</summary>
         internal static void RunOwned<T>(bool enabled, string ownedResults, string evidenceRoot, string inheritedDiagnosticManifest,
@@ -208,6 +220,9 @@ namespace VBAi.Tests.Integration
             var after = Read(phase + "ClosedReadback");
             if (Version(before) != Version(after))
                 throw Retain(new InvalidOperationException("The expected refusal changed the complete preferences revision; do not continue or replay."));
+            var serializer = new System.Web.Script.Serialization.JavaScriptSerializer();
+            if (serializer.Serialize(before["Tabs"]) != serializer.Serialize(after["Tabs"]))
+                throw Retain(new InvalidOperationException("The expected refusal changed the complete preferences structure; do not continue or replay."));
             evidence(phase + "VerifiedRefusal", new { Response = reply, IndependentClosedReadback = after, MutationRetried = false });
         }
 
@@ -228,7 +243,11 @@ namespace VBAi.Tests.Integration
             return data;
         }
         private void EnsureDispatchAllowed()
-        { if (HostRetained) throw new InvalidOperationException("The exact owned host is retained; dispatch and cleanup are forbidden."); }
+        {
+            if (HostRetained) throw new InvalidOperationException("The exact owned host is retained; dispatch and cleanup are forbidden.");
+            try { verifyExclusiveHost?.Invoke(); }
+            catch (Exception error) { throw Retain(error); }
+        }
         private Exception OutcomeFailure(Exception error, object request, object response)
         { return Retain(error, request, response); }
         private Exception Retain(Exception primary, object request = null, object response = null)

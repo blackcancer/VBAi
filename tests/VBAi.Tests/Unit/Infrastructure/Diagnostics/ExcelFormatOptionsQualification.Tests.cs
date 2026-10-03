@@ -14,6 +14,62 @@ namespace VBAi.Tests.Unit
     public sealed class ExcelFormatOptionsQualificationTests
     {
         [TestMethod]
+        public void GuardWarmupVerifiesOneRefusalWithoutPreferenceMutationOrCleanup()
+        {
+            var probe = new Probe();
+            var runner = probe.Create();
+            var before = new Dictionary<string, object>(probe.Values);
+            runner.WarmGuardForBreakpoint();
+            CollectionAssert.AreEquivalent(before.ToArray(), probe.Values.ToArray());
+            Assert.AreEqual(3, probe.Requests.Count);
+            Assert.AreEqual(1, probe.Requests.Count(request => Equals(request["Command"], "set_vbe_option")));
+            Assert.AreEqual(1, probe.ClosureCalls);
+            Assert.IsFalse(runner.HostRetained);
+            Assert.AreEqual(0, probe.Cleanup);
+            Assert.IsTrue(probe.Phases.Contains("GuardBreakpointWarmupVerified"));
+        }
+
+        [TestMethod]
+        public void GuardWarmupRefusesStructurallyChangedReadbackEvenWhenHashMatches()
+        {
+            var probe = new Probe { SemanticFault = "GuardBreakpointWarmupClosedReadbackIntent" };
+            var runner = probe.Create();
+            Assert.IsNotNull(Failure(runner.WarmGuardForBreakpoint));
+            Assert.IsTrue(runner.HostRetained);
+            Assert.AreEqual(0, probe.Cleanup);
+            Assert.AreEqual(1, probe.ClosureCalls);
+            Assert.IsTrue(probe.Phases.Contains("GuardBreakpointWarmupClosedReadbackReply"));
+            Assert.IsFalse(probe.Phases.Contains("GuardBreakpointWarmupVerified"));
+        }
+
+        [TestMethod]
+        public void CompetingHostBeforeBaselinePreventsEveryNativeRequestAndCleanup()
+        {
+            var probe = new Probe { ExclusiveGuardFaultAt = 1 };
+            var runner = probe.Create();
+            Assert.IsNotNull(Failure(runner.Run));
+            Assert.IsTrue(runner.HostRetained);
+            Assert.AreEqual(0, probe.Requests.Count);
+            Assert.AreEqual(0, probe.Writes);
+            Assert.AreEqual(0, probe.Cleanup);
+            Assert.AreEqual(1, probe.Preserved);
+        }
+
+        [TestMethod]
+        public void CompetingHostAfterFontCommitPreventsReadbackRestorationAndCleanup()
+        {
+            var probe = new Probe { ExclusiveGuardFaultAt = 4 };
+            var runner = probe.Create(historicalPalettePrefix: true);
+            Assert.IsNotNull(Failure(runner.Run));
+            Assert.IsTrue(runner.HostRetained);
+            Assert.AreEqual(1, probe.Writes, "Only the already confirmed font commit is allowed.");
+            Assert.AreEqual(3, probe.Requests.Count, "Baseline, fresh pre-write read, then font commit.");
+            Assert.AreEqual(0, probe.Cleanup);
+            Assert.IsFalse(probe.Phases.Contains("FontReadbackIntent"));
+            Assert.IsFalse(probe.Phases.Contains("BeforeRestorationIntent"));
+        }
+
+        [TestMethod]
         public void HistoricalPrefixKeepsNullQueryAndRestoresOnlyConfirmedFontAndPaletteWrites()
         {
             var probe = new Probe { EmptySizes = true };
@@ -61,6 +117,7 @@ namespace VBAi.Tests.Unit
         {
             internal bool EmptySizes, CleanupFault, PreservationFault;
             internal int FaultAt, Reads, Writes, Cleanup, Preserved, ClosureCalls;
+            internal int ExclusiveGuardFaultAt, ExclusiveGuardCalls;
             internal string Fault, EvidenceFault, SemanticFault, ClosureFault;
             internal readonly List<string> Phases = new List<string>();
             internal readonly List<IDictionary<string, object>> Requests = new List<IDictionary<string, object>>();
@@ -79,7 +136,10 @@ namespace VBAi.Tests.Unit
                     (phase, data) => {
                         Phases.Add(phase); Evidence.Add(Tuple.Create(phase, data));
                         if (EvidenceFault == phase) { EvidenceFault = null; throw new IOException("evidence failed at " + phase); }
-                    }, verifyReadStability, marginOnly, historicalPalettePrefix);
+                    }, verifyReadStability, marginOnly, historicalPalettePrefix, () => {
+                        if (++ExclusiveGuardCalls == ExclusiveGuardFaultAt)
+                            throw new InvalidOperationException("Another VBE host appeared during the campaign.");
+                    });
             }
             private IDictionary<string, object> Dispatch(object raw)
             {
@@ -103,7 +163,7 @@ namespace VBAi.Tests.Unit
                 else
                 {
                     Writes++;
-                    if (Equals(request["ExpectedOptionsVersion"], BaselineVersion) && phase == "StaleVersionIntent")
+                    if (!Equals(request["ExpectedOptionsVersion"], Version()))
                         response = Refused("VBE options changed since inspection; read them again.");
                     else
                     {

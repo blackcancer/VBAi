@@ -1,7 +1,7 @@
 "use strict";
 
 // Read the already-captured CLR objects only when the historical stale guard throws.
-// No target function evaluation, heap search, memory writes or preference action.
+// No target function evaluation, heap search, target data writes or preference action.
 let layouts = new Map();
 let reads = 0;
 let captures = 0;
@@ -16,6 +16,20 @@ function configure(pid) {
 }
 function output(command) {
     return Array.from(host.namespace.Debugger.Utility.Control.ExecuteCommand(command));
+}
+function armGuardBreakpoint(offset) {
+    if (!Number.isInteger(Number(offset)) || Number(offset) < 0 || Number(offset) > 65535)
+        throw new Error("Guard IL offset is absent or out of bounds.");
+    if (output("bl").some(line => /^\s*\d+\s+[ed]\s+/.test(line)))
+        throw new Error("Unexpected existing debugger breakpoint; no reconfiguration.");
+    output("!bpmd -nofuturemodule VBAi.dll VBAi.VbeDebugWindows.SetVbeOption " + Number(offset));
+    const entries = output("bl").map(line => /^\s*(\d+)\s+e\s+([0-9a-f`]+)\s+/i.exec(line)).filter(match => match);
+    if (entries.length !== 1) throw new Error("The exact guard IL breakpoint did not bind uniquely: " + entries.length);
+    const method = output("!ip2md " + entries[0][2]);
+    if (!method.some(line => line.includes("VBAi.VbeDebugWindows.SetVbeOption(VBAi.Request, IWritableOptionsProbe)")))
+        throw new Error("The bound native breakpoint is not the writable guard overload.");
+    output('bs ' + entries[0][1] + ' "!clrstack -a;dx @$scriptContents.capture(true);g"');
+    host.diagnostics.debugLog("Q026_GUARD_IL_ARMED offset=" + Number(offset) + " breakpoint=" + entries[0][1] + "\n");
 }
 function address(value) { return host.parseInt64(value.replace(/`/g, ""), 16); }
 function initializeScript() { return [new host.apiVersionSupport(1, 3)]; }
@@ -103,11 +117,13 @@ function request(value) {
     }
     return result;
 }
-function capture() {
+function capture(fromGuardBreakpoint) {
     try {
         if (ownedPid && Number(host.currentProcess.Id) !== ownedPid) throw new Error("Owned trace process changed.");
-        const exception = output("!pe");
-        if (!exception.some(line => /^Message:\s+VBE options changed since inspection; read them again\.\s*$/.test(line))) return;
+        if (fromGuardBreakpoint !== true) {
+            const exception = output("!pe");
+            if (!exception.some(line => /^Message:\s+VBE options changed since inspection; read them again\.\s*$/.test(line))) return;
+        }
         if (++captures > 8) throw new Error("Guard capture count exceeds its bound.");
         const stack = output("!clrstack -a");
         let inside = false, capturedRequest = null;
@@ -137,7 +153,8 @@ function capture() {
         }
         if (states.length !== 1) throw new Error("Guard snapshot is missing or ambiguous: " + states.length);
         const json = JSON.stringify({ Request: request(capturedRequest), Tabs: states[0],
-            Source: "FirstChanceClrException.OwningGuardFrame.HeapReadOnly", Capture: captures });
+            Source: fromGuardBreakpoint === true ? "ExactGuardILBreakpoint.OwningGuardFrame.HeapReadOnly" :
+                "FirstChanceClrException.OwningGuardFrame.HeapReadOnly", Capture: captures });
         if (json.length > 1024 * 1024) throw new Error("Guard serialization exceeds its bound.");
         // WinDbg truncates one debugLog item at 16 KiB. Frame each bounded chunk;
         // consumers must verify sequence, count and complete length before parsing.
