@@ -18,16 +18,17 @@ namespace VBAi.Tests.Integration
         private readonly Action preserve, cleanup;
         private readonly Action<string, object> evidence;
         private readonly int processId;
-        private readonly bool verifyReadStability, marginOnly;
+        private readonly bool verifyReadStability, marginOnly, historicalPalettePrefix;
         private readonly List<Tuple<string, string, object, string>> ledger = new List<Tuple<string, string, object, string>>();
         private IDictionary<string, object> baseline;
         internal bool HostRetained { get; private set; }
 
         internal ExcelFormatOptionsQualification(int processId, Func<object, IDictionary<string, object>> dispatch,
             Func<IDictionary<string, object>> observeClosure, Action preserve, Action cleanup, Action<string, object> evidence,
-            bool verifyReadStability = false, bool marginOnly = false)
+            bool verifyReadStability = false, bool marginOnly = false, bool historicalPalettePrefix = false)
         { this.processId = processId; this.dispatch = dispatch; this.observeClosure = observeClosure;
-            this.preserve = preserve; this.cleanup = cleanup; this.evidence = evidence; this.verifyReadStability = verifyReadStability; this.marginOnly = marginOnly; }
+            this.preserve = preserve; this.cleanup = cleanup; this.evidence = evidence; this.verifyReadStability = verifyReadStability; this.marginOnly = marginOnly;
+            this.historicalPalettePrefix = historicalPalettePrefix; }
 
         /// <summary>Validate the Format opt-in before preparation, then hand off only a successfully owned bootstrap.</summary>
         internal static void RunOwned<T>(bool enabled, string ownedResults, string evidenceRoot, string inheritedDiagnosticManifest,
@@ -66,7 +67,8 @@ namespace VBAi.Tests.Integration
 
         private void Matrix()
         {
-            evidence("ScenarioMatrix", marginOnly ? new[] { "margin indicator", "full options version restored" } : Scenarios);
+            evidence("ScenarioMatrix", marginOnly ? new[] { "margin indicator", "full options version restored" } :
+                historicalPalettePrefix ? new[] { "historical font and size refusal", "historical foreground/background/indicator without Query", "full options version restored" } : Scenarios);
             baseline = Read("Baseline");
             evidence("BaselineComplete", baseline);
             if (verifyReadStability)
@@ -106,9 +108,10 @@ namespace VBAi.Tests.Integration
                 var paletteFormat = Format(Read(names[0] + "Catalogue")); string category = CurrentCategory(paletteFormat);
                 var control = CategoryPalette(paletteFormat, category, names);
                 string next = Choices(control).First(x => x != (string)control["Value"]);
-                Write(names[0], tab, (string)control["Name"], next, category);
+                Write(names[0], tab, (string)control["Name"], next, historicalPalettePrefix ? null : category);
                 Assert.AreEqual(next, CategoryPalette(Format(Read(names[0] + "Readback")), category, names)["Value"]);
             }
+            if (historicalPalettePrefix) return; // The old drift preceded the other-category/checkbox scenarios; keep this diagnostic bounded.
             var categoryRead = Read("OtherCategoryCatalogue"); var categories = (object[])Format(categoryRead)["FormatCategories"];
             Assert.IsTrue(categories.Length > 1);
             var other = VbeBridgeClient.Object(categories[1]);

@@ -14,6 +14,22 @@ namespace VBAi.Tests.Unit
     public sealed class ExcelFormatOptionsQualificationTests
     {
         [TestMethod]
+        public void HistoricalPrefixKeepsNullQueryAndRestoresOnlyConfirmedFontAndPaletteWrites()
+        {
+            var probe = new Probe { EmptySizes = true };
+            probe.Create(historicalPalettePrefix: true).Run();
+            Assert.AreEqual(9, probe.Writes, "Four real commits, four compensations and one expected size refusal are required.");
+            Assert.AreEqual(1, probe.Cleanup);
+            Assert.IsFalse(probe.Phases.Contains("MarginIntent"));
+            Assert.IsFalse(probe.Phases.Contains("OtherCategoryIntent"));
+            Assert.IsFalse(probe.Phases.Contains("StaleVersionIntent"));
+            foreach (var item in probe.Requests.Where(request => Equals(request["Command"], "set_vbe_option")))
+                if (new[] { "Foreground", "Background", "Indicator" }.Contains(Convert.ToString(item["Property"])))
+                    Assert.IsNull(item["Query"], "The historical request omitted Query, including restoration.");
+            Assert.IsTrue(probe.Phases.Contains("BaselineRestored"));
+        }
+
+        [TestMethod]
         public void FocusedMarginQualificationChangesAndRestoresOnlyTheRealCheckbox()
         {
             var probe = new Probe();
@@ -50,7 +66,7 @@ namespace VBAi.Tests.Unit
                 ["Normal Text.Foreground"] = "Black", ["Normal Text.Background"] = "White", ["Normal Text.Indicator"] = "Blue",
                 ["Keyword Text.Foreground"] = "Black", ["Keyword Text.Background"] = "White", ["Keyword Text.Indicator"] = "Blue" };
             internal string Category = "Normal Text", BaselineVersion;
-            internal ExcelFormatOptionsQualification Create(bool verifyReadStability = false, bool marginOnly = false)
+            internal ExcelFormatOptionsQualification Create(bool verifyReadStability = false, bool marginOnly = false, bool historicalPalettePrefix = false)
             {
                 BaselineVersion = Version();
                 return new ExcelFormatOptionsQualification(42, Dispatch, ObserveClosure,
@@ -59,7 +75,7 @@ namespace VBAi.Tests.Unit
                     (phase, data) => {
                         Phases.Add(phase); Evidence.Add(Tuple.Create(phase, data));
                         if (EvidenceFault == phase) { EvidenceFault = null; throw new IOException("evidence failed at " + phase); }
-                    }, verifyReadStability, marginOnly);
+                    }, verifyReadStability, marginOnly, historicalPalettePrefix);
             }
             private IDictionary<string, object> Dispatch(object raw)
             {
@@ -95,7 +111,7 @@ namespace VBAi.Tests.Unit
                             string property = (string)request["Property"];
                             string query = request.TryGetValue("Query", out object q) ? q as string : null;
                             if (!string.IsNullOrEmpty(query)) Category = query;
-                            string key = query == null ? property : query + "." + property;
+                            string key = new[] { "Foreground", "Background", "Indicator" }.Contains(property) ? Category + "." + property : property;
                             Values[key] = request["Value"] is bool check ? (object)(check ? "On" : "Off") : request["Value"];
                             response = Reply(new Dictionary<string, object> { ["CommitRequested"] = true, ["ControlValueVerified"] = true, ["DialogClosed"] = true });
                         }
@@ -144,7 +160,10 @@ namespace VBAi.Tests.Unit
                         Control("Font", "ControlType.ComboBox", Values["Font"], "Consolas", "Courier New"),
                         Control("Size", "ControlType.ComboBox", Values["Size"], EmptySizes ? new string[0] : new[] { "12", "14" }),
                         Control("Margin Indicator Bar", "ControlType.CheckBox", Values["Margin Indicator Bar"]),
-                        Control("Code Colors", "ControlType.List", Category, "Normal Text", "Keyword Text") },
+                        Control("Code Colors", "ControlType.List", Category, "Normal Text", "Keyword Text"),
+                        Control("Foreground", "ControlType.ComboBox", Values[Category + ".Foreground"], "Black", "Red"),
+                        Control("Background", "ControlType.ComboBox", Values[Category + ".Background"], "White", "Yellow"),
+                        Control("Indicator", "ControlType.ComboBox", Values[Category + ".Indicator"], "Blue", "Green") },
                     ["FormatCategories"] = new object[] { CategoryState("Normal Text"), CategoryState("Keyword Text") } } } };
             private IDictionary<string, object> CategoryState(string category) => new Dictionary<string, object> { ["Category"] = category,
                 ["Palettes"] = new object[] { Control("Foreground", "ControlType.ComboBox", Values[category + ".Foreground"], "Black", "Red"),

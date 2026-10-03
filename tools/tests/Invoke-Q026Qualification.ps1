@@ -4,7 +4,8 @@ param(
     [string]$EvidenceRoot,
     [string]$InstalledDirectory,
     [string]$PlanPath = (Join-Path $PSScriptRoot 'q026-plan.json'),
-    [ValidateSet('FullFormat','Margin')][string]$Scenario = 'FullFormat'
+    [ValidateSet('FullFormat','Margin','HistoricalPalettePrefix')][string]$Scenario = 'FullFormat',
+    [string]$ClrTracePlan
 )
 $ErrorActionPreference = 'Stop'
 function Write-Json($path, $value) {
@@ -22,7 +23,8 @@ if ($Prepare) {
     Get-ChildItem -LiteralPath $InstalledDirectory -Force | Copy-Item -Destination $product -Recurse
     foreach ($project in @('tests/VBAi.Q026.Tests/VBAi.Q026.Tests.csproj','tests/VBAi.Desktop.Helper/VBAi.Desktop.Helper.csproj')) {
         $log = Join-Path $EvidenceRoot (([IO.Path]::GetFileNameWithoutExtension($project)) + '-build.log')
-        & dotnet build (Join-Path $repository $project) -c Debug "-p:BuildOutputRoot=$build" "-p:FrozenProductDirectory=$product" --verbosity minimal *> $log
+        $extra=@();if($Scenario -eq 'HistoricalPalettePrefix'){$extra+= '-p:HistoricalOptionsOnly=true'}
+        & dotnet build (Join-Path $repository $project) -c Debug "-p:BuildOutputRoot=$build" "-p:FrozenProductDirectory=$product" @extra --verbosity minimal *> $log
         if ($LASTEXITCODE -ne 0) { throw "Preparation failed; no host launched. See $log." }
     }
     $test = Join-Path $build 'VBAi.Q026.Tests/Debug/net48/VBAi.Tests.dll'
@@ -34,11 +36,20 @@ if ($Prepare) {
     $files = @(Get-ChildItem -LiteralPath ([IO.Path]::GetDirectoryName($test)) -File | Where-Object {$_.Extension -in @('.dll','.exe','.config')} | ForEach-Object { @{Path=$_.FullName;Sha256=(Get-FileHash -LiteralPath $_.FullName).Hash} })
     $files += @{Path=$helper;Sha256=(Get-FileHash -LiteralPath $helper).Hash}
     $files += @{Path=$script;Sha256=(Get-FileHash -LiteralPath $script).Hash}
-    $nativeMethod=if($Scenario -eq 'Margin'){'NativeMarginCheckboxRoundTripAndRestoreCompleteOptionsVersion'}else{'NativeFormatChoicesRoundTripAndRestoreCompleteOptionsVersion'}
+    $nativeMethod=if($Scenario -eq 'Margin'){'NativeMarginCheckboxRoundTripAndRestoreCompleteOptionsVersion'}elseif($Scenario -eq 'HistoricalPalettePrefix'){'NativeHistoricalFontPalettePrefixAndRestoreCompleteOptionsVersion'}else{'NativeFormatChoicesRoundTripAndRestoreCompleteOptionsVersion'}
     $matrix=Get-Content -LiteralPath (Join-Path $PSScriptRoot 'q026-scenarios.json') -Raw -Encoding UTF8 | ConvertFrom-Json
     if($Scenario -eq 'Margin'){
         $matrix.Cases=@($matrix.Cases | Where-Object {$_.Id -in @('read-stability','margin','complete-restoration','normal-exit')})
         $matrix.Scope='Owned disposable Excel margin-checkbox diagnostic only; not the full Format matrix'
+    }
+    if($Scenario -eq 'HistoricalPalettePrefix'){
+        if(-not [IO.Path]::IsPathRooted($ClrTracePlan) -or -not (Test-Path -LiteralPath $ClrTracePlan)){throw 'A frozen preflighted CLR collector is required for the historical prefix.'}
+        $tracePlan=Get-Content -LiteralPath $ClrTracePlan -Raw -Encoding UTF8|ConvertFrom-Json
+        foreach($path in @($ClrTracePlan,$tracePlan.Preflight,$tracePlan.CdbPath,$tracePlan.TraceScript)){
+            $files+=@{Path=$path;Sha256=(Get-FileHash -LiteralPath $path).Hash}
+        }
+        $matrix.Cases=@($matrix.Cases|Where-Object {$_.Id -in @('read-stability','font','size-catalogue','palettes','complete-restoration','normal-exit')})
+        $matrix.Scope='Historical frozen Excel font/palette prefix without Query; causal diagnostic only, not current-product qualification'
     }
     $plan = @{Scope=('Q-026 owned Excel '+$Scenario+' mutation/restoration; not all-host qualification');Scenario=$Scenario;Repository=$repository;
         SourceCommit=(& git -C $repository rev-parse HEAD);SourceStatus=@(& git -C $repository status --porcelain);
@@ -46,7 +57,7 @@ if ($Prepare) {
         EvidenceRoot=$EvidenceRoot;TestAssembly=$test;HelperAssembly=$helper;FrozenFiles=$files;
         Matrix=$matrix;
         NativeMethod=('VBAi.Tests.Integration.Hosts.Excel.ExcelFormatOptionsTests.'+$nativeMethod);
-        QuietHostPeriodSeconds=30;NoNativeReplay=$true;NoForceTermination=$true;PreparedUtc=[DateTime]::UtcNow.ToString('o')}
+        ClrTracePlan=$ClrTracePlan;QuietHostPeriodSeconds=30;NoNativeReplay=$true;NoForceTermination=$true;PreparedUtc=[DateTime]::UtcNow.ToString('o')}
     Write-Json (Join-Path $EvidenceRoot 'q026-plan.json') $plan
     Write-Output ('Prepared '+$EvidenceRoot)
     exit 0
@@ -102,6 +113,7 @@ try {
 } finally {if($key){$key.Dispose()};$registry.Dispose()}
 if(@(Get-Process EXCEL,WINWORD,POWERPNT,MSACCESS,MSPUB,SLDWORKS -ErrorAction SilentlyContinue).Count){throw 'A competing host appeared after the quiet period; no launch.'}
 $env:VBAi_RUN_EXCEL_TESTS='1'
+$env:VBAi_TEST_Q026_CLR_TRACE_PLAN=$plan.ClrTracePlan
 $env:VBAi_EXCEL_RESULTS=Join-Path $plan.EvidenceRoot 'native/hosts'
 $env:VBAi_TEST_FORMAT_OPTIONS_OUTPUT=Join-Path $plan.EvidenceRoot 'native/phases'
 $record.NativeState='STARTED_ONCE';$record.NativeStartedUtc=[DateTime]::UtcNow.ToString('o');Write-Json $ledger $record

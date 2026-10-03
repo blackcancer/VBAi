@@ -34,7 +34,11 @@ namespace VBAi.Tests.Integration.Hosts.Excel
         public void NativeMarginCheckboxRoundTripAndRestoreCompleteOptionsVersion()
         { RunQualification(true); }
 
-        private void RunQualification(bool marginOnly)
+        [STATestMethod]
+        public void NativeHistoricalFontPalettePrefixAndRestoreCompleteOptionsVersion()
+        { RunQualification(false, true); }
+
+        private void RunQualification(bool marginOnly, bool historicalPalettePrefix = false)
         {
             if (Environment.GetEnvironmentVariable("VBAi_RUN_EXCEL_TESTS") != "1")
                 Assert.Inconclusive("Excel automation is opt-in. Set VBAi_RUN_EXCEL_TESTS=1.");
@@ -54,10 +58,10 @@ namespace VBAi.Tests.Integration.Hosts.Excel
                     if (!string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("VBAi_TEST_DESKTOP_NAME")))
                         Environment.SetEnvironmentVariable(VbeInspectionTrace.EnvironmentName, trace);
                     return ExcelVbeFixture.StartOwnedWithTrace(trace);
-                }, host => QualifyReadyHost(host, marginOnly));
+                }, host => QualifyReadyHost(host, marginOnly, historicalPalettePrefix));
         }
 
-        private void QualifyReadyHost(ExcelVbeFixture host, bool marginOnly)
+        private void QualifyReadyHost(ExcelVbeFixture host, bool marginOnly, bool historicalPalettePrefix)
         {
             // No using/finally Dispose: uncertainty must retain this exact fixture and all owning COM references.
             DateTime startUtc = DateTime.MinValue;
@@ -69,11 +73,20 @@ namespace VBAi.Tests.Integration.Hosts.Excel
                 catch (Exception recording) { throw new AggregateException("Startup identity and its evidence both failed; host retained.", identityFailure, recording); }
                 throw;
             }
+            Q026OptionsGuardTrace trace = null;
+            try { trace = Q026OptionsGuardTrace.StartIfRequested(host, startUtc, evidenceDirectory); }
+            catch { RetainHost(host); throw; }
             var lifecycle = new ExcelFormatOptionsQualification(host.ProcessId, host.Command,
                 () => ObserveOptionsClosure(host.ProcessId, startUtc), () => RetainHost(host),
-                () => { host.Dispose(); AttachEvidence(host, startUtc, "ShutdownVerified", host.ShutdownDiagnostics); },
-                (phase, data) => AttachEvidence(host, startUtc, phase, data), verifyReadStability: true, marginOnly: marginOnly);
-            lifecycle.Run();
+                () => { trace?.Dispose(); host.Dispose(); AttachEvidence(host, startUtc, "ShutdownVerified", host.ShutdownDiagnostics); },
+                (phase, data) => AttachEvidence(host, startUtc, phase, data), verifyReadStability: true, marginOnly: marginOnly,
+                historicalPalettePrefix: historicalPalettePrefix);
+            Exception primary = null, detach = null;
+            try { lifecycle.Run(); } catch (Exception error) { primary = error; }
+            try { trace?.Dispose(); } catch (Exception error) { detach = error; RetainHost(host); }
+            if (primary != null && detach != null) throw new AggregateException("Format qualification and CLR detachment failures are both retained.", primary, detach);
+            if (primary != null) System.Runtime.ExceptionServices.ExceptionDispatchInfo.Capture(primary).Throw();
+            if (detach != null) throw detach;
         }
 
         private static void RetainHost(ExcelVbeFixture host)
