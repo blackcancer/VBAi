@@ -182,6 +182,11 @@ The receipt also records the requested raw command line. The single Word `/a`
 switch stays literal and only the macro-free seed path is quoted, following
 [Microsoft's Office command-line syntax](https://support.microsoft.com/en-us/office/lifecycle/command-line-switches-for-microsoft-office-products).
 That requested string is not evidence of startup behavior or cleared recovery state.
+During startup, only an unambiguous window whose process, root, classes, UI thread
+and exact private desktop have already been verified may be observed again while
+hidden. A foreign or unreadable identity refuses immediately. The bounded wait
+records native metadata before the readiness check; both document and root must
+be visible and pass the final identity check before any NativeOM call.
 Discovery uses a bounded inventory of the exact named desktop; duplicate document
 windows, partial enumeration, foreign identities or an unavailable actual UI
 desktop refuse without activation or native replay. The only open document must

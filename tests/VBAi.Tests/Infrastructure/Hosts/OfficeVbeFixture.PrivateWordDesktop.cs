@@ -235,7 +235,8 @@ namespace VBAi.Tests.Integration
             var clock = Stopwatch.StartNew();
             IntPtr documentWindow = WaitForPrivateWordWindow(() => privateWordChild.Wait(0),
                 () => LaunchedWordDocumentWindows(desktopName), () => clock.Elapsed < TimeSpan.FromSeconds(30),
-                () => Thread.Sleep(100), documentHandle => RequirePrivateWordDocumentWindow(documentHandle, desktopName));
+                () => Thread.Sleep(100), documentHandle => RequirePrivateWordDocumentWindow(documentHandle, desktopName),
+                documentHandle => ObservePrivateWordWindowReadiness(documentHandle, desktopName));
             uint pid; uint uiThread = GetWindowThreadProcessId(documentWindow, out pid);
             Assert.AreEqual((uint)ProcessId, pid);
             Assert.AreEqual(desktopName, IsolatedTestDesktop.DesktopName(uiThread), true,
@@ -288,7 +289,7 @@ namespace VBAi.Tests.Integration
         }
 
         internal static IntPtr WaitForPrivateWordWindow(Func<bool> exited, Func<IntPtr[]> inventory,
-            Func<bool> withinBound, Action wait, Action<IntPtr> verify)
+            Func<bool> withinBound, Action wait, Action<IntPtr> verify, Func<IntPtr, bool> ready = null)
         {
             if (exited == null || inventory == null || withinBound == null || wait == null || verify == null)
                 throw new ArgumentNullException("Private Word window observation dependencies");
@@ -301,6 +302,11 @@ namespace VBAi.Tests.Integration
                 if (windows.Length == 1)
                 {
                     if (windows[0] == IntPtr.Zero) throw new InvalidOperationException("The Word document HWND is unavailable.");
+                    if (ready != null && !ready(windows[0]))
+                    {
+                        wait(); // Only a positively owned, still-hidden startup window may be observed again.
+                        continue;
+                    }
                     verify(windows[0]);
                     if (exited()) throw new InvalidOperationException("Original Word exited during window verification.");
                     return windows[0];
@@ -324,18 +330,58 @@ namespace VBAi.Tests.Integration
                 (uint)ProcessId, desktop, IsolatedTestDesktop.DesktopName);
         }
 
+        private bool ObservePrivateWordWindowReadiness(IntPtr handle, string desktop)
+        {
+            IntPtr root = GetAncestor(handle, 2);
+            uint pid, rootPid;
+            uint tid = GetWindowThreadProcessId(handle, out pid);
+            uint rootTid = GetWindowThreadProcessId(root, out rootPid);
+            var childClass = new StringBuilder(64); var rootClass = new StringBuilder(64);
+            GetClassName(handle, childClass, childClass.Capacity);
+            GetClassName(root, rootClass, rootClass.Capacity);
+            bool visible = IsWindowVisible(handle), rootVisible = IsWindowVisible(root);
+            steps.Add(new { Phase = "PrivateWordWindowReadinessObserved", Handle = handle.ToInt64(),
+                Root = root.ToInt64(), ProcessId = pid, RootProcessId = rootPid, ThreadId = tid,
+                RootThreadId = rootTid, ChildClass = childClass.ToString(), RootClass = rootClass.ToString(),
+                Visible = visible, RootVisible = rootVisible, ComCalls = 0, UiActions = 0 });
+            FlushAdapterEvidence();
+            return PrivateWordWindowReady(handle, root, pid, rootPid, tid, rootTid,
+                childClass.ToString(), rootClass.ToString(), visible, rootVisible,
+                (uint)ProcessId, desktop, IsolatedTestDesktop.DesktopName);
+        }
+
+        internal static bool PrivateWordWindowReady(IntPtr handle, IntPtr root, uint pid, uint rootPid,
+            uint tid, uint rootTid, string childClass, string rootClass, bool visible, bool rootVisible,
+            uint expectedPid, string desktop, Func<uint, string> readDesktop)
+        {
+            if (readDesktop == null) throw new ArgumentNullException(nameof(readDesktop));
+            IsolatedTestDesktop.RequireName(desktop);
+            RequirePrivateWordWindowStructure(handle, root, pid, rootPid, tid, rootTid, childClass, rootClass, expectedPid);
+            if (!string.Equals(readDesktop(tid), desktop, StringComparison.Ordinal))
+                throw new InvalidOperationException("The actual Word UI thread is outside the exact private desktop.");
+            return visible && rootVisible;
+        }
+
         internal static void RequirePrivateWordWindowIdentity(IntPtr handle, IntPtr root, uint pid, uint rootPid,
             uint tid, uint rootTid, string childClass, string rootClass, bool visible, bool rootVisible,
             uint expectedPid, string desktop, Func<uint, string> readDesktop)
         {
             if (readDesktop == null) throw new ArgumentNullException(nameof(readDesktop));
             IsolatedTestDesktop.RequireName(desktop);
-            if (expectedPid == 0 || handle == IntPtr.Zero || root == IntPtr.Zero || handle == root ||
-                pid != expectedPid || rootPid != expectedPid || tid == 0 || rootTid != tid ||
-                childClass != "_WwG" || rootClass != "OpusApp" || !visible || !rootVisible)
-                throw new InvalidOperationException("The Word document window/root identity is incomplete or foreign.");
+            RequirePrivateWordWindowStructure(handle, root, pid, rootPid, tid, rootTid, childClass, rootClass, expectedPid);
+            if (!visible || !rootVisible)
+                throw new InvalidOperationException("The Word document/root is not yet visible; NativeOM is not permitted.");
             if (!string.Equals(readDesktop(tid), desktop, StringComparison.Ordinal))
                 throw new InvalidOperationException("The actual Word UI thread is outside the exact private desktop.");
+        }
+
+        private static void RequirePrivateWordWindowStructure(IntPtr handle, IntPtr root, uint pid, uint rootPid,
+            uint tid, uint rootTid, string childClass, string rootClass, uint expectedPid)
+        {
+            if (expectedPid == 0 || handle == IntPtr.Zero || root == IntPtr.Zero || handle == root ||
+                pid != expectedPid || rootPid != expectedPid || tid == 0 || rootTid != tid ||
+                childClass != "_WwG" || rootClass != "OpusApp")
+                throw new InvalidOperationException("The Word document window/root identity is incomplete or foreign.");
         }
     }
 }

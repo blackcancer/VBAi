@@ -326,6 +326,96 @@ namespace VBAi.Tests.Unit
         }
 
         [TestMethod]
+        public void ReadinessWaitsOnlyForHiddenWindowsWithCompleteOwnedIdentityAndExactDesktop()
+        {
+            string desktop = "VBAiTests_" + Guid.NewGuid().ToString("N");
+            foreach (bool visible in new[] { false, true })
+                foreach (bool rootVisible in new[] { false, true })
+                {
+                    int reads = 0;
+                    Assert.AreEqual(visible && rootVisible, ReadyWindow(desktop, visible: visible,
+                        rootVisible: rootVisible, read: tid => { Assert.AreEqual(41u, tid); reads++; return desktop; }));
+                    Assert.AreEqual(1, reads, "Even hidden owned windows must prove their actual desktop before waiting.");
+                }
+            foreach (Func<bool> refuse in new Func<bool>[] {
+                () => ReadyWindow(desktop, handle: IntPtr.Zero),
+                () => ReadyWindow(desktop, root: IntPtr.Zero),
+                () => ReadyWindow(desktop, root: new IntPtr(10)),
+                () => ReadyWindow(desktop, pid: 8),
+                () => ReadyWindow(desktop, rootPid: 8),
+                () => ReadyWindow(desktop, expectedPid: 0),
+                () => ReadyWindow(desktop, tid: 0),
+                () => ReadyWindow(desktop, rootTid: 42),
+                () => ReadyWindow(desktop, childClass: "Other"),
+                () => ReadyWindow(desktop, rootClass: "Other") })
+                Assert.ThrowsException<InvalidOperationException>(() => refuse());
+            foreach (string actual in new[] { null, "", "Default", desktop.ToUpperInvariant() })
+                Assert.ThrowsException<InvalidOperationException>(() => ReadyWindow(desktop, read: unused => actual));
+            var original = new InvalidOperationException("Desktop observation failed");
+            Assert.AreSame(original, Assert.ThrowsException<InvalidOperationException>(() =>
+                ReadyWindow(desktop, read: unused => throw original)));
+            Assert.ThrowsException<ArgumentException>(() => ReadyWindow("Default"));
+            Assert.ThrowsException<ArgumentNullException>(() => OfficeVbeFixture.PrivateWordWindowReady(
+                new IntPtr(10), new IntPtr(20), 7, 7, 41, 41, "_WwG", "OpusApp", false, false, 7, desktop, null));
+        }
+
+        private static bool ReadyWindow(string desktop, IntPtr? handle = null, IntPtr? root = null, uint pid = 7,
+            uint rootPid = 7, uint tid = 41, uint rootTid = 41, string childClass = "_WwG", string rootClass = "OpusApp",
+            bool visible = false, bool rootVisible = false, uint expectedPid = 7, Func<uint, string> read = null)
+        {
+            return OfficeVbeFixture.PrivateWordWindowReady(handle ?? new IntPtr(10), root ?? new IntPtr(20),
+                pid, rootPid, tid, rootTid, childClass, rootClass, visible, rootVisible, expectedPid, desktop, read ?? (unused => desktop));
+        }
+
+        [TestMethod]
+        public void UniqueOwnedStartupWindowsBecomeVisibleBeforeTheSoleFinalVerification()
+        {
+            string desktop = "VBAiTests_" + Guid.NewGuid().ToString("N");
+            foreach (bool[] hidden in new[] { new[] { false, false }, new[] { false, true }, new[] { true, false } })
+            {
+                int inventories = 0, waits = 0, readies = 0, verifies = 0;
+                var handle = new IntPtr(10);
+                Assert.AreEqual(handle, OfficeVbeFixture.WaitForPrivateWordWindow(() => false,
+                    () => { inventories++; return new[] { handle }; }, () => true, () => waits++,
+                    actual => { Assert.AreEqual(2, readies); Assert.AreEqual(handle, actual); verifies++; },
+                    actual => { readies++; return ReadyWindow(desktop, handle: actual,
+                        visible: readies == 2 || hidden[0], rootVisible: readies == 2 || hidden[1]); }));
+                Assert.AreEqual(2, inventories); Assert.AreEqual(1, waits);
+                Assert.AreEqual(2, readies); Assert.AreEqual(1, verifies);
+            }
+        }
+
+        [TestMethod]
+        public void ReadinessErrorsAndAmbiguousInventoriesNeverBecomeWaitingOrFinalVerification()
+        {
+            foreach (IntPtr[] windows in new[] { null, new[] { IntPtr.Zero },
+                new[] { new IntPtr(10), new IntPtr(20) }, new[] { new IntPtr(10), new IntPtr(10) } })
+                Assert.ThrowsException<InvalidOperationException>(() => OfficeVbeFixture.WaitForPrivateWordWindow(
+                    () => false, () => windows, () => true, () => Assert.Fail(), unused => Assert.Fail(),
+                    unused => { Assert.Fail("Ambiguous inventory cannot reach readiness."); return false; }));
+            var original = new InvalidOperationException("Foreign or unavailable actual window identity");
+            Assert.AreSame(original, Assert.ThrowsException<InvalidOperationException>(() => OfficeVbeFixture.WaitForPrivateWordWindow(
+                () => false, () => new[] { new IntPtr(10) }, () => true, () => Assert.Fail(), unused => Assert.Fail(),
+                unused => throw original)));
+        }
+
+        [TestMethod]
+        public void HiddenOwnedWindowTimeoutOrOriginalExitNeverReachesComVerification()
+        {
+            int bounds = 0, waits = 0, readies = 0;
+            Assert.ThrowsException<TimeoutException>(() => OfficeVbeFixture.WaitForPrivateWordWindow(() => false,
+                () => new[] { new IntPtr(10) }, () => ++bounds == 1, () => waits++, unused => Assert.Fail(),
+                unused => { readies++; return false; }));
+            Assert.AreEqual(1, waits); Assert.AreEqual(1, readies);
+            int checks = 0;
+            waits = readies = 0;
+            Assert.ThrowsException<InvalidOperationException>(() => OfficeVbeFixture.WaitForPrivateWordWindow(() => ++checks == 2,
+                () => new[] { new IntPtr(10) }, () => true, () => waits++, unused => Assert.Fail(),
+                unused => { readies++; return false; }));
+            Assert.AreEqual(1, waits); Assert.AreEqual(1, readies);
+        }
+
+        [TestMethod]
         public void WordDocumentInventoryCollectsZeroOneTwoAndDeduplicatedOwnedChildrenAndIgnoresForeignPids()
         {
             foreach (int count in new[] { 0, 1, 2 })
