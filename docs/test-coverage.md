@@ -1363,17 +1363,26 @@ The collector arms the exact guard branch. Publisher PID 40760, start
 interval. The immediate pre-dispatch observation stops the scenario before its
 baseline read, with a null failed request and an empty commit ledger. No
 preference write is issued. Collector detachment is verified with exit 0; no
-natural stale-guard capture occurs. The owned host and registration are retained
-pending competing-host release and an independently verified normal shutdown.
+natural stale-guard capture occurs. The owned host and registration are initially
+retained pending competing-host release and an independently verified shutdown.
 
 The recovery validator now narrowly supports this earlier stop using the exact
 complete verified warmup readback. The matching offline PowerShell evidence
-gates record **17 passed, 0 failed**, with no Office activation or native
+gates in source `c5ff8fb` record **17 passed, 0 failed**, with no Office activation or native
 dispatch (`q026-warmup-recovery-gates.json`). They refuse foreign PID/start/MVID,
 missing or changed structures despite equal hashes, uncertain replies, known
 writes, intervening native dispatch, positive ledgers, unknown requests/errors,
 unverified closure and ambiguous receipts. The native failure stays failed;
 Q-026 remains **OPEN**.
+
+After Publisher is released, `isolation-stop-preferences/terminal.json` records
+a fresh complete readback equal to the verified warmup baseline. No compensation
+write is sent. `isolation-stop-shutdown.json` observes one Close, one Quit and
+normal exit 0 through the fresh recovery handle, not the original campaign
+handle. Host and previous registration release complete at
+`2026-10-03T20:42:37.6784270Z` (`isolation-stop-release.json`). The original
+GUI worker exits with code 1 and preserves the failed native scenario; the
+separate recovery GUI worker exits with code 0. No forced termination occurs.
 
 ### Q-026 offline snapshot review (2026-10-03)
 
