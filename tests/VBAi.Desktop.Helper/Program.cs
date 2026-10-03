@@ -69,7 +69,17 @@ namespace VBAi.Desktop.Helper
                     Error = error.ToString(), CleanupReplayed = false, Utc = Utc() });
                 // A UI/exit uncertainty is not permission to stop a host or drop its original query handle.
                 if (retainedChild != null)
-                    for (;;) Thread.Sleep(1000);
+                {
+                    // Recovery may close the owned host after the campaign has already failed.
+                    // Observe the original child's terminal handle and an empty private desktop;
+                    // releasing these handles never replays Close/Quit or changes the failed result.
+                    while (!retainedChild.Wait(1000) || IsolatedTestDesktop.HasWindows(desktop))
+                        Thread.Sleep(200);
+                    Write(output, "retained-release.json", new { State = "RETAINED_DESKTOP_RELEASED_AFTER_RECOVERY",
+                        OriginalChildExitCode = retainedChild.ExitCode(), CampaignQualified = false,
+                        CleanupReplayed = false, ForcedTermination = false, Desktop = desktop, Utc = Utc() });
+                    retainedChild.Dispose(); retainedChild = null;
+                }
                 if (retainedDesktop != null) { retainedDesktop.Dispose(); retainedDesktop = null; }
                 return 1;
             }

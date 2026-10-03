@@ -51,9 +51,9 @@ try {
     $status=$statusRaw | ConvertFrom-Json
     if(-not $status.Ok -or $status.Data.HostProcessId -ne $ledger.ProcessId -or $status.Data.AssemblyModuleVersionId -ne $plan.ProductMvid){throw 'Loaded candidate identity mismatch.'}
     $current=Read 'initial'
-    $margin=@($current.Tabs.Controls | Where-Object {$_.Name -ceq $ledger.Data.Request.Property})
-    $baselineMargin=@($baseline.Data.Tabs.Controls | Where-Object {$_.Name -ceq $ledger.Data.Request.Property})
-    if($margin.Count -ne 1 -or $baselineMargin.Count -ne 1 -or $margin[0].Value -cne $baselineMargin[0].Value){throw 'Failed margin transaction did not return to baseline; retain for explicit recovery.'}
+    $failedControl=@($current.Tabs | Where-Object {$_.Tab -ceq $ledger.Data.Request.Pane} | ForEach-Object {$_.Controls} | Where-Object {$_.Name -ceq $ledger.Data.Request.Property -and $_.Type -ne 'ControlType.Text'})
+    $baselineControl=@($baseline.Data.Tabs | Where-Object {$_.Tab -ceq $ledger.Data.Request.Pane} | ForEach-Object {$_.Controls} | Where-Object {$_.Name -ceq $ledger.Data.Request.Property -and $_.Type -ne 'ControlType.Text'})
+    if($failedControl.Count -ne 1 -or $baselineControl.Count -ne 1 -or $failedControl[0].Value -cne $baselineControl[0].Value){throw 'Failed transaction control is not at baseline; retain for explicit recovery.'}
     $entries=@($ledger.Data.CommittedRestoreEntries);[Array]::Reverse($entries);$sequence=0
     foreach($entry in $entries){
         $sequence++;$name='restore-'+$sequence.ToString('D2');$control=Control $current $entry

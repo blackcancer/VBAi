@@ -1,13 +1,16 @@
 #requires -Version 5.1
 param([Parameter(Mandatory=$true)][string]$EvidenceRoot,
     [string]$RecoveryRoot,
-    [Parameter(Mandatory=$true)][string]$OutputPath,[string]$BootstrapClosureObservation)
+    [Parameter(Mandatory=$true)][string]$OutputPath,[string]$BootstrapClosureObservation,[string]$IsolationDesktopRoot)
 $ErrorActionPreference='Stop'
 if(-not [IO.Path]::IsPathRooted($OutputPath) -or (Test-Path -LiteralPath $OutputPath) -or (Test-Path -LiteralPath ($OutputPath+'.progress.json'))){throw 'Fresh one-shot shutdown output required.'}
 $root=@(Get-ChildItem -LiteralPath (Join-Path $EvidenceRoot 'native/hosts') -Directory)
 if($root.Count -ne 1){throw 'One owned host required.'}
 $startup=Get-Content -LiteralPath (Join-Path $root[0].FullName 'startup.json') -Raw -Encoding UTF8 | ConvertFrom-Json
-$desktop=(Get-Content -LiteralPath (Join-Path $EvidenceRoot 'isolation/desktop/desktop-plan.json') -Raw -Encoding UTF8 | ConvertFrom-Json).Desktop
+if(-not $IsolationDesktopRoot){$IsolationDesktopRoot=Join-Path $EvidenceRoot 'isolation/desktop'}
+$desktop=(Get-Content -LiteralPath (Join-Path $IsolationDesktopRoot 'desktop-plan.json') -Raw -Encoding UTF8 | ConvertFrom-Json).Desktop
+$worker=Get-Content -LiteralPath (Join-Path $IsolationDesktopRoot 'worker-desktop.json') -Raw -Encoding UTF8 | ConvertFrom-Json
+if($worker.ActualDesktop -ne $desktop -or $worker.ExpectedDesktop -ne $desktop -or $worker.DesktopSwitches -ne 0){throw 'Private worker desktop evidence mismatch.'}
 if(-not $startup.Owned){throw 'Owned launch required.'}
 if($BootstrapClosureObservation){
     if($RecoveryRoot){throw 'Bootstrap-only closure cannot stand in for preference recovery.'}

@@ -77,7 +77,7 @@ namespace VBAi.Tests.Integration.Hosts.Excel
             try { trace = Q026OptionsGuardTrace.StartIfRequested(host, startUtc, evidenceDirectory); }
             catch { RetainHost(host); throw; }
             var lifecycle = new ExcelFormatOptionsQualification(host.ProcessId, host.Command,
-                () => ObserveOptionsClosure(host.ProcessId, startUtc), () => RetainHost(host),
+                () => ObserveOptionsClosureSettled(host, startUtc), () => RetainHost(host),
                 () => { trace?.Dispose(); host.Dispose(); AttachEvidence(host, startUtc, "ShutdownVerified", host.ShutdownDiagnostics); },
                 (phase, data) => AttachEvidence(host, startUtc, phase, data), verifyReadStability: true, marginOnly: marginOnly,
                 historicalPalettePrefix: historicalPalettePrefix);
@@ -96,6 +96,24 @@ namespace VBAi.Tests.Integration.Hosts.Excel
         }
 
         /// <summary>Only native reads: no focus, input, accessibility action, COM call or bridge request.</summary>
+        private IDictionary<string, object> ObserveOptionsClosureSettled(ExcelVbeFixture host, DateTime expectedStartUtc)
+        {
+            // Historical builds post Cancel without waiting for destruction. Observe its completion;
+            // never send input or another bridge request while an owned dialog is still present.
+            var timer = Stopwatch.StartNew();
+            var first = ObserveOptionsClosure(host.ProcessId, expectedStartUtc);
+            var last = first; int observations = 1;
+            while (Equals(last["ProcessIdentityVerified"], true) && Equals(last["EnumerationSucceeded"], true) &&
+                !Equals(last["OptionsDialogAbsent"], true) && timer.ElapsedMilliseconds < 2000)
+            {
+                System.Threading.Thread.Sleep(50);
+                last = ObserveOptionsClosure(host.ProcessId, expectedStartUtc); observations++;
+            }
+            AttachEvidence(host, expectedStartUtc, "ClosureObservation", new { First = first, Last = last,
+                Observations = observations, ElapsedMilliseconds = timer.ElapsedMilliseconds, NativeInput = 0, BridgeRequests = 0 });
+            return last;
+        }
+
         private static IDictionary<string, object> ObserveOptionsClosure(int processId, DateTime expectedStartUtc)
         {
             var windows = new List<object>(); bool optionsAbsent = true, identity = false, complete = false;

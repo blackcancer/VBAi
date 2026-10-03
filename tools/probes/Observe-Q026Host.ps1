@@ -1,13 +1,16 @@
 #requires -Version 5.1
 param([Parameter(Mandatory=$true)][string]$EvidenceRoot,
     [Parameter(Mandatory=$true)][string]$OutputPath,
-    [string]$CancelObservationPath,[switch]$ReadDialogText)
+    [string]$CancelObservationPath,[switch]$ReadDialogText,[string]$IsolationDesktopRoot)
 $ErrorActionPreference='Stop'
 if (-not [IO.Path]::IsPathRooted($OutputPath) -or (Test-Path -LiteralPath $OutputPath)) { throw 'A fresh absolute receipt is required.' }
 $hostRoot=@(Get-ChildItem -LiteralPath (Join-Path $EvidenceRoot 'native/hosts') -Directory)
 if($hostRoot.Count -ne 1){throw 'Exactly one owned host receipt is required.'}
 $startup=Get-Content -LiteralPath (Join-Path $hostRoot[0].FullName 'startup.json') -Raw -Encoding UTF8 | ConvertFrom-Json
-$desktop=(Get-Content -LiteralPath (Join-Path $EvidenceRoot 'isolation/desktop/desktop-plan.json') -Raw -Encoding UTF8 | ConvertFrom-Json).Desktop
+if(-not $IsolationDesktopRoot){$IsolationDesktopRoot=Join-Path $EvidenceRoot 'isolation/desktop'}
+$desktop=(Get-Content -LiteralPath (Join-Path $IsolationDesktopRoot 'desktop-plan.json') -Raw -Encoding UTF8 | ConvertFrom-Json).Desktop
+$worker=Get-Content -LiteralPath (Join-Path $IsolationDesktopRoot 'worker-desktop.json') -Raw -Encoding UTF8 | ConvertFrom-Json
+if($worker.ActualDesktop -ne $desktop -or $worker.ExpectedDesktop -ne $desktop -or $worker.DesktopSwitches -ne 0){throw 'Private worker desktop evidence mismatch.'}
 if($desktop -notmatch '^VBAiTests_[0-9a-f]{32}$' -or -not $startup.Owned){throw 'Reviewed private owned launch is required.'}
 Add-Type -TypeDefinition @'
 using System;
