@@ -1,10 +1,5 @@
 # Recorded validation
 
-Q-026 is **CLOSED for the tested corrected Excel candidate**, by maintainer
-decision on 2026-10-03. See the [scoped closure](#q-026-scoped-closure-2026-10-03).
-Earlier Q-026 OPEN/NOT_RUN statements below describe their historical
-checkpoints; they do not override this current decision or rewrite failed runs.
-
 ## Office testing subsystem qualification (2026-10-01)
 
 These trials reuse the frozen product built from
@@ -1110,29 +1105,6 @@ add-in. Execution checks that value before native launch. No Office trust
 setting or registered identity is changed. The next diagnostic must verify
 actual loaded-candidate identity before any preference scenario is accepted.
 
-### Q-026 scoped closure (2026-10-03)
-
-The maintainer instructed closure after reviewing current native acceptance and
-the remaining historical uncertainties. Q-026 is **CLOSED** for the corrected
-Excel candidate identified in [current native acceptance](#q-026-current-native-acceptance-2026-10-03):
-product MVID `24d4809c-d427-4412-b746-793d59fc056a`, test source `9400d654`.
-The separate margin and full Format campaigns establish real preference changes,
-independent readbacks, expected size/stale-revision refusals, equality of all
-baseline Tabs and revision, and normal exit from the original Excel handle.
-Their private-desktop and registration release receipts remain the closure basis.
-No runtime revision, ownership, restoration or normal-exit assertion is relaxed.
-
-The original stale-revision cause is now a separate **non-blocking historical
-investigation**, rather than a prerequisite to Q-026 closure. Its missing guard
-snapshots, unreproduced rejection and historical diagnostic launchers' unverified
-endings remain recorded in the [historical diagnostic](#q-026-historical-binary-diagnostic-2026-10-03).
-Failed runs and fresh-handle recoveries retain their actual outcomes. A later
-pass establishes the tested behavior, not the old failure's cause.
-
-This acceptance covers the tested Excel native Format matrix. An empty size
-catalogue qualifies honest refusal only; size mutation and other-host acceptance
-are not established. Other release gates retain their own scope and status.
-
 ### Q-026 current native acceptance (2026-10-03)
 
 Source `9400d654a11affaa931271cc4efcdc4dde05a80c` freezes both final campaigns
@@ -1178,11 +1150,10 @@ or shutdown error. No SOLIDWORKS or other-host acceptance is implied.
 `artifacts/q026-release.json` records release at `2026-10-03T09:15:13.5259898Z`,
 after owned Excel exit and absence of competing hosts. The limited-context
 restore verified the exact prior Q-024 CodeBase and LoadBehavior DWORD 0.
-The current instrumented Format matrix is **ACCEPTED**, and Q-026 is **CLOSED**
-by the maintainer's scoped decision above. The historical stale-revision cause
-remains **UNPROVEN** in a separate non-blocking investigation: the old failed run
-is not converted to a pass. Further blind repetitions would not supply its
-missing historical receipts.
+The current instrumented Format matrix is **ACCEPTED**. Q-026's historical
+stale-revision cause remains **UNPROVEN**: the old failed run is not converted
+to a pass by these new results, and its stricter causal-closure criterion remains
+open. Further blind repetitions would not supply its missing historical receipts.
 
 ### Q-026 historical binary diagnostic (2026-10-03)
 
@@ -1262,10 +1233,9 @@ cause and original-worker normal exit remain unverified. This is separate from
 the native test runner's verified result and original Excel-handle exit. No
 cleanup is replayed and no global keyboard input or desktop switch is used.
 
-The historical causal investigation remains **UNEXPLAINED / non-blocking**
-following the maintainer's scoped closure of Q-026. Delayed Options closure does
-not establish why the original complete revision differed, and recovery does
-not turn the failed native prefix into a pass.
+Q-026's historical causal criterion remains **OPEN**. Delayed Options closure
+does not establish why the original complete revision differed, and recovery
+does not turn the failed native prefix into a pass.
 
 ### Q-026 offline snapshot review (2026-10-03)
 
