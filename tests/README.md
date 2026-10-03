@@ -486,6 +486,31 @@ baseline hash and all tab structures must match before
 once. Recovery receipts do not convert a failed native TRX into acceptance, and
 their newly captured process handle does not prove the lost campaign handle's
 shutdown lifecycle. These helpers do not recover arbitrary user documents.
+`Recover-Q026Preferences.ps1 -RecoveryHostStartup` permits a separately owned
+recovery host only when the original process is absent and its failed request
+was a read with no terminal response. The exact frozen product must be loaded;
+the complete snapshot may differ from the original baseline only in a positively
+committed supported font. This path does not replay the lost read or transfer
+an unknown mutation. The original failed qualification remains failed.
+
+Optional `VBAi_TEST_Q026_CLR_TRACE_PLAN` enables test-only capture of the
+historical revision guard. Prefer a separately verified plan with
+`TraceMode: ExactGuardILBreakpoint` and a `GuardILOffset` derived from the frozen
+binary's IL, not a guessed source line. Its own
+`Test-Q026ClrTracePreflight.ps1 -GuardILOffset` receipt must verify the complete
+synthetic graph, request, exact branch and normal detach/exit with matching
+collector and product hashes. The Format fixture first compiles the native
+guard through one intentional nonmutating refusal and verifies complete
+unchanged state; only then can the exact breakpoint bind. A missing or ambiguous
+breakpoint retains ownership and prevents the matrix. Ordinary CLR exceptions
+are not stopped in this mode. The legacy first-chance mode remains available
+for its separately verified plans, but changes timing much more substantially.
+Neither mode establishes causality without a natural guard rejection and its
+complete matching before/observed snapshots. Format dispatches independently
+check owned PID/start and absence of competing VBE hosts throughout the run;
+this supplements the reservation requirement rather than guaranteeing that
+another chat cannot start a host between observations.
+
 `Observe-Q026Host.ps1 -ReadDialogText` optionally reads a bounded inventory of
 owned dialog controls without input. A terminal bootstrap failure before any
 preference dispatch may use `Close-Q026RecoveredHost.ps1

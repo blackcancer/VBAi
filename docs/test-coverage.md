@@ -1237,6 +1237,85 @@ Q-026's historical causal criterion remains **OPEN**. Delayed Options closure
 does not establish why the original complete revision differed, and recovery
 does not turn the failed native prefix into a pass.
 
+### Q-026 diagnostic crash and targeted capture (2026-10-03)
+
+Historical campaign `q026-historical-prefix-campaign-v4`, source `474d4c2`,
+loads the unchanged original product on inactive desktop
+`VBAiTests_285a6e65f7664bf38cceec8f1357fc18`: Excel PID 17064, start
+`2026-10-03T16:06:40.7009034Z`. The font and three palette writes pass their
+readbacks; three palette compensations complete. The subsequent
+`read_vbe_options` request expires after emission at
+`2026-10-03T16:24:19.9324626Z`. No font compensation, cleanup or retry is sent.
+The CLR trace has no complete stale-guard capture and records an access
+violation. Windows Application Error event 1000 independently identifies
+the same PID/start, exception `0xC0000005`, and EXCEL.EXE offset `0x10CFBDE`.
+The owning worker exits with code 1. Its direct GUI launcher and private-desktop
+terminal observe that original-worker exit normally; they do not establish a
+normal exit for the crashed Excel. Windows also records a Publisher crash
+during the native interval, so exclusive host use throughout that trial is
+not established. Neither crash cause is inferred from these events.
+
+Office subsequently starts Excel PID 42408 with `/restore` on desktop `Default`.
+After explicit user reservation for Q-026 recovery, exact native attachment
+finds only the unchanged saved disposable seed. One Close and one Quit return;
+the fresh recovery handle observes exit 0. This successor is not the original
+campaign host and cannot supply its missing lifecycle evidence.
+
+`q026-historical-prefix-campaign-v4/separate-owned-recovery` owns a further
+isolated Excel PID 12836, start `2026-10-03T16:49:11.7267442Z`, on desktop
+`VBAiTests_11784aa1e68847bfaa1de1b91f99f792`, with the exact historical MVID.
+The new host's complete snapshot differs from the original baseline only in
+the positively committed font. Three palette entries already match and are
+not written again. One font compensation with a fresh revision, independent
+readback and complete Tabs equality restores baseline revision `544477...`.
+Its original native launch handle observes exit 0; the original private worker
+and direct GUI launcher also exit 0 without desktop switches. At
+`2026-10-03T16:50:55.9361372Z`, preference recovery and guarded restoration of
+the previous Q-024 registration are complete. These recovery receipts explicitly
+keep the original campaign failed.
+
+| Source / artifact | Actual result | Scope |
+| --- | --- | --- |
+| `474d4c2`, `q026-historical-prefix-campaign-v4/managed/managed.trx` | 71 passed, 0 failed, 0 skipped | Historical-compatible managed subset |
+| `474d4c2`, `q026-historical-prefix-campaign-v4/native/format.trx` | 0 passed, 1 failed, 0 skipped | Historical prefix; restoration read expires and owned Excel crashes |
+| Source files committed as `f9f5ccc`, `q026-v4-followup-build/managed/managed.trx` | 73 passed, 0 failed, 0 skipped | Intermediate host-exclusivity guards, not the full repository suite |
+| `f9f5ccc`, `q026-guard-il-harness-build/managed/managed.trx` | 74 passed, 1 failed, 0 skipped | Retained intermediate failure in the synthetic warmup model |
+| `f9f5ccc`, `q026-guard-il-harness-green/managed/managed.trx` | 75 passed, 0 failed, 0 skipped | Corrected focused lifecycle model, exclusivity and nonmutating guard warmup |
+
+Source `f9f5ccc` checks exact ownership and competing VBE hosts before every
+Format dispatch. A changed interval retains the host and forbids further reads,
+writes, compensation and cleanup. Refusals require complete structural equality
+as well as unchanged revision. No production revision check is relaxed.
+
+The earlier exception collector stops on all CLR exceptions before filtering
+the message and substantially alters timing. A new mode binds only the exact
+stale-guard IL branch in the frozen binary. Pure metadata inspection identifies
+`ldstr` at IL offset 233 (`0xE9`); the collector verifies its literal, product
+MVID/hash, uniquely bound native address and complete matching synthetic
+preflight before attachment. Normal UIA exceptions are not intercepted. The
+guard warmup uses one intentional refusal targeting an absent property and
+verifies dialog destruction and complete unchanged state before attachment.
+Debugger breakpoints are diagnostic code changes, not preference writes or
+target function evaluations.
+
+`q026-guard-il-preflight-v1` retains a failed PowerShell JSON comparison after
+a complete capture; an independent structural comparison finds no differing
+fields. Windows PowerShell had decorated the root array with ETS properties.
+The corrected comparison uses the original .NET Framework serializer on both
+JSON graphs. `q026-guard-il-preflight-v3/preflight.json` verifies the complete
+synthetic snapshot and request at the exact IL branch, with debugger detach and
+original-helper exit 0. It activates no Office host. The new mode is prepared;
+it does not establish the historical revision drift or qualify native Office.
+
+The targeted capture follows the primary [SOS documentation on GitHub](https://github.com/dotnet/diagnostics/blob/main/src/SOS/Strike/sosdocs.txt)
+and Microsoft's [breakpoint command documentation](https://learn.microsoft.com/en-us/windows-hardware/drivers/debuggercmds/bs--update-breakpoint-command-).
+Microsoft's [UI Automation threading guidance](https://learn.microsoft.com/en-us/windows/win32/winauto/uiauto-threading)
+requires a separate MTA client thread for interactions with the client's own UI;
+the bridge already uses a separate worker. The [VBE-Themes project's registry mapping](https://github.com/vicsar/VBE-Themes)
+also documents common VBE settings, supporting the need for an exclusive host
+interval. These references guide the investigation; they do not prove either
+the original stale revision or this later crash. Q-026 remains **OPEN**.
+
 ### Q-026 offline snapshot review (2026-10-03)
 
 Branch `codex/q026-qualification` starts from `origin/main` at `4b382b9`,
