@@ -2,6 +2,67 @@
 
 ## Complete inactive desktop gate (2026-10-03)
 
+Frozen source `8ad5ecf79f151c4633fe1d7dc002d60890e93cb8` builds with zero
+warnings/errors. Its complete default managed gate reports **3,960 passed,
+0 failed, 206 inactive, 4,166 total**, ending `2026-10-03T00:04:35.2224999Z`.
+The TRX outcome is Completed; source stays clean and product/test hashes remain
+exact. Native/provider opt-ins and the coverage collector are disabled. Product
+MVID is `96f9b70e-662f-4551-89b5-ff7400bdb2a8`; product SHA-256 is
+`84616C0329641EDD8DC49DBDE8D3550052F23EBA6FA22C113C0CA873CFAAF022`;
+test SHA-256 is
+`AC5011DB02A20BCCF2F0EEC0D1BC21A5F17A656D648814997AF075749A0F75DC`.
+Actual testhost PID `6856`, thread `65148`, verifies its inactive desktop
+`VBAiTests_0b034b85219d41ef9ac8f9b2348226da`; input remains `Default`.
+
+The same candidate's complete synthetic matrix reports **9 proven, 0 gaps,
+9 required**, ending `2026-10-02T23:49:16.0170021Z`. Matrix PID `43408`, thread
+`55344`, observes its ordinary owned Form as the active private window, with no
+explicit activation call. The exact ToolBar popup is owned by that Form; its
+unique virtual Git MSAA action raises exactly one click. All original campaign
+children exit normally with code 0, and their terminal tasks are removed with
+receipts. This is managed/synthetic acceptance, not Word acceptance or a new
+line/branch coverage measurement.
+
+After the separate campaigns release their Office hosts, temporary registration
+Apply is verified and the complete native Word bank is submitted once. Its result
+is **0 passed, 1 failed, 2 inactive**, ending `2026-10-03T00:06:04.7187875Z`.
+Startup stops at `GetThreadDesktop` for the launched primary thread, returning
+NULL/error 0 before NativeOM attachment, VBE opening, document creation or
+Chat/Git action. Word PID `42988` is retained with no Close/Quit entry. Its
+original testhost has exited; the campaign worker retains the private desktop.
+This is a native preflight failure, not a failed Chat/Git delivery or successful
+host loading.
+
+Separate read-only diagnostics on that exact private desktop find the actual
+Word UI thread `20560` and its exact desktop name. They also find two distinct
+documents: the inert DOCX seed and an older saved disposable DOCM from
+`artifacts/qualification-v1/followup-20260930/office-adapter-v4/`. The documents
+are not equivalent views of the seed. No source or macro is read or executed.
+The origin of the older document and the primary-thread NULL remain unknown.
+A proposed normal recovery refuses during document/hash preflight before macro
+suppression or Quit; its read-only leases and child remain retained. Shared-read
+hashes are subsequently obtained without changing either file. A concurrent
+campaign restores the observed core/chat CodeBases to the installed `bin`
+path; this campaign has not replayed Restore or claimed ownership of that write.
+The backup and launch evidence remain preserved.
+
+Evidence is under `artifacts/q024-private-batch-v9-20261003/`; its tested source
+is retained in a clean frozen checkout. Q-024 remains open and Q-027 deferred.
+Corrections and their complete mirror bank are prepared separately; those source
+changes do not inherit this candidate's acceptance.
+
+The preceding `fe59993062e5deeac95ae5eeb0266399ae0575b2` gate also reports
+**3,960 passed, 0 failed, 206 inactive, 4,166 total**, ending
+`2026-10-02T23:47:29.9821185Z`, with exact hashes and clean source. Its synthetic
+matrix reports **8 proven, 1 gap, 9 required**: the no-activation canary Form
+produces an ownerless Options popup, refused before Git delivery. Registration
+Apply and native Word are NOT_RUN on that candidate. Artifacts are under
+`artifacts/q024-private-batch-v8-20261003/`. Ordinary Form startup on the private
+desktop corrects the synthetic owner observation; the actual Word owner contract
+is unchanged.
+
+## Earlier inactive desktop gate (2026-10-03)
+
 Frozen source `a15609fd95430021c0f828b5a3ba712841af19ce` builds with zero
 warnings/errors. Its complete default managed gate reports **3,952 passed,
 0 failed, 206 inactive, 4,158 total**, ending `2026-10-02T22:53:18.3202473Z`.

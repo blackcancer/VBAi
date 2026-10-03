@@ -2,6 +2,7 @@ using System;
 using System.ComponentModel;
 using System.IO;
 using System.Runtime.InteropServices;
+using System.Runtime.ExceptionServices;
 using System.Text;
 
 namespace VBAi.Tests.Integration
@@ -66,7 +67,107 @@ namespace VBAi.Tests.Integration
             return name.ToString();
         }
 
-        internal static string DesktopName(uint threadId) => ObjectName(GetThreadDesktop(threadId));
+        /// <summary>Retains separate native desktop/name failures without treating an unavailable thread as proof of placement.</summary>
+        internal sealed class ThreadDesktopObservation
+        {
+            public uint ThreadId { get; }
+            public long Handle { get; }
+            public string Name { get; }
+            public int DesktopError { get; }
+            public int NameError { get; }
+            internal ThreadDesktopObservation(uint threadId, long handle, string name, int desktopError, int nameError)
+            { ThreadId = threadId; Handle = handle; Name = name; DesktopError = desktopError; NameError = nameError; }
+        }
+
+        internal static ThreadDesktopObservation ReadThreadDesktop(uint threadId)
+        {
+            SetLastError(0);
+            IntPtr handle = GetThreadDesktop(threadId);
+            int desktopError = Marshal.GetLastWin32Error();
+            if (handle == IntPtr.Zero) return new ThreadDesktopObservation(threadId, 0, null, desktopError, 0);
+            var name = new StringBuilder(256); uint required;
+            SetLastError(0);
+            bool named = GetUserObjectInformationW(handle, 2, name, (uint)(name.Capacity * 2), out required);
+            int nameError = Marshal.GetLastWin32Error();
+            return new ThreadDesktopObservation(threadId, handle.ToInt64(), named ? name.ToString() : null,
+                desktopError, named ? 0 : nameError);
+        }
+
+        internal static string RequireThreadDesktopName(ThreadDesktopObservation observation)
+        {
+            if (observation == null) throw new ArgumentNullException(nameof(observation));
+            if (observation.Handle == 0)
+                throw new Win32Exception(observation.DesktopError, "GetThreadDesktop returned NULL for thread " +
+                    observation.ThreadId + "; error=" + observation.DesktopError + ". Desktop identity is unproved.");
+            if (observation.NameError != 0 || string.IsNullOrEmpty(observation.Name))
+                throw new Win32Exception(observation.NameError, "The desktop name is unavailable for thread " +
+                    observation.ThreadId + "; error=" + observation.NameError + ". Desktop identity is unproved.");
+            return observation.Name;
+        }
+
+        internal static string DesktopName(uint threadId) => RequireThreadDesktopName(ReadThreadDesktop(threadId));
+
+        internal sealed class WindowEnumeration
+        {
+            internal bool Completed;
+            internal int Error;
+        }
+
+        /// <summary>Preserves visitor failures alongside a failed identity recheck; partial enumerations never become success.</summary>
+        internal static void InventoryNamedWindows(string name, Func<string> readName,
+            Func<Func<IntPtr, bool>, WindowEnumeration> enumerate, Func<IntPtr, bool> visit)
+        {
+            if (readName == null || enumerate == null || visit == null) throw new ArgumentNullException("Named desktop inventory dependencies");
+            RequireName(name);
+            if (!string.Equals(readName(), name, StringComparison.Ordinal))
+                throw new InvalidOperationException("The named desktop inventory handle differs from the required desktop.");
+            int count = 0; Exception failure = null;
+            WindowEnumeration result = null;
+            try
+            {
+                result = enumerate(window => {
+                    if (++count > 8192) return false;
+                    try { return visit(window); }
+                    catch (Exception error) { failure = error; return false; }
+                });
+            }
+            catch (Exception error)
+            {
+                failure = failure == null ? error : new AggregateException("Visitor and desktop enumeration both failed.", failure, error);
+            }
+            try
+            {
+                if (!string.Equals(readName(), name, StringComparison.Ordinal))
+                    throw new InvalidOperationException("The named desktop identity changed during inventory.");
+            }
+            catch (Exception error)
+            {
+                failure = failure == null ? error : new AggregateException("Original inventory failure and desktop identity recheck both failed.", failure, error);
+            }
+            if (failure != null) ExceptionDispatchInfo.Capture(failure).Throw();
+            if (result == null) throw new InvalidOperationException("Named desktop enumeration returned no terminal result.");
+            RequireWindowInventory(result.Completed, count, result.Error);
+        }
+
+        /// <summary>Visits a complete bounded inventory through an exact named inactive desktop handle.</summary>
+        internal static void InventoryWindows(string name, Func<IntPtr, bool> visit)
+        {
+            if (visit == null) throw new ArgumentNullException(nameof(visit));
+            RequireCurrent(name);
+            IntPtr handle = OpenDesktopW(name, 0, false, 0x41);
+            if (handle == IntPtr.Zero) throw new Win32Exception(Marshal.GetLastWin32Error());
+            try
+            {
+                InventoryNamedWindows(name, () => ObjectName(handle), callback => {
+                    WindowVisitor visitor = (window, state) => callback(window);
+                    SetLastError(0);
+                    bool completed = EnumDesktopWindows(handle, visitor, IntPtr.Zero);
+                    return new WindowEnumeration { Completed = completed, Error = Marshal.GetLastWin32Error() };
+                }, visit);
+                RequireCurrent(name);
+            }
+            finally { CloseDesktop(handle); }
+        }
 
         internal static bool HasWindows(string name)
         {

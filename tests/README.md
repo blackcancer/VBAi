@@ -116,6 +116,18 @@ checks both populated and empty inventories on the owned desktop before starting
 any campaign. On the observed Windows 11 host an empty valid desktop returns
 false/error 0 without callbacks; errored or partial inventories remain refusals.
 
+The private Word fixture persists its returned CreateProcess identity and captures
+the original process before window discovery. The primary thread's desktop query
+is a recorded diagnostic: an unavailable name provides no placement proof, and
+an observed different desktop refuses. Attachment requires the unique `_WwG`
+document child under an owned visible `OpusApp` root, the exact launched PID and
+actual UI thread's named inactive desktop, before the first NativeOM/COM call.
+Discovery uses a bounded inventory of the exact named desktop; duplicate document
+windows, partial enumeration, foreign identities or an unavailable actual UI
+desktop refuse without activation or native replay. The only open document must
+still be the exact macro-free seed. A recovered older disposable document does
+not satisfy that condition and is retained for a separate diagnosis.
+
 Discover an expanded ComboBox's list through its exact `GetComboBoxInfo` list
 HWND, then require the unique enabled UIA ListItem under that HWND, the same
 process/thread and private desktop. A dropdown need not expose its items as
