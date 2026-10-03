@@ -1278,8 +1278,8 @@ keep the original campaign failed.
 | --- | --- | --- |
 | `474d4c2`, `q026-historical-prefix-campaign-v4/managed/managed.trx` | 71 passed, 0 failed, 0 skipped | Historical-compatible managed subset |
 | `474d4c2`, `q026-historical-prefix-campaign-v4/native/format.trx` | 0 passed, 1 failed, 0 skipped | Historical prefix; restoration read expires and owned Excel crashes |
-| Source files committed as `f9f5ccc`, `q026-v4-followup-build/managed/managed.trx` | 73 passed, 0 failed, 0 skipped | Intermediate host-exclusivity guards, not the full repository suite |
-| `f9f5ccc`, `q026-guard-il-harness-build/managed/managed.trx` | 74 passed, 1 failed, 0 skipped | Retained intermediate failure in the synthetic warmup model |
+| Intermediate working tree after `474d4c2`, `q026-v4-followup-build/managed/managed.trx` | 73 passed, 0 failed, 0 skipped | Host-exclusivity guards before the later warmup additions; test assembly SHA-256 `F249020528DC07A83CA801B736768160BE718B7ECCB25C7C6C3AED31DD4E4EBE` |
+| Intermediate working tree before `f9f5ccc`, `q026-guard-il-harness-build/managed/managed.trx` | 74 passed, 1 failed, 0 skipped | Retained failure before the synthetic warmup-model correction; test assembly SHA-256 `75FC2E03C30E8081E1C6DEBC5CF3526270700D2DADE62B2DBAE7208C957213CB` |
 | `f9f5ccc`, `q026-guard-il-harness-green/managed/managed.trx` | 75 passed, 0 failed, 0 skipped | Corrected focused lifecycle model, exclusivity and nonmutating guard warmup |
 
 Source `f9f5ccc` checks exact ownership and competing VBE hosts before every
