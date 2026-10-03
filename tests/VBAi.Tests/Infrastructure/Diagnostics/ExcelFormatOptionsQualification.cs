@@ -106,10 +106,11 @@ namespace VBAi.Tests.Integration
             foreach (var names in new[] { new[] { "Foreground", "Premier plan :" }, new[] { "Background", "Arrière-plan :" }, new[] { "Indicator", "Indicateur :" } })
             {
                 var paletteFormat = Format(Read(names[0] + "Catalogue")); string category = CurrentCategory(paletteFormat);
-                var control = CategoryPalette(paletteFormat, category, names);
+                var control = historicalPalettePrefix ? Find(paletteFormat, names) : CategoryPalette(paletteFormat, category, names);
                 string next = Choices(control).First(x => x != (string)control["Value"]);
                 Write(names[0], tab, (string)control["Name"], next, historicalPalettePrefix ? null : category);
-                Assert.AreEqual(next, CategoryPalette(Format(Read(names[0] + "Readback")), category, names)["Value"]);
+                var readback = Format(Read(names[0] + "Readback"));
+                Assert.AreEqual(next, (historicalPalettePrefix ? Find(readback, names) : CategoryPalette(readback, category, names))["Value"]);
             }
             if (historicalPalettePrefix) return; // The old drift preceded the other-category/checkbox scenarios; keep this diagnostic bounded.
             var categoryRead = Read("OtherCategoryCatalogue"); var categories = (object[])Format(categoryRead)["FormatCategories"];
@@ -170,6 +171,14 @@ namespace VBAi.Tests.Integration
                     if (!ledger.Any(item => item.Item2 == property && item.Item4 == category))
                         ledger.Add(Tuple.Create(tab, property, old, category));
                 });
+            if (historicalPalettePrefix)
+            {
+                // The original test reads back in Matrix immediately after Write. Keep that
+                // order rather than inserting another full native inspection between them.
+                evidence(phase + "HistoricalCommit", new { Before = before, MutationRetried = false,
+                    IndependentReadbackRequiredByMatrix = true });
+                return;
+            }
             var after = Read(phase + "IndependentAfterWrite");
             Assert.AreEqual(Expected(value), Control(Format(after), property, category)["Value"], "The native preference readback differs from the requested value.");
             evidence(phase + "Verified", new { Before = before, IndependentAfterRead = after,

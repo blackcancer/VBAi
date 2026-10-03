@@ -1,7 +1,9 @@
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Runtime.InteropServices;
+using System.Security.Cryptography;
 using System.Threading;
 using System.Web.Script.Serialization;
 using System.Windows.Automation;
@@ -14,6 +16,7 @@ namespace VBAi.Desktop.Helper
     internal static class Program
     {
         [DllImport("user32.dll")] private static extern IntPtr GetForegroundWindow();
+        [DllImport("kernel32.dll")] private static extern IntPtr GetConsoleWindow();
         [DllImport("user32.dll")] private static extern uint GetWindowThreadProcessId(IntPtr window, out uint pid);
         [DllImport("user32.dll", SetLastError = true)] private static extern bool PostMessageW(IntPtr window, uint message, IntPtr wParam, IntPtr lParam);
         private static IDisposable retainedDesktop;
@@ -21,6 +24,52 @@ namespace VBAi.Desktop.Helper
 
         [STAThread]
         private static int Main(string[] args)
+        {
+            try
+            {
+                if (args.Length == 2 && args[0] == "--run-plan") return RunPlan(args[1]);
+                return Run(args);
+            }
+            catch (Exception error)
+            {
+                // A malformed plan must not open a crash dialog on the user's desktop.
+                if (args.Length == 2 && args[0] == "--run-plan" && Path.IsPathRooted(args[1]))
+                    try { Write(Path.GetDirectoryName(args[1]), "entry-failure.json", new {
+                        State = "ENTRY_FAILED", Error = error.ToString(), NoCleanupReplayed = true, Utc = Utc() }); }
+                    catch { }
+                return 3;
+            }
+        }
+
+        private static int RunPlan(string path)
+        {
+            // The scheduled action starts this GUI executable directly. Its lifetime and
+            // receipts do not depend on an intermediate PowerShell console.
+            if (!Path.IsPathRooted(path) || !File.Exists(path) || new FileInfo(path).Length > 65536) return 3;
+            var plan = new JavaScriptSerializer().Deserialize<Dictionary<string, object>>(File.ReadAllText(path));
+            string script = (string)plan["Script"], helper = (string)plan["Helper"], worker = (string)plan["Worker"],
+                output = (string)plan["Output"], terminal = (string)plan["Terminal"];
+            foreach (string value in new[] { script, helper, worker, output, terminal })
+                if (!Path.IsPathRooted(value)) return 3;
+            if (!string.Equals(Path.GetFullPath(helper), typeof(Program).Assembly.Location, StringComparison.OrdinalIgnoreCase) ||
+                !File.Exists(script) || !File.Exists(worker) || Directory.Exists(output) || File.Exists(terminal) ||
+                Hash(helper) != (string)plan["HelperSha256"] || Hash(script) != (string)plan["ScriptSha256"] ||
+                Hash(worker) != (string)plan["WorkerSha256"]) return 3;
+            int code = Run(new[] { "--run", script, output, worker });
+            Write(Path.GetDirectoryName(terminal), Path.GetFileName(terminal), new { State = "CHILD_TERMINAL",
+                ExitCode = code, User = System.Security.Principal.WindowsIdentity.GetCurrent().Name,
+                DirectGuiLauncher = true, ConsoleAttached = GetConsoleWindow() != IntPtr.Zero, Utc = Utc() });
+            return code;
+        }
+
+        private static string Hash(string path)
+        {
+            using (var file = File.OpenRead(path))
+            using (var sha = SHA256.Create())
+                return BitConverter.ToString(sha.ComputeHash(file)).Replace("-", "");
+        }
+
+        private static int Run(string[] args)
         {
             if (args.Length == 3 && args[0] == "--probe") return Probe(args[1], args[2]);
             if (args.Length != 4 || args[0] != "--run") return 2;
@@ -33,6 +82,12 @@ namespace VBAi.Desktop.Helper
             string input = IsolatedTestDesktop.InputDesktopName();
             try
             {
+                Write(output, "helper-started.json", new { ProcessId = Process.GetCurrentProcess().Id,
+                    ProcessStartUtc = Process.GetCurrentProcess().StartTime.ToUniversalTime().ToString("o"),
+                    ConsoleAttached = GetConsoleWindow() != IntPtr.Zero, Product = typeof(Program).Assembly.Location,
+                    AssemblyMvid = typeof(Program).Module.ModuleVersionId.ToString("D"), Utc = Utc() });
+                if (GetConsoleWindow() != IntPtr.Zero)
+                    throw new InvalidOperationException("The private launcher must not depend on a console lifetime.");
                 retainedDesktop = IsolatedTestDesktop.Create(desktop);
                 Write(output, "desktop-plan.json", new { Desktop = desktop, InputDesktop = input,
                     Script = script, SwitchDesktopCalled = false, TerminationAllowed = false,

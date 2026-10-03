@@ -27,6 +27,10 @@ namespace VBAi.Tests.Unit
                 if (new[] { "Foreground", "Background", "Indicator" }.Contains(Convert.ToString(item["Property"])))
                     Assert.IsNull(item["Query"], "The historical request omitted Query, including restoration.");
             Assert.IsTrue(probe.Phases.Contains("BaselineRestored"));
+            Assert.IsFalse(probe.Phases.Any(phase => phase.EndsWith("IndependentAfterWriteIntent")),
+                "The historical sequence must not insert an additional native read between Write and the original readback.");
+            foreach (string property in new[] { "Font", "Foreground", "Background", "Indicator" })
+                Assert.IsTrue(probe.Phases.Contains(property + "ReadbackReply"), "Each historical commit still requires its original independent readback.");
         }
 
         [TestMethod]

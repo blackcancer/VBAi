@@ -79,7 +79,7 @@ namespace VBAi.Tests.Integration.Hosts.Excel
             var lifecycle = new ExcelFormatOptionsQualification(host.ProcessId, host.Command,
                 () => ObserveOptionsClosureSettled(host, startUtc), () => RetainHost(host),
                 () => { trace?.Dispose(); host.Dispose(); AttachEvidence(host, startUtc, "ShutdownVerified", host.ShutdownDiagnostics); },
-                (phase, data) => AttachEvidence(host, startUtc, phase, data), verifyReadStability: true, marginOnly: marginOnly,
+                (phase, data) => AttachEvidence(host, startUtc, phase, data), verifyReadStability: !historicalPalettePrefix, marginOnly: marginOnly,
                 historicalPalettePrefix: historicalPalettePrefix);
             Exception primary = null, detach = null;
             try { lifecycle.Run(); } catch (Exception error) { primary = error; }
