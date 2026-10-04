@@ -1,5 +1,5 @@
 #requires -Version 5.1
-param([switch]$Prepare, [string]$EvidenceRoot, [string]$ModelRoot,
+param([switch]$Prepare, [string]$EvidenceRoot, [string]$ModelRoot, [string]$ProductSourceCommit,
     [string]$Model = 'qwen2.5:7b-instruct',
     [string]$OllamaExecutable = 'C:\Users\init-\AppData\Local\Programs\Ollama\ollama.exe')
 $ErrorActionPreference = 'Stop'
@@ -28,13 +28,27 @@ if ($Prepare) {
         $modelFiles += $path
     }
     $hosts = @()
+    $toolExecutables = @('node.exe','dotnet.exe','git.exe' | ForEach-Object {
+        $tool = (Get-Command $_ -CommandType Application -ErrorAction Stop).Source
+        @{Path=$tool;Sha256=(Get-FileHash -LiteralPath $tool).Hash}
+    })
     foreach ($name in @('Excel','Word','PowerPoint','Access','Publisher','Outlook')) {
         $exeName = @{Excel='EXCEL';Word='WINWORD';PowerPoint='POWERPNT';Access='MSACCESS';Publisher='MSPUB';Outlook='OUTLOOK'}[$name]
         $exe = Join-Path 'C:/Program Files/Microsoft Office/root/Office16' ($exeName + '.EXE')
         $hosts += @{Name=$name;Executable=$exe;ProcessName=$exeName;Version=(Get-Item -LiteralPath $exe).VersionInfo.FileVersion;Sha256=(Get-FileHash -LiteralPath $exe).Hash}
     }
+    if (-not $ProductSourceCommit) { $ProductSourceCommit = & git -C $repo rev-parse HEAD }
+    $managedClasses = @('NativeExportTraceTests','OllamaQualificationEndpointTests','OllamaQualificationModelTests',
+        'OllamaQualificationProfileTests','OllamaSyntheticWireCaptureTests','OllamaOfficeStreamOracleTests',
+        'LlmChatClientCoverageTests','StreamTests','ChatWindowStateTests','LlmVbeToolsBoundaryTests',
+        'LlmVbeAsyncValidationTests','LlmVbeToolContractTests','LlmProjectPrivacyTests','ProjectPrivacyBoundaryTests',
+        'CatalogBoundaryTests','ToolCatalogTests','PrivateDesktopUiActionTests','QualificationDesktopGuardTests',
+        'OfficeVbeFixtureDesktopTests','OfficeVbeFixtureDesktopStartupRecoveryTests','OutlookPrivateDesktopTests',
+        'OfficeOwnedShutdownEvidenceTests','OutlookVbaTestFixtureShutdownTests')
+    $managedFilter = '(TestCategory=Unit|TestCategory=Scenario)&TestCategory!=OllamaUi&(' +
+        (($managedClasses | ForEach-Object {'FullyQualifiedName~VBAi.Tests.Unit.'+$_+'.'}) -join '|') + ')'
     $scenarios = @(
-        @{Id='managed';Filter='TestCategory=Unit|TestCategory=Scenario';Oracle='All selected unit/scenario tests pass; native/provider opt-ins are absent'}
+        @{Id='managed';Filter=$managedFilter;Oracle='Focused transport/chat/privacy/desktop/Office lifecycle regressions all pass; includes the Node lookup regression. This gate does not replace the failed broad aggregate. The real-provider OllamaUi case runs separately; native/provider opt-ins are absent'}
         @{Id='tool-roundtrip';Filter='FullyQualifiedName=VBAi.Tests.Integration.OllamaQualificationTests.LocalModelStreamsAndCompletesSyntheticToolRoundTrip';Oracle='Visible HTTP deltas, exactly one qualification_echo with scalar VB_AI_42, exact final marker; retained synthetic wire'}
         @{Id='cancel-recovery';Filter='FullyQualifiedName=VBAi.Tests.Integration.OllamaQualificationTests.LocalModelCancellationDoesNotPoisonTheNextConversation';Oracle='Cancel after first nonempty fragment; independent fresh request completes; exact wire retained'}
         @{Id='detached-ui';Filter='FullyQualifiedName=VBAi.Tests.Unit.ChatWindowStateTests.LocalOllamaShownChatStreamsStopsAndCompletesNextSend';Oracle='Shown real controls render text while busy, one Stop, visible interruption and next complete UI_READY_42; simulated VBE explicitly distinct'}
@@ -47,16 +61,24 @@ if ($Prepare) {
     $frozen = Join-Path $EvidenceRoot 'Invoke-FrozenQ028.ps1'
     Copy-Item -LiteralPath $PSCommandPath -Destination $frozen
     $files = @($frozen,$OllamaExecutable) + $modelFiles
+    $files += @($toolExecutables.Path)
     $files += @(Get-ChildItem (Split-Path $product),(Split-Path $tests),(Split-Path $helper) -Recurse -File | Select-Object -ExpandProperty FullName)
     $files += @((Join-Path $repo 'tools/testing-explorer/Set-TestExplorerCandidate.ps1'),(Join-Path $repo 'tools/tests/Invoke-IsolatedDesktopWorker.ps1'))
+    $backendPort = Free-Port; $proxyPort = Free-Port
+    if ($backendPort -eq $proxyPort) { throw 'Port allocation collided; no campaign launched.' }
+    $settings = Join-Path $EvidenceRoot 'bounded.runsettings'
+    '<RunSettings><RunConfiguration><TargetPlatform>x64</TargetPlatform><MaxCpuCount>1</MaxCpuCount><TestSessionTimeout>900000</TestSessionTimeout><TreatNoTestsAsError>true</TreatNoTestsAsError></RunConfiguration></RunSettings>' | Set-Content -LiteralPath $settings -Encoding UTF8
+    $files += $settings
     $plan = @{Scope='Q028 real Ollama and six classic Office VBE hosts; no SOLIDWORKS, Visio, Project or global VBE preference changes';
+        ProductSourceCommit=$ProductSourceCommit;RunSettings=$settings;CaseTimeoutMilliseconds=900000;
         SourceCommit=(& git -C $repo rev-parse HEAD);SourceStatus=@(& git -C $repo status --porcelain);Repository=$repo;
         EvidenceRoot=$EvidenceRoot;Product=$product;TestAssembly=$tests;Helper=$helper;
         ProductMvid=([Reflection.Assembly]::ReflectionOnlyLoadFrom($product).ManifestModule.ModuleVersionId.ToString('D'));
         ProductSha256=(Get-FileHash $product).Hash;OllamaExe=$OllamaExecutable;OllamaVersion=(Get-Item $OllamaExecutable).VersionInfo.ProductVersion;
-        ModelRoot=$ModelRoot;Model=$Model;ModelDigest=(Get-FileHash $manifest).Hash;BackendPort=(Free-Port);ProxyPort=(Free-Port);
+        ModelRoot=$ModelRoot;Model=$Model;ModelDigest=(Get-FileHash $manifest).Hash;BackendPort=$backendPort;ProxyPort=$proxyPort;
         Temperature=0;TopP=0.8;ContextLength=8192;NumParallel=1;Device='CPU';CloudDisabled=$true;
         Hosts=$hosts;Scenarios=$scenarios;NoRetry=$true;NoDesktopSwitch=$true;NoForceTerminationOfOffice=$true;
+        ToolExecutables=$toolExecutables;
         BackendShutdown='Stop only the exact newly created synthetic headless Ollama server after requests settle; never call this a normal Office exit';
         FrozenFiles=@($files | Select-Object -Unique | ForEach-Object {@{Path=$_;Sha256=(Get-FileHash -LiteralPath $_).Hash}});
         PreparedUtc=[DateTime]::UtcNow.ToString('o')}
@@ -83,14 +105,18 @@ function Run-Case($scenario, $row) {
     $result = Join-Path $root $scenario.Id
     [IO.Directory]::CreateDirectory($result) | Out-Null
     $row.Trx=Join-Path $result 'result.trx'
-    & dotnet vstest $plan.TestAssembly "/TestCaseFilter:$($scenario.Filter)" "/ResultsDirectory:$result" '/Logger:trx;LogFileName=result.trx' *> (Join-Path $result 'console.log')
+    & dotnet vstest $plan.TestAssembly "/Settings:$($plan.RunSettings)" "/TestCaseFilter:$($scenario.Filter)" "/ResultsDirectory:$result" '/Logger:trx;LogFileName=result.trx' *> (Join-Path $result 'console.log')
+    $testExitCode = $LASTEXITCODE
     if (-not (Test-Path -LiteralPath $row.Trx)) { $row.State='NO_TERMINAL_REPORT';Flush;return }
     [xml]$trx = Get-Content -LiteralPath $row.Trx -Raw -Encoding UTF8
     $c = $trx.TestRun.ResultSummary.Counters
-    $row.State = if ($LASTEXITCODE -eq 0 -and [int]$c.total -gt 0 -and [int]$c.total -eq [int]$c.passed) { 'PASS' } else { 'FAILED_OR_SKIPPED' }
+    $row.State = if ($testExitCode -eq 0 -and [int]$c.total -gt 0 -and [int]$c.total -eq [int]$c.passed) { 'PASS' } else { 'FAILED_OR_SKIPPED' }
     Flush
 }
 try {
+    # Scheduled GUI tasks do not inherit Codex's process-local Node runtime path.
+    # Freeze the exact tools in Prepare, prepend only those directories in this worker.
+    $env:PATH = ((@($plan.ToolExecutables.Path | ForEach-Object {Split-Path $_}) | Select-Object -Unique) -join ';')+';'+$env:PATH
     # Strip inherited qualification opt-ins; keep only the private desktop's identity/sentinel.
     foreach ($entry in @(Get-ChildItem Env: | Where-Object {$_.Name -match '^VBAi_RUN_|^VBAi_TEST_|^VBAi_OLLAMA_'})) {
         if ($entry.Name -notmatch '^VBAi_TEST_DESKTOP_') { Remove-Item -LiteralPath ('Env:\'+$entry.Name) }
@@ -160,6 +186,7 @@ try {
     for ($i=4;$i -lt $plan.Scenarios.Count;$i++) {
         foreach ($hostRow in $plan.Hosts) { if (@(Get-Process $hostRow.ProcessName -ErrorAction SilentlyContinue).Count -ne 0) { throw 'A preceding/foreign Office host is live; no next bank.' } }
         $env:VBAi_VBE_INSPECTION_TRACE=Join-Path $root ('hosts/'+$plan.Scenarios[$i].Host+'/inspection.jsonl')
+        [IO.Directory]::CreateDirectory((Split-Path $env:VBAi_VBE_INSPECTION_TRACE)) | Out-Null
         Run-Case $plan.Scenarios[$i] $rows[$i]
         if ($rows[$i].State -ne 'PASS') { throw ('Native bank failed: '+$rows[$i].Id+'; remaining banks are NOT_RUN.') }
     }

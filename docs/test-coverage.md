@@ -7356,3 +7356,22 @@ Q-006 remains **OPEN** for these distinct boundaries:
 No current pass establishes causality for an earlier crash or acceptance for a
 different host. The reusable [testing procedure](../tests/README.md#q-006-inactive-desktop-excel-qualification)
 preserves refusals and uncertain ownership instead of replaying native work.
+
+## Q028 Office preparation: first managed gate, 2026-10-04
+
+Source `ea0e8e92c51acd45cc06873dffbd4e82e5ae4f81`, product MVID
+`0174389e-7709-4cf9-b443-c115931bf476`, test MVID
+`9d418516-1174-4b57-9ecf-202e53f563da`, private desktop
+`VBAiTests_191ed78759504b8ebbe5b692fa940a7d`.
+The `Unit|Scenario` aggregate selected 4,183 tests: 4,181 passed, one failed
+(`NativeExportTraceTests.TraceScriptPreservesPidPathPrivacyAndPairedNativeStatus`,
+Node executable absent from the scheduled worker PATH), and one was skipped
+(the opt-in real Ollama UI test inherited a Unit category). Duration: 12m51s.
+Evidence is retained in `artifacts/q028-office-01/managed/result.trx` and
+`campaign.json` in the qualification worktree. The aggregate remains failed.
+
+All nine real provider/native banks remained NOT_RUN, with zero invocations.
+No Ollama backend or Office process was started, and no candidate registration
+or settings mutation occurred. Original child exit code 1 and successful private
+Desktop closure have separate terminal receipts. This is environment and managed
+preparation evidence, not Q028 native acceptance or a coverage percentage.

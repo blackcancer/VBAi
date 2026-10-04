@@ -1360,6 +1360,15 @@ oracles before any provider request or native launch. Preparation never download
 or substitutes a model. The current explicit profile is CPU, context 8192,
 parallelism 1, temperature 0 and top-p 0.8; other profiles remain separate.
 
+The worker freezes the exact Node, .NET and Git executable paths because scheduled
+GUI tasks do not inherit a shell's temporary runtime path. Its managed gate selects
+transport, chat, privacy, desktop ownership and Office lifecycle regressions;
+it does not replace a previously failed full aggregate. Each bank uses a frozen
+x64 runsettings file with a 15-minute session deadline. A deadline is a failed or
+uncertain outcome, never a normal Office exit. When retaining product bytes while
+rebuilding only the test harness, pass their original `-ProductSourceCommit`;
+the plan records that identity separately from the harness revision.
+
 Run the generated `Invoke-FrozenQ028.ps1` through
 `tools/tests/Invoke-IsolatedTests.ps1` with the frozen helper and a fresh launcher
 directory. It runs the managed gate, strict synthetic tool roundtrip,

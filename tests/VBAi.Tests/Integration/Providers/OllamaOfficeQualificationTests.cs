@@ -67,6 +67,7 @@ namespace VBAi.Tests.Integration
                     try
                     {
                         ui = new OllamaOfficeUi(host.ProcessId, record); ui.Discover();
+                        ui.Select("scopePicker", host.Label);
                         ui.RequireScope(host.Label);
                         ui.Click("modelSummary");
                         ui.Select("providerPicker", LlmProvider.All.Single(item => item.IsOllama).ToString());
