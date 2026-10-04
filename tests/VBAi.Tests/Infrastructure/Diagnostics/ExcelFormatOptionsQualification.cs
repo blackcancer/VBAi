@@ -18,7 +18,7 @@ namespace VBAi.Tests.Integration
         private readonly Action preserve, cleanup;
         private readonly Action<string, object> evidence;
         private readonly int processId;
-        private readonly bool verifyReadStability, marginOnly, historicalPalettePrefix;
+        private readonly bool verifyReadStability, marginOnly, historicalPalettePrefix, fontSizeOnly;
         private readonly List<Tuple<string, string, object, string>> ledger = new List<Tuple<string, string, object, string>>();
         private IDictionary<string, object> baseline;
         private readonly Action verifyExclusiveHost;
@@ -37,10 +37,11 @@ namespace VBAi.Tests.Integration
         internal ExcelFormatOptionsQualification(int processId, Func<object, IDictionary<string, object>> dispatch,
             Func<IDictionary<string, object>> observeClosure, Action preserve, Action cleanup, Action<string, object> evidence,
             bool verifyReadStability = false, bool marginOnly = false, bool historicalPalettePrefix = false,
-            Action verifyExclusiveHost = null)
+            Action verifyExclusiveHost = null, bool fontSizeOnly = false)
         { this.processId = processId; this.dispatch = dispatch; this.observeClosure = observeClosure;
             this.preserve = preserve; this.cleanup = cleanup; this.evidence = evidence; this.verifyReadStability = verifyReadStability; this.marginOnly = marginOnly;
-            this.historicalPalettePrefix = historicalPalettePrefix; this.verifyExclusiveHost = verifyExclusiveHost; }
+            this.historicalPalettePrefix = historicalPalettePrefix; this.verifyExclusiveHost = verifyExclusiveHost;
+            this.fontSizeOnly = fontSizeOnly; }
 
         /// <summary>Validate the Format opt-in before preparation, then hand off only a successfully owned bootstrap.</summary>
         internal static void RunOwned<T>(bool enabled, string ownedResults, string evidenceRoot, string inheritedDiagnosticManifest,
@@ -80,6 +81,7 @@ namespace VBAi.Tests.Integration
         private void Matrix()
         {
             evidence("ScenarioMatrix", marginOnly ? new[] { "margin indicator", "full options version restored" } :
+                fontSizeOnly ? new[] { "exact font", "size catalogue or honest refusal", "full options version restored" } :
                 historicalPalettePrefix ? new[] { "historical font and size refusal", "historical foreground/background/indicator without Query", "full options version restored" } : Scenarios);
             baseline = Read("Baseline");
             evidence("BaselineComplete", baseline);
@@ -115,6 +117,7 @@ namespace VBAi.Tests.Integration
                 Write("Size", tab, (string)size["Name"], next, null);
                 Assert.AreEqual(next, Find(Format(Read("SizeReadback")), "Size", "Taille :")["Value"]);
             }
+            if (fontSizeOnly) return; // Keep the catalogue diagnostic inside the same restoration and owned shutdown lifecycle.
             foreach (var names in new[] { new[] { "Foreground", "Premier plan :" }, new[] { "Background", "Arrière-plan :" }, new[] { "Indicator", "Indicateur :" } })
             {
                 var paletteFormat = Format(Read(names[0] + "Catalogue")); string category = CurrentCategory(paletteFormat);

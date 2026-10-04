@@ -113,6 +113,25 @@ namespace VBAi.Tests.Unit
             Assert.IsFalse(probe.Phases.Contains("BaselineRestored"));
         }
 
+        [DataTestMethod, DataRow(false), DataRow(true)]
+        public void FocusedFontSizeCatalogueRestoresCompleteSnapshotWithoutPaletteOrMarginWrites(bool empty)
+        {
+            var probe = new Probe { EmptySizes = empty };
+            var initial = new Dictionary<string, object>(probe.Values);
+            probe.Create(verifyReadStability: true, fontSizeOnly: true).Run();
+            CollectionAssert.AreEquivalent(initial.ToArray(), probe.Values.ToArray());
+            Assert.AreEqual(empty ? 3 : 4, probe.Writes,
+                "Font commit/restoration plus either one exact refusal or one size commit/restoration.");
+            Assert.AreEqual(1, probe.Cleanup);
+            Assert.IsTrue(probe.Phases.Contains("BaselineRestored"));
+            Assert.IsTrue(probe.Phases.Contains(empty ? "EmptySizeVerifiedRefusal" : "SizeVerified"));
+            Assert.IsFalse(probe.Phases.Contains("ForegroundIntent"));
+            Assert.IsFalse(probe.Phases.Contains("MarginIntent"));
+            Assert.IsFalse(probe.Phases.Contains("StaleVersionIntent"));
+            Assert.IsTrue(probe.Requests.Where(x => Equals(x["Command"], "set_vbe_option"))
+                .All(x => new[] { "Font", "Size" }.Contains(Convert.ToString(x["Property"]))));
+        }
+
         private sealed class Probe
         {
             internal bool EmptySizes, CleanupFault, PreservationFault;
@@ -127,7 +146,7 @@ namespace VBAi.Tests.Unit
                 ["Normal Text.Foreground"] = "Black", ["Normal Text.Background"] = "White", ["Normal Text.Indicator"] = "Blue",
                 ["Keyword Text.Foreground"] = "Black", ["Keyword Text.Background"] = "White", ["Keyword Text.Indicator"] = "Blue" };
             internal string Category = "Normal Text", BaselineVersion;
-            internal ExcelFormatOptionsQualification Create(bool verifyReadStability = false, bool marginOnly = false, bool historicalPalettePrefix = false)
+            internal ExcelFormatOptionsQualification Create(bool verifyReadStability = false, bool marginOnly = false, bool historicalPalettePrefix = false, bool fontSizeOnly = false)
             {
                 BaselineVersion = Version();
                 return new ExcelFormatOptionsQualification(42, Dispatch, ObserveClosure,
@@ -139,7 +158,7 @@ namespace VBAi.Tests.Unit
                     }, verifyReadStability, marginOnly, historicalPalettePrefix, () => {
                         if (++ExclusiveGuardCalls == ExclusiveGuardFaultAt)
                             throw new InvalidOperationException("Another VBE host appeared during the campaign.");
-                    });
+                    }, fontSizeOnly);
             }
             private IDictionary<string, object> Dispatch(object raw)
             {

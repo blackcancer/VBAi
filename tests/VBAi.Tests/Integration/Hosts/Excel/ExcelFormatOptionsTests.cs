@@ -38,7 +38,11 @@ namespace VBAi.Tests.Integration.Hosts.Excel
         public void NativeHistoricalFontPalettePrefixAndRestoreCompleteOptionsVersion()
         { RunQualification(false, true); }
 
-        private void RunQualification(bool marginOnly, bool historicalPalettePrefix = false)
+        [STATestMethod]
+        public void NativeFontSizeCatalogueAndRestoreCompleteOptionsVersion()
+        { RunQualification(false, fontSizeOnly: true); }
+
+        private void RunQualification(bool marginOnly, bool historicalPalettePrefix = false, bool fontSizeOnly = false)
         {
             if (Environment.GetEnvironmentVariable("VBAi_RUN_EXCEL_TESTS") != "1")
                 Assert.Inconclusive("Excel automation is opt-in. Set VBAi_RUN_EXCEL_TESTS=1.");
@@ -58,10 +62,10 @@ namespace VBAi.Tests.Integration.Hosts.Excel
                     if (!string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("VBAi_TEST_DESKTOP_NAME")))
                         Environment.SetEnvironmentVariable(VbeInspectionTrace.EnvironmentName, trace);
                     return ExcelVbeFixture.StartOwnedWithTrace(trace);
-                }, host => QualifyReadyHost(host, marginOnly, historicalPalettePrefix));
+                }, host => QualifyReadyHost(host, marginOnly, historicalPalettePrefix, fontSizeOnly));
         }
 
-        private void QualifyReadyHost(ExcelVbeFixture host, bool marginOnly, bool historicalPalettePrefix)
+        private void QualifyReadyHost(ExcelVbeFixture host, bool marginOnly, bool historicalPalettePrefix, bool fontSizeOnly)
         {
             // No using/finally Dispose: uncertainty must retain this exact fixture and all owning COM references.
             DateTime startUtc = DateTime.MinValue;
@@ -78,7 +82,7 @@ namespace VBAi.Tests.Integration.Hosts.Excel
                 () => ObserveOptionsClosureSettled(host, startUtc), () => RetainHost(host),
                 () => { trace?.Dispose(); host.Dispose(); AttachEvidence(host, startUtc, "ShutdownVerified", host.ShutdownDiagnostics); },
                 (phase, data) => AttachEvidence(host, startUtc, phase, data), verifyReadStability: !historicalPalettePrefix, marginOnly: marginOnly,
-                historicalPalettePrefix: historicalPalettePrefix, verifyExclusiveHost: () => VerifyExclusiveHost(host, startUtc));
+                historicalPalettePrefix: historicalPalettePrefix, verifyExclusiveHost: () => VerifyExclusiveHost(host, startUtc), fontSizeOnly: fontSizeOnly);
             Exception primary = null, detach = null;
             bool runStarted = false;
             try {
