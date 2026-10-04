@@ -130,7 +130,7 @@ namespace VBAi.Tests.Integration.Hosts.Excel
 
         private static IDictionary<string, object> ReadSizeFocusSnapshot(ExcelVbeFixture host)
         {
-            var reply = host.Command("vbe_options"); Assert.IsNotNull(reply); Assert.AreEqual(true, reply["Ok"]);
+            var reply = host.Command("read_vbe_options"); Assert.IsNotNull(reply); Assert.AreEqual(true, reply["Ok"]);
             var data = VbeBridgeClient.Object(reply["Data"]); Assert.AreEqual(true, data["DialogClosed"]);
             Assert.IsTrue(((object[])data["Tabs"]).Length > 0); Assert.AreEqual(64, ((string)data["OptionsVersion"]).Length);
             return data;
