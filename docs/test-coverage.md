@@ -7445,3 +7445,18 @@ confirms French UI and assistant-show/tool-window creation messages for that
 PID, without a logged docking failure; it also records a distinct Monaco startup
 error. These observations do not qualify the native assistant or prove a cause
 for the historical empty model stream.
+
+At harness revisions `8b3cab7` and `e1b488f`, `q028-office-07` and
+`q028-office-08` each passed **517 selected managed tests** and the three real
+prerequisites. The archived complete-empty replay is included in these gates.
+Both native Excel banks still failed discovery before Send and preserved all
+five later banks as NOT_RUN; original normal Excel exit 0 and restoration were
+verified, while each original worker exited 1. Office07 demonstrates automatic
+connection with LoadBehavior 3 and zero connection setters. It identifies a
+visible, correctly captioned `ChatWindow` under the original VBE, so its failure
+does not establish absence of the chat. Office08 identifies the rejected
+ActiveX ancestor as `ControlAxSourcingSite`, immediately hosted by a same-thread
+`GenericPane` with native caption `VBAi`. This proves the harness's assumed
+ancestor name was wrong for that observed VBE site. The subsequent selector
+uses that exact runtime alias and checks the immediate native pane, ownership
+and visibility instead of removing the native-hosting requirement.

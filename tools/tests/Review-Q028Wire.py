@@ -202,6 +202,9 @@ def require_embedded_owner(observed, bank, campaign):
     require(observed.get("HostedToolWindow") is True and type(observed.get("ToolContainer")) is int and observed["ToolContainer"] > 0 and
             type(observed.get("NativeSite")) is int and observed["NativeSite"] > 0,
             "Assistant lacks the verified native ChatToolWindow container/site")
+    require(observed.get("ContainerIdentity") in ("ChatToolWindow", "ControlAxSourcingSite") and
+            observed.get("NativeSiteClass") == "GenericPane" and observed.get("NativeToolCaptionMatches") is True,
+            "Native ActiveX container identity, GenericPane or VBAi tool caption differs")
     require(observed.get("ChildOfVbe") is True or observed.get("NativeSiteOwnedByVbe") is True,
             "Native hosted assistant lacks the original VBE relationship")
 
@@ -324,16 +327,19 @@ class OracleTests(unittest.TestCase):
 
     def test_docked_and_floating_native_sites_are_supported(self):
         observed = {"ProcessId": 10, "Desktop": "private", "HostedToolWindow": True,
-                    "ToolContainer": 20, "NativeSite": 30, "ChildOfVbe": True, "NativeSiteOwnedByVbe": False}
+                    "ToolContainer": 20, "NativeSite": 30, "ChildOfVbe": True, "NativeSiteOwnedByVbe": False,
+                    "ContainerIdentity": "ChatToolWindow", "NativeSiteClass": "GenericPane", "NativeToolCaptionMatches": True}
         require_embedded_owner(observed, {"ProcessId": 10}, {"Desktop": "private"})
-        observed.update(ChildOfVbe=False, NativeSiteOwnedByVbe=True)
+        observed.update(ChildOfVbe=False, NativeSiteOwnedByVbe=True, ContainerIdentity="ControlAxSourcingSite")
         require_embedded_owner(observed, {"ProcessId": 10}, {"Desktop": "private"})
 
     def test_detached_foreign_or_unattached_sites_are_refused(self):
         valid = {"ProcessId": 10, "Desktop": "private", "HostedToolWindow": True,
-                 "ToolContainer": 20, "NativeSite": 30, "ChildOfVbe": True, "NativeSiteOwnedByVbe": False}
+                 "ToolContainer": 20, "NativeSite": 30, "ChildOfVbe": True, "NativeSiteOwnedByVbe": False,
+                    "ContainerIdentity": "ChatToolWindow", "NativeSiteClass": "GenericPane", "NativeToolCaptionMatches": True}
         for change in ({"HostedToolWindow": False}, {"ToolContainer": 0}, {"NativeSite": 0},
-                       {"ChildOfVbe": False, "NativeSiteOwnedByVbe": False}, {"ProcessId": 99}, {"Desktop": "Default"}):
+                       {"ChildOfVbe": False, "NativeSiteOwnedByVbe": False}, {"ProcessId": 99}, {"Desktop": "Default"},
+                       {"ContainerIdentity": "UnrelatedPane"}, {"NativeSiteClass": "WindowsForms"}, {"NativeToolCaptionMatches": False}):
             with self.assertRaises(ValueError):
                 require_embedded_owner(dict(valid, **change), {"ProcessId": 10}, {"Desktop": "private"})
 

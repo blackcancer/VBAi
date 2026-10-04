@@ -126,7 +126,10 @@ namespace VBAi.Tests.Integration
                 Guard();
                 record(new { Phase = "ActualEmbeddedAssistant", ProcessId = pid, Vbe = vbe.ToInt64(), Chat = chat.ToInt64(),
                     NativeThread = ownerThread, Desktop = desktop, ChildOfVbe = IsChild(vbe, chat), HostedToolWindow = true,
-                    ToolContainer = toolContainer.ToInt64(), NativeSite = nativeSite.ToInt64(), NativeSiteOwnedByVbe = OwnedByVbe(nativeSite) });
+                    ToolContainer = toolContainer.ToInt64(), NativeSite = nativeSite.ToInt64(),
+                    NativeSiteOwnedByVbe = OwnedByVbe(GetAncestor(nativeSite, 2)),
+                    ContainerIdentity = AutomationElement.FromHandle(toolContainer).Current.AutomationId,
+                    NativeSiteClass = "GenericPane", NativeToolCaptionMatches = true });
                 return true;
             }, 45, "discover the installed embedded assistant");
             } catch { record(new { Phase = "AssistantDiscoveryFailed", ProcessId = pid, Vbe = vbe.ToInt64(),
@@ -186,10 +189,18 @@ namespace VBAi.Tests.Integration
                     AutomationId = element.Current.AutomationId, Type = element.Current.ControlType.ProgrammaticName,
                     ContainerNameMatches = element.Current.Name == "ChatToolWindow", NativeToolCaptionMatches = title.ToString() == "VBAi",
                     Parent = GetAncestor(parent, 1).ToInt64() });
-                if (element.Current.AutomationId != "ChatToolWindow" && element.Current.Name != "ChatToolWindow") continue;
-                container = parent; site = GetAncestor(parent, 2);
-                return site != IntPtr.Zero && (container == window || IsChild(container, window)) &&
-                    (IsChild(vbe, window) || OwnedByVbe(site));
+                if (element.Current.AutomationId != "ChatToolWindow" && element.Current.AutomationId != "ControlAxSourcingSite") continue;
+                // VBIDE supplies ControlAxSourcingSite as the ActiveX container's runtime
+                // name. Its immediate native tool pane must still be the exact VBAi site.
+                if (!cls.ToString().StartsWith("WindowsForms", StringComparison.Ordinal)) return false;
+                container = parent; site = GetAncestor(parent, 1);
+                uint sitePid; uint siteThread = GetWindowThreadProcessId(site, out sitePid);
+                var siteClass = new StringBuilder(128); GetClassName(site, siteClass, siteClass.Capacity);
+                var siteTitle = new StringBuilder(128); GetWindowText(site, siteTitle, siteTitle.Capacity);
+                return site != IntPtr.Zero && sitePid == pid && siteThread == ownerThread && IsWindowVisible(site) &&
+                    siteClass.ToString() == "GenericPane" && siteTitle.ToString() == "VBAi" &&
+                    (container == window || IsChild(container, window)) &&
+                    (IsChild(vbe, site) || OwnedByVbe(GetAncestor(site, 2)));
             }
             return false;
         }

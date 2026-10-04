@@ -1391,8 +1391,10 @@ and an existing configured profile; it launches only the selected executable on
 the inactive desktop and attaches through the ROT after sole-process/native-window
 identity checks. It never falls back to COM activation on another desktop.
 
-Assistant discovery requires the actual `ChatToolWindow` ancestor, matching
-native process/thread and a site attached to the original VBE. A native floating
+Assistant discovery requires the actual ActiveX ancestor (`ChatToolWindow` or
+the VBE runtime name `ControlAxSourcingSite`), matching native process/thread,
+and its immediate `GenericPane` site with the exact `VBAi` caption attached to
+the original VBE. A native floating
 tool site is accepted only through its verified VBE owner chain; an independent
 chat Form is refused. Bounded initial/failure inventories preserve handles and
 classes without window contents. The observer detects the real VBE menu language,
