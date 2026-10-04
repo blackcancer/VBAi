@@ -1399,6 +1399,13 @@ tool site is accepted only through its verified VBE owner chain; an independent
 chat Form is refused. Bounded initial/failure inventories preserve handles and
 classes without window contents. The observer detects the real VBE menu language,
 waits for the model catalogue, and selects only the exact combo's native list.
+Before sending, it binds the fixed transcript panel and caches the fixed controls,
+revalidating their original native process/thread and ownership on subsequent
+reads. During generation it reads only visible, read-only RichEdit children
+intersecting that panel's viewport, using bounded native text messages instead of
+enumerating the recycled UIA transcript tree. These reads cannot send or stop a
+turn. The synthetic stream requests an explicit numbered output format; the
+numbered-response and exact recovery oracles still reject prompt echoes.
 The recovery response must equal `UI_READY_42`; an echoed prompt cannot pass.
 `python tools/tests/Review-Q028Wire.py <evidence-root>` independently checks the
 ordered matrix, native receipts, restored state, original worker exit and actual

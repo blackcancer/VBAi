@@ -18,12 +18,20 @@ namespace VBAi.Tests.Integration
         [DllImport("user32.dll")] private static extern bool EnumChildWindows(IntPtr parent, Visitor visitor, IntPtr state);
         [DllImport("user32.dll")] private static extern uint GetWindowThreadProcessId(IntPtr hwnd, out uint pid);
         [DllImport("user32.dll")] private static extern bool IsWindowVisible(IntPtr hwnd);
+        [DllImport("user32.dll")] private static extern bool IsWindow(IntPtr hwnd);
         [DllImport("user32.dll")] private static extern bool IsChild(IntPtr parent, IntPtr child);
         [DllImport("user32.dll")] private static extern IntPtr GetAncestor(IntPtr hwnd, uint flag);
         [DllImport("user32.dll")] private static extern IntPtr GetWindow(IntPtr hwnd, uint command);
         [DllImport("user32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
         private static extern IntPtr SendMessageTimeout(IntPtr hwnd, uint message, IntPtr wParam, string text,
             uint flags, uint timeout, out IntPtr result);
+        [DllImport("user32.dll", EntryPoint = "SendMessageTimeoutW", CharSet = CharSet.Unicode, SetLastError = true)]
+        private static extern IntPtr ReadTextTimeout(IntPtr hwnd, uint message, IntPtr wParam, StringBuilder text,
+            uint flags, uint timeout, out IntPtr result);
+        [DllImport("user32.dll", EntryPoint = "GetWindowLongPtrW")]
+        private static extern IntPtr GetWindowLongPtr(IntPtr hwnd, int index);
+        [StructLayout(LayoutKind.Sequential)] private struct Rect { internal int Left, Top, Right, Bottom; }
+        [DllImport("user32.dll")] private static extern bool GetWindowRect(IntPtr hwnd, out Rect rect);
         [DllImport("user32.dll", CharSet = CharSet.Unicode)] private static extern int GetClassName(IntPtr hwnd, StringBuilder text, int size);
         [DllImport("user32.dll", CharSet = CharSet.Unicode)] private static extern int GetWindowText(IntPtr hwnd, StringBuilder text, int size);
         private readonly int pid;
@@ -32,6 +40,8 @@ namespace VBAi.Tests.Integration
         private IntPtr toolContainer, nativeSite;
         private uint ownerThread;
         private AutomationElement root;
+        private IntPtr transcriptPanel;
+        private readonly Dictionary<string, AutomationElement> fixedControls = new Dictionary<string, AutomationElement>();
         private readonly HashSet<IntPtr> recordedAncestors = new HashSet<IntPtr>();
         internal bool SentUnsettled { get; private set; }
         internal bool StopEmitted { get; private set; }
@@ -215,10 +225,29 @@ namespace VBAi.Tests.Integration
         internal AutomationElement Leaf(string id)
         {
             Guard();
+            AutomationElement cached;
+            if (fixedControls.TryGetValue(id, out cached))
+            {
+                var handle = new IntPtr(cached.Current.NativeWindowHandle);
+                uint process; uint thread = GetWindowThreadProcessId(handle, out process);
+                if (cached.Current.AutomationId != id || cached.Current.ProcessId != pid || process != pid ||
+                    thread != ownerThread || !IsChild(chat, handle) || !IsWindowVisible(handle))
+                    throw new InvalidOperationException("Fixed assistant control ownership changed: " + id);
+                return cached;
+            }
             var found = root.FindAll(TreeScope.Descendants, new PropertyCondition(AutomationElement.AutomationIdProperty, id));
             if (found.Count != 1 || found[0].Current.ProcessId != pid)
                 throw new InvalidOperationException("Expected one owned assistant control: " + id);
+            fixedControls.Add(id, found[0]);
             return found[0];
+        }
+
+        internal void BindTranscript()
+        {
+            if (SentUnsettled) throw new InvalidOperationException("Bind the fixed transcript before sending.");
+            transcriptPanel = new IntPtr(Leaf("transcriptPanel").Current.NativeWindowHandle);
+            if (!IsChild(chat, transcriptPanel)) throw new InvalidOperationException("Transcript is outside the owned chat.");
+            record(new { Phase = "NativeTranscriptBound", ProcessId = pid, Panel = transcriptPanel.ToInt64(), NativeThread = ownerThread });
         }
 
         internal void Click(string id)
@@ -339,39 +368,57 @@ namespace VBAi.Tests.Integration
         internal string[] VisibleTranscript()
         {
             Guard();
-            var texts = root.FindAll(TreeScope.Descendants, new AndCondition(
-                new OrCondition(new PropertyCondition(AutomationElement.ControlTypeProperty, ControlType.Edit),
-                    new PropertyCondition(AutomationElement.ControlTypeProperty, ControlType.Document)),
-                new PropertyCondition(AutomationElement.IsOffscreenProperty, false))).Cast<AutomationElement>();
-            if (texts.Count() > 256) throw new InvalidOperationException("Bounded visible transcript control inventory.");
-            return texts.Where(item => item.Current.Name != UiText.Get("Your request; Enter to send, Shift+Enter for a new line"))
-                .Select(ReadVisibleText).Where(text => text.Length > 0).ToArray();
+            var texts = ReadNativeTranscript(transcriptPanel, pid, ownerThread);
+            Guard();
+            return texts;
         }
 
-        private string ReadVisibleText(AutomationElement item)
+        // The transcript recycles WinForms RichEdit children inside WPF. Enumerating
+        // its changing UIA tree can block until generation ends or return stale nodes.
+        // Observe only visible read-only native RichEdit controls inside the fixed
+        // transcript panel, with bounded marshalled WM_GETTEXT reads; emit no action.
+        internal static string[] ReadNativeTranscript(IntPtr panel, int processId, uint nativeThread)
         {
-            if (item.Current.ProcessId != pid) throw new InvalidOperationException("Foreign transcript element.");
-            object pattern;
-            if (item.TryGetCurrentPattern(TextPattern.Pattern, out pattern))
+            uint panelPid;
+            if (panel == IntPtr.Zero || GetWindowThreadProcessId(panel, out panelPid) != nativeThread ||
+                panelPid != processId || !IsWindowVisible(panel))
+                throw new InvalidOperationException("Missing or foreign native transcript panel.");
+            Rect viewport;
+            if (!GetWindowRect(panel, out viewport)) throw new InvalidOperationException("Transcript viewport unavailable.");
+            var handles = new List<IntPtr>(); int count = 0;
+            EnumChildWindows(panel, (window, state) => {
+                if (++count >= 2048) return false;
+                var name = new StringBuilder(128); GetClassName(window, name, name.Capacity);
+                if (name.ToString().IndexOf("RichEdit", StringComparison.OrdinalIgnoreCase) >= 0) handles.Add(window);
+                return true;
+            }, IntPtr.Zero);
+            if (count >= 2048 || handles.Count > 256) throw new InvalidOperationException("Bounded native transcript inventory.");
+            var texts = new List<string>();
+            foreach (var handle in handles)
             {
-                var ranges = ((TextPattern)pattern).GetVisibleRanges();
-                if (ranges.Length > 64) throw new InvalidOperationException("Bounded visible text ranges.");
-                var text = new StringBuilder();
-                foreach (var range in ranges)
-                {
-                    int remaining = 65536 - text.Length;
-                    if (remaining <= 0) break;
-                    text.Append(range.GetText(remaining));
-                }
-                return text.ToString();
+                if (!IsWindow(handle)) continue; // A recycled child may disappear between observations.
+                uint childPid; uint childThread = GetWindowThreadProcessId(handle, out childPid);
+                if (childPid != processId || childThread != nativeThread || !IsChild(panel, handle))
+                    throw new InvalidOperationException("Foreign native transcript child.");
+                Rect bounds;
+                if (!IsWindowVisible(handle) || (GetWindowLongPtr(handle, -16).ToInt64() & 0x800) == 0 ||
+                    !GetWindowRect(handle, out bounds) || Math.Min(bounds.Right, viewport.Right) <= Math.Max(bounds.Left, viewport.Left) ||
+                    Math.Min(bounds.Bottom, viewport.Bottom) <= Math.Max(bounds.Top, viewport.Top)) continue;
+                IntPtr length;
+                if (SendMessageTimeout(handle, 0x000E, IntPtr.Zero, null, 3, 1000, out length) == IntPtr.Zero)
+                    throw new InvalidOperationException("Bounded native transcript length read failed.");
+                if (length.ToInt64() < 0 || length.ToInt64() > 65536) throw new InvalidOperationException("Bounded native transcript text.");
+                // Leave room for a fragment appended between the two independent reads.
+                var text = new StringBuilder(65537); IntPtr copied;
+                if (ReadTextTimeout(handle, 0x000D, new IntPtr(text.Capacity), text, 3, 1000, out copied) == IntPtr.Zero)
+                    throw new InvalidOperationException("Bounded native transcript text read failed.");
+                if (copied.ToInt64() < 0 || copied.ToInt64() > 65536) throw new InvalidOperationException("Invalid native transcript length.");
+                if (!IsWindow(handle)) continue;
+                if (GetWindowThreadProcessId(handle, out childPid) != nativeThread || childPid != processId || !IsChild(panel, handle))
+                    throw new InvalidOperationException("Native transcript child changed during read.");
+                if (text.Length > 0) texts.Add(text.ToString());
             }
-            if (item.TryGetCurrentPattern(ValuePattern.Pattern, out pattern))
-            {
-                string text = ((ValuePattern)pattern).Current.Value;
-                if (text.Length > 65536) throw new InvalidOperationException("Bounded transcript value.");
-                return text;
-            }
-            return "";
+            return texts.ToArray();
         }
 
         internal void Wait(Func<bool> condition, int seconds, string stage)

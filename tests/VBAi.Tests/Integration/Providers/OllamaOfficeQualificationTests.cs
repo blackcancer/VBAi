@@ -79,7 +79,8 @@ namespace VBAi.Tests.Integration
                         // readback; the collapsed layout intentionally removes them from UIA.
                         ui.Select("modePicker", UiText.Get("Chat"));
                         ui.Select("approvalPicker", UiText.Get("Read-only"));
-                        ui.SendOnce("This is a synthetic interface test unrelated to VBA. Do not use tools. Write a long numbered list of 1000 everyday objects, beginning immediately with item 1 and continuing without introductory remarks.");
+                        ui.BindTranscript();
+                        ui.SendOnce("This is a synthetic interface test unrelated to VBA. Do not use tools. Output 1000 lines with exactly this format: '1. Object 1', then '2. Object 2', then '3. Object 3', continuing the same pattern. Begin immediately with the first line; no introductory remarks.");
                         ui.Wait(() => ui.IsBusy && ui.VisibleTranscript().Any(OllamaOfficeStreamOracle.IsNumberedResponse),
                             125, "visible streamed text while busy");
                         report["StreamedWhileBusy"] = true; flush();

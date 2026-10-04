@@ -11,6 +11,9 @@ import xml.etree.ElementTree as ET
 
 HOSTS = ("Excel", "Word", "PowerPoint", "Access", "Publisher", "Outlook")
 SCENARIOS = ("managed", "tool-roundtrip", "cancel-recovery", "detached-ui") + tuple(h.lower() + "-embedded" for h in HOSTS)
+STREAM_PROMPT = ("This is a synthetic interface test unrelated to VBA. Do not use tools. Output 1000 lines with exactly this format: "
+                 "'1. Object 1', then '2. Object 2', then '3. Object 3', continuing the same pattern. "
+                 "Begin immediately with the first line; no introductory remarks.")
 
 
 def read_json(path):
@@ -209,6 +212,29 @@ def require_embedded_owner(observed, bank, campaign):
             "Native hosted assistant lacks the original VBE relationship")
 
 
+
+def is_stream_request(prompt):
+    return prompt == STREAM_PROMPT or "Write a long numbered list of 1000 everyday objects" in prompt
+
+
+def is_numbered_response(text):
+    return len(text) > 20 and re.search(r"(?m)^\s*1[.)]\s+\S", text) is not None
+
+
+def require_native_transcript(observations, embedded, bank):
+    bounds = [(index, row) for index, row in enumerate(observations) if row.get("Phase") == "NativeTranscriptBound"]
+    require(len(bounds) == 1, "Native transcript binding is missing or ambiguous")
+    index, bound = bounds[0]
+    require(type(bound.get("ProcessId")) is int and bound["ProcessId"] == bank["ProcessId"] and
+            type(bound.get("NativeThread")) is int and bound["NativeThread"] > 0 and
+            type(embedded.get("NativeThread")) is int and bound["NativeThread"] == embedded["NativeThread"] and
+            type(bound.get("Panel")) is int and bound["Panel"] > 0,
+            "Native transcript process/thread/panel differs from the installed assistant")
+    composer = [i for i, row in enumerate(observations) if row.get("Phase") == "ComposerSetIntentOnce"]
+    send = [i for i, row in enumerate(observations) if row.get("Phase") == "ButtonIntentOnce" and row.get("Id") == "send"]
+    require(composer and send and index < composer[0] < send[0], "Native transcript was not bound before first composer/send")
+
+
 def review(root):
     plan, campaign = read_json(root / "q028-plan.json"), read_json(root / "campaign.json")
     require(campaign["State"] == "FUNCTIONAL_MATRIX_PASS_PENDING_OFFLINE_WIRE_REVIEW", "Functional matrix is not complete")
@@ -248,18 +274,19 @@ def review(root):
         embedded = [r for r in bank["Observations"] if r.get("Phase") == "ActualEmbeddedAssistant"]
         require(len(embedded) == 1, "Installed assistant owner observation is missing or ambiguous")
         require_embedded_owner(embedded[0], bank, campaign)
+        require_native_transcript(bank["Observations"], embedded[0], bank)
         candidates = [r for r in rows if "ObservedMarker" in r["user"] and ("Project=" + bank["Project"] + ",") in r["user"]]
         require(len(candidates) == 2, host["Name"] + ": native read requires exactly two requests")
         first, final = candidates
         ready = [r for r in rows if "Reply with exactly UI_READY_42 and nothing else." in r["user"]]
         require(len(ready) == 1 and int(ready[0]["id"]) < int(first["id"]) < int(final["id"]), "Next-send/native wire order differs")
         complete(ready[0]); require_ready(response(root, ready[0], plan["Model"]))
-        stream = [r for r in rows if "Write a long numbered list of 1000 everyday objects" in r["user"] and int(r["id"]) < int(ready[0]["id"])]
+        stream = [r for r in rows if is_stream_request(r["user"]) and int(r["id"]) < int(ready[0]["id"])]
         numbered = []
         for row in stream:
             require(row["receipt"].get("HttpStatus") == 200, "Streaming request did not receive HTTP200")
             parsed = response(root, row, plan["Model"], partial=row["receipt"].get("State") != "COMPLETE")
-            if len(parsed["text"]) > 20 and re.search(r"(?m)^\s*1[.)]\s+\S", parsed["text"]):
+            if is_numbered_response(parsed["text"]):
                 numbered.append(row["id"])
         require(numbered, "No independent streamed assistant text; echoed prompt cannot qualify")
         complete(first); complete(final)
@@ -320,6 +347,29 @@ class OracleTests(unittest.TestCase):
         self.assertEqual("1. An everyday object", parsed["text"])
         with self.assertRaises(json.JSONDecodeError):
             parse_response(prefix + b'data: {"partial":\n\n', "m", partial=True)
+
+    def test_new_and_legacy_stream_prompts_keep_strict_text_oracle(self):
+        self.assertTrue(is_stream_request(STREAM_PROMPT))
+        self.assertTrue(is_stream_request("Write a long numbered list of 1000 everyday objects, starting immediately with item 1."))
+        self.assertFalse(is_stream_request(STREAM_PROMPT + " Another instruction."))
+        self.assertTrue(is_numbered_response("1. Object 1\n2. Object 2\n3. Object 3"))
+        self.assertTrue(is_numbered_response("1) Object 1\n2) Object 2\n3) Object 3"))
+        self.assertFalse(is_numbered_response("1\n2\n3\n" * 10))
+        self.assertFalse(is_numbered_response("1. Object 1"))
+
+    def test_native_transcript_requires_exact_owner_before_composer_and_send(self):
+        bound = {"Phase": "NativeTranscriptBound", "ProcessId": 10, "NativeThread": 11, "Panel": 12}
+        composer = {"Phase": "ComposerSetIntentOnce"}
+        send = {"Phase": "ButtonIntentOnce", "Id": "send"}
+        embedded, bank = {"NativeThread": 11}, {"ProcessId": 10}
+        require_native_transcript([bound, composer, send], embedded, bank)
+        for change in ({"ProcessId": 99}, {"NativeThread": 99}, {"NativeThread": 0}, {"Panel": 0}, {"Panel": True}):
+            with self.assertRaises(ValueError):
+                require_native_transcript([dict(bound, **change), composer, send], embedded, bank)
+        for rows in ([composer, send], [bound, bound, composer, send], [composer, bound, send],
+                     [bound, send, composer], [bound, composer]):
+            with self.assertRaises(ValueError):
+                require_native_transcript(rows, embedded, bank)
 
     def test_empty_matrix_refused(self):
         with self.assertRaises(ValueError):

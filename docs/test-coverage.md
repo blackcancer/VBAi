@@ -7460,3 +7460,25 @@ ActiveX ancestor as `ControlAxSourcingSite`, immediately hosted by a same-thread
 ancestor name was wrong for that observed VBE site. The subsequent selector
 uses that exact runtime alias and checks the immediate native pane, ownership
 and visibility instead of removing the native-hosting requirement.
+
+At harness `89dab8f`, `q028-office-09` passed **517 selected managed tests** and
+the three real prerequisites. Its native Excel bank recognized the embedded chat
+and French VBE menus but failed the exact project-list lookup before Send.
+The five remaining Office banks stayed NOT_RUN. The original Excel exited 0;
+settings/registration restoration, backend/proxy closure and private desktop
+release passed; the original worker exited 1.
+
+At harness `a88dcfd`, `q028-office-10` passed **517 selected managed tests** and
+the same three real prerequisites. Exact native combo selection reached the
+first installed-host Send in Excel PID 210496. During transcript observation,
+UIA `FindAll` raised `ElementNotAvailableException`; a subsequent independent
+observation found the assistant idle. The bank remains failed: no Stop, next-send
+or native tool phase ran, and five later Office banks remain NOT_RUN. The wire
+contains nonempty assistant content, but no terminal finish/DONE, and its receipt
+records a client-write error. Its plain numeric output also fails the frozen
+numbered-object oracle. This is neither a complete-empty response nor proof of
+visible streaming or the historical failure's cause. Original Excel exit 0,
+normal Close/Quit, unchanged product bytes, restored settings/COM registration,
+closed proxy/backend and private desktop release are separately verified;
+original worker exit 1 remains the campaign outcome. Evidence is retained under
+`artifacts/q028-office-09` and `artifacts/q028-office-10`.
