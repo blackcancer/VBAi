@@ -1563,6 +1563,56 @@ its catalogue expansion uses [CB_SHOWDROPDOWN](https://learn.microsoft.com/en-us
 Neither message establishes that this VBE build populates Size choices; the native
 observation must decide that hypothesis.
 
+### Q-026 native Size focus and current-candidate preparation (2026-10-04)
+
+`SizeFocus` harness `1d2e107` against frozen product MVID
+`9dc786a9-7128-41db-b21e-5bce14c0935f` records **94 managed passed, 0 failed,
+0 skipped; 1 native passed, 0 failed, 0 skipped** in `q026-size-focus-native-v2`.
+Owned Excel PID 176968 starts `2026-10-04T10:31:39.6471352Z` on its inactive
+desktop. The actual native catalogue changes from zero entries to nine after
+one dialog-local focus operation, then remains at nine after expansion. Its
+observed choices are `8, 9, 10, 11, 12, 14, 16, 18, 24`. The edit value remains
+`10`. This proves focus-dependent population on this host/build; the values
+are observations, not a portable allowed-size range.
+
+The Options menu executes once on the fixture's owning STA. The separate private
+worker selects the observed Format tab, posts one `WM_NEXTDLGCTL`, observes the
+owning GUI thread's focus and cancels once. The exact dialog is destroyed.
+All Tabs and revision `544477...` remain unchanged. There are 22 phase receipts;
+original launch handle 2176 observes normal exit 0. Worker/launcher exit 0,
+registration is restored, and `q026-size-focus-native-v2-audit.json` independently
+checks the complete baseline and action receipts. No preference write occurs.
+
+The preceding v1 at `facd68a` retains **1 native failed** before any Options
+invocation because the harness sends the unsupported name `vbe_options` instead
+of `read_vbe_options`. Its exact inert refusal is retained, not counted as native
+acceptance. A recovery actor's first attempt stops before dispatch because it
+expects an outer terminal that is pending while Excel remains open. Its next
+attempt performs one complete read, then rejects its comparison because Windows
+PowerShell decodes an unmarked UTF-8 baseline as ANSI. An independent structured
+comparison finds zero differing Tabs and equal complete revisions. The final
+actor reads those existing receipts explicitly as UTF-8, observes dialog absence
+and closes the owned workbook/Quit once, with exit 0 from a recovery handle.
+Neither read nor cleanup is replayed; registration is restored. The original
+native failure remains failed. These terminal tasks are exported and removed.
+
+Production `c1cb2c3` prepares only an empty recognized native Size control. It
+validates ownership, parent dialog, enabled state and unchanged edit value,
+dispatches to the owning GUI thread once and requires bounded focus observation.
+The unlabelled write verifier also recognizes observed control ID 4911. No size
+value is invented and the exact-choice/revision guards remain enforced.
+Content-free opt-in trace metadata adds focus-attempt and post-focus count fields.
+
+The final focused suite at `08d7420` records **9 managed passed, 0 failed,
+0 skipped**, including the real owned Win32 focus/population regression and
+unlabelled write verification with unknown-choice refusal. Build completes with
+zero warnings/errors. Frozen current product MVID
+`7156af5b-941c-4452-9e78-1381cb69af0d` has SHA-256
+`950D86EDEF3F90DC3A8EE274627AC75C08012BF158F55140817ECEC9FABF85EC`.
+The single complete Format campaign `q026-full-size-native-v1` is started after
+that gate, including real Size mutation and restoration; its native acceptance
+is **PENDING** at this checkpoint. Historical causality remains **OPEN**.
+
 ### Q-026 offline snapshot review (2026-10-03)
 
 Branch `codex/q026-qualification` starts from `origin/main` at `4b382b9`,
