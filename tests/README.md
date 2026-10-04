@@ -459,6 +459,12 @@ with full-snapshot restoration and original-handle normal exit. It records the
 native catalogue before and after the font change. An empty list still exercises
 the explicit refusal and does not establish size-mutation acceptance; palette,
 margin and historical-causality qualification remain separate.
+`-Scenario SizeFocus` opens the existing native Options menu once on the fixture's
+owning STA. A worker on the same inactive desktop selects the observed Format
+tab, posts one `WM_NEXTDLGCTL` to the owned Size control, observes focus and the
+native catalogue, then cancels once. No preference is written. Acceptance requires
+complete unchanged Tabs/revision and normal exit through the original launch
+handle; unknown focus, modal or dispatch outcomes retain the owned host.
 `tools/tests/Set-Q026Candidate.ps1` temporarily changes only the existing per-user
 x64 add-in CodeBase and matching version entry, with an explicit fresh backup.
 It refuses loaded VBE hosts or an unexpected assembly/original CodeBase. Restore

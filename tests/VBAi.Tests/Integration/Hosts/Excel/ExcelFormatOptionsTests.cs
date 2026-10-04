@@ -12,7 +12,7 @@ namespace VBAi.Tests.Integration.Hosts.Excel
 {
     /// <summary>Full native Format qualification with terminal-only restoration and durable owned-host evidence.</summary>
     [TestClass, TestCategory("Excel")]
-    public sealed class ExcelFormatOptionsTests
+    public sealed partial class ExcelFormatOptionsTests
     {
         public TestContext TestContext { get; set; }
         private static readonly List<ExcelVbeFixture> retainedFormatHosts = new List<ExcelVbeFixture>();

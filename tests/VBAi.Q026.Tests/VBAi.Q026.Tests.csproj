@@ -26,6 +26,7 @@
     <Compile Include="..\VBAi.Tests\Unit\Infrastructure\Diagnostics\IsolatedTestDesktop.Tests.cs;..\VBAi.Tests\Unit\Infrastructure\Diagnostics\ExcelFormatOptionsQualification.Tests.cs" />
     <Compile Include="..\VBAi.Tests\Unit\Vbe\Debug\VbeDebugWindows.Options.Checkbox.Tests.cs" Condition="'$(HistoricalOptionsOnly)' != 'true'" />
     <Compile Include="..\VBAi.Tests\Integration\Hosts\Excel\ExcelFormatOptionsTests.cs" />
+    <Compile Include="..\VBAi.Tests\Integration\Hosts\Excel\ExcelFormatOptionsTests.SizeFocus.cs;..\VBAi.Tests\Infrastructure\Hosts\ExcelVbeFixture.OptionsMenu.cs" />
     <Compile Include="..\VBAi.Tests\Infrastructure\Diagnostics\Q026OptionsGuardTrace.cs" />
     <Compile Include="..\VBAi.Tests\Infrastructure\Diagnostics\NativeWindowEnumerationOwnership.cs;..\VBAi.Tests\Unit\Infrastructure\Diagnostics\NativeWindowEnumerationOwnership.Tests.cs" />
     <Compile Include="HistoricalDiagnosticConstants.cs" Condition="'$(HistoricalOptionsOnly)' == 'true'" />

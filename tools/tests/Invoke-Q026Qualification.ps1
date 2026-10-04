@@ -4,7 +4,7 @@ param(
     [string]$EvidenceRoot,
     [string]$InstalledDirectory,
     [string]$PlanPath = (Join-Path $PSScriptRoot 'q026-plan.json'),
-    [ValidateSet('FullFormat','Margin','FontSizeCatalogue','HistoricalPalettePrefix')][string]$Scenario = 'FullFormat',
+    [ValidateSet('FullFormat','Margin','FontSizeCatalogue','SizeFocus','HistoricalPalettePrefix')][string]$Scenario = 'FullFormat',
     [string]$ClrTracePlan
 )
 $ErrorActionPreference = 'Stop'
@@ -38,7 +38,7 @@ if ($Prepare) {
     $files = @(Get-ChildItem -LiteralPath ([IO.Path]::GetDirectoryName($test)) -File | Where-Object {$_.Extension -in @('.dll','.exe','.config')} | ForEach-Object { @{Path=$_.FullName;Sha256=(Get-FileHash -LiteralPath $_.FullName).Hash} })
     $files += @{Path=$helper;Sha256=(Get-FileHash -LiteralPath $helper).Hash}
     $files += @{Path=$script;Sha256=(Get-FileHash -LiteralPath $script).Hash}
-    $nativeMethod=if($Scenario -eq 'Margin'){'NativeMarginCheckboxRoundTripAndRestoreCompleteOptionsVersion'}elseif($Scenario -eq 'FontSizeCatalogue'){'NativeFontSizeCatalogueAndRestoreCompleteOptionsVersion'}elseif($Scenario -eq 'HistoricalPalettePrefix'){'NativeHistoricalFontPalettePrefixAndRestoreCompleteOptionsVersion'}else{'NativeFormatChoicesRoundTripAndRestoreCompleteOptionsVersion'}
+    $nativeMethod=if($Scenario -eq 'Margin'){'NativeMarginCheckboxRoundTripAndRestoreCompleteOptionsVersion'}elseif($Scenario -eq 'FontSizeCatalogue'){'NativeFontSizeCatalogueAndRestoreCompleteOptionsVersion'}elseif($Scenario -eq 'SizeFocus'){'NativeSizeFocusCatalogueWithoutPreferenceWrites'}elseif($Scenario -eq 'HistoricalPalettePrefix'){'NativeHistoricalFontPalettePrefixAndRestoreCompleteOptionsVersion'}else{'NativeFormatChoicesRoundTripAndRestoreCompleteOptionsVersion'}
     $matrix=Get-Content -LiteralPath (Join-Path $PSScriptRoot 'q026-scenarios.json') -Raw -Encoding UTF8 | ConvertFrom-Json
     if($Scenario -eq 'Margin'){
         $matrix.Cases=@($matrix.Cases | Where-Object {$_.Id -in @('read-stability','margin','complete-restoration','normal-exit')})
@@ -56,6 +56,10 @@ if ($Prepare) {
     if($Scenario -eq 'FontSizeCatalogue'){
         $matrix.Cases=@($matrix.Cases|Where-Object {$_.Id -in @('read-stability','font','size-catalogue','complete-restoration','normal-exit')})
         $matrix.Scope='Owned disposable Excel font/size catalogue diagnostic with full restoration; not the complete Format matrix'
+    }
+    if($Scenario -eq 'SizeFocus'){
+        $matrix.Cases=@(@{Id='size-focus';Scope='Observe exact Size catalogue before focus, after one owned WM_NEXTDLGCTL and expansion; Cancel once; complete unchanged baseline and normal original-handle exit; no preference writes'})
+        $matrix.Scope='Owned disposable Excel Size focus diagnostic only; no size mutation acceptance'
     }
     $plan = @{Scope=('Q-026 owned Excel '+$Scenario+' mutation/restoration; not all-host qualification');Scenario=$Scenario;Repository=$repository;
         SourceCommit=(& git -C $repository rev-parse HEAD);SourceStatus=@(& git -C $repository status --porcelain);

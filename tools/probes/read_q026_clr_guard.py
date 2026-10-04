@@ -7,6 +7,12 @@ from pathlib import Path
 def captures(text):
     result, active = [], None
     for line in text.splitlines():
+        # The exact IL breakpoint emits a status receipt, not a capture frame.
+        # Accept only the collector's fixed receipt; malformed frames still fail.
+        if line == "Q026_GUARD_IL_ARMED offset=233 breakpoint=0":
+            if active is not None:
+                raise ValueError("Breakpoint receipt interrupted a capture.")
+            continue
         if line.startswith("Q026_GUARD_CAPTURE_ERROR "):
             raise ValueError("CLR collector reported an incomplete capture.")
         if not line.startswith("Q026_GUARD_"):

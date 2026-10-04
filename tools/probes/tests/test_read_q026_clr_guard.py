@@ -39,5 +39,17 @@ class GuardFramesTests(unittest.TestCase):
     def test_no_guard_is_not_invented(self):
         self.assertEqual([], guard.captures("Q026_OPTIONS_TRACE_READY pid=1\n"))
 
+    def test_armed_exact_breakpoint_without_hit_has_no_capture(self):
+        self.assertEqual([], guard.captures("Q026_GUARD_IL_ARMED offset=233 breakpoint=0\n"))
+
+    def test_armed_receipt_preserves_complete_capture(self):
+        actual = guard.captures("\n".join(["Q026_GUARD_IL_ARMED offset=233 breakpoint=0"] + self.frames()))
+        self.assertEqual(1, len(actual))
+
+    def test_wrong_offset_and_interleaved_receipt_fail(self):
+        for text in ["Q026_GUARD_IL_ARMED offset=234 breakpoint=0",
+                     "\n".join(self.frames()[:1] + ["Q026_GUARD_IL_ARMED offset=233 breakpoint=0"] + self.frames()[1:])]:
+            with self.assertRaises(ValueError): guard.captures(text)
+
 
 if __name__ == "__main__": unittest.main()

@@ -1529,6 +1529,40 @@ this does not prove focus caused the empty catalogue. An earlier observer runs
 after PID 46072 has already exited and returns no rows; it is not live evidence.
 Historical revision drift and real size mutation remain **OPEN**.
 
+### Q-026 exact historical guard campaign (2026-10-04)
+
+Campaign `q026-historical-prefix-campaign-v9` uses harness `fd183b0` and the
+unchanged historical product MVID `5cc513d1-5569-4835-bf6c-cf70a18274fb`
+(SHA-256 `A12378FB826CAAD6C0BBE79BF09C52332760E6C32FDB4F65138876CB90F5F167`).
+It records **83 managed passed, 0 failed, 0 skipped; 1 native passed, 0 failed,
+0 skipped**. Owned Excel PID 69328 starts `2026-10-04T09:49:33.4942230Z`
+on inactive desktop `VBAiTests_900b63e8d1a14661b713c435714629b1`.
+
+All four historical font/palette commits and their readbacks succeed. All Tabs
+and complete revision `544477...` are restored, independently audited in
+`q026-historical-v9-audit.json`. Evidence includes 126 phase receipts and 36 command
+records. The exact guard breakpoint at IL offset 233 is armed; debugger PID 77856
+detaches with exit 0 before cleanup. The original Excel launch handle 2224 observes
+exit 0, and both original worker and GUI launcher terminate normally without an
+input-desktop switch. Registration is restored; the terminal task is exported
+and removed. The three terminal v8 tasks are separately exported and removed.
+
+The retained log contains **zero natural guard captures**. The offline decoder
+previously treated its fixed `Q026_GUARD_IL_ARMED` status receipt as JSON; it now
+accepts only that exact receipt and still rejects malformed or interrupted frames.
+Its focused offline suite records **9 passed**. This decoder correction does not
+change the historical binary or create evidence of a guard hit. The intentional
+pre-attachment warmup refusal is not a natural revision-drift reproduction.
+Historical causality and real size mutation remain **OPEN**.
+
+The next dedicated `SizeFocus` diagnostic is implemented and builds against the
+frozen content-free observation candidate. It makes no preference write and does
+not yet have native acceptance at this checkpoint. Its single dialog-local focus
+message follows [Microsoft's WM_NEXTDLGCTL contract](https://learn.microsoft.com/en-us/windows/win32/dlgbox/wm-nextdlgctl);
+its catalogue expansion uses [CB_SHOWDROPDOWN](https://learn.microsoft.com/en-us/windows/win32/controls/cb-showdropdown).
+Neither message establishes that this VBE build populates Size choices; the native
+observation must decide that hypothesis.
+
 ### Q-026 offline snapshot review (2026-10-03)
 
 Branch `codex/q026-qualification` starts from `origin/main` at `4b382b9`,
