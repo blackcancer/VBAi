@@ -373,6 +373,49 @@ namespace VBAi
             return style;
         }
 
+        [System.Runtime.InteropServices.DllImport("kernel32.dll", EntryPoint = "GetCurrentThreadId")]
+        private static extern uint OptionsCurrentThreadId();
+        [System.Runtime.InteropServices.DllImport("user32.dll", EntryPoint = "GetGUIThreadInfo")]
+        private static extern bool OptionsGuiThreadInfo(uint thread, ref OptionsGuiInfo info);
+        [System.Runtime.InteropServices.StructLayout(System.Runtime.InteropServices.LayoutKind.Sequential)]
+        private struct OptionsGuiInfo
+        {
+            internal uint Size, Flags;
+            internal IntPtr Active, Focus, Capture, MenuOwner, MoveSize, Caret;
+            internal int Left, Top, Right, Bottom;
+        }
+
+        // VBE populates its empty Size catalogue on focus, before dropdown expansion.
+        // Dispatch only to the captured owned dialog; never use keyboard input or retry.
+        private static void FocusOptionsSizeCatalogue(IntPtr window)
+        {
+            IntPtr parent = OptionsComboParent(window);
+            Action guard = () => {
+                GuardOptionsCombo(window);
+                GuardOptionsOwnedWindow(parent, window, "ComboBox");
+                if (ClassName(parent) != "#32770" || OptionsComboParent(window) != parent ||
+                    !IsWindowVisible(window) || !OptionsWindowEnabled(window))
+                    throw new InvalidOperationException("The owned Size control is unavailable for catalogue focus.");
+            };
+            guard(); uint owner = GetWindowThreadProcessId(window, out uint ignored);
+            Func<bool> focused = () => {
+                guard();
+                var info = new OptionsGuiInfo { Size = (uint)System.Runtime.InteropServices.Marshal.SizeOf(typeof(OptionsGuiInfo)) };
+                if (!OptionsGuiThreadInfo(owner, ref info)) throw new InvalidOperationException("The Size owning-thread focus cannot be read.");
+                return info.Focus == window || (info.Focus != IntPtr.Zero && OptionsComboParent(info.Focus) == window);
+            };
+            if (focused()) return;
+            if (owner == OptionsCurrentThreadId()) SendMessageInt(parent, 0x28, window, new IntPtr(1));
+            else if (!PostMessage(parent, 0x28, window, new IntPtr(1)))
+                throw new InvalidOperationException("The owned Size catalogue focus could not be posted.");
+            for (int pause = 0; pause < 80; pause++)
+            {
+                if (focused()) return;
+                System.Threading.Thread.Sleep(25);
+            }
+            throw new InvalidOperationException("The owned Size catalogue focus was not observed; do not repost.");
+        }
+
                 /// <summary>Lit le catalogue Win32 complet et le texte éditable, puis referme toute liste dépliée pour lecture.</summary>
                 /// <param name="window">Handle de la ComboBox qualifiée.</param>
                 /// <param name="control">État de sortie qui recevra choix, sélection et valeur éditable.</param>
@@ -391,6 +434,23 @@ namespace VBAi
                 {
                     observed.Style = style; observed.CountBefore = count;
                     ObserveOptionsComboIdentity(window, observed);
+                }
+                // The write verifier has no UIA label; use the actual VBE Size control
+                // identifier too, after the same native ownership/string guards.
+                if (count == 0 && (OptionsDiagnosticRole(control.Name) == VbeInspectionTrace.OptionsRole.Size || GetDlgCtrlID(window) == 4911))
+                {
+                    int length = SendMessageInt(window, 0xE, IntPtr.Zero, IntPtr.Zero).ToInt32();
+                    if (length < 0 || length > 4096) throw new InvalidOperationException("The native Size edit value is oversized.");
+                    var before = new StringBuilder(length + 1);
+                    if (OptionsComboReadText(window, 0xD, new IntPtr(before.Capacity), before).ToInt32() != length)
+                        throw new InvalidOperationException("The native Size edit value cannot be read before focus.");
+                    if (observed != null) { observed.Role = VbeInspectionTrace.OptionsRole.Size; observed.FocusAttempted = true; }
+                    FocusOptionsSizeCatalogue(window);
+                    var after = new StringBuilder(length + 1);
+                    if (OptionsComboReadText(window, 0xD, new IntPtr(after.Capacity), after).ToInt32() != length || after.ToString() != before.ToString())
+                        throw new InvalidOperationException("Catalogue focus changed the Size edit value; no write is allowed.");
+                    count = SendMessageInt(window, 0x146, IntPtr.Zero, IntPtr.Zero).ToInt32();
+                    if (observed != null) observed.CountAfterFocus = count;
                 }
                 if (count == 0)
                 {

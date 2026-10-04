@@ -789,6 +789,29 @@ namespace VBAi.Tests.Unit
         }
 
         [TestMethod]
+        public void OwnedNativeSizeCataloguePopulatesOnFocusWithoutSelectionOrEditWrite()
+        {
+            using (var fixture = new OwnedNativeOptionsControls())
+            {
+                int focusNotifications = 0;
+                fixture.OnControlNotification = (identifier, code, window) => {
+                    if (identifier != 511 || code != 3) return; // CBN_SETFOCUS, as observed in the native diagnostic.
+                    focusNotifications++;
+                    foreach (string size in new[] { "8", "10", "12" }) OptionsFixtureText(window, 0x143, IntPtr.Zero, size);
+                };
+                var rows = new List<string>();
+                var control = new VbeDebugWindows.OptionsControl { Name = "Size" };
+                using (new VbeInspectionTrace(rows.Add).Enter()) InvokeOptionsMethod(null, "ReadOptionsCombo", fixture.Size, control);
+                CollectionAssert.AreEqual(new[] { "8", "10", "12" }, control.Choices.ToArray());
+                Assert.AreEqual("10", control.Value); Assert.AreEqual(1, focusNotifications);
+                var native = (Dictionary<string, object>)new JavaScriptSerializer().Deserialize<Dictionary<string, object>>(rows.Single())["Native"];
+                Assert.AreEqual(0, native["CountBefore"]); Assert.AreEqual(3, native["CountAfterFocus"]);
+                Assert.AreEqual(true, native["FocusAttempted"]); Assert.AreEqual(false, native["ExpansionAttempted"]);
+                Assert.IsFalse(fixture.Notifications.Any(x => x.Item1 == 511 && (x.Item2 == 1 || x.Item2 == 9)));
+            }
+        }
+
+        [TestMethod]
         public void BrokenComboTraceCannotChangeAnEmptyReadOrSuppressNativeOwnershipRefusal()
         {
             using (var fixture = new OwnedNativeOptionsControls())

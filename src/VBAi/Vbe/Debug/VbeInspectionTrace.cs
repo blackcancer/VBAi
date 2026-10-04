@@ -42,12 +42,14 @@ namespace VBAi
             public int? ControlId;
             public int? Style;
             public int? CountBefore;
+            public int? CountAfterFocus;
             public int? CountAfterExpansion;
             public int? SelectedIndex;
             public bool? DropDownBefore;
             public bool? DropDownAfterExpansion;
             public bool? DropDownAfterCleanup;
             public bool ExpansionAttempted;
+            public bool FocusAttempted;
             public bool ReadCompleted;
         }
 
