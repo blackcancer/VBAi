@@ -514,4 +514,3 @@ are under `artifacts/qualification-v1/`; detached UI captures are under
 `artifacts/ui-review/screenshots/`. These ignored files are not public downloads.
 The maintained [compatibility matrix](compatibility.md) records operation-specific
 host outcomes; [testing](../tests/README.md) supplies the standard commands.
-
