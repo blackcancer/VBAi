@@ -183,9 +183,14 @@ namespace VBAi.Tests.Integration.Hosts.Excel
             }
             internal static IntPtr FindSize(IntPtr dialog, int pid)
             {
+                IntPtr result = TryFindVisibleSize(dialog, pid);
+                Assert.AreNotEqual(IntPtr.Zero, result); return result;
+            }
+            internal static IntPtr TryFindVisibleSize(IntPtr dialog, int pid)
+            {
                 var found = new List<IntPtr>(); Exception failure = null;
                 EnumChildWindows(dialog, (window, _) => { try { if (GetDlgCtrlID(window) == 4911 && Class(window) == "ComboBox" && IsWindowVisible(window) && IsWindowEnabled(window)) { RequireOwned(window, pid); found.Add(window); } return true; } catch (Exception error) { failure = error; return false; } }, IntPtr.Zero);
-                if (failure != null) throw failure; Assert.AreEqual(1, found.Count); return found[0];
+                if (failure != null) throw failure; Assert.IsTrue(found.Count <= 1); return found.Count == 1 ? found[0] : IntPtr.Zero;
             }
         }
     }

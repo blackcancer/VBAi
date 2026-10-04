@@ -475,6 +475,17 @@ test; this is a causal diagnostic, not an unchanged historical test harness.
 The deliberate stale request is classified separately from any unexpected guard
 hit. The earlier prefix intentionally omits later stages; its passing result
 does not identify the historical failure's position.
+`-Scenario HistoricalCatalogueDrift` uses the same frozen guard collector for a
+controlled Size-focus diagnostic. `-Scenario CatalogueDrift` compares the current
+candidate. The request's property is first verified absent, so neither path can
+reach a preference writer. An actor posts one owned dialog-local focus message
+while observing the product's own tab navigation. The old candidate must refuse
+the fresh revision after catalogue population; the prepared current candidate
+must reach the missing-property refusal with a stable revision. Both require an
+unchanged complete closed readback and original-handle normal exit. A captured
+old guard must still be decoded and compared offline. This deliberately induced
+metadata drift is not a natural reproduction or proof of the original failure;
+it does not replace the complete Format matrix or close historical causality.
 `tools/tests/Set-Q026Candidate.ps1` temporarily changes only the existing per-user
 x64 add-in CodeBase and matching version entry, with an explicit fresh backup.
 It refuses loaded VBE hosts or an unexpected assembly/original CodeBase. Restore

@@ -1699,6 +1699,29 @@ interval is released at `12:54:48.6999999Z`. Independent assertions are retained
 `q026-historical-full-v1-audit.json`. Q-026 remains **OPEN** for historical causality;
 the separate current-candidate complete Format acceptance is unaffected.
 
+An additional offline comparison retains exact equality between the original
+September baseline and the complete historical diagnostic's baseline. Comparing
+that same original baseline with the accepted current Size candidate changes
+only `/Tabs/1/Controls/10/Choices`, `NativeChoices` and `SelectedIndex`:
+empty catalogues become nine actual entries, and index `-1` becomes `2`; the edit
+value remains `10`. Normalizing only those three recorded fields makes every
+Tabs field equal. The historical .NET Framework serialization/hash algorithm
+recomputes both retained revisions exactly. Receipts are
+`q026-original-to-full-historical-baseline.json`,
+`q026-original-to-current-size-baseline.json` and
+`q026-recorded-hash-algorithm-comparison.json`. This proves that catalogue
+metadata alone can change the revision, not that it changed at the missing
+original guard. The retained September loading log identifies the original
+Excel PID but contains no compared request/snapshot pair for that refusal.
+
+The controlled `HistoricalCatalogueDrift` / `CatalogueDrift` diagnostic builds
+against the frozen historical candidate with zero warnings/errors. Native work
+is **NOT_RUN** at this preparation checkpoint. It targets a property verified
+absent, posts one owned Size-focus message and requires full unchanged readback
+and normal exit. Its purpose is to compare the actual guarded snapshots of a
+deliberately induced metadata transition; it is not a substitute for natural
+historical causality or the complete Format matrix.
+
 ### Q-026 offline snapshot review (2026-10-03)
 
 Branch `codex/q026-qualification` starts from `origin/main` at `4b382b9`,
