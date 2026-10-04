@@ -1610,8 +1610,30 @@ zero warnings/errors. Frozen current product MVID
 `7156af5b-941c-4452-9e78-1381cb69af0d` has SHA-256
 `950D86EDEF3F90DC3A8EE274627AC75C08012BF158F55140817ECEC9FABF85EC`.
 The single complete Format campaign `q026-full-size-native-v1` is started after
-that gate, including real Size mutation and restoration; its native acceptance
-is **PENDING** at this checkpoint. Historical causality remains **OPEN**.
+that gate, including real Size mutation and restoration. It records **94 managed
+passed, 0 failed, 0 skipped; 1 native passed, 0 failed, 0 skipped**. Owned Excel
+PID 59624 starts `2026-10-04T10:44:00.7774862Z` on inactive desktop
+`VBAiTests_4cf1047cd362410a972000b1485ba7f4`. The campaign runs from
+`10:43:59.1559018Z` to `11:15:53.9946517Z`.
+
+Font, Size, all three palettes, another code category and margin are independently
+verified. The stale-revision refusal is confirmed with actual dialog absence and
+an unchanged complete readback. Native Size changes `10 -> 8 -> 10` using observed
+choices. Every Tabs field and complete revision
+`dd7304d6f53ccfae1038774428bd1e3d13546c6239551d01046be62724dd9cba`
+matches the baseline after all restoration. There are 207 phase receipts and 62
+command records. The original retained launch handle 2192 observes exit 0;
+worker and GUI launcher exit 0 without an input-desktop switch or foreground
+observation. The limited actor restores its original registration/loading values.
+The terminal task is exported and removed after live host absence is confirmed.
+Independent assertions are retained in `q026-full-size-native-v1-audit.json`.
+
+The complete current Excel Format matrix, including Size mutation, is now
+**ACCEPTED** for this exact candidate. This does not establish restart persistence,
+other-host compatibility or the historical cause. Q-026 remains **OPEN only for
+the stricter historical causal criterion**; the passing unchanged historical
+prefix captures no natural guard refusal, and the original failed run retains
+no compared state pair at its failing guard.
 
 ### Q-026 offline snapshot review (2026-10-03)
 

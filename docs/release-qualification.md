@@ -138,6 +138,17 @@ Q-026 remains open for that stricter historical causal criterion. Exact candidat
 scope, retained failures and release evidence are in
 [recorded validation](test-coverage.md#q-026-current-native-acceptance-2026-10-03).
 
+The subsequent owned Excel focus diagnostic identifies the empty Size catalogue:
+the native list populates when its owned control receives focus, without changing
+the edit value. The current `08d7420` candidate now prepares that catalogue through
+one guarded dialog-local focus operation; exact-choice and revision guards remain
+enforced. Its complete native Format matrix accepts real Size mutation and exact
+whole-snapshot restoration, with normal original-handle exit and registration
+release. This closes the Size functional gap for that candidate and tested Excel
+build. Historical causality remains open: the exact old guard is armed on the
+unchanged binary, but its passing prefix captures no natural refusal. See
+[candidate-specific evidence](test-coverage.md#q-026-native-size-focus-and-current-candidate-preparation-2026-10-04).
+
 The original complete baseline and the original candidate can be identified;
 the missing evidence is the pair of snapshots compared at the failing revision
 guard, not the initial baseline. A read-only CLR collector is now available for
