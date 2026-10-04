@@ -21,13 +21,9 @@ namespace VBAi.Tests.Integration
         [DllImport("user32.dll")] private static extern bool IsChild(IntPtr parent, IntPtr child);
         [DllImport("user32.dll")] private static extern IntPtr GetAncestor(IntPtr hwnd, uint flag);
         [DllImport("user32.dll")] private static extern IntPtr GetWindow(IntPtr hwnd, uint command);
-        [StructLayout(LayoutKind.Sequential)] private struct Rect { internal int Left, Top, Right, Bottom; }
-        [StructLayout(LayoutKind.Sequential)] private struct ComboInfo
-        {
-            internal int Size; internal Rect Item, Button; internal uint ButtonState;
-            internal IntPtr Combo, Edit, List;
-        }
-        [DllImport("user32.dll")] private static extern bool GetComboBoxInfo(IntPtr hwnd, ref ComboInfo info);
+        [DllImport("user32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+        private static extern IntPtr SendMessageTimeout(IntPtr hwnd, uint message, IntPtr wParam, string text,
+            uint flags, uint timeout, out IntPtr result);
         [DllImport("user32.dll", CharSet = CharSet.Unicode)] private static extern int GetClassName(IntPtr hwnd, StringBuilder text, int size);
         [DllImport("user32.dll", CharSet = CharSet.Unicode)] private static extern int GetWindowText(IntPtr hwnd, StringBuilder text, int size);
         private readonly int pid;
@@ -239,30 +235,40 @@ namespace VBAi.Tests.Integration
             Wait(() => Leaf(id).Current.IsEnabled, 30, "enabled " + id);
             if (SelectedValue(combo) == expected) return;
             var comboHandle = new IntPtr(combo.Current.NativeWindowHandle);
-            var info = new ComboInfo { Size = Marshal.SizeOf(typeof(ComboInfo)) };
-            if (!IsChild(chat, comboHandle) || !GetComboBoxInfo(comboHandle, ref info) ||
-                info.Combo != comboHandle || info.List == IntPtr.Zero)
-                throw new InvalidOperationException("Exact native combo popup identity unavailable: " + id);
+            Wait(() => ExactChoicePresent(id, expected), 30, "exact native choice ready " + id);
             var expand = (ExpandCollapsePattern)combo.GetCurrentPattern(ExpandCollapsePattern.Pattern);
             record(new { Phase = "ComboExpandIntentOnce", Id = id }); expand.Expand();
-            var choices = AutomationElement.RootElement.FindAll(TreeScope.Descendants,
-                new AndCondition(new PropertyCondition(AutomationElement.ProcessIdProperty, pid),
-                    new PropertyCondition(AutomationElement.ControlTypeProperty, ControlType.ListItem),
-                    new PropertyCondition(AutomationElement.NameProperty, expected)));
-            if (choices.Count != 1) throw new InvalidOperationException("Ambiguous/missing exact combo choice: " + expected);
-            uint popupPid; uint popupThread = GetWindowThreadProcessId(info.List, out popupPid);
-            if (popupPid != pid || popupThread != ownerThread || !IsWindowVisible(info.List))
-                throw new InvalidOperationException("Exact combo popup left its native owner.");
-            IsolatedTestDesktop.RequireOfficeWindowInventory(Environment.GetEnvironmentVariable("VBAi_TEST_DESKTOP_NAME"), (uint)pid, true, info.List);
-            bool inExactList = false; var node = choices[0];
-            for (int depth = 0; depth < 32 && node != null; depth++, node = TreeWalker.RawViewWalker.GetParent(node))
-                if (node.Current.NativeWindowHandle == info.List.ToInt64()) { inExactList = true; break; }
-            if (!inExactList) throw new InvalidOperationException("Choice does not belong to the exact combo popup.");
+            string desktop = Environment.GetEnvironmentVariable("VBAi_TEST_DESKTOP_NAME");
+            var choice = VBAi.Desktop.Helper.NativeComboListDiscovery.RequireExactItem(comboHandle, expected,
+                pid, ownerThread, desktop, thread => {
+                    if (thread != ownerThread) throw new InvalidOperationException("Foreign combo/list thread.");
+                    // Desktop identity comes from the exact owned window inventory. Querying
+                    // GetThreadDesktop for a foreign process is not a reliable proof here.
+                    Guard(); IsolatedTestDesktop.RequireOfficeWindowInventory(desktop, (uint)pid, true, comboHandle);
+                    return desktop;
+                }, record);
             Guard();
             record(new { Phase = "ComboSelectionIntentOnce", Id = id, Value = expected });
-            ((SelectionItemPattern)choices[0].GetCurrentPattern(SelectionItemPattern.Pattern)).Select();
+            ((SelectionItemPattern)choice.GetCurrentPattern(SelectionItemPattern.Pattern)).Select();
             Wait(() => SelectedValue(Leaf(id)) == expected,
                 10, "read back " + id);
+        }
+
+        private bool ExactChoicePresent(string id, string expected)
+        {
+            var combo = Leaf(id);
+            var hwnd = new IntPtr(combo.Current.NativeWindowHandle);
+            uint process; uint thread = GetWindowThreadProcessId(hwnd, out process);
+            if (!IsChild(chat, hwnd) || process != pid || thread != ownerThread || expected.Length > 2048)
+                throw new InvalidOperationException("Exact owned combo identity changed.");
+            IntPtr index;
+            // CB_FINDSTRINGEXACT is a read, marshalled by user32 across the owned process.
+            // It lets project/catalogue refresh settle before the one popup expansion.
+            if (SendMessageTimeout(hwnd, 0x0158, new IntPtr(-1), expected, 3, 3000, out index) == IntPtr.Zero)
+                throw new InvalidOperationException("Bounded native combo readiness read did not return.");
+            if (index.ToInt64() == -1) return false;
+            if (index.ToInt64() < 0 || index.ToInt64() >= 4096) throw new InvalidOperationException("Bounded native combo index.");
+            return true;
         }
 
         private string SelectedValue(AutomationElement combo)
