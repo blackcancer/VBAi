@@ -1714,13 +1714,12 @@ metadata alone can change the revision, not that it changed at the missing
 original guard. The retained September loading log identifies the original
 Excel PID but contains no compared request/snapshot pair for that refusal.
 
-The controlled `HistoricalCatalogueDrift` / `CatalogueDrift` diagnostic builds
-against the frozen historical candidate with zero warnings/errors. Native work
-is **NOT_RUN** at this preparation checkpoint. It targets a property verified
-absent, posts one owned Size-focus message and requires full unchanged readback
-and normal exit. Its purpose is to compare the actual guarded snapshots of a
-deliberately induced metadata transition; it is not a substitute for natural
-historical causality or the complete Format matrix.
+The controlled `HistoricalCatalogueDrift` / `CatalogueDrift` diagnostic targets
+a property verified absent, posts one owned Size-focus message and requires full
+unchanged readback and normal exit. Both native cases now pass. Their scope is
+the actual guarded snapshots of a deliberately induced metadata transition;
+they do not substitute for natural historical causality or the complete Format
+matrix.
 
 Both prepared cases freeze harness `e07a7b0` and their unchanged product payloads.
 The limited private-desktop managed preflight exits 0 without an input-desktop
@@ -1729,23 +1728,48 @@ These scopes are separate, overlapping managed subsets, not a combined test coun
 
 | Source / receipt | Result | Scope |
 | --- | --- | --- |
-| `e07a7b0`, `q026-controlled-catalogue-old-v1/managed-preflight/managed.trx` | 86 passed, 0 failed, 0 skipped | Historical-compatible focused managed subset against MVID `5cc513d1-5569-4835-bf6c-cf70a18274fb`; native controlled-focus case NOT_RUN. |
-| `e07a7b0`, `q026-controlled-catalogue-current-v1/managed-preflight/managed.trx` | 97 passed, 0 failed, 0 skipped | Focused managed subset including current native-checkbox implementation against MVID `7156af5b-941c-4452-9e78-1381cb69af0d`; native controlled-focus case NOT_RUN. |
+| `e07a7b0`, `q026-controlled-catalogue-old-v1/managed-preflight/managed.trx` and `managed/managed.trx` | Each run: 86 passed, 0 failed, 0 skipped | Historical-compatible focused managed subset against MVID `5cc513d1-5569-4835-bf6c-cf70a18274fb`; the second run is the required frozen native-pipeline gate. |
+| `e07a7b0`, `q026-controlled-catalogue-current-v1/managed-preflight/managed.trx` and `managed/managed.trx` | Each run: 97 passed, 0 failed, 0 skipped | Focused managed subset including current native-checkbox implementation against MVID `7156af5b-941c-4452-9e78-1381cb69af0d`; the second run is the required frozen native-pipeline gate. |
+| `e07a7b0`, `q026-controlled-catalogue-old-v1/native/format.trx` | 1 passed, 0 failed, 0 skipped | One controlled catalogue transition on the unchanged historical product, exact guarded graph capture and normal exit; no preference write. |
+| `e07a7b0`, `q026-controlled-catalogue-current-v1/native/format.trx` | 1 passed, 0 failed, 0 skipped | Same one-shot focus scenario on the unchanged current product, stable complete revision and normal exit; no preference write. |
 
-The native slot is not reacquired merely from an empty process inventory;
-availability is pending coordination after the previous interval was released.
-Registration is unchanged during this preparation. The terminal managed task is
-exported and removed, and the native cases have not been dispatched.
-The two one-shot launch wrappers now freeze their controller and registration
-helper with the candidate inputs. Syntax validation passes. A missing-slot check
-refuses before creating a run claim, registration backup or native campaign;
-its receipt is `q026-controlled-catalogue-reservation-gate.log`. This is a launch
-gate observation, not native acceptance. The offline paired-capture audit is
-also prepared but not executed without native receipts. It requires the captured
-old revision to differ only in the three Size metadata fields and equal the
-current prepared snapshot, plus exact unchanged readbacks and original-handle
-normal exits. Even a passing controlled mechanism comparison will not establish
-the cause of the missing original guard state pair.
+The one-shot launch wrappers freeze their controller and registration helper.
+The earlier missing-slot check refuses before a run claim or registration change
+(`q026-controlled-catalogue-reservation-gate.log`). The maintainer subsequently
+authorizes native work without another slot request; a fresh six-host inventory
+is empty before dispatch. Both cases run sequentially on inactive desktops,
+with owned Excel released between cases. No uncertain operation is replayed.
+
+Historical Excel PID 208308 starts `2026-10-04T13:53:31.3978354Z` on
+`VBAiTests_f80ac9c5171a4bedb218deb2aac0edaa`. One posted focus populates nine
+Size choices without changing the value `10`. The inert, absent-property request
+uses the immediately preceding complete revision `544477...`; the exact old
+guard refuses it. Its one captured request/snapshot pair recomputes to
+`dd7304...`, differing solely in `Size.Choices`, `Size.NativeChoices` and
+`Size.SelectedIndex`. Normalizing those three fields makes every Tabs field
+equal to the pre-request baseline. The collector detaches normally, exit 0.
+
+Current Excel PID 220200 starts `2026-10-04T13:58:31.3390561Z` on
+`VBAiTests_9ca492b6d75e492a807018b94c193782`. Its baseline already contains
+the nine Size choices and revision `dd7304...`. The same controlled focus
+does not invalidate that revision: the request reaches the unique
+absent-option refusal after the revision guard. Every field in its complete
+baseline equals the captured historical graph, with exactly the same revision.
+
+Both cases independently verify actual dialog closure and complete unchanged
+closed readback. Original launch handles 2152 and 2240 respectively observe
+normal exit 0 after one Close and one Quit. Neither helper switches the input
+desktop or observes an owned foreground window. Both wrappers restore the
+original registration/loading values, all six host processes are absent, and
+the terminal tasks are exported and removed. The paired audit passes in
+`q026-controlled-catalogue-v1-audit.json`; release evidence is
+`q026-controlled-catalogue-release-20261004.json`.
+
+This establishes an actual native metadata-only revision drift and its prevention
+on the current candidate. It does not recover the missing original September
+guard pair or establish that the same focus transition caused that historical
+failure. The stricter historical causal gate remains **OPEN**; the previously
+accepted complete current Format matrix is unchanged.
 
 ### Q-026 offline snapshot review (2026-10-03)
 
