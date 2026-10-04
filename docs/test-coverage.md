@@ -1722,6 +1722,21 @@ and normal exit. Its purpose is to compare the actual guarded snapshots of a
 deliberately induced metadata transition; it is not a substitute for natural
 historical causality or the complete Format matrix.
 
+Both prepared cases freeze harness `e07a7b0` and their unchanged product payloads.
+The limited private-desktop managed preflight exits 0 without an input-desktop
+switch or an owned foreground observation. It activates no Office/VBE host.
+These scopes are separate, overlapping managed subsets, not a combined test count:
+
+| Source / receipt | Result | Scope |
+| --- | --- | --- |
+| `e07a7b0`, `q026-controlled-catalogue-old-v1/managed-preflight/managed.trx` | 86 passed, 0 failed, 0 skipped | Historical-compatible focused managed subset against MVID `5cc513d1-5569-4835-bf6c-cf70a18274fb`; native controlled-focus case NOT_RUN. |
+| `e07a7b0`, `q026-controlled-catalogue-current-v1/managed-preflight/managed.trx` | 97 passed, 0 failed, 0 skipped | Focused managed subset including current native-checkbox implementation against MVID `7156af5b-941c-4452-9e78-1381cb69af0d`; native controlled-focus case NOT_RUN. |
+
+The native slot is not reacquired merely from an empty process inventory;
+availability is pending coordination after the previous interval was released.
+Registration is unchanged during this preparation. The terminal managed task is
+exported and removed, and the native cases have not been dispatched.
+
 ### Q-026 offline snapshot review (2026-10-03)
 
 Branch `codex/q026-qualification` starts from `origin/main` at `4b382b9`,
