@@ -1736,6 +1736,16 @@ The native slot is not reacquired merely from an empty process inventory;
 availability is pending coordination after the previous interval was released.
 Registration is unchanged during this preparation. The terminal managed task is
 exported and removed, and the native cases have not been dispatched.
+The two one-shot launch wrappers now freeze their controller and registration
+helper with the candidate inputs. Syntax validation passes. A missing-slot check
+refuses before creating a run claim, registration backup or native campaign;
+its receipt is `q026-controlled-catalogue-reservation-gate.log`. This is a launch
+gate observation, not native acceptance. The offline paired-capture audit is
+also prepared but not executed without native receipts. It requires the captured
+old revision to differ only in the three Size metadata fields and equal the
+current prepared snapshot, plus exact unchanged readbacks and original-handle
+normal exits. Even a passing controlled mechanism comparison will not establish
+the cause of the missing original guard state pair.
 
 ### Q-026 offline snapshot review (2026-10-03)
 
