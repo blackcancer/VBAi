@@ -169,19 +169,97 @@ namespace VBAi
         /// <summary>Runs an explicit Immediate capture on the caller's VBE UI context.</summary>
         internal System.Threading.Tasks.Task<object> ReadImmediateAsync(Request request)
         {
+            RequireGeneralSettled();
             return debugger.ReadImmediateAsync(request);
         }
 
         /// <summary>Inspects declared scalar locals through the asynchronous native debugger route.</summary>
         internal System.Threading.Tasks.Task<object> InspectLocalScalarsAsync(Request request)
         {
+            RequireGeneralSettled();
             return debugger.InspectLocalScalarsAsync(request);
         }
 
         /// <summary>Allows queued native saves to finish without blocking the VBE message loop.</summary>
         internal System.Threading.Tasks.Task<object> SaveHostDocumentAsync(Request request)
         {
+            RequireGeneralSettled();
             return components.SaveHostDocumentAsync(request);
+        }
+
+        private bool generalInFlight, generalQuarantined;
+        private int generalAuthorizationDepth;
+        private int bridgeOperationsInFlight;
+        internal void RequireGeneralSettled()
+        {
+            if (generalInFlight || generalQuarantined)
+                throw new InvalidOperationException("An original General operation is pending or uncertain. No further native operation is permitted in this session.");
+        }
+
+        // Claimed and released on the bridge's owning STA. The worker keeps its
+        // existing native thread while General cannot enter during its dispatch.
+        internal Action AdmitBridgeOperation()
+        {
+            RequireGeneralSettled();
+            int owner = System.Threading.Thread.CurrentThread.ManagedThreadId;
+            if (System.Threading.Thread.CurrentThread.GetApartmentState() != System.Threading.ApartmentState.STA)
+                throw new InvalidOperationException("Bridge admission requires the owning STA.");
+            bridgeOperationsInFlight++;
+            bool released = false;
+            return () => {
+                if (System.Threading.Thread.CurrentThread.ManagedThreadId != owner)
+                    throw new InvalidOperationException("Bridge admission must be released on its owning STA.");
+                if (released) return;
+                released = true;
+                bridgeOperationsInFlight--;
+            };
+        }
+
+        /// <summary>Reads or edits the native General page on the original VBE UI thread.</summary>
+        internal async System.Threading.Tasks.Task<object> ProjectGeneralAsync(Request request, bool write)
+        {
+            RequireGeneralSettled();
+            if (bridgeOperationsInFlight != 0)
+                throw new InvalidOperationException("A bridge operation is pending. General cannot enter until it settles.");
+            int ownerThread = System.Threading.Thread.CurrentThread.ManagedThreadId;
+            Action requireContext = () => {
+                if (System.Threading.Thread.CurrentThread.ManagedThreadId != ownerThread ||
+                    System.Threading.Thread.CurrentThread.GetApartmentState() != System.Threading.ApartmentState.STA)
+                    throw new InvalidOperationException("General left its original owning STA.");
+            };
+            Action<VbeProjectGeneralOperation.Result> journal = result => {
+                requireContext();
+                // Claims are durable before dispatch and deliberately omit project data and file paths.
+                LoadLog.AppendText(LoadLog.PathName, DateTime.UtcNow.ToString("o") +
+                    " General claim Open=" + result.OpenAttempts + " Field=" + result.FieldAttempts +
+                    " OK=" + result.OkAttempts + " Cancel=" + result.CancelAttempts +
+                    " Terminal=" + result.Terminal + " Mutation=" + result.MutationInvoked +
+                    " Uncertain=" + result.Uncertain + " Closed=" + result.DialogClosed +
+                    " ExecuteReturned=" + result.OriginalExecuteReturned + Environment.NewLine);
+            };
+            generalInFlight = true;
+            Action<bool> originalAuthorization = request?.RevalidateProjectPropertyAuthorization;
+            Action<bool> scopedAuthorization = live => {
+                requireContext();
+                if (originalAuthorization == null) throw new InvalidOperationException("Original General authorization is required.");
+                if (live) generalAuthorizationDepth++;
+                try { originalAuthorization(live); }
+                finally { if (live) generalAuthorizationDepth--; }
+            };
+            if (request != null) request.RevalidateProjectPropertyAuthorization = scopedAuthorization;
+            try
+            {
+                var result = (VbeProjectGeneralOperation.Result)await components.ProjectGeneralAsync(
+                    request, write, debugger.CaptureGeneralCommand, journal, requireContext);
+                generalQuarantined = result.Uncertain;
+                return result;
+            }
+            finally
+            {
+                if (request != null && request.RevalidateProjectPropertyAuthorization == scopedAuthorization)
+                    request.RevalidateProjectPropertyAuthorization = originalAuthorization;
+                generalInFlight = false;
+            }
         }
 
         /// <summary>Exécute la commande demandée et encapsule son résultat dans une réponse.</summary>
@@ -192,8 +270,17 @@ namespace VBAi
             if (request == null || string.IsNullOrWhiteSpace(request.Command))
                 return Response.Failure("A command is required.");
 
+            // The live conversation authorization reads the project inventory. Permit
+            // that read during the operation, while retaining all mutation exclusions.
+            if (request.Command != "status" && (generalQuarantined ||
+                (generalInFlight && !(generalAuthorizationDepth > 0 && request.Command == "list_projects"))))
+                return Response.Failure("An original General operation is pending or uncertain. No further session operation is permitted.");
+
             switch (request.Command)
             {
+                case "read_project_general":
+                case "set_project_general":
+                    return Response.Failure("The native General command requires InvokeAsync or the bridge worker.");
                 case "discover_vba_tests":
                 case "preview_vba_test_support":
                 case "install_vba_test_support":

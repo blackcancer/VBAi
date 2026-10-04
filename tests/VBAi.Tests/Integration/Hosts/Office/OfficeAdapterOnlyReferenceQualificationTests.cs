@@ -27,7 +27,12 @@ namespace VBAi.Tests.Integration
         /// <summary>Removes only the optional Scripting reference from a separately owned Publisher baseline.</summary>
         [STATestMethod] public void PublisherReferenceRemovalAdapterSaveReopen() { Qualify("Publisher", true); }
 
-        private void Qualify(string host, bool remove, bool fromFile = false)
+        /// <summary>Qualifies installed Scripting reference changes from an audited existing serialized Publisher publication.</summary>
+        [STATestMethod] public void PublisherSerializedReferenceAdditionAdapterSaveReopen() { Qualify("Publisher", false, serializedPublisherSeed: true); }
+        [STATestMethod] public void PublisherSerializedReferenceFileAdditionAdapterSaveReopen() { Qualify("Publisher", false, true, true); }
+        [STATestMethod] public void PublisherSerializedReferenceRemovalAdapterSaveReopen() { Qualify("Publisher", true, serializedPublisherSeed: true); }
+
+        private void Qualify(string host, bool remove, bool fromFile = false, bool serializedPublisherSeed = false)
         {
             string installedPath = RequireInstalledScripting();
             IDictionary<string, object> baseline = null, expected = null;
@@ -66,7 +71,7 @@ namespace VBAi.Tests.Integration
                     Assert.IsTrue(string.Equals(installedPath, Path.GetFullPath(Convert.ToString(scripting["FullPath"])),
                         StringComparison.OrdinalIgnoreCase), "The live reference must identify the exact registered installed library.");
                 }
-            }, TestContext);
+            }, TestContext, serializedPublisherSeed);
         }
 
         private static void AddScripting(OfficeVbeFixture fixture, IDictionary<string, object> before, string installedPath = null)

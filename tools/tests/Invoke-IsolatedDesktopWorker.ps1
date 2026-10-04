@@ -2,7 +2,10 @@ param(
     [Parameter(Mandatory=$true)][string]$ScriptPath,
     [Parameter(Mandatory=$true)][string]$ExpectedDesktop,
     [Parameter(Mandatory=$true)][string]$ProofPath,
-    [Parameter(Mandatory=$true)][string]$HelperAssembly
+    [Parameter(Mandatory=$true)][string]$HelperAssembly,
+    [Parameter(Mandatory=$true)][long]$SentinelWindow,
+    [Parameter(Mandatory=$true)][uint32]$SentinelProcessId,
+    [Parameter(Mandatory=$true)][uint32]$SentinelThreadId
 )
 $ErrorActionPreference='Stop'
 $env:PSModulePath=(Join-Path $env:WINDIR 'System32/WindowsPowerShell/v1.0/Modules')+';'+$env:PSModulePath
@@ -21,6 +24,10 @@ $actual=$desktopType.GetMethod('DesktopName',$flags).Invoke($null,@([uint32]$thr
 $input=$desktopType.GetMethod('InputDesktopName',$flags).Invoke($null,@())
 @{ExpectedDesktop=$ExpectedDesktop;ActualDesktop=$actual;InputDesktop=$input;WorkerPid=$PID;ThreadId=$thread;DesktopSwitches=0;Utc=[DateTime]::UtcNow.ToString('o')} |
     ConvertTo-Json | Set-Content -LiteralPath $ProofPath -Encoding UTF8
+if($SentinelWindow -le 0 -or $SentinelProcessId -eq 0 -or $SentinelThreadId -eq 0){throw 'Exact sentinel identity is required'}
+$env:VBAi_TEST_DESKTOP_SENTINEL_HWND=$SentinelWindow.ToString([Globalization.CultureInfo]::InvariantCulture)
+$env:VBAi_TEST_DESKTOP_SENTINEL_PID=$SentinelProcessId.ToString([Globalization.CultureInfo]::InvariantCulture)
+$env:VBAi_TEST_DESKTOP_SENTINEL_TID=$SentinelThreadId.ToString([Globalization.CultureInfo]::InvariantCulture)
 $env:VBAi_TEST_DESKTOP_NAME=$ExpectedDesktop
 $env:VBAi_QUALIFICATION_DESKTOP=$ExpectedDesktop
 $evidence=Join-Path (Split-Path $ProofPath) 'testhosts'

@@ -11,11 +11,12 @@ desktop development tools, the .NET Framework 4.8 targeting/developer tools, the
 C++ x64 build tools and a Windows SDK. `TlbExp.exe` comes from the .NET Framework
 SDK. The build invokes the native renderer build and requires those C++ tools.
 
-The native Office adapters also need the `Microsoft.Office.Interop.PowerPoint`
-and `Microsoft.Office.Interop.Word` 15.0 PIAs at build time. The project searches
+The native Office adapters also need the `Microsoft.Office.Interop.PowerPoint`,
+`Microsoft.Office.Interop.Word` and `Microsoft.Vbe.Interop` 15.0 PIAs at build time. The project searches
 the Visual Studio Office tools and the GAC. If they are installed elsewhere, pass
 `-p:PowerPointInteropPath="<path-to>/Microsoft.Office.Interop.PowerPoint.dll"`
-and `-p:WordInteropPath="<path-to>/Microsoft.Office.Interop.Word.dll"` to
+`-p:WordInteropPath="<path-to>/Microsoft.Office.Interop.Word.dll"` and
+`-p:VbeInteropPath="<path-to>/Microsoft.Vbe.Interop.dll"` to
 `dotnet build`. `EmbedInteropTypes=true` embeds the types used by VBAi; these PIAs
 are not separate files to deploy with the add-in.
 

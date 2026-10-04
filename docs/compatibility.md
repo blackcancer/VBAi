@@ -27,6 +27,51 @@ operation, language feature or UI surface.
 
 ### Current operation-specific refresh
 
+Q-012 is CLOSED for the identified Access/Publisher **existing-document adapter
+contract**. Active-module and module/class/UserForm-state Save, reference addition
+by GUID/file, reference removal and Description are verified through the loaded
+candidate, one adapter Save, exact independent fresh-process readback and normal
+exits. Explicit native General HelpContextID and HelpFile text representable by
+the owning ANSI control have the same persistence acceptance. Candidate identities,
+test scopes and lifecycle evidence are in
+[recorded validation](test-coverage.md#q-012-completed-adapter-contract-2026-10-04).
+
+The Access French multi-object confirmation retains approved object/source,
+selection, canonical project, mode, revision, runtime authorization and deadline
+checks before one queued confirmation. It does not compile implicitly, accept
+unknown prompts/locales or fabricate a document Saved flag. Publisher opens an
+audited owned serialized publication with process-local macros disabled; exact
+retained/active/sole document and native-window identities precede adapter work.
+This does not qualify empty-publication VBA initialization, NewDocument or first
+SaveAs. Stored UserForm state does not establish rendering or event execution.
+
+For real Access/Publisher Type100 projects, legacy `set_project_property`
+HelpFile/HelpContextID writes are unsupported and refused before setter entry.
+The catalogue's additive `SetterStatus=HostLegacyWriteUnsupported` preserves raw
+Value/Type/ReadOnly/digest/error fields. Refresh the opaque project version and
+explicitly use `read_project_general` then approved asynchronous
+`set_project_general`; no automatic fallback or Save follows. Other hosts,
+project types and properties retain their existing routes.
+
+Unsupported Unicode is accepted only as a known pre-write refusal with one
+guarded Cancel, observed command return, unchanged state and exact saved bytes
+after normal close. It is not Unicode persistence acceptance. Earlier malformed
+HelpFile COM getters, failed scalar HRESULTs, partial live mutations, startup
+failures, forced exits and interrupted-helper receipts remain recorded failures
+or uncertainty on their original candidates. The explicit General contract does
+not normalize or repair those legacy results; `open_project_help` is not qualified
+by path-storage acceptance.
+
+Final inactive-desktop shutdown and temporary COM/startup registration restoration
+are verified. The launcher variation separates the helper from the parent console
+without changing its binary, injecting input or suppressing control signals;
+earlier interruption causes remain unattributed. Earlier managed full-suite
+acceptance retains its own candidate, while the final gate is focused. No
+whole-host, full release or code-coverage acceptance follows. Historical
+[D2 matrix](test-coverage.md#q-012-access-confirmation-and-native-matrix-2026-10-03)
+and [D1 diagnosis](test-coverage.md#q-012-access-save-confirmation-and-publisher-ownership-diagnostic-2026-10-03)
+remain distinct from the current operation scope.
+
 Latest gated source `8f5e16f` passes the installed Word owner-menu capture, exact
 local checkpoint and compare, preserving source, full references and saved bytes
 with normal original exit code 0 and a stated 15-second read-only exit bound.
@@ -182,7 +227,7 @@ availability improves; this does not qualify the embedded-host assistant.
 SOLIDWORKS is not exercised in this earlier refresh. At that checkpoint the
 installed DLL was unchanged and temporary registration selections were restored.
 
-See the [current qualification checkpoint](release-qualification.md#current-candidate-checkpoint-2026-10-03)
+See the [current qualification checkpoint](release-qualification.md#pr22-integration-checkpoint-2026-10-04)
 and [recorded validation](test-coverage.md#native-qualification-refresh-2026-10-01)
 for the exact tested scopes and identities. Historical observations below retain
 their original candidate boundaries.
@@ -356,8 +401,8 @@ binary, not the later edits listed in the coverage summary.
 | Excel x64 | Earlier builds covered load/bridge, save, protection, debugger inspection, Monaco, palette and Ollama tool read. On candidate 353d, `scalar-excel-native` passes complete UserForm fitting, arrays and persistence with normal exits. Independent scroll-only and generic scalar trials also pass: project Description, module Name with unchanged code, and Label BackColor verified through native getters and a reviewed designer capture. | Q-025's tested fitting/scalar paths are corrected; earlier crashes and abnormal exits remain recorded. This does not qualify every control, all Git workflows or other hosts. Format-options revision drift remains Q-026 despite a later successful rerun and verified preference restoration. |
 | Word, Office 16 x64 | `office-accepted` verifies disposable DOCM editing, references, module/class/form content and adapter-only save/reopen; PID 35984 exited normally. On 353d, two-document native evidence (local artifact: `artifacts/qualification-v1/word-git-native/353-native-03/hosts/Word/2cb46193741e415ab5773c1539745096/qualification.json`) verifies same-name project resolution by canonical document paths, native selection, refusal of the old Git binding after owned SaveAs, and unchanged source in the other document; PID 50144 exited normally. | The path contract preserves raw `VBProject.FileName` and uses PID/IUnknown-matched `Document.FullName`. Complete Git remains blocked (**Q-024**): production Capture receives 0x800AC35C during export into GitTemporary, despite successful byte-identical bridge/external exports to artifact paths. The suite remains failed. Native chat/Git UI opening, every SaveAs/cancellation path and template support are not qualified; `Normal` was not modified. |
 | PowerPoint, Office 16 x64 | `office-accepted`, disposable `.pptm`: shared VBE scenarios and VBAi adapter save passed, with `Verified=true`, `Uncertain=false`, followed by close/reopen without a helper save and module/class/form readback. Owned PID `50432` exited with code 0. | This supersedes the earlier trust-blocked save observation. It qualifies the tested existing-document save path, not every SaveAs, event cancellation, execution or Git workflow. |
-| Access, Office 16 x64 | `office-accepted`, disposable `.accdb`: shared VBE inspection/editing, references, compilation, an MSForms UserForm and native-helper save/reopen passed. Owned PIDs `36512` and `57496` exited with code 0. | The existing-document adapter now has scoped v5 module/class, Description and reference-addition save/reopen acceptance above; HelpFile, HelpContextID and reference-removal acceptance remain incomplete. Access matches CurrentProject.FullName to a unique injected-VBE project and uses stable Application/PID and mapped/selected-project guards before the built-in VBE Save command for the exact active project. It does not compile implicitly or invent a document Saved flag; first SaveAs is unavailable. |
-| Publisher, Office 16 x64 | `office-accepted`, disposable `.pub`: shared VBE inspection/editing, references, compilation, UserForm and native-helper save/reopen passed. Owned PIDs `30152` and `27104` exited with code 0. | The follow-up source includes an existing-document adapter; native adapter save/reopen remains `NOT_QUALIFIED`. Publisher matches Document.FullName to a unique injected-VBE project and invokes Document.Save once after final identity/path/format/writable checks. First SaveAs is unavailable. |
+| Access, Office 16 x64 | Earlier `office-accepted` shared VBE inspection/editing, references, compilation and MSForms/native-helper persistence retain their candidate-specific scope. Current Q-012 accepts existing ACCDB adapter module/class-source persistence, reference workflows, Description and explicit native General HelpContextID/representable HelpFile, with exact fresh readback and normal exits. | Legacy HelpFile/HelpContextID setters are refused pre-write with an explicit native General alternative. Access binds CurrentProject.FullName to its canonical mapped/selected injected-VBE project. French multi-object confirmation requires approved Type1/Type2 objects, complete selection and final authorization/deadline checks. No implicit compile, invented document Saved flag, first SaveAs, unsupported Unicode persistence or UserForm execution/rendering claim. |
+| Publisher, Office 16 x64 | Earlier `office-accepted` shared VBE and native-helper scopes remain historical. Current Q-012 accepts existing serialized PUB adapter source/class/UserForm-state persistence, reference workflows, Description and explicit native General HelpContextID/representable HelpFile, with exact fresh readback and normal exits. | Bootstrap uses the frozen owned serialized seed with macros disabled and exact application/document/window identity. Empty NewDocument VBA initialization and first SaveAs remain unqualified. Document.Save is attempted once after final path/format/writable/revision checks. Legacy help metadata writes and unsupported Unicode are refused before mutation through their explicit guarded contracts; form rendering/execution and whole-host acceptance are not inferred. |
 | Classic Outlook, Office 16 x64 | `outlook-accepted`: startup, exact loaded MVID/PID, project inventory, explicit-project debug state and VBE environment passed using the existing profile. Owned PID `37044` exited with code 0. | Read-only metadata qualification only. No profile was configured, mail read/sent, or user VBA code modified. Persistence, macro execution and full Outlook UI workflows remain unqualified. |
 | New Outlook for Windows | Installed; **NOT_APPLICABLE** to the VBE add-in. | Microsoft documents that [new Outlook does not support VBA/macros](https://learn.microsoft.com/en-us/microsoft-365-apps/outlook/get-started/vba-alternatives). |
 | OneNote desktop | Installed; **NOT_APPLICABLE** to the VBE add-in. | Its [documented Application interface](https://learn.microsoft.com/en-us/office/client-developer/onenote/application-interface-onenote) exposes content/window automation, not a VBE host. COM registration alone does not establish VBE compatibility. |

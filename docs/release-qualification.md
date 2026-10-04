@@ -14,6 +14,13 @@ This is a local candidate built from `8675f13` with four focused product fixes;
 it is not a qualification of that unchanged commit, the restored installed v9
 DLL, or the complete release.
 
+PR preparation integrates main `3d55d41` without replaying native actions.
+The integration build and affected managed bank pass, while the outer launcher
+identity check fails and retains its own failure receipt. The native acceptance
+above remains specific to the earlier frozen candidate; the integrated DLL has
+not received a new native bank or complete managed release gate. See
+[PR preparation validation](test-coverage.md#q-014-pr-integration-validation-2026-10-04).
+
 The maintainer authorized autonomous owned host/IDE launch and normal closure
 for this qualification. All native actions use disposable projects and inactive
 Windows desktops, with exact PID/start/path/ROT/revision and loaded-byte checks.
@@ -69,6 +76,72 @@ Current evidence and scoped managed results are in
 and [the independent 2025 bank](test-coverage.md#q-014-final-candidate-native-core-and-assistant-2025-2026-10-04).
 The complete managed release gate, coverage measurement and authenticated external
 providers remain outside this Q-014 qualification.
+
+## PR22 integration checkpoint (2026-10-04)
+
+Merge source `2f2786f` integrates the complete Q012 branch with the existing
+Q024/Q006 guards. Its isolated solution and Q006 harness compile, its complete
+default managed suite passes, and its complete synthetic UI action matrix passes.
+Original private workers exit normally, their sentinels close once and their
+desktop leases close successfully. The two outer scheduled launchers instead
+finish with `0xC000013A` and missing terminal/helper-exit receipts; that cause
+remains unresolved and outer launcher lifecycle is not qualified.
+
+No Office host, authenticated provider or coverage collector runs in this merge
+validation, and COM registration remains unchanged. Q012's native acceptance
+below retains its original product identity; it is not fresh runtime acceptance
+of the merged DLL. Q024 stays open and Q027 remains deferred. See
+[recorded validation](test-coverage.md#pr22-merge-validation-2026-10-04)
+for exact identities, scopes, counters and the retained launcher failure.
+
+## Q-012 completed adapter contract (2026-10-04)
+
+**Q-012 is CLOSED for the required Access/Publisher adapter contract** on the
+identified candidate in [recorded validation](test-coverage.md#q-012-completed-adapter-contract-2026-10-04).
+Accepted existing-document operations persist pending module/class source,
+references and Description through adapter-only Save, independent fresh
+process readback and normal original/fresh exits. Publisher additionally preserves
+the baseline UserForm state. Explicit native General
+HelpContextID and representable HelpFile text have the same persistence oracle.
+
+Legacy `set_project_property` writes to HelpFile/HelpContextID are refused
+before mutation for real Access/Publisher Type100 projects. Their property
+catalogue reports `SetterStatus=HostLegacyWriteUnsupported` independently of
+`ReadOnly`; callers must use `read_project_general` followed by a separately
+approved asynchronous `set_project_general`. No fallback setter, implicit Save
+or retry is introduced. Earlier malformed COM reads, failed HRESULTs and partial
+live mutations remain failed evidence, not repaired legacy API behavior.
+
+The Unicode case establishes certain pre-write refusal and guarded cancellation
+with unchanged project/source/reference state and byte-identical publication
+after normal close. It does not qualify unsupported Unicode persistence.
+Publisher's accepted bootstrap opens an audited owned serialized publication
+with macros disabled; empty NewDocument VBA initialization and first SaveAs
+remain unqualified. Stored UserForm state is not Designer-rendering or execution
+acceptance, and no production macro is executed.
+
+The final campaign verifies inactive-desktop ownership, normal host/helper exits,
+checked desktop release and restoration of temporary COM/startup registration.
+Prior startup, file-lock and interrupted-helper failures remain recorded. A
+successful detached-console launch does not identify their historical cause.
+The final managed gate is focused, not a current full-suite or coverage claim.
+Other release gates remain open; completing Q-012 does not qualify v1.0.0 as a
+whole. Exact identities, scopes, counters and lifecycle evidence are maintained
+only in [recorded validation](test-coverage.md).
+
+## Q-012 inactive-desktop checkpoint (2026-10-03)
+
+At this earlier checkpoint Q-012 was PARTIAL. Access source/reference/Description
+adapter persistence passed in recorded scopes; legacy HelpContextID still failed
+after partial live mutation and HelpFile fresh COM readback remained malformed.
+Publisher connected persistence scopes were observed, but new-publication
+autoload and subsequent fresh activation were not consistently established.
+Native ANSI character loss, forced cleanup, unrelated binary-inventory drift and
+missing helper terminal receipts remained failed or uncertain evidence.
+Those outcomes retain their original candidates in
+[recorded validation](test-coverage.md#q-012-typed-vbide-and-normal-publisher-candidate-2026-10-03)
+and the later candidate-specific sections. They are not rewritten by the current
+explicit General path, serialized-seed contract or scoped acceptance above.
 
 ## Current candidate checkpoint (2026-10-03)
 
@@ -132,6 +205,9 @@ desktop evidence. Native Word is NOT_RUN on that candidate; its launcher retains
 ownership after an empty-inventory refusal. Corrections need a fresh green gate
 and complete action-matrix proof before native Word. See
 [recorded validation](test-coverage.md#inactive-desktop-managed-campaign-2026-10-02).
+
+## Earlier candidate checkpoint (2026-10-02)
+
 Latest green native gated source `8f5e16f`,
 product MVID `c22c9ff5-cf61-4dc4-8c88-0741a24753c8`, passes the actual installed
 Word owner-menu capture, exact local checkpoint and compare, preserving source,
@@ -403,7 +479,7 @@ applies only to the stated operation, host and tested candidate; CLOSED does not
 qualify an entire application. OPEN and PARTIAL entries remain release gates
 where required by the agreed scope.
 
-The remaining completion gates are Q-006, Q-012, Q-014, Q-020, Q-024,
+The remaining completion gates are Q-006, Q-014, Q-020, Q-024,
 Q-026, Q-027, Q-028 and Q-030. The other findings have the scoped corrections and
 validation described below; they do not constitute complete current-candidate
 qualification. The previously installed product at this checkpoint was source
@@ -701,7 +777,7 @@ operation can pass a refusal test while the capability remains unqualified.
 | Q-009 | P2 | NuGet runtime license/notice payloads were absent from the build output. | Deliver exact upstream texts with provenance and verify output hashes. | Payload added and final Debug/Release delivery hashes verified. |
 | Q-010 | P3 | WebView2 creates persistent per-PID profiles without a retention policy. | Define ownership and safe cleanup only after browser processes exit; preserve active/private state. | CLOSED for the newly owned editor-profile lifecycle on candidate `9924660b`: each editor has a unique environment folder; retirement and its matching BrowserProcessExited notification are both required before asynchronous cleanup. Detached real WebView2 acceptance verifies one editor can close and remove its profile while a second remains usable. Unknown legacy profiles, missing exit evidence, links and locked files are retained; no automatic legacy purge or crash recovery deletion is claimed. See recorded validation. |
 | Q-011 | P1 gate | Word/PowerPoint adapter acceptance required project-access prerequisites. | Run verified adapter-only save/reopen under a maintainer-approved host configuration. | CLOSED for adapter-only save/reopen on candidate `7b5f11d8`: Word and PowerPoint preserve the pending module/class sources and form/Label, with no post-adapter helper Save, verified disk readback and normal host exit. This scope does not explain the older Word form-creation failure or qualify every host operation. Exact evidence is in test-coverage.md. |
-| Q-012 | P1 gate | Access/Publisher host-document save adapters lacked native acceptance. | Implement and qualify an adapter, or explicitly narrow the release contract for this operation. | PARTIAL. Historical `7b5f11d8` Publisher save/readback passed; Access disk sources persisted but original responses remained uncertain. Preceding `d5e25e25` deferred verification then refused transient CurrentProject wrapper identity in the interrupted Office campaign. The read-only diagnostic establishes stable database path and mapped/selected VBProject despite distinct retained wrapper IUnknowns. Product `2e75161` / preceding installed `f9a36c85` corrects this guard without weakening owning-PID, VBE, mode, protection, selection or source/metadata checks. Fresh adapter-only module/class, Description and Scripting-reference addition by GUID/file pass exact save/reopen and normal exits. Preceding-v5 HelpFile is altered after reopen through descriptor, CLR binder and raw IDispatch, with intact raw VARIANT canary; HelpContextID runtime type information confirms I4 but its setter fails. Reference removal fails initial host exit and disk reopen is NOT_RUN. Current `d8f31d57` Access HelpContextID bridge/external CLR setters return 321 after a verified Save, but Quit nonexit prevents disk reopen. The fresh raw IDispatch PUT case on owned Access PID 38712 returns HRESULT 0 with VT_I4 321 and intact VARIANT canaries; all getters and one verified Save succeed, but its single Quit does not produce process exit, so fresh-disk reopen is NOT_RUN. A stable database copy precedes separately authorized forced exit -1; no Quit, setter or Save is replayed, and normal cleanup/persistence remain unqualified. External Access HelpFile production CLR and raw PUT both return normally but fresh-disk readback remains altered. Current Publisher startup and semantic reopen guards correct the fixture's no-code-pane and name-to-path selector assumptions; the original preparation/assertion failures remain failed. Adapter-only module/class/form, Description, and Scripting-reference addition by GUID/file and removal now pass exact fresh-disk source/metadata/reference readback and normal exit 0. Publisher HelpFile disk storage is correct in both CP1252 PROJECTHELPFILEPATH fields and the PROJECT text stream, yet the exposed fresh getter is altered; loading, BSTR construction or marshaling cause remains unproven. Publisher HelpContextID returns error 0x9CFD3148 despite terminal live value 321 and Saved=false. Live sources/identity/properties are preserved before one separately authorized owned discard and normal exit 0, without setter replay or subsequent Save; the failed mutation and disk persistence are not qualified. No heuristic or causal product fix is inferred. Access/Publisher metadata, lifecycle and remaining adapter scopes stay open; exact terminal evidence is in recorded validation. |
+| Q-012 | P1 gate | Access/Publisher host-document save adapters required current native acceptance. | Qualify the required existing-document adapter contract and normal fresh-process lifecycle with explicit metadata API limits. | CLOSED for the [current adapter contract](#q-012-completed-adapter-contract-2026-10-04): source/class/UserForm-state Save, reference workflows, Description and native General persistence, plus pre-write legacy/Unicode refusal. Publisher uses the audited serialized seed; empty NewDocument initialization, unsupported Unicode persistence and UserForm rendering/execution remain outside this acceptance. Historical failures and exact candidate/counter evidence remain in [recorded validation](test-coverage.md). |
 | Q-013 | P1 gate | Classic Outlook initially had no configured profile. | Qualify a read-only scenario in an explicitly configured classic profile without modifying mail or production VBA. | CLOSED for read-only startup/metadata: `outlook-accepted/native.trx`, MVID `ce19a20c-9708-4c17-b998-f3415b8e6303`; exact PID, project inventory, scoped debug state and environment passed, normal exit 0. No account configured by automation, no mail read/sent or VBA mutation. |
 | Q-014 | P1 gate | SOLIDWORKS versions require independent native acceptance. | Qualify load, UI, disposable module/form operations, compile/debug, persistence and cleanup in each explicitly selected version. | QUALIFIED for selected 2019 SP5 (27.5.0) and 2025 SP1.1 (33.1.1) on final candidate ddf638b2. Independent native core, scoped Monaco/designer UI, local assistant dispatch/refusals/cancellation/recovery and normal owned host/IDE/worker cleanup pass. Original COM/settings state is restored. Historical failures and other release gates remain separate; see the current Q-014 decision above. |
 | Q-015 | P2 gate | The initial instrumented suite timed out on post-step observation; its direct relationship to Q-005 is not proven. | Repeat the complete suite on the corrected source and retain failures/skips honestly. | CLOSED for current source `8f2315d` / installed `d8f31d57`: the complete instrumented suite passes with unchanged product hash and independently verified individual TRX outcomes. Preceding Monaco-status source `d7a1c75` / `6a74af33` and earlier product `2e75161` / `f9a36c85` with tests `f0874e6` retain separate completed passes. The original v5 complete run remains failed with explained fixture-packaging/Git-path defects. Exact counters, below-target managed coverage and terminal evidence are in recorded validation. Native/provider opt-ins remain separate gates; a later product binary requires its own full run, and historical observation-timeout causes remain unproven. |

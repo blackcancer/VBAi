@@ -89,6 +89,166 @@ before teardown when a native result readback is still pending.
 See [the current Q-014 gate](../docs/release-qualification.md#q-014-private-desktop-campaign-2026-10-04)
 and [its final recorded results](../docs/test-coverage.md#q-014-final-decision-and-cleanup-2026-10-04).
 
+## Q012 campaign on an inactive Windows desktop
+
+`tools/tests/Invoke-Q012Qualification.ps1` prepares the complete fixed Access and
+Publisher adapter matrix before execution. Preparation is read-only and freezes
+source, binaries, installed executables and exact test selectors. `-Execute`
+claims that plan once; it runs the focused managed gate, then each native case
+at most once, retaining its original TRX and all blocked/not-run rows. Existing
+or retained same-host processes block dependent cases. A reviewed `-HostScope`
+and frozen `-BlockedHostReason` can preserve a proven prerequisite failure without
+repeating that unchanged host bootstrap; every excluded row stays BLOCKED. No native mutation or
+cleanup is replayed to obtain a pass.
+
+`-ScenarioNumbers` can freeze a smaller diagnostic selection from the numbered
+matrix. Each number must be distinct; unselected rows remain NOT_RUN with zero
+invocations. A selected-case pass does not qualify the full matrix. Use a fresh
+plan/evidence directory for a changed hypothesis or instrumentation, retaining
+the original failures and avoiding a replay of already accepted cases.
+Its terminal state is `DIAGNOSTIC_PASS` only when all selected cases pass;
+`FullMatrixQualified` remains false unless the complete matrix passes and the
+exact temporary COM registration is restored and verified at the terminal gate.
+
+`-StopOnNativeFailure` blocks later selected cases after the first native failure.
+`-NativeScenarioTimeoutSeconds` applies a VSTest hang deadline to each selected
+native case, without creating dumps. `-ManagedGateTimeoutSeconds` independently
+bounds the focused managed gate's hang wait. A deadline termination does not prove normal
+Office shutdown; inspect the retained ownership and cleanup receipts. Defaults
+preserve the original behavior. Rows 16 and 17 exercise the explicit native
+General HelpFile and HelpContextID paths; rows 13 and 15 retain their distinct
+legacy COM results. Row 18 separately exercises accented HelpFile text
+representable by the observed ANSI control. Row 19 verifies refusal before
+writing unsupported Unicode. A known encoding refusal cancels the unchanged
+original dialog once, with the same ownership, authorization and revision checks
+as a read. Acceptance requires observed closure and original command return,
+unchanged source/references/file, and normal host shutdown; no Save or fresh
+reopen follows. Unknown failures and unsettled cancellation retain uncertainty
+and require separately guarded cleanup. Row 16 retains the original Unicode persistence
+test; it is not replaced by the narrower accented-path scenario.
+Rows 20 and 21 apply the shared native General persistence scenario to an owned
+Access database, for compatible HelpFile text and HelpContextID respectively.
+They observe host trust without enabling content or changing trust policy.
+Rows 22–26 separately use the audited serialized Publisher seed for source/class/
+UserForm-state Save, reference addition by GUID/file, reference removal and
+Description. Rows 27–30 verify Access/Publisher legacy HelpFile/HelpContextID
+refusal before any setter, with unchanged project/source/reference/Saved state
+and normal close. They perform no Save or fresh reopen after the refusal.
+The catalogue's `HostLegacyWriteUnsupported` status requires an explicit,
+approved native General call; it is not a fallback or a ReadOnly reclassification.
+
+Row 19 keeps its audited saved seed unchanged: it does not replace source markers,
+perform a preparation Save or read live publication bytes. The original seed's
+closed-file hash is bound to the verified pre-open copy; byte comparison of the
+owned publication occurs only after successful normal fixture disposal. A
+known refusal requires Field/OK attempts absent, one Cancel, closure and original
+Execute return, unchanged revision/source/references/Saved state, and exact closed
+bytes. Unknown outcomes remain quarantined. Successful compatible-text or refusal
+cases do not replace the original Unicode persistence failure.
+
+Current Q-012 acceptance is the required existing-document contract recorded in
+[recorded validation](../docs/test-coverage.md#q-012-completed-adapter-contract-2026-10-04),
+not every diagnostic row or a complete managed suite. Original NewDocument and
+legacy scalar failures remain preserved; form-state persistence is not rendering
+or event execution. Keep focused/native plans sequential so an unrelated smoke
+test cannot add a screenshot to a frozen binary inventory during qualification.
+The runner hashes the full source/binary inventory before
+each actual invocation and at the terminal gate, avoiding repeated hashing for
+unselected rows that cannot dispatch.
+
+The desktop helper checks the creator lease's native close result and records
+the attempt before entering `CloseDesktop`. Failed closes retain the owned
+handle and their original error; disposal never repeats that native call.
+Successful terminal publication follows sentinel shutdown and verified creator
+lease release. Remaining host windows or an uncertain close retain ownership
+and require separately guarded cleanup. This does not make forced host exits
+normal shutdown acceptance.
+
+Publisher fixture Open requires verified process-local
+`AutomationSecurity=ForceDisable`. It never enables macro content, changes a
+global trust policy or retries an uncertain Open. An unfamiliar modal is refused.
+
+`-MetadataGetterProbe` explicitly freezes the existing read-only Access metadata
+diagnostic into a selected campaign. It compares descriptor, CLR and raw getters
+at the planned mutation/save/reopen phases, including observation after a failed
+setter. That observation cannot promote a failed or uncertain mutation to success.
+The getter opt-in is enabled only after the focused managed gate; setter probes
+remain disabled and no additional metadata write or Save is introduced.
+
+Build the solution with an isolated `BuildOutputRoot`. Prepare with absolute
+`-CandidateAssembly`, `-BuildOutputRoot`, `-EvidenceDirectory` and
+`-DesktopHelperAssembly` paths using Windows PowerShell 5.1 x64. The helper is
+`VBAi.Desktop.Helper.exe` in its project output. Preparation does not change COM
+registration or start Office. Review `plan.json` and the registration preview.
+
+Create a reviewed script containing the same arguments plus `-Execute`, then
+pass its absolute path to `tools/tests/Invoke-IsolatedTests.ps1` with a fresh
+absolute evidence directory and that helper. The one-shot limited-user task
+creates a generated inactive Windows desktop; it never switches the input
+desktop. Its canary and worker receipts are environment proofs, not Office
+acceptance. Missing desktop evidence refuses execution without fallback.
+The outer limited launcher uses `UseShellExecute=false` and `CreateNoWindow=true`
+for the unchanged console helper, drains both redirected streams asynchronously,
+and retains its original process handle/identity until observed exit. No WinExe
+conversion, control-handler ignore, console attachment or keyboard input is used.
+Parent and worker console observations do not establish a helper-local console
+inventory or explain older `0xC000013A` interruptions. Exceptional launcher faults
+need their separate checked evidence; normal native acceptance proves the settled
+path only. Run `tools/tests/Test-IsolatedHelperRetention.ps1` under PowerShell 5.1
+for pure receipt-failure and uncertain-Start regressions; it starts no helper or
+Office application. A helper/worker that disappears without terminal evidence is not
+treated as normal cleanup.
+
+Only Access and Publisher have the private host bootstrap. The campaign passes
+`VBAi_TEST_ACCESS_EXE` and `VBAi_TEST_PUBLISHER_EXE` from the frozen installed
+paths. Original and reopened processes are explicitly started on the private
+desktop, attached without COM activation, and verified by original handle, image,
+PID and exact HWND membership in successful private/input desktop inventories
+before mutation. The live hidden sentinel must be observed on the private desktop;
+no owned host window may appear on the input desktop. Foreign thread-desktop
+queries are not used as proof. Ordinary Office tests without
+`VBAi_TEST_DESKTOP_NAME` retain their existing behavior.
+
+Private Access bootstrap explicitly observes the registered `VBAi.AddIn` VBE
+entry and, when disconnected, requests its host-managed connection once.
+Exact ProgID/GUID, original COM/process/window identities, fixture STA and
+private/input inventories must remain valid. Read-only LoadBehavior observations
+must remain unchanged, and unknown visible modals or a disabled VBE refuse the
+subsequent bridge/scenario work. A true Connect readback is not candidate
+acceptance: the existing bridge PID and MVID checks remain mandatory. Failed or
+uncertain connection is retained without reconnecting or changing trust policy.
+
+Access starts as an explicitly owned normal application and attaches through ROT;
+Publisher also uses an explicitly owned normal GUI launch with no arguments.
+Its registered server command/arguments are recorded only and never executed;
+manual server arguments do not perform COM class activation. Before the first
+disposable NewDocument/Open, the application association is explicitly provisional:
+empty prelaunch inventory, sole retained original Publisher process, exact native
+handle/image/session, application interface/canonical identity, fixture STA and
+private/input/sentinel proofs must agree. A failed or uncertain first creation/open
+has no retry, fallback or adoption. The returned publication must then be the exact
+retained, active and sole canonical document with an owned native window before
+any baseline SaveAs, bridge or scenario work. Final ownership is not inferred
+from ROT attachment alone.
+Access records Boolean `UserControl` and `Visible` once outside ROT discovery.
+An already visible instance needs no visibility setter; hidden automation permits
+one setter, while a hidden user-controlled instance refuses. The decision is bound
+to the original native handle/application/PID and cannot be reused. Ownership and
+private desktop proofs precede database creation or open.
+Publisher's observed French recovery prompt is handled before ROT attachment:
+only its exact owned dialog and native No button can receive one bounded click
+requesting normal startup. Unknown prompts/locales, changed identities or uncertain
+message delivery retain the host and refuse further action. No safe-mode,
+macro-trust, licensing or global input setting is changed.
+
+Every positive case requires adapter-only Save, exact source/project/reference
+readback, normal original exit, a fresh process reopening the saved file and
+normal final exit. Existing ACCDB/PUB is the accepted scope; first SaveAs remains
+refused. The campaign preserves the uncertainty and single-save guards. It
+restores the exact temporary registration without replacing installed binaries
+or changing trust policies. A retained host or helper stays separately recorded;
+forced cleanup, if separately performed, cannot qualify normal exit or persistence.
+
 ## Q-006 inactive-desktop Excel qualification
 
 `tools/tests/Invoke-Q006Qualification.ps1 -Prepare` builds a deliberately scoped
@@ -1335,3 +1495,15 @@ Keep machine-local artifacts outside the maintained guide tree. Publish a concis
 versioned summary in [recorded validation](../docs/test-coverage.md), separating
 unit/runtime tests, native host observations, Designer checks and live-provider
 runs. An old 100% result does not describe a later build.
+
+Publisher serialized-publication qualification uses the explicit
+`StartPublisherSerializedQualificationSeed` fixture entry and
+`VBAi_TEST_PUBLISHER_SERIALIZED_SEED` opt-in. This accepts only the frozen,
+owned qualification file with its original normal-exit and closed-file receipts;
+it does not accept arbitrary macro files. The fixture copies once and opens once
+with macros disabled on the guarded private desktop. Before source or metadata
+writes, it audits the exact inert document/module/class sources, reference
+manifest and native General baseline. Dedicated `PublisherSerialized*` adapter
+tests qualify existing publications; the original NewDocument tests remain
+separate. These results do not qualify empty-publication VBA initialization or
+first SaveAs, and no VBA procedures are executed.

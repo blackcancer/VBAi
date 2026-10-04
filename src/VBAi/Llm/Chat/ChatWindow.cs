@@ -72,6 +72,7 @@ namespace VBAi
             RefreshApprovalSelection();
             tools = new LlmVbeTools(session, this, settings);
             tools.ValidateScope = EnsureCurrentScope;
+            tools.ValidateCachedScope = () => { EnsureCachedScope(); };
             tools.FormCut += change => AddEntry(new ChatEntry { Speaker = "Designer", FormCut = change });
             tools.CodeEdited += change =>
             {

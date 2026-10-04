@@ -652,20 +652,28 @@ namespace VBAi
             catch (Exception ex) { SetStatus(UiText.Get("Memory not saved: ") + ex.Message); }
         }
 
-        /// <summary>Vérifie que le projet auquel appartient la conversation est encore ouvert et non ambigu.</summary>
-        /// <exception cref="InvalidOperationException">La portée n’existe plus ou le document enregistré a changé de chemin.</exception>
-        private void EnsureCurrentScope()
+        /// <summary>Validates cached conversation selection and refreshes tool bindings without host reads.</summary>
+        /// <exception cref="InvalidOperationException">History is unavailable/loading or the selected scope is missing.</exception>
+        private MacroScope EnsureCachedScope()
         {
             if (sessionViewUnavailable) throw new InvalidOperationException(UiText.Get("History unavailable: ").TrimEnd());
             if (loadingScope) throw new InvalidOperationException("Conversation history is still loading.");
             var scope = scopePicker.SelectedItem as MacroScope;
-            if (scopeSession == null) return;
+            if (scopeSession == null) return null;
             if (scope == null) throw new InvalidOperationException(UiText.Get("The project for this conversation is closed or ambiguous."));
             if (tools != null)
             {
                 tools.BoundProject = scope.Project;
                 tools.SetReadAccess(currentSession?.ReadProjectGrants, currentSession?.SharedContextReadAllowed ?? false);
             }
+            return scope;
+        }
+
+        /// <summary>Validates the selected conversation scope and its current host project.</summary>
+        private void EnsureCurrentScope()
+        {
+            var scope = EnsureCachedScope();
+            if (scopeSession == null) return;
             var response = ReadHost(scopeSession, new Request { Command = "list_projects" });
             if (!response.Ok) throw new InvalidOperationException(response.Error);
             var projects = json.DeserializeObject(json.Serialize(response.Data)) as object[];
