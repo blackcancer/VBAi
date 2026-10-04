@@ -43,7 +43,7 @@ if ($Prepare) {
         'LlmChatClientCoverageTests','StreamTests','ChatWindowStateTests','LlmVbeToolsBoundaryTests',
         'LlmVbeAsyncValidationTests','LlmVbeToolContractTests','LlmProjectPrivacyTests','ProjectPrivacyBoundaryTests',
         'CatalogBoundaryTests','ToolCatalogTests','PrivateDesktopUiActionTests','QualificationDesktopGuardTests',
-        'OfficeVbeFixtureDesktopTests','OfficeVbeFixtureDesktopStartupRecoveryTests','OutlookPrivateDesktopTests',
+        'OfficeVbeFixtureDesktopTests','OfficeVbeFixtureDesktopStartupRecoveryTests','OfficeVbeFixtureDesktopAddInConnectionTests','OutlookPrivateDesktopTests',
         'OfficeOwnedShutdownEvidenceTests','OutlookVbaTestFixtureShutdownTests')
     $managedFilter = '(TestCategory=Unit|TestCategory=Scenario)&TestCategory!=OllamaUi&(' +
         (($managedClasses | ForEach-Object {'FullyQualifiedName~VBAi.Tests.Unit.'+$_+'.'}) -join '|') +
@@ -175,10 +175,13 @@ try {
     Write-Json (Join-Path $root 'settings-intent.json') @{Baseline=$settingsBaseline;Applied=$settingsApplied;SecretsDecryptedOrCaptured=$false;OnlyChangedFields=$settingsFields}
     foreach ($field in $settingsFields) { $settingsType.GetProperty($field).SetValue($settings,$settingsApplied[$field],$null) }
     $save.Invoke($settings,@()) | Out-Null
+    $settingsReadback=$load.Invoke($null,@())
+    foreach ($field in $settingsFields) { if ($settingsType.GetProperty($field).GetValue($settingsReadback,$null) -cne $settingsApplied[$field]) { throw ('Applied settings readback differs: '+$field) } }
     $registered=$true
     $ledger.RegistrationApply=& $register -CandidateAssemblyPath $plan.Product -ExpectedMvid ([Guid]$plan.ProductMvid) -Apply -ReportPath $backup
     $env:VBAi_QUALIFICATION_DESKTOP=$env:VBAi_TEST_DESKTOP_NAME
     $env:VBAi_RUN_OLLAMA_OFFICE_TESTS='1';$env:VBAi_RUN_EXCEL_TESTS='1';$env:VBAi_RUN_OFFICE_TESTS='1';$env:VBAi_RUN_OUTLOOK_TESTS='1'
+    $env:VBAi_Q028_CONNECT_OWNED_ADDIN='1'
     $env:VBAi_Q028_RESULTS=Join-Path $root 'host-results';$env:VBAi_EXCEL_RESULTS=Join-Path $root 'hosts/Excel';$env:VBAi_OFFICE_RESULTS=Join-Path $root 'hosts/Office';$env:VBAi_OUTLOOK_RESULTS=Join-Path $root 'hosts/Outlook'
     foreach ($hostRow in $plan.Hosts) {
         [Environment]::SetEnvironmentVariable('VBAi_TEST_'+$hostRow.Name.ToUpperInvariant()+'_EXE',$hostRow.Executable,'Process')
@@ -186,6 +189,8 @@ try {
     }
     for ($i=4;$i -lt $plan.Scenarios.Count;$i++) {
         foreach ($hostRow in $plan.Hosts) { if (@(Get-Process $hostRow.ProcessName -ErrorAction SilentlyContinue).Count -ne 0) { throw 'A preceding/foreign Office host is live; no next bank.' } }
+        $settingsReadback=$load.Invoke($null,@())
+        foreach ($field in $settingsFields) { if ($settingsType.GetProperty($field).GetValue($settingsReadback,$null) -cne $settingsApplied[$field]) { throw ('Settings changed before native bank: '+$field) } }
         $env:VBAi_VBE_INSPECTION_TRACE=Join-Path $root ('hosts/'+$plan.Scenarios[$i].Host+'/inspection.jsonl')
         [IO.Directory]::CreateDirectory((Split-Path $env:VBAi_VBE_INSPECTION_TRACE)) | Out-Null
         Run-Case $plan.Scenarios[$i] $rows[$i]

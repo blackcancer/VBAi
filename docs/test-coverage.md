@@ -7375,3 +7375,32 @@ No Ollama backend or Office process was started, and no candidate registration
 or settings mutation occurred. Original child exit code 1 and successful private
 Desktop closure have separate terminal receipts. This is environment and managed
 preparation evidence, not Q028 native acceptance or a coverage percentage.
+
+### Corrected Q028 prerequisites and failed native bootstrap
+
+Harness source `66dc23b88a5d52a5219e97da1d45d149d2c46f5d` (use the campaign plan
+as the authoritative full revision if this abbreviation differs), retained product
+source `ea0e8e9` and identical product bytes: `q028-office-03` passed its 499 focused
+managed regressions with no failures/skips. Each real headless tool, cancellation
+and detached UI bank selected one test and passed. CPU inference, exact model
+digest and context 8192 were independently observed. These scoped passes do not
+change the failed broad aggregate above.
+
+The Excel bank failed before native assistant dispatch: the exact disposable
+seed was attached, but its bridge was unavailable. Read-only recovery confirmed
+`VBAi.AddIn` with the expected GUID and `Connect=false`. No source mutation or
+native chat send occurred. Word, PowerPoint, Access, Publisher and Outlook remained
+NOT_RUN. The saved macro-free seed was independently reattached and closed once;
+one Quit returned and the recovery-held process handle observed exit code 0.
+That recovery handle is distinct from original-campaign normal-exit evidence.
+
+The helper subsequently observed its original child exit code 1, no remaining
+private windows, one sentinel close and successful Desktop release. The owned
+headless backend was stopped separately; its captured runner also exited. The
+initial read-only observation wrapper had a settled COM member lookup failure;
+its idle helper was stopped separately, without terminating Office. All six
+provider fields independently matched their initial values, so recovery emitted
+no settings save. COM registration had changed after application; the exact
+restore guard refused to overwrite it. Its writer/cause is not established.
+This failed campaign remains unqualified; receipts are retained under
+`artifacts/q028-office-03`.

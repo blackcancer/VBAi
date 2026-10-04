@@ -1387,6 +1387,18 @@ and an existing configured profile; it launches only the selected executable on
 the inactive desktop and attaches through the ROT after sole-process/native-window
 identity checks. It never falls back to COM activation on another desktop.
 
+Excel's macro-free `/automation` bootstrap can leave the registered VBE add-in
+disconnected. Q028 explicitly enables `VBAi_Q028_CONNECT_OWNED_ADDIN=1`: after
+original process, STA, VBE window, private-desktop, ProgID/GUID and registered
+candidate-byte checks, the shared single-use connection gate observes `Connect`
+and permits one setter only for an exact false Boolean. It verifies true readback
+and unchanged LoadBehavior. Failed or uncertain delivery retains the host; no
+trust policy or registry repair is attempted. Other Excel banks keep their
+existing startup behavior. `tools/probes/Inspect-Q028ExcelBootstrap.ps1` supports
+read-only diagnosis and a separately guarded close of the unchanged saved seed
+after an independent disconnected-add-in observation. Recovery never qualifies
+the failed bank.
+
 For installed-host requests, an explicit loopback observer captures only synthetic
 JSON bodies and response bytes, without headers or credentials. Its capture is
 bounded and preserves early-disposal outcomes. The final wire review must verify
