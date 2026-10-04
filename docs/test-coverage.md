@@ -1418,7 +1418,7 @@ Source `16ffa13` adds optional native/UIA Options combo observations through
 the existing bounded inspection trace. The isolated Debug/net48/x64 production
 candidate is MVID `9dc786a9-7128-41db-b21e-5bce14c0935f`, SHA-256
 `9F005722C6ED4749F428AD44E111FA4917EC468EC6A1990B96B0C311CA11C7CB`.
-It is **not installed or native VBE-qualified**. The first test-project build
+At this checkpoint it is **not installed or native VBE-qualified**. The first test-project build
 fails for missing test namespace imports; the corrected build passes without
 warnings/errors (`q026-combo-observation-build-final.log`).
 
@@ -1468,6 +1468,66 @@ host is activated and registration is unchanged. The frozen native plan and
 one-shot wrapper are prepared but **NOT_RUN**, pending explicit release of the
 native interval. Historical causality and real font-size mutation remain
 **OPEN**; the existing full-matrix acceptance belongs to its earlier candidate.
+
+### Q-026 native size catalogue and historical ownership stop (2026-10-04)
+
+After explicit user reservation, harness `38ee39f` runs the frozen `16ffa13`
+product (MVID `9dc786a9-7128-41db-b21e-5bce14c0935f`) on inactive desktop
+`VBAiTests_58d9f0494ad14604aece8d5b3b6e6a39`. The preceding v1 wrapper
+refuses registration before any Office activation because the actual limited
+worker has LoadBehavior 2. The explicit loading opt-in now accepts that existing
+DWORD and restores it exactly; no registration is created or trust policy changed.
+The elevated reader's different registration values are not substituted for the
+worker's actual values.
+
+`q026-font-size-catalogue-native-v2` records **88 managed passed, 0 failed,
+0 skipped; 1 native passed, 0 failed, 0 skipped**. Owned Excel PID 46072,
+start `2026-10-04T09:10:49.0020351Z`, Office `16.0.20430.20092`, verifies
+font mutation, closed independent readback, empty-size refusal without replay,
+complete restoration and exit 0 from the original retained launch handle 2112.
+All Tabs independently match the original revision `544477...`; 51 phase
+receipts and 14 command records are retained. The original worker and GUI
+launcher exit 0 with no desktop switch or foreground observation. Registration
+is restored and the terminal launch tasks are exported and removed.
+
+The new trace contains 20 actual native Size observations: control ID 4911,
+style `0x50010302`, native string combo, count 0 before and after its single
+expansion, selected index -1, expanded state true and final expanded state false.
+All reads complete without a native error and belong to PID 46072. This occurs
+before and after the font change. The empty catalogue is therefore observed
+through Win32, not merely missing UIA descendants. No size entry is invented;
+**size mutation remains unqualified**. Independent evidence is retained in
+`q026-font-size-native-v2-audit.json`. This is scoped font/refusal acceptance,
+not full Format acceptance on this diagnostic candidate or historical causality.
+
+The separate historical v8 campaign uses unchanged product MVID
+`5cc513d1-5569-4835-bf6c-cf70a18274fb` and passes **77 managed tests** but
+fails its single native test during the known pre-write guard warmup. Owned
+Excel PID 38836 starts `2026-10-04T09:29:28.6293854Z`. The exact expected
+guard refusal is received, but window enumeration cannot read a window owner;
+it does not establish retained Options visibility. No preference commit or
+collector attachment occurs. An independent later observation confirms Options
+absence. This failed case is retained and is not a natural stale-drift reproduction.
+
+Source `388c916` permits recovery only for this identified historical binary,
+the exact sentinel request and terminal pre-write refusal, unique complete
+baseline, unchanged ownership and an empty commit ledger. It still requires
+independent closure and a fresh complete matching snapshot before cleanup.
+Its pure-data validation records **25 passed**; the existing recovery-baseline
+gates record **17 passed**, with no native dispatch. Actual recovery reads the
+full unchanged `544477...` baseline without a compensation write, closes the
+owned seed once and calls Quit once; a separately retained recovery handle
+observes exit 0. The wrapper then fails its postcondition because it checks an
+absent `Exited` field instead of the receipt's explicit normal-exit state.
+Cleanup is not replayed. A registration-only actor verifies the existing receipt
+and restores the original registration at `2026-10-04T09:42:38.4397840Z`.
+Neither recovery nor this outer-wrapper correction qualifies the original test.
+
+A passive observation during v8 records an enabled Size combo on its owning
+dialog while the Code Colors list has focus. It sends no input or bridge call;
+this does not prove focus caused the empty catalogue. An earlier observer runs
+after PID 46072 has already exited and returns no rows; it is not live evidence.
+Historical revision drift and real size mutation remain **OPEN**.
 
 ### Q-026 offline snapshot review (2026-10-03)
 
