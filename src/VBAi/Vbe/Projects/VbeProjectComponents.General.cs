@@ -56,12 +56,15 @@ namespace VBAi
             var result = await operation.RunAsync(name, value, request.ExpectedOptionsVersion, live, pure, open, durableClaim, helpFile);
             // An uncertain original modal must not trigger another host read/recovery action.
             if (result.Uncertain) { ClearGeneralMetadata(result); RecordGeneralPublication(result, durableClaim); return result; }
-            if (result.Error != null) return result;
+            if (result.Error != null && !result.RefusedBeforeWrite) return result;
             try
             {
                 if (!result.Terminal || !result.OriginalExecuteReturned || !result.DialogClosed)
                     throw new InvalidOperationException("Original General Execute and modal closure are not settled.");
-                if (!write) live();
+                if (result.RefusedBeforeWrite && (result.FieldAttempts != 0 || result.OkAttempts != 0 || result.MutationInvoked ||
+                    result.CommittedRequested || result.ControlValueVerified || result.CancelAttempts != 1))
+                    throw new InvalidOperationException("The original no-write representation refusal and single Cancel are not proved.");
+                if (!write || result.RefusedBeforeWrite) live();
                 else
                 {
                     native.RequireOwner(); authorization(true);
@@ -77,9 +80,10 @@ namespace VBAi
             catch (Exception error)
             {
                 result.Error = error.ToString(); result.Available = false;
-                result.Uncertain |= result.MutationInvoked || !result.OriginalExecuteReturned || !result.DialogClosed;
+                result.Uncertain |= result.RefusedBeforeWrite || result.MutationInvoked || !result.OriginalExecuteReturned || !result.DialogClosed;
                 ClearGeneralMetadata(result);
             }
+            if (result.RefusedBeforeWrite) ClearGeneralMetadata(result);
             RecordGeneralPublication(result, durableClaim);
             return result;
         }

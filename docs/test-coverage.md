@@ -1,5 +1,91 @@
 # Recorded validation
 
+## Q-012 completed adapter contract (2026-10-04)
+
+Q-012 is **CLOSED for the required Access/Publisher adapter contract** on product
+MVID `2106fd95-fb1d-4b3e-b971-0ba39e78494b`, SHA-256
+`852DC8414D0E667ACAF9A3424978683F14E4EA8DED2ABF2780DBAE9851AF1CA8`.
+The frozen plans record source `60b8b7f2d81bcc3ca04900481f31a2ea956c1f5a` plus
+their pending-source manifests on `codex/q012-office-20261002`. Product bytes
+remain identical across the accepted campaigns; fixture/test/helper revisions
+are recorded separately and do not inherit one another's test results.
+
+| Gate | Result | Exact scope |
+| --- | --- | --- |
+| Final focused managed gate | 766 passed, 0 failed, 0 skipped | `q012-publisher-pending-detached/qualification/unit/unit.trx`; changed General, legacy refusal, admission, persistence, fixture and desktop guards. This is not a complete managed-suite or coverage run. |
+| Required native adapter contract | 20 accepted cases | Access rows 1–6, 20/21 and 27/28; Publisher rows 17–19, 22–26 and 29/30, combined from the original individual outcomes and lifecycle/readback receipts below. This does not make all rows in the wider diagnostic matrix green. |
+| Required normal host lifecycle | 35 original/fresh generations, normal exit code 0 | Complete original retained-handle ledger across the accepted cases, with no forced exit promoted to acceptance. |
+| Final Publisher pending campaign | DIAGNOSTIC_PASS | Every selected case is invoked once; temporary COM registration and scoped startup registration are restored and verified; checked helper desktop close succeeds. |
+| Complete managed suite on this product | NOT_RUN | Earlier complete-suite results below retain their own product identities. No current percentage or release-wide acceptance is inferred. |
+
+The machine-local evidence root is
+`C:\Users\init-\Documents\Codex\q012-20261003-next`. Accepted outcomes are:
+
+| Evidence relative to that root | Accepted rows | Test and helper SHA-256 prefixes |
+| --- | --- | --- |
+| `q012-adapters-final/summary.json` | Access 1–6 | Tests `10D59817`, helper `5FE7E795`; original full hashes are frozen in its `plan.json`. |
+| `q012-access-remaining/summary.json` | Access 20/21, 27/28 | Tests `7EBC538E`, helper `5FE7E795`; original full hashes are frozen in its `plan.json`. |
+| `q012-publisher-remaining/qualification/summary.json` | Publisher 17/18 | Tests `7EBC538E`, helper `5FE7E795`; original full hashes are frozen in its qualification plan. |
+| `q012-publisher-pending-detached/qualification/summary.json` | Publisher 19, 22–26, 29/30 | Tests `B240E972`, helper `47A43829`; original full hashes are frozen in its qualification plan. |
+
+The final test SHA-256 is
+`B240E9723EF4FB2DE8E278BBA55FF5288A02481DE3C872749C26FD24630F2E3B`;
+helper SHA-256 is
+`47A43829FA551C22F8AEB2A9230062FD2863B8DD71FD03980A0D620D101BE3C4`.
+These final test bytes were not used for the earlier accepted rows. The earlier
+aggregate failures remain failures: an unrelated later Publisher startup failure
+does not erase accepted Access cases, and the original live-file-lock failure
+in row 19 does not erase accepted Publisher persistence cases.
+
+The accepted positive contract covers active-module and module/class source persistence, UserForm
+state preservation (Publisher), reference addition by GUID/file, reference removal,
+Description and explicit native General HelpContextID/representable HelpFile
+text. Each persistence case requires one original adapter Save, exact independent
+fresh-process readback and normal exits. Stored UserForm structure/code/state
+does not qualify Designer rendering, form events or execution.
+
+Unsupported Unicode is qualified as a **known pre-write refusal**, with no field
+or OK dispatch, one guarded Cancel, observed dialog closure and original Execute
+return. Row 19 uses the already-saved audited serialized seed without baseline
+source edits or Save. Its original normally closed copy has the exact pre-open
+seed bytes and SHA-256; no Save, reopen or retry follows the refusal. Positive
+Unicode persistence remains unqualified. Legacy COM HelpFile/HelpContextID
+failures remain historical failures; current Type100 Access/Publisher writes
+are refused before either legacy setter, with explicit `read_project_general`
+and approved `set_project_general` alternatives. This is an API migration,
+not a repaired legacy COM setter or an automatic fallback.
+
+Publisher acceptance applies to an audited owned serialized publication opened
+with macros disabled. Empty-publication VBA initialization, NewDocument and
+first SaveAs are not qualified by this seed. Exact project/process/native-window
+identity, revision, mode, approval and privacy guards remain in force.
+
+The final pending campaign records normal host/helper shutdown, sentinel exit,
+successful creator `CloseDesktop`, input desktop unchanged and no owned focus
+observations. Scoped LoadBehavior restores the exact original DWORD2 after its
+temporary DWORD3 setup, with neighboring values unchanged. Its release proof
+uses the complete original-generation ledger; task removal is verified and no
+owned Access/Publisher remains. Unrelated SOLIDWORKS processes are not included
+in this cleanup.
+
+Earlier missing-helper-terminal/`0xC000013A` interruptions remain unattributed.
+The changed launcher uses the same helper binary with `UseShellExecute=false`,
+`CreateNoWindow=true`, asynchronous draining of both streams and retained original
+process exit evidence. A separate no-Office canary and the final native campaign
+qualify that normal launch path. Parent-console exclusion and disjoint worker
+console observations do not establish a helper-local console inventory or the
+cause of previous interruptions. Exceptional launcher fault handling requires
+its separately recorded checks; a happy-path native run cannot prove it.
+The later launcher-only exceptional-path correction protects a failed retained
+receipt write and refuses process disposal when Start returned no known outcome.
+`q012-launcher-retention-review/probe-results.json` records 12 passing old/new
+AST-extracted fault comparisons, with no Office, process wait or registry calls.
+The versioned `tools/tests/Test-IsolatedHelperRetention.ps1` also passes its six
+pure fault-injection cases under Windows PowerShell 5.1 after the correction.
+It does not replay native qualification. The last native launcher hash begins
+`F6ABD9`; the separately checked correction's SHA-256 is
+`C1BD623F007AA57FE7D0F7A6504C109067E8E3F6A82A5BD364E0F9E684A7FEE0`.
+
 ## Q-012 bridge admission candidate (2026-10-03)
 
 The `access-general-dispatchguard`, `general-full-managed-dispatchguard` and
@@ -169,7 +255,7 @@ Evidence is under `C:\Users\init-\Documents\Codex\q012-20261003-next`:
 `publisher-general-ansiguard`, `access-general-ansiguard` and their corresponding
 `desktop-*` lifecycle/cleanup receipts, `general-full-managed-fixed`,
 `publisher-general-nativeom-dispatch` and `publisher-general-manager-readonly`.
-Q-012 remains **PARTIAL**; no code
+At that checkpoint, Q-012 remained **PARTIAL**; no code
 coverage measurement is taken.
 
 ## Q-012 native General candidate and desktop API investigation (2026-10-03)
@@ -218,7 +304,7 @@ without a native close retry. Later source changes require a new candidate gate.
 Evidence is under `C:\Users\init-\Documents\Codex\q012-20261003-next`:
 `publisher-general-approvalfix`, `desktop-publisher-general-approvalfix`,
 `publisher-general-approvalfix/native-ui-snapshot.json` and
-`desktop-close-api-results.json`. Q-012 remains **PARTIAL**; no code coverage
+`desktop-close-api-results.json`. At that checkpoint, Q-012 remained **PARTIAL**; no code coverage
 measurement is taken.
 
 ## Q-012 typed VBIDE and normal Publisher candidate (2026-10-03)
@@ -258,7 +344,7 @@ A real, read-only PrintWindow capture proves the retained Publisher VBE,
 code pane and docked assistant are visible on the private desktop. White WPF
 regions may reflect capture/compositor limitations; this is not complete UI or
 UserForm Designer acceptance. The capture invokes no COM, keyboard action or
-desktop switch. Q-012 remains **PARTIAL**; no coverage measurement is taken.
+desktop switch. At that checkpoint, Q-012 remained **PARTIAL**; no coverage measurement is taken.
 
 Evidence is under `C:\Users\init-\Documents\Codex\q012-20261003-next`:
 `publisher-disabled-bank`, `publisher-helpcontext-single`, their desktop/cleanup
@@ -337,7 +423,7 @@ Evidence under `artifacts/q012-20261003`: `d6-access-i4`,
 `desktop-d6-access-i4`, `d6-build.log`, `d6-loadbehavior-correction.json`,
 `managed-i4-final`, `desktop-managed-i4-final/cleanup.json`,
 `scalar-native-independent-review` and `scalar-native-dispatch-review`.
-Q-012 remains **PARTIAL**. HelpFile and Publisher remain separate open gates;
+At that checkpoint, Q-012 remained **PARTIAL**. HelpFile and Publisher remain separate open gates;
 no coverage measurement is taken.
 
 ## Q-012 preceding scalar and connection gates (2026-10-03)

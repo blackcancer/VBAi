@@ -29,7 +29,8 @@ namespace VBAi.Tests.Unit
             internal bool Visible; internal int Captures, Writes, Closes, Owners; internal int Button;
             internal int HelpFileCodePage = 1252, HelpFileRepresentationChecks;
             internal bool HelpFileUnicode = false;
-            internal Action OnWrite, OnOwner, OnClose; internal Exception WriteError, CaptureError; internal bool RefuseClosure;
+            internal Action OnWrite, OnOwner, OnClose, OnRepresentation, BeforeCloseEntry, BeforeFieldEntry;
+            internal Exception WriteError, CaptureError, RepresentationError, CloseError; internal bool RefuseClosure;
             public void RequireOwner() { Owners++; OnOwner?.Invoke(); }
             public void Prepare() { RequireOwner(); if (Visible) throw new InvalidOperationException("preexisting modal"); }
             public VbeProjectGeneralOperation.Snapshot Capture(string name)
@@ -44,20 +45,21 @@ namespace VBAi.Tests.Unit
             }
             public void WriteContext(VbeProjectGeneralOperation.Snapshot expected, int value, Action entry)
             {
-                RequireSame(expected, true); entry(); Writes++; State.ContextText = value.ToString(System.Globalization.CultureInfo.InvariantCulture);
+                RequireSame(expected, true); BeforeFieldEntry?.Invoke(); entry(); Writes++; State.ContextText = value.ToString(System.Globalization.CultureInfo.InvariantCulture);
                 OnWrite?.Invoke(); if (WriteError != null) throw WriteError;
             }
             public void WriteHelpFile(VbeProjectGeneralOperation.Snapshot expected, string value, Action entry)
             {
-                RequireSame(expected, true); RequireHelpFileRepresentable(expected, value); entry(); Writes++; State.HelpFile = value; OnWrite?.Invoke(); if (WriteError != null) throw WriteError;
+                RequireSame(expected, true); RequireHelpFileRepresentable(expected, value); BeforeFieldEntry?.Invoke(); entry(); Writes++; State.HelpFile = value; OnWrite?.Invoke(); if (WriteError != null) throw WriteError;
             }
             public void RequireHelpFileRepresentable(VbeProjectGeneralOperation.Snapshot expected, string value)
             {
                 RequireSame(expected, true); HelpFileRepresentationChecks++;
+                OnRepresentation?.Invoke(); if (RepresentationError != null) throw RepresentationError;
                 VbeProjectGeneralNative.RequireExactTextRepresentation(value, HelpFileCodePage, HelpFileUnicode);
             }
             public void Close(VbeProjectGeneralOperation.Snapshot expected, int id, Action entry)
-            { RequireSame(expected, true); entry(); Closes++; Button = id; OnClose?.Invoke(); if (!RefuseClosure) Visible = false; }
+            { RequireSame(expected, true); BeforeCloseEntry?.Invoke(); entry(); Closes++; Button = id; OnClose?.Invoke(); if (CloseError != null) throw CloseError; if (!RefuseClosure) Visible = false; }
             public bool Closed(VbeProjectGeneralOperation.Snapshot expected) => !Visible;
         }
         internal static VbeProjectGeneralOperation.Snapshot Snapshot() => new VbeProjectGeneralOperation.Snapshot {
@@ -72,7 +74,7 @@ namespace VBAi.Tests.Unit
         {
             internal readonly Native Native = new Native(); internal readonly Scheduler Scheduler = new Scheduler();
             internal readonly List<string> Claims = new List<string>(); internal readonly VbeProjectGeneralOperation Operation;
-            internal Action Live, Pure, BeforeEntry, AfterEntry; internal Action<VbeProjectGeneralOperation.Result> Claim;
+            internal Action Live, Pure, BeforeEntry, AfterEntry, BeforeExecuteReturns; internal Action<VbeProjectGeneralOperation.Result> Claim;
             internal Task<VbeProjectGeneralOperation.Result> Pending;
             internal Case() { Operation = new VbeProjectGeneralOperation(Native, Scheduler); }
             internal void Start(int? value = 321, string file = null, string version = null)
@@ -80,6 +82,7 @@ namespace VBAi.Tests.Unit
                 Pending = Operation.RunAsync("Disposable", value, version ?? Native.State.OptionsVersion, () => Live?.Invoke(), () => Pure?.Invoke(), before => {
                     BeforeEntry?.Invoke(); before(); Native.Visible = true; AfterEntry?.Invoke();
                     Scheduler.Pump(); Scheduler.Pump();
+                    BeforeExecuteReturns?.Invoke();
                     if (Pending.IsCompleted) Assert.IsNotNull(Pending.Result.Error, "Only an uncertain/error result may settle before original Execute returns.");
                 }, result => { Claims.Add(result.Terminal ? "terminal" : result.OkAttempts == 1 ? "ok" : result.FieldAttempts == 1 ? "field" : result.CancelAttempts == 1 ? "cancel" : "open"); Claim?.Invoke(result); }, file);
             }
@@ -108,16 +111,96 @@ namespace VBAi.Tests.Unit
             CollectionAssert.AreEqual(new[] { "open", "cancel", "terminal" },c.Claims.ToArray());
         }
         [TestMethod]
-        public void UnrepresentableAnsiHelpFileRefusesBeforeFieldClaimAndRetainsOriginalModal()
+        public void UnrepresentableAnsiHelpFileRefusesBeforeFieldClaimAndCancelsUnchangedModalOnce()
         {
             var c = new Case(); c.Start(null, @"C:\日本.chm"); var result = c.Complete();
-            Assert.IsTrue(result.Terminal && result.Uncertain && c.Native.Visible);
+            Assert.IsTrue(result.Terminal && result.RefusedBeforeWrite && result.DialogClosed && result.OriginalExecuteReturned);
+            Assert.IsFalse(result.Uncertain || result.Available || c.Native.Visible); Assert.IsNotNull(result.Error);
             Assert.IsFalse(result.MutationInvoked || result.ControlValueVerified || result.CommittedRequested || result.RetryAllowed);
-            Assert.AreEqual(0, result.FieldAttempts); Assert.AreEqual(0, result.OkAttempts); Assert.AreEqual(0, result.CancelAttempts);
-            Assert.AreEqual(0, c.Native.Writes); Assert.AreEqual(0, c.Native.Closes); Assert.AreEqual(1, c.Native.HelpFileRepresentationChecks);
-            CollectionAssert.AreEqual(new[] { "open", "terminal" }, c.Claims.ToArray());
+            Assert.AreEqual(0, result.FieldAttempts); Assert.AreEqual(0, result.OkAttempts); Assert.AreEqual(1, result.CancelAttempts);
+            Assert.AreEqual(0, c.Native.Writes); Assert.AreEqual(1, c.Native.Closes); Assert.AreEqual(2, c.Native.Button); Assert.AreEqual(1, c.Native.HelpFileRepresentationChecks);
+            CollectionAssert.AreEqual(new[] { "open", "cancel", "terminal" }, c.Claims.ToArray());
             c.Scheduler.Pump(); Assert.AreEqual(1, c.Native.HelpFileRepresentationChecks);
             Assert.ThrowsException<InvalidOperationException>(() => c.Start(null, @"C:\été.chm"));
+        }
+        [DataTestMethod]
+        [DataRow("live")][DataRow("pure")][DataRow("owner")][DataRow("value")][DataRow("handle")]
+        [DataRow("claim")][DataRow("policyAfterClaim")][DataRow("deadlineBeforeEnqueue")]
+        public void KnownRefusalCannotCancelAfterAuthorizationIdentityClaimOrDeadlineFailure(string fault)
+        {
+            var c = new Case();
+            c.Native.OnRepresentation = () => {
+                if (fault == "live") c.Live = () => { throw new InvalidOperationException("live revoked"); };
+                if (fault == "pure") c.Pure = () => { throw new InvalidOperationException("policy revoked"); };
+                if (fault == "owner") c.Native.OnOwner = () => { throw new InvalidOperationException("owner changed"); };
+                if (fault == "value") c.Native.State.Description = "changed";
+                if (fault == "handle") c.Native.State.Context = new IntPtr(99);
+            };
+            c.Claim = receipt => {
+                if (receipt.Terminal || receipt.CancelAttempts == 0) return;
+                if (fault == "claim") throw new InvalidOperationException("cancel receipt failed");
+                if (fault == "policyAfterClaim") c.Pure = () => { throw new InvalidOperationException("policy revoked after claim"); };
+            };
+            if (fault == "deadlineBeforeEnqueue") c.Native.BeforeCloseEntry = () => c.Scheduler.Time = 20001;
+            c.Start(null, @"C:\日本.chm"); var r = c.Complete();
+            Assert.IsTrue(r.RefusedBeforeWrite && r.Uncertain && r.Terminal && c.Native.Visible);
+            Assert.AreEqual(0, r.FieldAttempts); Assert.AreEqual(0, r.OkAttempts);
+            Assert.AreEqual(0, c.Native.Writes); Assert.AreEqual(0, c.Native.Closes);
+            c.Scheduler.Pump(); Assert.AreEqual(0, c.Native.Closes);
+        }
+        [TestMethod]
+        public void UnknownRepresentationFailureDoesNotEnterKnownRefusalCancelPath()
+        {
+            var c = new Case(); c.Native.RepresentationError = new InvalidOperationException("native code page unavailable");
+            c.Start(null, @"C:\日本.chm"); var r = c.Complete();
+            Assert.IsTrue(r.Uncertain && c.Native.Visible); Assert.IsFalse(r.RefusedBeforeWrite);
+            Assert.AreEqual(0, r.FieldAttempts); Assert.AreEqual(0, r.CancelAttempts); Assert.AreEqual(0, c.Native.Closes);
+        }
+        [DataTestMethod][DataRow("post")][DataRow("timeout")][DataRow("terminalReceipt")]
+        public void RefusalCancelFailureRemainsUncertainAndNeverClosesAgain(string fault)
+        {
+            var c = new Case();
+            if (fault == "post") c.Native.CloseError = new InvalidOperationException("Cancel enqueue failed");
+            if (fault == "timeout") c.Native.RefuseClosure = true;
+            if (fault == "terminalReceipt") c.Claim = receipt => { if (receipt.Terminal) throw new InvalidOperationException("terminal receipt failed"); };
+            c.Start(null, @"C:\日本.chm"); c.Scheduler.Posted();
+            if (fault == "timeout") { c.Scheduler.Time = 20001; c.Scheduler.Pump(); }
+            var r = c.Pending.Result;
+            Assert.IsTrue(r.RefusedBeforeWrite && r.Uncertain && r.Terminal); Assert.AreEqual(1, r.CancelAttempts);
+            Assert.AreEqual(0, c.Native.Writes); Assert.AreEqual(1, c.Native.Closes);
+            c.Scheduler.Pump(); Assert.AreEqual(1, c.Native.Closes);
+        }
+        [DataTestMethod][DataRow(false)][DataRow(true)]
+        public void ClosedCancelWithOriginalExecuteStillPendingAtDeadlineRemainsUncertain(bool refusal)
+        {
+            var c = new Case(); bool observedPendingExecute = false;
+            c.BeforeExecuteReturns = () => {
+                Assert.IsFalse(c.Pending.IsCompleted, "Closed modal alone cannot settle the original Execute.");
+                c.Scheduler.Time = 20001; c.Scheduler.Pump();
+                var terminal = c.Pending.Result;
+                observedPendingExecute = terminal.DialogClosed && !terminal.OriginalExecuteReturned;
+                Assert.IsTrue(terminal.Uncertain && terminal.Terminal);
+            };
+            c.Start(null, refusal ? @"C:\日本.chm" : null); var r = c.Complete();
+            Assert.IsTrue(observedPendingExecute && r.Uncertain); Assert.AreEqual(1, c.Native.Closes); Assert.AreEqual(0, c.Native.Writes);
+        }
+        [DataTestMethod]
+        [DataRow("fieldClaim")][DataRow("fieldEntry")][DataRow("okClaim")][DataRow("okEntry")]
+        public void DeadlineCrossedDuringGuardsCannotEnterFieldOrOk(string phase)
+        {
+            var c = new Case();
+            if (phase == "fieldClaim") c.Native.OnRepresentation = () => c.Scheduler.Time = 20001;
+            if (phase == "fieldEntry") c.Native.BeforeFieldEntry = () => c.Scheduler.Time = 20001;
+            if (phase == "okClaim") c.Native.OnWrite = () => c.Scheduler.Time = 20001;
+            if (phase == "okEntry") c.Native.BeforeCloseEntry = () => c.Scheduler.Time = 20001;
+            c.Start(null, @"C:\été.chm"); var result = c.Complete();
+            bool fieldEntered = phase == "okClaim" || phase == "okEntry";
+            Assert.IsTrue(result.Terminal && result.Uncertain && c.Native.Visible);
+            Assert.AreEqual(fieldEntered, result.MutationInvoked); Assert.IsFalse(result.CommittedRequested);
+            Assert.AreEqual(phase == "fieldClaim" ? 0 : 1, result.FieldAttempts);
+            Assert.AreEqual(phase == "okEntry" ? 1 : 0, result.OkAttempts);
+            Assert.AreEqual(fieldEntered ? 1 : 0, c.Native.Writes); Assert.AreEqual(0, c.Native.Closes);
+            Assert.AreEqual(0, result.CancelAttempts); c.Scheduler.Pump(); Assert.AreEqual(0, c.Native.Closes);
         }
         [TestMethod]
         public void ChangedAnsiRepresentationAfterFieldClaimIsRecheckedBeforeMutationEntry()

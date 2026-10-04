@@ -11,6 +11,13 @@ namespace VBAi
     // Proposed additive native General route. It is never invoked after a COM setter.
     internal sealed class VbeProjectGeneralOperation
     {
+        // Only the pure, strict encoding round trip may produce this refusal.
+        // Native identity, code-page discovery and authorization failures do not.
+        internal sealed class TextRepresentationRefusedException : InvalidOperationException
+        {
+            internal TextRepresentationRefusedException(Exception inner = null)
+                : base("Native General text cannot preserve the exact requested value in its code page; no field write was entered.", inner) { }
+        }
         internal sealed class Snapshot
         {
             internal IntPtr Dialog, Page, Tab, Context, NameEdit, DescriptionEdit, HelpFileEdit, CompilationEdit;
@@ -31,7 +38,7 @@ namespace VBAi
         }
         internal sealed class Result
         {
-            public bool Available, MutationInvoked, Uncertain, ControlValueVerified, CommittedRequested, DialogClosed, CommandEntered, OriginalExecuteReturned, Terminal;
+            public bool Available, MutationInvoked, Uncertain, ControlValueVerified, CommittedRequested, DialogClosed, CommandEntered, OriginalExecuteReturned, Terminal, RefusedBeforeWrite;
             public bool PersistenceVerified => false;
             public bool RetryAllowed => false;
             public string OptionsVersion, Name, Description, HelpFile, HelpContextText, ConditionalCompilation, Error;
@@ -117,17 +124,29 @@ namespace VBAi
             Action<Exception> fail = error => {
                 if (terminal) return;
                 result.Error = error.ToString();
-                result.Uncertain = result.FieldAttempts != 0 || result.OkAttempts != 0 || (commandEntered && !result.DialogClosed);
+                result.Uncertain = result.FieldAttempts != 0 || result.OkAttempts != 0 || (commandEntered && (!result.DialogClosed || !commandReturned));
                 // A claimed field/OK or unsettled Execute is retained. No Cancel/second close fallback.
                 finish();
+            };
+            Action requireDeadline = () => {
+                scheduling.RequireOwner();
+                long elapsed = scheduling.ElapsedMilliseconds - started;
+                if (elapsed < 0 || elapsed > 20000) throw new InvalidOperationException("Original General operation deadline expired; no replay.");
+            };
+            Action cancelUnchanged = () => {
+                if (result.FieldAttempts != 0 || result.OkAttempts != 0 || result.MutationInvoked || result.CancelAttempts != 0 || closeClaimed)
+                    throw new InvalidOperationException("Only an unchanged original General inspection may be cancelled once.");
+                authorizeLiveTarget(); native.RequireSame(before, true); authorizeCachedPolicy(); native.RequireOwner(); requireDeadline();
+                result.CancelAttempts = 1; durableClaim(result); native.RequireSame(before, true); authorizeCachedPolicy(); native.RequireOwner(); requireDeadline();
+                closeClaimed = true;
+                native.Close(before, 2, () => { authorizeCachedPolicy(); native.RequireOwner(); requireDeadline(); });
             };
             Action tick = () => {
                 if (terminal || tickActive) return; tickActive = true;
                 try
                 {
                     scheduling.RequireOwner(); native.RequireOwner();
-                    long elapsed = scheduling.ElapsedMilliseconds - started;
-                    if (elapsed < 0 || elapsed > 20000) throw new InvalidOperationException("Original General operation deadline expired; no replay.");
+                    requireDeadline();
                     if (!commandEntered) return; // Never adopt a dialog while command resolution/authorization is still pumping.
                     if (closeClaimed)
                     {
@@ -145,15 +164,21 @@ namespace VBAi
                     result.OptionsVersion = before.OptionsVersion;
                     if (!write)
                     {
-                        authorizeLiveTarget(); native.RequireSame(before, true); authorizeCachedPolicy(); native.RequireOwner();
-                        result.CancelAttempts = 1; durableClaim(result); native.RequireSame(before, true); authorizeCachedPolicy(); native.RequireOwner();
-                        closeClaimed = true; native.Close(before, 2, () => { authorizeCachedPolicy(); native.RequireOwner(); }); return;
+                        cancelUnchanged(); return;
                     }
                     if (!string.Equals(expectedOptionsVersion, before.OptionsVersion, StringComparison.OrdinalIgnoreCase)) throw new InvalidOperationException("General options changed; no mutation was entered.");
                     authorizeLiveTarget(); native.RequireSame(before, true); authorizeCachedPolicy(); native.RequireOwner();
-                    if (helpFileValue != null) native.RequireHelpFileRepresentable(before, helpFileValue);
-                    result.FieldAttempts = 1; durableClaim(result); native.RequireSame(before, true); authorizeCachedPolicy(); native.RequireOwner();
-                    Action entry = () => { authorizeCachedPolicy(); native.RequireOwner(); result.MutationInvoked = true; };
+                    if (helpFileValue != null)
+                    {
+                        try { native.RequireHelpFileRepresentable(before, helpFileValue); }
+                        catch (TextRepresentationRefusedException error)
+                        {
+                            result.RefusedBeforeWrite = true; result.Available = false; result.Error = error.Message;
+                            cancelUnchanged(); return;
+                        }
+                    }
+                    requireDeadline(); result.FieldAttempts = 1; durableClaim(result); native.RequireSame(before, true); authorizeCachedPolicy(); native.RequireOwner();
+                    Action entry = () => { authorizeCachedPolicy(); native.RequireOwner(); requireDeadline(); result.MutationInvoked = true; };
                     if (contextValue.HasValue) native.WriteContext(before, contextValue.Value, entry);
                     else native.WriteHelpFile(before, helpFileValue, entry);
                     var after = native.Capture(exactProjectName);
@@ -162,8 +187,8 @@ namespace VBAi
                     if (!retained) throw new InvalidOperationException("General field readback differs; retain this original modal.");
                     result.ControlValueVerified = true; result.HelpContextText = after.ContextText; result.HelpFile = after.HelpFile; result.OptionsVersion = after.OptionsVersion;
                     authorizeLiveTarget(); native.RequireSame(after, true); authorizeCachedPolicy(); native.RequireOwner();
-                    result.OkAttempts = 1; durableClaim(result); native.RequireSame(after, true); authorizeCachedPolicy(); native.RequireOwner();
-                    closeClaimed = true; native.Close(after, 1, () => { authorizeCachedPolicy(); native.RequireOwner(); result.CommittedRequested = true; });
+                    requireDeadline(); result.OkAttempts = 1; durableClaim(result); native.RequireSame(after, true); authorizeCachedPolicy(); native.RequireOwner();
+                    closeClaimed = true; native.Close(after, 1, () => { authorizeCachedPolicy(); native.RequireOwner(); requireDeadline(); result.CommittedRequested = true; });
                 }
                 catch (Exception error) { fail(error); }
                 finally { tickActive = false; }

@@ -102,6 +102,7 @@ namespace VBAi
         {
             dynamic project = GetProject(projectName);
             var properties = ReadProperties((object)project);
+            DescribeLegacyHelpMetadata((object)project, properties);
             var components = new List<object>();
             foreach (dynamic component in project.VBComponents)
                 components.Add(new { Name = (string)component.Name, Type = (int)component.Type });
@@ -543,6 +544,7 @@ namespace VBAi
             if (string.Equals(request.Property, "Name", StringComparison.OrdinalIgnoreCase)) return RenameSavedExcelProject(request);
             dynamic project = GetDesignProject(request.Project);
             AssertProjectVersion(request, project);
+            RequireLegacyHelpMetadataWriteSupported((object)project, request.Property);
             if (!TrySetAccessHelpContext(request, (object)project)) SetScalar((object)project, request.Property, request.Value);
             return ProjectProperties(request.Project);
         }

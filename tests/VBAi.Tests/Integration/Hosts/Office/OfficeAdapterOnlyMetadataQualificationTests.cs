@@ -24,7 +24,10 @@ namespace VBAi.Tests.Integration
         /// <summary>Checks an owned Publisher HelpFile path marker without changing any installed help library.</summary>
         [STATestMethod] public void PublisherHelpFilePathAdapterSaveReopen() { Qualify("Publisher", "HelpFile"); }
 
-        private void Qualify(string host, string property)
+        /// <summary>Qualifies Description persistence from an audited existing serialized Publisher publication.</summary>
+        [STATestMethod] public void PublisherSerializedDescriptionAdapterSaveReopen() { Qualify("Publisher", "Description", true); }
+
+        private void Qualify(string host, string property, bool serializedPublisherSeed = false)
         {
             object expected = null, before = null;
             OfficeAdapterOnlyProjectQualification.Run(host, "Metadata." + property, null, fixture => {
@@ -41,7 +44,7 @@ namespace VBAi.Tests.Integration
                 Assert.AreEqual(Convert.ToString(expected, CultureInfo.InvariantCulture),
                     Convert.ToString(OfficeAdapterOnlyProjectQualification.ReadProperty(fixture, property), CultureInfo.InvariantCulture),
                     "Project metadata was not retained exactly: " + property);
-            }, TestContext);
+            }, TestContext, serializedPublisherSeed);
         }
     }
 }

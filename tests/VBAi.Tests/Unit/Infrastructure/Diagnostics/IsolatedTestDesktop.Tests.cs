@@ -239,5 +239,50 @@ namespace VBAi.Tests.Unit
             Assert.ThrowsException<InvalidOperationException>(() => IsolatedTestDesktop.ValidateOfficeWindowInventories(
                 desktop, 100, sentinel, privateInventory, inputInventory, false, IntPtr.Zero));
         }
+
+        [TestMethod]
+        public void FailedNativeInventoriesRemainRefusedAndExposeDistinctPrivateInputDiagnostics()
+        {
+            string desktop = "VBAiTests_" + Guid.NewGuid().ToString("N");
+            var sentinel = new IsolatedTestDesktop.WindowIdentity(new IntPtr(11), 100, 200);
+            var validPrivate = new IsolatedTestDesktop.WindowInventory(desktop, true, sentinel);
+            var validInput = new IsolatedTestDesktop.WindowInventory("Default", true);
+            var nativeFailure = new IsolatedTestDesktop.WindowInventory(desktop, false, 5, true, "None",
+                IntPtr.Zero, 0, 0, 0, new[] { sentinel });
+            var callbackFailure = new IsolatedTestDesktop.WindowInventory("Default", false, 1400, false,
+                "InvalidWindowIdentity", new IntPtr(99), 0, 0, 1400,
+                new[] { new IsolatedTestDesktop.WindowIdentity(new IntPtr(99), 0, 0) });
+            var privateError = Assert.ThrowsException<InvalidOperationException>(() =>
+                IsolatedTestDesktop.ValidateOfficeWindowInventories(desktop, 101, sentinel,
+                    nativeFailure, validInput, false, IntPtr.Zero));
+            StringAssert.Contains(privateError.Message, "Private={Desktop=" + desktop + ",Complete=False,EnumBOOL=False,EnumError=5");
+            StringAssert.Contains(privateError.Message, "Input={Desktop=Default,Complete=True");
+            var inputError = Assert.ThrowsException<InvalidOperationException>(() =>
+                IsolatedTestDesktop.ValidateOfficeWindowInventories(desktop, 101, sentinel,
+                    validPrivate, callbackFailure, false, IntPtr.Zero));
+            StringAssert.Contains(inputError.Message, "Input={Desktop=Default,Complete=False,EnumBOOL=False,EnumError=1400");
+            StringAssert.Contains(inputError.Message, "CallbackStop=InvalidWindowIdentity,FailedHWND=0x63,FailedPID=0,FailedTID=0,IdentityError=1400");
+        }
+
+        [TestMethod]
+        public void InventoryCapAndDesktopMismatchCannotBecomeAcceptedThroughDiagnosticInstrumentation()
+        {
+            string desktop = "VBAiTests_" + Guid.NewGuid().ToString("N");
+            var sentinel = new IsolatedTestDesktop.WindowIdentity(new IntPtr(11), 100, 200);
+            var input = new IsolatedTestDesktop.WindowInventory("Default", true);
+            // Even an inconsistent raw successful BOOL cannot override a recorded callback stop.
+            var capped = new IsolatedTestDesktop.WindowInventory(desktop, true, 234, true,
+                "WindowLimitExceeded", new IntPtr(12), 999, 998, 0, new[] { sentinel });
+            Assert.IsFalse(capped.Complete);
+            var error = Assert.ThrowsException<InvalidOperationException>(() =>
+                IsolatedTestDesktop.ValidateOfficeWindowInventories(desktop, 101, sentinel, capped, input, false, IntPtr.Zero));
+            StringAssert.Contains(error.Message, "CallbackStop=WindowLimitExceeded");
+            var wrongDesktop = new IsolatedTestDesktop.WindowInventory("Other", true, 0, true, "None",
+                IntPtr.Zero, 0, 0, 0, new[] { sentinel });
+            var mismatch = Assert.ThrowsException<InvalidOperationException>(() =>
+                IsolatedTestDesktop.ValidateOfficeWindowInventories(desktop, 101, sentinel, wrongDesktop, input, false, IntPtr.Zero));
+            StringAssert.Contains(mismatch.Message, "Expected=" + desktop);
+            StringAssert.Contains(mismatch.Message, "Private={Desktop=Other");
+        }
     }
 }

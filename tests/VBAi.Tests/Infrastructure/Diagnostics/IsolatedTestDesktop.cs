@@ -22,12 +22,13 @@ namespace VBAi.Tests.Integration
         [DllImport("user32.dll", SetLastError = true)] private static extern IntPtr OpenInputDesktop(uint flags, bool inherit, uint access);
         [DllImport("user32.dll", SetLastError = true)] private static extern IntPtr GetThreadDesktop(uint threadId);
         [DllImport("user32.dll", SetLastError = true)] private static extern bool SetThreadDesktop(IntPtr desktop);
-        [DllImport("user32.dll")] private static extern uint GetWindowThreadProcessId(IntPtr window, out uint processId);
+        [DllImport("user32.dll", SetLastError = true)] private static extern uint GetWindowThreadProcessId(IntPtr window, out uint processId);
         [DllImport("user32.dll")] private static extern IntPtr GetAncestor(IntPtr window, uint flags);
         [DllImport("user32.dll")] private static extern IntPtr GetProcessWindowStation();
         [DllImport("user32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
         private static extern bool GetUserObjectInformationW(IntPtr handle, int index, StringBuilder value, uint size, out uint required);
         [DllImport("kernel32.dll")] internal static extern uint GetCurrentThreadId();
+        [DllImport("kernel32.dll", EntryPoint = "SetLastError")] private static extern void SetNativeLastError(uint error);
         [DllImport("kernel32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
         private static extern bool CreateProcessW(string application, StringBuilder command, IntPtr processSecurity,
             IntPtr threadSecurity, bool inherit, uint flags, IntPtr environment, string directory,
@@ -140,8 +141,30 @@ namespace VBAi.Tests.Integration
             internal readonly string Desktop;
             internal readonly bool Complete;
             internal readonly WindowIdentity[] Windows;
+            internal readonly bool? EnumerationSucceeded, IdentityComplete;
+            internal readonly int? EnumerationError, IdentityError;
+            internal readonly string CallbackStopReason;
+            internal readonly IntPtr FailedWindow;
+            internal readonly uint FailedProcessId, FailedThreadId;
             internal WindowInventory(string desktop, bool complete, params WindowIdentity[] windows)
-            { Desktop = desktop; Complete = complete; Windows = windows; }
+            { Desktop = desktop; Complete = complete; Windows = windows; CallbackStopReason = "NotInstrumented"; }
+            internal WindowInventory(string desktop, bool enumerationSucceeded, int enumerationError,
+                bool identityComplete, string callbackStopReason, IntPtr failedWindow,
+                uint failedProcessId, uint failedThreadId, int identityError, WindowIdentity[] windows)
+            {
+                Desktop = desktop; EnumerationSucceeded = enumerationSucceeded; EnumerationError = enumerationError;
+                IdentityComplete = identityComplete; CallbackStopReason = callbackStopReason;
+                FailedWindow = failedWindow; FailedProcessId = failedProcessId; FailedThreadId = failedThreadId;
+                IdentityError = identityError; Windows = windows;
+                Complete = enumerationSucceeded && identityComplete && callbackStopReason == "None";
+            }
+            internal string Diagnostic => string.Format(CultureInfo.InvariantCulture,
+                "Desktop={0},Complete={1},EnumBOOL={2},EnumError={3},IdentityComplete={4},Count={5},Limit=8192,CallbackStop={6},FailedHWND=0x{7:X},FailedPID={8},FailedTID={9},IdentityError={10}",
+                Desktop ?? "<null>", Complete, EnumerationSucceeded?.ToString() ?? "NotInstrumented",
+                EnumerationError?.ToString(CultureInfo.InvariantCulture) ?? "NotInstrumented",
+                IdentityComplete?.ToString() ?? "NotInstrumented", Windows?.Length ?? -1,
+                CallbackStopReason ?? "<null>", FailedWindow.ToInt64(), FailedProcessId, FailedThreadId,
+                IdentityError?.ToString(CultureInfo.InvariantCulture) ?? "NotInstrumented");
         }
 
         /// <summary>Checks foreign HWND membership using explicit desktop inventories, never foreign GetThreadDesktop.</summary>
@@ -176,8 +199,10 @@ namespace VBAi.Tests.Integration
             ValidateOfficeWindowInventories(desktop, ownedPid,
                 new WindowIdentity(new IntPtr(sentinelWindow), sentinelPid, sentinelThread),
                 privateInventory, inputInventory, requireWindow, requiredWindow);
-            if (!string.Equals(InputDesktopName(), inputInventory.Desktop, StringComparison.OrdinalIgnoreCase))
-                throw new InvalidOperationException("The user's input desktop changed during the read-only inventory; no native action or desktop restoration is performed.");
+            string inputAfter = InputDesktopName();
+            if (!string.Equals(inputAfter, inputInventory.Desktop, StringComparison.OrdinalIgnoreCase))
+                throw InventoryFailure("The user's input desktop changed during the read-only inventory; no native action or desktop restoration is performed. InputAfter=" + inputAfter,
+                    desktop, ownedPid, privateInventory, inputInventory);
             RequireCurrent(desktop); // Never restore or override the user's input desktop choice.
         }
 
@@ -185,14 +210,45 @@ namespace VBAi.Tests.Integration
         {
             string name = ObjectName(handle);
             var windows = new List<WindowIdentity>(); bool identityComplete = true;
+            string callbackStop = "None"; IntPtr failedWindow = IntPtr.Zero;
+            uint failedProcess = 0, failedThread = 0; int identityError = 0;
             WindowVisitor visitor = (window, state) => {
-                uint process; uint thread = GetWindowThreadProcessId(window, out process);
-                if (window == IntPtr.Zero || process == 0 || thread == 0) identityComplete = false;
+                uint process = 0;
+                SetNativeLastError(0);
+                uint thread = GetWindowThreadProcessId(window, out process);
+                int currentIdentityError = Marshal.GetLastWin32Error(); // Before any other native call.
                 windows.Add(new WindowIdentity(window, process, thread));
-                return identityComplete && windows.Count <= 8192;
+                if (window == IntPtr.Zero || process == 0 || thread == 0)
+                {
+                    identityComplete = false; callbackStop = "InvalidWindowIdentity";
+                    failedWindow = window; failedProcess = process; failedThread = thread;
+                    identityError = currentIdentityError;
+                    // EnumDesktopWindows requires a failing callback to set its error.
+                    SetNativeLastError((uint)(currentIdentityError != 0 ? currentIdentityError : 1400));
+                    return false;
+                }
+                if (windows.Count > 8192)
+                {
+                    callbackStop = "WindowLimitExceeded"; failedWindow = window;
+                    failedProcess = process; failedThread = thread;
+                    SetNativeLastError(234); // ERROR_MORE_DATA: our explicit inventory cap.
+                    return false;
+                }
+                return true;
             };
+            SetNativeLastError(0);
             bool complete = EnumDesktopWindows(handle, visitor, IntPtr.Zero);
-            return new WindowInventory(name, complete && identityComplete, windows.ToArray());
+            int enumerationError = Marshal.GetLastWin32Error(); // Before CloseDesktop or logging.
+            return new WindowInventory(name, complete, enumerationError, identityComplete, callbackStop,
+                failedWindow, failedProcess, failedThread, identityError, windows.ToArray());
+        }
+
+        private static InvalidOperationException InventoryFailure(string reason, string expected, uint ownedPid,
+            WindowInventory privateInventory, WindowInventory inputInventory)
+        {
+            return new InvalidOperationException(reason + " Expected=" + expected + ",OwnedPID=" + ownedPid +
+                "; Private={" + (privateInventory?.Diagnostic ?? "<null>") + "}; Input={" +
+                (inputInventory?.Diagnostic ?? "<null>") + "}. No native action or automatic inventory retry.");
         }
 
         /// <summary>Pure acceptance seam: failure, missing sentinel/target or owned input windows always refuse.</summary>
@@ -205,20 +261,20 @@ namespace VBAi.Tests.Integration
                 !privateInventory.Complete || !inputInventory.Complete || privateInventory.Windows == null || inputInventory.Windows == null ||
                 !string.Equals(privateInventory.Desktop, expected, StringComparison.OrdinalIgnoreCase) ||
                 string.IsNullOrWhiteSpace(inputInventory.Desktop) || string.Equals(inputInventory.Desktop, expected, StringComparison.OrdinalIgnoreCase))
-                throw new InvalidOperationException("Exact private/input desktop inventories are incomplete or unverified; Office actions are refused.");
+                throw InventoryFailure("Exact private/input desktop inventories are incomplete or unverified; Office actions are refused.", expected, ownedPid, privateInventory, inputInventory);
             bool foundSentinel = false, foundRequired = requiredWindow == IntPtr.Zero; int ownedWindows = 0;
             foreach (var window in privateInventory.Windows)
             {
                 if (window == null || window.Window == IntPtr.Zero || window.ProcessId == 0 || window.ThreadId == 0)
-                    throw new InvalidOperationException("Private native window identity is incomplete.");
+                    throw InventoryFailure("Private native window identity is incomplete.", expected, ownedPid, privateInventory, inputInventory);
                 if (window.Window == sentinel.Window && window.ProcessId == sentinel.ProcessId && window.ThreadId == sentinel.ThreadId) foundSentinel = true;
                 if (window.ProcessId == ownedPid) { ownedWindows++; if (window.Window == requiredWindow) foundRequired = true; }
             }
             foreach (var window in inputInventory.Windows)
                 if (window == null || window.Window == IntPtr.Zero || window.ProcessId == 0 || window.ThreadId == 0 || window.ProcessId == ownedPid)
-                    throw new InvalidOperationException("An owned Office window is on the input desktop, or its inventory is incomplete; no native action is allowed.");
+                    throw InventoryFailure("An owned Office window is on the input desktop, or its inventory is incomplete; no native action is allowed.", expected, ownedPid, privateInventory, inputInventory);
             if (!foundSentinel || !foundRequired || (requireWindow && ownedWindows == 0))
-                throw new InvalidOperationException("The exact live sentinel or required owned Office HWND was not observed on the private desktop.");
+                throw InventoryFailure("The exact live sentinel or required owned Office HWND was not observed on the private desktop.", expected, ownedPid, privateInventory, inputInventory);
         }
 
         internal static string InputDesktopName()

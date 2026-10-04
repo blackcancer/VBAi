@@ -90,5 +90,49 @@ namespace VBAi.Tests.Unit
             Assert.IsNull(result.Name);Assert.IsNull(result.Description);Assert.IsNull(result.HelpFile);Assert.IsNull(result.HelpContextText);Assert.IsNull(result.ConditionalCompilation);Assert.IsNull(result.OptionsVersion);
             Assert.AreEqual(write?1:0,native.Writes);Assert.AreEqual(1,native.Closes);Assert.AreEqual(2,terminalReceipts);
         }
+        [DataTestMethod][DataRow("none")][DataRow("revision")][DataRow("policy")][DataRow("publicationReceipt")]
+        public async Task KnownEncodingRefusalRevalidatesUnchangedProjectAndRedactsMetadataAfterCancel(string fault)
+        {
+            string directory = Path.Combine(Path.GetTempPath(), "vbai-general-refusal-" + Guid.NewGuid().ToString("N"));
+            Directory.CreateDirectory(directory);
+            try
+            {
+                string path = Path.Combine(directory, "日本.chm"); File.WriteAllText(path, "inert marker");
+                var project = new Project { Name = "Disposable" }; var host = new Host { ActiveVBProject = project }; host.VBProjects.Add(project);
+                var service = new VbeProjectComponents(host, new VbeForms(host));
+                var native = new VbeProjectGeneralOperationTests.Native(); var scheduler = new VbeProjectGeneralOperationTests.Scheduler();
+                service.GeneralProjectIdentity = ReferenceEquals; service.GeneralNativeFactory = (root, context) => native;
+                service.GeneralOperationFactory = n => new VbeProjectGeneralOperation(n, scheduler);
+                dynamic initial = service.ProjectProperties(project.Name); bool revoked = false; int terminalReceipts = 0;
+                var request = new Request { Project = project.Name, ExpectedMode = 2, ExpectedProjectVersion = initial.Version,
+                    ControlCaption = "Properties", Property = "HelpFile", Value = path, ExpectedOptionsVersion = native.State.OptionsVersion,
+                    RevalidateProjectPropertyAuthorization = _ => { if (revoked) throw new InvalidOperationException("privacy revoked after Cancel"); } };
+                native.OnClose = () => {
+                    if (fault == "revision") project.Description = "changed after Cancel";
+                    if (fault == "policy") revoked = true;
+                };
+                Task<object> task; var previous = SynchronizationContext.Current;
+                try
+                {
+                    SynchronizationContext.SetSynchronizationContext(null);
+                    task = service.ProjectGeneralAsync(request, true, (captured, live) => entry => {
+                        live(); entry(); native.Visible = true; scheduler.Pump(); scheduler.Pump();
+                    }, receipt => {
+                        if (receipt.Terminal && ++terminalReceipts == 2 && fault == "publicationReceipt")
+                            throw new InvalidOperationException("final receipt failed");
+                    }, () => { });
+                }
+                finally { SynchronizationContext.SetSynchronizationContext(previous); }
+                scheduler.Posted(); scheduler.Pump(); var result = (VbeProjectGeneralOperation.Result)await task.ConfigureAwait(false);
+                Assert.IsTrue(result.RefusedBeforeWrite && result.DialogClosed && result.OriginalExecuteReturned && result.Terminal);
+                Assert.AreEqual(fault != "none", result.Uncertain); Assert.IsFalse(result.Available || result.MutationInvoked || result.CommittedRequested);
+                Assert.AreEqual(0, result.FieldAttempts); Assert.AreEqual(0, result.OkAttempts); Assert.AreEqual(1, result.CancelAttempts);
+                Assert.AreEqual(0, native.Writes); Assert.AreEqual(1, native.Closes); Assert.AreEqual(2, terminalReceipts);
+                Assert.IsNotNull(result.Error); Assert.IsNull(result.Name); Assert.IsNull(result.Description); Assert.IsNull(result.HelpFile);
+                Assert.IsNull(result.HelpContextText); Assert.IsNull(result.ConditionalCompilation); Assert.IsNull(result.OptionsVersion);
+                Assert.IsFalse(result.Error.Contains(path), "The refused file path must not appear in the public error.");
+            }
+            finally { Directory.Delete(directory, true); }
+        }
     }
 }

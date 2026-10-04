@@ -138,19 +138,20 @@ namespace VBAi
         {
             if (value == null) throw new ArgumentNullException(nameof(value));
             Require(codePage > 0, "Native General text code page is unavailable.");
+            // Unsupported/unknown code pages are infrastructure failures, not a
+            // known representation refusal eligible for a guarded Cancel.
+            var encoding = Encoding.GetEncoding(unicode ? 1200 : codePage,
+                EncoderFallback.ExceptionFallback, DecoderFallback.ExceptionFallback);
             try
             {
                 // Exception fallbacks disable replacement and best-fit mappings. Unicode controls
                 // still require valid UTF-16; no normalization or path substitution is performed.
-                var encoding = Encoding.GetEncoding(unicode ? 1200 : codePage,
-                    EncoderFallback.ExceptionFallback, DecoderFallback.ExceptionFallback);
                 string roundTrip = encoding.GetString(encoding.GetBytes(value));
-                Require(string.Equals(value, roundTrip, StringComparison.Ordinal), "Native General text cannot preserve the exact requested value.");
+                if (!string.Equals(value, roundTrip, StringComparison.Ordinal))
+                    throw new VbeProjectGeneralOperation.TextRepresentationRefusedException();
             }
-            catch (ArgumentException error)
-            {
-                throw new InvalidOperationException("Native General text cannot preserve the exact requested value in its code page; no field write was entered.", error);
-            }
+            catch (EncoderFallbackException error) { throw new VbeProjectGeneralOperation.TextRepresentationRefusedException(error); }
+            catch (DecoderFallbackException error) { throw new VbeProjectGeneralOperation.TextRepresentationRefusedException(error); }
         }
         public void WriteHelpFile(VbeProjectGeneralOperation.Snapshot expected, string value, Action beforeEntry)
         { WriteField(expected, expected.HelpFileEdit, value ?? throw new ArgumentNullException(nameof(value)), beforeEntry); }

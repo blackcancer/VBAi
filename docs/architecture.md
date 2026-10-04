@@ -38,6 +38,17 @@ provide projects, components, code modules, references and code panes. Native
 command and accessibility services provide operations not exposed as complete
 public VBIDE collections.
 
+For native Access and Publisher host projects (VBIDE Type 100),
+`set_project_property` refuses HelpFile and HelpContextID before either COM setter.
+Observed partial failures do not justify another setter or an automatic UI
+fallback. `project_properties` retains the COM descriptor's `ReadOnly` flag and
+raw value, while its existing `SetterStatus` reports `HostLegacyWriteUnsupported`
+and `Display` identifies the explicit General alternative. Clients must refresh
+the opaque project version and choose that asynchronous, approved workflow;
+existing command names and request fields remain unchanged. COM HelpFile readback
+and `open_project_help` are not repaired by this change. Other hosts, project types
+and properties retain their existing routes.
+
 The explicit asynchronous `read_project_general` and `set_project_general`
 commands use the original VBE General dialog on its owning STA. They are separate
 from the existing COM metadata commands and never run as recovery after a failed

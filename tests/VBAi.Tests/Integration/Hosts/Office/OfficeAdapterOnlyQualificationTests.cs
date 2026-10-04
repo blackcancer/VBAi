@@ -22,6 +22,9 @@ namespace VBAi.Tests.Integration
         [STATestMethod]
         public void PublisherAdapterOnlySaveReopen() { Qualify("Publisher", true, true); }
 
+        /// <summary>Qualifies code and UserForm saves from an audited existing serialized Publisher publication.</summary>
+        [STATestMethod] public void PublisherSerializedAdapterOnlySaveReopen() { Qualify("Publisher", true, true, true); }
+
         /// <summary>Requires native Word form creation and a verified adapter-only document round-trip.</summary>
         [STATestMethod]
         public void WordAdapterOnlySaveReopen() { Qualify("Word", true, true); }
@@ -31,9 +34,9 @@ namespace VBAi.Tests.Integration
         public void PowerPointAdapterOnlySaveReopen() { Qualify("PowerPoint", true, true); }
 
         /// <summary>Creates a saved baseline, dirties only synthetic code, and preserves the original save outcome.</summary>
-        private static void Qualify(string host, bool editClass, bool includeForm)
+        private static void Qualify(string host, bool editClass, bool includeForm, bool serializedPublisherSeed = false)
         {
-            var fixture = OfficeVbeFixture.Start(host);
+            var fixture = serializedPublisherSeed ? OfficeVbeFixture.StartPublisherSerializedQualificationSeed() : OfficeVbeFixture.Start(host);
             Exception trialError = null, originalOutcomeError = null;
             try
             {

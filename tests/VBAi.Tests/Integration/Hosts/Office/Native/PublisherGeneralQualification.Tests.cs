@@ -41,9 +41,12 @@ namespace VBAi.Tests.Integration
             RequirePrivateHostOptIn(host);
             OfficeVbeFixture fixture = null;
             Exception failure = null;
+            byte[] refusalBaselineBytes = null;
+            string refusalDocumentPath = null;
+            bool refusalVerified = false;
             try
             {
-                fixture = OfficeVbeFixture.Start(host);
+                fixture = host == "Publisher" ? OfficeVbeFixture.StartPublisherSerializedQualificationSeed() : OfficeVbeFixture.Start(host);
                 fixture.RequireAdapterOnlyCleanup();
                 Assert.AreEqual(host, fixture.Kind, "The launched host must match the selected native qualification.");
                 fixture.RecordAdapterStage(host + "GeneralQualificationScope", new { Host = fixture.Kind, Property = property,
@@ -54,13 +57,31 @@ namespace VBAi.Tests.Integration
                     HelpFileMarker = property == "HelpFile" ? helpFileMarker : null,
                     RetainedModalIsNormalCleanupSuccess = false, UnsupportedUnicodePersistenceQualified = false });
                 RequireBridge(fixture);
-                foreach (string name in Modules)
+                if (expectEncodingRefusal)
                 {
-                    fixture.Data(name.EndsWith("Class", StringComparison.Ordinal) ? "create_class" : "create_module", "Module", name, "ExpectedMode", 2);
-                    ReplaceMarker(fixture, name, "baseline-" + Guid.NewGuid().ToString("N"));
+                    Assert.AreEqual("Publisher", host);
+                    Assert.IsTrue(fixture.PublisherSerializedSeed, "The refusal case requires the audited saved serialized seed, without preparation writes.");
+                    refusalDocumentPath = fixture.DocumentPath;
+                    refusalBaselineBytes = File.ReadAllBytes(OfficeVbeFixture.PublisherSeedPath);
+                    string sourceSha;
+                    using (var hash = SHA256.Create()) sourceSha = BitConverter.ToString(hash.ComputeHash(refusalBaselineBytes)).Replace("-", "");
+                    OfficeVbeFixture.RequirePublisherSeedBytes(OfficeVbeFixture.PublisherSeedPath, refusalBaselineBytes.LongLength, sourceSha);
+                    fixture.RecordAdapterStage("PublisherEncodingRefusalClosedSeedBaseline", new {
+                        Source = OfficeVbeFixture.PublisherSeedPath, SourceSha256 = sourceSha, SourceBytes = refusalBaselineBytes.LongLength,
+                        OwnedCopy = refusalDocumentPath, BaselineFromAuditedPreOpenSeedCopy = true,
+                        LivePublicationBytesRead = false, SourceWrites = 0, PreparationSaveAttempts = 0 });
                 }
-                SelectOwnedCode(fixture);
-                fixture.SaveAdapterBaseline(Modules);
+                else
+                {
+                    foreach (string name in Modules)
+                    {
+                        if (!fixture.PublisherSerializedSeed)
+                            fixture.Data(name.EndsWith("Class", StringComparison.Ordinal) ? "create_class" : "create_module", "Module", name, "ExpectedMode", 2);
+                        ReplaceMarker(fixture, name, "baseline-" + Guid.NewGuid().ToString("N"));
+                    }
+                    SelectOwnedCode(fixture);
+                    fixture.SaveAdapterBaseline(Modules);
+                }
                 Assert.AreEqual(true, fixture.Data("project_persistence_status")["ProjectSaved"]);
                 var baselineHashes = ReadHashes(fixture);
                 var baselineReferences = fixture.Data("list_references");
@@ -88,12 +109,18 @@ namespace VBAi.Tests.Integration
                 if (expectEncodingRefusal)
                 {
                     Assert.AreEqual("HelpFile", property);
+                    string refusalProjectVersion = (string)fixture.Data("project_properties")["Version"];
                     AssertEncodingRefusal(fixture, expected, before);
-                    // No subsequent bridge call, Save, reopen, Cancel or retry may follow this retained original modal.
-                    // Dispose records its independent cleanup refusal; the test must not hide that campaign failure.
-                    throw new InvalidOperationException("Expected native encoding refusal verified with zero field writes; " +
-                        "the original modal remains retained and normal host cleanup is not qualified.");
+                    CollectionAssert.AreEqual(baselineHashes, ReadHashes(fixture), "Certain no-write refusal changed source.");
+                    OfficeAdapterOnlyProjectQualification.AssertReferencesEqual(baselineReferences, fixture.Data("list_references"));
+                    Assert.AreEqual(refusalProjectVersion, fixture.Data("project_properties")["Version"], "Certain no-write refusal changed the project revision.");
+                    Assert.AreEqual(true, fixture.Data("project_persistence_status")["ProjectSaved"]);
+                    RequireBridge(fixture);
+                    refusalVerified = true;
+                    // The known refusal is terminal; no Save, reopen or General retry follows.
                 }
+                else
+                {
                 var originalWrite = WriteGeneral(fixture, property, expected, before);
                 AssertUnchangedOtherFields(before, originalWrite, nativeField);
                 Assert.AreEqual(Convert.ToString(expected, CultureInfo.InvariantCulture), Text(originalWrite, nativeField),
@@ -164,6 +191,7 @@ namespace VBAi.Tests.Integration
                     OriginalGeneralWriteVerified = true, OriginalAdapterResponseVerified = true,
                     NativeFreshDiskReadbackVerified = true, ComMetadataGetterAcceptanceRequired = false,
                     HelpContentQualified = false, MacroExecuted = false });
+                }
             }
             catch (Exception error)
             {
@@ -178,6 +206,24 @@ namespace VBAi.Tests.Integration
                 {
                     try { fixture.Dispose(); }
                     catch (Exception cleanup) { failure = failure == null ? cleanup : new AggregateException(host + " General trial and cleanup failure.", failure, cleanup); }
+                    if (failure == null && refusalVerified)
+                    {
+                        try
+                        {
+                            Assert.AreEqual(refusalDocumentPath, fixture.DocumentPath);
+                            byte[] closedBytes = File.ReadAllBytes(refusalDocumentPath);
+                            CollectionAssert.AreEqual(refusalBaselineBytes, closedBytes, "Certain no-write refusal changed the publication compared with its audited pre-open seed copy.");
+                            string closedSha;
+                            using (var hash = SHA256.Create()) closedSha = BitConverter.ToString(hash.ComputeHash(closedBytes)).Replace("-", "");
+                            Assert.AreEqual(OfficeVbeFixture.PublisherSeedSha, closedSha);
+                            fixture.RecordAdapterStage("PublisherEncodingRefusalClosedCopyVerified", new {
+                                Path = refusalDocumentPath, Bytes = closedBytes.LongLength, Sha256 = closedSha,
+                                OriginalSource = OfficeVbeFixture.PublisherSeedPath, OriginalSourceSha256 = OfficeVbeFixture.PublisherSeedSha,
+                                HostExitedBeforeRead = true, NormalOriginalDisposeVerified = true,
+                                RefusedBeforeWrite = true, SaveAttempts = 0, FreshReopenAttempts = 0, RetryAllowed = false });
+                        }
+                        catch (Exception disk) { failure = disk; }
+                    }
                     try
                     {
                         foreach (string name in new[] { "adapter-only-progress.json", "report.json", "host-shutdown.json" })
@@ -257,33 +303,37 @@ namespace VBAi.Tests.Integration
                 "ExpectedOptionsVersion", Text(before, "OptionsVersion"));
             fixture.RecordAdapterStage("Original" + fixture.Kind + "NativeGeneralResponse", new {
                 Phase = "OriginalUnsupportedEncodingRefusal", Write = true, Response = response });
-            // Mark before assertions: any mismatch must also retain the original modal without native cleanup.
+            // Mark before assertions: an unknown or mismatched original refusal remains quarantined without cleanup retry.
             fixture.NativeExecutionUnsettled = true;
             Assert.AreEqual(true, Field(response, "Ok"), "An explicit General result is required for the no-write claim.");
             var result = VbeBridgeClient.Object(response["Data"]);
             Assert.AreEqual(true, Field(result, "Terminal"));
             Assert.AreEqual(false, Field(result, "Available"));
-            Assert.AreEqual(true, Field(result, "Uncertain"));
+            Assert.AreEqual(false, Field(result, "Uncertain"));
             Assert.AreEqual(true, Field(result, "CommandEntered"));
-            Assert.AreEqual(false, Field(result, "DialogClosed"));
+            Assert.AreEqual(true, Field(result, "DialogClosed"));
+            Assert.AreEqual(true, Field(result, "OriginalExecuteReturned"));
+            Assert.AreEqual(true, Field(result, "RefusedBeforeWrite"));
             Assert.AreEqual(false, Field(result, "MutationInvoked"));
             Assert.AreEqual(false, Field(result, "ControlValueVerified"));
             Assert.AreEqual(false, Field(result, "CommittedRequested"));
             Assert.AreEqual(false, Field(result, "PersistenceVerified"));
             Assert.AreEqual(false, Field(result, "RetryAllowed"));
             Assert.AreEqual(1, Field(result, "OpenAttempts"));
-            foreach (string attempts in new[] { "FieldAttempts", "OkAttempts", "CancelAttempts" })
+            Assert.AreEqual(1, Field(result, "CancelAttempts"));
+            foreach (string attempts in new[] { "FieldAttempts", "OkAttempts" })
                 Assert.AreEqual(0, Field(result, attempts), "Unsupported encoding must be refused before field dispatch: " + attempts);
             foreach (string field in NativeFields.Concat(new[] { "OptionsVersion" }))
-                Assert.IsNull(Field(result, field), "Retained uncertain metadata must be redacted: " + field);
+                Assert.IsNull(Field(result, field), "Refused metadata must be redacted: " + field);
             string error = Convert.ToString(Field(result, "Error"));
             StringAssert.Contains(error, "cannot preserve the exact requested value");
             StringAssert.Contains(error, "no field write was entered");
             fixture.RecordAdapterStage(fixture.Kind + "NativeEncodingRefusalVerified", new {
                 ExpectedNativeEncodingRefusal = true, FieldMutationInvoked = false, FieldAttempts = 0,
-                OkAttempts = 0, CancelAttempts = 0, SaveAttempts = 0, FreshReopenAttempts = 0,
-                MetadataRedacted = true, OriginalModalRetained = true, NormalHostCleanupQualified = false,
+                OkAttempts = 0, CancelAttempts = 1, SaveAttempts = 0, FreshReopenAttempts = 0,
+                MetadataRedacted = true, OriginalModalRetained = false, NormalHostCleanupRequired = true,
                 UnsupportedUnicodePersistenceQualified = false, RetryAllowed = false });
+            fixture.NativeExecutionUnsettled = false; // Only the fully verified original Cancel makes ordinary read-only checks and cleanup safe.
         }
 
         private static IDictionary<string, object> AssertGeneralResponse(OfficeVbeFixture fixture,

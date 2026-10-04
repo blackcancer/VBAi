@@ -7,13 +7,14 @@ param(
     [Parameter(Mandatory=$true)][string]$DesktopHelperAssembly,
     [string]$TestProject,
     [ValidateSet('All','Access','Publisher')][string]$HostScope='All',
-    [ValidateRange(1,21)][int[]]$ScenarioNumbers=(1..15),
+    [ValidateRange(1,30)][int[]]$ScenarioNumbers=(1..15),
     [switch]$StopOnNativeFailure,
     [ValidateRange(0,3600)][int]$NativeScenarioTimeoutSeconds=0,
     [ValidateRange(0,3600)][int]$ManagedGateTimeoutSeconds=0,
     [string]$BlockedHostReason='Host excluded by the reviewed plan; prior outcomes are not promoted to acceptance.',
     [ValidateSet('Debug','Release')][string]$Configuration='Debug',
     [switch]$MetadataGetterProbe,
+    [string]$PublisherSerializedSeed,
     [switch]$Execute
 )
 $ErrorActionPreference='Stop'
@@ -27,12 +28,14 @@ $testAssembly=Join-Path $BuildOutputRoot ('VBAi.Tests/'+$Configuration+'/net48/V
 $unitNames=@('VbeProjectGeneralOperationTests','VbeProjectGeneralNativeTests','VbeProjectGeneralProjectTests',
     'VbeDebugGeneralCommandTests','LlmVbeToolsProjectGeneralTests','BridgeServerTests','VbeSessionContractTests',
     'VbeOtherHostPersistenceTests','OfficeProjectReopenIdentityTests','OfficePublisherStartupBindingTests',
-    'OfficeVbeFixturePublisherTestCleanupTests','OfficeVbeFixturePublisherBootstrapTests','OfficeMetadataMutationEvidenceTests','VbeScalarPropertyTests','AccessHelpContextDispatchTests','AccessHelpContextProjectTests','IsolatedTestDesktopTests','OfficeVbeFixtureDesktopTests','OfficeVbeFixtureDesktopAddInConnectionTests','OfficeVbeFixtureDesktopStartupRecoveryTests','OfficeVbeFixturePublisherOwnershipTests','AccessSaveConfirmationTests','LlmVbeToolsBoundaryTests','ChatWindowStateTests')
+    'OfficeVbeFixturePublisherTestCleanupTests','OfficeVbeFixturePublisherBootstrapTests','OfficeVbeFixturePublisherSerializedSeedTests','OfficeMetadataMutationEvidenceTests','VbeScalarPropertyTests','AccessHelpContextDispatchTests','AccessHelpContextProjectTests','IsolatedTestDesktopTests','OfficeVbeFixtureDesktopTests','OfficeVbeFixtureDesktopAddInConnectionTests','OfficeVbeFixtureDesktopStartupRecoveryTests','OfficeVbeFixturePublisherOwnershipTests','AccessSaveConfirmationTests','LlmVbeToolsBoundaryTests','ChatWindowStateTests')
 $unitFilter=($unitNames | ForEach-Object {
     $selector='FullyQualifiedName~VBAi.Tests.Unit.'+$_
     if($_ -in @('BridgeServerTests','VbeSessionContractTests')){return $selector+'.General'}
     if($_ -ceq 'ChatWindowStateTests'){$selector+'.CachedMetadata'}else{$selector}
 }) -join '|'
+$unitFilter+='|FullyQualifiedName~VBAi.Tests.Unit.BridgeServerTests.PendingGeneralBlocksBridgeNativeRoutesBeforeAnyEntry|FullyQualifiedName~VBAi.Tests.Unit.BridgeServerTests.UncertainGeneralBlocksBridgeNativeRoutesBeforeAnyEntry|FullyQualifiedName~VBAi.Tests.Unit.BridgeServerTests.NativeBridgeAdmissionExcludesGeneralUntilWorkerReturnsOrThrows'
+$unitFilter+='|FullyQualifiedName~VBAi.Tests.Unit.VbeProjectLegacyHelpMetadataTests|FullyQualifiedName~VBAi.Tests.Unit.VbeProjectComponentsTests|FullyQualifiedName~VBAi.Tests.Unit.VbeProjectScalarFailureTests|FullyQualifiedName~VBAi.Tests.Unit.ProjectHelpTests|FullyQualifiedName~VBAi.Tests.Unit.ProjectHelpNativeBoundaryTests|FullyQualifiedName~VBAi.Tests.Unit.VbeSessionContractTests'
 $scenarioRows=@(
     'Access|OfficeAdapterOnlyQualificationTests|Access16ActiveModuleOnlyAdapterSaveReopen',
     'Access|OfficeAdapterOnlyQualificationTests|Access16ModuleAndClassAdapterSaveReopen',
@@ -54,7 +57,16 @@ $scenarioRows=@(
     'Publisher|PublisherGeneralQualificationTests|PublisherNativeAnsiHelpFileSaveReopen',
     'Publisher|PublisherGeneralQualificationTests|PublisherNativeUnicodeHelpFileRefusedBeforeWrite',
     'Access|AccessGeneralQualificationTests|AccessNativeAnsiHelpFileSaveReopen',
-    'Access|AccessGeneralQualificationTests|AccessNativeHelpContextSaveReopen'
+    'Access|AccessGeneralQualificationTests|AccessNativeHelpContextSaveReopen',
+    'Publisher|OfficeAdapterOnlyQualificationTests|PublisherSerializedAdapterOnlySaveReopen',
+    'Publisher|OfficeAdapterOnlyReferenceQualificationTests|PublisherSerializedReferenceAdditionAdapterSaveReopen',
+    'Publisher|OfficeAdapterOnlyReferenceQualificationTests|PublisherSerializedReferenceFileAdditionAdapterSaveReopen',
+    'Publisher|OfficeAdapterOnlyReferenceQualificationTests|PublisherSerializedReferenceRemovalAdapterSaveReopen',
+    'Publisher|OfficeAdapterOnlyMetadataQualificationTests|PublisherSerializedDescriptionAdapterSaveReopen',
+    'Access|LegacyHelpMetadataRefusalTests|AccessLegacyHelpFileRefusedBeforeWrite',
+    'Access|LegacyHelpMetadataRefusalTests|AccessLegacyHelpContextRefusedBeforeWrite',
+    'Publisher|LegacyHelpMetadataRefusalTests|PublisherLegacyHelpFileRefusedBeforeWrite',
+    'Publisher|LegacyHelpMetadataRefusalTests|PublisherLegacyHelpContextRefusedBeforeWrite'
 )
 $scenarios=@()
 foreach($row in $scenarioRows){
@@ -179,6 +191,15 @@ $TestProject=Absolute-Existing $TestProject
 $DesktopHelperAssembly=Absolute-Existing $DesktopHelperAssembly
 $testAssembly=Absolute-Existing $testAssembly
 $registrationScript=Absolute-Existing $registrationScript
+if($PublisherSerializedSeed){$PublisherSerializedSeed=Absolute-Existing $PublisherSerializedSeed}
+$publisherSeedHash=if($PublisherSerializedSeed){Hash-File $PublisherSerializedSeed}else{''}
+$publisherSeedProvenance=@()
+if($PublisherSerializedSeed){
+    foreach($receiptName in @('shutdown-before-reopen-183824.json','adapter-only-progress.json')){
+        $receiptPath=Absolute-Existing (Join-Path (Split-Path $PublisherSerializedSeed -Parent) $receiptName)
+        $publisherSeedProvenance+=@{Path=$receiptPath;Sha256=(Hash-File $receiptPath)}
+    }
+}
 if(-not [IO.Path]::IsPathRooted($EvidenceDirectory)){throw 'Absolute evidence directory required.'}
 $EvidenceDirectory=[IO.Path]::GetFullPath($EvidenceDirectory)
 foreach($output in @($BuildOutputRoot,(Split-Path $CandidateAssembly -Parent),(Split-Path $DesktopHelperAssembly -Parent))){
@@ -214,6 +235,8 @@ if(-not $Execute){
         HostScope=$HostScope;BlockedHostReason=$BlockedHostReason;SelectedScenarioNumbers=@($ScenarioNumbers);
         StopOnNativeFailure=[bool]$StopOnNativeFailure;NativeScenarioTimeoutSeconds=$NativeScenarioTimeoutSeconds;
         ManagedGateTimeoutSeconds=$ManagedGateTimeoutSeconds;
+        PublisherSerializedSeed=$PublisherSerializedSeed;PublisherSerializedSeedSha256=$publisherSeedHash;
+        PublisherSerializedSeedProvenance=$publisherSeedProvenance;
         NativeInvocationLimit=1;NativeSaveReplay=$false;ForceTermination=$false;InputDesktopFallback=$false;MetadataGetterProbe=[bool]$MetadataGetterProbe;
         Scope='Existing ACCDB/PUB save; no first SaveAs, macro execution, trust changes or signatures.'}
     Write-Report $planPath $plan
@@ -225,6 +248,10 @@ $plan=Get-Content -LiteralPath $planPath -Raw -Encoding UTF8 | ConvertFrom-Json
 $plannedStopOnFailure=$false
 $plannedNativeTimeout=0
 $plannedManagedTimeout=0
+$plannedPublisherSeed='';$plannedPublisherSeedHash=''
+if($null -ne $plan.PSObject.Properties['PublisherSerializedSeed']){$plannedPublisherSeed=[string]$plan.PublisherSerializedSeed;$plannedPublisherSeedHash=[string]$plan.PublisherSerializedSeedSha256}
+$plannedPublisherSeedProvenance=@()
+if($null -ne $plan.PSObject.Properties['PublisherSerializedSeedProvenance']){$plannedPublisherSeedProvenance=@($plan.PublisherSerializedSeedProvenance)}
 if($null -ne $plan.PSObject.Properties['StopOnNativeFailure']){$plannedStopOnFailure=[bool]$plan.StopOnNativeFailure}
 if($null -ne $plan.PSObject.Properties['NativeScenarioTimeoutSeconds']){$plannedNativeTimeout=[int]$plan.NativeScenarioTimeoutSeconds}
 if($null -ne $plan.PSObject.Properties['ManagedGateTimeoutSeconds']){$plannedManagedTimeout=[int]$plan.ManagedGateTimeoutSeconds}
@@ -235,6 +262,8 @@ if($plan.Format -cne 'VBAi.Q012.Campaign.1' -or $plan.Repository -cne $repo -or
     $plan.DesktopHelperAssembly -cne $DesktopHelperAssembly -or $plan.EvidenceDirectory -cne $EvidenceDirectory -or
     $plan.HostScope -cne $HostScope -or $plan.BlockedHostReason -cne $BlockedHostReason -or
     $plan.MetadataGetterProbe -ne [bool]$MetadataGetterProbe -or
+    $plannedPublisherSeed -cne [string]$PublisherSerializedSeed -or $plannedPublisherSeedHash -cne $publisherSeedHash -or
+    (Canonical-Json $plannedPublisherSeedProvenance) -cne (Canonical-Json $publisherSeedProvenance) -or
     $plannedStopOnFailure -ne [bool]$StopOnNativeFailure -or $plannedNativeTimeout -ne $NativeScenarioTimeoutSeconds -or
     $plannedManagedTimeout -ne $ManagedGateTimeoutSeconds -or
     (Canonical-Json @($plan.SelectedScenarioNumbers)) -cne (Canonical-Json @($ScenarioNumbers)) -or
@@ -279,6 +308,7 @@ try{
         Write-Report $summaryPath $summary
         $env:VBAi_RUN_OFFICE_TESTS='1';$env:VBAi_TEST_ACCESS_EXE=$plan.AccessExecutable;$env:VBAi_TEST_PUBLISHER_EXE=$plan.PublisherExecutable
         if($MetadataGetterProbe){$env:VBAi_RUN_OFFICE_METADATA_GETTER_PROBE='1'}
+        if($PublisherSerializedSeed){$env:VBAi_TEST_PUBLISHER_SERIALIZED_SEED=$PublisherSerializedSeed}
         $nativeFailureScenario=$null
         foreach($scenario in $scenarios){
             if($scenario.Number -notin $ScenarioNumbers){
@@ -291,6 +321,8 @@ try{
                 # Full source/binary checks guard actual invocations and the final result.
                 # Unselected rows cannot dispatch and need no repeated repository hashing.
                 Require-Frozen $plan
+                if($PublisherSerializedSeed -and (Hash-File $PublisherSerializedSeed) -cne $publisherSeedHash){throw 'Frozen Publisher seed changed before dispatch.'}
+                foreach($receipt in $publisherSeedProvenance){if((Hash-File $receipt.Path) -cne $receipt.Sha256){throw 'Frozen Publisher seed provenance changed before dispatch.'}}
                 $desktopType.GetMethod('RequireCurrent',$flags).Invoke($null,@($desktop)) | Out-Null
                 $existing=@(Host-Inventory $scenario.Host)
                 if($existing.Count){

@@ -79,7 +79,7 @@ namespace VBAi.Tests.Integration
         /// <summary>Preserves an uncertain startup for a read-only identity investigation.</summary>
         internal static OfficeVbeFixture StartAccessIdentityProbe() { return Start("Access", true); }
 
-        private static OfficeVbeFixture Start(string kind, bool preserveStartupFailure, string requestedProgId = null, bool allowExistingHost = false)
+        private static OfficeVbeFixture Start(string kind, bool preserveStartupFailure, string requestedProgId = null, bool allowExistingHost = false, string serializedPublisherSeed = null)
         {
             if (Environment.GetEnvironmentVariable("VBAi_RUN_OFFICE_TESTS") != "1")
                 Assert.Inconclusive("Set VBAi_RUN_OFFICE_TESTS=1 to qualify installed Office hosts.");
@@ -148,21 +148,32 @@ namespace VBAi.Tests.Integration
                 {
                     result.RecordPublisherActivationCanary();
                     if (desktop != null) result.RequireApplicationOwner();
-                    result.document = result.InvokePrivatePublisherBootstrap("NewDocument", () => (object)app.NewDocument());
-                    result.RequirePublisherPublication("AfterNewDocumentBeforeBootstrapSave", false);
+                    if (serializedPublisherSeed == null)
+                    {
+                        result.document = result.InvokePrivatePublisherBootstrap("NewDocument", () => (object)app.NewDocument());
+                        result.RequirePublisherPublication("AfterNewDocumentBeforeBootstrapSave", false);
+                    }
+                    else
+                    {
+                        result.CopyPublisherQualificationSeed(serializedPublisherSeed);
+                        result.document = result.InvokePrivatePublisherBootstrap("Open", () => (object)app.Open(result.DocumentPath, false, false));
+                        result.RequirePublisherPublication("AfterSerializedSeedOpen", true);
+                    }
                     result.ShowPublisherWindow();
                 }
-                result.SaveNative();
-                if (kind == "Publisher") result.RequirePublisherPublication("AfterBootstrapSave", true);
+                if (serializedPublisherSeed == null) result.SaveNative();
+                if (kind == "Publisher" && serializedPublisherSeed == null) result.RequirePublisherPublication("AfterBootstrapSave", true);
                 result.ShowVbe();
                 var status = result.Data("status");
                 Assert.AreEqual(typeof(VbeSession).Module.ModuleVersionId.ToString("D"), status["AssemblyModuleVersionId"], "Another add-in build is installed.");
                 Assert.AreEqual(result.ProcessId, Convert.ToInt32(status["HostProcessId"]));
+                if (serializedPublisherSeed != null) Assert.AreEqual(true, status["Connected"], "Serialized Publisher requires the exact connected host bridge.");
                 if (kind == "Access" && desktop != null) Assert.AreEqual(true, status["Connected"], "Private Access add-in connection must be confirmed by its exact bridge.");
                 var projects = result.Items("list_projects");
                 result.BindStartupProject(projects);
                 result.Items("list_modules");
                 result.RecordNativeProjectPath();
+                if (serializedPublisherSeed != null) result.AuditPublisherSerializedSeed();
                 return result;
             }
             catch (Exception startupError)

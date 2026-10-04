@@ -18,16 +18,19 @@ namespace VBAi.Tests.Unit
         [DataRow("C:\\−.chm")]
         [DataRow("C:\\Ａ.chm")]
         public void AnsiHelpFileRefusesUnavailableCharactersAndBestFitSubstitutions(string value)
-            => Assert.ThrowsException<InvalidOperationException>(() => VbeProjectGeneralNative.RequireExactTextRepresentation(value, 1252, false));
+            => Assert.ThrowsException<VbeProjectGeneralOperation.TextRepresentationRefusedException>(() => VbeProjectGeneralNative.RequireExactTextRepresentation(value, 1252, false));
         [DataTestMethod][DataRow(1252, false)][DataRow(65001, false)][DataRow(1252, true)]
         public void InvalidUtf16NeverBecomesReplacementText(int codePage, bool unicode)
         {
             foreach (string value in new[] { "C:\\" + (char)0xD800 + ".chm", "C:\\" + (char)0xDC00 + ".chm" })
-                Assert.ThrowsException<InvalidOperationException>(() => VbeProjectGeneralNative.RequireExactTextRepresentation(value, codePage, unicode));
+                Assert.ThrowsException<VbeProjectGeneralOperation.TextRepresentationRefusedException>(() => VbeProjectGeneralNative.RequireExactTextRepresentation(value, codePage, unicode));
         }
         [TestMethod]
         public void InvalidNativeCodePageCannotSilentlyUseTheProcessDefault()
             => Assert.ThrowsException<InvalidOperationException>(() => VbeProjectGeneralNative.RequireExactTextRepresentation("C:\\help.chm", 0, false));
+        [TestMethod]
+        public void UnsupportedCodePageIsNotARepresentationRefusalEligibleForCancel()
+            => Assert.ThrowsException<ArgumentOutOfRangeException>(() => VbeProjectGeneralNative.RequireExactTextRepresentation("C:\\help.chm", int.MaxValue, false));
         [DataTestMethod][DataRow(4941)][DataRow(4940)][DataRow(4948)][DataRow(4949)][DataRow(4958)]
         public void ObservedGeneralEditsRequireExactVisibleEnabledWritableContract(int id)
         {

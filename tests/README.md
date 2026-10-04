@@ -34,13 +34,39 @@ preserve the original behavior. Rows 16 and 17 exercise the explicit native
 General HelpFile and HelpContextID paths; rows 13 and 15 retain their distinct
 legacy COM results. Row 18 separately exercises accented HelpFile text
 representable by the observed ANSI control. Row 19 verifies refusal before
-writing unsupported Unicode; its retained modal remains a failed cleanup scope,
-with no Save or fresh reopen. Run that deliberate refusal last and perform
-separately guarded cleanup. Row 16 retains the original Unicode persistence
+writing unsupported Unicode. A known encoding refusal cancels the unchanged
+original dialog once, with the same ownership, authorization and revision checks
+as a read. Acceptance requires observed closure and original command return,
+unchanged source/references/file, and normal host shutdown; no Save or fresh
+reopen follows. Unknown failures and unsettled cancellation retain uncertainty
+and require separately guarded cleanup. Row 16 retains the original Unicode persistence
 test; it is not replaced by the narrower accented-path scenario.
 Rows 20 and 21 apply the shared native General persistence scenario to an owned
 Access database, for compatible HelpFile text and HelpContextID respectively.
 They observe host trust without enabling content or changing trust policy.
+Rows 22–26 separately use the audited serialized Publisher seed for source/class/
+UserForm-state Save, reference addition by GUID/file, reference removal and
+Description. Rows 27–30 verify Access/Publisher legacy HelpFile/HelpContextID
+refusal before any setter, with unchanged project/source/reference/Saved state
+and normal close. They perform no Save or fresh reopen after the refusal.
+The catalogue's `HostLegacyWriteUnsupported` status requires an explicit,
+approved native General call; it is not a fallback or a ReadOnly reclassification.
+
+Row 19 keeps its audited saved seed unchanged: it does not replace source markers,
+perform a preparation Save or read live publication bytes. The original seed's
+closed-file hash is bound to the verified pre-open copy; byte comparison of the
+owned publication occurs only after successful normal fixture disposal. A
+known refusal requires Field/OK attempts absent, one Cancel, closure and original
+Execute return, unchanged revision/source/references/Saved state, and exact closed
+bytes. Unknown outcomes remain quarantined. Successful compatible-text or refusal
+cases do not replace the original Unicode persistence failure.
+
+Current Q-012 acceptance is the required existing-document contract recorded in
+[recorded validation](../docs/test-coverage.md#q-012-completed-adapter-contract-2026-10-04),
+not every diagnostic row or a complete managed suite. Original NewDocument and
+legacy scalar failures remain preserved; form-state persistence is not rendering
+or event execution. Keep focused/native plans sequential so an unrelated smoke
+test cannot add a screenshot to a frozen binary inventory during qualification.
 The runner hashes the full source/binary inventory before
 each actual invocation and at the terminal gate, avoiding repeated hashing for
 unselected rows that cannot dispatch.
@@ -76,6 +102,17 @@ absolute evidence directory and that helper. The one-shot limited-user task
 creates a generated inactive Windows desktop; it never switches the input
 desktop. Its canary and worker receipts are environment proofs, not Office
 acceptance. Missing desktop evidence refuses execution without fallback.
+The outer limited launcher uses `UseShellExecute=false` and `CreateNoWindow=true`
+for the unchanged console helper, drains both redirected streams asynchronously,
+and retains its original process handle/identity until observed exit. No WinExe
+conversion, control-handler ignore, console attachment or keyboard input is used.
+Parent and worker console observations do not establish a helper-local console
+inventory or explain older `0xC000013A` interruptions. Exceptional launcher faults
+need their separate checked evidence; normal native acceptance proves the settled
+path only. Run `tools/tests/Test-IsolatedHelperRetention.ps1` under PowerShell 5.1
+for pure receipt-failure and uncertain-Start regressions; it starts no helper or
+Office application. A helper/worker that disappears without terminal evidence is not
+treated as normal cleanup.
 
 Only Access and Publisher have the private host bootstrap. The campaign passes
 `VBAi_TEST_ACCESS_EXE` and `VBAi_TEST_PUBLISHER_EXE` from the frozen installed
@@ -1190,3 +1227,15 @@ Keep machine-local artifacts outside the maintained guide tree. Publish a concis
 versioned summary in [recorded validation](../docs/test-coverage.md), separating
 unit/runtime tests, native host observations, Designer checks and live-provider
 runs. An old 100% result does not describe a later build.
+
+Publisher serialized-publication qualification uses the explicit
+`StartPublisherSerializedQualificationSeed` fixture entry and
+`VBAi_TEST_PUBLISHER_SERIALIZED_SEED` opt-in. This accepts only the frozen,
+owned qualification file with its original normal-exit and closed-file receipts;
+it does not accept arbitrary macro files. The fixture copies once and opens once
+with macros disabled on the guarded private desktop. Before source or metadata
+writes, it audits the exact inert document/module/class sources, reference
+manifest and native General baseline. Dedicated `PublisherSerialized*` adapter
+tests qualify existing publications; the original NewDocument tests remain
+separate. These results do not qualify empty-publication VBA initialization or
+first SaveAs, and no VBA procedures are executed.
