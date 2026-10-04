@@ -30,6 +30,7 @@ namespace VBAi.Tests.Integration
             string path = Path.Combine(root, kind + "-assistant.json");
             Assert.IsFalse(File.Exists(path), "A host bank is one-shot; preserve prior evidence instead of replaying it.");
             var profile = OllamaQualificationProfile.Resolve();
+            var languageScope = new VBAi.Tests.Infrastructure.LocalizationScope(UiText.Culture.Name);
             var observations = new List<object>();
             Action flush = null;
             Action<object> record = value => { lock (observations) { observations.Add(value); flush?.Invoke(); } };
@@ -67,10 +68,12 @@ namespace VBAi.Tests.Integration
                     try
                     {
                         ui = new OllamaOfficeUi(host.ProcessId, record); ui.Discover();
+                        ui.DetectNativeLanguage();
                         ui.Select("scopePicker", host.Label);
                         ui.RequireScope(host.Label);
                         ui.Click("modelSummary");
                         ui.Select("providerPicker", LlmProvider.All.Single(item => item.IsOllama).ToString());
+                        ui.Wait(() => ui.Leaf("modelPicker").Current.IsEnabled, 30, "model catalogue ready");
                         ui.Select("modelPicker", profile.Model);
                         ui.Click("modelSummary");
                         ui.Select("modePicker", UiText.Get("Discussion"));
@@ -85,7 +88,7 @@ namespace VBAi.Tests.Integration
                         report["CancellationAcknowledged"] = true; flush();
                         ui.SendOnce("The previous response was intentionally stopped. This is a synthetic UI test unrelated to VBA. Do not use tools. Reply with exactly UI_READY_42 and nothing else.");
                         ui.WaitIdle(125);
-                        ui.Wait(() => ui.VisibleTranscript().Any(text => text.Contains("UI_READY_42")), 10, "visible completed next reply");
+                        ui.Wait(() => ui.VisibleTranscript().Any(OllamaOfficeStreamOracle.IsReadyResponse), 10, "visible completed next reply");
                         report["NextSendCompleted"] = true; flush();
                         string request = "This is a synthetic qualification. Inspect only the selected disposable project. Call read_module exactly once for Project=" + host.Project +
                             ", Module=" + module + ". What is the exact value of the string constant ObservedMarker? The value is only in the module. Do not modify or execute code. Return the value after reading it.";
@@ -138,6 +141,7 @@ namespace VBAi.Tests.Integration
                         if (failure == null) failure = ExceptionDispatchInfo.Capture(cleanup);
                     }
                 }
+                languageScope.Dispose();
                 report["CompletedUtc"] = DateTime.UtcNow.ToString("o"); flush(); TestContext.AddResultFile(path);
             }
             failure?.Throw();

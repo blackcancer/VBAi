@@ -1391,6 +1391,17 @@ and an existing configured profile; it launches only the selected executable on
 the inactive desktop and attaches through the ROT after sole-process/native-window
 identity checks. It never falls back to COM activation on another desktop.
 
+Assistant discovery requires the actual `ChatToolWindow` ancestor, matching
+native process/thread and a site attached to the original VBE. A native floating
+tool site is accepted only through its verified VBE owner chain; an independent
+chat Form is refused. Bounded initial/failure inventories preserve handles and
+classes without window contents. The observer detects the real VBE menu language,
+waits for the model catalogue, and selects only the exact combo's native list.
+The recovery response must equal `UI_READY_42`; an echoed prompt cannot pass.
+`python tools/tests/Review-Q028Wire.py <evidence-root>` independently checks the
+ordered matrix, native receipts, restored state, original worker exit and actual
+synthetic SSE/tool exchange. `--self-test` exercises the offline rejection cases.
+
 Excel's macro-free `/automation` bootstrap can leave the registered VBE add-in
 disconnected. Q028 explicitly enables `VBAi_Q028_CONNECT_OWNED_ADDIN=1`: after
 original process, STA, VBE window, private-desktop, ProgID/GUID and registered

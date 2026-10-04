@@ -7,5 +7,6 @@ namespace VBAi.Tests.Integration
     {
         internal static bool IsNumberedResponse(string text) => text != null &&
             Regex.IsMatch(text, @"(?m)^\s*1[.)]\s+\S") && text.Length > 20;
+        internal static bool IsReadyResponse(string text) => text?.Trim() == "UI_READY_42";
     }
 }

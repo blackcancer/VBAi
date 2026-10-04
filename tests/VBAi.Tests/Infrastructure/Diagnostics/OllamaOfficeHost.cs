@@ -10,7 +10,10 @@ namespace VBAi.Tests.Integration
         internal delegate IDictionary<string, object> ReadData(string command, params object[] pairs);
         internal ReadData Data;
         internal Func<string, IDictionary<string, object>[]> Items;
-        internal string Project, Root, Label;
+        internal string Project, Root;
+        private string projectName, projectPath;
+        internal string Label => projectName + " · " + (!string.IsNullOrWhiteSpace(projectPath) &&
+            System.IO.Path.IsPathRooted(projectPath) ? System.IO.Path.GetFileName(projectPath) : UiText.Get("unsaved document"));
         internal int ProcessId;
         internal Action Retain;
         private IDisposable fixture;
@@ -66,9 +69,8 @@ namespace VBAi.Tests.Integration
             var matched = Array.FindAll(projects, row => Convert.ToString(row["Name"]) == result.Project ||
                 string.Equals(VbeProjectHostPath.FromFields(row), result.Project, StringComparison.OrdinalIgnoreCase));
             Assert.AreEqual(1, matched.Length, "The exact owned project must have one scope label.");
-            string path = VbeProjectHostPath.FromFields(matched[0]);
-            bool saved = !string.IsNullOrWhiteSpace(path) && System.IO.Path.IsPathRooted(path);
-            result.Label = Convert.ToString(matched[0]["Name"]) + " · " + (saved ? System.IO.Path.GetFileName(path) : UiText.Get("unsaved document"));
+            result.projectPath = VbeProjectHostPath.FromFields(matched[0]);
+            result.projectName = Convert.ToString(matched[0]["Name"]);
             return result;
         }
 
