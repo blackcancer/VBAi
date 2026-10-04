@@ -20,7 +20,8 @@ namespace VBAi.Tests.Integration.Hosts.Excel
         private string evidenceDirectory;
         private delegate bool WindowCallback(IntPtr handle, IntPtr parameter);
         [DllImport("user32.dll", SetLastError = true)] private static extern bool EnumWindows(WindowCallback callback, IntPtr parameter);
-        [DllImport("user32.dll")] private static extern uint GetWindowThreadProcessId(IntPtr handle, out uint processId);
+        [DllImport("user32.dll", SetLastError = true)] private static extern uint GetWindowThreadProcessId(IntPtr handle, out uint processId);
+        [DllImport("user32.dll")] private static extern bool IsWindow(IntPtr handle);
         [DllImport("user32.dll", CharSet = CharSet.Unicode)] private static extern int GetClassName(IntPtr handle, StringBuilder text, int capacity);
         [DllImport("user32.dll", CharSet = CharSet.Unicode)] private static extern int GetWindowText(IntPtr handle, StringBuilder text, int capacity);
         [DllImport("user32.dll", CharSet = CharSet.Unicode)] private static extern int GetWindowTextLength(IntPtr handle);
@@ -143,7 +144,7 @@ namespace VBAi.Tests.Integration.Hosts.Excel
 
         private static IDictionary<string, object> ObserveOptionsClosure(int processId, DateTime expectedStartUtc)
         {
-            var windows = new List<object>(); bool optionsAbsent = true, identity = false, complete = false;
+            var windows = new List<object>(); var confirmedGone = new List<long>(); bool optionsAbsent = true, identity = false, complete = false;
             string error = null;
             DateTime beforeStart = DateTime.MinValue, afterStart = DateTime.MinValue;
             try
@@ -156,10 +157,10 @@ namespace VBAi.Tests.Integration.Hosts.Excel
                     complete = EnumWindows((handle, parameter) => {
                         try
                         {
-                            uint pid;
-                            if (GetWindowThreadProcessId(handle, out pid) == 0)
-                                throw new InvalidOperationException("A window owner could not be read during complete enumeration.");
-                            if (pid != processId) return true;
+                            uint? pid = NativeWindowEnumerationOwnership.ReadProcessId(handle,
+                                GetWindowThreadProcessId, Marshal.GetLastWin32Error, IsWindow);
+                            if (!pid.HasValue) { confirmedGone.Add(handle.ToInt64()); return true; }
+                            if (pid.Value != processId) return true;
                             var className = new StringBuilder(256);
                             if (GetClassName(handle, className, className.Capacity) == 0)
                                 throw new InvalidOperationException("An owned window class could not be read.");
@@ -186,6 +187,7 @@ namespace VBAi.Tests.Integration.Hosts.Excel
                 ["BeforeStartUtc"] = beforeStart.ToString("o"), ["AfterStartUtc"] = afterStart.ToString("o"),
                 ["ProcessIdentityVerified"] = identity, ["EnumerationSucceeded"] = complete && error == null,
                 ["OptionsDialogAbsent"] = complete && identity && error == null && optionsAbsent, ["OwnedWindows"] = windows.ToArray(),
+                ["ConfirmedGoneDuringEnumeration"] = confirmedGone.ToArray(),
                 ["Error"] = error, ["ObservationOnly"] = true };
         }
 
