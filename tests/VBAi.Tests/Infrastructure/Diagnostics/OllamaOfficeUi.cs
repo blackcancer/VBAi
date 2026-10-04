@@ -50,13 +50,17 @@ namespace VBAi.Tests.Integration
             object lastInventory = null;
             try {
             Wait(() => {
-                var roots = new List<IntPtr>(); var tops = new List<IntPtr>(); int count = 0;
+                var roots = new List<IntPtr>(); var tops = new List<IntPtr>(); var topInventory = new List<object>(); int count = 0;
                 EnumWindows((window, state) => {
                     if (++count >= 4096) return false;
                     uint process; GetWindowThreadProcessId(window, out process);
-                    if (process != pid || !IsWindowVisible(window)) return true;
-                    tops.Add(window);
+                    if (process != pid) return true;
                     var name = new StringBuilder(128); GetClassName(window, name, name.Capacity);
+                    var title = new StringBuilder(128); GetWindowText(window, title, title.Capacity);
+                    topInventory.Add(new { Hwnd = window.ToInt64(), Class = name.ToString(), Visible = IsWindowVisible(window),
+                        Owner = GetWindow(window, 4).ToInt64(), CaptionMatches = title.ToString() == "VBAi — Your AI agent for VBA" });
+                    if (!IsWindowVisible(window)) return true;
+                    tops.Add(window);
                     if (name.ToString() == "wndclass_desked_gsk") roots.Add(window);
                     return true;
                 }, IntPtr.Zero);
@@ -79,27 +83,41 @@ namespace VBAi.Tests.Integration
                 foreach (var window in windows)
                 {
                     uint process; uint thread = GetWindowThreadProcessId(window, out process);
-                    if (process != pid || thread != ownerThread || !IsWindowVisible(window)) continue;
+                    if (process != pid || thread != ownerThread) continue;
                     var name = new StringBuilder(128); GetClassName(window, name, name.Capacity);
                     if (!name.ToString().StartsWith("WindowsForms", StringComparison.Ordinal)) continue;
                     var title = new StringBuilder(128); GetWindowText(window, title, title.Capacity);
                     bool captionMatches = title.ToString() == "VBAi — Your AI agent for VBA";
+                    var candidate = AutomationElement.FromHandle(window);
+                    string automationId = candidate.Current.AutomationId;
+                    bool knownControl = automationId == "ChatToolWindow" || automationId == "ChatWindow";
                     inventory.Add(new { Hwnd = window.ToInt64(), Class = name.ToString(), ProcessId = process,
                         NativeThread = thread, CaptionMatches = captionMatches, ChildOfVbe = IsChild(vbe, window),
+                        Visible = IsWindowVisible(window), KnownAssistantControl = knownControl,
+                        FixedControlId = knownControl ? automationId : null, Type = candidate.Current.ControlType.ProgrammaticName,
+                        ControlIdSha256 = EditorDocument.Hash(automationId ?? ""),
                         Root = GetAncestor(window, 2).ToInt64(), Parent = GetAncestor(window, 1).ToInt64() });
-                    if (!captionMatches) continue;
-                    var candidate = AutomationElement.FromHandle(window);
+                    // A hosted borderless Form need not expose its caption through cross-process
+                    // GetWindowText. The COM container and exact control identities are the proof.
+                    if (!IsWindowVisible(window) || (!captionMatches && !knownControl)) continue;
                     if (candidate.Current.ControlType != ControlType.Window && candidate.Current.ControlType != ControlType.Pane) continue;
                     var scope = candidate.FindAll(TreeScope.Descendants,
                         new PropertyCondition(AutomationElement.AutomationIdProperty, "scopePicker"));
+                    var options = candidate.FindAll(TreeScope.Descendants,
+                        new PropertyCondition(AutomationElement.AutomationIdProperty, "options"));
+                    var send = candidate.FindAll(TreeScope.Descendants,
+                        new PropertyCondition(AutomationElement.AutomationIdProperty, "send"));
                     IntPtr container, site;
                     bool hosted = TryHostedSite(window, out container, out site);
                     inventory.Add(new { Candidate = window.ToInt64(), ScopeCount = scope.Count, HostedToolWindow = hosted,
                         ToolContainer = container.ToInt64(), NativeSite = site.ToInt64() });
-                    if (scope.Count == 1 && hosted) found.Add(window);
+                    if (scope.Count == 1 && options.Count == 1 && send.Count == 1 && hosted) found.Add(window);
                 }
-                lastInventory = new { ProcessId = pid, Vbe = vbe.ToInt64(), Windows = inventory };
+                lastInventory = new { ProcessId = pid, Vbe = vbe.ToInt64(), Windows = inventory, TopWindows = topInventory };
                 if (initialInventory) { record(new { Phase = "InitialAssistantInventory", Inventory = lastInventory }); initialInventory = false; }
+                // A container and its inner Form can expose the same descendants. Prefer the
+                // innermost native candidate, while retaining distinct tool sites as ambiguous.
+                found = found.Where(window => !found.Any(other => other != window && IsChild(window, other))).ToList();
                 if (children >= 2048 || found.Count > 1) throw new InvalidOperationException("Ambiguous/bounded installed assistant inventory.");
                 if (found.Count == 0) return false;
                 chat = found[0]; root = AutomationElement.FromHandle(chat);
@@ -154,7 +172,7 @@ namespace VBAi.Tests.Integration
         {
             container = site = IntPtr.Zero;
             var seen = new HashSet<IntPtr>();
-            for (IntPtr parent = GetAncestor(window, 1); parent != IntPtr.Zero && seen.Count < 64 && seen.Add(parent);
+            for (IntPtr parent = window; parent != IntPtr.Zero && seen.Count < 64 && seen.Add(parent);
                 parent = GetAncestor(parent, 1))
             {
                 uint process; uint thread = GetWindowThreadProcessId(parent, out process);
@@ -162,7 +180,7 @@ namespace VBAi.Tests.Integration
                 var element = AutomationElement.FromHandle(parent);
                 if (element.Current.AutomationId != "ChatToolWindow") continue;
                 container = parent; site = GetAncestor(parent, 2);
-                return site != IntPtr.Zero && IsChild(container, window) &&
+                return site != IntPtr.Zero && (container == window || IsChild(container, window)) &&
                     (IsChild(vbe, window) || OwnedByVbe(site));
             }
             return false;
@@ -200,8 +218,7 @@ namespace VBAi.Tests.Integration
         {
             var combo = Leaf(id);
             Wait(() => Leaf(id).Current.IsEnabled, 30, "enabled " + id);
-            var value = combo.GetCurrentPattern(ValuePattern.Pattern) as ValuePattern;
-            if (value != null && value.Current.Value == expected) return;
+            if (SelectedValue(combo) == expected) return;
             var comboHandle = new IntPtr(combo.Current.NativeWindowHandle);
             var info = new ComboInfo { Size = Marshal.SizeOf(typeof(ComboInfo)) };
             if (!IsChild(chat, comboHandle) || !GetComboBoxInfo(comboHandle, ref info) ||
@@ -225,13 +242,28 @@ namespace VBAi.Tests.Integration
             Guard();
             record(new { Phase = "ComboSelectionIntentOnce", Id = id, Value = expected });
             ((SelectionItemPattern)choices[0].GetCurrentPattern(SelectionItemPattern.Pattern)).Select();
-            Wait(() => Convert.ToString(((ValuePattern)Leaf(id).GetCurrentPattern(ValuePattern.Pattern)).Current.Value) == expected,
+            Wait(() => SelectedValue(Leaf(id)) == expected,
                 10, "read back " + id);
+        }
+
+        private string SelectedValue(AutomationElement combo)
+        {
+            object pattern;
+            if (combo.TryGetCurrentPattern(SelectionPattern.Pattern, out pattern))
+            {
+                var selected = ((SelectionPattern)pattern).Current.GetSelection();
+                if (selected.Length == 0) return "";
+                if (selected.Length != 1 || selected[0].Current.ProcessId != pid)
+                    throw new InvalidOperationException("Ambiguous or foreign selected combo item.");
+                return selected[0].Current.Name;
+            }
+            if (combo.TryGetCurrentPattern(ValuePattern.Pattern, out pattern)) return ((ValuePattern)pattern).Current.Value;
+            throw new InvalidOperationException("Combo exposes neither exact selection nor value readback.");
         }
 
         internal void RequireScope(string expectedLabel)
         {
-            Wait(() => ((ValuePattern)Leaf("scopePicker").GetCurrentPattern(ValuePattern.Pattern)).Current.Value == expectedLabel,
+            Wait(() => SelectedValue(Leaf("scopePicker")) == expectedLabel,
                 15, "exact owned project scope");
             record(new { Phase = "ScopeReadback", Value = expectedLabel });
         }
@@ -283,11 +315,38 @@ namespace VBAi.Tests.Integration
         {
             Guard();
             var texts = root.FindAll(TreeScope.Descendants, new AndCondition(
-                new PropertyCondition(AutomationElement.ControlTypeProperty, ControlType.Edit),
+                new OrCondition(new PropertyCondition(AutomationElement.ControlTypeProperty, ControlType.Edit),
+                    new PropertyCondition(AutomationElement.ControlTypeProperty, ControlType.Document)),
                 new PropertyCondition(AutomationElement.IsOffscreenProperty, false))).Cast<AutomationElement>();
+            if (texts.Count() > 256) throw new InvalidOperationException("Bounded visible transcript control inventory.");
             return texts.Where(item => item.Current.Name != UiText.Get("Your request; Enter to send, Shift+Enter for a new line"))
-                .Select(item => { object pattern; return item.TryGetCurrentPattern(ValuePattern.Pattern, out pattern)
-                    ? ((ValuePattern)pattern).Current.Value : ""; }).Where(text => text.Length > 0).ToArray();
+                .Select(ReadVisibleText).Where(text => text.Length > 0).ToArray();
+        }
+
+        private string ReadVisibleText(AutomationElement item)
+        {
+            if (item.Current.ProcessId != pid) throw new InvalidOperationException("Foreign transcript element.");
+            object pattern;
+            if (item.TryGetCurrentPattern(TextPattern.Pattern, out pattern))
+            {
+                var ranges = ((TextPattern)pattern).GetVisibleRanges();
+                if (ranges.Length > 64) throw new InvalidOperationException("Bounded visible text ranges.");
+                var text = new StringBuilder();
+                foreach (var range in ranges)
+                {
+                    int remaining = 65536 - text.Length;
+                    if (remaining <= 0) break;
+                    text.Append(range.GetText(remaining));
+                }
+                return text.ToString();
+            }
+            if (item.TryGetCurrentPattern(ValuePattern.Pattern, out pattern))
+            {
+                string text = ((ValuePattern)pattern).Current.Value;
+                if (text.Length > 65536) throw new InvalidOperationException("Bounded transcript value.");
+                return text;
+            }
+            return "";
         }
 
         internal void Wait(Func<bool> condition, int seconds, string stage)

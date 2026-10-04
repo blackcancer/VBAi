@@ -7424,3 +7424,24 @@ settings save, all-field readback and `Restored=true, Verified=true` registratio
 restoration. Its post-readback returns Codex and the original Q024 registration;
 the recovery worker exited 0 and released its Desktop. The earlier exec-shell
 receipt is not evidence of real-context restoration.
+
+`q028-office-05` reused Office04's exact managed TRX after checking identical
+product/test bytes and filter; it did not execute that managed bank again. Its
+three real provider prerequisites passed. Excel connected the exact candidate
+once without changing LoadBehavior, but assistant discovery timed out before
+any native chat Send. Its original normal exit was verified; restoration and
+private-desktop release passed. Later Office banks remained NOT_RUN.
+
+The revised harness at `5c18ca3` passed **516 selected managed tests**, with no
+failures or skips, in `q028-office-06`; the same three real prerequisites passed.
+The installed product remained `ea0e8e9`, MVID
+`0174389e-7709-4cf9-b443-c115931bf476`. Excel PID 26040 again stopped at discovery
+before sending: the bounded inventory shows a visible WinForms child of the VBE
+without the expected native caption. It does not identify that child's purpose.
+The original Excel exit was 0, original worker exit 1, settings and registration
+restored, backend/proxy closed and private desktop released. All five later
+Office banks remain NOT_RUN. The separate read-only scheduled load diagnostic
+confirms French UI and assistant-show/tool-window creation messages for that
+PID, without a logged docking failure; it also records a distinct Monaco startup
+error. These observations do not qualify the native assistant or prove a cause
+for the historical empty model stream.

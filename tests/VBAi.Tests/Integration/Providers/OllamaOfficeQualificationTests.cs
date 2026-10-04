@@ -76,7 +76,7 @@ namespace VBAi.Tests.Integration
                         ui.Wait(() => ui.Leaf("modelPicker").Current.IsEnabled, 30, "model catalogue ready");
                         ui.Select("modelPicker", profile.Model);
                         ui.Click("modelSummary");
-                        ui.Select("modePicker", UiText.Get("Discussion"));
+                        ui.Select("modePicker", UiText.Get("Chat"));
                         ui.Select("approvalPicker", UiText.Get("Read-only"));
                         ui.SendOnce("This is a synthetic interface test unrelated to VBA. Do not use tools. Write a long numbered list of 1000 everyday objects, beginning immediately with item 1 and continuing without introductory remarks.");
                         ui.Wait(() => ui.IsBusy && ui.VisibleTranscript().Any(OllamaOfficeStreamOracle.IsNumberedResponse),
