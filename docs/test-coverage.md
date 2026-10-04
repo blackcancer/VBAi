@@ -1446,6 +1446,29 @@ correction or a new coverage percentage. Notification behavior is documented
 by [Microsoft](https://learn.microsoft.com/en-us/windows/win32/controls/cbn-dropdown)
 and its [published Win32 documentation source](https://github.com/MicrosoftDocs/win32/blob/docs/desktop-src/Controls/about-combo-boxes.md).
 
+### Q-026 focused font/size diagnostic preparation (2026-10-04)
+
+Harness source `edb8e81` adds `-Scenario FontSizeCatalogue`. It uses the same
+exact-ownership, revision, positive-commit ledger, complete-restoration and
+normal-exit gates as the full Format matrix, while excluding palette, margin
+and deliberate stale-revision mutations. Both real catalogue choices and an
+empty-catalogue refusal are exercised in the managed lifecycle model.
+
+`q026-font-size-catalogue-native-v1/managed-preflight/managed.trx` records
+**88 passed, 0 failed, 0 skipped** against the frozen `16ffa13` product
+(MVID `9dc786a9-7128-41db-b21e-5bce14c0935f`). This focused harness build and
+the launcher build have no warnings/errors. These are managed/model and owned
+standard-control tests, not native VBE acceptance.
+
+The preflight runs on inactive desktop
+`VBAiTests_62e75c8c3c354a189aad35aa0bf307b1`. The original worker and GUI
+launcher exit with code 0; input-desktop switches and owned foreground
+observations are zero. The scheduled task is exported and removed. No Office
+host is activated and registration is unchanged. The frozen native plan and
+one-shot wrapper are prepared but **NOT_RUN**, pending explicit release of the
+native interval. Historical causality and real font-size mutation remain
+**OPEN**; the existing full-matrix acceptance belongs to its earlier candidate.
+
 ### Q-026 offline snapshot review (2026-10-03)
 
 Branch `codex/q026-qualification` starts from `origin/main` at `4b382b9`,

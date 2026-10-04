@@ -454,6 +454,11 @@ replayed; preserve its receipts and exact host ownership for recovery.
 Preparation with `-Scenario Margin` selects the separate checkbox-only native
 method and a reduced matrix (read stability, real margin transition, complete
 restoration and normal exit). A pass qualifies that diagnostic, not full Format.
+`-Scenario FontSizeCatalogue` selects only font/size inspection and mutation,
+with full-snapshot restoration and original-handle normal exit. It records the
+native catalogue before and after the font change. An empty list still exercises
+the explicit refusal and does not establish size-mutation acceptance; palette,
+margin and historical-causality qualification remain separate.
 `tools/tests/Set-Q026Candidate.ps1` temporarily changes only the existing per-user
 x64 add-in CodeBase and matching version entry, with an explicit fresh backup.
 It refuses loaded VBE hosts or an unexpected assembly/original CodeBase. Restore
