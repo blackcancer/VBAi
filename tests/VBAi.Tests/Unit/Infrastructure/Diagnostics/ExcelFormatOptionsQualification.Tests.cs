@@ -93,6 +93,7 @@ namespace VBAi.Tests.Unit
         public void HistoricalFullMatrixIncludesCategoryMarginStaleRefusalAndCompleteRestoration()
         {
             var probe = new Probe { EmptySizes = true };
+            string originalCategory = probe.Category;
             probe.Create(historicalPalettePrefix: true, historicalFullMatrix: true).Run();
             Assert.AreEqual(14, probe.Writes, "Six confirmed commits, six compensations and two classified refusals.");
             Assert.AreEqual(1, probe.Cleanup); Assert.AreEqual(0, probe.Preserved);
@@ -101,10 +102,13 @@ namespace VBAi.Tests.Unit
             Assert.IsFalse(probe.Phases.Any(x => x.EndsWith("IndependentAfterWriteIntent")));
             foreach (string phase in new[] { "Font", "Foreground", "Background", "Indicator", "OtherCategory", "Margin" })
                 Assert.IsTrue(probe.Phases.Contains(phase + "HistoricalCommit"));
+            string otherCategory = probe.Requests.Where(x => Equals(x["Command"], "set_vbe_option"))
+                .Select(x => x.TryGetValue("Query", out object query) ? query as string : null).First(x => x != null);
+            Assert.AreNotEqual(originalCategory, otherCategory);
             Assert.AreEqual(2, probe.Requests.Count(x => Equals(x["Command"], "set_vbe_option") &&
-                x.TryGetValue("Query", out object category) && Equals(category, "Other")), "The original nondefault-category mutation and its restoration keep Query.");
+                x.TryGetValue("Query", out object category) && Equals(category, otherCategory)), "The original nondefault-category mutation and its restoration keep Query.");
             Assert.AreEqual(3, probe.Requests.Count(x => Equals(x["Command"], "set_vbe_option") &&
-                x.TryGetValue("Query", out object category) && Equals(category, "Normal")),
+                x.TryGetValue("Query", out object category) && Equals(category, originalCategory)),
                 "Recovery of the three originally implicit palettes binds the observed category after the later selection.");
             Assert.AreEqual(probe.BaselineVersion, probe.Version());
         }
