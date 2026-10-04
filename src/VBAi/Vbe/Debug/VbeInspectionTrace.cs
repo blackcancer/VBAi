@@ -25,7 +25,31 @@ namespace VBAi
         internal enum Phase { Enqueue, CallbackEntered, OwnerSta, ContextValidation, ContextValidated,
             Command229Before, Command229Returned, ObserverEntered, ObserverDialogFound, ObserverReadComplete,
             ObserverTerminal, ContinuationEnqueued, ContinuationEntered, ContinuationReturned,
-            CoreEntered, CoreTerminal, Terminal }
+            CoreEntered, CoreTerminal, Terminal, OptionsComboInspection }
+
+        internal enum OptionsReader { NativeCombo, UiAutomationCombo }
+        internal enum OptionsRole { Other, Font, Size, Palette }
+
+        /// <summary>Numeric native observations only; no labels, values or request text.</summary>
+        internal sealed class OptionsComboEvidence
+        {
+            public OptionsReader Reader;
+            public OptionsRole Role;
+            public long Window;
+            public long? Parent;
+            public uint? OwnerProcessId;
+            public uint? OwnerThreadId;
+            public int? ControlId;
+            public int? Style;
+            public int? CountBefore;
+            public int? CountAfterExpansion;
+            public int? SelectedIndex;
+            public bool? DropDownBefore;
+            public bool? DropDownAfterExpansion;
+            public bool? DropDownAfterCleanup;
+            public bool ExpansionAttempted;
+            public bool ReadCompleted;
+        }
 
         internal VbeInspectionTrace(Action<string> writer) { write = writer; }
 
@@ -81,6 +105,24 @@ namespace VBAi
                 write?.Invoke(new JavaScriptSerializer().Serialize(row));
             }
             catch { /* Evidence is optional and must not affect a native operation or its original failure. */ }
+        }
+
+        internal void RecordOptionsCombo(OptionsComboEvidence observed, Exception error = null)
+        {
+            try
+            {
+                int sequence = Interlocked.Increment(ref count);
+                if (sequence > MaximumEvents || observed == null ||
+                    !Enum.IsDefined(typeof(OptionsReader), observed.Reader) ||
+                    !Enum.IsDefined(typeof(OptionsRole), observed.Role)) return;
+                var row = new { Correlation = correlation, Sequence = sequence, Utc = DateTime.UtcNow.ToString("o"),
+                    HostProcessId = Process.GetCurrentProcess().Id, ThreadId = Thread.CurrentThread.ManagedThreadId,
+                    Apartment = Thread.CurrentThread.GetApartmentState().ToString(), ElapsedMilliseconds = clock.ElapsedMilliseconds,
+                    Phase = Phase.OptionsComboInspection.ToString(), ErrorType = error?.GetType().Name,
+                    Reader = observed.Reader.ToString(), Role = observed.Role.ToString(), Native = observed };
+                write?.Invoke(new JavaScriptSerializer().Serialize(row));
+            }
+            catch { /* Diagnostics cannot alter a native read, closure or original exception. */ }
         }
 
         private sealed class Scope : IDisposable

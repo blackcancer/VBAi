@@ -1,5 +1,8 @@
 using System.Windows.Automation;
 
+using System.Collections.Generic;
+using System.Web.Script.Serialization;
+
 namespace VBAi.Tests.Unit
 {
     using System;
@@ -728,6 +731,98 @@ namespace VBAi.Tests.Unit
                 InvokeOptionsMethod(null, "ReadOptionsCombo", handle, palette);
                 Assert.AreEqual("NativeIndex:2", palette.Value); Assert.AreEqual(2, palette.SelectedIndex);
                 Assert.AreEqual("", palette.NativeChoices[2].Label); Assert.AreEqual(2, fixture.Colours["Normal"][0]);
+            }
+        }
+
+        [TestMethod]
+        public void OwnedNativeEmptySizeTraceRetainsCountsIdentityAndClosureWithoutValues()
+        {
+            using (var fixture = new OwnedNativeOptionsControls())
+            {
+                var rows = new List<string>();
+                var trace = new VbeInspectionTrace(rows.Add);
+                var size = new VbeDebugWindows.OptionsControl { Name = "Taille :" };
+                using (trace.Enter()) InvokeOptionsMethod(null, "ReadOptionsCombo", fixture.Size, size);
+                Assert.AreEqual("10", size.Value); Assert.AreEqual(0, size.Choices.Count);
+                Assert.AreEqual(1, rows.Count);
+                var row = new JavaScriptSerializer().Deserialize<Dictionary<string, object>>(rows[0]);
+                var native = (Dictionary<string, object>)row["Native"];
+                Assert.AreEqual("NativeCombo", row["Reader"]); Assert.AreEqual("Size", row["Role"]);
+                Assert.AreEqual(511, native["ControlId"]); Assert.AreEqual(0, native["CountBefore"]);
+                Assert.AreEqual(0, native["CountAfterExpansion"]); Assert.AreEqual(true, native["ExpansionAttempted"]);
+                Assert.AreEqual(false, native["DropDownBefore"]); Assert.AreEqual(false, native["DropDownAfterCleanup"]);
+                Assert.AreEqual(true, native["ReadCompleted"]);
+                Assert.AreEqual(fixture.Size.ToInt64(), Convert.ToInt64(native["Window"]));
+                Assert.AreEqual(fixture.Host.Handle.ToInt64(), Convert.ToInt64(native["Parent"]));
+                Assert.AreEqual(System.Diagnostics.Process.GetCurrentProcess().Id, Convert.ToInt32(native["OwnerProcessId"]));
+                Assert.IsTrue(Convert.ToInt32(native["OwnerThreadId"]) > 0);
+                Assert.IsTrue((Convert.ToInt32(native["Style"]) & 0x200) != 0);
+                Assert.IsFalse(native.ContainsKey("Value")); Assert.IsFalse(native.ContainsKey("Choices"));
+                Assert.IsFalse(rows[0].Contains("Taille"));
+                Assert.IsFalse(fixture.Notifications.Any(x => x.Item1 == 511 && (x.Item2 == 1 || x.Item2 == 9)));
+            }
+        }
+
+        [TestMethod]
+        public void OwnedNativeLazySizeTraceObservesPopulationWithoutASecondExpansion()
+        {
+            using (var fixture = new OwnedNativeOptionsControls())
+            {
+                int openings = 0;
+                fixture.OnControlNotification = (identifier, code, window) => {
+                    if (identifier != 511 || code != 7) return;
+                    openings++;
+                    foreach (string size in new[] { "8", "10", "12" }) OptionsFixtureText(window, 0x143, IntPtr.Zero, size);
+                };
+                var rows = new List<string>();
+                var control = new VbeDebugWindows.OptionsControl { Name = "Size" };
+                using (new VbeInspectionTrace(rows.Add).Enter()) InvokeOptionsMethod(null, "ReadOptionsCombo", fixture.Size, control);
+                Assert.AreEqual(1, openings);
+                CollectionAssert.AreEqual(new[] { "8", "10", "12" }, control.Choices.ToArray());
+                Assert.AreEqual("10", control.Value);
+                var row = new JavaScriptSerializer().Deserialize<Dictionary<string, object>>(rows.Single());
+                var native = (Dictionary<string, object>)row["Native"];
+                Assert.AreEqual(0, native["CountBefore"]); Assert.AreEqual(3, native["CountAfterExpansion"]);
+                Assert.AreEqual(false, native["DropDownAfterCleanup"]);
+                Assert.IsFalse(fixture.Notifications.Any(x => x.Item1 == 511 && (x.Item2 == 1 || x.Item2 == 9)));
+            }
+        }
+
+        [TestMethod]
+        public void BrokenComboTraceCannotChangeAnEmptyReadOrSuppressNativeOwnershipRefusal()
+        {
+            using (var fixture = new OwnedNativeOptionsControls())
+            using (new VbeInspectionTrace(_ => { throw new System.IO.IOException("PRIVATE_TRACE_DESTINATION"); }).Enter())
+            {
+                var size = new VbeDebugWindows.OptionsControl { Name = "Size" };
+                InvokeOptionsMethod(null, "ReadOptionsCombo", fixture.Size, size);
+                Assert.AreEqual("10", size.Value); Assert.AreEqual(0, size.Choices.Count);
+                Assert.AreEqual(IntPtr.Zero, OptionsFixtureInteger(fixture.Size, 0x157, IntPtr.Zero, IntPtr.Zero));
+                var failure = Assert.ThrowsException<InvalidOperationException>(() =>
+                    InvokeOptionsMethod(null, "ReadOptionsCombo", IntPtr.Zero, size));
+                Assert.AreEqual("The native options ComboBox does not belong to this process.", failure.Message);
+            }
+        }
+
+        [TestMethod]
+        public void OptionsTraceDistinguishesUiaSizeFallbackWithoutLoggingItsChoice()
+        {
+            using (var fixture = new OwnedNativeOptionsControls())
+            {
+                var size = fixture.Root.Add(new AutomationNode { Name = "Size", Kind = ControlType.ComboBox }.With(SelectionPattern.Pattern));
+                size.Add(new AutomationNode { Name = "PRIVATE_SIZE_CHOICE", Kind = ControlType.ListItem, Selected = true }.With(SelectionItemPattern.Pattern));
+                var probe = Native<VbeDebugWindows.IOptionsProbe>("NativeOptionsProbe");
+                probe.Tabs(fixture.Host.Handle);
+                var rows = new List<string>();
+                using (new VbeInspectionTrace(rows.Add).Enter())
+                    CollectionAssert.AreEqual(new[] { "PRIVATE_SIZE_CHOICE" }, probe.Controls(fixture.Host.Handle, 0).Single(x => x.Name == "Size").Choices.ToArray());
+                var row = rows.Select(text => new JavaScriptSerializer().Deserialize<Dictionary<string, object>>(text))
+                    .Single(x => Equals(x["Role"], "Size"));
+                Assert.AreEqual("UiAutomationCombo", row["Reader"]);
+                var native = (Dictionary<string, object>)row["Native"];
+                Assert.IsNull(native["CountBefore"]);
+                Assert.AreEqual(false, native["ExpansionAttempted"]);
+                Assert.IsFalse(string.Join("", rows).Contains("PRIVATE_SIZE_CHOICE"));
             }
         }
 

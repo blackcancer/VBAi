@@ -569,6 +569,10 @@ namespace VBAi
                                     ReadOptionsCombo(new IntPtr(element.Current.NativeWindowHandle), control);
                                     controls.Add(control); continue;
                                 }
+                                if (kind == ControlType.ComboBox)
+                                    VbeInspectionTrace.Current?.RecordOptionsCombo(new VbeInspectionTrace.OptionsComboEvidence {
+                                        Reader = VbeInspectionTrace.OptionsReader.UiAutomationCombo,
+                                        Role = OptionsDiagnosticRole(control.Name), Window = element.Current.NativeWindowHandle });
                                 var choices = element.FindAll(TreeScope.Descendants,
                                     new PropertyCondition(AutomationElement.ControlTypeProperty, ControlType.ListItem))
                                     .Cast<AutomationElement>().Where(x => x.Current.IsEnabled &&
@@ -1280,7 +1284,7 @@ namespace VBAi
         /// <returns>Valeurs visibles et erreurs individuelles de lecture.</returns>
         public static object ReadVbeOptions()
         {
-            return ReadVbeOptions(new NativeOptionsProbe());
+            return TraceOptionsInspection(() => ReadVbeOptions(new NativeOptionsProbe()));
         }
 
         /// <summary>Lit le dialogue Options avec une sonde injectable et le ferme sans appliquer de modifications.</summary>
