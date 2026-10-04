@@ -1,0 +1,42 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <IsTestProject>true</IsTestProject>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+    <GenerateProgramFile>false</GenerateProgramFile>
+    <AssemblyName>VBAi.Tests</AssemblyName>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.14.1" />
+    <PackageReference Include="MSTest.TestAdapter" Version="3.7.1" />
+    <PackageReference Include="MSTest.TestFramework" Version="3.7.1" />
+    <Reference Include="VBAi"><HintPath>$(FrozenProductDirectory)\VBAi.dll</HintPath></Reference>
+    <Reference Include="System.Web.Extensions" />
+    <Reference Include="System.Windows.Forms" />
+    <Reference Include="System.Drawing" />
+    <Reference Include="WindowsBase" />
+    <Reference Include="Microsoft.CSharp" />
+    <Reference Include="Accessibility" />
+    <Reference Include="UIAutomationClient" />
+    <Reference Include="UIAutomationTypes" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="..\VBAi.Tests\Infrastructure\Hosts\ExcelVbeFixture.cs;..\VBAi.Tests\Infrastructure\Hosts\ExcelVbeFixture.Evidence.cs;..\VBAi.Tests\Infrastructure\Hosts\ExcelVbeFixture.OwnedBootstrap.cs;..\VBAi.Tests\Infrastructure\Hosts\ExcelVbeFixture.TeardownTrace.cs" />
+    <Compile Include="..\VBAi.Tests\Infrastructure\Hosts\ExcelOwnedBootstrapPlan.cs;..\VBAi.Tests\Infrastructure\Hosts\ExcelOwnedProcessImage.cs;..\VBAi.Tests\Infrastructure\Hosts\VbeBridgeClient.cs" />
+    <Compile Include="..\VBAi.Tests\Infrastructure\Diagnostics\IsolatedTestDesktop.cs;..\VBAi.Tests\Infrastructure\Diagnostics\NativeTeardownTraceGate.cs;..\VBAi.Tests\Infrastructure\Diagnostics\ExcelFormatOptionsQualification.cs" />
+    <Compile Include="..\VBAi.Tests\Unit\Infrastructure\Diagnostics\IsolatedTestDesktop.Tests.cs;..\VBAi.Tests\Unit\Infrastructure\Diagnostics\ExcelFormatOptionsQualification.Tests.cs" />
+    <Compile Include="..\VBAi.Tests\Unit\Vbe\Debug\VbeDebugWindows.Options.Checkbox.Tests.cs" Condition="'$(HistoricalOptionsOnly)' != 'true'" />
+    <Compile Include="..\VBAi.Tests\Integration\Hosts\Excel\ExcelFormatOptionsTests.cs" />
+    <Compile Include="..\VBAi.Tests\Integration\Hosts\Excel\ExcelFormatOptionsTests.SizeFocus.cs;..\VBAi.Tests\Infrastructure\Hosts\ExcelVbeFixture.OptionsMenu.cs" />
+    <Compile Include="..\VBAi.Tests\Integration\Hosts\Excel\ExcelFormatOptionsTests.CatalogueDrift.cs" />
+    <Compile Include="..\VBAi.Tests\Infrastructure\Diagnostics\Q026OptionsGuardTrace.cs" />
+    <Compile Include="..\VBAi.Tests\Infrastructure\Diagnostics\NativeWindowEnumerationOwnership.cs;..\VBAi.Tests\Unit\Infrastructure\Diagnostics\NativeWindowEnumerationOwnership.Tests.cs" />
+    <Compile Include="HistoricalDiagnosticConstants.cs" Condition="'$(HistoricalOptionsOnly)' == 'true'" />
+  </ItemGroup>
+  <Target Name="RequireFrozenProduct" BeforeTargets="ResolveReferences">
+    <Error Condition="'$(FrozenProductDirectory)' == '' Or !Exists('$(FrozenProductDirectory)\VBAi.dll')" Text="An explicit frozen VBAi candidate directory is required." />
+  </Target>
+  <Target Name="CopyFrozenDependencies" AfterTargets="Build">
+    <ItemGroup><FrozenDependencies Include="$(FrozenProductDirectory)\*.dll" /></ItemGroup>
+    <Copy SourceFiles="@(FrozenDependencies)" DestinationFolder="$(TargetDir)" SkipUnchangedFiles="true" />
+  </Target>
+</Project>

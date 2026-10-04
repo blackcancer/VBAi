@@ -281,6 +281,32 @@ namespace VBAi
                 /// <param name="name">Libellé UI Automation du contrôle.</param>
                 /// <returns><see langword="true"/> si le nom correspond à une liste Code Colors prise en charge.</returns>
         private static bool IsCodeColorList(string name) => new[] { "code colors", "couleurs du code", "color text", "texte couleur" }.Contains(NormalizeOptionName(name));
+
+        /// <summary>Writes one owned native checkbox without a focus-dependent UIA Toggle provider.</summary>
+        private static void WriteOptionsCheckbox(IntPtr dialog, IntPtr button, bool desired)
+        {
+            Action guard = () => {
+                GuardOptionsOwnedWindow(dialog, button, "Button");
+                int kind = OptionsComboStyle(button, -16) & 0xf;
+                if (!IsWindowVisible(button) || !OptionsWindowEnabled(button) || (kind != 2 && kind != 3))
+                    throw new InvalidOperationException("The exact native Options checkbox is unavailable or not a two-state checkbox.");
+            };
+            SetOptionsCheckbox(desired,
+                () => { guard(); return SendMessageInt(button, 0xF0, IntPtr.Zero, IntPtr.Zero).ToInt32(); },
+                () => { guard(); SendMessageInt(button, BmClick, IntPtr.Zero, IntPtr.Zero); });
+        }
+
+        /// <summary>Requires exact before/after native state and never retries an uncertain click.</summary>
+        internal static void SetOptionsCheckbox(bool desired, Func<int> read, Action click)
+        {
+            if (read == null || click == null) throw new ArgumentException("Native read and click are required.");
+            int before = read(), expected = desired ? 1 : 0;
+            if (before != 0 && before != 1) throw new InvalidOperationException("An indeterminate or unreadable option is not writable.");
+            if (before == expected) return;
+            click();
+            if (read() != expected)
+                throw new InvalidOperationException("The native checkbox did not retain the requested state; do not retry automatically.");
+        }
                 /// <summary>Reconnaît uniquement les libellés des trois palettes de catégorie.</summary>
                 /// <param name="name">Libellé UI Automation du contrôle.</param>
                 /// <returns><see langword="true"/> si le nom correspond à une palette de couleur prise en charge.</returns>
@@ -336,13 +362,58 @@ namespace VBAi
 
                 /// <summary>Refuse toute utilisation de messages ComboBox sur un autre processus ou une autre classe.</summary>
                 /// <param name="window">Handle de la ComboBox à vérifier.</param>
-        private static void GuardOptionsCombo(IntPtr window)
+        private static int GuardOptionsCombo(IntPtr window)
         {
             GetWindowThreadProcessId(window, out uint pid);
             if (window == IntPtr.Zero || pid != System.Diagnostics.Process.GetCurrentProcess().Id || ClassName(window) != "ComboBox")
                 throw new InvalidOperationException("The native options ComboBox does not belong to this process.");
-            if ((OptionsComboStyle(window, -16) & 0x200) == 0)
+            int style = OptionsComboStyle(window, -16);
+            if ((style & 0x200) == 0)
                 throw new InvalidOperationException("An owner-data options ComboBox without native strings cannot be inspected.");
+            return style;
+        }
+
+        [System.Runtime.InteropServices.DllImport("kernel32.dll", EntryPoint = "GetCurrentThreadId")]
+        private static extern uint OptionsCurrentThreadId();
+        [System.Runtime.InteropServices.DllImport("user32.dll", EntryPoint = "GetGUIThreadInfo")]
+        private static extern bool OptionsGuiThreadInfo(uint thread, ref OptionsGuiInfo info);
+        [System.Runtime.InteropServices.StructLayout(System.Runtime.InteropServices.LayoutKind.Sequential)]
+        private struct OptionsGuiInfo
+        {
+            internal uint Size, Flags;
+            internal IntPtr Active, Focus, Capture, MenuOwner, MoveSize, Caret;
+            internal int Left, Top, Right, Bottom;
+        }
+
+        // VBE populates its empty Size catalogue on focus, before dropdown expansion.
+        // Dispatch only to the captured owned dialog; never use keyboard input or retry.
+        private static void FocusOptionsSizeCatalogue(IntPtr window)
+        {
+            IntPtr parent = OptionsComboParent(window);
+            Action guard = () => {
+                GuardOptionsCombo(window);
+                GuardOptionsOwnedWindow(parent, window, "ComboBox");
+                if (ClassName(parent) != "#32770" || OptionsComboParent(window) != parent ||
+                    !IsWindowVisible(window) || !OptionsWindowEnabled(window))
+                    throw new InvalidOperationException("The owned Size control is unavailable for catalogue focus.");
+            };
+            guard(); uint owner = GetWindowThreadProcessId(window, out uint ignored);
+            Func<bool> focused = () => {
+                guard();
+                var info = new OptionsGuiInfo { Size = (uint)System.Runtime.InteropServices.Marshal.SizeOf(typeof(OptionsGuiInfo)) };
+                if (!OptionsGuiThreadInfo(owner, ref info)) throw new InvalidOperationException("The Size owning-thread focus cannot be read.");
+                return info.Focus == window || (info.Focus != IntPtr.Zero && OptionsComboParent(info.Focus) == window);
+            };
+            if (focused()) return;
+            if (owner == OptionsCurrentThreadId()) SendMessageInt(parent, 0x28, window, new IntPtr(1));
+            else if (!PostMessage(parent, 0x28, window, new IntPtr(1)))
+                throw new InvalidOperationException("The owned Size catalogue focus could not be posted.");
+            for (int pause = 0; pause < 80; pause++)
+            {
+                if (focused()) return;
+                System.Threading.Thread.Sleep(25);
+            }
+            throw new InvalidOperationException("The owned Size catalogue focus was not observed; do not repost.");
         }
 
                 /// <summary>Lit le catalogue Win32 complet et le texte éditable, puis referme toute liste dépliée pour lecture.</summary>
@@ -350,15 +421,48 @@ namespace VBAi
                 /// <param name="control">État de sortie qui recevra choix, sélection et valeur éditable.</param>
         private static void ReadOptionsCombo(IntPtr window, OptionsControl control)
         {
-            GuardOptionsCombo(window);
-            int count = SendMessageInt(window, 0x146, IntPtr.Zero, IntPtr.Zero).ToInt32();
+            var trace = VbeInspectionTrace.Current;
+            var observed = trace == null ? null : new VbeInspectionTrace.OptionsComboEvidence {
+                Reader = VbeInspectionTrace.OptionsReader.NativeCombo, Role = OptionsDiagnosticRole(control.Name), Window = window.ToInt64() };
             bool expanded = false;
+            Exception failure = null;
             try
             {
-                if (count == 0 && SendMessageInt(window, 0x157, IntPtr.Zero, IntPtr.Zero) == IntPtr.Zero)
+                int style = GuardOptionsCombo(window);
+                int count = SendMessageInt(window, 0x146, IntPtr.Zero, IntPtr.Zero).ToInt32();
+                if (observed != null)
                 {
-                    SendMessageInt(window, 0x14F, new IntPtr(1), IntPtr.Zero); expanded = true;
+                    observed.Style = style; observed.CountBefore = count;
+                    ObserveOptionsComboIdentity(window, observed);
+                }
+                // The write verifier has no UIA label; use the actual VBE Size control
+                // identifier too, after the same native ownership/string guards.
+                if (count == 0 && (OptionsDiagnosticRole(control.Name) == VbeInspectionTrace.OptionsRole.Size || GetDlgCtrlID(window) == 4911))
+                {
+                    int length = SendMessageInt(window, 0xE, IntPtr.Zero, IntPtr.Zero).ToInt32();
+                    if (length < 0 || length > 4096) throw new InvalidOperationException("The native Size edit value is oversized.");
+                    var before = new StringBuilder(length + 1);
+                    if (OptionsComboReadText(window, 0xD, new IntPtr(before.Capacity), before).ToInt32() != length)
+                        throw new InvalidOperationException("The native Size edit value cannot be read before focus.");
+                    if (observed != null) { observed.Role = VbeInspectionTrace.OptionsRole.Size; observed.FocusAttempted = true; }
+                    FocusOptionsSizeCatalogue(window);
+                    var after = new StringBuilder(length + 1);
+                    if (OptionsComboReadText(window, 0xD, new IntPtr(after.Capacity), after).ToInt32() != length || after.ToString() != before.ToString())
+                        throw new InvalidOperationException("Catalogue focus changed the Size edit value; no write is allowed.");
                     count = SendMessageInt(window, 0x146, IntPtr.Zero, IntPtr.Zero).ToInt32();
+                    if (observed != null) observed.CountAfterFocus = count;
+                }
+                if (count == 0)
+                {
+                    bool wasExpanded = SendMessageInt(window, 0x157, IntPtr.Zero, IntPtr.Zero) != IntPtr.Zero;
+                    if (observed != null) observed.DropDownBefore = wasExpanded;
+                    if (!wasExpanded)
+                    {
+                        if (observed != null) observed.ExpansionAttempted = true;
+                        SendMessageInt(window, 0x14F, new IntPtr(1), IntPtr.Zero); expanded = true;
+                        count = SendMessageInt(window, 0x146, IntPtr.Zero, IntPtr.Zero).ToInt32();
+                        if (observed != null) { observed.CountAfterExpansion = count; ObserveOptionsComboDropDown(window, observed, false); }
+                    }
                 }
                 if (count < 0 || count > 2000) throw new InvalidOperationException("The native options list count is invalid.");
                 var labels = new List<string>();
@@ -378,8 +482,52 @@ namespace VBAi
                 if (OptionsComboReadText(window, 0x000D, new IntPtr(value.Capacity), value).ToInt32() != valueLength)
                     throw new InvalidOperationException("The native options edit value changed during inspection.");
                 DescribeOptionsNativeChoices(control, labels, selected, value.ToString());
+                if (observed != null) { observed.SelectedIndex = selected; observed.ReadCompleted = true; }
             }
-            finally { if (expanded) SendMessageInt(window, 0x14F, IntPtr.Zero, IntPtr.Zero); }
+            catch (Exception error) { failure = error; throw; }
+            finally
+            {
+                try { if (expanded) SendMessageInt(window, 0x14F, IntPtr.Zero, IntPtr.Zero); }
+                catch (Exception error) { failure = error; throw; }
+                finally
+                {
+                    if (observed != null)
+                    {
+                        if (expanded) ObserveOptionsComboDropDown(window, observed, true);
+                        trace.RecordOptionsCombo(observed, failure);
+                    }
+                }
+            }
+        }
+
+        private static VbeInspectionTrace.OptionsRole OptionsDiagnosticRole(string name)
+        {
+            string normalized = NormalizeOptionName(name);
+            if (normalized == "size" || normalized == "taille") return VbeInspectionTrace.OptionsRole.Size;
+            if (normalized == "font" || normalized == "police") return VbeInspectionTrace.OptionsRole.Font;
+            return IsColorPalette(name) ? VbeInspectionTrace.OptionsRole.Palette : VbeInspectionTrace.OptionsRole.Other;
+        }
+
+        private static void ObserveOptionsComboIdentity(IntPtr window, VbeInspectionTrace.OptionsComboEvidence observed)
+        {
+            try
+            {
+                observed.OwnerThreadId = GetWindowThreadProcessId(window, out uint pid);
+                observed.OwnerProcessId = pid; observed.Parent = OptionsComboParent(window).ToInt64();
+                observed.ControlId = GetDlgCtrlID(window);
+            }
+            catch { /* Optional metadata has no influence on the native result. */ }
+        }
+
+        private static void ObserveOptionsComboDropDown(IntPtr window, VbeInspectionTrace.OptionsComboEvidence observed, bool cleanup)
+        {
+            try
+            {
+                GuardOptionsCombo(window);
+                bool open = SendMessageInt(window, 0x157, IntPtr.Zero, IntPtr.Zero) != IntPtr.Zero;
+                if (cleanup) observed.DropDownAfterCleanup = open; else observed.DropDownAfterExpansion = open;
+            }
+            catch { /* Missing observations stay null rather than asserting closure. */ }
         }
 
                 /// <summary>Sélectionne une entrée exacte et notifie le parent comme une sélection native, sans frappe ni coordonnées.</summary>
@@ -481,7 +629,13 @@ namespace VBAi
                 /// <summary>Écrit une préférence reconnue d’édition/débogage, puis ferme par validation native.</summary>
                 /// <param name="request">Onglet, propriété, valeur et version attendue des options.</param>
                 /// <returns>Valeurs avant/après et indication de validation/fermeture du dialogue.</returns>
-        public static object SetVbeOption(Request request) => SetVbeOption(request, new NativeOptionsProbe());
+        public static object SetVbeOption(Request request) => TraceOptionsInspection(() => SetVbeOption(request, new NativeOptionsProbe()));
+
+        private static object TraceOptionsInspection(Func<object> inspect)
+        {
+            var trace = VbeInspectionTrace.Current ?? VbeInspectionTrace.Begin();
+            using (trace?.Enter()) return inspect();
+        }
                 /// <summary>Orchestration injectable, sans modification des préférences tant que la version ne correspond pas.</summary>
                 /// <param name="request">Onglet, propriété, valeur et version attendue des options.</param>
                 /// <param name="native">Sonde utilisée pour lire, écrire, valider ou fermer le dialogue natif.</param>

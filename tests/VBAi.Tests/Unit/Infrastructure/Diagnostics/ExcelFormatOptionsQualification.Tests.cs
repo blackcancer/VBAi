@@ -13,10 +13,178 @@ namespace VBAi.Tests.Unit
     [TestClass, TestCategory("Unit")]
     public sealed class ExcelFormatOptionsQualificationTests
     {
+        [TestMethod]
+        public void GuardWarmupVerifiesOneRefusalWithoutPreferenceMutationOrCleanup()
+        {
+            var probe = new Probe();
+            var runner = probe.Create();
+            var before = new Dictionary<string, object>(probe.Values);
+            runner.WarmGuardForBreakpoint();
+            CollectionAssert.AreEquivalent(before.ToArray(), probe.Values.ToArray());
+            Assert.AreEqual(3, probe.Requests.Count);
+            Assert.AreEqual(1, probe.Requests.Count(request => Equals(request["Command"], "set_vbe_option")));
+            Assert.AreEqual(1, probe.ClosureCalls);
+            Assert.IsFalse(runner.HostRetained);
+            Assert.AreEqual(0, probe.Cleanup);
+            Assert.IsTrue(probe.Phases.Contains("GuardBreakpointWarmupVerified"));
+        }
+
+        [TestMethod]
+        public void GuardWarmupRefusesStructurallyChangedReadbackEvenWhenHashMatches()
+        {
+            var probe = new Probe { SemanticFault = "GuardBreakpointWarmupClosedReadbackIntent" };
+            var runner = probe.Create();
+            Assert.IsNotNull(Failure(runner.WarmGuardForBreakpoint));
+            Assert.IsTrue(runner.HostRetained);
+            Assert.AreEqual(0, probe.Cleanup);
+            Assert.AreEqual(1, probe.ClosureCalls);
+            Assert.IsTrue(probe.Phases.Contains("GuardBreakpointWarmupClosedReadbackReply"));
+            Assert.IsFalse(probe.Phases.Contains("GuardBreakpointWarmupVerified"));
+        }
+
+        [TestMethod]
+        public void CompetingHostBeforeBaselinePreventsEveryNativeRequestAndCleanup()
+        {
+            var probe = new Probe { ExclusiveGuardFaultAt = 1 };
+            var runner = probe.Create();
+            Assert.IsNotNull(Failure(runner.Run));
+            Assert.IsTrue(runner.HostRetained);
+            Assert.AreEqual(0, probe.Requests.Count);
+            Assert.AreEqual(0, probe.Writes);
+            Assert.AreEqual(0, probe.Cleanup);
+            Assert.AreEqual(1, probe.Preserved);
+        }
+
+        [TestMethod]
+        public void CompetingHostAfterFontCommitPreventsReadbackRestorationAndCleanup()
+        {
+            var probe = new Probe { ExclusiveGuardFaultAt = 4 };
+            var runner = probe.Create(historicalPalettePrefix: true);
+            Assert.IsNotNull(Failure(runner.Run));
+            Assert.IsTrue(runner.HostRetained);
+            Assert.AreEqual(1, probe.Writes, "Only the already confirmed font commit is allowed.");
+            Assert.AreEqual(3, probe.Requests.Count, "Baseline, fresh pre-write read, then font commit.");
+            Assert.AreEqual(0, probe.Cleanup);
+            Assert.IsFalse(probe.Phases.Contains("FontReadbackIntent"));
+            Assert.IsFalse(probe.Phases.Contains("BeforeRestorationIntent"));
+        }
+
+        [TestMethod]
+        public void HistoricalPrefixKeepsNullQueryAndRestoresOnlyConfirmedFontAndPaletteWrites()
+        {
+            var probe = new Probe { EmptySizes = true };
+            probe.Create(historicalPalettePrefix: true).Run();
+            Assert.AreEqual(9, probe.Writes, "Four real commits, four compensations and one expected size refusal are required.");
+            Assert.AreEqual(1, probe.Cleanup);
+            Assert.IsFalse(probe.Phases.Contains("MarginIntent"));
+            Assert.IsFalse(probe.Phases.Contains("OtherCategoryIntent"));
+            Assert.IsFalse(probe.Phases.Contains("StaleVersionIntent"));
+            foreach (var item in probe.Requests.Where(request => Equals(request["Command"], "set_vbe_option")))
+                if (new[] { "Foreground", "Background", "Indicator" }.Contains(Convert.ToString(item["Property"])))
+                    Assert.IsNull(item["Query"], "The historical request omitted Query, including restoration.");
+            Assert.IsTrue(probe.Phases.Contains("BaselineRestored"));
+            Assert.IsFalse(probe.Phases.Any(phase => phase.EndsWith("IndependentAfterWriteIntent")),
+                "The historical sequence must not insert an additional native read between Write and the original readback.");
+            foreach (string property in new[] { "Font", "Foreground", "Background", "Indicator" })
+                Assert.IsTrue(probe.Phases.Contains(property + "ReadbackReply"), "Each historical commit still requires its original independent readback.");
+        }
+
+        [TestMethod]
+        public void HistoricalFullMatrixIncludesCategoryMarginStaleRefusalAndCompleteRestoration()
+        {
+            var probe = new Probe { EmptySizes = true };
+            string originalCategory = probe.Category;
+            probe.Create(historicalPalettePrefix: true, historicalFullMatrix: true).Run();
+            Assert.AreEqual(14, probe.Writes, "Six confirmed commits, six compensations and two classified refusals.");
+            Assert.AreEqual(1, probe.Cleanup); Assert.AreEqual(0, probe.Preserved);
+            foreach (string phase in new[] { "OtherCategoryReadbackReply", "MarginReadbackReply", "StaleVersionVerifiedRefusal", "BaselineRestored" })
+                Assert.IsTrue(probe.Phases.Contains(phase), phase);
+            Assert.IsFalse(probe.Phases.Any(x => x.EndsWith("IndependentAfterWriteIntent")));
+            foreach (string phase in new[] { "Font", "Foreground", "Background", "Indicator", "OtherCategory", "Margin" })
+                Assert.IsTrue(probe.Phases.Contains(phase + "HistoricalCommit"));
+            string otherCategory = probe.Requests.Where(x => Equals(x["Command"], "set_vbe_option"))
+                .Select(x => x.TryGetValue("Query", out object query) ? query as string : null).First(x => x != null);
+            Assert.AreNotEqual(originalCategory, otherCategory);
+            Assert.AreEqual(2, probe.Requests.Count(x => Equals(x["Command"], "set_vbe_option") &&
+                x.TryGetValue("Query", out object category) && Equals(category, otherCategory)), "The original nondefault-category mutation and its restoration keep Query.");
+            Assert.AreEqual(3, probe.Requests.Count(x => Equals(x["Command"], "set_vbe_option") &&
+                x.TryGetValue("Query", out object category) && Equals(category, originalCategory)),
+                "Recovery of the three originally implicit palettes binds the observed category after the later selection.");
+            Assert.AreEqual(probe.BaselineVersion, probe.Version());
+        }
+
+        [TestMethod]
+        public void HistoricalFullMatrixRetainsUncertainMarginAndNeverStartsStaleOrCleanup()
+        {
+            var healthy = new Probe { EmptySizes = true };
+            healthy.Create(historicalPalettePrefix: true, historicalFullMatrix: true).Run();
+            int margin = healthy.Requests.FindIndex(x => Equals(x["Command"], "set_vbe_option") && Equals(x["Property"], "Margin Indicator Bar")) + 1;
+            Assert.IsTrue(margin > 0);
+            var failed = new Probe { EmptySizes = true, Fault = "NoCommit", FaultAt = margin };
+            var runner = failed.Create(historicalPalettePrefix: true, historicalFullMatrix: true);
+            Assert.IsNotNull(Failure(runner.Run));
+            Assert.IsTrue(runner.HostRetained); Assert.AreEqual(margin, failed.Requests.Count);
+            Assert.AreEqual(0, failed.Cleanup); Assert.AreEqual(1, failed.Preserved);
+            Assert.IsFalse(failed.Phases.Contains("StaleVersionIntent"));
+            Assert.IsFalse(failed.Phases.Contains("BeforeRestorationIntent"));
+        }
+
+        [TestMethod]
+        public void HistoricalFullMatrixRejectsAnIncompatibleReducedScopeBeforeDispatch()
+        {
+            var probe = new Probe();
+            Assert.ThrowsException<ArgumentException>(() => probe.Create(historicalFullMatrix: true));
+            Assert.AreEqual(0, probe.Requests.Count); Assert.AreEqual(0, probe.Cleanup);
+        }
+
+        [TestMethod]
+        public void FocusedMarginQualificationChangesAndRestoresOnlyTheRealCheckbox()
+        {
+            var probe = new Probe();
+            probe.Create(verifyReadStability: true, marginOnly: true).Run();
+            Assert.AreEqual(2, probe.Writes, "One transition and its single restoration are required.");
+            Assert.AreEqual("On", probe.Values["Margin Indicator Bar"]);
+            Assert.AreEqual(1, probe.Cleanup);
+            Assert.IsFalse(probe.Phases.Contains("FontIntent"));
+            Assert.IsFalse(probe.Phases.Contains("StaleVersionIntent"));
+            Assert.IsTrue(probe.Phases.Contains("BaselineRestored"));
+        }
+
+        [TestMethod]
+        public void ChangedCompleteTabsCannotPassRestorationWithAnUnchangedRevision()
+        {
+            var probe = new Probe { SemanticFault = "CompleteRestorationReadbackIntent" };
+            var runner = probe.Create();
+            Assert.IsNotNull(Failure(runner.Run));
+            Assert.IsTrue(runner.HostRetained);
+            Assert.AreEqual(0, probe.Cleanup);
+            Assert.IsFalse(probe.Phases.Contains("BaselineRestored"));
+        }
+
+        [DataTestMethod, DataRow(false), DataRow(true)]
+        public void FocusedFontSizeCatalogueRestoresCompleteSnapshotWithoutPaletteOrMarginWrites(bool empty)
+        {
+            var probe = new Probe { EmptySizes = empty };
+            var initial = new Dictionary<string, object>(probe.Values);
+            probe.Create(verifyReadStability: true, fontSizeOnly: true).Run();
+            CollectionAssert.AreEquivalent(initial.ToArray(), probe.Values.ToArray());
+            Assert.AreEqual(empty ? 3 : 4, probe.Writes,
+                "Font commit/restoration plus either one exact refusal or one size commit/restoration.");
+            Assert.AreEqual(1, probe.Cleanup);
+            Assert.IsTrue(probe.Phases.Contains("BaselineRestored"));
+            Assert.IsTrue(probe.Phases.Contains(empty ? "EmptySizeVerifiedRefusal" : "SizeVerified"));
+            Assert.IsFalse(probe.Phases.Contains("ForegroundIntent"));
+            Assert.IsFalse(probe.Phases.Contains("MarginIntent"));
+            Assert.IsFalse(probe.Phases.Contains("StaleVersionIntent"));
+            Assert.IsTrue(probe.Requests.Where(x => Equals(x["Command"], "set_vbe_option"))
+                .All(x => new[] { "Font", "Size" }.Contains(Convert.ToString(x["Property"]))));
+        }
+
         private sealed class Probe
         {
             internal bool EmptySizes, CleanupFault, PreservationFault;
             internal int FaultAt, Reads, Writes, Cleanup, Preserved, ClosureCalls;
+            internal int ExclusiveGuardFaultAt, ExclusiveGuardCalls;
             internal string Fault, EvidenceFault, SemanticFault, ClosureFault;
             internal readonly List<string> Phases = new List<string>();
             internal readonly List<IDictionary<string, object>> Requests = new List<IDictionary<string, object>>();
@@ -26,7 +194,7 @@ namespace VBAi.Tests.Unit
                 ["Normal Text.Foreground"] = "Black", ["Normal Text.Background"] = "White", ["Normal Text.Indicator"] = "Blue",
                 ["Keyword Text.Foreground"] = "Black", ["Keyword Text.Background"] = "White", ["Keyword Text.Indicator"] = "Blue" };
             internal string Category = "Normal Text", BaselineVersion;
-            internal ExcelFormatOptionsQualification Create()
+            internal ExcelFormatOptionsQualification Create(bool verifyReadStability = false, bool marginOnly = false, bool historicalPalettePrefix = false, bool fontSizeOnly = false, bool historicalFullMatrix = false)
             {
                 BaselineVersion = Version();
                 return new ExcelFormatOptionsQualification(42, Dispatch, ObserveClosure,
@@ -35,7 +203,10 @@ namespace VBAi.Tests.Unit
                     (phase, data) => {
                         Phases.Add(phase); Evidence.Add(Tuple.Create(phase, data));
                         if (EvidenceFault == phase) { EvidenceFault = null; throw new IOException("evidence failed at " + phase); }
-                    });
+                    }, verifyReadStability, marginOnly, historicalPalettePrefix, () => {
+                        if (++ExclusiveGuardCalls == ExclusiveGuardFaultAt)
+                            throw new InvalidOperationException("Another VBE host appeared during the campaign.");
+                    }, fontSizeOnly, historicalFullMatrix);
             }
             private IDictionary<string, object> Dispatch(object raw)
             {
@@ -59,7 +230,7 @@ namespace VBAi.Tests.Unit
                 else
                 {
                     Writes++;
-                    if (Equals(request["ExpectedOptionsVersion"], BaselineVersion) && phase == "StaleVersionIntent")
+                    if (!Equals(request["ExpectedOptionsVersion"], Version()))
                         response = Refused("VBE options changed since inspection; read them again.");
                     else
                     {
@@ -71,7 +242,7 @@ namespace VBAi.Tests.Unit
                             string property = (string)request["Property"];
                             string query = request.TryGetValue("Query", out object q) ? q as string : null;
                             if (!string.IsNullOrEmpty(query)) Category = query;
-                            string key = query == null ? property : query + "." + property;
+                            string key = new[] { "Foreground", "Background", "Indicator" }.Contains(property) ? Category + "." + property : property;
                             Values[key] = request["Value"] is bool check ? (object)(check ? "On" : "Off") : request["Value"];
                             response = Reply(new Dictionary<string, object> { ["CommitRequested"] = true, ["ControlValueVerified"] = true, ["DialogClosed"] = true });
                         }
@@ -120,7 +291,10 @@ namespace VBAi.Tests.Unit
                         Control("Font", "ControlType.ComboBox", Values["Font"], "Consolas", "Courier New"),
                         Control("Size", "ControlType.ComboBox", Values["Size"], EmptySizes ? new string[0] : new[] { "12", "14" }),
                         Control("Margin Indicator Bar", "ControlType.CheckBox", Values["Margin Indicator Bar"]),
-                        Control("Code Colors", "ControlType.List", Category, "Normal Text", "Keyword Text") },
+                        Control("Code Colors", "ControlType.List", Category, "Normal Text", "Keyword Text"),
+                        Control("Foreground", "ControlType.ComboBox", Values[Category + ".Foreground"], "Black", "Red"),
+                        Control("Background", "ControlType.ComboBox", Values[Category + ".Background"], "White", "Yellow"),
+                        Control("Indicator", "ControlType.ComboBox", Values[Category + ".Indicator"], "Blue", "Green") },
                     ["FormatCategories"] = new object[] { CategoryState("Normal Text"), CategoryState("Keyword Text") } } } };
             private IDictionary<string, object> CategoryState(string category) => new Dictionary<string, object> { ["Category"] = category,
                 ["Palettes"] = new object[] { Control("Foreground", "ControlType.ComboBox", Values[category + ".Foreground"], "Black", "Red"),
@@ -233,6 +407,25 @@ namespace VBAi.Tests.Unit
             Assert.IsTrue(probe.Evidence.Any(item => item.Item1 == "BaselineComplete"));
             var terminal = Copy(probe.Evidence.Single(item => item.Item1 == "QualificationTerminal").Item2);
             Assert.AreEqual(true, terminal["Verified"]); Assert.AreEqual(true, terminal["CleanupInvoked"]);
+        }
+
+        [TestMethod]
+        public void StableBaselineIsIndependentlyComparedBeforeTheFirstPreferenceWrite()
+        {
+            var probe = new Probe(); probe.Create(true).Run();
+            Assert.IsTrue(probe.Phases.IndexOf("BaselineStabilityVerified") < probe.Phases.IndexOf("FontIntent"));
+            Assert.AreEqual(probe.BaselineVersion, probe.Version());
+            Assert.AreEqual(1, probe.Cleanup);
+        }
+
+        [TestMethod]
+        public void InconsistentBaselineSnapshotFailsBeforeAnyPreferenceMutation()
+        {
+            var probe = new Probe { SemanticFault = "BaselineStabilityIntent" };
+            Failure(() => probe.Create(true).Run());
+            Assert.AreEqual(0, probe.Writes);
+            Assert.IsFalse(probe.Phases.Contains("FontIntent"));
+            Assert.AreEqual(1, probe.Cleanup, "A complete independently verified baseline restoration still permits normal cleanup.");
         }
 
         [DataTestMethod]

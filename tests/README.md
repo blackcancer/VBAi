@@ -1,5 +1,17 @@
 # Testing VBAi
 
+## Isolated launcher choices
+
+`tools/tests/Invoke-IsolatedTests.ps1` keeps the original-handle PowerShell
+launcher by default. `-DirectGuiLauncher` selects the Q026 GUI entry point
+(`--run-plan`) instead, avoiding an intermediate console process. Both routes
+use the same guarded worker, hidden inventory sentinel, checked desktop lease
+and retained failed-worker observation. The helper is a WinExe in either route.
+The default route records the original outer helper handle and observed exit;
+the direct route records its own helper identity and terminal result, with the
+scheduled task's actual exit checked separately. Do not substitute those
+different receipt contracts or turn resource release into a passing campaign.
+
 The test suite covers the shared VBE core, provider protocols, storage, editor
 services and selected host integrations. A passing local suite is not a claim
 that every feature works in every application that embeds the VBE.
@@ -996,6 +1008,188 @@ The formatting-options scenario can additionally use an absolute
 before/after evidence independently of VSTest attachment retention, including
 successful runs. It creates a unique subdirectory and never retries a failed
 mutation to gather evidence.
+
+For Q-026 investigation, `tools/probes/inspect_q026_options.py <before.json>
+<after.json> --output <fresh-report.json>` compares recorded complete snapshots
+offline. It preserves catalogue order, palette fields and value types, and refuses
+truncated, ambiguous or incomplete receipts. It neither invokes a host nor proves
+native restoration. The [prepared Q-026 scenario matrix](../tools/tests/q026-scenarios.json)
+records the native cases and stop rules; its planned status is not execution proof.
+
+### Q-026 inactive-desktop campaign
+
+`tools/tests/Invoke-Q026Qualification.ps1 -Prepare` copies the reviewed
+candidate into a fresh evidence directory and builds only the focused harness
+and desktop helper. It does not replace the installed DLL or modify registration.
+Use Windows PowerShell 5.1 for this .NET Framework preparation:
+
+```powershell
+$q026Evidence = Join-Path $PWD ('artifacts/q026-' + [Guid]::NewGuid().ToString('N'))
+powershell.exe -NoProfile -File tools/tests/Invoke-Q026Qualification.ps1 -Prepare `
+    -EvidenceRoot $q026Evidence -InstalledDirectory 'E:\path\to\installed\net48'
+powershell.exe -NoProfile -File tools/tests/Invoke-IsolatedTests.ps1 `
+    -ScriptPath (Join-Path $q026Evidence 'Invoke-FrozenQ026.ps1') `
+    -HelperAssembly (Join-Path $q026Evidence 'build/VBAi.Desktop.Helper/Debug/net48/VBAi.Desktop.Helper.exe') `
+    -EvidenceDirectory (Join-Path $q026Evidence 'isolation')
+```
+
+The target path must identify the reviewed candidate; it can be frozen before
+temporary registration, but must match the registered CodeBase before execution. Preparation
+freezes hashes, MVID, source revision/status and the scenario matrix. Execution
+requires a verified private-desktop worker, passing managed guards and a continuous
+30-second interval without another Excel, Word, PowerPoint, Access, Publisher or
+SOLIDWORKS process. Preferences can be shared across desktops: a host retained by
+another qualification must be recovered by its owner before this campaign starts.
+A quiet process inventory can also be a gap between cases in another native
+batch. Obtain that batch owner's explicit release before scheduling Q-026;
+the automated 30-second interval does not establish that the batch has ended.
+The campaign waits without terminating another process or switching desktops.
+It checks the per-user x64 CodeBase before launching its owned disposable Excel.
+
+`campaign.json`, the native TRX and durable `native/phases` receipts are separate
+evidence. A passing TRX requires independent review of the complete baseline and
+restored tab structures, refusal closure, actual loaded assembly, original-handle
+normal exit and the private-desktop terminal inventory. An empty size catalogue
+qualifies only the documented refusal; it does not qualify a font-size mutation.
+The evidence root is one-shot. Failed, pending or uncertain work must not be
+replayed; preserve its receipts and exact host ownership for recovery.
+
+Preparation with `-Scenario Margin` selects the separate checkbox-only native
+method and a reduced matrix (read stability, real margin transition, complete
+restoration and normal exit). A pass qualifies that diagnostic, not full Format.
+`-Scenario FontSizeCatalogue` selects only font/size inspection and mutation,
+with full-snapshot restoration and original-handle normal exit. It records the
+native catalogue before and after the font change. An empty list still exercises
+the explicit refusal and does not establish size-mutation acceptance; palette,
+margin and historical-causality qualification remain separate.
+`-Scenario SizeFocus` opens the existing native Options menu once on the fixture's
+owning STA. A worker on the same inactive desktop selects the observed Format
+tab, posts one `WM_NEXTDLGCTL` to the owned Size control, observes focus and the
+native catalogue, then cancels once. No preference is written. Acceptance requires
+complete unchanged Tabs/revision and normal exit through the original launch
+handle; unknown focus, modal or dispatch outcomes retain the owned host.
+`-Scenario HistoricalFullFormat` uses the unchanged historical product and the
+preflighted exact-guard collector through the nondefault category, margin and
+deliberate stale-revision request. Initial palette writes retain their original
+null Query. Positive compensation entries bind the category observed before each
+write, so the later category selection cannot redirect recovery. Independent
+closed readbacks and terminal recovery proof are stronger than the original
+test; this is a causal diagnostic, not an unchanged historical test harness.
+The deliberate stale request is classified separately from any unexpected guard
+hit. The earlier prefix intentionally omits later stages; its passing result
+does not identify the historical failure's position.
+`-Scenario HistoricalCatalogueDrift` uses the same frozen guard collector for a
+controlled Size-focus diagnostic. `-Scenario CatalogueDrift` compares the current
+candidate. The request's property is first verified absent, so neither path can
+reach a preference writer. An actor posts one owned dialog-local focus message
+while observing the product's own tab navigation. The old candidate must refuse
+the fresh revision after catalogue population; the prepared current candidate
+must reach the missing-property refusal with a stable revision. Both require an
+unchanged complete closed readback and original-handle normal exit. A captured
+old guard must still be decoded and compared offline. This deliberately induced
+metadata drift is not a natural reproduction or proof of the original failure;
+it does not replace the complete Format matrix or close historical causality.
+`tools/tests/Set-Q026Candidate.ps1` temporarily changes only the existing per-user
+x64 add-in CodeBase and matching version entry, with an explicit fresh backup.
+It refuses loaded VBE hosts or an unexpected assembly/original CodeBase. Restore
+the original registration after all test-owned hosts have exited normally; the
+script refuses to overwrite a registration changed by another task.
+Apply and restore registration in the same user/token context as the limited
+private-desktop worker. An elevated shell's successful readback does not prove
+the worker sees that CodeBase. The campaign records the worker's actual value
+and refuses a mismatch before launching Excel. Reserve the entire activation,
+native execution and restoration interval: an empty host inventory alone is
+insufficient if another qualification is about to launch. The isolated worker
+also records script exceptions in `worker-error.json` without replaying cleanup.
+The helper uses the installer's unescaped `file:///` CodeBase representation;
+URI percent encoding is not substituted for the repository's COM registration
+format. Check actual class activation before opening a host after a path-format
+change; a matching registry string alone is insufficient loading evidence.
+Execution also requires the existing VBAi `Addins64` LoadBehavior to be 3.
+If necessary, explicit `Set-Q026Candidate.ps1 -EnableAutoLoad` temporarily
+enables that installed add-in only from an existing DWORD 0, 2 or 3,
+records the exact previous DWORD and restores
+it with CodeBase after the owned hosts exit. It creates no registration and
+changes no Office trust policy. A changed setting from another task prevents
+restoration; it must not be overwritten silently.
+The disconnected startup value 2 is accepted only by this explicit opt-in;
+execution still requires 3 before activation. Microsoft's
+[COM add-in flag documentation](https://learn.microsoft.com/en-us/office/vba/outlook/concepts/getting-started/customizing-outlook-using-com-add-ins)
+describes startup and connection bits. This reference does not establish that
+the current VBE installation successfully loads; its actual MVID must be verified.
+
+For a retained Q-026 host, `tools/probes/Observe-Q026Host.ps1` defaults to an
+independent PID/start/desktop window inventory, without bridge calls or input.
+Its explicit `-CancelObservationPath` recovery targets only the captured owned
+Options dialog and sends Cancel once on that desktop. It must not be used to
+replay an uncertain cancellation. `Recover-Q026Preferences.ps1` compensates only
+the captured positively committed entries with fresh revisions and exact
+readbacks; any failed guard or unknown reply stops further dispatch. A complete
+baseline hash and all tab structures must match before
+`Close-Q026RecoveredHost.ps1` can close the sole saved disposable seed and Quit
+once. Recovery receipts do not convert a failed native TRX into acceptance, and
+their newly captured process handle does not prove the lost campaign handle's
+shutdown lifecycle. These helpers do not recover arbitrary user documents.
+`Recover-Q026Preferences.ps1 -RecoveryHostStartup` permits a separately owned
+recovery host only when the original process is absent and its failed request
+was a read with no terminal response. The exact frozen product must be loaded;
+the complete snapshot may differ from the original baseline only in a positively
+committed supported font. This path does not replay the lost read or transfer
+an unknown mutation. The original failed qualification remains failed.
+An empty commit ledger and null failed request can be released only for the
+recorded pre-dispatch isolation stop, with its immediately preceding competitor
+observation and a fresh complete baseline comparison. No compensation is sent.
+Unknown null requests and incomplete states are refused.
+If the same isolation stop occurs after the verified nonmutating guard warmup
+but before the scenario baseline, `Resolve-Q026RecoveryBaseline.ps1` accepts
+only the complete unchanged warmup readback for that exact PID/start/MVID.
+Both warmup receipts and the immediate competitor observation are required;
+intervening native dispatch, uncertain responses or positive commits refuse
+this path. The recovery still requires a fresh full comparison after competing
+hosts have exited. Offline evidence gates can be run without Office:
+
+```powershell
+powershell.exe -NoProfile -File tools/probes/tests/Test-Q026RecoveryBaseline.ps1
+```
+
+The existing `VBAi_VBE_INSPECTION_TRACE` opt-in also records bounded Options
+combo metadata on the public read/write completion paths. `OptionsComboInspection`
+distinguishes native ComboBox and UI Automation fallback, with a fixed Font,
+Size, Palette or Other role. Native records retain handle/parent/control identity,
+style, list counts before/after the existing single expansion, selection index
+and observed dropdown cleanup. Missing observations remain null. No labels,
+choice text, values, request content or exception messages are logged. These
+records share the existing event/file limits and can be truncated; unavailable
+logging cannot change the native result. They do not populate an empty catalogue,
+relax revision checks or qualify font-size writes without native acceptance.
+
+Optional `VBAi_TEST_Q026_CLR_TRACE_PLAN` enables test-only capture of the
+historical revision guard. Prefer a separately verified plan with
+`TraceMode: ExactGuardILBreakpoint` and a `GuardILOffset` derived from the frozen
+binary's IL, not a guessed source line. Its own
+`Test-Q026ClrTracePreflight.ps1 -GuardILOffset` receipt must verify the complete
+synthetic graph, request, exact branch and normal detach/exit with matching
+collector and product hashes. The Format fixture first compiles the native
+guard through one intentional nonmutating refusal and verifies complete
+unchanged state; only then can the exact breakpoint bind. A missing or ambiguous
+breakpoint retains ownership and prevents the matrix. Ordinary CLR exceptions
+are not stopped in this mode. The legacy first-chance mode remains available
+for its separately verified plans, but changes timing much more substantially.
+Neither mode establishes causality without a natural guard rejection and its
+complete matching before/observed snapshots. Format dispatches independently
+check owned PID/start and absence of competing VBE hosts throughout the run;
+this supplements the reservation requirement rather than guaranteeing that
+another chat cannot start a host between observations.
+
+`Observe-Q026Host.ps1 -ReadDialogText` optionally reads a bounded inventory of
+owned dialog controls without input. A terminal bootstrap failure before any
+preference dispatch may use `Close-Q026RecoveredHost.ps1
+-BootstrapClosureObservation <receipt>` instead of a preference-recovery
+receipt. This separate path requires the recorded failed bootstrap, worker exit,
+no Format phase receipts, independently observed dialog absence and the unchanged
+saved disposable seed. It closes that seed and quits once; its receipt remains
+unqualified and does not certify the failed campaign's original process handle.
+
 The SOLIDWORKS workflow must not create or kill an application instance on the
 user's behalf. A host fixture can use its own native save helper; that result does
 not automatically qualify VBAi's `save_host_document` adapter.

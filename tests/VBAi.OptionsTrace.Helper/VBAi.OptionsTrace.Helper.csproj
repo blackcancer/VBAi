@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <GenerateProgramFile>false</GenerateProgramFile>
+    <AssemblyName>VBAi.Tests</AssemblyName>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="VBAi"><HintPath>$(FrozenProductDirectory)\VBAi.dll</HintPath></Reference>
+    <Reference Include="System.Web.Extensions" />
+  </ItemGroup>
+  <Target Name="RequireFrozenProduct" BeforeTargets="ResolveReferences">
+    <Error Condition="'$(FrozenProductDirectory)' == '' Or !Exists('$(FrozenProductDirectory)\VBAi.dll')" Text="An explicit frozen VBAi candidate is required." />
+  </Target>
+  <Target Name="CopyFrozenDependencies" AfterTargets="Build">
+    <ItemGroup><FrozenDependencies Include="$(FrozenProductDirectory)\*.dll" /></ItemGroup>
+    <Copy SourceFiles="@(FrozenDependencies)" DestinationFolder="$(TargetDir)" SkipUnchangedFiles="true" />
+  </Target>
+</Project>

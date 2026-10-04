@@ -18,14 +18,32 @@ namespace VBAi.Tests.Integration
         private readonly Action preserve, cleanup;
         private readonly Action<string, object> evidence;
         private readonly int processId;
+        private readonly bool verifyReadStability, marginOnly, historicalPalettePrefix, fontSizeOnly, historicalFullMatrix;
         private readonly List<Tuple<string, string, object, string>> ledger = new List<Tuple<string, string, object, string>>();
         private IDictionary<string, object> baseline;
+        private readonly Action verifyExclusiveHost;
         internal bool HostRetained { get; private set; }
 
+        /// <summary>Compile the unchanged native guard through one known refusal, before attaching its exact IL breakpoint.</summary>
+        internal void WarmGuardForBreakpoint()
+        {
+            var before = Read("GuardBreakpointWarmupBefore");
+            Refusal("GuardBreakpointWarmup", new { Command = "set_vbe_option", Pane = (string)Format(before)["Tab"],
+                Property = "__Q026_READ_ONLY_GUARD_WARMUP__", Value = "No preference mutation",
+                ExpectedOptionsVersion = new string('0', 64) }, before, "VBE options changed since inspection; read them again.");
+            evidence("GuardBreakpointWarmupVerified", new { NativePreferenceWrites = 0, FailedMutationReplayed = false });
+        }
+
         internal ExcelFormatOptionsQualification(int processId, Func<object, IDictionary<string, object>> dispatch,
-            Func<IDictionary<string, object>> observeClosure, Action preserve, Action cleanup, Action<string, object> evidence)
+            Func<IDictionary<string, object>> observeClosure, Action preserve, Action cleanup, Action<string, object> evidence,
+            bool verifyReadStability = false, bool marginOnly = false, bool historicalPalettePrefix = false,
+            Action verifyExclusiveHost = null, bool fontSizeOnly = false, bool historicalFullMatrix = false)
         { this.processId = processId; this.dispatch = dispatch; this.observeClosure = observeClosure;
-            this.preserve = preserve; this.cleanup = cleanup; this.evidence = evidence; }
+            this.preserve = preserve; this.cleanup = cleanup; this.evidence = evidence; this.verifyReadStability = verifyReadStability; this.marginOnly = marginOnly;
+            this.historicalPalettePrefix = historicalPalettePrefix; this.verifyExclusiveHost = verifyExclusiveHost;
+            this.fontSizeOnly = fontSizeOnly; this.historicalFullMatrix = historicalFullMatrix;
+            if (historicalFullMatrix && (!historicalPalettePrefix || marginOnly || fontSizeOnly))
+                throw new ArgumentException("Historical full matrix requires historical mutation order and the complete scope."); }
 
         /// <summary>Validate the Format opt-in before preparation, then hand off only a successfully owned bootstrap.</summary>
         internal static void RunOwned<T>(bool enabled, string ownedResults, string evidenceRoot, string inheritedDiagnosticManifest,
@@ -64,10 +82,22 @@ namespace VBAi.Tests.Integration
 
         private void Matrix()
         {
-            evidence("ScenarioMatrix", Scenarios);
+            evidence("ScenarioMatrix", marginOnly ? new[] { "margin indicator", "full options version restored" } :
+                fontSizeOnly ? new[] { "exact font", "size catalogue or honest refusal", "full options version restored" } :
+                historicalPalettePrefix && !historicalFullMatrix ? new[] { "historical font and size refusal", "historical foreground/background/indicator without Query", "full options version restored" } : Scenarios);
             baseline = Read("Baseline");
             evidence("BaselineComplete", baseline);
+            if (verifyReadStability)
+            {
+                var stable = Read("BaselineStability");
+                Assert.AreEqual(Version(baseline), Version(stable), "Complete revision drifted before any preference write.");
+                var json = new System.Web.Script.Serialization.JavaScriptSerializer();
+                Assert.AreEqual(json.Serialize(baseline["Tabs"]), json.Serialize(stable["Tabs"]),
+                    "Hash equality must not hide a different recorded options snapshot.");
+                evidence("BaselineStabilityVerified", new { Before = baseline, After = stable, PreferenceWrites = 0 });
+            }
             var format = Format(baseline); string tab = (string)format["Tab"];
+            if (marginOnly) { Margin(tab); return; }
             var font = Find(format, "Font", "Police :");
             string alternate = Choices(font).FirstOrDefault(x => x != (string)font["Value"] &&
                 new[] { "Consolas (Occidental)", "Consolas (Western)", "Consolas", "Courier New (Occidental)", "Courier New (Western)", "Courier New" }.Contains(x));
@@ -89,14 +119,19 @@ namespace VBAi.Tests.Integration
                 Write("Size", tab, (string)size["Name"], next, null);
                 Assert.AreEqual(next, Find(Format(Read("SizeReadback")), "Size", "Taille :")["Value"]);
             }
+            if (fontSizeOnly) return; // Keep the catalogue diagnostic inside the same restoration and owned shutdown lifecycle.
             foreach (var names in new[] { new[] { "Foreground", "Premier plan :" }, new[] { "Background", "Arrière-plan :" }, new[] { "Indicator", "Indicateur :" } })
             {
                 var paletteFormat = Format(Read(names[0] + "Catalogue")); string category = CurrentCategory(paletteFormat);
-                var control = CategoryPalette(paletteFormat, category, names);
+                var control = historicalPalettePrefix ? Find(paletteFormat, names) : CategoryPalette(paletteFormat, category, names);
                 string next = Choices(control).First(x => x != (string)control["Value"]);
-                Write(names[0], tab, (string)control["Name"], next, category);
-                Assert.AreEqual(next, CategoryPalette(Format(Read(names[0] + "Readback")), category, names)["Value"]);
+                Write(names[0], tab, (string)control["Name"], next, historicalPalettePrefix ? null : category);
+                var readback = Format(Read(names[0] + "Readback"));
+                Assert.AreEqual(next, (historicalPalettePrefix ? Find(readback, names) : CategoryPalette(readback, category, names))["Value"]);
             }
+            // The original rethrow stack does not identify the failing stage. The
+            // prefix deliberately omits later stages; a pass cannot exclude them.
+            if (historicalPalettePrefix && !historicalFullMatrix) return;
             var categoryRead = Read("OtherCategoryCatalogue"); var categories = (object[])Format(categoryRead)["FormatCategories"];
             Assert.IsTrue(categories.Length > 1);
             var other = VbeBridgeClient.Object(categories[1]);
@@ -106,15 +141,20 @@ namespace VBAi.Tests.Integration
             string colour = Choices(foreground).First(x => x != (string)foreground["Value"]);
             Write("OtherCategory", tab, (string)foreground["Name"], colour, otherCategory);
             Assert.AreEqual(colour, CategoryPalette(Format(Read("OtherCategoryReadback")), otherCategory, (string)foreground["Name"])["Value"]);
+            Margin(tab);
+            var beforeStale = Read("BeforeStaleRefusal");
+            Assert.AreNotEqual(Version(baseline), Version(beforeStale), "The stale scenario needs a genuinely changed complete revision.");
+            Refusal("StaleVersion", new { Command = "set_vbe_option", Pane = tab, Property = font["Name"], Value = font["Value"],
+                ExpectedOptionsVersion = Version(baseline) }, beforeStale, "VBE options changed since inspection; read them again.");
+        }
+
+        private void Margin(string tab)
+        {
             var margin = Find(Format(Read("MarginCatalogue")), "Margin Indicator Bar", "Barre des indicateurs en marge");
             Assert.IsTrue(Equals(margin["Value"], "On") || Equals(margin["Value"], "Off"), "The native margin value must be exact On/Off.");
             bool nextMargin = !Equals(margin["Value"], "On");
             Write("Margin", tab, (string)margin["Name"], nextMargin, null);
             Assert.AreEqual(nextMargin ? "On" : "Off", Find(Format(Read("MarginReadback")), (string)margin["Name"])["Value"]);
-            var beforeStale = Read("BeforeStaleRefusal");
-            Assert.AreNotEqual(Version(baseline), Version(beforeStale), "The stale scenario needs a genuinely changed complete revision.");
-            Refusal("StaleVersion", new { Command = "set_vbe_option", Pane = tab, Property = font["Name"], Value = font["Value"],
-                ExpectedOptionsVersion = Version(baseline) }, beforeStale, "VBE options changed since inspection; read them again.");
         }
 
         private void Restore()
@@ -134,6 +174,9 @@ namespace VBAi.Tests.Integration
             }
             var restored = Read("CompleteRestorationReadback");
             Assert.AreEqual(Version(baseline), Version(restored), "Every category and preference must return to the complete baseline revision.");
+            var json = new System.Web.Script.Serialization.JavaScriptSerializer();
+            Assert.AreEqual(json.Serialize(baseline["Tabs"]), json.Serialize(restored["Tabs"]),
+                "Every recorded tab, catalogue and palette must match the complete baseline, independently of its hash.");
             evidence("BaselineRestored", new { BaselineVersion = Version(baseline), Readback = restored });
         }
 
@@ -142,11 +185,25 @@ namespace VBAi.Tests.Integration
             var before = Read(phase + "BeforeWrite");
             object old = Control(Format(before), property, category)["Value"];
             if (value is bool) old = Equals(old, "On");
+            // Keep the historical request's null Query, but bind its positive
+            // recovery entry to the actual category. Later Query changes otherwise
+            // redirect an implicit palette compensation to a different category.
+            string restoreCategory = historicalFullMatrix && category == null &&
+                new[] { "Foreground", "Background", "Indicator" }.Contains(phase)
+                ? CurrentCategory(Format(before)) : category;
             Send(phase, new { Command = "set_vbe_option", Pane = tab, Property = property, Value = value,
                 Query = category, ExpectedOptionsVersion = Version(before) }, true, () => {
-                    if (!ledger.Any(item => item.Item2 == property && item.Item4 == category))
-                        ledger.Add(Tuple.Create(tab, property, old, category));
+                    if (!ledger.Any(item => item.Item2 == property && item.Item4 == restoreCategory))
+                        ledger.Add(Tuple.Create(tab, property, old, restoreCategory));
                 });
+            if (historicalPalettePrefix)
+            {
+                // The original test reads back in Matrix immediately after Write. Keep that
+                // order rather than inserting another full native inspection between them.
+                evidence(phase + "HistoricalCommit", new { Before = before, MutationRetried = false,
+                    IndependentReadbackRequiredByMatrix = true });
+                return;
+            }
             var after = Read(phase + "IndependentAfterWrite");
             Assert.AreEqual(Expected(value), Control(Format(after), property, category)["Value"], "The native preference readback differs from the requested value.");
             evidence(phase + "Verified", new { Before = before, IndependentAfterRead = after,
@@ -176,6 +233,9 @@ namespace VBAi.Tests.Integration
             var after = Read(phase + "ClosedReadback");
             if (Version(before) != Version(after))
                 throw Retain(new InvalidOperationException("The expected refusal changed the complete preferences revision; do not continue or replay."));
+            var serializer = new System.Web.Script.Serialization.JavaScriptSerializer();
+            if (serializer.Serialize(before["Tabs"]) != serializer.Serialize(after["Tabs"]))
+                throw Retain(new InvalidOperationException("The expected refusal changed the complete preferences structure; do not continue or replay."));
             evidence(phase + "VerifiedRefusal", new { Response = reply, IndependentClosedReadback = after, MutationRetried = false });
         }
 
@@ -196,7 +256,11 @@ namespace VBAi.Tests.Integration
             return data;
         }
         private void EnsureDispatchAllowed()
-        { if (HostRetained) throw new InvalidOperationException("The exact owned host is retained; dispatch and cleanup are forbidden."); }
+        {
+            if (HostRetained) throw new InvalidOperationException("The exact owned host is retained; dispatch and cleanup are forbidden.");
+            try { verifyExclusiveHost?.Invoke(); }
+            catch (Exception error) { throw Retain(error); }
+        }
         private Exception OutcomeFailure(Exception error, object request, object response)
         { return Retain(error, request, response); }
         private Exception Retain(Exception primary, object request = null, object response = null)

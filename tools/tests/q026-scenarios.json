@@ -1,0 +1,66 @@
+{
+  "Qualification": "Q-026",
+  "Status": "PLANNED_NOT_RUN",
+  "Scope": "Owned disposable Excel, complete native Options revision and exact restoration",
+  "Isolation": "Inactive Windows desktop; reuse verified Q006 isolation infrastructure from PR #20 before native execution",
+  "Preconditions": [
+    "No existing Excel or other VBE test host whose preferences could overlap",
+    "Frozen candidate and harness SHA-256, actual loaded MVID, exact owned PID/start/window desktop",
+    "Durable complete baseline receipt before any preference mutation",
+    "Original process handle retained before native work",
+    "Every planned native case has a bounded observation deadline and an explicit restoration oracle"
+  ],
+  "Cases": [
+    {
+      "Id": "read-stability",
+      "Action": "Read complete options in a bounded sequence without preference writes",
+      "Oracle": "Equal complete OptionsVersion and structurally equal Tabs; retain exact differing paths on failure"
+    },
+    {
+      "Id": "font",
+      "Action": "Select one exact observed alternate font using the immediately preceding complete revision",
+      "Oracle": "Confirmed commit and closed dialog, independent exact readback, original font restored"
+    },
+    {
+      "Id": "size-catalogue",
+      "Action": "Read the size catalogue before and after the font change; retain native branch/count/selection evidence when available",
+      "Oracle": "An exact observed alternate size can be changed and restored; an empty catalogue must refuse without mutation and prove dialog closure. Refusal does not qualify size mutation"
+    },
+    {
+      "Id": "palettes",
+      "Action": "Change foreground, background and indicator through exact observed native choices",
+      "Oracle": "Each explicit category/value is read back and restored with a fresh complete revision"
+    },
+    {
+      "Id": "nondefault-category",
+      "Action": "Change one observed palette in a different Code Colors category",
+      "Oracle": "Requested category retained, exact value readback and full original palette restored; no repeated selection notification"
+    },
+    {
+      "Id": "margin",
+      "Action": "Toggle the exact native margin-indicator checkbox once",
+      "Oracle": "Real On/Off transition followed by exact restoration; a redundant write is not accepted"
+    },
+    {
+      "Id": "stale-revision",
+      "Action": "Attempt one write against a genuinely obsolete complete revision after a confirmed change",
+      "Oracle": "Exact refusal, independently closed dialog, unchanged post-refusal complete state"
+    },
+    {
+      "Id": "complete-restoration",
+      "Action": "Restore positively committed entries in reverse order using fresh reads",
+      "Oracle": "Full original OptionsVersion and all Tabs match the retained baseline, including catalogues and category palettes"
+    },
+    {
+      "Id": "normal-exit",
+      "Action": "Close the disposable seed without saving and request Quit only after all native work is terminal",
+      "Oracle": "Exit code 0 from the original handle and clean private desktop inventory; no forced termination"
+    }
+  ],
+  "StopRules": [
+    "Lost, pending, refused unexpectedly or incomplete native replies retain exact ownership and prevent further dispatch",
+    "Never repeat a native mutation, selection notification, restoration or cleanup after an uncertain outcome",
+    "A hash without complete recorded Tabs is insufficient restoration evidence",
+    "Historical failures are retained separately; a later pass does not establish their cause"
+  ]
+}

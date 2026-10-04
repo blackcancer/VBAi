@@ -12,7 +12,7 @@ namespace VBAi.Tests.Integration.Hosts.Excel
 {
     /// <summary>Full native Format qualification with terminal-only restoration and durable owned-host evidence.</summary>
     [TestClass, TestCategory("Excel")]
-    public sealed class ExcelFormatOptionsTests
+    public sealed partial class ExcelFormatOptionsTests
     {
         public TestContext TestContext { get; set; }
         private static readonly List<ExcelVbeFixture> retainedFormatHosts = new List<ExcelVbeFixture>();
@@ -20,7 +20,8 @@ namespace VBAi.Tests.Integration.Hosts.Excel
         private string evidenceDirectory;
         private delegate bool WindowCallback(IntPtr handle, IntPtr parameter);
         [DllImport("user32.dll", SetLastError = true)] private static extern bool EnumWindows(WindowCallback callback, IntPtr parameter);
-        [DllImport("user32.dll")] private static extern uint GetWindowThreadProcessId(IntPtr handle, out uint processId);
+        [DllImport("user32.dll", SetLastError = true)] private static extern uint GetWindowThreadProcessId(IntPtr handle, out uint processId);
+        [DllImport("user32.dll")] private static extern bool IsWindow(IntPtr handle);
         [DllImport("user32.dll", CharSet = CharSet.Unicode)] private static extern int GetClassName(IntPtr handle, StringBuilder text, int capacity);
         [DllImport("user32.dll", CharSet = CharSet.Unicode)] private static extern int GetWindowText(IntPtr handle, StringBuilder text, int capacity);
         [DllImport("user32.dll", CharSet = CharSet.Unicode)] private static extern int GetWindowTextLength(IntPtr handle);
@@ -28,6 +29,25 @@ namespace VBAi.Tests.Integration.Hosts.Excel
 
         [STATestMethod]
         public void NativeFormatChoicesRoundTripAndRestoreCompleteOptionsVersion()
+        { RunQualification(false); }
+
+        [STATestMethod]
+        public void NativeMarginCheckboxRoundTripAndRestoreCompleteOptionsVersion()
+        { RunQualification(true); }
+
+        [STATestMethod]
+        public void NativeHistoricalFontPalettePrefixAndRestoreCompleteOptionsVersion()
+        { RunQualification(false, true); }
+
+        [STATestMethod]
+        public void NativeHistoricalCompleteFormatAndRestoreCompleteOptionsVersion()
+        { RunQualification(false, true, historicalFullMatrix: true); }
+
+        [STATestMethod]
+        public void NativeFontSizeCatalogueAndRestoreCompleteOptionsVersion()
+        { RunQualification(false, fontSizeOnly: true); }
+
+        private void RunQualification(bool marginOnly, bool historicalPalettePrefix = false, bool fontSizeOnly = false, bool historicalFullMatrix = false)
         {
             if (Environment.GetEnvironmentVariable("VBAi_RUN_EXCEL_TESTS") != "1")
                 Assert.Inconclusive("Excel automation is opt-in. Set VBAi_RUN_EXCEL_TESTS=1.");
@@ -42,10 +62,15 @@ namespace VBAi.Tests.Integration.Hosts.Excel
                 Environment.GetEnvironmentVariable(PathVisibilityDiagnostic.EnvironmentName), () => {
                     Directory.CreateDirectory(evidenceDirectory);
                     TestContext.WriteLine("Retained options evidence: " + evidenceDirectory);
-                }, trace => ExcelVbeFixture.StartOwnedWithTrace(trace), QualifyReadyHost);
+                }, trace => {
+                    // The private child inherits this testhost's exact per-case trace opt-in.
+                    if (!string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("VBAi_TEST_DESKTOP_NAME")))
+                        Environment.SetEnvironmentVariable(VbeInspectionTrace.EnvironmentName, trace);
+                    return ExcelVbeFixture.StartOwnedWithTrace(trace);
+                }, host => QualifyReadyHost(host, marginOnly, historicalPalettePrefix, fontSizeOnly, historicalFullMatrix));
         }
 
-        private void QualifyReadyHost(ExcelVbeFixture host)
+        private void QualifyReadyHost(ExcelVbeFixture host, bool marginOnly, bool historicalPalettePrefix, bool fontSizeOnly, bool historicalFullMatrix)
         {
             // No using/finally Dispose: uncertainty must retain this exact fixture and all owning COM references.
             DateTime startUtc = DateTime.MinValue;
@@ -57,11 +82,25 @@ namespace VBAi.Tests.Integration.Hosts.Excel
                 catch (Exception recording) { throw new AggregateException("Startup identity and its evidence both failed; host retained.", identityFailure, recording); }
                 throw;
             }
+            Q026OptionsGuardTrace trace = null;
             var lifecycle = new ExcelFormatOptionsQualification(host.ProcessId, host.Command,
-                () => ObserveOptionsClosure(host.ProcessId, startUtc), () => RetainHost(host),
-                () => { host.Dispose(); AttachEvidence(host, startUtc, "ShutdownVerified", host.ShutdownDiagnostics); },
-                (phase, data) => AttachEvidence(host, startUtc, phase, data));
-            lifecycle.Run();
+                () => ObserveOptionsClosureSettled(host, startUtc), () => RetainHost(host),
+                () => { trace?.Dispose(); host.Dispose(); AttachEvidence(host, startUtc, "ShutdownVerified", host.ShutdownDiagnostics); },
+                (phase, data) => AttachEvidence(host, startUtc, phase, data), verifyReadStability: !historicalPalettePrefix, marginOnly: marginOnly,
+                historicalPalettePrefix: historicalPalettePrefix, verifyExclusiveHost: () => VerifyExclusiveHost(host, startUtc), fontSizeOnly: fontSizeOnly,
+                historicalFullMatrix: historicalFullMatrix);
+            Exception primary = null, detach = null;
+            bool runStarted = false;
+            try {
+                if (Q026OptionsGuardTrace.NeedsGuardWarmupIfRequested()) lifecycle.WarmGuardForBreakpoint();
+                trace = Q026OptionsGuardTrace.StartIfRequested(host, startUtc, evidenceDirectory);
+                runStarted = true;
+                lifecycle.Run();
+            } catch (Exception error) { primary = error; if (!runStarted) RetainHost(host); }
+            try { trace?.Dispose(); } catch (Exception error) { detach = error; RetainHost(host); }
+            if (primary != null && detach != null) throw new AggregateException("Format qualification and CLR detachment failures are both retained.", primary, detach);
+            if (primary != null) System.Runtime.ExceptionServices.ExceptionDispatchInfo.Capture(primary).Throw();
+            if (detach != null) throw detach;
         }
 
         private static void RetainHost(ExcelVbeFixture host)
@@ -71,9 +110,46 @@ namespace VBAi.Tests.Integration.Hosts.Excel
         }
 
         /// <summary>Only native reads: no focus, input, accessibility action, COM call or bridge request.</summary>
+        private IDictionary<string, object> ObserveOptionsClosureSettled(ExcelVbeFixture host, DateTime expectedStartUtc)
+        {
+            // Historical builds post Cancel without waiting for destruction. Observe its completion;
+            // never send input or another bridge request while an owned dialog is still present.
+            var timer = Stopwatch.StartNew();
+            var first = ObserveOptionsClosure(host.ProcessId, expectedStartUtc);
+            var last = first; int observations = 1;
+            while (Equals(last["ProcessIdentityVerified"], true) && Equals(last["EnumerationSucceeded"], true) &&
+                !Equals(last["OptionsDialogAbsent"], true) && timer.ElapsedMilliseconds < 2000)
+            {
+                System.Threading.Thread.Sleep(50);
+                last = ObserveOptionsClosure(host.ProcessId, expectedStartUtc); observations++;
+            }
+            AttachEvidence(host, expectedStartUtc, "ClosureObservation", new { First = first, Last = last,
+                Observations = observations, ElapsedMilliseconds = timer.ElapsedMilliseconds, NativeInput = 0, BridgeRequests = 0 });
+            return last;
+        }
+
+        private void VerifyExclusiveHost(ExcelVbeFixture host, DateTime startUtc)
+        {
+            var competitors = new List<object>();
+            bool ownedAlive = false;
+            foreach (var name in new[] { "EXCEL", "WINWORD", "POWERPNT", "MSACCESS", "MSPUB", "SLDWORKS" })
+                foreach (var process in Process.GetProcessesByName(name))
+                    using (process)
+                    {
+                        DateTime actualStart = process.StartTime.ToUniversalTime();
+                        if (process.Id == host.ProcessId && name == "EXCEL" && actualStart == startUtc && !process.HasExited)
+                            ownedAlive = true;
+                        else competitors.Add(new { ProcessId = process.Id, Name = name, ProcessStartUtc = actualStart.ToString("o") });
+                    }
+            AttachEvidence(host, startUtc, "HostExclusivityObservation", new { OwnedAlive = ownedAlive, Competitors = competitors,
+                BeforeDispatch = true, NativeInput = 0, BridgeRequests = 0 });
+            if (!ownedAlive || competitors.Count != 0)
+                throw new InvalidOperationException("The owned Excel identity or exclusive VBE-host interval changed; retain without further native dispatch.");
+        }
+
         private static IDictionary<string, object> ObserveOptionsClosure(int processId, DateTime expectedStartUtc)
         {
-            var windows = new List<object>(); bool optionsAbsent = true, identity = false, complete = false;
+            var windows = new List<object>(); var confirmedGone = new List<long>(); bool optionsAbsent = true, identity = false, complete = false;
             string error = null;
             DateTime beforeStart = DateTime.MinValue, afterStart = DateTime.MinValue;
             try
@@ -86,10 +162,10 @@ namespace VBAi.Tests.Integration.Hosts.Excel
                     complete = EnumWindows((handle, parameter) => {
                         try
                         {
-                            uint pid;
-                            if (GetWindowThreadProcessId(handle, out pid) == 0)
-                                throw new InvalidOperationException("A window owner could not be read during complete enumeration.");
-                            if (pid != processId) return true;
+                            uint? pid = NativeWindowEnumerationOwnership.ReadProcessId(handle,
+                                GetWindowThreadProcessId, Marshal.GetLastWin32Error, IsWindow);
+                            if (!pid.HasValue) { confirmedGone.Add(handle.ToInt64()); return true; }
+                            if (pid.Value != processId) return true;
                             var className = new StringBuilder(256);
                             if (GetClassName(handle, className, className.Capacity) == 0)
                                 throw new InvalidOperationException("An owned window class could not be read.");
@@ -116,6 +192,7 @@ namespace VBAi.Tests.Integration.Hosts.Excel
                 ["BeforeStartUtc"] = beforeStart.ToString("o"), ["AfterStartUtc"] = afterStart.ToString("o"),
                 ["ProcessIdentityVerified"] = identity, ["EnumerationSucceeded"] = complete && error == null,
                 ["OptionsDialogAbsent"] = complete && identity && error == null && optionsAbsent, ["OwnedWindows"] = windows.ToArray(),
+                ["ConfirmedGoneDuringEnumeration"] = confirmedGone.ToArray(),
                 ["Error"] = error, ["ObservationOnly"] = true };
         }
 

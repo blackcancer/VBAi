@@ -569,6 +569,10 @@ namespace VBAi
                                     ReadOptionsCombo(new IntPtr(element.Current.NativeWindowHandle), control);
                                     controls.Add(control); continue;
                                 }
+                                if (kind == ControlType.ComboBox)
+                                    VbeInspectionTrace.Current?.RecordOptionsCombo(new VbeInspectionTrace.OptionsComboEvidence {
+                                        Reader = VbeInspectionTrace.OptionsReader.UiAutomationCombo,
+                                        Role = OptionsDiagnosticRole(control.Name), Window = element.Current.NativeWindowHandle });
                                 var choices = element.FindAll(TreeScope.Descendants,
                                     new PropertyCondition(AutomationElement.ControlTypeProperty, ControlType.ListItem))
                                     .Cast<AutomationElement>().Where(x => x.Current.IsEnabled &&
@@ -617,13 +621,8 @@ namespace VBAi
                 if (type == "ControlType.ComboBox" && selected.Current.NativeWindowHandle != 0 &&
                     ClassName(new IntPtr(selected.Current.NativeWindowHandle)) == "ComboBox")
                     WriteOptionsCombo(new IntPtr(selected.Current.NativeWindowHandle), (string)value);
-                else if (type == "ControlType.CheckBox" && selected.TryGetCurrentPattern(TogglePattern.Pattern, out object toggle))
-                {
-                    var pattern = (TogglePattern)toggle;
-                    if (pattern.Current.ToggleState == ToggleState.Indeterminate) throw new InvalidOperationException("An indeterminate option is not writable.");
-                    bool desired = (bool)value;
-                    if ((pattern.Current.ToggleState == ToggleState.On) != desired) pattern.Toggle();
-                }
+                else if (type == "ControlType.CheckBox")
+                    WriteOptionsCheckbox(dialog, new IntPtr(selected.Current.NativeWindowHandle), (bool)value);
                 else if (type == "ControlType.RadioButton" && selected.TryGetCurrentPattern(SelectionItemPattern.Pattern, out object selection))
                     ((SelectionItemPattern)selection).Select();
                 else if (type == "ControlType.Edit" && !selected.Current.IsPassword && selected.TryGetCurrentPattern(ValuePattern.Pattern, out object input))
@@ -1285,7 +1284,7 @@ namespace VBAi
         /// <returns>Valeurs visibles et erreurs individuelles de lecture.</returns>
         public static object ReadVbeOptions()
         {
-            return ReadVbeOptions(new NativeOptionsProbe());
+            return TraceOptionsInspection(() => ReadVbeOptions(new NativeOptionsProbe()));
         }
 
         /// <summary>Lit le dialogue Options avec une sonde injectable et le ferme sans appliquer de modifications.</summary>

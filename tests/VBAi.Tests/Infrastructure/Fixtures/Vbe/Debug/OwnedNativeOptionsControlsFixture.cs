@@ -95,6 +95,7 @@ namespace VBAi.Tests.Unit
             internal IntPtr Font, Size, List;
             internal string CurrentCategory = "Normal";
             internal Action<string> OnCategoryNotification;
+            internal Action<int, int, IntPtr> OnControlNotification;
 
             internal OwnedNativeOptionsControls()
             {
@@ -152,6 +153,7 @@ namespace VBAi.Tests.Unit
                 if (message.Msg != 0x111) return;
                 int identifier = (int)(message.WParam.ToInt64() & 0xffff), code = (int)(message.WParam.ToInt64() >> 16);
                 Notifications.Add(Tuple.Create(identifier, code, message.LParam));
+                OnControlNotification?.Invoke(identifier, code, message.LParam);
                 if (identifier == 4905 && code == 1 && message.LParam == List)
                 {
                     int selected = OptionsFixtureInteger(List, 0x188, IntPtr.Zero, IntPtr.Zero).ToInt32();

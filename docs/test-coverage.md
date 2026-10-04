@@ -4351,6 +4351,893 @@ test and retained-host decision remain unchanged. No bridge, COM, input,
 restoration or cleanup occurs during this later observation, retained in
 `retained-dialog-later-observation.json`.
 
+### Q-026 inactive-desktop preparation (2026-10-03)
+
+Source `180aee899941027c16bece8bef61dfcef47f7f22` prepares the focused Q-026
+harness against the frozen installed candidate, not against a rebuilt product.
+Its actual product MVID is `d2c3601b-893d-4e84-b9e3-c172da7e2437`, SHA-256
+`C4D095D9427379AC8F2A82D047C8780637A0E815173241976F2C86664E777644`.
+The focused harness/helper and the complete solution build completed without
+warnings or errors. The source working tree was clean when the campaign was
+prepared; subsequent documentation edits do not alter its frozen files.
+
+`artifacts/q026-20261003-native/managed/managed.trx` records **68 passed,
+0 failed, 0 skipped**, covering the private-desktop and Format lifecycle guards.
+This is focused managed validation, not coverage or native acceptance.
+The one-shot campaign has not dispatched a native Format command: it waits
+for another qualification's retained Access PID 6880, start
+`2026-10-02T22:27:55.5717465Z`. The owning Q-012 receipt records a returned Quit
+without observed process exit; Q-026 neither replays its cleanup nor terminates it.
+Once that owner finishes recovery, the frozen worker additionally requires
+30 continuous seconds without another VBE host before its own Excel launch.
+Q-026 remains **OPEN / native NOT_RUN** at this preparation checkpoint.
+
+### Q-026 native Format failure and recovery (2026-10-03)
+
+The frozen `180aee8` campaign subsequently executed the complete Format method
+once on the inactive desktop `VBAiTests_24227bdb782d40e087294b262600a190`.
+Excel PID 32152, start `2026-10-02T22:42:37.0468311Z`, version
+`16.0.20430.20092`, loaded the preparation candidate identified above.
+`artifacts/q026-20261003-native/native/format.trx` records **0 passed, 1 failed,
+0 skipped**. Durable receipts verify baseline read stability, font and three
+normal-text palettes, another-category foreground, and the empty-size refusal
+with independently observed closure and unchanged complete state. The margin
+write then returned `Ok=false` / an invalid-object-state error; its Options
+dialog remained open. No margin retry, stale-revision trial, automatic
+compensation or campaign Close/Quit followed that unknown write outcome.
+Full restoration and qualification are therefore failed in that TRX.
+
+Independent recovery captured the exact owned Options dialog, cancelled it once
+on a private-desktop thread and verified its absence. An initial default-desktop
+cancellation guard refused before any native message; that refusal was not a
+lost cancellation. The first compensation attempt likewise refused before any
+write because Windows PowerShell interpreted a UTF-8 receipt as ANSI. With
+explicit UTF-8 decoding, `recovery-utf8/terminal.json` proves the five positively
+committed entries returned to baseline, including every tab/category/catalogue
+and revision `544477535d391a457fc66947a3ddb3da7ffb430e6212289c6586a6fcb65f3e05`.
+The failed margin remained at its original `On` value and was not replayed.
+`recovery-shutdown.json` records one disposable-seed Close, one returned Quit
+and normal exit 0 without forced termination. This uses a fresh recovery handle;
+it does not qualify the original campaign's retained-handle shutdown.
+
+The corrective source replaces Options-checkbox UIA Toggle with a guarded
+two-state Win32 Button read/click/read sequence. A matching value sends no click;
+an unreadable initial state refuses before dispatch; a failed or unmatched
+readback never triggers another click. The initial isolated-build
+`q026-checkbox-fix-tests/checkbox-guards.trx` records **11 passed, 0 failed,
+0 skipped** for the pure transition/failure contracts. The broader private-desktop regression
+record `q026-checkbox-dispatch-unit-v2/results/checkbox-native-guards.trx` has
+**201 passed, 1 failed, 0 skipped**: its new synthetic button fixture exposed an
+ambiguous duplicate accessible name. After correcting only that fixture,
+`q026-checkbox-dispatch-unit-v3/results/checkbox-focus.trx` records **80 passed,
+0 failed, 0 skipped**, including the real Win32 transitions and lifecycle guards.
+The solution builds without warnings/errors in `q026-checkbox-candidate`.
+These are local control/managed tests, not acceptance of the repaired Excel path.
+The new checkbox-only Excel method must pass on a fresh owned host before a
+complete Format qualification is attempted. Q-026 remains **OPEN** here.
+
+### Q-026 corrected-candidate prelaunch guards (2026-10-03)
+
+Source `5ab57ea84beebd47934ba5fc2da8e639bc2d050a` prepared a margin-only
+diagnostic with candidate MVID `24d4809c-d427-4412-b746-793d59fc056a`, SHA-256
+`37D06CC3D25CC455A3AE6F128756921003577188E1B740882CF17A25DCD6AC48`.
+The separate `q026-margin-native/managed/managed.trx` and
+`q026-margin-native-v2/managed/managed.trx` each record **81 passed, 0 failed,
+0 skipped** for their focused managed gate. Both workers then exited with code
+1 before any native launch. The diagnostic worker receipt in the second run
+identifies a registered-CodeBase mismatch; no Excel or preference write occurred.
+An independent limited-worker observation saw the original product path,
+although the development shell read the candidate path. This is a registration
+context observation, not a proven explanation of historical Options revision drift.
+
+The development-context registration was restored from its exact backup.
+A subsequent limited-context activation refused before mutation because another
+campaign had just opened Word PID `42988`. Its ownership remains with that
+campaign; Q-026 neither closes it nor overwrites its registration. The repaired
+Excel path remains **NOT_RUN** pending an exclusive native-test interval.
+
+### Q-026 candidate loading diagnostic (2026-10-03)
+
+The subsequent `q026-margin-native-v3` campaign at source `639b488` used the
+same corrected candidate identified above. Its managed gate recorded **81 passed,
+0 failed, 0 skipped**. The native TRX recorded **0 passed, 1 failed, 0 skipped**:
+owned Excel PID `26764`, start `2026-10-03T08:16:27.2217572Z`, remained in add-in
+loading before any preference dispatch. An independently read VBA dialog said
+the add-in could not load and offered its removal. Explicit recovery answered
+No once, preserving registration; bootstrap then failed terminally because the
+bridge was unavailable. No Format scenario is qualified by that run.
+
+The independent class-activation diagnostic returned HRESULT `0x80070002` and
+loaded no VBAi assembly with the helper's percent-encoded CodeBase. The helper
+now matches `Install-VBAi.ps1` and the other repository registration tools by
+preserving the unescaped Unicode `file:///` path. After guarded restoration and
+reapplication, `q026-class-activation-v2.json` recorded successful activation of
+the exact candidate MVID and path; its private worker exited normally. This
+diagnoses the qualification helper's loading error, not historical revision drift.
+
+`q026-margin-native-v3/bootstrap-shutdown.json` records normal recovery exit 0,
+one returned seed Close and one returned Quit, without termination. This
+bootstrap-only recovery required terminal worker/boot failure, no preference
+receipts, dialog absence, the exact saved seed and its unchanged SHA-256. An
+earlier exclusive file-hash read refused before Close; the shared read then
+verified the same seed hash. The fresh recovery handle does not qualify the
+original failed campaign's shutdown lifecycle. All Excel processes were absent
+after recovery. The next native diagnostic remains separately **NOT_RUN** here.
+
+At source `af7f352`, `q026-margin-native-v4` recorded **81 managed passed,
+0 failed, 0 skipped** and **0 native passed, 1 failed, 0 skipped**. Owned Excel
+PID `15268`, start `2026-10-03T08:30:50.6679365Z`, failed terminally before Format
+dispatch because the bridge was unavailable. Independent limited-context
+inspection then found the existing VBAi LoadBehavior DWORD was 0. This run did
+not test the repaired preference path. Its `bootstrap-shutdown.json` verifies
+one returned seed Close, one returned Quit and fresh-handle normal recovery
+exit 0; all earlier failed results remain failed.
+
+The qualification activation helper now supports an explicit, reversible
+autoload opt-in, preserving the observed DWORD 0 in
+`q026-limited-registration-v3.clixml` before enabling only the installed VBAi
+add-in. Execution checks that value before native launch. No Office trust
+setting or registered identity is changed. The next diagnostic must verify
+actual loaded-candidate identity before any preference scenario is accepted.
+
+### Q-026 current native acceptance (2026-10-03)
+
+Source `9400d654a11affaa931271cc4efcdc4dde05a80c` freezes both final campaigns
+on clean branch `codex/q026-qualification`. Both use product MVID
+`24d4809c-d427-4412-b746-793d59fc056a`, SHA-256
+`37D06CC3D25CC455A3AE6F128756921003577188E1B740882CF17A25DCD6AC48`, and
+Excel `16.0.20430.20092`. The loaded native MVID and all frozen file hashes were
+verified independently of registration readback.
+
+| Campaign / recorded artifact | Actual result | Exact scope |
+| --- | --- | --- |
+| `artifacts/q026-margin-native-v5/managed/managed.trx` | 81 passed, 0 failed, 0 skipped | Focused managed gate, not the full repository suite |
+| `artifacts/q026-margin-native-v5/native/format.trx` | 1 passed, 0 failed, 0 skipped | Fresh owned Excel PID 44076, start `2026-10-03T08:36:34.7590580Z`; real On-to-Off margin transition, independent readbacks, exact complete restoration and normal exit |
+| `artifacts/q026-full-native-v3/managed/managed.trx` | 81 passed, 0 failed, 0 skipped | Same focused managed gate for the independently launched complete campaign |
+| `artifacts/q026-full-native-v3/native/format.trx` | 1 passed, 0 failed, 0 skipped | Fresh owned Excel PID 22396, start `2026-10-03T08:44:40.2579485Z`; full planned Format matrix, refusals, restoration and normal exit |
+
+The complete campaign verifies initial full-state stability; font, foreground,
+background and indicator mutations; another category's foreground; a real margin
+transition; and an intentionally stale revision refusal. Its size catalogue is
+empty: only the expected refusal is accepted, **not a size mutation**. Both
+refusals have independently observed dialog absence and structurally unchanged
+complete readbacks. All six positively committed entries were restored in
+reverse order, with explicit categories and fresh revisions. No uncertain native
+action was replayed.
+
+The independent `complete-restoration-independent.json` comparisons find every
+tab, control, catalogue and palette equal to baseline, with revision
+`544477535d391a457fc66947a3ddb3da7ffb430e6212289c6586a6fcb65f3e05` and matching
+PID/start/MVID metadata within each campaign. The margin comparison finds only
+`/Tabs/1/Controls/11/Value` changed On to Off. The separate full-campaign font
+comparison finds only `/Tabs/1/Controls/8/Value` changed. The restored margin
+snapshot also matches the next fresh Excel's complete initial snapshot; this is
+an actual observation across normal exit and a new host, not a restart claim
+derived from `CommitRequested` alone.
+
+Each fixture retains its original native launch handle and asserts its normal
+exit independently of the separately queried process. Both shutdown receipts
+record exit 0, returned Close/Quit and no forced termination. Both private desktop
+terminals report original-worker exit 0 with input desktop `Default` and no
+desktop switches. Terminal qualification receipts have no primary, restoration
+or shutdown error. No SOLIDWORKS or other-host acceptance is implied.
+
+`artifacts/q026-release.json` records release at `2026-10-03T09:15:13.5259898Z`,
+after owned Excel exit and absence of competing hosts. The limited-context
+restore verified the exact prior Q-024 CodeBase and LoadBehavior DWORD 0.
+The current instrumented Format matrix is **ACCEPTED**. Q-026's historical
+stale-revision cause remains **UNPROVEN**: the old failed run is not converted
+to a pass by these new results, and its stricter causal-closure criterion remains
+open. Further blind repetitions would not supply its missing historical receipts.
+
+### Q-026 historical binary diagnostic (2026-10-03)
+
+The original failed Format test retained a complete initial baseline in
+`qualification-v1/activated-excel`, revision
+`544477535d391a457fc66947a3ddb3da7ffb430e6212289c6586a6fcb65f3e05`, file SHA-256
+`EA0C00167ECB4431DA0E06FA1D0EAA386722D63B7E5EBF1B7B7F062A7F196DDF`.
+Its test fixture checked the loaded product MVID before that capture. The frozen
+original product is MVID `5cc513d1-5569-4835-bf6c-cf70a18274fb`, SHA-256
+`A12378FB826CAAD6C0BBE79BF09C52332760E6C32FDB4F65138876CB90F5F167`.
+Portable-PDB document checksums match the relevant options implementation and
+Format test at source `5c860a3`; `q026-original-source-provenance.json` retains
+those hashes. The exception stack points to the test's catch/rethrow line,
+not to a particular preference. Later recovery snapshots show font and normal
+text foreground changes, but are not the two snapshots compared at the failing
+revision guard. Those guard snapshots remain unavailable.
+
+Source `eb89a3a` introduces a test-only, opt-in CLR collector for the unchanged
+historical binary. `q026-historical-trace-preflight/trial-08/preflight.json`
+verifies a complete synthetic options graph, exact request fields, debugger
+detach and normal helper exit. This preflight activates no Office host, performs
+no target function evaluation and changes no preference. Framed captures are
+decoded offline and can be hashed using the original .NET Framework
+JavaScriptSerializer/UTF-8/SHA-256 algorithm. Empty or incomplete traces cannot
+establish revision drift.
+
+| Source / retained artifact | Actual result | Scope |
+| --- | --- | --- |
+| `eb89a3a`, `q026-historical-prefix-campaign-v1` | Prelaunch refused; no native scenario | Canonical registered path differed from a noncanonical plan path; guarded registration release, no preference writes |
+| `e1e158c`, `q026-historical-prefix-campaign-v2/managed/managed.trx` | 71 passed, 0 failed, 0 skipped | Historical-compatible managed subset; excludes the later native-checkbox implementation |
+| `e1e158c`, `q026-historical-prefix-campaign-v2/native/format.trx` | 0 passed, 1 failed, 0 skipped | Owned Excel PID 37156, start `2026-10-03T10:23:57.9740740Z`; scenario stopped before palettes when immediate native enumeration still found Options |
+| `7203f492`, `q026-recovery-validation/managed/managed.trx` | 71 passed, 0 failed, 0 skipped | Same historical-compatible subset; both diagnostic projects build without warnings or errors |
+| `7203f492`, `tools/probes/tests/test_read_q026_clr_guard.py` | 6 passed, 0 failed | Offline framing, Unicode, truncation and collector-error checks; no native acceptance |
+| `7203f492`, `q026-historical-prefix-campaign-v3/managed/managed.trx` | 71 passed, 0 failed, 0 skipped | Historical-compatible managed subset on the frozen original product |
+| `7203f492`, `q026-historical-prefix-campaign-v3/native/format.trx` | 1 passed, 0 failed, 0 skipped | Owned Excel PID 39752, start `2026-10-03T10:46:21.2979545Z`; font, honest size refusal and foreground/background/indicator without Query, four reverse compensations, complete restoration and original-host-handle exit 0 |
+
+The failed native prefix loaded the exact historical MVID on inactive desktop
+`VBAiTests_6bcc4563e670469d823b4ece448ef906`. Its sole positively confirmed
+preference change was the font. The expected size refusal occurred before any
+size write; independent enumeration found a visible owned Options dialog at
+that instant. A later read-only enumeration verified its absence without Cancel
+or further input. The detached trace contains no complete stale-guard capture.
+The first recovery precheck stopped before any write because it counted both
+the size label and combo box. The corrected precheck selected the unique editable
+control and verified its unchanged baseline value before the font compensation.
+
+`recovery-font-once-v2/terminal.json` verifies the complete baseline revision and
+tab structure after one positively confirmed font compensation, with no replay
+of the failed size operation. `recovery-shutdown.json` records one returned
+seed Close, one returned Quit and normal exit 0 through a fresh recovery handle;
+it is not original-launch-handle lifecycle acceptance. The debugger detached
+normally with exit 0. `registration-release.json` records release at
+`2026-10-03T10:43:09.3011741Z`, restoring the prior Q-024 CodeBase and autoload
+setting. The old desktop helper recorded retained private handles after the
+failed campaign; the recovery issued no forced termination. Source `7203f492` allows future
+helpers to release retained handles after independently observing original-child
+exit and an empty private desktop, without replaying native cleanup.
+
+The subsequent prefix starts from the same complete baseline on inactive
+desktop `VBAiTests_5eedf5ed3b2b4e4b8d3579cbf532a4e2`. Its size refusal observes
+Options still present, then absent after 54 ms across two native enumerations,
+without bridge requests or input in between. All three palette changes preserve
+the observed normal-text category. The independent
+`complete-restoration-independent.json` comparison verifies complete Tabs and
+revision equality, with identical recorded PID/start/MVID metadata. Its terminal
+has no primary, restoration or shutdown error; the fixture verifies exit 0 on
+the original Excel launch handle. The CLR collector detaches normally with exit
+0 and yields no stale-guard capture. The product SHA-256 remains unchanged.
+`q026-historical-wrapper-v3.json` verifies guarded registration restoration and
+absence of Excel at `2026-10-03T11:06:59.0147355Z`.
+
+This diagnostic prefix includes additional independent reads, a debugger and
+inactive-desktop isolation; it does not reproduce the original run's timing or
+qualify the original full matrix on the old product. Both external scheduled
+launchers lack a terminal receipt and later report `0xC000013A`; their stopping
+cause and original-worker normal exit remain unverified. This is separate from
+the native test runner's verified result and original Excel-handle exit. No
+cleanup is replayed and no global keyboard input or desktop switch is used.
+
+Q-026's historical causal criterion remains **OPEN**. Delayed Options closure
+does not establish why the original complete revision differed, and recovery
+does not turn the failed native prefix into a pass.
+
+### Q-026 diagnostic crash and targeted capture (2026-10-03)
+
+Historical campaign `q026-historical-prefix-campaign-v4`, source `474d4c2`,
+loads the unchanged original product on inactive desktop
+`VBAiTests_285a6e65f7664bf38cceec8f1357fc18`: Excel PID 17064, start
+`2026-10-03T16:06:40.7009034Z`. The font and three palette writes pass their
+readbacks; three palette compensations complete. The subsequent
+`read_vbe_options` request expires after emission at
+`2026-10-03T16:24:19.9324626Z`. No font compensation, cleanup or retry is sent.
+The CLR trace has no complete stale-guard capture and records an access
+violation. Windows Application Error event 1000 independently identifies
+the same PID/start, exception `0xC0000005`, and EXCEL.EXE offset `0x10CFBDE`.
+The owning worker exits with code 1. Its direct GUI launcher and private-desktop
+terminal observe that original-worker exit normally; they do not establish a
+normal exit for the crashed Excel. Windows also records a Publisher crash
+during the native interval, so exclusive host use throughout that trial is
+not established. Neither crash cause is inferred from these events.
+
+Office subsequently starts Excel PID 42408 with `/restore` on desktop `Default`.
+After explicit user reservation for Q-026 recovery, exact native attachment
+finds only the unchanged saved disposable seed. One Close and one Quit return;
+the fresh recovery handle observes exit 0. This successor is not the original
+campaign host and cannot supply its missing lifecycle evidence.
+
+`q026-historical-prefix-campaign-v4/separate-owned-recovery` owns a further
+isolated Excel PID 12836, start `2026-10-03T16:49:11.7267442Z`, on desktop
+`VBAiTests_11784aa1e68847bfaa1de1b91f99f792`, with the exact historical MVID.
+The new host's complete snapshot differs from the original baseline only in
+the positively committed font. Three palette entries already match and are
+not written again. One font compensation with a fresh revision, independent
+readback and complete Tabs equality restores baseline revision `544477...`.
+Its original native launch handle observes exit 0; the original private worker
+and direct GUI launcher also exit 0 without desktop switches. At
+`2026-10-03T16:50:55.9361372Z`, preference recovery and guarded restoration of
+the previous Q-024 registration are complete. These recovery receipts explicitly
+keep the original campaign failed.
+
+| Source / artifact | Actual result | Scope |
+| --- | --- | --- |
+| `474d4c2`, `q026-historical-prefix-campaign-v4/managed/managed.trx` | 71 passed, 0 failed, 0 skipped | Historical-compatible managed subset |
+| `474d4c2`, `q026-historical-prefix-campaign-v4/native/format.trx` | 0 passed, 1 failed, 0 skipped | Historical prefix; restoration read expires and owned Excel crashes |
+| Intermediate working tree after `474d4c2`, `q026-v4-followup-build/managed/managed.trx` | 73 passed, 0 failed, 0 skipped | Host-exclusivity guards before the later warmup additions; test assembly SHA-256 `F249020528DC07A83CA801B736768160BE718B7ECCB25C7C6C3AED31DD4E4EBE` |
+| Intermediate working tree before `f9f5ccc`, `q026-guard-il-harness-build/managed/managed.trx` | 74 passed, 1 failed, 0 skipped | Retained failure before the synthetic warmup-model correction; test assembly SHA-256 `75FC2E03C30E8081E1C6DEBC5CF3526270700D2DADE62B2DBAE7208C957213CB` |
+| `f9f5ccc`, `q026-guard-il-harness-green/managed/managed.trx` | 75 passed, 0 failed, 0 skipped | Corrected focused lifecycle model, exclusivity and nonmutating guard warmup |
+
+Source `f9f5ccc` checks exact ownership and competing VBE hosts before every
+Format dispatch. A changed interval retains the host and forbids further reads,
+writes, compensation and cleanup. Refusals require complete structural equality
+as well as unchanged revision. No production revision check is relaxed.
+
+The earlier exception collector stops on all CLR exceptions before filtering
+the message and substantially alters timing. A new mode binds only the exact
+stale-guard IL branch in the frozen binary. Pure metadata inspection identifies
+`ldstr` at IL offset 233 (`0xE9`); the collector verifies its literal, product
+MVID/hash, uniquely bound native address and complete matching synthetic
+preflight before attachment. Normal UIA exceptions are not intercepted. The
+guard warmup uses one intentional refusal targeting an absent property and
+verifies dialog destruction and complete unchanged state before attachment.
+Debugger breakpoints are diagnostic code changes, not preference writes or
+target function evaluations.
+
+`q026-guard-il-preflight-v1` retains a failed PowerShell JSON comparison after
+a complete capture; an independent structural comparison finds no differing
+fields. Windows PowerShell had decorated the root array with ETS properties.
+The corrected comparison uses the original .NET Framework serializer on both
+JSON graphs. `q026-guard-il-preflight-v3/preflight.json` verifies the complete
+synthetic snapshot and request at the exact IL branch, with debugger detach and
+original-helper exit 0. It activates no Office host. The new mode is prepared;
+it does not establish the historical revision drift or qualify native Office.
+
+The targeted capture follows the primary [SOS documentation on GitHub](https://github.com/dotnet/diagnostics/blob/main/src/SOS/Strike/sosdocs.txt)
+and Microsoft's [breakpoint command documentation](https://learn.microsoft.com/en-us/windows-hardware/drivers/debuggercmds/bs--update-breakpoint-command-).
+Microsoft's [UI Automation threading guidance](https://learn.microsoft.com/en-us/windows/win32/winauto/uiauto-threading)
+requires a separate MTA client thread for interactions with the client's own UI;
+the bridge already uses a separate worker. The [VBE-Themes project's registry mapping](https://github.com/vicsar/VBE-Themes)
+also documents common VBE settings, supporting the need for an exclusive host
+interval. These references guide the investigation; they do not prove either
+the original stale revision or this later crash. Q-026 remains **OPEN**.
+
+### Q-026 targeted native capture interrupted by another host (2026-10-03)
+
+Source `35d3c429070e4b184d8811b8035a1bb5b67c6d99` freezes
+`q026-historical-prefix-campaign-v5` on the unchanged historical product. Its
+managed subset records **75 passed, 0 failed, 0 skipped**, and its native
+scenario records **0 passed, 1 failed, 0 skipped**. Excel PID 10228, start
+`2026-10-03T17:26:47.2289879Z`, is owned on inactive desktop
+`VBAiTests_2caea500bf17437faa8129082c137de8`.
+
+The nonmutating guard warmup verifies the known refusal, actual dialog absence
+and a complete unchanged readback. The collector binds the exact native
+stale-guard branch and reaches ARMED with `ExactGuardILBreakpoint` mode.
+The matrix captures its complete baseline, then the next exclusivity observation
+finds competing Access PID 41756, start `2026-10-03T17:28:41.747923Z`.
+The campaign stops before the font pre-write read and before every matrix
+preference write. The positive commit ledger is empty; no unknown native
+operation is replayed. The collector detaches normally with exit 0. This real
+guard stop validates the protection, not the historical cause or the interrupted
+matrix. The external GUI helper retains the private desktop until recovery.
+
+After Access disappears, `isolation-stop-preferences/terminal.json` verifies a
+fresh complete baseline read on that same owned Excel, with no compensation
+write. `isolation-stop-shutdown.json` records one returned Close, one returned
+Quit and exit 0 through a fresh recovery handle; it is not original-campaign
+handle proof. `isolation-stop-release.json` confirms host and previous
+registration release at `2026-10-03T17:33:11.8109153Z`. The original-worker
+terminal exits with code 1 and keeps the native scenario failed. Recovery uses
+the narrowly checked pre-dispatch isolation-stop path subsequently added to
+`Recover-Q026Preferences.ps1`. An exclusive interval has been requested before
+another native attempt. Q-026 remains **OPEN**.
+
+### Q-026 reserved-slot interruption before the scenario baseline (2026-10-03)
+
+Source `f9a6d9a80d82a107d12146207f9a82bbcb82de15` freezes
+`q026-historical-prefix-campaign-v6` on the same unchanged historical product.
+Its managed subset records **75 passed, 0 failed, 0 skipped**; the native
+scenario records **0 passed, 1 failed, 0 skipped**. Owned Excel PID 33088,
+start `2026-10-03T17:43:45.2020947Z`, runs on inactive desktop
+`VBAiTests_9e52898a7a24477ba494469fbcd7991d` with the exact frozen loaded MVID.
+
+The nonmutating warmup captures complete revision `544477535d391a457fc66947a3ddb3da7ffb430e6212289c6586a6fcb65f3e05`,
+verifies the expected stale refusal, dialog absence and unchanged full readback.
+The collector arms the exact guard branch. Publisher PID 40760, start
+`2026-10-03T17:45:17.9813208Z`, then appears during the explicitly reserved
+interval. The immediate pre-dispatch observation stops the scenario before its
+baseline read, with a null failed request and an empty commit ledger. No
+preference write is issued. Collector detachment is verified with exit 0; no
+natural stale-guard capture occurs. The owned host and registration are initially
+retained pending competing-host release and an independently verified shutdown.
+
+The recovery validator now narrowly supports this earlier stop using the exact
+complete verified warmup readback. The matching offline PowerShell evidence
+gates in source `c5ff8fb` record **17 passed, 0 failed**, with no Office activation or native
+dispatch (`q026-warmup-recovery-gates.json`). They refuse foreign PID/start/MVID,
+missing or changed structures despite equal hashes, uncertain replies, known
+writes, intervening native dispatch, positive ledgers, unknown requests/errors,
+unverified closure and ambiguous receipts. The native failure stays failed;
+Q-026 remains **OPEN**.
+
+After Publisher is released, `isolation-stop-preferences/terminal.json` records
+a fresh complete readback equal to the verified warmup baseline. No compensation
+write is sent. `isolation-stop-shutdown.json` observes one Close, one Quit and
+normal exit 0 through the fresh recovery handle, not the original campaign
+handle. Host and previous registration release complete at
+`2026-10-03T20:42:37.6784270Z` (`isolation-stop-release.json`). The original
+GUI worker exits with code 1 and preserves the failed native scenario; the
+separate recovery GUI worker exits with code 0. No forced termination occurs.
+
+### Q-026 inter-case gap and normal release (2026-10-03)
+
+Source `047d8c7b011c688e6e7f8064d407278fdd1b85fc` freezes
+`q026-historical-prefix-campaign-v7` on unchanged historical MVID
+`5cc513d1-5569-4835-bf6c-cf70a18274fb`. The focused managed subset records
+**75 passed, 0 failed, 0 skipped**; the native scenario records
+**0 passed, 1 failed, 0 skipped**. The campaign first waits for Q-012 Access
+PID 191444, then observes a quiet inventory interval and starts before the
+user's response establishes that Q-012 is still running. A quiet interval
+between native cases is not release of the other qualification batch.
+
+Owned Excel PID 136028, start `2026-10-03T20:46:39.6119508Z`, runs on inactive
+desktop `VBAiTests_7d0d627923dc4fe7aa8f8446504ca342`. Its guard warmup and
+complete baseline are verified. Publisher PID 104540, start
+`2026-10-03T20:48:21.0478323Z`, appears during that baseline read. The next
+pre-dispatch observation stops before the font pre-write read and all matrix
+preference writes, with an empty commit ledger. The collector detaches normally
+with exit 0; no natural stale-guard capture occurs.
+
+After that Publisher process disappears, a fresh complete recovery read equals
+the retained baseline, with no compensation. One Close and one Quit return;
+the fresh recovery handle observes normal exit 0. Host and prior registration
+release complete at `2026-10-03T20:50:50.7553273Z`. The original GUI worker
+exits 1 and the separate recovery worker exits 0; no process is forcibly ended.
+The failed native scenario is preserved. No further native campaign is scheduled
+pending the user's explicit confirmation that Q-012 has ended. Q-026 remains
+**OPEN** for the historical causal criterion.
+
+### Q-026 content-free combo observations (2026-10-04)
+
+Source `16ffa13` adds optional native/UIA Options combo observations through
+the existing bounded inspection trace. The isolated Debug/net48/x64 production
+candidate is MVID `9dc786a9-7128-41db-b21e-5bce14c0935f`, SHA-256
+`9F005722C6ED4749F428AD44E111FA4917EC468EC6A1990B96B0C311CA11C7CB`.
+At this checkpoint it is **not installed or native VBE-qualified**. The first test-project build
+fails for missing test namespace imports; the corrected build passes without
+warnings/errors (`q026-combo-observation-build-final.log`).
+
+`q026-combo-observation-managed-v1/combo.trx` records **34 passed, 0 failed,
+0 skipped**. The scope includes the Options revision/write guards, bounded
+inspection trace, real disposable standard Win32 combos and simulated UIA
+providers. A genuinely empty list records zero native entries before/after its
+single expansion; a separately simulated native owner populates its list on
+the documented dropdown notification, and the existing reader sees those
+entries without another opening or any selection/edit notification. Empty,
+populated and fallback paths preserve their exact values and close only the
+temporary list they opened. Unavailable logging cannot suppress the native
+ownership refusal; mixed trace events retain the existing cap and exclude
+exception messages, control labels and choice values.
+
+The managed worker runs on inactive desktop
+`VBAiTests_2bb0865561ae456483fff2311c51073c`, with no Office activation,
+input-desktop switch or owned foreground observation. Its original child and
+GUI launcher both exit normally with code 0; its scheduled launch task is
+exported and removed. The user's existing SOLIDWORKS is untouched. Native
+font-size/catalogue diagnosis and the historical revision-drift acceptance
+remain **NOT_RUN / OPEN** pending an explicitly released host interval.
+These observations add evidence for the next native trial, not a causal
+correction or a new coverage percentage. Notification behavior is documented
+by [Microsoft](https://learn.microsoft.com/en-us/windows/win32/controls/cbn-dropdown)
+and its [published Win32 documentation source](https://github.com/MicrosoftDocs/win32/blob/docs/desktop-src/Controls/about-combo-boxes.md).
+
+### Q-026 focused font/size diagnostic preparation (2026-10-04)
+
+Harness source `edb8e81` adds `-Scenario FontSizeCatalogue`. It uses the same
+exact-ownership, revision, positive-commit ledger, complete-restoration and
+normal-exit gates as the full Format matrix, while excluding palette, margin
+and deliberate stale-revision mutations. Both real catalogue choices and an
+empty-catalogue refusal are exercised in the managed lifecycle model.
+
+`q026-font-size-catalogue-native-v1/managed-preflight/managed.trx` records
+**88 passed, 0 failed, 0 skipped** against the frozen `16ffa13` product
+(MVID `9dc786a9-7128-41db-b21e-5bce14c0935f`). This focused harness build and
+the launcher build have no warnings/errors. These are managed/model and owned
+standard-control tests, not native VBE acceptance.
+
+The preflight runs on inactive desktop
+`VBAiTests_62e75c8c3c354a189aad35aa0bf307b1`. The original worker and GUI
+launcher exit with code 0; input-desktop switches and owned foreground
+observations are zero. The scheduled task is exported and removed. No Office
+host is activated and registration is unchanged. The frozen native plan and
+one-shot wrapper are prepared but **NOT_RUN**, pending explicit release of the
+native interval. Historical causality and real font-size mutation remain
+**OPEN**; the existing full-matrix acceptance belongs to its earlier candidate.
+
+### Q-026 native size catalogue and historical ownership stop (2026-10-04)
+
+After explicit user reservation, harness `38ee39f` runs the frozen `16ffa13`
+product (MVID `9dc786a9-7128-41db-b21e-5bce14c0935f`) on inactive desktop
+`VBAiTests_58d9f0494ad14604aece8d5b3b6e6a39`. The preceding v1 wrapper
+refuses registration before any Office activation because the actual limited
+worker has LoadBehavior 2. The explicit loading opt-in now accepts that existing
+DWORD and restores it exactly; no registration is created or trust policy changed.
+The elevated reader's different registration values are not substituted for the
+worker's actual values.
+
+`q026-font-size-catalogue-native-v2` records **88 managed passed, 0 failed,
+0 skipped; 1 native passed, 0 failed, 0 skipped**. Owned Excel PID 46072,
+start `2026-10-04T09:10:49.0020351Z`, Office `16.0.20430.20092`, verifies
+font mutation, closed independent readback, empty-size refusal without replay,
+complete restoration and exit 0 from the original retained launch handle 2112.
+All Tabs independently match the original revision `544477...`; 51 phase
+receipts and 14 command records are retained. The original worker and GUI
+launcher exit 0 with no desktop switch or foreground observation. Registration
+is restored and the terminal launch tasks are exported and removed.
+
+The new trace contains 20 actual native Size observations: control ID 4911,
+style `0x50010302`, native string combo, count 0 before and after its single
+expansion, selected index -1, expanded state true and final expanded state false.
+All reads complete without a native error and belong to PID 46072. This occurs
+before and after the font change. The empty catalogue is therefore observed
+through Win32, not merely missing UIA descendants. No size entry is invented;
+**size mutation remains unqualified**. Independent evidence is retained in
+`q026-font-size-native-v2-audit.json`. This is scoped font/refusal acceptance,
+not full Format acceptance on this diagnostic candidate or historical causality.
+
+The separate historical v8 campaign uses unchanged product MVID
+`5cc513d1-5569-4835-bf6c-cf70a18274fb` and passes **77 managed tests** but
+fails its single native test during the known pre-write guard warmup. Owned
+Excel PID 38836 starts `2026-10-04T09:29:28.6293854Z`. The exact expected
+guard refusal is received, but window enumeration cannot read a window owner;
+it does not establish retained Options visibility. No preference commit or
+collector attachment occurs. An independent later observation confirms Options
+absence. This failed case is retained and is not a natural stale-drift reproduction.
+
+Source `388c916` permits recovery only for this identified historical binary,
+the exact sentinel request and terminal pre-write refusal, unique complete
+baseline, unchanged ownership and an empty commit ledger. It still requires
+independent closure and a fresh complete matching snapshot before cleanup.
+Its pure-data validation records **25 passed**; the existing recovery-baseline
+gates record **17 passed**, with no native dispatch. Actual recovery reads the
+full unchanged `544477...` baseline without a compensation write, closes the
+owned seed once and calls Quit once; a separately retained recovery handle
+observes exit 0. The wrapper then fails its postcondition because it checks an
+absent `Exited` field instead of the receipt's explicit normal-exit state.
+Cleanup is not replayed. A registration-only actor verifies the existing receipt
+and restores the original registration at `2026-10-04T09:42:38.4397840Z`.
+Neither recovery nor this outer-wrapper correction qualifies the original test.
+
+A passive observation during v8 records an enabled Size combo on its owning
+dialog while the Code Colors list has focus. It sends no input or bridge call;
+this does not prove focus caused the empty catalogue. An earlier observer runs
+after PID 46072 has already exited and returns no rows; it is not live evidence.
+Historical revision drift and real size mutation remain **OPEN**.
+
+### Q-026 exact historical guard campaign (2026-10-04)
+
+Campaign `q026-historical-prefix-campaign-v9` uses harness `fd183b0` and the
+unchanged historical product MVID `5cc513d1-5569-4835-bf6c-cf70a18274fb`
+(SHA-256 `A12378FB826CAAD6C0BBE79BF09C52332760E6C32FDB4F65138876CB90F5F167`).
+It records **83 managed passed, 0 failed, 0 skipped; 1 native passed, 0 failed,
+0 skipped**. Owned Excel PID 69328 starts `2026-10-04T09:49:33.4942230Z`
+on inactive desktop `VBAiTests_900b63e8d1a14661b713c435714629b1`.
+
+All four historical font/palette commits and their readbacks succeed. All Tabs
+and complete revision `544477...` are restored, independently audited in
+`q026-historical-v9-audit.json`. Evidence includes 126 phase receipts and 36 command
+records. The exact guard breakpoint at IL offset 233 is armed; debugger PID 77856
+detaches with exit 0 before cleanup. The original Excel launch handle 2224 observes
+exit 0, and both original worker and GUI launcher terminate normally without an
+input-desktop switch. Registration is restored; the terminal task is exported
+and removed. The three terminal v8 tasks are separately exported and removed.
+
+The retained log contains **zero natural guard captures**. The offline decoder
+previously treated its fixed `Q026_GUARD_IL_ARMED` status receipt as JSON; it now
+accepts only that exact receipt and still rejects malformed or interrupted frames.
+Its focused offline suite records **9 passed**. This decoder correction does not
+change the historical binary or create evidence of a guard hit. The intentional
+pre-attachment warmup refusal is not a natural revision-drift reproduction.
+Historical causality and real size mutation remain **OPEN**.
+
+The next dedicated `SizeFocus` diagnostic is implemented and builds against the
+frozen content-free observation candidate. It makes no preference write and does
+not yet have native acceptance at this checkpoint. Its single dialog-local focus
+message follows [Microsoft's WM_NEXTDLGCTL contract](https://learn.microsoft.com/en-us/windows/win32/dlgbox/wm-nextdlgctl);
+its catalogue expansion uses [CB_SHOWDROPDOWN](https://learn.microsoft.com/en-us/windows/win32/controls/cb-showdropdown).
+Neither message establishes that this VBE build populates Size choices; the native
+observation must decide that hypothesis.
+
+### Q-026 native Size focus and current-candidate preparation (2026-10-04)
+
+`SizeFocus` harness `1d2e107` against frozen product MVID
+`9dc786a9-7128-41db-b21e-5bce14c0935f` records **94 managed passed, 0 failed,
+0 skipped; 1 native passed, 0 failed, 0 skipped** in `q026-size-focus-native-v2`.
+Owned Excel PID 176968 starts `2026-10-04T10:31:39.6471352Z` on its inactive
+desktop. The actual native catalogue changes from zero entries to nine after
+one dialog-local focus operation, then remains at nine after expansion. Its
+observed choices are `8, 9, 10, 11, 12, 14, 16, 18, 24`. The edit value remains
+`10`. This proves focus-dependent population on this host/build; the values
+are observations, not a portable allowed-size range.
+
+The Options menu executes once on the fixture's owning STA. The separate private
+worker selects the observed Format tab, posts one `WM_NEXTDLGCTL`, observes the
+owning GUI thread's focus and cancels once. The exact dialog is destroyed.
+All Tabs and revision `544477...` remain unchanged. There are 22 phase receipts;
+original launch handle 2176 observes normal exit 0. Worker/launcher exit 0,
+registration is restored, and `q026-size-focus-native-v2-audit.json` independently
+checks the complete baseline and action receipts. No preference write occurs.
+
+The preceding v1 at `facd68a` retains **1 native failed** before any Options
+invocation because the harness sends the unsupported name `vbe_options` instead
+of `read_vbe_options`. Its exact inert refusal is retained, not counted as native
+acceptance. A recovery actor's first attempt stops before dispatch because it
+expects an outer terminal that is pending while Excel remains open. Its next
+attempt performs one complete read, then rejects its comparison because Windows
+PowerShell decodes an unmarked UTF-8 baseline as ANSI. An independent structured
+comparison finds zero differing Tabs and equal complete revisions. The final
+actor reads those existing receipts explicitly as UTF-8, observes dialog absence
+and closes the owned workbook/Quit once, with exit 0 from a recovery handle.
+Neither read nor cleanup is replayed; registration is restored. The original
+native failure remains failed. These terminal tasks are exported and removed.
+
+Production `c1cb2c3` prepares only an empty recognized native Size control. It
+validates ownership, parent dialog, enabled state and unchanged edit value,
+dispatches to the owning GUI thread once and requires bounded focus observation.
+The unlabelled write verifier also recognizes observed control ID 4911. No size
+value is invented and the exact-choice/revision guards remain enforced.
+Content-free opt-in trace metadata adds focus-attempt and post-focus count fields.
+
+The final focused suite at `08d7420` records **9 managed passed, 0 failed,
+0 skipped**, including the real owned Win32 focus/population regression and
+unlabelled write verification with unknown-choice refusal. Build completes with
+zero warnings/errors. Frozen current product MVID
+`7156af5b-941c-4452-9e78-1381cb69af0d` has SHA-256
+`950D86EDEF3F90DC3A8EE274627AC75C08012BF158F55140817ECEC9FABF85EC`.
+The single complete Format campaign `q026-full-size-native-v1` is started after
+that gate, including real Size mutation and restoration. It records **94 managed
+passed, 0 failed, 0 skipped; 1 native passed, 0 failed, 0 skipped**. Owned Excel
+PID 59624 starts `2026-10-04T10:44:00.7774862Z` on inactive desktop
+`VBAiTests_4cf1047cd362410a972000b1485ba7f4`. The campaign runs from
+`10:43:59.1559018Z` to `11:15:53.9946517Z`.
+
+Font, Size, all three palettes, another code category and margin are independently
+verified. The stale-revision refusal is confirmed with actual dialog absence and
+an unchanged complete readback. Native Size changes `10 -> 8 -> 10` using observed
+choices. Every Tabs field and complete revision
+`dd7304d6f53ccfae1038774428bd1e3d13546c6239551d01046be62724dd9cba`
+matches the baseline after all restoration. There are 207 phase receipts and 62
+command records. The original retained launch handle 2192 observes exit 0;
+worker and GUI launcher exit 0 without an input-desktop switch or foreground
+observation. The limited actor restores its original registration/loading values.
+The terminal task is exported and removed after live host absence is confirmed.
+Independent assertions are retained in `q026-full-size-native-v1-audit.json`.
+
+The complete current Excel Format matrix, including Size mutation, is now
+**ACCEPTED** for this exact candidate. This does not establish restart persistence,
+other-host compatibility or the historical cause. At this checkpoint Q-026 was
+**OPEN only for the stricter historical causal criterion**; the passing unchanged historical
+prefix captures no natural guard refusal, and the original failed run retains
+no compared state pair at its failing guard.
+
+### Q-026 complete historical diagnostic preparation (2026-10-04)
+
+The original test's line 85 is a catch/rethrow, not the failing mutation.
+Its retained stack therefore cannot locate the stale refusal before the later
+category or margin operations. The passing historical prefix remains valid for
+its bounded scope and does not exclude those later stages.
+
+`HistoricalFullFormat`, harness `bb6a98d`, extends the diagnostic through the
+original mutation order, another category, margin and the deliberate stale
+request. Product MVID `5cc513d1-5569-4835-bf6c-cf70a18274fb` and its SHA-256
+`A12378FB826CAAD6C0BBE79BF09C52332760E6C32FDB4F65138876CB90F5F167` remain
+unchanged. Independent dialog-closure/readback proofs and safe compensation are
+added; this is not a byte-identical replay of the original test harness.
+
+Managed preparation exposes a distinct recovery-target problem: initial palette
+requests omit `Query`, while a later request selects another category. An implicit
+compensation can consequently restore the wrong category. The diagnostic retains
+the original null-`Query` mutation requests, but binds positively verified recovery
+entries to the actual category observed before each write. This explains a
+restoration-target hazard; it does not establish the original stale refusal's
+cause.
+
+| Source / receipt | Result | Scope |
+| --- | --- | --- |
+| Pre-`ff6c0a8` trial, `q026-historical-full-managed-preflight/managed.trx` | 84 passed, 2 failed, 0 skipped | Focused managed diagnostic; complete-baseline failures expose implicit palette recovery targeting. No native host is activated. |
+| `ff6c0a8`, `q026-historical-full-managed-preflight-v2/managed.trx` | 85 passed, 1 failed, 0 skipped | Recovery matches the full baseline; a test assertion incorrectly assumes category labels. No native host is activated. |
+| `bb6a98d`, `q026-historical-full-native-v1/managed/managed.trx` | 86 passed, 0 failed, 0 skipped | Focused managed diagnostic including observed-category compensation and retention on an uncertain margin result; not native acceptance. |
+| `bb6a98d`, `q026-historical-full-native-v1/native/format.trx` | 0 passed, 1 failed, 0 skipped | Unchanged historical product; five commits pass, then margin returns a generic invalid-state error. Recovery remains separate from qualification. |
+| Decoder `b658fb5`, `q026-captured-revision-modes-9e34137173c5447ab54965de43f9580d/result.json` | 3 offline checks passed, 0 failed | Retained synthetic graph: both first-chance and exact-IL provenance preserve every Tabs field and the same recomputed revision; unknown provenance is refused. No host access or native acceptance. |
+
+The original Excel TRX has no test whose execution overlaps the failed Format
+case. This excludes overlap within that retained runner, not another process or
+an external preference change. Two preceding cases report retained Excel after
+Quit, but that does not prove those processes remained alive during Format.
+The original command history contains a process inventory at
+`2026-09-29T21:52:32.181Z`, within the failing Format interval: its only Excel row
+is the owned PID 27328. The bounded extracted receipt is
+`q026-original-live-inventory-20260929T215232Z.json`. This constrains a competing
+Excel hypothesis at that instant; it is not continuous inventory or a guarded
+request/snapshot pair. The correction to offline revision decoding
+accepts the exact-IL collector's existing provenance without relaxing the native
+revision guard or altering the frozen product/collector.
+
+Owned Excel PID 191468 starts `2026-10-04T12:30:16.8017459Z` on inactive desktop
+`VBAiTests_ae2f8a43dcb74260984fc86e4fa6d204`. Font, the three palettes and another
+category commit and pass independent readback. The margin request returns
+`Ok=false`, a generic localized invalid-state error and `Data=null`. It is not
+the stale-revision error. The case stops without replay, restoration or shutdown;
+its 102 phase receipts retain five positively confirmed recovery entries. The
+exact guard collector captures zero refusals and detaches normally, exit 0.
+The deliberate stale stage is **NOT_RUN**. Neither that error nor an absent guard
+capture identifies the original historical revision drift.
+
+Independent enumeration confirms that the exact Options dialog is absent.
+One scoped recovery starts at `12:48:00.4774243Z`, verifies that margin is still
+at its baseline value and restores only the five known entries in reverse order.
+Every Tabs field and revision
+`544477535d391a457fc66947a3ddb3da7ffb430e6212289c6586a6fcb65f3e05`
+matches the complete baseline. The failed margin command is not replayed.
+One workbook Close and one Quit return normally; a fresh recovery handle 840
+observes exit 0. This is recovery-handle proof, not original-campaign-handle proof.
+
+The original native worker and its retained GUI launcher keep exit 1; the recovery
+worker/launcher exit 0. Both workers record no input-desktop switch. The original
+private desktop is released only after recovery, without cleanup replay or forced
+termination. Original registration/loading values are restored; live native-host
+inventory is empty. Both terminal tasks are exported and removed. The reserved
+interval is released at `12:54:48.6999999Z`. Independent assertions are retained in
+`q026-historical-full-v1-audit.json`. Q-026 remains **OPEN** for historical causality;
+the separate current-candidate complete Format acceptance is unaffected.
+
+An additional offline comparison retains exact equality between the original
+September baseline and the complete historical diagnostic's baseline. Comparing
+that same original baseline with the accepted current Size candidate changes
+only `/Tabs/1/Controls/10/Choices`, `NativeChoices` and `SelectedIndex`:
+empty catalogues become nine actual entries, and index `-1` becomes `2`; the edit
+value remains `10`. Normalizing only those three recorded fields makes every
+Tabs field equal. The historical .NET Framework serialization/hash algorithm
+recomputes both retained revisions exactly. Receipts are
+`q026-original-to-full-historical-baseline.json`,
+`q026-original-to-current-size-baseline.json` and
+`q026-recorded-hash-algorithm-comparison.json`. This proves that catalogue
+metadata alone can change the revision, not that it changed at the missing
+original guard. The retained September loading log identifies the original
+Excel PID but contains no compared request/snapshot pair for that refusal.
+
+The controlled `HistoricalCatalogueDrift` / `CatalogueDrift` diagnostic targets
+a property verified absent, posts one owned Size-focus message and requires full
+unchanged readback and normal exit. Both native cases now pass. Their scope is
+the actual guarded snapshots of a deliberately induced metadata transition;
+they do not substitute for natural historical causality or the complete Format
+matrix.
+
+Both prepared cases freeze harness `e07a7b0` and their unchanged product payloads.
+The limited private-desktop managed preflight exits 0 without an input-desktop
+switch or an owned foreground observation. It activates no Office/VBE host.
+These scopes are separate, overlapping managed subsets, not a combined test count:
+
+| Source / receipt | Result | Scope |
+| --- | --- | --- |
+| `e07a7b0`, `q026-controlled-catalogue-old-v1/managed-preflight/managed.trx` and `managed/managed.trx` | Each run: 86 passed, 0 failed, 0 skipped | Historical-compatible focused managed subset against MVID `5cc513d1-5569-4835-bf6c-cf70a18274fb`; the second run is the required frozen native-pipeline gate. |
+| `e07a7b0`, `q026-controlled-catalogue-current-v1/managed-preflight/managed.trx` and `managed/managed.trx` | Each run: 97 passed, 0 failed, 0 skipped | Focused managed subset including current native-checkbox implementation against MVID `7156af5b-941c-4452-9e78-1381cb69af0d`; the second run is the required frozen native-pipeline gate. |
+| `e07a7b0`, `q026-controlled-catalogue-old-v1/native/format.trx` | 1 passed, 0 failed, 0 skipped | One controlled catalogue transition on the unchanged historical product, exact guarded graph capture and normal exit; no preference write. |
+| `e07a7b0`, `q026-controlled-catalogue-current-v1/native/format.trx` | 1 passed, 0 failed, 0 skipped | Same one-shot focus scenario on the unchanged current product, stable complete revision and normal exit; no preference write. |
+
+The one-shot launch wrappers freeze their controller and registration helper.
+The earlier missing-slot check refuses before a run claim or registration change
+(`q026-controlled-catalogue-reservation-gate.log`). The maintainer subsequently
+authorizes native work without another slot request; a fresh six-host inventory
+is empty before dispatch. Both cases run sequentially on inactive desktops,
+with owned Excel released between cases. No uncertain operation is replayed.
+
+Historical Excel PID 208308 starts `2026-10-04T13:53:31.3978354Z` on
+`VBAiTests_f80ac9c5171a4bedb218deb2aac0edaa`. One posted focus populates nine
+Size choices without changing the value `10`. The inert, absent-property request
+uses the immediately preceding complete revision `544477...`; the exact old
+guard refuses it. Its one captured request/snapshot pair recomputes to
+`dd7304...`, differing solely in `Size.Choices`, `Size.NativeChoices` and
+`Size.SelectedIndex`. Normalizing those three fields makes every Tabs field
+equal to the pre-request baseline. The collector detaches normally, exit 0.
+
+Current Excel PID 220200 starts `2026-10-04T13:58:31.3390561Z` on
+`VBAiTests_9ca492b6d75e492a807018b94c193782`. Its baseline already contains
+the nine Size choices and revision `dd7304...`. The same controlled focus
+does not invalidate that revision: the request reaches the unique
+absent-option refusal after the revision guard. Every field in its complete
+baseline equals the captured historical graph, with exactly the same revision.
+
+Both cases independently verify actual dialog closure and complete unchanged
+closed readback. Original launch handles 2152 and 2240 respectively observe
+normal exit 0 after one Close and one Quit. Neither helper switches the input
+desktop or observes an owned foreground window. Both wrappers restore the
+original registration/loading values, all six host processes are absent, and
+the terminal tasks are exported and removed. The paired audit passes in
+`q026-controlled-catalogue-v1-audit.json`; release evidence is
+`q026-controlled-catalogue-release-20261004.json`.
+
+This establishes an actual native metadata-only revision drift and its prevention
+on the current candidate. It does not recover the missing original September
+guard pair or establish that the same focus transition caused that historical
+failure. At this checkpoint the stricter historical causal gate remained **OPEN**; the previously
+accepted complete current Format matrix is unchanged.
+
+The subsequent completion audit independently inspects the complete frozen
+current campaign, its unchanged payload hashes and each declared scenario's
+terminal proof. `q026-completion-audit-20261004-v2.json` maps every case in the
+ordered matrix to its retained evidence, including actual alternate Size,
+nondefault category, genuine margin transition, stale refusal, complete Tabs
+restoration and original-handle exit. Its remaining gate is explicitly
+`original-historical-causality`; no host is launched and no case is replayed for
+this audit. The original archive inventory contains the baseline attachment,
+but no failing guarded request/snapshot pair. Recovery archives establish later
+restoration, not the lost comparison's fields. Qualification was consequently
+not marked complete at that audit. The maintainer confirms on 2026-10-04 that
+no additional original archive is available after cleanup;
+`q026-original-evidence-unavailable-20261004.json` retains that evidence limitation.
+
+### Q-026 approved current-candidate closure (2026-10-04)
+
+The maintainer explicitly approves closing Q-026 for the tested Excel candidate,
+on the complete verified current matrix and demonstrated correction, while
+retaining the precise original incident trigger as unexplained. This replaces
+the previous historical-causality blocker; it does not change any original test
+outcome or claim that non-reproduction alone establishes a correction.
+
+The [approved candidate decision](../tools/tests/q026-qualified-candidate.json)
+records source `08d74202f3053113f44562dea570fff165d063e3`, product MVID
+`7156af5b-941c-4452-9e78-1381cb69af0d`, SHA-256
+`950D86EDEF3F90DC3A8EE274627AC75C08012BF158F55140817ECEC9FABF85EC`, and Excel
+x64 file version `16.0.20430.20092`. It maps every declared case to positive
+native proof with receipt hashes. A fresh read of retained complete snapshots,
+terminal responses, exact payload hashes and original-handle exit receipts
+verifies the decision. No native test is replayed to obtain closure, and earlier
+audits remain unchanged.
+
+Q-026 is **CLOSED for this recorded candidate and Excel build**. The nine declared
+scenarios, whole-state restoration, guarded stale refusal and normal shutdown
+are accepted. The controlled comparison additionally proves an actual old
+metadata drift and its prevention on that candidate. Historical failures remain
+failed, the original September trigger remains unexplained, and other binaries,
+hosts, restart persistence and the complete product release remain separate
+acceptance scopes. The local decision receipt is
+`q026-final-decision-20261004.json`.
+
+### Q-026 offline snapshot review (2026-10-03)
+
+Branch `codex/q026-qualification` starts from `origin/main` at `4b382b9`,
+independently of the complete Q-006 publication in PR #20. No native host was
+launched and no preference was changed in this initial Q-026 follow-up.
+The prepared case matrix is `tools/tests/q026-scenarios.json`; all its native
+cases remain **PLANNED_NOT_RUN**, including full restoration and normal exit.
+Execution must first use the verified inactive-desktop isolation infrastructure.
+
+The offline comparator rejects truncated/ambiguous receipts, missing hashed
+control fields, malformed revisions and unverified dialog closure. It compares
+all recorded tab/category/palette fields, catalogue order and value types;
+recorded host identity remains separate from preference equality. It does not
+recompute the .NET serialization hash or prove native restoration/cause.
+`be2e25f` records **7 passed, 0 failed** in
+`artifacts/q026-initial-review/offline-tests.log`. The identity/count correction
+at `8a8c7f8` records **8 passed, 0 failed** in `offline-tests-identity.log`.
+These are Python diagnostic tests, not a .NET/native run or coverage measurement.
+
+The actual historical inputs are the complete durable `options-0004`, `0006`,
+`0010` and `0015` receipts below
+`E:/Développement/AddIn/CodexVBA/artifacts/qualification-v1/followup-20260930/format-native-v6-corrected/phases/options-evidence-8c1703a33ef44a6593935b7292ee563c/`.
+They identify Excel PID 48192, start `2026-10-01T03:50:04.2993576Z`, product MVID
+`d8f31d57-8612-465e-871c-93a62f2b3eae` and test MVID
+`7c4a6bf2-f4a0-4234-b196-8ec0fcd0af96`. This is historical frozen evidence, not
+execution of the currently installed product.
+
+- `baseline-to-before-write.json`: equal complete revision and tab structure
+  between baseline capture and the font's preceding read.
+- `font-change.json`: the recorded revision changes; the sole structural
+  difference is `/Tabs/1/Controls/8/Value`, from `Consolas (Occidental)` to
+  `Courier New (Occidental)`.
+- `font-to-size-read.json`: equal complete revision and structure between
+  independent font readback and size catalogue read.
+- `baseline-to-size-with-identity.json`: preserves matching recorded PID/start/
+  product metadata while reporting the expected font difference.
+
+Both baseline and later size receipts already show `Taille :` value `10`, no
+choices and selected index `-1`. This does not establish why the catalogue is
+empty, but prevents attributing its first appearance to this font write.
+No spontaneous revision drift is observed in these compared reads. They do not
+explain a different older stale-revision failure, replay any uncertain operation,
+or establish complete baseline restoration. Q-026 remains **OPEN**.
+
 ## Current installed v6: complete managed acceptance (2026-10-01)
 
 Product source `8f2315d04162f55b0956618f96b59d294a3fb681` includes the Monaco

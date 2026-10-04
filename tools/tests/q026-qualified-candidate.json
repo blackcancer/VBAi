@@ -1,0 +1,144 @@
+{
+  "Qualification": "Q-026",
+  "Status": "CLOSED_FOR_RECORDED_CANDIDATE",
+  "DecisionUtc": "2026-10-04T14:29:01.382392+00:00",
+  "SourceCommit": "08d74202f3053113f44562dea570fff165d063e3",
+  "ProductMvid": "7156af5b-941c-4452-9e78-1381cb69af0d",
+  "ProductSha256": "950D86EDEF3F90DC3A8EE274627AC75C08012BF158F55140817ECEC9FABF85EC",
+  "Host": "Excel x64",
+  "HostFileVersion": "16.0.20430.20092",
+  "Scope": "Complete native Options Format matrix, guarded mutations, complete restoration and normal exit.",
+  "ApprovedCriterion": "Verified current functional behavior and demonstrated correction. Unknown original incident trigger is retained as historical uncertainty and no longer blocks this scoped qualification.",
+  "MaintainerApproval": {
+    "Source": "User reply to request_user_input_async call_L4rvSNuKgwuWv7DD825IL8tG",
+    "Question": "Approve Q026 closure for the tested Excel candidate on nine validated scenarios and demonstrated correction, retaining the exact original cause as unexplained?",
+    "Answer": "Approuver la clôture proposée"
+  },
+  "AcceptedCases": [
+    {
+      "Id": "read-stability",
+      "State": "PASS",
+      "Evidence": [
+        {
+          "Path": "artifacts/q026-full-size-native-v1/native/phases/options-evidence-b4e18b7c992d4be0aca4b96df0d6756c/options-0009-BaselineStabilityVerified-59624.json",
+          "Sha256": "CE9CAA6443634EB644D95CE8239E1FE646BA179B5E594C882809C1027E0B290A",
+          "Phase": "BaselineStabilityVerified"
+        }
+      ]
+    },
+    {
+      "Id": "font",
+      "State": "PASS",
+      "Evidence": [
+        {
+          "Path": "artifacts/q026-full-size-native-v1/native/phases/options-evidence-b4e18b7c992d4be0aca4b96df0d6756c/options-0019-FontVerified-59624.json",
+          "Sha256": "5777FD5739054F3F782BE448CE5FB81F536CBFEF08D014ACADCC4E84A5A285ED",
+          "Phase": "FontVerified"
+        }
+      ]
+    },
+    {
+      "Id": "size-catalogue",
+      "State": "PASS",
+      "Evidence": [
+        {
+          "Path": "artifacts/q026-full-size-native-v1/native/phases/options-evidence-b4e18b7c992d4be0aca4b96df0d6756c/options-0035-SizeVerified-59624.json",
+          "Sha256": "C0CE1E94569CC3330AFB1C3C2828CF0FCA14DDCD950A20D464D00C15B6145BB9",
+          "Phase": "SizeVerified"
+        }
+      ]
+    },
+    {
+      "Id": "palettes",
+      "State": "PASS",
+      "Evidence": [
+        {
+          "Path": "artifacts/q026-full-size-native-v1/native/phases/options-evidence-b4e18b7c992d4be0aca4b96df0d6756c/options-0051-ForegroundVerified-59624.json",
+          "Sha256": "FFB35B377DB3711243EE6FD6ADE02BB74CE53C9730B9BF0087F3AF10C756A050",
+          "Phase": "ForegroundVerified"
+        },
+        {
+          "Path": "artifacts/q026-full-size-native-v1/native/phases/options-evidence-b4e18b7c992d4be0aca4b96df0d6756c/options-0067-BackgroundVerified-59624.json",
+          "Sha256": "47D514F03E0FBAFE405D9C40B638098A2F3D494EE90822C7EEEB6B165C127DC4",
+          "Phase": "BackgroundVerified"
+        },
+        {
+          "Path": "artifacts/q026-full-size-native-v1/native/phases/options-evidence-b4e18b7c992d4be0aca4b96df0d6756c/options-0083-IndicatorVerified-59624.json",
+          "Sha256": "62B3BECB5A9EBF5DF68DD0BD917EF576C40AF66BFCB532F5CB1E78ABF60C00F9",
+          "Phase": "IndicatorVerified"
+        }
+      ]
+    },
+    {
+      "Id": "nondefault-category",
+      "State": "PASS",
+      "Evidence": [
+        {
+          "Path": "artifacts/q026-full-size-native-v1/native/phases/options-evidence-b4e18b7c992d4be0aca4b96df0d6756c/options-0099-OtherCategoryVerified-59624.json",
+          "Sha256": "79EB510DED483798DBE1D9DAC30CE786D3351E01AE2E4D75DB923879EFE7E480",
+          "Phase": "OtherCategoryVerified"
+        }
+      ]
+    },
+    {
+      "Id": "margin",
+      "State": "PASS",
+      "Evidence": [
+        {
+          "Path": "artifacts/q026-full-size-native-v1/native/phases/options-evidence-b4e18b7c992d4be0aca4b96df0d6756c/options-0115-MarginVerified-59624.json",
+          "Sha256": "231AD77DD322ACD9EDD21928076312EF562713E8846302153719D51F2547A018",
+          "Phase": "MarginVerified"
+        }
+      ]
+    },
+    {
+      "Id": "stale-revision",
+      "State": "PASS",
+      "Evidence": [
+        {
+          "Path": "artifacts/q026-full-size-native-v1/native/phases/options-evidence-b4e18b7c992d4be0aca4b96df0d6756c/options-0130-StaleVersionVerifiedRefusal-59624.json",
+          "Sha256": "D11F730D98999F73F221680710B0389BC1F413E30157AED68D9793FBA5659699",
+          "Phase": "StaleVersionVerifiedRefusal"
+        }
+      ]
+    },
+    {
+      "Id": "complete-restoration",
+      "State": "PASS",
+      "Evidence": [
+        {
+          "Path": "artifacts/q026-full-size-native-v1/native/phases/options-evidence-b4e18b7c992d4be0aca4b96df0d6756c/options-0204-BaselineRestored-59624.json",
+          "Sha256": "9022E6CA955317A7FC276F94B59128090F6452CC3CF0A410E02F9171B1E8D55A",
+          "Phase": "BaselineRestored"
+        }
+      ]
+    },
+    {
+      "Id": "normal-exit",
+      "State": "PASS",
+      "Evidence": [
+        {
+          "Path": "artifacts/q026-full-size-native-v1/native/phases/options-evidence-b4e18b7c992d4be0aca4b96df0d6756c/options-0206-ShutdownVerified-59624.json",
+          "Sha256": "615E94EB95AA4F0C6802B958A3FC65F110B0849760B38F089727551C57F11CA3",
+          "Phase": "ShutdownVerified"
+        }
+      ]
+    }
+  ],
+  "Evidence": {
+    "FullNativeMatrix": "artifacts/q026-full-size-native-v1-audit.json",
+    "ControlledComparison": "artifacts/q026-controlled-catalogue-v1-audit.json",
+    "EarlierCompletionAudit": "artifacts/q026-completion-audit-20261004-v2.json"
+  },
+  "OriginalHistoricalCauseProven": false,
+  "HistoricalDisposition": "Original trigger unexplained; original failures and incomplete trials retain their original outcomes.",
+  "NonReproductionAloneIsAcceptance": false,
+  "Limits": [
+    "Recorded candidate and Excel build only",
+    "No restart persistence claim",
+    "No other-host acceptance",
+    "No whole-release acceptance"
+  ],
+  "NativeReplayPerformedForDecision": false,
+  "QualificationCompleteUnderApprovedCriterion": true
+}
