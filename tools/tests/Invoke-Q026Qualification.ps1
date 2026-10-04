@@ -4,7 +4,7 @@ param(
     [string]$EvidenceRoot,
     [string]$InstalledDirectory,
     [string]$PlanPath = (Join-Path $PSScriptRoot 'q026-plan.json'),
-    [ValidateSet('FullFormat','Margin','FontSizeCatalogue','SizeFocus','HistoricalPalettePrefix')][string]$Scenario = 'FullFormat',
+    [ValidateSet('FullFormat','Margin','FontSizeCatalogue','SizeFocus','HistoricalPalettePrefix','HistoricalFullFormat')][string]$Scenario = 'FullFormat',
     [string]$ClrTracePlan
 )
 $ErrorActionPreference = 'Stop'
@@ -25,7 +25,7 @@ if ($Prepare) {
     Get-ChildItem -LiteralPath $InstalledDirectory -Force | Copy-Item -Destination $product -Recurse
     foreach ($project in @('tests/VBAi.Q026.Tests/VBAi.Q026.Tests.csproj','tests/VBAi.Desktop.Helper/VBAi.Desktop.Helper.csproj')) {
         $log = Join-Path $EvidenceRoot (([IO.Path]::GetFileNameWithoutExtension($project)) + '-build.log')
-        $extra=@();if($Scenario -eq 'HistoricalPalettePrefix'){$extra+= '-p:HistoricalOptionsOnly=true'}
+        $extra=@();if($Scenario -in @('HistoricalPalettePrefix','HistoricalFullFormat')){$extra+= '-p:HistoricalOptionsOnly=true'}
         & dotnet build (Join-Path $repository $project) -c Debug "-p:BuildOutputRoot=$build" "-p:FrozenProductDirectory=$product" @extra --verbosity minimal *> $log
         if ($LASTEXITCODE -ne 0) { throw "Preparation failed; no host launched. See $log." }
     }
@@ -38,20 +38,24 @@ if ($Prepare) {
     $files = @(Get-ChildItem -LiteralPath ([IO.Path]::GetDirectoryName($test)) -File | Where-Object {$_.Extension -in @('.dll','.exe','.config')} | ForEach-Object { @{Path=$_.FullName;Sha256=(Get-FileHash -LiteralPath $_.FullName).Hash} })
     $files += @{Path=$helper;Sha256=(Get-FileHash -LiteralPath $helper).Hash}
     $files += @{Path=$script;Sha256=(Get-FileHash -LiteralPath $script).Hash}
-    $nativeMethod=if($Scenario -eq 'Margin'){'NativeMarginCheckboxRoundTripAndRestoreCompleteOptionsVersion'}elseif($Scenario -eq 'FontSizeCatalogue'){'NativeFontSizeCatalogueAndRestoreCompleteOptionsVersion'}elseif($Scenario -eq 'SizeFocus'){'NativeSizeFocusCatalogueWithoutPreferenceWrites'}elseif($Scenario -eq 'HistoricalPalettePrefix'){'NativeHistoricalFontPalettePrefixAndRestoreCompleteOptionsVersion'}else{'NativeFormatChoicesRoundTripAndRestoreCompleteOptionsVersion'}
+    $nativeMethod=if($Scenario -eq 'Margin'){'NativeMarginCheckboxRoundTripAndRestoreCompleteOptionsVersion'}elseif($Scenario -eq 'FontSizeCatalogue'){'NativeFontSizeCatalogueAndRestoreCompleteOptionsVersion'}elseif($Scenario -eq 'SizeFocus'){'NativeSizeFocusCatalogueWithoutPreferenceWrites'}elseif($Scenario -eq 'HistoricalPalettePrefix'){'NativeHistoricalFontPalettePrefixAndRestoreCompleteOptionsVersion'}elseif($Scenario -eq 'HistoricalFullFormat'){'NativeHistoricalCompleteFormatAndRestoreCompleteOptionsVersion'}else{'NativeFormatChoicesRoundTripAndRestoreCompleteOptionsVersion'}
     $matrix=Get-Content -LiteralPath (Join-Path $PSScriptRoot 'q026-scenarios.json') -Raw -Encoding UTF8 | ConvertFrom-Json
     if($Scenario -eq 'Margin'){
         $matrix.Cases=@($matrix.Cases | Where-Object {$_.Id -in @('read-stability','margin','complete-restoration','normal-exit')})
         $matrix.Scope='Owned disposable Excel margin-checkbox diagnostic only; not the full Format matrix'
     }
-    if($Scenario -eq 'HistoricalPalettePrefix'){
+    if($Scenario -in @('HistoricalPalettePrefix','HistoricalFullFormat')){
         if(-not [IO.Path]::IsPathRooted($ClrTracePlan) -or -not (Test-Path -LiteralPath $ClrTracePlan)){throw 'A frozen preflighted CLR collector is required for the historical prefix.'}
         $tracePlan=Get-Content -LiteralPath $ClrTracePlan -Raw -Encoding UTF8|ConvertFrom-Json
         foreach($path in @($ClrTracePlan,$tracePlan.Preflight,$tracePlan.CdbPath,$tracePlan.TraceScript)){
             $files+=@{Path=$path;Sha256=(Get-FileHash -LiteralPath $path).Hash}
         }
-        $matrix.Cases=@($matrix.Cases|Where-Object {$_.Id -in @('read-stability','font','size-catalogue','palettes','complete-restoration','normal-exit')})
-        $matrix.Scope='Historical frozen Excel font/palette prefix without Query; causal diagnostic only, not current-product qualification'
+        if($Scenario -eq 'HistoricalPalettePrefix'){
+            $matrix.Cases=@($matrix.Cases|Where-Object {$_.Id -in @('read-stability','font','size-catalogue','palettes','complete-restoration','normal-exit')})
+            $matrix.Scope='Historical frozen Excel font/palette prefix without Query; causal diagnostic only, not current-product qualification'
+        }else{
+            $matrix.Scope='Historical frozen complete Excel Format mutation order including Query, margin and deliberate stale guard; independent closure/readback proof added, not current-product qualification'
+        }
     }
     if($Scenario -eq 'FontSizeCatalogue'){
         $matrix.Cases=@($matrix.Cases|Where-Object {$_.Id -in @('read-stability','font','size-catalogue','complete-restoration','normal-exit')})

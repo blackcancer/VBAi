@@ -465,6 +465,16 @@ tab, posts one `WM_NEXTDLGCTL` to the owned Size control, observes focus and the
 native catalogue, then cancels once. No preference is written. Acceptance requires
 complete unchanged Tabs/revision and normal exit through the original launch
 handle; unknown focus, modal or dispatch outcomes retain the owned host.
+`-Scenario HistoricalFullFormat` uses the unchanged historical product and the
+preflighted exact-guard collector through the nondefault category, margin and
+deliberate stale-revision request. Initial palette writes retain their original
+null Query. Positive compensation entries bind the category observed before each
+write, so the later category selection cannot redirect recovery. Independent
+closed readbacks and terminal recovery proof are stronger than the original
+test; this is a causal diagnostic, not an unchanged historical test harness.
+The deliberate stale request is classified separately from any unexpected guard
+hit. The earlier prefix intentionally omits later stages; its passing result
+does not identify the historical failure's position.
 `tools/tests/Set-Q026Candidate.ps1` temporarily changes only the existing per-user
 x64 add-in CodeBase and matching version entry, with an explicit fresh backup.
 It refuses loaded VBE hosts or an unexpected assembly/original CodeBase. Restore

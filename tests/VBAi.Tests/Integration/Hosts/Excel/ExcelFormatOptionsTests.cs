@@ -40,10 +40,14 @@ namespace VBAi.Tests.Integration.Hosts.Excel
         { RunQualification(false, true); }
 
         [STATestMethod]
+        public void NativeHistoricalCompleteFormatAndRestoreCompleteOptionsVersion()
+        { RunQualification(false, true, historicalFullMatrix: true); }
+
+        [STATestMethod]
         public void NativeFontSizeCatalogueAndRestoreCompleteOptionsVersion()
         { RunQualification(false, fontSizeOnly: true); }
 
-        private void RunQualification(bool marginOnly, bool historicalPalettePrefix = false, bool fontSizeOnly = false)
+        private void RunQualification(bool marginOnly, bool historicalPalettePrefix = false, bool fontSizeOnly = false, bool historicalFullMatrix = false)
         {
             if (Environment.GetEnvironmentVariable("VBAi_RUN_EXCEL_TESTS") != "1")
                 Assert.Inconclusive("Excel automation is opt-in. Set VBAi_RUN_EXCEL_TESTS=1.");
@@ -63,10 +67,10 @@ namespace VBAi.Tests.Integration.Hosts.Excel
                     if (!string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("VBAi_TEST_DESKTOP_NAME")))
                         Environment.SetEnvironmentVariable(VbeInspectionTrace.EnvironmentName, trace);
                     return ExcelVbeFixture.StartOwnedWithTrace(trace);
-                }, host => QualifyReadyHost(host, marginOnly, historicalPalettePrefix, fontSizeOnly));
+                }, host => QualifyReadyHost(host, marginOnly, historicalPalettePrefix, fontSizeOnly, historicalFullMatrix));
         }
 
-        private void QualifyReadyHost(ExcelVbeFixture host, bool marginOnly, bool historicalPalettePrefix, bool fontSizeOnly)
+        private void QualifyReadyHost(ExcelVbeFixture host, bool marginOnly, bool historicalPalettePrefix, bool fontSizeOnly, bool historicalFullMatrix)
         {
             // No using/finally Dispose: uncertainty must retain this exact fixture and all owning COM references.
             DateTime startUtc = DateTime.MinValue;
@@ -83,7 +87,8 @@ namespace VBAi.Tests.Integration.Hosts.Excel
                 () => ObserveOptionsClosureSettled(host, startUtc), () => RetainHost(host),
                 () => { trace?.Dispose(); host.Dispose(); AttachEvidence(host, startUtc, "ShutdownVerified", host.ShutdownDiagnostics); },
                 (phase, data) => AttachEvidence(host, startUtc, phase, data), verifyReadStability: !historicalPalettePrefix, marginOnly: marginOnly,
-                historicalPalettePrefix: historicalPalettePrefix, verifyExclusiveHost: () => VerifyExclusiveHost(host, startUtc), fontSizeOnly: fontSizeOnly);
+                historicalPalettePrefix: historicalPalettePrefix, verifyExclusiveHost: () => VerifyExclusiveHost(host, startUtc), fontSizeOnly: fontSizeOnly,
+                historicalFullMatrix: historicalFullMatrix);
             Exception primary = null, detach = null;
             bool runStarted = false;
             try {

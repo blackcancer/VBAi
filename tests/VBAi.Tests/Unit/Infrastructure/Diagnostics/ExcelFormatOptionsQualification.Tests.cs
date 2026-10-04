@@ -90,6 +90,50 @@ namespace VBAi.Tests.Unit
         }
 
         [TestMethod]
+        public void HistoricalFullMatrixIncludesCategoryMarginStaleRefusalAndCompleteRestoration()
+        {
+            var probe = new Probe { EmptySizes = true };
+            probe.Create(historicalPalettePrefix: true, historicalFullMatrix: true).Run();
+            Assert.AreEqual(14, probe.Writes, "Six confirmed commits, six compensations and two classified refusals.");
+            Assert.AreEqual(1, probe.Cleanup); Assert.AreEqual(0, probe.Preserved);
+            foreach (string phase in new[] { "OtherCategoryReadbackReply", "MarginReadbackReply", "StaleVersionVerifiedRefusal", "BaselineRestored" })
+                Assert.IsTrue(probe.Phases.Contains(phase), phase);
+            Assert.IsFalse(probe.Phases.Any(x => x.EndsWith("IndependentAfterWriteIntent")));
+            foreach (string phase in new[] { "Font", "Foreground", "Background", "Indicator", "OtherCategory", "Margin" })
+                Assert.IsTrue(probe.Phases.Contains(phase + "HistoricalCommit"));
+            Assert.AreEqual(2, probe.Requests.Count(x => Equals(x["Command"], "set_vbe_option") &&
+                x.TryGetValue("Query", out object category) && Equals(category, "Other")), "The original nondefault-category mutation and its restoration keep Query.");
+            Assert.AreEqual(3, probe.Requests.Count(x => Equals(x["Command"], "set_vbe_option") &&
+                x.TryGetValue("Query", out object category) && Equals(category, "Normal")),
+                "Recovery of the three originally implicit palettes binds the observed category after the later selection.");
+            Assert.AreEqual(probe.BaselineVersion, probe.Version());
+        }
+
+        [TestMethod]
+        public void HistoricalFullMatrixRetainsUncertainMarginAndNeverStartsStaleOrCleanup()
+        {
+            var healthy = new Probe { EmptySizes = true };
+            healthy.Create(historicalPalettePrefix: true, historicalFullMatrix: true).Run();
+            int margin = healthy.Requests.FindIndex(x => Equals(x["Command"], "set_vbe_option") && Equals(x["Property"], "Margin Indicator Bar")) + 1;
+            Assert.IsTrue(margin > 0);
+            var failed = new Probe { EmptySizes = true, Fault = "NoCommit", FaultAt = margin };
+            var runner = failed.Create(historicalPalettePrefix: true, historicalFullMatrix: true);
+            Assert.IsNotNull(Failure(runner.Run));
+            Assert.IsTrue(runner.HostRetained); Assert.AreEqual(margin, failed.Requests.Count);
+            Assert.AreEqual(0, failed.Cleanup); Assert.AreEqual(1, failed.Preserved);
+            Assert.IsFalse(failed.Phases.Contains("StaleVersionIntent"));
+            Assert.IsFalse(failed.Phases.Contains("BeforeRestorationIntent"));
+        }
+
+        [TestMethod]
+        public void HistoricalFullMatrixRejectsAnIncompatibleReducedScopeBeforeDispatch()
+        {
+            var probe = new Probe();
+            Assert.ThrowsException<ArgumentException>(() => probe.Create(historicalFullMatrix: true));
+            Assert.AreEqual(0, probe.Requests.Count); Assert.AreEqual(0, probe.Cleanup);
+        }
+
+        [TestMethod]
         public void FocusedMarginQualificationChangesAndRestoresOnlyTheRealCheckbox()
         {
             var probe = new Probe();
@@ -146,7 +190,7 @@ namespace VBAi.Tests.Unit
                 ["Normal Text.Foreground"] = "Black", ["Normal Text.Background"] = "White", ["Normal Text.Indicator"] = "Blue",
                 ["Keyword Text.Foreground"] = "Black", ["Keyword Text.Background"] = "White", ["Keyword Text.Indicator"] = "Blue" };
             internal string Category = "Normal Text", BaselineVersion;
-            internal ExcelFormatOptionsQualification Create(bool verifyReadStability = false, bool marginOnly = false, bool historicalPalettePrefix = false, bool fontSizeOnly = false)
+            internal ExcelFormatOptionsQualification Create(bool verifyReadStability = false, bool marginOnly = false, bool historicalPalettePrefix = false, bool fontSizeOnly = false, bool historicalFullMatrix = false)
             {
                 BaselineVersion = Version();
                 return new ExcelFormatOptionsQualification(42, Dispatch, ObserveClosure,
@@ -158,7 +202,7 @@ namespace VBAi.Tests.Unit
                     }, verifyReadStability, marginOnly, historicalPalettePrefix, () => {
                         if (++ExclusiveGuardCalls == ExclusiveGuardFaultAt)
                             throw new InvalidOperationException("Another VBE host appeared during the campaign.");
-                    }, fontSizeOnly);
+                    }, fontSizeOnly, historicalFullMatrix);
             }
             private IDictionary<string, object> Dispatch(object raw)
             {

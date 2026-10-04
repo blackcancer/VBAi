@@ -18,7 +18,7 @@ namespace VBAi.Tests.Integration
         private readonly Action preserve, cleanup;
         private readonly Action<string, object> evidence;
         private readonly int processId;
-        private readonly bool verifyReadStability, marginOnly, historicalPalettePrefix, fontSizeOnly;
+        private readonly bool verifyReadStability, marginOnly, historicalPalettePrefix, fontSizeOnly, historicalFullMatrix;
         private readonly List<Tuple<string, string, object, string>> ledger = new List<Tuple<string, string, object, string>>();
         private IDictionary<string, object> baseline;
         private readonly Action verifyExclusiveHost;
@@ -37,11 +37,13 @@ namespace VBAi.Tests.Integration
         internal ExcelFormatOptionsQualification(int processId, Func<object, IDictionary<string, object>> dispatch,
             Func<IDictionary<string, object>> observeClosure, Action preserve, Action cleanup, Action<string, object> evidence,
             bool verifyReadStability = false, bool marginOnly = false, bool historicalPalettePrefix = false,
-            Action verifyExclusiveHost = null, bool fontSizeOnly = false)
+            Action verifyExclusiveHost = null, bool fontSizeOnly = false, bool historicalFullMatrix = false)
         { this.processId = processId; this.dispatch = dispatch; this.observeClosure = observeClosure;
             this.preserve = preserve; this.cleanup = cleanup; this.evidence = evidence; this.verifyReadStability = verifyReadStability; this.marginOnly = marginOnly;
             this.historicalPalettePrefix = historicalPalettePrefix; this.verifyExclusiveHost = verifyExclusiveHost;
-            this.fontSizeOnly = fontSizeOnly; }
+            this.fontSizeOnly = fontSizeOnly; this.historicalFullMatrix = historicalFullMatrix;
+            if (historicalFullMatrix && (!historicalPalettePrefix || marginOnly || fontSizeOnly))
+                throw new ArgumentException("Historical full matrix requires historical mutation order and the complete scope."); }
 
         /// <summary>Validate the Format opt-in before preparation, then hand off only a successfully owned bootstrap.</summary>
         internal static void RunOwned<T>(bool enabled, string ownedResults, string evidenceRoot, string inheritedDiagnosticManifest,
@@ -82,7 +84,7 @@ namespace VBAi.Tests.Integration
         {
             evidence("ScenarioMatrix", marginOnly ? new[] { "margin indicator", "full options version restored" } :
                 fontSizeOnly ? new[] { "exact font", "size catalogue or honest refusal", "full options version restored" } :
-                historicalPalettePrefix ? new[] { "historical font and size refusal", "historical foreground/background/indicator without Query", "full options version restored" } : Scenarios);
+                historicalPalettePrefix && !historicalFullMatrix ? new[] { "historical font and size refusal", "historical foreground/background/indicator without Query", "full options version restored" } : Scenarios);
             baseline = Read("Baseline");
             evidence("BaselineComplete", baseline);
             if (verifyReadStability)
@@ -127,7 +129,9 @@ namespace VBAi.Tests.Integration
                 var readback = Format(Read(names[0] + "Readback"));
                 Assert.AreEqual(next, (historicalPalettePrefix ? Find(readback, names) : CategoryPalette(readback, category, names))["Value"]);
             }
-            if (historicalPalettePrefix) return; // The old drift preceded the other-category/checkbox scenarios; keep this diagnostic bounded.
+            // The original rethrow stack does not identify the failing stage. The
+            // prefix deliberately omits later stages; a pass cannot exclude them.
+            if (historicalPalettePrefix && !historicalFullMatrix) return;
             var categoryRead = Read("OtherCategoryCatalogue"); var categories = (object[])Format(categoryRead)["FormatCategories"];
             Assert.IsTrue(categories.Length > 1);
             var other = VbeBridgeClient.Object(categories[1]);
@@ -181,10 +185,16 @@ namespace VBAi.Tests.Integration
             var before = Read(phase + "BeforeWrite");
             object old = Control(Format(before), property, category)["Value"];
             if (value is bool) old = Equals(old, "On");
+            // Keep the historical request's null Query, but bind its positive
+            // recovery entry to the actual category. Later Query changes otherwise
+            // redirect an implicit palette compensation to a different category.
+            string restoreCategory = historicalFullMatrix && category == null &&
+                new[] { "Foreground", "Background", "Indicator" }.Contains(phase)
+                ? CurrentCategory(Format(before)) : category;
             Send(phase, new { Command = "set_vbe_option", Pane = tab, Property = property, Value = value,
                 Query = category, ExpectedOptionsVersion = Version(before) }, true, () => {
-                    if (!ledger.Any(item => item.Item2 == property && item.Item4 == category))
-                        ledger.Add(Tuple.Create(tab, property, old, category));
+                    if (!ledger.Any(item => item.Item2 == property && item.Item4 == restoreCategory))
+                        ledger.Add(Tuple.Create(tab, property, old, restoreCategory));
                 });
             if (historicalPalettePrefix)
             {
