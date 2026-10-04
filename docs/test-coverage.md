@@ -1,5 +1,620 @@
 # Recorded validation
 
+## Q-014 final decision and cleanup (2026-10-04)
+
+`artifacts/q014-final-decision-20261004/qualification.json` records Q-014
+acceptance for corrected candidate `ddf638b2` in selected SOLIDWORKS 2019 SP5
+and 2025 SP1.1. Its aggregate checks require exact loaded MVID/SHA, every final
+native core PASS, reviewed scoped UI, source-preserving workspace/pane close,
+every assistant native PASS, one normal host ExitApp, one idle IDE Quit, private
+worker exit 0, absent owned processes and exact original CodeBase restoration.
+The final complete settings SHA matches the pre-launch baseline. User IDE PID
+32512 remains present; the final owned host/IDE PIDs are absent.
+
+The 2019 final core and UI bank, the independent 2019 complete assistant bank,
+and the combined 2025 final bank all terminate normally. Saved-copy hashes remain
+identical to their verified product Save hashes after host exit. The restored
+installed DLL remains Q024 v9; the qualification applies to the final corrected
+artifact, not an installed upgrade or the unchanged source commit. Earlier
+failures remain preserved. Full managed release/coverage and authenticated
+external provider acceptance are not inferred from this native qualification.
+
+## Q-014 final-candidate native core and UI, 2019 (2026-10-04)
+
+`artifacts/q014-final-native-2019-20261004/` loads `ddf638b2` exactly in
+SOLIDWORKS 2019 PID 144848, revision 27.5.0, with owned IDE PID 222964,
+on `VBAiTests_f8e5f178325d4d41945b24dffb4251d0`. Its first final-candidate
+native core bank passes every prepared oracle: fresh macro, connected load,
+module/class, UserForm/Label, stale guards, complete export/import, compilation,
+breakpoint/run/step/continue with marker 42, verified product Save and native
+Edit Macro reopen of the byte-identical copy. Earlier v9 core passes are not
+promoted to these final bytes.
+
+Reviewed actual captures show the correct Monaco class and module, this bank's
+marker path, Label `Q014 2019 synthetic`, designer resize/restoration and return
+to Monaco without a closed-project warning. Native class-pane close/reopen
+preserves source and its reopened content is reviewed. Hosted WM_CLOSE retains
+the original workspace. Capture acceptance is scoped to editor/designer; native
+WPF overlay artifacts do not prove the complete assistant layout.
+
+The complete same-candidate 2019 assistant evidence is retained from
+`artifacts/q014-recovery-barrier-2019-20261004/`, with its exact MVID/SHA checked
+before this core bank. Those passing assistant requests are not replayed.
+Pre-exit copies of both final core macros retain the verified Save SHA
+`6FFA936617B338924D2289C4D1AD7F47A95A253EEE6F119301B5072B69F40A76`.
+Final normal host/IDE exit and COM restoration are recorded separately.
+
+## Q-014 final-candidate native core and assistant, 2025 (2026-10-04)
+
+`artifacts/q014-recovery-barrier-2025-20261004/` verifies exact candidate
+`ddf638b2-30d2-40a5-8ad3-9d49f303ff7c`, SHA-256
+`69BDE5B2D1CB55CA23597540F1CA108231F342FAF79A79B3F160E31FAC11AFD5`,
+in SOLIDWORKS 2025 PID 197792, revision 33.1.1, with owned IDE PID 249784,
+on `VBAiTests_3430cc9e61d44152a59373e7c2aa66b6`. The prepared assistant
+bank independently passes local native reading, permission and visible stale
+refusals, visible stream/cancellation and visible recovery, with unchanged class
+source. Every native receipt precedes teardown.
+
+In the same owned host, a fresh final-candidate native core bank passes native
+macro creation, exact connected load, module/class preparation, UserForm/Label,
+stale guards, BAS/CLS/FRM/FRX export/import, compile, verified breakpoint/run/step/
+continue with marker 42, product Save and byte-identical native Edit Macro reopen.
+`final-native-core/campaign.json` retains each individual result. This final
+bank supplies current-byte proof; the earlier Q024 v9 core results remain separate.
+
+Reviewed native captures verify Monaco class/module content (including this
+bank's exact debug marker path), the Label, designer resize/restoration and return
+to Monaco without a closed-project warning. Unique native class-pane close/reopen
+preserves source, and hosted WM_CLOSE preserves the original editor. PrintWindow
+captures contain native overlay/WPF artifacts, so this is scoped editor/designer
+acceptance, not a full assistant visual-layout claim.
+
+One normal ExitApp observes original host exit 0 without an error acknowledgement,
+then the idle owned IDE exits 0. Final temporary state restoration is recorded
+separately. Historical failures are retained and are not counted as current passes.
+
+`artifacts/q014-final-core-candidate-20261004/results/final-core-contracts.trx`
+records **45 passed, 0 failed, 0 skipped** against exactly the final product hash.
+Build and private test worker exit successfully. This scoped persistence/guard
+bank is not a complete managed suite or a new coverage percentage.
+
+## Q-014 after-tools cancellation and recovery, corrected barrier (2026-10-04)
+
+`artifacts/q014-recovery-barrier-2019-20261004/` loads `ddf638b2` exactly in
+SOLIDWORKS 2019 PID 191276, revision 27.5.0, with owned IDE PID 147116 and
+inactive desktop `VBAiTests_1e4edeaeb75c4e75a9d855968625b17d`. The complete
+prepared after-tools assistant sequence passes: local reading, ReadOnly refusal,
+visible stale-revision refusal, visible stream before one Stop, visible
+interruption, idle recovery and a visible subsequent local reply. Each native
+class readback is unchanged. Prerequisite observations are not added as new
+coverage totals, and no core module/form/debug/persistence bank is replayed.
+
+The bank runner retains each original observer handle, waits for its exit and
+requires its native PASS receipt before launching the next step. Its terminal
+receipt confirms all native readbacks before teardown. One ExitApp then observes
+normal host exit 0 without any error acknowledgement; the idle owned IDE exits
+normally. This directly closes the latest 2019 after-tools visibility/recovery
+observation gaps. Earlier failed banks and the historical native access violation
+remain recorded; this passing run is not a causal explanation of that crash.
+
+## Q-014 corrected child-focus native shutdown in 2019 (2026-10-04)
+
+`artifacts/q014-child-focus-2019-20261004/` verifies exact native load of
+`ddf638b2` in SOLIDWORKS 2019 PID 138556, revision 27.5.0, with owned IDE
+PID 192716 and private desktop `VBAiTests_e2c4fa985dc349408fd02667bad92bac`.
+A fresh synthetic conversation's bounded stream is visible before one Stop;
+interruption is visible, idle returns, and native class source is unchanged.
+This different conversation sequence does not erase the earlier blank-stream
+failure after reading and refusal scenarios.
+
+Recovery receives its local HTTP completion, but host teardown is emitted before
+independent native result readback finishes. The readback then fails its parent
+ownership guard because the host exited. This is a harness sequencing failure,
+not proof of a product recovery failure or success; the first evidence remains
+retained. `tools/tests/Assert-Q014AssistantTerminal.ps1` now refuses teardown while
+any sent scenario lacks its terminal native readback receipt. Its disposable
+fixture verifies pending refusal and completed acceptance without starting hosts.
+
+The first ExitApp completes and the retained host handle observes normal exit 0
+without any error acknowledgement. The idle IDE and private worker also exit 0.
+Temporary CodeBase values are restored and the complete settings SHA returns to
+`7686A73C17E5218D7FACF69B40CBAD67C04801CDB5C402387D38F4A1B3BF247C`.
+This proves the latest native shutdown correction in both host versions; recovery
+acceptance with the corrected terminal barrier remains pending.
+
+## Q-014 corrected child-focus native shutdown in 2025 (2026-10-04)
+
+`artifacts/q014-child-focus-2025-20261004/` verifies exact native load of
+`ddf638b2` in SOLIDWORKS 2025 PID 109592, revision 33.1.1, and owned IDE
+PID 94252, on `VBAiTests_2e56f89f52d340cf9fade273b0eb17ca`. One ExitApp
+completes and the independently retained original host handle observes exit 0,
+without any error-dialog acknowledgement or second shutdown command. The idle
+IDE exits normally. Only load and shutdown are exercised; functional assistant
+banks are not replayed.
+
+The original bootstrap fails during a read-only prelaunch DTE read with
+RPC_E_CALL_REJECTED before any Debug.Start intent. Supplemental helper guards
+also refuse before any native action. A bounded read-only observation then
+allows the first Debug.Start in the same owned IDE, with the original failure
+retained. Thus the supplemental shutdown passes, while the original bootstrap
+campaign is not green. All temporary CodeBase values are restored; this focused
+bank performs no provider/approval selection. The streaming display gap in 2019
+and older crashes remain outside this clean shutdown proof.
+
+## Q-014 focused 2025 child-focus evidence (2026-10-04)
+
+`artifacts/q014-focus-2025-20261004/` loads `385b187a` exactly in SOLIDWORKS
+2025 PID 52236, revision 33.1.1, with IDE PID 108136 and private desktop
+`VBAiTests_79fe6cc0bd4942099b2046ef642efb4c`. One stale-revision request refuses
+editing, preserves native class source, and displays its final marker. Hosted
+workspace WM_CLOSE preserves the original editor. Passing read/permission/
+cancellation/recovery and core banks are not replayed.
+
+One ExitApp completes but exceeds the exit deadline. Existing .NET dialog
+details identify a different focus path: InvalidComObjectException in
+`Control.ActiveXImpl.OnFocus`, `Control.ChildGotFocus`, `Control.OnGotFocus`,
+`ElementHost.OnGotFocus`, `WmSetFocus` and `ElementHost.WndProc`. The retained
+lost-focus correction does not cover this child gain-of-focus path. One Continue
+acknowledgement permits host exit 0; owned IDE and private worker exit 0. The
+shutdown failure remains retained. COM and provider/approval state is restored;
+the complete settings SHA matches the pre-launch baseline `7686A73C`.
+
+A subsequent ChatContentHost correction catches only InvalidComObjectException
+around the base gain-of-focus notification, with no repeat and unrelated-error
+propagation. Its isolated build initially fails because the test fixture namespace
+import is missing; the corrected build passes. `artifacts/q014-child-focus-fix-20261004/results/child-focus.trx`
+records **4 passed, 0 failed, 0 skipped**, with private worker exit 0. Candidate
+MVID is `ddf638b2-30d2-40a5-8ad3-9d49f303ff7c`, SHA-256
+`69BDE5B2D1CB55CA23597540F1CA108231F342FAF79A79B3F160E31FAC11AFD5`.
+Native acceptance is separate
+and pending. The 2019 streaming visibility and shutdown failures remain open.
+
+## Q-014 focused 2019 candidate and retained failures (2026-10-04)
+
+`artifacts/q014-focus-2019-20261004/` loads candidate MVID
+`385b187a-6eb1-4fa0-99f9-4612d66c14bf`, SHA-256
+`E4E53AE10AF749BEFBD4B4765FDDBCF9C41ED3ACF9C5CF87D174040917CB3825`,
+in owned SOLIDWORKS 2019 PID 74916, revision 27.5.0, and IDE PID 47624.
+The inactive desktop is `VBAiTests_582f774d9b8c407e8542f7ec8a8a5858`.
+The original bootstrap deadline fails on a native toolbar consistency warning;
+one acknowledgement allows the already-launched host's first owned Edit Macro.
+That bootstrap failure and helper exit 1 remain retained.
+
+With the composer initially enabled and no settings dialog opened, local reading,
+ReadOnly refusal and stale-revision refusal pass. The latter's final marker is
+visible in native controls and an independently reviewed window capture, with
+class source unchanged. Hosted workspace WM_CLOSE also preserves the original
+workspace and source. No passing core scenarios are replayed.
+
+Cancellation fails before Stop: the bounded local stream never satisfies the
+visible stream and unique Stop prerequisite. No Stop is emitted; recovery stays
+NOT_RUN. The stream ends naturally, the native source remains unchanged, and
+independent controls show blank assistant entries. Read-only thread inventory
+places all enumerated native WinForms controls on the owning UI thread; it does
+not support a cross-thread creation explanation. The initial case-sensitive history query uses an unnormalized key and returns
+no sessions. The corrected query uses the product's uppercase exact synthetic
+scope and finds the complete stream persisted (2770 characters), while native
+controls still show blank content. This distinguishes stored model text from
+visible transcript acceptance; no other scope is read.
+
+One ExitApp completes but normal exit exceeds the deadline, with a native Error
+dialog reporting a detached COM RCW. The debugger remains in Run mode. One OK
+acknowledgement permits the original host to exit 0; the idle owned IDE then
+exits 0. This preserves the shutdown failure and does not establish clean native
+acceptance of the focus correction. Main-user CodeBase values are restored, and
+provider/approval restoration returns the complete settings SHA to
+`7686A73C17E5218D7FACF69B40CBAD67C04801CDB5C402387D38F4A1B3BF247C`.
+The native cancellation and shutdown causes remain unresolved.
+
+## Q-014 native ActiveX focus-loss correction (2026-10-04)
+
+`artifacts/q014-maincontext-2025-20261004/` independently loads the corrected
+editor candidate `5fec5a16` in SOLIDWORKS 2025 PID 108124, revision 33.1.1, with
+owned IDE PID 216656 and an inactive desktop. The composer is enabled before
+and after selecting the synthetic scope, without opening settings first.
+Local module reading, ReadOnly edit refusal, visible streaming cancellation,
+idle recovery and a subsequent local reply pass with native class source
+unchanged. Direct hosted editor WM_CLOSE preserves the original window and code.
+
+The stale-revision tool refuses editing with unchanged source, but the required
+final marker is absent from visible native transcript controls. Independent
+settled observations retain that gap; no request is replayed. The transcript
+already reports its scroll position at the bottom, so no scroll action is
+emitted. HTTP completion alone does not establish visible transcript acceptance.
+
+One ExitApp returns but host exit exceeds its deadline. Independent observation
+finds a Microsoft .NET Framework dialog. Expanding its existing details once
+exposes InvalidComObjectException at `Control.ActiveXImpl.OnFocus`, called by
+`Control.OnLostFocus`, `WmKillFocus` and `UserControl.WndProc`. This is a native
+WinForms ActiveX focus-site failure, not the retained CodePane Close boundary.
+The original dialog details are in `framework-error-expanded-details.json`.
+After one Continue acknowledgement, the original host handle observes exit 0;
+the idle IDE and private worker also exit 0. No Debugger.Go, second ExitApp or
+forced termination is emitted. The original shutdown failure is retained.
+
+All three main-user CodeBase values are restored. Provider/approval restoration
+preserves other settings text and returns the complete settings file to its
+pre-launch SHA-256 `7686A73C17E5218D7FACF69B40CBAD67C04801CDB5C402387D38F4A1B3BF247C`.
+
+ChatToolWindow now tolerates InvalidComObjectException specifically around the
+base lost-focus notification, without retrying it or hiding unrelated errors.
+`artifacts/q014-native-focus-fix-20261004/results/native-focus.trx` records
+**7 passed, 0 failed, 0 skipped**, including normal notification, detached-site
+tolerance and unrelated-error propagation. The isolated build passes without
+warnings/errors after the calling sandbox's SDK access refusal; that earlier
+build failure remains in `build.log`. Private worker terminal receipts verify
+normal exit and input desktop Default. Native shutdown acceptance of this new
+candidate remains pending; earlier assistant/crash/visibility failures remain
+separate and are not erased by the focused tests.
+
+## Q-014 native candidate selection and registry context (2026-10-04)
+
+`artifacts/q014-corrected-2019-20261004/` retains a rejected native load trial.
+Owned SOLIDWORKS 2019 PID 179472, revision 27.5.0, opens only a byte-identical
+copy of the already-qualified synthetic macro. Its load guard observes Q024 v9,
+MVID `96f9b70e-662f-4551-89b5-ff7400bdb2a8`, instead of the corrected candidate
+`5fec5a16-3d72-4d76-bd36-1e0e76e20f59`. No functional bank is replayed. Both
+owned host and IDE exit normally, the private worker exits, and the three
+temporary CodeBase values are restored in the calling registry context.
+Helper success does not override this rejected native candidate identity.
+
+The independent constructor-only COM probe loads the corrected bytes in a
+fresh observer, but this is not native VBE acceptance. Native read-only inventory
+shows VBAi.AddIn connected without a VBAi macro reference. A separate hidden
+WMI-created user process then observes the actual main-user CodeBase pointing
+to Q024 v9 and the settings file length differing from the calling process's
+view. `wmi-context-readonly.json` and `independent-main-context-readonly.json`
+retain these contradictory context observations. This establishes registry
+view isolation; it does not explain the assistant crashes.
+
+`artifacts/q014-maincontext-2019-20261004/` prepares a new candidate-selection
+trial with the same retained macro. A main-user process backs up and temporarily
+changes only the three existing HKCU64 CodeBase values and verifies their
+readback. Owned SOLIDWORKS 2019 PID 49016 then loads the exact corrected MVID and
+SHA-256 on desktop `VBAiTests_fb167b1fd6224c039ce89da72015daea`.
+`native-vbai-connect-terminal.json` records the native connection. The first
+direct editor WM_CLOSE preserves the original visible editor and unchanged
+class source (`workspace-close-result.json`). This accepts that correction in
+2019 only, without replaying the completed core bank.
+
+The settings Save closure deadline fails; its action is not repeated. A first
+addressed normal close discards the remaining dialog. Native scope, Agent mode,
+ReadOnly and LM Studio model `Q014_LOCAL` are independently observed. The first
+composer SetValue is rejected with ElementNotEnabledException and independent
+empty-composer readback prevents Send. Only the synthetic model-list HTTP
+request exists. Assistant dispatch, cancellation and recovery remain NOT_RUN
+after this prerequisite refusal; the disabled WPF composer is retained evidence,
+not an assistant crash or proof of its cause.
+
+One ExitApp completes but the host remains beyond the observation deadline with
+the same detached-RCW native error dialog. The CodePane correction therefore
+does not establish clean native shutdown. After one acknowledgement, the
+original host handle observes exit code 0; the owned idle IDE also exits with
+code 0, and the private worker terminates. The original deadline failure remains.
+The main-user restoration then verifies all three original CodeBase values and
+restores only the qualification-owned ProviderName and VbeEditApproval fields
+to their independently observed native baseline, preserving all other settings
+text and a backup. Trust, identity and startup values remain unchanged.
+
+## Q-014 editor close corrections (2026-10-04)
+
+The isolated current-source build at
+`artifacts/q014-editor-rcw-fix-20261004/build/VBAi/Debug/net48/VBAi.dll`
+has SHA-256 `34DBAF7014F1CB18BD6D78CB665FEB8F8083033441045F888D87E6182C03BAA2`.
+It includes two focused editor lifetime corrections on base `8675f13d`, separate
+from the previously loaded Q024 v9. It is not installed or qualified in
+SOLIDWORKS yet. Source/test hashes are retained in `build-plan.json`.
+
+A matched portable PDB for the actual Q024 v9 DLL is inspected in
+`artifacts/q014-v9-source-audit-20261004/pdb-source-comparison.json`. The CodeView
+GUID agrees with the PDB identity and the DLL SHA agrees with native receipts.
+Document SHA-256 values match the pre-edit workspace editor, hosting and most
+chat source files. Twelve document byte hashes differ, including generated
+files; this establishes file-specific provenance, not a whole product revision.
+
+The first real WinForms child-editor probe keeps initialization deliberately
+active and observes `TaskManagerClosing`, cancellation and a visible window.
+The separate ready-editor probe reproduces disposal after direct WM_CLOSE in
+Q024 v9. Both probes use disposable child Forms on inactive desktops without
+SOLIDWORKS, macros or WebView startup. Direct WM_CLOSE is classified as
+TaskManagerClosing by the installed .NET Framework. The product's hosted
+UserClosing guard previously missed that reason. It now cancels both close
+transports; normal owner disposal remains available.
+
+`artifacts/q014-editor-close-fix-20261004/results/editor-close.trx` records
+**46 passed, 1 failed, 0 skipped** for the initial editor/workspace mirror run.
+The new regression's lifetime checks pass, but its no-WebView assertion fails
+because the fixture drains pending initialization too late. After moving that
+drain before clearing the suppression flag, only the failed regression is run:
+`regression-results/regression.trx` records **1 passed, 0 failed, 0 skipped**.
+The other passing scenarios are retained without replay. This is not a passing
+full-suite claim.
+
+The detached-pane probe against Q024 v9 exposes an uncaught
+InvalidComObjectException while releasing the retained native window. This is
+an injected shutdown boundary, not proof of the earlier native host's error
+origin. CloseNativeWindow now tolerates that already-detached RCW as well as
+COMException, clears ownership after the first attempt, and still propagates
+unrelated failures. The new regression verifies both cleanup and non-retry.
+
+The final affected mirror and cross-lifetime run is
+`artifacts/q014-editor-rcw-fix-20261004/results/editor-rcw.trx`:
+**17 passed, 0 failed, 0 skipped**. Both isolated builds have no warnings/errors.
+Actual testhost receipts and helper terminal files verify inactive desktops,
+normal worker exit and input Default. No completed SOLIDWORKS bank is replayed.
+Native acceptance of these changed bytes and the assistant crash/cancellation/
+recovery gates remain open; these corrections do not explain or resolve the
+native access violation.
+## Q-014 native settings restoration and editor close observation (2026-10-04)
+
+Evidence root: `artifacts/q014-settings-restoration-20261004/`. A fresh owned
+SOLIDWORKS 2019 PID 222256, revision 27.5.0, loads the same Q024 v9 candidate
+on `VBAiTests_8055fd500f2f42ea81987225740feafc`. No IDE, assistant prompt,
+macro execution or completed qualification bank is repeated.
+
+The actual native dialog initially retains the synthetic endpoint from the
+failed 2019 assistant trial. An addressed Save does not close the dialog.
+Independent cancellation and reopening verify that those fields were unchanged;
+the uncertain Save is not repeated. A separately guarded MSAA button action then
+restores Codex, Automatic approval and the default LM Studio URL. Reopening the
+native dialog independently verifies these fields, including removal of the
+known test endpoint, in `restore-msaa-native-result.json`. No credential field
+is read or changed and no model control is mutated. This proves the observed
+native fields in the same host; cold-start persistence and a complete settings
+snapshot are not attested. The earlier presumed-file readback remains insufficient.
+
+The previously NOT_RUN independent editor UserClosing probe emits one addressed
+WM_CLOSE. Its preservation oracle fails (`workspace-close-error.json`). The
+independent `workspace-close-independent-readback.json` then verifies that the
+editor is absent, SOLIDWORKS remains alive and native class source is unchanged.
+No second close or reopen is emitted. The current-source cancellation contract
+cannot be assumed for source-unattested Q024 v9 or an unobserved WorkspaceHosted
+flag. This observation qualifies neither cancellation of editor closure nor a
+complete editor close/reopen lifecycle. It does not override the successful
+native code-pane close/reopen in the core banks.
+The first ExitApp completes, but the original deadline fails while a native
+error dialog reports a COM object detached from its underlying RCW.
+`normal-close-error-dialog-readback.json` retains that message. One addressed
+OK acknowledgement then permits host exit, without another ExitApp or forced
+termination. `restoration-owned-host-exit.json` observes exit code 0 through the
+original child handle; `isolated-run/desktop/terminal.json` observes worker exit
+0 and an empty private desktop. The initial close deadline and RCW error remain
+failures; later cleanup does not qualify an error-free lifecycle. The retained
+SWP backup still matches the original saved-copy hash. User IDE PID 32512 is
+preserved.
+## Q-014 independent assistant follow-up, SOLIDWORKS 2019 (2026-10-04)
+
+Evidence root: `artifacts/q014-assistant-2019-20261004/`. This remaining-only
+bank retains the completed native and managed results and opens a fresh copy
+of the saved 2019 fixture. Combined helper compilation, script parsing and
+the corrected loopback SSE terminal preflight pass before native launch.
+The owned processes are SOLIDWORKS PID 243576, revision 27.5.0, and VS PID
+116604 on `VBAiTests_99f451fcfcef4cc6be87dd4628771ba7`.
+
+The initial bridge connection times out before sending a request. The actual
+native Add-In Manager independently shows VBAi selected and unloaded. One load
+request's immediate checkbox oracle fails; a later read-only observation shows
+loaded state 1 with no startup-option change. The manager then receives its
+first accept. `native-vbai-connect-terminal.json` and
+`bridge-status-connected.json` verify the exact Q024 v9 MVID, path and SHA.
+No load toggle, file command, core bank or managed suite is replayed. The failed
+bootstrap and immediate checkbox oracle remain retained.
+
+The native settings dialog exposes the previous 2025 synthetic endpoint instead
+of this worker's inherited endpoint. One addressed settings change attaches the
+prepared local server; its catalogue and native model readback select
+`Q014_LOCAL`, and the settings dialog is independently observed closed. The
+initial composer guard refuses before any send intent. A read-only probe then
+verifies the exact named empty composer and compiled comparison strings. The
+prepared guard receives a bounded read-only readiness wait; no SetValue or Send
+is retried. One SetValue reports an error after applying text, whose independent
+readback matches before the first Send.
+
+`http-v2-002-terminal.json` records the server's production-format `read_module`
+request. No final native tool response is obtained. The exact owned debugger
+subsequently observes the host exited with code 1 and no targets; retained
+output includes native COM errors, without a proved cause or a 2019 access
+violation attribution. `local-read-error.json` records failed completion.
+Permission/revision, hosted-close, cancellation and recovery scenarios remain
+NOT_RUN after host loss. The disposable SWP has a verified retained backup;
+one normal IDE Quit observes exit 0, with no ExitApp or forced termination.
+The original worker records host exit 1 and preserves campaign failure.
+
+## Q-014 embedded assistant follow-up, SOLIDWORKS 2025 (2026-10-04)
+
+Evidence root: `artifacts/q014-assistant-2025-ready-20261004/`. This executes
+only missing assistant scenarios against the actual Q024 v9 bytes recorded
+below, on owned SOLIDWORKS PID 86320, revision 33.1.1, and VS PID 205852 on
+`VBAiTests_3ac1eaa73d4b4fbe850f8a3f7df1b0e5`. The disposable SWP is a fresh
+byte copy of the previously qualified fixture. No native core bank, managed
+suite, product build or product COM registration is repeated.
+
+The actual installed embedded ChatWindow selects the exact owned project,
+Agent mode and LM Studio with model `Q014_LOCAL`. A synthetic loopback HTTP
+server supplies model/catalogue/SSE responses; production HTTP, catalogue
+gateway, native VBE tools and UI remain in use. No authenticated provider prompt
+is sent. Only changed non-sensitive settings fields are retained. After the host
+exit, `settings-restoration-readback.json` verifies baseline fields in the
+presumed settings file without rewriting it or retaining keys. The subsequent
+2019 native settings dialog still exposes this campaign's synthetic endpoint.
+That contradicts effective restoration acceptance: the disk readback alone
+does not prove the actual loaded settings were restored. The later native-dialog restoration above verifies the known changed fields.
+
+| Scenario | Current evidence |
+| --- | --- |
+| Native read | `local-read-result.json` verifies a real `read_module` tool result containing unprompted class code/value, unchanged source and the completion marker visible in the embedded transcript. UIA SetValue reports an error after applying the text; independent readback verifies it. Only the first Send is then emitted; input is not replayed. |
+| Permission refusal | `permission-refusal-result.json` verifies the catalogue gateway's read-only edit refusal, unchanged native source and visible completion marker. |
+| Revision refusal | `revision-refusal-retained-result.json` verifies the exact localized changed-module refusal for an all-zero stale SHA, unchanged native source and visible completion after addressed transcript scrolling. The earlier localized-oracle and UTF8-read failures are retained; no tool or Send is repeated. |
+| Cancellation | The first malformed fixture ends without a terminal finish reason (`cancel-error.json`, `http-010-terminal.json`); the product displays an incomplete-response error and restores the prompt. The separate corrected-fixture trial reaches `http-v2-002-request.json`, then loses its transport and leaves the owned host paused on a native access violation. Neither trial emits Stop or qualifies cancellation. |
+| Recovery and lifecycle | Cancellation recovery and the hosted-window close contract remain NOT_RUN. After one debugger continuation, the host exits with code 1 according to the exact owned debugger output. The attempted normal-close precheck finds the host already absent, so no ExitApp is emitted. The now-idle IDE receives one normal Quit and exits 0; private-worker/resource closure is independently observed. Known settings fields are subsequently restored in the separate native-dialog trial above; complete settings restoration is not attested. This is failed-host cleanup, not normal host-exit acceptance. Independent 2019 assistant reading also fails after host loss. |
+
+The malformed cancellation fixture omitted a terminal `finish_reason=stop`.
+The corrected `Q014LocalServerV2.cs` has a bounded controllable stream and a
+separate receipt prefix; `server-v2-preflight/result.json` verifies its SSE
+terminal protocol without executing a native action. `endpoint-v2-result.json`
+verifies attachment through the real native settings dialog and catalogue HTTP
+request. No credential field is read. `cancel-v2-debug-break-details.json` records
+debugger break mode, thread 24984 and exception `0xC0000005` in `oleaut32.dll`
+reading `0xFFFFFFFFFFFFFFFF`. `cancel-v2-frame-module-map.json` maps the retained
+stack to OLE, COM and RPC modules. This establishes a native exception, not its
+cause. No product attribution is inferred. The saved fixture
+has a separate shared-read hash and byte-identical backup in
+`retained-before-debug-resume-verified.json`; no host Save is replayed.
+`debug-exception-continue-result.json` observes a single continuation to run mode.
+`after-exception-host-exit-debugger.json` subsequently records host exit code 1
+and no debugger targets. `followup-ide-normal-close.json` records normal IDE exit
+code 0, with no forced termination. The original private worker exits 0 and the
+desktop becomes empty; that infrastructure receipt does not override the failed
+native scenario or the host's nonzero exit.
+Transcript scrolling and virtualization must be observed before cancellation
+so an offscreen live entry cannot be counted as rendered.
+Earlier preparation failures remain in `artifacts/q014-assistant-2025-20261004/`:
+JSON collection casting and separate Add-Type anonymous-type collisions prevent
+host start; its owned prelaunch IDE exits normally with code 0, without Debug.Start.
+The corrected bootstrap passes HTTP and combined-compilation prechecks first.
+Q-014 remains active and partial; the failed follow-up's owned processes have
+exited. Its failed scenarios and remaining acceptance gaps stay retained.
+
+## Q-014 private-desktop retention recovery (2026-10-04)
+
+Evidence root: `artifacts/q014-retained-release-20261004/`. The source base is
+`8675f13df94f8768e2ca556fa2427871be043fd8` plus the retained helper changes.
+This executes no SOLIDWORKS operation and does not repeat either native core bank.
+The helper and scoped guard assembly build without warnings or errors against
+the frozen Q024 v9 candidate. The initial sandbox build is refused SDK profile
+access; the user-context isolated build succeeds without rebuilding the product.
+
+The real inactive-desktop regression leaves an owned timer-driven form alive
+after the original worker exits with code 7. `run/desktop/failure.json` retains
+that failed campaign. After the form closes itself normally,
+`run/desktop/retained-terminal.json` independently observes the original worker
+handle signalled, its exit code and an empty private desktop, then records
+resource release. The helper exits 1, preserving the failed campaign outcome.
+It never switches desktops, retries an action or terminates a process. Failed
+desktop-close observations also remain failures instead of implied release.
+
+`guard-results/guards.trx` records **8 passed, 0 failed, 0 skipped** for the
+changed desktop infrastructure's focused guard class only. The actual testhost
+receipt and `guard-run/desktop/terminal.json` verify a separate inactive desktop,
+normal worker exit 0 and input desktop Default. This is not full-suite coverage.
+Old loaded launcher copies are unaffected; their resource release remains
+unattested. Missing embedded assistant scenarios are ordered in
+`artifacts/q014-assistant-followup-20261004/assistant-scenarios.json`, marked
+PREPARED_NOT_EXECUTED. No assistant acceptance is inferred from this regression.
+
+## Q-014 resumed private-desktop SOLIDWORKS 2019 (2026-10-04)
+
+Evidence root: `artifacts/q014-2019-resume-20261004/`. The harness source base
+remains `8675f13df94f8768e2ca556fa2427871be043fd8` plus the retained Q014 harness
+changes. Actual loaded product source provenance is not independently attested.
+The native VBE loads Q024 v9 from
+`E:/Développement/AddIn/CodexVBA/artifacts/build-q024-private-batch-v9-20261003/VBAi/Debug/net48/VBAi.dll`:
+MVID `96f9b70e-662f-4551-89b5-ff7400bdb2a8`, SHA-256
+`84616C0329641EDD8DC49DBDE8D3550052F23EBA6FA22C113C0CA873CFAAF022`.
+The initially planned product and its retained managed TRX remain separate.
+No product rebuild or registration rewrite occurred. The observed load-path
+difference has no established cause; `registration-readonly.json` records the
+post-run root and versioned CodeBase still pointing at the original path.
+
+The scoped harness builds against a frozen copy of the actual loaded candidate
+with zero warnings/errors. `managed-v9/managed.trx` retains **45 failed** at
+AssemblyInitialize because an observer omitted the desktop evidence directory;
+no test body executed. After that guard setup is corrected,
+`managed-v9-ready/managed.trx` records **45 passed, 0 failed, 0 skipped**.
+The actual testhost receipt proves the same inactive desktop as the native host.
+Neither run measures full-suite coverage or qualifies another candidate.
+
+| Scenario | Observed result and evidence |
+| --- | --- |
+| Launch and desktop | Owned VS PID 80648 and SOLIDWORKS PID 202172, revision 27.5.0, exact path/start/PID ROT, native Afx owner thread on `VBAiTests_6c76f5c151ef4ed894d17efb3f397bf1`; input `Default`. Read-only project readiness and transient process-path observation failures are retained; one effective Debug.Start. |
+| Native fixture and load | One typed RunCommand(573), addressed Save, fresh SWP. Native Add-In Manager observes VBAi unloaded, then receives one checked load and accept. The subsequent bridge verifies actual MVID/path/x64/AddIn connection. Receipt-writing errors do not trigger repeated native actions. |
+| Components and guards | `campaign-loaded-v9-ready.json` passes synthetic module/class/UserForm/Label, stale source/project/form refusals, guarded export/remove/import with exact source/designer readback, and native compilation with no diagnostic. Original disposable Type100 source hashes are unchanged. |
+| Debugger | `campaign-debug-persistence.json` passes breakpoint at line 5, observed break/step to line 6, continue to design, output `42`, and breakpoint removal. No keyboard shortcuts or debug mutation replay. The earlier oracle treated identical menu/toolbar command presentations as distinct commands; refusal occurred before debug invocation. |
+| Persistence | One `save_host_document` is Verified, not Uncertain, and source/class/form are preserved. The initial ordinary hash reader conflicts with the host's writer; shared-read hashing succeeds without repeating Save. `campaign-persisted-reopen.json` passes one native Edit Macro of the exact saved copy, full source/class/designer equality and unchanged disk bytes. |
+| Embedded UI | Reviewed real captures show module and class code, designer/Label, resize to 1400x900 and original bounds restored, return to code, and no closed-project warning. The unique native class code window closes/reopens with unchanged source; delayed tab synchronization is observed honestly. Entire embedded Monaco-window closure remains NOT_RUN. |
+| Assistant | Real embedded shell and scope inventory observed. Synthetic local provider tool dispatch, approval/revision refusal through chat, cancellation and recovery remain NOT_RUN. No provider prompt was sent. |
+| Normal cleanup | `authorized-normal-close.json` observes original-handle SW exit code 0 after backups; its read-only DTE transition refusal is retained. `authorized-normal-close-completion.json` independently verifies design mode/no targets and observes the first IDE Quit and exit code 0. No forced stop or second ExitApp. |
+
+Both saved SWP backups have SHA-256
+`A2B960FAB084882BA122D7155EFBAEC30D8956BEEF0ECDD40DCEA849A171F798`
+and remain retained with BAS/CLS/FRM/FRX exports, raw wire intents/readbacks and
+real PNG captures. Earlier failed ledgers are preserved. Passive failed launcher
+owners are retained; their complete desktop-resource release is not attested.
+Independent 2025 evidence follows below. Q014 stays open for these
+remaining gates, despite the successful 2019 native core bank.
+
+## Q-014 independent private-desktop SOLIDWORKS 2025 (2026-10-04)
+
+Evidence root: `artifacts/q014-2025-20261004/`, with the same harness base and
+actual Q024 v9 SHA-256/MVID as the resumed 2019 campaign above. The loaded
+product is verified independently; no product rebuild or registration rewrite
+occurs. `loaded-candidate-plan.json` retains the exact preceding passing
+`managed-v9-ready/managed.trx` and verifies all frozen runtime dependencies.
+There is no additional managed test execution or full-suite coverage claim.
+
+| Scenario | Observed result and evidence |
+| --- | --- |
+| Identity/isolation | Owned VS PID 127936; SOLIDWORKS PID 43656, revision 33.1.1, exact executable/start/PID ROT and native owner thread on `VBAiTests_f2d7a4fdca3c4915b7346ce0df330e45`; input Default. One effective Debug.Start. |
+| Core native bank | `campaign-loaded-v9.json` passes fresh New Macro, actual candidate load, synthetic module/class/form, stale guards, export/remove/import, compile, full breakpoint/run/step/continue with output 42, single verified Save and independent native saved-copy Edit Macro with complete source/designer equality. No uncertain mutation replay. |
+| Embedded UI | `ui-stage.json`, `ui-close-reopen.json` and reviewed real captures verify class/module code, synthetic UserForm/Label, 1400x900 resize/original bounds restoration and native class-pane close/reopen with unchanged source. No stale closed-project warning in reviewed images. Entire embedded-window closure is NOT_RUN. |
+| Cleanup | `authorized-normal-close.json` records byte-identical backups, one ExitApp, one Quit, both original-handle exit codes 0 and input Default. User IDE PID 32512 remains running. No forced termination. |
+| Remaining gates | Assistant local dispatch/approval/revision refusal/cancellation/recovery are NOT_RUN. Complete release of retained passive desktop owners is not attested. Q-014 remains partial. |
+
+Both 49152-byte SWP backups have SHA-256
+`D87978DBA7789D6FF7DC0ED660B0C1E4FDE09072B86D529C9AFE7DD116CFCE59`.
+Raw wire intents/readbacks, component exports, PNG captures and earlier failures
+remain retained. Initial startup-modal and candidate-identity refusals are not
+promoted to PASS; the modal refusal preceded the first native New Macro intent.
+The corrected UI observer initialization also preceded any selection/resize.
+Final tracked qualification helpers compile and the runner parses successfully;
+these checks execute no native action and do not repeat the passing bank.
+## Q-014 private-desktop SOLIDWORKS 2019 (2026-10-04)
+
+Evidence root: `artifacts/q014-2019-20261004/`. Harness source base is
+`8675f13df94f8768e2ca556fa2427871be043fd8` plus the retained uncommitted Q-014
+harness files. The product was copied from the installed directory without
+rebuilding or registration changes; its source revision is not independently
+attested by this run. Candidate MVID is
+`d2c3601b-893d-4e84-b9e3-c172da7e2437`; SHA-256 is
+`C4D095D9427379AC8F2A82D047C8780637A0E815173241976F2C86664E777644`.
+The scoped harness and desktop helper build with zero warnings/errors.
+
+`managed/managed.trx` records **45 passed, 0 failed, 0 skipped** in the scoped
+SOLIDWORKS persistence/private-desktop bank. It ran once. This measures neither
+full-suite coverage nor native SOLIDWORKS functional acceptance. The actual
+testhost desktop receipt, canary original exit, addressed canary click and
+worker desktop are retained under `isolated-run/desktop/`. The private desktop
+is `VBAiTests_a4c486ceadaa44b7917ea99f6e34f6ec`; input remains `Default`.
+
+| Phase | Observed evidence and limits |
+| --- | --- |
+| Initial launch harness | `campaign.json` retains an internal-property reflection failure after owned VS launch. The CLI also interpreted quoted `/Command` and `Debug.Start` as nonexistent files, shown by `dialog-readonly.json`. No SOLIDWORKS launch occurred through that CLI request. The original desktop helper retains ownership after the worker exited with private windows remaining. |
+| Same-IDE launch completion | The known terminal CLI error was acknowledged once on its exact private button. `debug-start-recovered-intent.json` records one effective typed DTE Debug.Start in the existing utility IDE, PID 228076. No second IDE or SOLIDWORKS was launched; the managed bank was not repeated. |
+| Native launch identity | `host-identity-recovered.json` identifies SOLIDWORKS PID 153212, revision 27.5.0, exact 2019 executable/start time/PID ROT, unique native Afx frame on the private desktop and the sole target of the owned debugger. Initial frame-class and PowerShell `TYPE_E_ELEMENTNOTFOUND` observation failures remain retained. Typed interop reading succeeds. |
+| Solution rewrite | Visual Studio added solution metadata/indentation. `reviewed-solution-rewrite.json` retains initial and reviewed hashes; the sole utility project, Debug/x64 mapping, debugger executable and empty user override are unchanged. Product/hash checks were not waived. |
+| Disposable macro attempt | `native-command-573-intent.json` records one addressed WM_COMMAND attempt on the exact native frame. It did not expose a unique Save dialog within the observation bound. No filename/button request or SWP creation occurred. `campaign-continuation.json` records FAILED_OR_UNCERTAIN and all dependent native phases NOT_RUN. API command IDs are not proven native window-message IDs. |
+| Retention | `retained-owner.json` preserves the owned SOLIDWORKS/IDE/private-desktop identities. No ExitApp, debugger stop, force termination, native command replay or fixture cleanup was emitted. Normal exit is not yet observed. |
+
+The subsequent maintainer authorization permits automatic normal closure for
+this Q-014 qualification, without repeated approval for its owned test hosts.
+`authorized-normal-close.json` observes one typed ExitApp for the exact 2019
+process, with no open CAD documents and no pending modal dialog. SOLIDWORKS
+exits with code **0** at `2026-10-03T22:37:13.5178848Z`. The exact utility DTE
+then independently reports design mode and no debug target; one normal Quit
+closes IDE PID 228076 with code **0**. Both exits are observed through recovery
+query handles acquired before closure after identity verification, rather than
+inferred from PID absence. The final state is `NORMAL_EXIT_BOTH_OBSERVED`.
+There is no force termination, debugger stop, macro replay or file cleanup.
+The earlier campaign ledgers remain unchanged; their NOT_RUN cleanup status
+describes their original stop point. The original failed desktop-helper
+infrastructure remains passively retained; this does not attest full launcher
+resource release or resolve the failed macro-creation scenario.
+
+At this original campaign's stop point the typed correction had only compile-time
+checks. Its subsequent native execution and remaining limits are recorded in
+the resumed campaign above. Earlier failed ledgers are historical evidence and
+are not overwritten by the later functional pass.
+
 ## Q024 resumption and PR20 integration (2026-10-03)
 
 ### Published integration candidate

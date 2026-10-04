@@ -4,6 +4,72 @@
 not a claim of universal Office compatibility. Test totals and measured coverage
 are maintained only in [recorded validation](test-coverage.md).
 
+## Q-014 private-desktop campaign (2026-10-04)
+
+Q-014 is **qualified for the selected SOLIDWORKS 2019 SP5 and 2025 SP1.1
+versions**, on the corrected candidate MVID
+`ddf638b2-30d2-40a5-8ad3-9d49f303ff7c`, SHA-256
+`69BDE5B2D1CB55CA23597540F1CA108231F342FAF79A79B3F160E31FAC11AFD5`.
+This is a local candidate built from `8675f13` with four focused product fixes;
+it is not a qualification of that unchanged commit, the restored installed v9
+DLL, or the complete release.
+
+The maintainer authorized autonomous owned host/IDE launch and normal closure
+for this qualification. All native actions use disposable projects and inactive
+Windows desktops, with exact PID/start/path/ROT/revision and loaded-byte checks.
+The input desktop remains Default. No global keyboard input, forced process
+termination or authenticated provider request is used.
+
+Both versions independently pass the final native core bank: macro creation,
+module/class/UserForm operations, stale guards, complete export/import,
+compilation, breakpoint/run/step/continue, verified product Save and byte-identical
+native Edit Macro reopen. Reviewed actual Monaco/designer captures verify code,
+Label, resize/restoration and return to code without a closed-project warning.
+Unique native class-pane close/reopen preserves source; direct WM_CLOSE preserves
+the workspace-hosted editor. PrintWindow limitations restrict the pixel evidence
+to editor/designer acceptance, rather than a complete assistant layout assessment.
+
+The same candidate independently passes synthetic local assistant reading,
+permission and revision refusals, visible streaming cancellation and visible
+recovery in both versions. The terminal barrier requires native result readback
+before the next step or host teardown. Each final owned host, IDE and private
+worker exits normally. The original CodeBase values are restored, and the complete
+main-user settings file returns to its original hash. The user's IDE is preserved.
+
+The fixes cover hosted WM_CLOSE classification, a detached retained CodePane,
+and detached ActiveX sites during tool-window focus loss and ElementHost child
+focus gain. Historical startup, transport, access-violation, visibility and harness
+sequencing failures remain recorded. Passing final banks do not establish a causal
+explanation of the earlier access violation. They establish acceptance of the
+specified final bytes in the selected native versions.
+
+The reviewed ordered scenario contract is:
+
+| Scenario | Required acceptance |
+| --- | --- |
+| Managed guards | Exact frozen-product test results; owner/revision/identity checks; no save replay. |
+| Isolated launch | Private desktop canary; exact owned VS/DTE; one effective Debug.Start; exact SOLIDWORKS PID/start/path/ROT/revision and native UI desktop. |
+| Disposable macro | One native New Macro and addressed Save to a fresh SWP; unique Type100 project. |
+| Add-in load | Exact installed SHA-256/MVID/path, x64 bridge and connected VBAi.AddIn in the native VBE. |
+| Module/class | Synthetic code and recognized procedure; original component/source inventory preserved. |
+| UserForm | Synthetic code, Label, geometry and native designer readback. |
+| Stale guards | Stale source/project/form requests refused, with unchanged code/designer. |
+| Export/import | Retained BAS/CLS/FRM/FRX; guarded remove/import; source and complete designer equality. |
+| Compile | Native compilation with no diagnostic and return to design mode. |
+| Debugger | Observed breakpoint, step/continue lines and synthetic output; no keyboard shortcut or uncertain replay. |
+| Product Save | Single verified save, unchanged code/class/designer and durable SWP hash. |
+| Independent reopen | Native Edit Macro on a byte-identical saved copy; full source/designer readback without executing a macro to unload it. |
+| Embedded UI | Reviewed real Monaco/designer captures, resize/restoration, close/reopen and absence of stale-project warnings. |
+| Assistant | Synthetic local dispatch, permission/revision refusals, cancellation and recovery with no unapproved provider access. |
+| Cleanup | Retained backups; separately authorized normal host/IDE exit and independent debugger/process evidence. |
+
+The aggregate decision is `artifacts/q014-final-decision-20261004/qualification.json`.
+Current evidence and scoped managed results are in
+[recorded final validation](test-coverage.md#q-014-final-candidate-native-core-and-ui-2019-2026-10-04)
+and [the independent 2025 bank](test-coverage.md#q-014-final-candidate-native-core-and-assistant-2025-2026-10-04).
+The complete managed release gate, coverage measurement and authenticated external
+providers remain outside this Q-014 qualification.
+
 ## Current candidate checkpoint (2026-10-03)
 
 The native qualification branch and PR 20 are published on `main` at `3aa99fb`.
@@ -637,7 +703,7 @@ operation can pass a refusal test while the capability remains unqualified.
 | Q-011 | P1 gate | Word/PowerPoint adapter acceptance required project-access prerequisites. | Run verified adapter-only save/reopen under a maintainer-approved host configuration. | CLOSED for adapter-only save/reopen on candidate `7b5f11d8`: Word and PowerPoint preserve the pending module/class sources and form/Label, with no post-adapter helper Save, verified disk readback and normal host exit. This scope does not explain the older Word form-creation failure or qualify every host operation. Exact evidence is in test-coverage.md. |
 | Q-012 | P1 gate | Access/Publisher host-document save adapters lacked native acceptance. | Implement and qualify an adapter, or explicitly narrow the release contract for this operation. | PARTIAL. Historical `7b5f11d8` Publisher save/readback passed; Access disk sources persisted but original responses remained uncertain. Preceding `d5e25e25` deferred verification then refused transient CurrentProject wrapper identity in the interrupted Office campaign. The read-only diagnostic establishes stable database path and mapped/selected VBProject despite distinct retained wrapper IUnknowns. Product `2e75161` / preceding installed `f9a36c85` corrects this guard without weakening owning-PID, VBE, mode, protection, selection or source/metadata checks. Fresh adapter-only module/class, Description and Scripting-reference addition by GUID/file pass exact save/reopen and normal exits. Preceding-v5 HelpFile is altered after reopen through descriptor, CLR binder and raw IDispatch, with intact raw VARIANT canary; HelpContextID runtime type information confirms I4 but its setter fails. Reference removal fails initial host exit and disk reopen is NOT_RUN. Current `d8f31d57` Access HelpContextID bridge/external CLR setters return 321 after a verified Save, but Quit nonexit prevents disk reopen. The fresh raw IDispatch PUT case on owned Access PID 38712 returns HRESULT 0 with VT_I4 321 and intact VARIANT canaries; all getters and one verified Save succeed, but its single Quit does not produce process exit, so fresh-disk reopen is NOT_RUN. A stable database copy precedes separately authorized forced exit -1; no Quit, setter or Save is replayed, and normal cleanup/persistence remain unqualified. External Access HelpFile production CLR and raw PUT both return normally but fresh-disk readback remains altered. Current Publisher startup and semantic reopen guards correct the fixture's no-code-pane and name-to-path selector assumptions; the original preparation/assertion failures remain failed. Adapter-only module/class/form, Description, and Scripting-reference addition by GUID/file and removal now pass exact fresh-disk source/metadata/reference readback and normal exit 0. Publisher HelpFile disk storage is correct in both CP1252 PROJECTHELPFILEPATH fields and the PROJECT text stream, yet the exposed fresh getter is altered; loading, BSTR construction or marshaling cause remains unproven. Publisher HelpContextID returns error 0x9CFD3148 despite terminal live value 321 and Saved=false. Live sources/identity/properties are preserved before one separately authorized owned discard and normal exit 0, without setter replay or subsequent Save; the failed mutation and disk persistence are not qualified. No heuristic or causal product fix is inferred. Access/Publisher metadata, lifecycle and remaining adapter scopes stay open; exact terminal evidence is in recorded validation. |
 | Q-013 | P1 gate | Classic Outlook initially had no configured profile. | Qualify a read-only scenario in an explicitly configured classic profile without modifying mail or production VBA. | CLOSED for read-only startup/metadata: `outlook-accepted/native.trx`, MVID `ce19a20c-9708-4c17-b998-f3415b8e6303`; exact PID, project inventory, scoped debug state and environment passed, normal exit 0. No account configured by automation, no mail read/sent or VBA mutation. |
-| Q-014 | P1 gate | SOLIDWORKS versions require independent native acceptance. | Qualify load, UI, disposable module/form operations, compile/debug, persistence and cleanup in each explicitly selected version. | PARTIAL. Historical aaf3 existing-Type100 save and saved-copy module/class/form readback passed independently in 2019 SP5 and 2025, with normal exits (Q-021); historical designer-resize failure remains recorded. Preceding `d5e25e25` passes 2019 load, copied native Edit Macro/source/form readback, Monaco return-to-code and designer/code resize. Later live class-source drift remains unproven and unmodified. Its ExitApp stalled at native heap corruption 0xc0000374; authorized forced/debugger cleanup is not normal shutdown, and exit code is NOT_OBSERVED. Preceding `f9a36c85` passes 2025 load, disposable module/class/form preparation, compile and verified Save. One synthetic run and a separate native reload verify marker/source/label, but the original whole-file-preservation trial fails. Monaco code rendering and resize/restoration pass with a stale closed-project warning still visible. Owned 2025 cleanup exits normally after backup and one ExitApp; complete lifecycle/debugger/assistant acceptance remains open. |
+| Q-014 | P1 gate | SOLIDWORKS versions require independent native acceptance. | Qualify load, UI, disposable module/form operations, compile/debug, persistence and cleanup in each explicitly selected version. | QUALIFIED for selected 2019 SP5 (27.5.0) and 2025 SP1.1 (33.1.1) on final candidate ddf638b2. Independent native core, scoped Monaco/designer UI, local assistant dispatch/refusals/cancellation/recovery and normal owned host/IDE/worker cleanup pass. Original COM/settings state is restored. Historical failures and other release gates remain separate; see the current Q-014 decision above. |
 | Q-015 | P2 gate | The initial instrumented suite timed out on post-step observation; its direct relationship to Q-005 is not proven. | Repeat the complete suite on the corrected source and retain failures/skips honestly. | CLOSED for current source `8f2315d` / installed `d8f31d57`: the complete instrumented suite passes with unchanged product hash and independently verified individual TRX outcomes. Preceding Monaco-status source `d7a1c75` / `6a74af33` and earlier product `2e75161` / `f9a36c85` with tests `f0874e6` retain separate completed passes. The original v5 complete run remains failed with explained fixture-packaging/Git-path defects. Exact counters, below-target managed coverage and terminal evidence are in recorded validation. Native/provider opt-ins remain separate gates; a later product binary requires its own full run, and historical observation-timeout causes remain unproven. |
 | Q-016 | P2 | Shift+Tab accepted a composer suggestion instead of allowing backward keyboard navigation. | Leave backward navigation unhandled while preserving plain-Tab suggestion acceptance. | Fixed; focused regression passed. |
 | Q-017 | P2 | The French welcome card is clipped in the narrow native chat panel. | All welcome actions remain visible or reachable by normal scrolling, including after resize. | Fixed by measuring the Designer table at its available width; failing-before/passing-after geometry checks and inspected native recapture confirm all actions are visible. |

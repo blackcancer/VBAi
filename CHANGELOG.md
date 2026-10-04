@@ -37,6 +37,10 @@ investigations and test transcripts belong in Git history and test artifacts.
 
 ### Fixed
 
+- Workspace-hosted editor closure now preserves the embedded editor for native
+  WM_CLOSE requests. Detached VBE/ActiveX focus sites no longer interrupt normal
+  host shutdown; the corrected candidate is qualified for the recorded Q-014
+  operations in SOLIDWORKS 2019 SP5 and 2025 SP1.1.
 - Cross-project read permissions and shared-context handling in conversations.
 - Unbounded reception of incomplete local bridge requests.
 - The former fixed eight-response HTTP workflow failure, replaced by progress-aware

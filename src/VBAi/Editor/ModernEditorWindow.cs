@@ -727,7 +727,11 @@ public int column { get; set; } }
         /// <param name="e">Événement annulable de fermeture.</param>
         private async void ClosingWindow(object sender, FormClosingEventArgs e)
         {
-            if (WorkspaceHosted && e.CloseReason == CloseReason.UserClosing && !closeAllowed) { e.Cancel = true; return; }
+            // .NET Framework classifies a direct WM_CLOSE as TaskManagerClosing.
+            // Both native close transports must preserve the embedded workspace.
+            if (WorkspaceHosted && !closeAllowed &&
+                (e.CloseReason == CloseReason.UserClosing || e.CloseReason == CloseReason.TaskManagerClosing))
+            { e.Cancel = true; return; }
             if (closeAllowed) { PreserveDrafts(); return; }
             if (!Ready && !initializing && !busy && activeStatusLayouts == 0) { closing = true; PreserveDrafts(); return; }
             e.Cancel = true; if (closing) return; closing = true; timer.Stop(); debugTimer.Stop(); streamTimer.Stop();

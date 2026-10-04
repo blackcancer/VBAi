@@ -356,6 +356,45 @@ namespace VBAi.Tests.Unit
                 Assert.IsTrue(UiInvoke.Field<ThemedTabControl>(window, "tabs").ShowCloseButtons);
             }
         }
+        [System.Runtime.InteropServices.DllImport("user32.dll")]
+        private static extern System.IntPtr SendMessage(System.IntPtr window, uint message, System.IntPtr first, System.IntPtr second);
+        [System.Runtime.InteropServices.DllImport("user32.dll", SetLastError = true)]
+        private static extern System.IntPtr SetParent(System.IntPtr child, System.IntPtr parent);
+
+        [STATestMethod]
+        public void HostedWorkspaceSurvivesActualWmCloseWithoutStartingDisposal()
+        {
+            using (var parent = new System.Windows.Forms.Form { IsMdiContainer = true })
+            using (var window = new ModernEditorWindow())
+            {
+                var flags = System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic;
+                var initializing = typeof(ModernEditorWindow).GetField("initializing", flags);
+                initializing.SetValue(window, true); // Suppress WebView startup in this native-message regression.
+                window.WorkspaceHosted = true;
+                window.TopLevel = false;
+                parent.Show();
+                var workspace = parent.Controls.OfType<System.Windows.Forms.MdiClient>().Single();
+                SetParent(window.Handle, workspace.Handle);
+                window.Show();
+                System.Windows.Forms.Application.DoEvents();
+                initializing.SetValue(window, false);
+                var original = window.Handle;
+                System.Windows.Forms.CloseReason? observed = null;
+                bool? cancelled = null;
+                window.FormClosing += (sender, args) => { observed = args.CloseReason; cancelled = args.Cancel; };
+
+                SendMessage(original, 0x10, System.IntPtr.Zero, System.IntPtr.Zero);
+                System.Windows.Forms.Application.DoEvents();
+
+                Assert.AreEqual(System.Windows.Forms.CloseReason.TaskManagerClosing, observed);
+                Assert.AreEqual(true, cancelled);
+                Assert.IsFalse(window.IsDisposed);
+                Assert.IsTrue(window.Visible);
+                Assert.AreEqual(original, window.Handle);
+                Assert.IsFalse((bool)typeof(ModernEditorWindow).GetField("closing", flags).GetValue(window));
+                Assert.IsNull(window.Browser);
+            }
+        }
         [DataTestMethod]
         [DataRow("https://editor.vbai.local/index.html", true)]
         [DataRow("https://editor.vbai.local/index.html?external", false)]

@@ -79,9 +79,49 @@ namespace VBAi.Desktop.Helper
                     Error = error.ToString(), CleanupReplayed = false, Utc = Utc() });
                 // A UI/exit uncertainty is not permission to stop a host or drop its original query handle.
                 if (retainedChild != null)
-                    for (;;) Thread.Sleep(1000);
+                    return ObserveRetainedExit(output, desktop);
                 if (retainedDesktop != null) { retainedDesktop.Dispose(); retainedDesktop = null; }
                 return 1;
+            }
+        }
+
+        // Observation may settle after a failed campaign. It never authorizes a host action.
+        private static int ObserveRetainedExit(string output, string desktop)
+        {
+            bool diagnosticWritten = false;
+            for (;;)
+            {
+                try
+                {
+                    if (retainedChild.Wait(200) &&
+                        !string.Equals(IsolatedTestDesktop.InputDesktopName(), desktop, StringComparison.OrdinalIgnoreCase) &&
+                        !IsolatedTestDesktop.HasWindows(desktop))
+                    {
+                        uint code = retainedChild.ExitCode();
+                        int pid = retainedChild.ProcessId;
+                        long handle = retainedChild.ProcessHandle.ToInt64();
+                        retainedDesktop.Dispose(); retainedDesktop = null;
+                        retainedChild.Dispose(); retainedChild = null;
+                        Write(output, "retained-terminal.json", new {
+                            State = "FAILED_CAMPAIGN_EXIT_OBSERVED_RESOURCES_RELEASED",
+                            ProcessId = pid, OriginalHandle = handle, ExitCode = code,
+                            Desktop = desktop, InputDesktop = IsolatedTestDesktop.InputDesktopName(),
+                            WindowsPresent = false, CleanupReplayed = false, TerminationCalled = false, Utc = Utc() });
+                        return 1; // Resource release does not turn the failed campaign into a pass.
+                    }
+                }
+                catch (Exception observation)
+                {
+                    if (retainedChild == null) throw; // A receipt failure is not a live-process wait.
+                    if (!diagnosticWritten)
+                    {
+                        Write(output, "retained-observation-failure.json", new {
+                            Desktop = desktop, Error = observation.ToString(), CleanupReplayed = false, Utc = Utc() });
+                        diagnosticWritten = true;
+                    }
+                    // Never infer exit or an empty desktop from an observation failure.
+                }
+                Thread.Sleep(1000);
             }
         }
 

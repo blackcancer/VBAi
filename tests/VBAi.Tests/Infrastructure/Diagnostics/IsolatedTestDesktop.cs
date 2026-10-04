@@ -280,7 +280,12 @@ namespace VBAi.Tests.Integration
         {
             private IntPtr handle;
             internal DesktopLease(IntPtr handle) { this.handle = handle; }
-            public void Dispose() { if (handle != IntPtr.Zero) { CloseDesktop(handle); handle = IntPtr.Zero; } }
+            public void Dispose()
+            {
+                if (handle == IntPtr.Zero) return;
+                if (!CloseDesktop(handle)) throw new Win32Exception(Marshal.GetLastWin32Error());
+                handle = IntPtr.Zero;
+            }
         }
 
         internal sealed class NativeChild : IDisposable
