@@ -1350,6 +1350,50 @@ native-code coverage.
 
 ## Provider qualification
 
+### Q028 Office assistant campaign
+
+`tools/tests/Invoke-Q028Qualification.ps1 -Prepare -EvidenceRoot <fresh-absolute-root>
+-ModelRoot <existing-absolute-model-store>` prepares the ordered Q028 matrix. It
+freezes the product, test and private-desktop helper bytes, model manifest/blobs,
+local Ollama executable, Office executable versions, selectors and acceptance
+oracles before any provider request or native launch. Preparation never downloads
+or substitutes a model. The current explicit profile is CPU, context 8192,
+parallelism 1, temperature 0 and top-p 0.8; other profiles remain separate.
+
+Run the generated `Invoke-FrozenQ028.ps1` through
+`tools/tests/Invoke-IsolatedTests.ps1` with the frozen helper and a fresh launcher
+directory. It runs the managed gate, strict synthetic tool roundtrip,
+cancellation/recovery and detached UI first. Only successful prerequisites allow
+the six installed-assistant banks: Excel, Word, PowerPoint, Access, Publisher and
+classic Outlook. A failed bank retains its result and leaves later banks NOT_RUN;
+no native action is replayed. Existing Office processes are preserved.
+
+The native banks require `VBAi_RUN_OLLAMA_OFFICE_TESTS=1`, the private desktop pair,
+`VBAi_Q028_RESULTS`, and the existing host-specific opt-ins configured by the
+worker. Each bank checks the installed MVID, native parent and exact project
+scope, visible streaming while busy, Stop, interruption acknowledgement, next
+reply, a native module marker and unchanged project source/references. No VBA
+procedure or Outlook send is requested. Outlook requires an absent personal OTM
+and an existing configured profile; it launches only the selected executable on
+the inactive desktop and attaches through the ROT after sole-process/native-window
+identity checks. It never falls back to COM activation on another desktop.
+
+For installed-host requests, an explicit loopback observer captures only synthetic
+JSON bodies and response bytes, without headers or credentials. Its capture is
+bounded and preserves early-disposal outcomes. The final wire review must verify
+that the marker was absent before the actual native read and appeared only in
+its tool result; a visible marker alone is insufficient. The functional matrix
+remains pending until that independent review and all lifecycle receipts pass.
+
+The worker temporarily changes only the six documented non-secret provider
+settings, and registers the exact candidate for future COM activation. It
+restores those fields only if their current values still match its own applied
+values; concurrent changes refuse restoration. Existing loaded add-ins are not
+replaced. Unsettled assistant work retains its host and forbids teardown. Office
+normal-exit receipts remain distinct from stopping the owned headless model
+server. Historical Q028 failures and unknown historical causes are not erased
+by a successful later profile.
+
 `VBAi_RUN_OLLAMA_TESTS=1` enables `TestCategory=Ollama` against the loopback
 server through the production HTTP client. `VBAi_TEST_OLLAMA_MODEL` selects an
 already-installed model (default `qwen2.5:7b-instruct`). The shared selector applies

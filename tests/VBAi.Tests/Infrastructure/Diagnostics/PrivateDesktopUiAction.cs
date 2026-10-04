@@ -28,15 +28,18 @@ namespace VBAi.Tests.Integration
 
         internal static bool Enabled => !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("VBAi_QUALIFICATION_DESKTOP"));
 
-        private static void RequireDesktop(uint nativeThread)
+        private static void RequireDesktop(uint nativeThread, int nativeProcessId, IntPtr nativeWindow)
         {
             string required = Environment.GetEnvironmentVariable("VBAi_QUALIFICATION_DESKTOP");
             string configured = Environment.GetEnvironmentVariable("VBAi_TEST_DESKTOP_NAME");
             if (string.IsNullOrEmpty(required) || !string.Equals(required, configured, StringComparison.Ordinal))
                 throw new InvalidOperationException("Private UI action requires the exact worker and test desktop pair.");
             IsolatedTestDesktop.RequireCurrent(required);
-            if (!string.Equals(IsolatedTestDesktop.DesktopName(nativeThread), required, StringComparison.OrdinalIgnoreCase))
-                throw new InvalidOperationException("The native UI owner thread is outside the exact inactive desktop.");
+            if (nativeThread == 0 || nativeProcessId <= 0 || nativeWindow == IntPtr.Zero)
+                throw new InvalidOperationException("The exact native UI owner identity is incomplete.");
+            // Foreign GetThreadDesktop can be denied. Use the already qualified complete
+            // private/input window inventories, retaining the exact HWND/PID/thread checks below.
+            IsolatedTestDesktop.RequireOfficeWindowInventory(required, (uint)nativeProcessId, true, nativeWindow);
         }
 
         internal static bool MatchesButton(string observedId, string expectedId, string observedName, string expectedName,
@@ -67,7 +70,7 @@ namespace VBAi.Tests.Integration
             IntPtr owner, IntPtr target, int expectedProcessId, uint expectedThreadId)
         {
             uint pid; uint thread = GetWindowThreadProcessId(target, out pid);
-            RequireDesktop(thread);
+            RequireDesktop(thread, (int)pid, target);
             if (!IsWindow(target) || !IsWindow(owner) ||
                 !MatchesButton(item.Current.AutomationId, expectedId, item.Current.Name, expectedName,
                     item.Current.ControlType.ProgrammaticName, item.Current.ProcessId, (int)pid, thread,
@@ -98,7 +101,7 @@ namespace VBAi.Tests.Integration
             int expectedProcessId, uint expectedThreadId)
         {
             uint pid; uint thread = GetWindowThreadProcessId(popup, out pid);
-            RequireDesktop(thread);
+            RequireDesktop(thread, (int)pid, popup);
             if (!IsWindow(popup) ||
                 !MatchesVirtualGit(item.Current.Name, expectedLabel, item.Current.ControlType.ProgrammaticName,
                     item.Current.ProcessId, (int)pid, thread, expectedProcessId, expectedThreadId,
