@@ -7378,8 +7378,7 @@ preparation evidence, not Q028 native acceptance or a coverage percentage.
 
 ### Corrected Q028 prerequisites and failed native bootstrap
 
-Harness source `66dc23b88a5d52a5219e97da1d45d149d2c46f5d` (use the campaign plan
-as the authoritative full revision if this abbreviation differs), retained product
+Harness source `66dc23b` (the full revision is frozen in the campaign plan), retained product
 source `ea0e8e9` and identical product bytes: `q028-office-03` passed its 499 focused
 managed regressions with no failures/skips. Each real headless tool, cancellation
 and detached UI bank selected one test and passed. CPU inference, exact model
@@ -7399,8 +7398,29 @@ private windows, one sentinel close and successful Desktop release. The owned
 headless backend was stopped separately; its captured runner also exited. The
 initial read-only observation wrapper had a settled COM member lookup failure;
 its idle helper was stopped separately, without terminating Office. All six
-provider fields independently matched their initial values, so recovery emitted
-no settings save. COM registration had changed after application; the exact
-restore guard refused to overwrite it. Its writer/cause is not established.
+provider fields matched their initial values in the exec-shell recovery view,
+so that attempt emitted no settings save. The COM restore guard also refused
+that view. Subsequent scheduled-context inspection disproved actual recovery:
+the scheduled worker still saw the Q028-applied fields and registrations at the
+same paths under the same SID. No concurrent human writer is established.
 This failed campaign remains unqualified; receipts are retained under
 `artifacts/q028-office-03`.
+
+The unchanged compiled harness/product subsequently passed the 514 selected
+managed tests and the same three real provider/UI cases in `q028-office-04`.
+It stopped before any Office launch because its scheduled context still had the
+Office03 candidate registered. Office04 restored only its own baseline, which
+was Office03's applied provider profile. This bank remains failed with all native
+rows NOT_RUN; its original worker exit 1 and successful Desktop release are
+retained separately.
+
+`artifacts/q028-context-01/outside-context.json` and the exec-shell context
+receipts demonstrate different settings/registry views despite identical SID,
+x64 architecture and nominal settings path. The precise isolation/remapping
+mechanism is not established. Recovery therefore ran in another reviewed private
+scheduled worker, using Office03's original six-field baseline and registration
+backup. `artifacts/q028-recovery-context-01/real-restoration.json` records one
+settings save, all-field readback and `Restored=true, Verified=true` registration
+restoration. Its post-readback returns Codex and the original Q024 registration;
+the recovery worker exited 0 and released its Desktop. The earlier exec-shell
+receipt is not evidence of real-context restoration.

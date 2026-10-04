@@ -1368,6 +1368,10 @@ x64 runsettings file with a 15-minute session deadline. A deadline is a failed o
 uncertain outcome, never a normal Office exit. When retaining product bytes while
 rebuilding only the test harness, pass their original `-ProductSourceCommit`;
 the plan records that identity separately from the harness revision.
+`-ManagedEvidenceRoot <prior-campaign>` may reuse only an all-pass managed TRX
+whose product/test bytes and exact filter match. The old plan, ledger and TRX
+are frozen dependencies; the new row is `PASS_REUSED`, has zero invocations and
+points to the original evidence. Provider and native banks still execute once.
 
 Run the generated `Invoke-FrozenQ028.ps1` through
 `tools/tests/Invoke-IsolatedTests.ps1` with the frozen helper and a fresh launcher
@@ -1398,6 +1402,13 @@ existing startup behavior. `tools/probes/Inspect-Q028ExcelBootstrap.ps1` support
 read-only diagnosis and a separately guarded close of the unchanged saved seed
 after an independent disconnected-add-in observation. Recovery never qualifies
 the failed bank.
+
+Recovery must read and restore settings/registration in the same scheduled
+execution context as the campaign. Identical user SIDs and paths alone do not
+prove identical views: `tools/probes/Read-Q028ProcessContext.ps1` provides a
+non-secret comparison. A misleading exec-shell snapshot is never restoration
+proof. `tools/probes/Restore-Q028Qualification.ps1` preserves concurrent changes
+and requires a separate output path for another, explicitly identified context.
 
 For installed-host requests, an explicit loopback observer captures only synthetic
 JSON bodies and response bytes, without headers or credentials. Its capture is

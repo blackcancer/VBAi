@@ -1,5 +1,5 @@
 #requires -Version 5.1
-param([switch]$Prepare, [string]$EvidenceRoot, [string]$ModelRoot, [string]$ProductSourceCommit,
+param([switch]$Prepare, [string]$EvidenceRoot, [string]$ModelRoot, [string]$ProductSourceCommit, [string]$ManagedEvidenceRoot,
     [string]$Model = 'qwen2.5:7b-instruct',
     [string]$OllamaExecutable = 'C:\Users\init-\AppData\Local\Programs\Ollama\ollama.exe')
 $ErrorActionPreference = 'Stop'
@@ -65,6 +65,24 @@ if ($Prepare) {
     $files += @($toolExecutables.Path)
     $files += @(Get-ChildItem (Split-Path $product),(Split-Path $tests),(Split-Path $helper) -Recurse -File | Select-Object -ExpandProperty FullName)
     $files += @((Join-Path $repo 'tools/testing-explorer/Set-TestExplorerCandidate.ps1'),(Join-Path $repo 'tools/tests/Invoke-IsolatedDesktopWorker.ps1'))
+    $reuseManaged=$null
+    if ($ManagedEvidenceRoot) {
+        $priorPlanPath=Join-Path $ManagedEvidenceRoot 'q028-plan.json';$priorCampaignPath=Join-Path $ManagedEvidenceRoot 'campaign.json'
+        $priorPlan=Get-Content $priorPlanPath -Raw -Encoding UTF8|ConvertFrom-Json
+        $priorCampaign=Get-Content $priorCampaignPath -Raw -Encoding UTF8|ConvertFrom-Json
+        $priorRow=@($priorCampaign.Scenarios|Where-Object Id -eq 'managed')
+        $priorTest=@($priorPlan.FrozenFiles|Where-Object Path -ceq $tests)
+        if ($priorRow.Count -ne 1 -or $priorRow[0].State -ne 'PASS' -or $priorRow[0].InvocationCount -ne 1 -or
+            $priorTest.Count -ne 1 -or $priorTest[0].Sha256 -cne (Get-FileHash $tests).Hash -or
+            $priorPlan.ProductSha256 -cne (Get-FileHash $product).Hash -or $priorPlan.Scenarios[0].Filter -cne $managedFilter) {
+            throw 'Managed evidence cannot be reused across different bytes, filter, failure or replay.'
+        }
+        [xml]$priorTrx=Get-Content $priorRow[0].Trx -Raw -Encoding UTF8
+        $counts=$priorTrx.TestRun.ResultSummary.Counters
+        if ([int]$counts.total -le 0 -or [int]$counts.total -ne [int]$counts.passed) {throw 'Prior managed TRX is not all-pass.'}
+        $reuseManaged=@{Campaign=$priorCampaignPath;Plan=$priorPlanPath;Trx=$priorRow[0].Trx;InvocationCount=1;TestAssemblySha256=$priorTest[0].Sha256;ProductSha256=$priorPlan.ProductSha256;Filter=$managedFilter}
+        $files+=@($priorPlanPath,$priorCampaignPath,$priorRow[0].Trx)
+    }
     $backendPort = Free-Port; $proxyPort = Free-Port
     if ($backendPort -eq $proxyPort) { throw 'Port allocation collided; no campaign launched.' }
     $settings = Join-Path $EvidenceRoot 'bounded.runsettings'
@@ -72,6 +90,10 @@ if ($Prepare) {
     $files += $settings
     $plan = @{Scope='Q028 real Ollama and six classic Office VBE hosts; no SOLIDWORKS, Visio, Project or global VBE preference changes';
         ProductSourceCommit=$ProductSourceCommit;RunSettings=$settings;CaseTimeoutMilliseconds=900000;
+        TestAssemblySourceCommit=if($reuseManaged){$priorPlan.SourceCommit}else{(& git -C $repo rev-parse HEAD)};
+        TestAssemblySha256=(Get-FileHash $tests).Hash;
+        TestAssemblyMvid=([Reflection.Assembly]::ReflectionOnlyLoadFrom($tests).ManifestModule.ModuleVersionId.ToString('D'));
+        ReuseManaged=$reuseManaged;
         SourceCommit=(& git -C $repo rev-parse HEAD);SourceStatus=@(& git -C $repo status --porcelain);Repository=$repo;
         EvidenceRoot=$EvidenceRoot;Product=$product;TestAssembly=$tests;Helper=$helper;
         ProductMvid=([Reflection.Assembly]::ReflectionOnlyLoadFrom($product).ManifestModule.ModuleVersionId.ToString('D'));
@@ -93,7 +115,7 @@ foreach ($file in $plan.FrozenFiles) { if ((Get-FileHash -LiteralPath $file.Path
 $root = $plan.EvidenceRoot
 $ledgerPath = Join-Path $root 'campaign.json'
 if (Test-Path -LiteralPath $ledgerPath) { throw 'This campaign is already claimed; no replay.' }
-$rows = @($plan.Scenarios | ForEach-Object { [pscustomobject]@{Id=$_.Id;Host=$_.Host;Oracle=$_.Oracle;State='NOT_RUN';InvocationCount=0;Trx=$null;Error=$null} })
+$rows = @($plan.Scenarios | ForEach-Object { [pscustomobject]@{Id=$_.Id;Host=$_.Host;Oracle=$_.Oracle;State='NOT_RUN';InvocationCount=0;Trx=$null;ReusedFrom=$null;Error=$null} })
 $ledger = @{State='RUNNING';Qualified=$false;Desktop=$env:VBAi_TEST_DESKTOP_NAME;Scenarios=$rows;ProductMvid=$plan.ProductMvid;ProductSha256=$plan.ProductSha256;StartedUtc=[DateTime]::UtcNow.ToString('o')}
 function Flush { Write-Json $ledgerPath $ledger }
 Flush
@@ -122,8 +144,10 @@ try {
     foreach ($entry in @(Get-ChildItem Env: | Where-Object {$_.Name -match '^VBAi_RUN_|^VBAi_TEST_|^VBAi_OLLAMA_'})) {
         if ($entry.Name -notmatch '^VBAi_TEST_DESKTOP_') { Remove-Item -LiteralPath ('Env:\'+$entry.Name) }
     }
-    Run-Case $plan.Scenarios[0] $rows[0]
-    if ($rows[0].State -ne 'PASS') { throw 'Managed gate failed; all real provider/native cases remain NOT_RUN.' }
+    if ($plan.ReuseManaged) {
+        $rows[0].State='PASS_REUSED';$rows[0].Trx=$plan.ReuseManaged.Trx;$rows[0].ReusedFrom=$plan.ReuseManaged.Campaign;Flush
+    } else { Run-Case $plan.Scenarios[0] $rows[0] }
+    if ($rows[0].State -notin @('PASS','PASS_REUSED')) { throw 'Managed gate failed; all real provider/native cases remain NOT_RUN.' }
     $start = [Diagnostics.ProcessStartInfo]::new($plan.OllamaExe,'serve')
     $start.UseShellExecute=$false;$start.CreateNoWindow=$true;$start.RedirectStandardOutput=$true;$start.RedirectStandardError=$true
     foreach ($key in @($start.EnvironmentVariables.Keys)) {

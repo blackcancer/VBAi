@@ -1,8 +1,8 @@
 #requires -Version 5.1
-param([Parameter(Mandatory=$true)][string]$EvidenceRoot)
+param([Parameter(Mandatory=$true)][string]$EvidenceRoot,[string]$OutputPath)
 $ErrorActionPreference='Stop'
 if($PSVersionTable.PSEdition -ne 'Desktop'){throw 'Desktop PowerShell required'}
-$output=Join-Path $EvidenceRoot 'recovery-restoration.json'
+$output=if($OutputPath){$OutputPath}else{Join-Path $EvidenceRoot 'recovery-restoration.json'}
 if(Test-Path -LiteralPath $output){throw 'Recovery restoration is one-shot'}
 $shutdown=Get-Content (Join-Path $EvidenceRoot 'bootstrap-shutdown.json') -Raw -Encoding UTF8|ConvertFrom-Json
 if($shutdown.State -ne 'BOOTSTRAP_FAILURE_HOST_NORMAL_EXIT' -or $shutdown.ExitCode -ne 0){throw 'Owned host normal-exit receipt required'}
