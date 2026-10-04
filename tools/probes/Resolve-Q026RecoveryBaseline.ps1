@@ -7,6 +7,9 @@ function Resolve-Q026RecoveryBaseline {
     $baseline=@($Records | Where-Object {$_.Phase -ceq 'BaselineComplete'})
     if($baseline.Count -eq 1){return @{Record=$baseline[0];Kind='ScenarioBaseline'}}
     if($baseline.Count -ne 0){throw 'Ambiguous scenario baseline.'}
+    if($Ledger.Data.Request.Property -ceq '__Q026_READ_ONLY_GUARD_WARMUP__'){
+        return Resolve-Q026KnownRefusedWarmup -Records $Records -Ledger $Ledger -ProductMvid $ProductMvid
+    }
     if($null -ne $Ledger.Data.Request -or $null -ne $Ledger.Data.Response -or
         @($Ledger.Data.CommittedRestoreEntries).Count -ne 0 -or
         $Ledger.Data.Error -notmatch '^System.InvalidOperationException: The owned Excel identity or exclusive VBE-host interval changed;'){
@@ -54,4 +57,51 @@ function Resolve-Q026RecoveryBaseline {
     return @{Kind='VerifiedWarmupBeforeScenario';Record=[pscustomobject]@{
         ProductMvid=$ProductMvid;ProcessId=$Ledger.ProcessId;ProcessStartUtc=$Ledger.ProcessStartUtc;
         Data=$after;SourcePhase=$refusal[0].Phase;SourceSequence=$refusal[0].Sequence}}
+}
+
+# A known guard refusal is before every preference write. Closure must still be
+# established independently by the recovery caller, followed by a full fresh read.
+function Resolve-Q026KnownRefusedWarmup {
+    param([object[]]$Records,$Ledger,[string]$ProductMvid)
+    if($ProductMvid -cne '5cc513d1-5569-4835-bf6c-cf70a18274fb' -or
+        @($Ledger.Data.CommittedRestoreEntries).Count -ne 0 -or
+        $Ledger.Data.Error -notmatch '^System.InvalidOperationException: Native Options-window absence for the exact owned process was not independently verified\.'){
+        throw 'Known historical warmup refusal and no commits required.'
+    }
+    $before=@($Records|Where-Object Phase -CEQ 'GuardBreakpointWarmupBeforeReply')
+    $intent=@($Records|Where-Object Phase -CEQ 'GuardBreakpointWarmupIntent')
+    $refusal=@($Records|Where-Object Phase -CEQ 'GuardBreakpointWarmupRefusalReply')
+    $closure=@($Records|Where-Object Phase -CEQ 'GuardBreakpointWarmupNativeClosureObservation')
+    $reads=@($Records|Where-Object Phase -CEQ 'GuardBreakpointWarmupBeforeIntent')
+    if($before.Count-ne 1 -or $intent.Count-ne 1 -or $refusal.Count-ne 1 -or $closure.Count-ne 1 -or $reads.Count-ne 1){throw 'Unique complete warmup receipts required.'}
+    foreach($record in $Records){
+        if($record.ProcessId-ne $Ledger.ProcessId -or $record.ProcessStartUtc-cne $Ledger.ProcessStartUtc -or
+            $record.ProductMvid-cne $ProductMvid){throw 'Warmup receipt ownership mismatch.'}
+        if($record.Phase -cnotin @('HostExclusivityObservation','GuardBreakpointWarmupBeforeIntent','GuardBreakpointWarmupBeforeReply',
+            'GuardBreakpointWarmupIntent','GuardBreakpointWarmupRefusalReply','ClosureObservation','GuardBreakpointWarmupNativeClosureObservation','HostRetained')){
+            throw 'Other native work prevents guard-only recovery.'
+        }
+    }
+    $request=$intent[0].Data; $reply=$refusal[0].Data; $old=$before[0].Data.Response.Data
+    if($reads[0].Data.Command-cne 'read_vbe_options' -or $request.Command-cne 'set_vbe_option' -or
+        $request.Property-cne '__Q026_READ_ONLY_GUARD_WARMUP__' -or $request.Value-cne 'No preference mutation' -or
+        $request.ExpectedOptionsVersion-cne ('0'*64) -or $reply.Ok-ne $false -or $null-ne $reply.Data -or
+        $reply.Error-cne 'VBE options changed since inspection; read them again.' -or
+        $before[0].Data.Response.Ok-ne $true -or $old.DialogClosed-ne $true -or -not $old.Tabs -or
+        $old.OptionsVersion-notmatch '^[a-fA-F0-9]{64}$' -or $old.OptionsVersion-ceq ('0'*64) -or
+        -not ($reads[0].Sequence-lt $before[0].Sequence -and $before[0].Sequence-lt $intent[0].Sequence -and
+            $intent[0].Sequence-lt $refusal[0].Sequence -and $refusal[0].Sequence-lt $closure[0].Sequence -and
+            $closure[0].Sequence+1-eq $Ledger.Sequence) -or $closure[0].Data.ProcessIdentityVerified-ne $true -or
+        $closure[0].Data.ObservationOnly-ne $true){throw 'Known ordered guard refusal and baseline required.'}
+    foreach($pair in @(@($request,$Ledger.Data.Request),@($reply,$Ledger.Data.Response))){
+        if((ConvertTo-Json -InputObject $pair[0] -Depth 100 -Compress)-cne (ConvertTo-Json -InputObject $pair[1] -Depth 100 -Compress)){throw 'Retained request/reply does not match its terminal receipt.'}
+    }
+    foreach($state in @($before[0].Data.Response,$old,$reply)){
+        foreach($name in @('Pending','Uncertain','DeliveryUncertain','VerificationPending')){
+            if($null-ne $state.$name -and $state.$name-ne $false){throw 'Uncertain guard warmup is not a known refusal.'}
+        }
+    }
+    return @{Kind='KnownWarmupRefusalBeforeScenario';Record=[pscustomobject]@{
+        ProductMvid=$ProductMvid;ProcessId=$Ledger.ProcessId;ProcessStartUtc=$Ledger.ProcessStartUtc;
+        Data=$old;SourcePhase=$before[0].Phase;SourceSequence=$before[0].Sequence}}
 }

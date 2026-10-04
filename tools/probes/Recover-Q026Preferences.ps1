@@ -81,6 +81,12 @@ try {
         if(($normalized.Tabs | ConvertTo-Json -Depth 100 -Compress) -cne ($baseline.Data.Tabs | ConvertTo-Json -Depth 100 -Compress)){throw 'State differs from baseline beyond the positively committed font; no compensation.'}
         Save 'separate-host-precheck.json' @{FailedCommand='read_vbe_options';OriginalHostAbsent=$true;
             BaselineEqualAfterFontNormalization=$true;OriginalBaselineVersion=$baseline.Data.OptionsVersion;Readback=$current}
+    } elseif($resolvedBaseline.Kind -ceq 'KnownWarmupRefusalBeforeScenario'){
+        if(@($ledger.Data.CommittedRestoreEntries).Count -ne 0 -or $current.OptionsVersion -cne $baseline.Data.OptionsVersion -or
+            ($current.Tabs | ConvertTo-Json -Depth 100 -Compress) -cne ($baseline.Data.Tabs | ConvertTo-Json -Depth 100 -Compress)){
+            throw 'Known guard refusal still requires a complete unchanged fresh snapshot; no compensation.'
+        }
+        Save 'guard-refusal-precheck.json' @{KnownPreWriteRefusal=$true;CommittedEntries=0;CompleteBaselineEqual=$true;CompensationWrites=0}
     } elseif($null -eq $ledger.Data.Request -and @($ledger.Data.CommittedRestoreEntries).Count -eq 0){
         $isolationFiles=@(Get-ChildItem -LiteralPath $phaseRoots[0].FullName -Filter '*-HostExclusivityObservation-*.json' | Sort-Object Name)
         if(-not $isolationFiles.Count){throw 'No known isolation-stop observation; no recovery dispatch.'}
