@@ -477,10 +477,16 @@ format. Check actual class activation before opening a host after a path-format
 change; a matching registry string alone is insufficient loading evidence.
 Execution also requires the existing VBAi `Addins64` LoadBehavior to be 3.
 If necessary, explicit `Set-Q026Candidate.ps1 -EnableAutoLoad` temporarily
-enables that installed add-in only, records the exact previous DWORD and restores
+enables that installed add-in only from an existing DWORD 0, 2 or 3,
+records the exact previous DWORD and restores
 it with CodeBase after the owned hosts exit. It creates no registration and
 changes no Office trust policy. A changed setting from another task prevents
 restoration; it must not be overwritten silently.
+The disconnected startup value 2 is accepted only by this explicit opt-in;
+execution still requires 3 before activation. Microsoft's
+[COM add-in flag documentation](https://learn.microsoft.com/en-us/office/vba/outlook/concepts/getting-started/customizing-outlook-using-com-add-ins)
+describes startup and connection bits. This reference does not establish that
+the current VBE installation successfully loads; its actual MVID must be verified.
 
 For a retained Q-026 host, `tools/probes/Observe-Q026Host.ps1` defaults to an
 independent PID/start/desktop window inventory, without bridge calls or input.

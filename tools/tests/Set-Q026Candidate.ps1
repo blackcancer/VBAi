@@ -48,7 +48,9 @@ try {
         if($EnableAutoLoad){
             $key=$registry.OpenSubKey($loadPath)
             try{
-                if(-not $key -or $key.GetValueKind('LoadBehavior') -ne [Microsoft.Win32.RegistryValueKind]::DWord -or $key.GetValue('LoadBehavior') -notin @(0,3)){throw 'Existing reviewed add-in load setting required; no creation or policy change.'}
+                # The disconnected startup value (2) also belongs to the existing
+                # add-in. Enable only with this opt-in and restore its exact DWORD.
+                if(-not $key -or $key.GetValueKind('LoadBehavior') -ne [Microsoft.Win32.RegistryValueKind]::DWord -or $key.GetValue('LoadBehavior') -notin @(0,2,3)){throw 'Existing reviewed add-in load setting required; no creation or policy change.'}
                 $autoLoad=@{Path=$loadPath;Value=$key.GetValue('LoadBehavior');Kind=[int]$key.GetValueKind('LoadBehavior')}
             }finally{if($key){$key.Dispose()}}
         }
