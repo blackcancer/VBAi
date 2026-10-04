@@ -1630,8 +1630,8 @@ Independent assertions are retained in `q026-full-size-native-v1-audit.json`.
 
 The complete current Excel Format matrix, including Size mutation, is now
 **ACCEPTED** for this exact candidate. This does not establish restart persistence,
-other-host compatibility or the historical cause. Q-026 remains **OPEN only for
-the stricter historical causal criterion**; the passing unchanged historical
+other-host compatibility or the historical cause. At this checkpoint Q-026 was
+**OPEN only for the stricter historical causal criterion**; the passing unchanged historical
 prefix captures no natural guard refusal, and the original failed run retains
 no compared state pair at its failing guard.
 
@@ -1775,7 +1775,7 @@ the terminal tasks are exported and removed. The paired audit passes in
 This establishes an actual native metadata-only revision drift and its prevention
 on the current candidate. It does not recover the missing original September
 guard pair or establish that the same focus transition caused that historical
-failure. The stricter historical causal gate remains **OPEN**; the previously
+failure. At this checkpoint the stricter historical causal gate remained **OPEN**; the previously
 accepted complete current Format matrix is unchanged.
 
 The subsequent completion audit independently inspects the complete frozen
@@ -1787,11 +1787,37 @@ restoration and original-handle exit. Its remaining gate is explicitly
 `original-historical-causality`; no host is launched and no case is replayed for
 this audit. The original archive inventory contains the baseline attachment,
 but no failing guarded request/snapshot pair. Recovery archives establish later
-restoration, not the lost comparison's fields. Qualification is consequently
-not marked complete. The maintainer confirms on 2026-10-04 that no additional
-original archive is available after cleanup. This does not waive the historical
-causal requirement; `q026-original-evidence-unavailable-20261004.json` records
-the evidence limitation separately from the accepted current functional matrix.
+restoration, not the lost comparison's fields. Qualification was consequently
+not marked complete at that audit. The maintainer confirms on 2026-10-04 that
+no additional original archive is available after cleanup;
+`q026-original-evidence-unavailable-20261004.json` retains that evidence limitation.
+
+### Q-026 approved current-candidate closure (2026-10-04)
+
+The maintainer explicitly approves closing Q-026 for the tested Excel candidate,
+on the complete verified current matrix and demonstrated correction, while
+retaining the precise original incident trigger as unexplained. This replaces
+the previous historical-causality blocker; it does not change any original test
+outcome or claim that non-reproduction alone establishes a correction.
+
+The [approved candidate decision](../tools/tests/q026-qualified-candidate.json)
+records source `08d74202f3053113f44562dea570fff165d063e3`, product MVID
+`7156af5b-941c-4452-9e78-1381cb69af0d`, SHA-256
+`950D86EDEF3F90DC3A8EE274627AC75C08012BF158F55140817ECEC9FABF85EC`, and Excel
+x64 file version `16.0.20430.20092`. It maps every declared case to positive
+native proof with receipt hashes. A fresh read of retained complete snapshots,
+terminal responses, exact payload hashes and original-handle exit receipts
+verifies the decision. No native test is replayed to obtain closure, and earlier
+audits remain unchanged.
+
+Q-026 is **CLOSED for this recorded candidate and Excel build**. The nine declared
+scenarios, whole-state restoration, guarded stale refusal and normal shutdown
+are accepted. The controlled comparison additionally proves an actual old
+metadata drift and its prevention on that candidate. Historical failures remain
+failed, the original September trigger remains unexplained, and other binaries,
+hosts, restart persistence and the complete product release remain separate
+acceptance scopes. The local decision receipt is
+`q026-final-decision-20261004.json`.
 
 ### Q-026 offline snapshot review (2026-10-03)
 
