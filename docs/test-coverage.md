@@ -1,5 +1,48 @@
 # Recorded validation
 
+## PR23 merge validation (2026-10-04)
+
+Merge source `601015036a85f9a9cbc1f82951f4cdedd1f3617a` integrates PR #23
+head `d58e6d4` with main `3d55d41` without conflicts. Its isolated Debug solution,
+Q014 frozen-product harness and Q006 frozen-product harness compile with no
+warnings or errors. The new Q014 project remains a separate scoped harness;
+its compilation does not execute native SOLIDWORKS tests.
+
+The merged product has MVID `13f1c77a-91ff-4dbb-b9db-27c54af86585` and SHA-256
+`5DC835FE119888B855BA1782857F320CB5064A96167E2BFB7DB7D713C804CBC8`.
+Test assembly SHA-256 is
+`E0F238506AC78541B0673F42E664334085A477851C8E00640AFE1E1C2F8B8D86`;
+helper SHA-256 is
+`10FCB8757D8A8146FC4BF2367125BCBF5CFB03875BCF82A161A51898E45294C2`.
+Exact commands, source/binary manifests, TRX and original lifecycle receipts are
+retained under `artifacts/pr23-integration-20261004/`.
+
+| Gate | Observed result |
+| --- | --- |
+| Complete affected managed classes | 122 passed, 0 failed, 0 skipped |
+| Complete synthetic UI action matrix | All nine required actions pass; no missing action |
+| Original private campaign workers | Exit 0 on their original handles; hidden sentinel closes once; desktop closes successfully |
+| Original outer helper and scheduled actors | Both exit 0 with matching PID/handle/birth/image receipts and task result 0; owned completed tasks removed |
+| Documentation, PowerShell syntax and changed-file encoding | Documentation check passes; both new PowerShell scripts parse; all 19 changed files decode as strict UTF-8 without replacement characters |
+| Complete default managed suite, native hosts, authenticated providers and coverage collection | NOT_RUN for this merge candidate |
+
+The single prepared VSTest filter selects whole `EditorAttributeGuardTests`,
+`EditorVbeModuleTests`, `ModernEditorWindowTests`, `ChatToolWindowCoverageTests`,
+`ChatContentHostTests`, `IsolatedTestDesktopTests` and
+`VbeSolidWorksPersistenceTests` classes. Test execution uses `--no-build
+--no-restore` against the isolated build. Native/provider opt-ins are cleared
+process-locally. Source, clean checkout and product/test hashes remain unchanged
+at the terminal gate.
+
+Both campaigns run on distinct inactive Windows desktops. Their original worker
+proofs match those desktops, the input desktop remains `Default`, and no desktop
+switch or owned foreground observation occurs. This successful launcher result
+does not explain or erase earlier `0xC000013A` and identity-check failures.
+No Office/SOLIDWORKS process is started; COM registration and installed binaries
+are unchanged. The recorded SOLIDWORKS 2019/2025 acceptance below remains tied to
+its earlier corrected frozen product, not this merged DLL. These scoped checks
+do not constitute a full release gate or a new coverage percentage.
+
 ## Q-014 PR integration validation (2026-10-04)
 
 Q014 commit `84f4f42` is integrated with main `3d55d41`. Product changes remain

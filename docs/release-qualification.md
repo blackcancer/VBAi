@@ -4,6 +4,17 @@
 not a claim of universal Office compatibility. Test totals and measured coverage
 are maintained only in [recorded validation](test-coverage.md).
 
+## PR23 integration checkpoint (2026-10-04)
+
+Merge source `6010150` preserves the Q014 editor/focus corrections and native
+qualification records. Its isolated solution and separate Q014/Q006 harnesses
+compile; the affected managed classes and complete synthetic UI matrix pass.
+Original private workers, helpers and scheduled actors exit normally, with
+verified single desktop release. This does not resolve historical launcher
+failures or qualify the merged DLL in a native host. The complete managed
+release gate, native hosts, authenticated providers and coverage collection
+remain NOT_RUN for this merge. See [recorded validation](test-coverage.md#pr23-merge-validation-2026-10-04).
+
 ## Q-014 private-desktop campaign (2026-10-04)
 
 Q-014 is **qualified for the selected SOLIDWORKS 2019 SP5 and 2025 SP1.1
