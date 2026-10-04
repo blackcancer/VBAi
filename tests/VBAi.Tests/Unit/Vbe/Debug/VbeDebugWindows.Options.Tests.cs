@@ -812,6 +812,27 @@ namespace VBAi.Tests.Unit
         }
 
         [TestMethod]
+        public void OwnedNativeSizeIdentifierPreparesCatalogueForUnlabelledWriteVerification()
+        {
+            using (var fixture = new OwnedNativeOptionsControls())
+            {
+                OptionsFixtureSetStyle(fixture.Size, -12, 4911); // The observed VBE Size identifier, not a guessed size value.
+                fixture.OnControlNotification = (identifier, code, window) => {
+                    if (identifier != 4911 || code != 3) return;
+                    foreach (string size in new[] { "8", "10", "12" }) OptionsFixtureText(window, 0x143, IntPtr.Zero, size);
+                };
+                var control = new VbeDebugWindows.OptionsControl(); // Same verifier used by the write path.
+                InvokeOptionsMethod(null, "ReadOptionsCombo", fixture.Size, control);
+                CollectionAssert.AreEqual(new[] { "8", "10", "12" }, control.Choices.ToArray());
+                Assert.AreEqual("10", control.Value);
+                InvokeOptionsMethod(null, "WriteOptionsCombo", fixture.Size, "12");
+                InvokeOptionsMethod(null, "ReadOptionsCombo", fixture.Size, control);
+                Assert.AreEqual("12", control.Value);
+                Assert.ThrowsException<InvalidOperationException>(() => InvokeOptionsMethod(null, "WriteOptionsCombo", fixture.Size, "14"));
+            }
+        }
+
+        [TestMethod]
         public void BrokenComboTraceCannotChangeAnEmptyReadOrSuppressNativeOwnershipRefusal()
         {
             using (var fixture = new OwnedNativeOptionsControls())
