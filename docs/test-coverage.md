@@ -1662,6 +1662,7 @@ cause.
 | Pre-`ff6c0a8` trial, `q026-historical-full-managed-preflight/managed.trx` | 84 passed, 2 failed, 0 skipped | Focused managed diagnostic; complete-baseline failures expose implicit palette recovery targeting. No native host is activated. |
 | `ff6c0a8`, `q026-historical-full-managed-preflight-v2/managed.trx` | 85 passed, 1 failed, 0 skipped | Recovery matches the full baseline; a test assertion incorrectly assumes category labels. No native host is activated. |
 | `bb6a98d`, `q026-historical-full-native-v1/managed/managed.trx` | 86 passed, 0 failed, 0 skipped | Focused managed diagnostic including observed-category compensation and retention on an uncertain margin result; not native acceptance. |
+| `bb6a98d`, `q026-historical-full-native-v1/native/format.trx` | 0 passed, 1 failed, 0 skipped | Unchanged historical product; five commits pass, then margin returns a generic invalid-state error. Recovery remains separate from qualification. |
 | Decoder `b658fb5`, `q026-captured-revision-modes-9e34137173c5447ab54965de43f9580d/result.json` | 3 offline checks passed, 0 failed | Retained synthetic graph: both first-chance and exact-IL provenance preserve every Tabs field and the same recomputed revision; unknown provenance is refused. No host access or native acceptance. |
 
 The original Excel TRX has no test whose execution overlaps the failed Format
@@ -1670,10 +1671,33 @@ an external preference change. The correction to offline revision decoding
 accepts the exact-IL collector's existing provenance without relaxing the native
 revision guard or altering the frozen product/collector.
 
-The complete native diagnostic is running on the unchanged historical product.
-Its terminal outcome is pending. A deliberate stale-request guard capture must
-be classified separately from an unexpected refusal; capture count alone cannot
-establish natural revision drift. Q-026 remains **OPEN** for historical causality.
+Owned Excel PID 191468 starts `2026-10-04T12:30:16.8017459Z` on inactive desktop
+`VBAiTests_ae2f8a43dcb74260984fc86e4fa6d204`. Font, the three palettes and another
+category commit and pass independent readback. The margin request returns
+`Ok=false`, a generic localized invalid-state error and `Data=null`. It is not
+the stale-revision error. The case stops without replay, restoration or shutdown;
+its 102 phase receipts retain five positively confirmed recovery entries. The
+exact guard collector captures zero refusals and detaches normally, exit 0.
+The deliberate stale stage is **NOT_RUN**. Neither that error nor an absent guard
+capture identifies the original historical revision drift.
+
+Independent enumeration confirms that the exact Options dialog is absent.
+One scoped recovery starts at `12:48:00.4774243Z`, verifies that margin is still
+at its baseline value and restores only the five known entries in reverse order.
+Every Tabs field and revision
+`544477535d391a457fc66947a3ddb3da7ffb430e6212289c6586a6fcb65f3e05`
+matches the complete baseline. The failed margin command is not replayed.
+One workbook Close and one Quit return normally; a fresh recovery handle 840
+observes exit 0. This is recovery-handle proof, not original-campaign-handle proof.
+
+The original native worker and its retained GUI launcher keep exit 1; the recovery
+worker/launcher exit 0. Both workers record no input-desktop switch. The original
+private desktop is released only after recovery, without cleanup replay or forced
+termination. Original registration/loading values are restored; live native-host
+inventory is empty. Both terminal tasks are exported and removed. The reserved
+interval is released at `12:54:48.6999999Z`. Independent assertions are retained in
+`q026-historical-full-v1-audit.json`. Q-026 remains **OPEN** for historical causality;
+the separate current-candidate complete Format acceptance is unaffected.
 
 ### Q-026 offline snapshot review (2026-10-03)
 
