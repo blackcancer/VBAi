@@ -1635,6 +1635,46 @@ the stricter historical causal criterion**; the passing unchanged historical
 prefix captures no natural guard refusal, and the original failed run retains
 no compared state pair at its failing guard.
 
+### Q-026 complete historical diagnostic preparation (2026-10-04)
+
+The original test's line 85 is a catch/rethrow, not the failing mutation.
+Its retained stack therefore cannot locate the stale refusal before the later
+category or margin operations. The passing historical prefix remains valid for
+its bounded scope and does not exclude those later stages.
+
+`HistoricalFullFormat`, harness `bb6a98d`, extends the diagnostic through the
+original mutation order, another category, margin and the deliberate stale
+request. Product MVID `5cc513d1-5569-4835-bf6c-cf70a18274fb` and its SHA-256
+`A12378FB826CAAD6C0BBE79BF09C52332760E6C32FDB4F65138876CB90F5F167` remain
+unchanged. Independent dialog-closure/readback proofs and safe compensation are
+added; this is not a byte-identical replay of the original test harness.
+
+Managed preparation exposes a distinct recovery-target problem: initial palette
+requests omit `Query`, while a later request selects another category. An implicit
+compensation can consequently restore the wrong category. The diagnostic retains
+the original null-`Query` mutation requests, but binds positively verified recovery
+entries to the actual category observed before each write. This explains a
+restoration-target hazard; it does not establish the original stale refusal's
+cause.
+
+| Source / receipt | Result | Scope |
+| --- | --- | --- |
+| Pre-`ff6c0a8` trial, `q026-historical-full-managed-preflight/managed.trx` | 84 passed, 2 failed, 0 skipped | Focused managed diagnostic; complete-baseline failures expose implicit palette recovery targeting. No native host is activated. |
+| `ff6c0a8`, `q026-historical-full-managed-preflight-v2/managed.trx` | 85 passed, 1 failed, 0 skipped | Recovery matches the full baseline; a test assertion incorrectly assumes category labels. No native host is activated. |
+| `bb6a98d`, `q026-historical-full-native-v1/managed/managed.trx` | 86 passed, 0 failed, 0 skipped | Focused managed diagnostic including observed-category compensation and retention on an uncertain margin result; not native acceptance. |
+| Decoder `b658fb5`, `q026-captured-revision-modes-9e34137173c5447ab54965de43f9580d/result.json` | 3 offline checks passed, 0 failed | Retained synthetic graph: both first-chance and exact-IL provenance preserve every Tabs field and the same recomputed revision; unknown provenance is refused. No host access or native acceptance. |
+
+The original Excel TRX has no test whose execution overlaps the failed Format
+case. This excludes overlap within that retained runner, not another process or
+an external preference change. The correction to offline revision decoding
+accepts the exact-IL collector's existing provenance without relaxing the native
+revision guard or altering the frozen product/collector.
+
+The complete native diagnostic is running on the unchanged historical product.
+Its terminal outcome is pending. A deliberate stale-request guard capture must
+be classified separately from an unexpected refusal; capture count alone cannot
+establish natural revision drift. Q-026 remains **OPEN** for historical causality.
+
 ### Q-026 offline snapshot review (2026-10-03)
 
 Branch `codex/q026-qualification` starts from `origin/main` at `4b382b9`,
