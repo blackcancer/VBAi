@@ -1667,7 +1667,14 @@ cause.
 
 The original Excel TRX has no test whose execution overlaps the failed Format
 case. This excludes overlap within that retained runner, not another process or
-an external preference change. The correction to offline revision decoding
+an external preference change. Two preceding cases report retained Excel after
+Quit, but that does not prove those processes remained alive during Format.
+The original command history contains a process inventory at
+`2026-09-29T21:52:32.181Z`, within the failing Format interval: its only Excel row
+is the owned PID 27328. The bounded extracted receipt is
+`q026-original-live-inventory-20260929T215232Z.json`. This constrains a competing
+Excel hypothesis at that instant; it is not continuous inventory or a guarded
+request/snapshot pair. The correction to offline revision decoding
 accepts the exact-IL collector's existing provenance without relaxing the native
 revision guard or altering the frozen product/collector.
 
@@ -1770,6 +1777,21 @@ on the current candidate. It does not recover the missing original September
 guard pair or establish that the same focus transition caused that historical
 failure. The stricter historical causal gate remains **OPEN**; the previously
 accepted complete current Format matrix is unchanged.
+
+The subsequent completion audit independently inspects the complete frozen
+current campaign, its unchanged payload hashes and each declared scenario's
+terminal proof. `q026-completion-audit-20261004-v2.json` maps every case in the
+ordered matrix to its retained evidence, including actual alternate Size,
+nondefault category, genuine margin transition, stale refusal, complete Tabs
+restoration and original-handle exit. Its remaining gate is explicitly
+`original-historical-causality`; no host is launched and no case is replayed for
+this audit. The original archive inventory contains the baseline attachment,
+but no failing guarded request/snapshot pair. Recovery archives establish later
+restoration, not the lost comparison's fields. Qualification is consequently
+not marked complete. The maintainer confirms on 2026-10-04 that no additional
+original archive is available after cleanup. This does not waive the historical
+causal requirement; `q026-original-evidence-unavailable-20261004.json` records
+the evidence limitation separately from the accepted current functional matrix.
 
 ### Q-026 offline snapshot review (2026-10-03)
 
