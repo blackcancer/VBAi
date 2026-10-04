@@ -1,4 +1,6 @@
+using System;
 using System.ComponentModel;
+using System.Runtime.InteropServices;
 using System.Windows.Forms.Integration;
 
 namespace VBAi
@@ -11,5 +13,18 @@ namespace VBAi
     {
         /// <summary>Crée l’hôte standard sans connexion à l’IDE ou au fournisseur.</summary>
         public ChatContentHost() { }
+
+        /// <summary>Allows a child focus notification after the native ActiveX site has detached.</summary>
+        /// <param name="e">The notification received on the owning UI thread.</param>
+        protected override void OnGotFocus(EventArgs e)
+        {
+            try { base.OnGotFocus(e); }
+            catch (InvalidComObjectException)
+            {
+                // ElementHost forwards child focus to the containing ActiveX site.
+                // Shutdown may detach that site first; do not repeat the notification.
+                LoadLog.Write("Native chat content focus site already detached.");
+            }
+        }
     }
 }

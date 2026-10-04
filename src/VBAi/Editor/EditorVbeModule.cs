@@ -124,6 +124,7 @@ namespace VBAi
             if (nativeWindow == null) return;
             try { ((dynamic)nativeWindow).Close(); }
             catch (COMException) { } // The project or its backing pane may already have closed.
+            catch (InvalidComObjectException) { } // Host shutdown can detach the retained pane's RCW first.
             finally { nativeWindow = null; }
         }
         /// <summary>Compare deux références COM par leur pointeur IUnknown, avec prise en charge des références identiques.</summary>

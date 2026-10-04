@@ -1,5 +1,6 @@
 using System;
 using System.Drawing;
+using System.Runtime.InteropServices;
 using System.Windows.Forms;
 using VBAi;
 using VBAi.Tests.Infrastructure;
@@ -11,6 +12,58 @@ namespace VBAi.Tests.Unit
 [TestClass, TestCategory("Unit")]
     public sealed class ChatToolWindowCoverageTests
     {
+        /// <summary>Preserves focus events while tolerating a detached native ActiveX site.</summary>
+        [STATestMethod]
+        public void LostFocusToleratesDetachedSiteWithoutRepeatingTheNotification()
+        {
+            using (var tool = new ChatToolWindow())
+            {
+                int attempts = 0;
+                tool.LostFocus += (sender, args) =>
+                {
+                    attempts++;
+                    throw new InvalidComObjectException("Detached native site");
+                };
+                LlmBoundaryScope.Call(tool, "OnLostFocus", EventArgs.Empty);
+                Assert.AreEqual(1, attempts);
+                Assert.IsFalse(tool.IsDisposed);
+            }
+        }
+
+        /// <summary>Normal focus notifications still reach their subscribers.</summary>
+        [STATestMethod]
+        public void LostFocusStillForwardsTheOriginalEvent()
+        {
+            using (var tool = new ChatToolWindow())
+            {
+                int notifications = 0;
+                tool.LostFocus += (sender, args) =>
+                {
+                    notifications++;
+                    Assert.AreSame(tool, sender);
+                    Assert.AreSame(EventArgs.Empty, args);
+                };
+                LlmBoundaryScope.Call(tool, "OnLostFocus", EventArgs.Empty);
+                Assert.AreEqual(1, notifications);
+            }
+        }
+
+        /// <summary>Unrelated focus errors remain observable instead of being hidden.</summary>
+        [STATestMethod]
+        public void LostFocusPropagatesUnrelatedErrorsWithoutRepeatingTheNotification()
+        {
+            using (var tool = new ChatToolWindow())
+            {
+                int attempts = 0;
+                var failure = new InvalidOperationException("Unrelated focus failure");
+                tool.LostFocus += (sender, args) => { attempts++; throw failure; };
+                var wrapper = Assert.ThrowsException<System.Reflection.TargetInvocationException>(
+                    () => LlmBoundaryScope.Call(tool, "OnLostFocus", EventArgs.Empty));
+                Assert.AreSame(failure, wrapper.InnerException);
+                Assert.AreEqual(1, attempts);
+            }
+        }
+
         /// <summary>Les coordonnées inversées ou dégénérées ne produisent jamais une taille négative.</summary>
         [STATestMethod]
         public void NativeSiteSizeClampsBothDimensionsWithoutUsingTheControlBounds()

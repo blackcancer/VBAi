@@ -4,6 +4,91 @@ The test suite covers the shared VBE core, provider protocols, storage, editor
 services and selected host integrations. A passing local suite is not a claim
 that every feature works in every application that embeds the VBE.
 
+## Q-014 inactive-desktop SOLIDWORKS qualification
+
+`tests/VBAi.Q014.Tests` is a scoped frozen-product harness for SOLIDWORKS
+persistence guards and private-desktop guards. It references an explicit
+`FrozenProductDirectory`, never rebuilds the installed product and does not
+replace the full managed suite. Build it and `VBAi.Desktop.Helper` using the
+same isolated output with `BuildProjectReferences=false` for the helper and an
+exact candidate copy at `build/VBAi/Debug/net48`. Use the preparation script
+only after those outputs and the installed candidate hashes agree.
+
+```powershell
+& "$env:WINDIR/System32/WindowsPowerShell/v1.0/powershell.exe" -NoProfile -File tools/tests/Invoke-Q014Qualification.ps1 -Prepare -EvidenceRoot "$PWD/artifacts/q014-owned-campaign" -InstalledDirectory '<absolute installed candidate directory>'
+```
+
+Preparation writes a frozen plan before execution. Run its saved
+`Invoke-FrozenQ014.ps1` only through `Invoke-IsolatedTests.ps1` and the prepared
+helper. The private-desktop canary and actual testhost desktop must pass first.
+SOLIDWORKS launch additionally requires explicit maintainer authorization: the
+default repository rule remains preloaded, selected hosts only. The current
+profile defaults to 2019 SP5, revision `27.5.0`. For explicitly authorized 2025
+qualification, pass `-SolidWorksYear 2025 -ExpectedNativeRevision 33.1.1` and
+the exact 2025 `-SolidWorksExecutable`; preparation validates the major version.
+
+The generated Visual Studio utility solution launches through the exact owned
+DTE's `Debug.Start`. Do not pass quoted `/Command` arguments to the desktop
+launcher's generic argument formatter. Capture internal `NativeChild` receipts
+through reflection with instance/nonpublic flags. SOLIDWORKS identity is read
+through its installed typed interop inside C#, since the observed 2019 ROT
+object refuses PowerShell's dynamic type-info scan. Validate the actual native
+Afx frame's PID/UI thread/desktop, rather than assuming a `SWFrame` class.
+
+The plan orders managed guards, launch, fresh native macro creation, add-in
+loading, module/class/form operations, stale-state refusals, export/import,
+compile, debugger, product Save, and independent saved-copy Edit Macro. Native
+macro file commands use typed `ISldWorks.RunCommand` with a retained STA worker;
+SOLIDWORKS API command IDs are not a qualified `WM_COMMAND` transport. Dialog
+input uses only addressed filename readback and the exact owned button. Each
+request has a durable intent; a timeout stops dependencies without replay or
+cleanup mutation. Original exports and partial files remain available.
+
+Embedded Monaco/designer rendering, resize/restore, stale-project UI, assistant
+dispatch/cancellation/recovery, and normal cleanup remain explicit acceptance
+requirements. The runner does **not** implement the embedded UI/assistant bank
+and must retain them as `NOT_RUN`, even if its bridge scenarios pass. Normal
+SOLIDWORKS/IDE closure requires maintainer authorization. Automatic normal
+closure has been explicitly authorized for the current Q-014 campaign and does
+not require a repeated approval for its exact owned hosts. This permission does
+not authorize force termination or uncertain mutation replay. The initial
+campaign and any narrowly guarded continuation retain separate ledgers; do not
+erase harness failures or rerun completed tests to manufacture a clean result.
+The typed file-command path received independent 2019 and 2025 acceptance in the
+campaign. Its external observers also record actual embedded rendering and
+normal owned-process closure; they do not turn the runner's UI/assistant
+placeholders into executed results. Read host-held SWP files with explicit
+ReadWrite/Delete sharing, retain a verified fresh copy, and never repeat Save
+merely because an ordinary file-hash reader conflicts with a host writer.
+
+`-RetainedManagedRoot` can preserve an earlier scoped TRX only when the installed
+candidate, scoped assembly and all frozen runtime dependencies match. Observe
+the exact loaded bridge MVID/path before assigning native results to that
+candidate. A different loaded candidate needs its own frozen harness/results;
+do not waive the identity oracle or rewrite registration to conceal a mismatch.
+Wait for exact DTE project/document readiness before the first Debug.Start and
+for a newly started process path before rejecting its identity. Duplicate menu
+and toolbar presentations with the same native ID/caption share a command
+identity. Read-only observations may settle; uncertain mutations may not replay.
+
+The desktop helper retains the original worker handle after campaign failure.
+It continues read-only exit and desktop observations; after that exact worker
+exits and the inactive desktop is empty, it releases its own handles and writes
+`retained-terminal.json`. It still returns failure and preserves `failure.json`.
+Observation errors never prove exit, an empty desktop or successful release.
+The timer-driven owned-form regression and focused guard results are recorded
+in [retention recovery evidence](../docs/test-coverage.md#q-014-private-desktop-retention-recovery-2026-10-04).
+This source correction does not change earlier already-loaded helper copies.
+
+Before normally closing a host from an additional assistant bank, call
+`tools/tests/Assert-Q014AssistantTerminal.ps1 -EvidenceRoot <absolute-bank-root>`.
+Every sent scenario must have its independent native success or failure receipt;
+a local HTTP completion alone is insufficient. This read-only barrier throws
+before teardown when a native result readback is still pending.
+
+See [the current Q-014 gate](../docs/release-qualification.md#q-014-private-desktop-campaign-2026-10-04)
+and [its final recorded results](../docs/test-coverage.md#q-014-final-decision-and-cleanup-2026-10-04).
+
 ## Q012 campaign on an inactive Windows desktop
 
 `tools/tests/Invoke-Q012Qualification.ps1` prepares the complete fixed Access and

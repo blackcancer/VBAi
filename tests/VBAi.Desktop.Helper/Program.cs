@@ -113,9 +113,66 @@ namespace VBAi.Desktop.Helper
                     DesktopCloseFailure = closeFailure == null ? null : closeFailure.ToString(),
                     Error = error.ToString(), CleanupReplayed = false, Utc = Utc() });
                 // A child, sentinel or failed desktop close retains ownership without any close replay.
-                if (retain) for (;;) Thread.Sleep(1000);
+                if (retain) return ObserveRetainedExit(output, desktop);
                 retainedDesktop = null;
                 return 1;
+            }
+        }
+
+        // Observation may settle after failure. No host action or failed close is replayed.
+        private static int ObserveRetainedExit(string output, string desktop)
+        {
+            bool diagnosticWritten = false, releaseAttempted = false;
+            for (;;)
+            {
+                try
+                {
+                    if (!releaseAttempted && retainedChild != null && retainedSentinel != null &&
+                        retainedDesktop != null && !retainedDesktop.CloseAttempted && retainedChild.Wait(200) &&
+                        !string.Equals(IsolatedTestDesktop.InputDesktopName(), desktop, StringComparison.OrdinalIgnoreCase) &&
+                        !IsolatedTestDesktop.HasOtherWindows(desktop, retainedSentinel.Window,
+                            retainedSentinel.ThreadId, (uint)Process.GetCurrentProcess().Id))
+                    {
+                        uint code = retainedChild.ExitCode();
+                        int pid = retainedChild.ProcessId;
+                        long handle = retainedChild.ProcessHandle.ToInt64();
+                        releaseAttempted = true; // Claim before either single native close.
+                        IsolatedTestDesktop.CompleteOwnedShutdown(() =>
+                        {
+                            retainedSentinel.CloseOnce();
+                            retainedSentinel = null;
+                        }, retainedDesktop, () =>
+                        {
+                            retainedChild.Dispose(); retainedChild = null;
+                        }, () =>
+                        {
+                            Write(output, "retained-terminal.json", new {
+                                State = "FAILED_CAMPAIGN_EXIT_OBSERVED_RESOURCES_RELEASED",
+                                ProcessId = pid, OriginalHandle = handle, ExitCode = code,
+                                Desktop = desktop, InputDesktop = IsolatedTestDesktop.InputDesktopName(),
+                                OtherWindowsPresent = false, SentinelCloseAttempts = 1,
+                                DesktopCloseAttempted = retainedDesktop.CloseAttempted,
+                                DesktopCloseSucceeded = retainedDesktop.CloseSucceeded,
+                                DesktopCloseError = retainedDesktop.CloseError,
+                                CleanupReplayed = false, TerminationCalled = false, Utc = Utc() });
+                        });
+                        retainedDesktop = null;
+                        return 1; // Resource release does not turn the failed campaign into a pass.
+                    }
+                }
+                catch (Exception observation)
+                {
+                    if (retainedChild == null) throw;
+                    if (!diagnosticWritten)
+                    {
+                        Write(output, "retained-observation-failure.json", new {
+                            Desktop = desktop, Error = observation.ToString(),
+                            CleanupReplayed = false, ReleaseAttempted = releaseAttempted, Utc = Utc() });
+                        diagnosticWritten = true;
+                    }
+                    // An observation failure proves neither exit nor successful release.
+                }
+                Thread.Sleep(1000);
             }
         }
 

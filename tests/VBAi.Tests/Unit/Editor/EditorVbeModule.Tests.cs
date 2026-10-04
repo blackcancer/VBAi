@@ -44,6 +44,35 @@ namespace VBAi.Tests.Unit.Editor
         private static string Read(EditorVbeContract f) => EditorDocument.Normalize(f.Adapter.Read());
         private static string Changed(string code) => code.Replace("count As Long = 1", "count As Long = 2");
 
+        [TestMethod]
+        public void DetachedNativePaneCleanupReleasesOwnershipWithoutRepeatingClose()
+        {
+            foreach (var error in new Exception[] { new COMException("Pane already closed"), new InvalidComObjectException("Pane RCW detached") })
+            {
+                var f = new EditorVbeContract();
+                f.Adapter.EnsureNativeWindow();
+                var pane = f.Original.CodeModule.CodePane.Window;
+                pane.OnClose = () => { throw error; };
+                f.Adapter.CloseNativeWindow();
+                Assert.AreEqual(1, pane.Closes);
+                f.Adapter.CloseNativeWindow();
+                Assert.AreEqual(1, pane.Closes, "Detached pane ownership must be cleared after the first attempt.");
+            }
+        }
+
+        [TestMethod]
+        public void UnexpectedNativePaneCleanupFailureStillPropagatesAndClearsOwnership()
+        {
+            var f = new EditorVbeContract();
+            f.Adapter.EnsureNativeWindow();
+            var pane = f.Original.CodeModule.CodePane.Window;
+            var failure = new InvalidOperationException("Unexpected owned pane failure");
+            pane.OnClose = () => { throw failure; };
+            Assert.AreSame(failure, Assert.ThrowsException<InvalidOperationException>(() => f.Adapter.CloseNativeWindow()));
+            f.Adapter.CloseNativeWindow();
+            Assert.AreEqual(1, pane.Closes);
+        }
+
         [STATestMethod]
         public void ComponentIdentityUsesIUnknownForDistinctNativeWrappers()
         {

@@ -39,6 +39,19 @@ namespace VBAi
             InitializeComponent();
         }
 
+        /// <summary>Allows native focus loss after the host has detached its ActiveX site.</summary>
+        /// <param name="e">The focus notification received on the owning UI thread.</param>
+        protected override void OnLostFocus(EventArgs e)
+        {
+            try { base.OnLostFocus(e); }
+            catch (InvalidComObjectException)
+            {
+                // WinForms ActiveXImpl.OnFocus can notify an already detached site
+                // during native host shutdown. Do not repeat that notification.
+                LoadLog.Write("Native tool-window focus site already detached.");
+            }
+        }
+
         /// <summary>Intègre la fenêtre de conversation comme contrôle enfant de ce conteneur.</summary>
         /// <param name="chat">Fenêtre de conversation à attacher ou détacher.</param>
         internal void Attach(Form chat)
