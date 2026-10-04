@@ -9,7 +9,9 @@ $json=[Web.Script.Serialization.JavaScriptSerializer]::new();$json.MaxJsonLength
 $record=$json.DeserializeObject([IO.File]::ReadAllText($CapturePath))
 $revisions=@()
 foreach($capture in $record['Captures']){
- if(-not $capture['Tabs'] -or -not $capture['Request'] -or $capture['Source'] -cne 'FirstChanceClrException.OwningGuardFrame.HeapReadOnly'){throw 'The complete owned guard graph is missing.'}
+ if(-not $capture['Tabs'] -or -not $capture['Request'] -or
+   $capture['Source'] -cnotin @('FirstChanceClrException.OwningGuardFrame.HeapReadOnly',
+     'ExactGuardILBreakpoint.OwningGuardFrame.HeapReadOnly')){throw 'The complete owned guard graph is missing.'}
  $serialized=$json.Serialize($capture['Tabs'])
  $sha=[Security.Cryptography.SHA256]::Create()
  try{$version=[BitConverter]::ToString($sha.ComputeHash([Text.Encoding]::UTF8.GetBytes($serialized))).Replace('-','').ToLowerInvariant()}finally{$sha.Dispose()}
