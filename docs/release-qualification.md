@@ -4,6 +4,19 @@
 not a claim of universal Office compatibility. Test totals and measured coverage
 are maintained only in [recorded validation](test-coverage.md).
 
+## PR24 integration checkpoint (2026-10-04)
+
+Merge source `2a2dd52` preserves Q026's native Options corrections and approved
+candidate decision, alongside main's desktop ownership, single-close and
+retained-worker protections. The isolated solution and separate qualification
+projects compile. The complete affected managed-class bank, corrected synthetic
+UI matrix and offline recovery/parser checks pass. The first GUI matrix script's
+early-release failure remains recorded separately. Final owned workers and
+launchers exit normally with verified private desktop release. No host or
+temporary registration is used. Q026 closure applies to its previously recorded
+Excel candidate; this merged DLL has no new native acceptance or full release
+gate. See [recorded validation](test-coverage.md#pr24-merge-validation-2026-10-04).
+
 ## PR23 integration checkpoint (2026-10-04)
 
 Merge source `6010150` preserves the Q014 editor/focus corrections and native

@@ -1,5 +1,66 @@
 # Recorded validation
 
+## PR24 merge validation (2026-10-04)
+
+Merge source `2a2dd5238731b567b8e6bc4823a8d4b13a05d47e` reconciles PR #24
+head `8526122` with main `4a5b05e`. Seven conflicts are resolved without removing
+main's exact window inventories, thread-desktop diagnostics, sentinel, checked
+single-close lease, original-helper receipts or Q014 retained-worker recovery.
+The GUI `--run-plan` entry is preserved as `-DirectGuiLauncher`; the default
+launcher keeps its independently held outer helper handle. The shared worker
+retains testhost desktop evidence and adds Q026's script-error receipt.
+
+The isolated Debug solution and four separate frozen-product projects
+(`VBAi.Q026.Tests`, `VBAi.OptionsTrace.Helper`, `VBAi.Q006.Tests` and
+`VBAi.Q014.Tests`) compile without warnings or errors. Merged product MVID is
+`d9a27f92-e956-4aad-93b4-4eddbb61e257`, SHA-256
+`9FD49CCD9AC38AFF24E2BD6B02428CE1C909ABD0DA6E8AC0EFF28EE9B0CF4F61`.
+Test assembly SHA-256 is
+`5B3FFFE5BB36232B4123A41ACB75747D5CB162C5422A3E72AE069980ABE855EA`;
+helper SHA-256 is
+`4C6BFED1D11C8457395984837A98D78A57C4061B35E0F8F4581A2082CC006296`.
+The frozen manifests, TRX, original process receipts and verification scripts
+remain in `artifacts/pr24-integration-20261004/`.
+
+| Validation | Observed result |
+| --- | --- |
+| Complete selected managed classes on an inactive desktop | 300 passed, 0 failed, 0 skipped |
+| Synthetic UI matrix with original action-process wait | All nine actions pass before original child exit and desktop release |
+| Python Options-receipt and CLR-guard parsers | 17 tests pass across the two suites |
+| PowerShell synthetic recovery baselines and guard refusals | 42 cases pass, no native dispatch or Office activation |
+| Generated launcher-retention fault injection | All six synthetic cases pass |
+| Preserved Q026 accepted-case receipts | All eleven referenced proof hashes match the retained original artifacts |
+| Static validation | Both documentation checks pass; 46 changed files decode as strict UTF-8; twelve PowerShell scripts parse; JSON and JavaScript syntax checks pass |
+| Complete default managed suite, new native-host acceptance, authenticated providers and coverage collection | NOT_RUN for this merge candidate |
+
+The single prepared managed filter selects whole `OptionsCheckboxTests`,
+`WritableOptionsTests`, `VbeDebugWindowsSystemTests`, `OptionsCancellationTests`,
+`VbeInspectionTraceTests`, `ExcelFormatOptionsQualificationTests`,
+`ExcelOptionsQualificationTests`, `NativeWindowEnumerationOwnershipTests`,
+`IsolatedTestDesktopTests`, `ExcelOwnedBootstrapPlanTests` and
+`QualificationDesktopGuardTests` classes. All expected classes appear in the
+actual TRX. Terminal verification binds the clean source, original test storage
+and unchanged product/test/helper hashes; native/provider opt-ins are cleared
+process-locally. No coverage percentage is collected or claimed.
+
+The first GUI action-matrix orchestration is **FAILED** lifecycle evidence:
+its copied Exe-era PowerShell script returns before the WinExe action process
+completes. Worker/desktop release at `14:46:03.2501421Z` precedes the UI matrix
+receipt at `14:46:14.0156641Z`; passing action assertions cannot qualify that
+release. Its original receipts remain unchanged. A fresh synthetic-only run
+uses `IsolatedTestDesktop.Launch` and waits on the original child handle:
+matrix completion `14:48:36.1262089Z`, child exit 0 `14:48:36.1487207Z`, then
+worker/desktop release `14:48:36.1797394Z`. No native-host mutation is replayed.
+
+Final managed and corrected GUI workers/helpers exit normally, their hidden
+sentinels close once, desktop leases close successfully and scheduled actors
+return 0. Completed owned tasks are removed. Input remains `Default`, with no
+desktop switch or owned foreground observation. No Office/SOLIDWORKS host is
+started, no installed DLL is replaced, and COM registration/settings are unchanged.
+Approved Q026 closure remains specific to source `08d7420`, MVID
+`7156af5b-941c-4452-9e78-1381cb69af0d` and the recorded Excel version; preserved
+historical proof hashes do not qualify this different merged DLL.
+
 ## PR23 merge validation (2026-10-04)
 
 Merge source `601015036a85f9a9cbc1f82951f4cdedd1f3617a` integrates PR #23

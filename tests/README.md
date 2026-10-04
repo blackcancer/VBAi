@@ -11,6 +11,10 @@ The default route records the original outer helper handle and observed exit;
 the direct route records its own helper identity and terminal result, with the
 scheduled task's actual exit checked separately. Do not substitute those
 different receipt contracts or turn resource release into a passing campaign.
+Scripts that launch a WinExe subprocess must explicitly retain and wait for its
+original process handle. An early script return and an empty window inventory
+do not prove that a GUI child has finished. The script must observe that exit
+before allowing its parent worker and desktop to close.
 
 The test suite covers the shared VBE core, provider protocols, storage, editor
 services and selected host integrations. A passing local suite is not a claim
