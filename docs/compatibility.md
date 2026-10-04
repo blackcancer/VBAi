@@ -227,7 +227,7 @@ availability improves; this does not qualify the embedded-host assistant.
 SOLIDWORKS is not exercised in this earlier refresh. At that checkpoint the
 installed DLL was unchanged and temporary registration selections were restored.
 
-See the [current qualification checkpoint](release-qualification.md#current-candidate-checkpoint-2026-10-03)
+See the [current qualification checkpoint](release-qualification.md#pr22-integration-checkpoint-2026-10-04)
 and [recorded validation](test-coverage.md#native-qualification-refresh-2026-10-01)
 for the exact tested scopes and identities. Historical observations below retain
 their original candidate boundaries.

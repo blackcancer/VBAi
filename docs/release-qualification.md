@@ -4,6 +4,23 @@
 not a claim of universal Office compatibility. Test totals and measured coverage
 are maintained only in [recorded validation](test-coverage.md).
 
+## PR22 integration checkpoint (2026-10-04)
+
+Merge source `2f2786f` integrates the complete Q012 branch with the existing
+Q024/Q006 guards. Its isolated solution and Q006 harness compile, its complete
+default managed suite passes, and its complete synthetic UI action matrix passes.
+Original private workers exit normally, their sentinels close once and their
+desktop leases close successfully. The two outer scheduled launchers instead
+finish with `0xC000013A` and missing terminal/helper-exit receipts; that cause
+remains unresolved and outer launcher lifecycle is not qualified.
+
+No Office host, authenticated provider or coverage collector runs in this merge
+validation, and COM registration remains unchanged. Q012's native acceptance
+below retains its original product identity; it is not fresh runtime acceptance
+of the merged DLL. Q024 stays open and Q027 remains deferred. See
+[recorded validation](test-coverage.md#pr22-merge-validation-2026-10-04)
+for exact identities, scopes, counters and the retained launcher failure.
+
 ## Q-012 completed adapter contract (2026-10-04)
 
 **Q-012 is CLOSED for the required Access/Publisher adapter contract** on the

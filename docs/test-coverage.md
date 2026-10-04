@@ -1,5 +1,57 @@
 # Recorded validation
 
+## PR22 merge validation (2026-10-04)
+
+Merge source `2f2786f297c2780838ed67670c9211fc7df993b8` integrates the complete
+Q012 branch `b2129016726a670c5ffec5b62afffb3895114655` with main's Q024/Q006
+desktop guards. It preserves literal Office switches, bounded named inventories,
+Word readiness/seed verification, actual testhost desktop receipts and the complete
+synthetic action matrix. Q012 adds its live sentinel, checked desktop close,
+detached helper lifetime tracking, Access/Publisher fixtures and native General
+operations. The host bootstrap requires matching generated desktop names before
+choosing the separate Word or Access/Publisher path; its mirror includes that
+integration boundary. A shared P/Invoke declaration removes two initial duplicate
+member build errors without changing the native operation.
+
+The corrected isolated solution build and the separate Q006 harness build have
+zero warnings/errors. The complete default managed suite reports **4,463 passed,
+0 failed, 226 inactive, 4,689 total**, with terminal receipt
+`2026-10-04T01:17:46.3828333Z`. TRX definitions, exact source, product/helper/test
+hashes and the clean integration checkout are verified. The complete synthetic UI
+matrix proves **9 actions with no gaps**. Its terminal action receipt is
+`2026-10-04T01:02:20.3473385Z`. The generated launcher retention fault bank
+separately passes **6 pure injected cases**, with no Office/helper launch.
+
+Product MVID is `4b0bcf4a-2491-4e35-84cb-7bc9802a5528`; product SHA-256 is
+`3D4DB06FDA002EFCE7F29020168B0096C480C833C54EBE2C2E9D2038D0C81208`;
+test SHA-256 is
+`A15DF8A12A7692F134623BE616DDBFE1634635E156727D1EBF184E64687942E1`;
+helper SHA-256 is
+`3ACD81527D7BBE5D6404974E0CB8B32E5F2C571A0005123444F9819EDED806C5`.
+Evidence is under `artifacts/pr22-integration-20261004/`.
+
+Original private campaign worker exits are observed through retained handles with
+code 0. Their sentinels close once and creator desktop leases close successfully.
+The managed desktop is `VBAiTests_470a79471b074bf89c92705151be2e26`; the matrix
+desktop is `VBAiTests_ea9a27cebdf14226bec28460f1d05c5e`. Input remains `Default`
+and no desktop switch or owned foreground observation is recorded.
+
+The two outer scheduled launchers nevertheless finish with `0xC000013A`, without
+`helper-original-exit.json` or `limited-terminal.json`. Their interruption cause
+is unproved. Direct worker/desktop receipts do not substitute for those missing
+outer lifecycle receipts: `OuterLauncherLifecycleVerified=false`. After the
+original helpers and task actors are absent, only the completed owned task
+registrations are removed, preserving their anomalous results. No force or native
+replay is used. The passing pure fault bank does not qualify this runtime failure.
+
+Office/provider opt-ins and the coverage collector are disabled. No Office host
+is launched, no installed DLL is replaced and no COM registration is changed by
+this integration. Access/Publisher acceptance below remains tied to its original
+Q012 product; native host acceptance on this merge is NOT_RUN. The current Word
+Q024 gates and deferred Q027 retain their recorded status. This is a verified
+managed test result and UI matrix with an unresolved outer-launcher anomaly,
+not an end-to-end launcher, current coverage or complete-release qualification.
+
 ## Q-012 completed adapter contract (2026-10-04)
 
 Q-012 is **CLOSED for the required Access/Publisher adapter contract** on product
