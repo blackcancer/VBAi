@@ -56,6 +56,35 @@ namespace VBAi.Tests.Unit
     public sealed partial class VbeSessionContractTests
     {
         [TestMethod]
+        public void GeneralQuarantineRefusesInventoryAndAllNativeAsyncRoutes()
+        {
+            var session = new VbeSession(new FakeVbe());
+            typeof(VbeSession).GetField("generalQuarantined", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic).SetValue(session, true);
+            Assert.IsTrue(session.Execute(new Request { Command = "status" }).Ok);
+            foreach (string command in new[] { "list_projects", "project_properties", "set_project_property", "open_native_ide_dialog" })
+                Assert.IsFalse(session.Execute(new Request { Command = command }).Ok, command);
+            Assert.ThrowsException<InvalidOperationException>(() => session.SaveHostDocumentAsync(new Request()));
+            Assert.ThrowsException<InvalidOperationException>(() => session.ReadImmediateAsync(new Request()));
+            Assert.ThrowsException<InvalidOperationException>(() => session.InspectLocalScalarsAsync(new Request()));
+        }
+
+        [TestMethod]
+        public void GeneralPendingAllowsOnlyLiveAuthorizationInventoryAndRejectsSyncGeneral()
+        {
+            var session = new VbeSession(new FakeVbe());
+            var flags = System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic;
+            Assert.IsFalse(session.Execute(new Request { Command = "read_project_general" }).Ok);
+            Assert.IsFalse(session.Execute(new Request { Command = "set_project_general" }).Ok);
+            typeof(VbeSession).GetField("generalInFlight", flags).SetValue(session, true);
+            Assert.IsFalse(session.Execute(new Request { Command = "list_projects" }).Ok);
+            typeof(VbeSession).GetField("generalAuthorizationDepth", flags).SetValue(session, 1);
+            Assert.IsTrue(session.Execute(new Request { Command = "list_projects" }).Ok);
+            Assert.IsFalse(session.Execute(new Request { Command = "set_project_property" }).Ok);
+            typeof(VbeSession).GetField("generalQuarantined", flags).SetValue(session, true);
+            Assert.IsFalse(session.Execute(new Request { Command = "list_projects" }).Ok);
+        }
+
+        [TestMethod]
         public void DispatcherRejectsMissingAndUnknownCommandsWithoutTouchingTheHost()
         {
             var session = new VbeSession(new FakeVbe());

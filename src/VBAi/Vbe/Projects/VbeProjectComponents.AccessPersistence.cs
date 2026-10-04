@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Threading;
@@ -10,6 +11,8 @@ namespace VBAi
     {
         /// <summary>Bounds read-only verification after Access returns from its single native Save command.</summary>
         internal TimeSpan AccessSaveVerificationTimeout = TimeSpan.FromSeconds(3);
+        /// <summary>Injects the dialog boundary in managed tests; production binds the exact native VBE owner.</summary>
+        internal Func<IntPtr, int, IEnumerable<AccessSaveApprovedComponent>, IAccessSaveConfirmation> AccessSaveConfirmationFactory = null;
         // Bridge, editor and chat share the same native VBE owner thread, across service instances.
         [ThreadStatic] private static bool accessSavePending;
 
@@ -45,6 +48,40 @@ namespace VBAi
                 string sourceSha = OtherHostSourceSha(projectObject);
                 // This existing native-host revision digest excludes only the Saved notification.
                 string revision = SolidWorksSaveRevision(request.Project);
+                var approvedComponents = new List<AccessSaveApprovedComponent>();
+                foreach (object current in project.VBComponents)
+                {
+                    int type = (int)((dynamic)current).Type;
+                    if (type == 1 || type == 2)
+                        approvedComponents.Add(new AccessSaveApprovedComponent((string)((dynamic)current).Name, type));
+                }
+                IAccessSaveConfirmation confirmation = null;
+                if (AccessSaveConfirmationFactory != null || native is NativeOtherHostProbe)
+                {
+                    var window = new IntPtr(Convert.ToInt64(vbe.MainWindow.HWnd));
+                    confirmation = AccessSaveConfirmationFactory != null
+                        ? AccessSaveConfirmationFactory(window, processId, approvedComponents)
+                        : CreateNativeAccessSaveConfirmation(window, processId, approvedComponents);
+                    if (confirmation == null) throw new InvalidOperationException("Access Save confirmation guard is unavailable.");
+                    confirmation.Prepare();
+                    if (native is NativeOtherHostProbe guardedProbe) guardedProbe.AccessBeforeSave = () => {
+                        if (Thread.CurrentThread.ManagedThreadId != ownerThread || native.HostKind != "Access" ||
+                            native.CurrentProcessId != processId || native.ApplicationProcessId(application) != (uint)processId ||
+                            (int)project.Mode != 2 || (int)project.Protection != 0 ||
+                            !native.SameProject(projectObject, (object)GetDesignProject(request.Project)))
+                            throw new InvalidOperationException("Access Save lost its approved owner or project before invocation.");
+                        AssertProjectVersion(request, project);
+                        RequireAccessSaveSelection(projectObject, pane, component, native);
+                        if (OtherHostSourceSha(projectObject) != sourceSha || SolidWorksSaveRevision(request.Project) != revision)
+                            throw new InvalidOperationException("Access Save source, metadata or references changed before invocation.");
+                        var currentState = native.State(document);
+                        if (currentState.ReadOnly || !OtherHostSamePath(currentState.Path, path) || currentState.Format != format ||
+                            !OtherHostProjectPathMatches(projectObject, path, "Access"))
+                            throw new InvalidOperationException("Access Save path or writable state changed before invocation.");
+                        request.RevalidateSaveAuthorization?.Invoke();
+                        confirmation.RequireBeforeSave();
+                    };
+                }
                 accessSavePending = true;
                 try
                 {
@@ -82,6 +119,42 @@ namespace VBAi
                                     throw new InvalidOperationException("Access Save verification failed: path, format or writable state changed.");
                                 if (!native.FileExists(path) || native.FileLength(path) < 1)
                                     throw new InvalidOperationException("Access Save verification failed: database file is absent or empty.");
+                                var candidate = confirmation?.Observe();
+                                if (candidate != null)
+                                {
+                                    if (elapsed.Elapsed >= AccessSaveVerificationTimeout)
+                                        throw new InvalidOperationException("Access Save confirmation remains pending; no confirmation or Save is retried.");
+                                    if (confirmation.ConfirmationAttempts == 0)
+                                        confirmation.Confirm(candidate, () => {
+                                            if (Thread.CurrentThread.ManagedThreadId != ownerThread ||
+                                                native.HostKind != "Access" || native.CurrentProcessId != processId ||
+                                                native.ApplicationProcessId(application) != (uint)processId ||
+                                                (int)project.Mode != 2 || (int)project.Protection != 0 ||
+                                                !native.SameProject(projectObject, (object)GetDesignProject(request.Project)))
+                                                throw new InvalidOperationException("Access Save confirmation lost its approved owner or project.");
+                                            RequireAccessSaveSelection(projectObject, pane, component, native);
+                                            if (OtherHostSourceSha(projectObject) != sourceSha || SolidWorksSaveRevision(request.Project) != revision)
+                                                throw new InvalidOperationException("Access Save confirmation source, metadata or references changed.");
+                                            object confirmedDocument = null;
+                                            try
+                                            {
+                                                confirmedDocument = MatchOtherHost(projectObject, native, application);
+                                                var confirmedState = native.State(confirmedDocument);
+                                                if (confirmedState.ReadOnly || !OtherHostSamePath(confirmedState.Path, path) ||
+                                                    !OtherHostProjectPathMatches(projectObject, path, "Access") || confirmedState.Format != format ||
+                                                    !native.FileExists(path) || native.FileLength(path) < 1 ||
+                                                    elapsed.Elapsed >= AccessSaveVerificationTimeout)
+                                                    throw new InvalidOperationException("Access Save confirmation path, writable state or deadline changed.");
+                                                request.RevalidateSaveAuthorization?.Invoke();
+                                            }
+                                            finally { ReleaseAccessObservation(confirmedDocument); }
+                                        }, () => {
+                                            if (elapsed.Elapsed >= AccessSaveVerificationTimeout)
+                                                throw new InvalidOperationException("Access Save confirmation delivery deadline expired; no native confirmation was queued.");
+                                        });
+                                    // Enqueue is not persistence. Yield for native processing and verify all guards again.
+                                    continue;
+                                }
                                 if (!(bool)project.Saved)
                                 {
                                     if (elapsed.Elapsed < AccessSaveVerificationTimeout) continue;
@@ -93,6 +166,9 @@ namespace VBAi
                                     SourceSha256 = sourceSha, CodePreserved = true, NativeFileFormatVerified = true,
                                     NativeQualification = "NOT_RUN", PersistenceReopenVerified = false,
                                     Verification = "DeferredOwnerThreadSavedReadback", VerificationMilliseconds = elapsed.ElapsedMilliseconds,
+                                    ConfirmationAttempts = confirmation?.ConfirmationAttempts ?? 0,
+                                    ConfirmationQueued = confirmation?.ConfirmationQueued ?? false,
+                                    ConfirmationPending = confirmation?.ConfirmationPending ?? false,
                                     Limit = "Access saved-state, identity, path, metadata and unchanged live source were verified after one native Save. Access has no document Saved flag; reopen the database to verify persisted content." };
                             }
                             finally { ReleaseAccessObservation(observedDocument); }
@@ -103,10 +179,17 @@ namespace VBAi
                         return new { Project = request.Project, Host = "Access", HostPath = path, SaveApi = "VBE.CommandBars.ID3",
                             SaveInvoked = true, SaveAsInvoked = false, MutationInvoked = true, Verified = false, Uncertain = true,
                             NativeQualification = "NOT_RUN", Reason = error.Message,
+                            ConfirmationAttempts = confirmation?.ConfirmationAttempts ?? 0,
+                            ConfirmationQueued = confirmation?.ConfirmationQueued ?? false,
+                            ConfirmationPending = confirmation?.ConfirmationPending ?? false,
                             Next = "Inspect project_persistence_status and the database; do not retry automatically." };
                     }
                 }
-                finally { accessSavePending = false; }
+                finally
+                {
+                    accessSavePending = false;
+                    if (native is NativeOtherHostProbe guardedProbe) guardedProbe.AccessBeforeSave = null;
+                }
             }
             finally
             {

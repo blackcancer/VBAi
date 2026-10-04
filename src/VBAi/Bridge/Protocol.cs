@@ -3,6 +3,12 @@ namespace VBAi
     /// <summary>Arguments sérialisés en JSON pour une commande du pont entre le complément et son client.</summary>
     public sealed class Request
     {
+        /// <summary>Revalidates the originating chat authorization before a deferred native save mutation; never crosses the JSON bridge.</summary>
+        [System.Web.Script.Serialization.ScriptIgnore]
+        internal System.Action RevalidateSaveAuthorization;
+        /// <summary>Revalidates originating chat policy/binding immediately before native project metadata mutation; never serialized.</summary>
+        [System.Web.Script.Serialization.ScriptIgnore]
+        internal System.Action<bool> RevalidateProjectPropertyAuthorization;
         /// <summary>Nom de la commande demandée au pont.</summary>
         /// <value>Nom de la commande demandée au pont.</value>
         public string Command { get; set; }

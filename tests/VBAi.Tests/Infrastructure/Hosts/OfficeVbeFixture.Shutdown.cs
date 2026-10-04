@@ -28,6 +28,7 @@ namespace VBAi.Tests.Integration
             commandContainment.RequireTerminal();
             if (hostTeardownRefused || (shutdownEvidence != null && (!owned || (Kind == "Word" && Equals(shutdownEvidence.Record["TeardownPrepared"], true)))))
                 throw new InvalidOperationException("The original Office ownership scope is closed or unverified; no native request, Save, Close/Quit retry or reopen is permitted.");
+            RequirePrivateHostDesktop(true);
         }
 
         private bool WaitForShutdownExit(Process process, int timeout, bool externalReferencesReleased)

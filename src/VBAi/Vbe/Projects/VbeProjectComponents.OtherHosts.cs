@@ -85,6 +85,8 @@ namespace VBAi
             private object accessExpectedPane, accessExpectedComponent;
             internal Func<object, object, bool> ReadIdentity = SameComIdentity;
             internal bool SaveInvocationStarted { get; private set; }
+            // Bound only by the original owner-thread Access async save; never approves an existing prompt.
+            internal Action AccessBeforeSave;
 
             /// <summary>Binds the actual selected VBIDE project, never a host-specific invented VBProject property.</summary>
             internal void BindProject(object project)
@@ -332,6 +334,7 @@ namespace VBAi
                         !OtherHostSamePath(State(document).Path, destination) || !(bool)((dynamic)accessSaveControl).Enabled)
                         throw new InvalidOperationException("Access save identity or writable state changed before invocation.");
                     PrepareSave(document);
+                    AccessBeforeSave?.Invoke();
                     SaveInvocationStarted = true;
                     new NativeSolidWorksSaveProbe().Save(accessSaveControl);
                     return;

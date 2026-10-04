@@ -38,6 +38,32 @@ provide projects, components, code modules, references and code panes. Native
 command and accessibility services provide operations not exposed as complete
 public VBIDE collections.
 
+For native Access and Publisher host projects (VBIDE Type 100),
+`set_project_property` refuses HelpFile and HelpContextID before either COM setter.
+Observed partial failures do not justify another setter or an automatic UI
+fallback. `project_properties` retains the COM descriptor's `ReadOnly` flag and
+raw value, while its existing `SetterStatus` reports `HostLegacyWriteUnsupported`
+and `Display` identifies the explicit General alternative. Clients must refresh
+the opaque project version and choose that asynchronous, approved workflow;
+existing command names and request fields remain unchanged. COM HelpFile readback
+and `open_project_help` are not repaired by this change. Other hosts, project types
+and properties retain their existing routes.
+
+The explicit asynchronous `read_project_general` and `set_project_general`
+commands use the original VBE General dialog on its owning STA. They are separate
+from the existing COM metadata commands and never run as recovery after a failed
+COM setter. Reads cancel the original dialog; writes target one HelpFile or
+HelpContextID field and request one OK after exact field readback. The native
+`OptionsVersion` protects all General fields independently of the existing COM
+project revision. Original project identity, design mode, protection, approval
+and privacy are revalidated across dispatch and final publication. A pending or
+uncertain operation blocks further session operations, including direct native
+bridge routes. Bridge admission is held on the owning STA until worker dispatch
+settles, preventing General from entering between admission and a native call.
+Managed status remains available. Persistence is qualified
+separately by adapter Save and independent reopen. Native host acceptance is
+recorded in the compatibility and qualification pages, not inferred from this design.
+
 A document save, application-level procedure invocation or standalone project
 persistence can require a host-specific path. These adapters must identify the
 actual document and report an unsupported operation or failed prerequisite rather

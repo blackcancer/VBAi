@@ -1,5 +1,852 @@
 # Recorded validation
 
+## Q-012 completed adapter contract (2026-10-04)
+
+Q-012 is **CLOSED for the required Access/Publisher adapter contract** on product
+MVID `2106fd95-fb1d-4b3e-b971-0ba39e78494b`, SHA-256
+`852DC8414D0E667ACAF9A3424978683F14E4EA8DED2ABF2780DBAE9851AF1CA8`.
+The frozen plans record source `60b8b7f2d81bcc3ca04900481f31a2ea956c1f5a` plus
+their pending-source manifests on `codex/q012-office-20261002`. Product bytes
+remain identical across the accepted campaigns; fixture/test/helper revisions
+are recorded separately and do not inherit one another's test results.
+
+| Gate | Result | Exact scope |
+| --- | --- | --- |
+| Final focused managed gate | 766 passed, 0 failed, 0 skipped | `q012-publisher-pending-detached/qualification/unit/unit.trx`; changed General, legacy refusal, admission, persistence, fixture and desktop guards. This is not a complete managed-suite or coverage run. |
+| Required native adapter contract | 20 accepted cases | Access rows 1–6, 20/21 and 27/28; Publisher rows 17–19, 22–26 and 29/30, combined from the original individual outcomes and lifecycle/readback receipts below. This does not make all rows in the wider diagnostic matrix green. |
+| Required normal host lifecycle | 35 original/fresh generations, normal exit code 0 | Complete original retained-handle ledger across the accepted cases, with no forced exit promoted to acceptance. |
+| Final Publisher pending campaign | DIAGNOSTIC_PASS | Every selected case is invoked once; temporary COM registration and scoped startup registration are restored and verified; checked helper desktop close succeeds. |
+| Complete managed suite on this product | NOT_RUN | Earlier complete-suite results below retain their own product identities. No current percentage or release-wide acceptance is inferred. |
+
+The machine-local evidence root is
+`C:\Users\init-\Documents\Codex\q012-20261003-next`. Accepted outcomes are:
+
+| Evidence relative to that root | Accepted rows | Test and helper SHA-256 prefixes |
+| --- | --- | --- |
+| `q012-adapters-final/summary.json` | Access 1–6 | Tests `10D59817`, helper `5FE7E795`; original full hashes are frozen in its `plan.json`. |
+| `q012-access-remaining/summary.json` | Access 20/21, 27/28 | Tests `7EBC538E`, helper `5FE7E795`; original full hashes are frozen in its `plan.json`. |
+| `q012-publisher-remaining/qualification/summary.json` | Publisher 17/18 | Tests `7EBC538E`, helper `5FE7E795`; original full hashes are frozen in its qualification plan. |
+| `q012-publisher-pending-detached/qualification/summary.json` | Publisher 19, 22–26, 29/30 | Tests `B240E972`, helper `47A43829`; original full hashes are frozen in its qualification plan. |
+
+The final test SHA-256 is
+`B240E9723EF4FB2DE8E278BBA55FF5288A02481DE3C872749C26FD24630F2E3B`;
+helper SHA-256 is
+`47A43829FA551C22F8AEB2A9230062FD2863B8DD71FD03980A0D620D101BE3C4`.
+These final test bytes were not used for the earlier accepted rows. The earlier
+aggregate failures remain failures: an unrelated later Publisher startup failure
+does not erase accepted Access cases, and the original live-file-lock failure
+in row 19 does not erase accepted Publisher persistence cases.
+
+The accepted positive contract covers active-module and module/class source persistence, UserForm
+state preservation (Publisher), reference addition by GUID/file, reference removal,
+Description and explicit native General HelpContextID/representable HelpFile
+text. Each persistence case requires one original adapter Save, exact independent
+fresh-process readback and normal exits. Stored UserForm structure/code/state
+does not qualify Designer rendering, form events or execution.
+
+Unsupported Unicode is qualified as a **known pre-write refusal**, with no field
+or OK dispatch, one guarded Cancel, observed dialog closure and original Execute
+return. Row 19 uses the already-saved audited serialized seed without baseline
+source edits or Save. Its original normally closed copy has the exact pre-open
+seed bytes and SHA-256; no Save, reopen or retry follows the refusal. Positive
+Unicode persistence remains unqualified. Legacy COM HelpFile/HelpContextID
+failures remain historical failures; current Type100 Access/Publisher writes
+are refused before either legacy setter, with explicit `read_project_general`
+and approved `set_project_general` alternatives. This is an API migration,
+not a repaired legacy COM setter or an automatic fallback.
+
+Publisher acceptance applies to an audited owned serialized publication opened
+with macros disabled. Empty-publication VBA initialization, NewDocument and
+first SaveAs are not qualified by this seed. Exact project/process/native-window
+identity, revision, mode, approval and privacy guards remain in force.
+
+The final pending campaign records normal host/helper shutdown, sentinel exit,
+successful creator `CloseDesktop`, input desktop unchanged and no owned focus
+observations. Scoped LoadBehavior restores the exact original DWORD2 after its
+temporary DWORD3 setup, with neighboring values unchanged. Its release proof
+uses the complete original-generation ledger; task removal is verified and no
+owned Access/Publisher remains. Unrelated SOLIDWORKS processes are not included
+in this cleanup.
+
+Earlier missing-helper-terminal/`0xC000013A` interruptions remain unattributed.
+The changed launcher uses the same helper binary with `UseShellExecute=false`,
+`CreateNoWindow=true`, asynchronous draining of both streams and retained original
+process exit evidence. A separate no-Office canary and the final native campaign
+qualify that normal launch path. Parent-console exclusion and disjoint worker
+console observations do not establish a helper-local console inventory or the
+cause of previous interruptions. Exceptional launcher fault handling requires
+its separately recorded checks; a happy-path native run cannot prove it.
+The later launcher-only exceptional-path correction protects a failed retained
+receipt write and refuses process disposal when Start returned no known outcome.
+`q012-launcher-retention-review/probe-results.json` records 12 passing old/new
+AST-extracted fault comparisons, with no Office, process wait or registry calls.
+The versioned `tools/tests/Test-IsolatedHelperRetention.ps1` also passes its six
+pure fault-injection cases under Windows PowerShell 5.1 after the correction.
+It does not replay native qualification. The last native launcher hash begins
+`F6ABD9`; the separately checked correction's SHA-256 is
+`C1BD623F007AA57FE7D0F7A6504C109067E8E3F6A82A5BD364E0F9E684A7FEE0`.
+
+## Q-012 bridge admission candidate (2026-10-03)
+
+The `access-general-dispatchguard`, `general-full-managed-dispatchguard` and
+`publisher-general-dispatchguard` plans bind source
+`d24960ee61025465e698c2256ebb79ffa74668f9` plus frozen pending manifests on
+`codex/q012-office-20261002`. Product MVID is
+`9ebf1c44-8429-4632-b49f-c3398f4bc8f6`, SHA-256
+`465BB0AAE0F4443E53C290965A760642810FB2B00C3E85EA6E82DBE29E3A5A87`.
+Test assembly SHA-256 is
+`F2E950311A19F9176CB22D8F198D795AD127585443310E278F8BF5007DFE657E`;
+helper SHA-256 remains
+`96E990FCE811B9F59966B93FF2EE78F91BB55A7368D72D4309A283A21CC3ECE7`.
+
+| Gate | Result | Scope |
+| --- | --- | --- |
+| Complete managed suite | 4,356 passed, 0 failed, 211 not executed; 4,567 total | Native opt-ins disabled; frozen compiled source and existing binary hashes unchanged. Individual TRX results determine not-executed count. |
+| Access focused gate | 656 passed, 0 failed, 0 skipped | Existing General/host guards. New bridge admission tests are included in the complete suite, outside this focused filter. |
+| Access native General HelpFile and HelpContextID, rows 20/21 | Both PASS | Single adapter Save, fresh-process exact General/source/reference readback and normal original/fresh exits for each operation. |
+| Access overall campaign terminal | FAILED | Final strict binary inventory finds an added PNG from the concurrent managed suite; all frozen existing binary hashes remain unchanged. The failed terminal is preserved. |
+| Publisher read-only existing-file diagnostic | PASS | Exact new candidate, fresh General 321/all fields/options version, module/class hashes and references match the previously saved candidate's file. Source and opened copy remain unchanged; normal close. No new adapter Save acceptance is inferred. |
+| Publisher focused gate | 656 passed, 0 failed, 0 skipped | Same compiled candidate. |
+| Publisher native row 17 | FAIL | NewDocument and preparatory SaveAs verify, then startup status fails before request emission, native General writes or adapter Save. |
+| Publisher native rows 18/19 | BLOCKED, zero invocations | Stop after startup failure in row 17. |
+
+The admission fix prevents direct native bridge routes from bypassing General's
+pending/uncertain state. An owning-STA admission token remains held until worker
+dispatch settles, excluding concurrent General entry without moving native
+worker calls to the UI thread. Tests cover pending/quarantined refusals, managed
+status availability and token release after successful and failed worker calls.
+
+Access's failed aggregate terminal is an inventory failure, not a failing native
+test. The added `VBAi.Tests/Debug/net48/github-settings.png` is produced by the
+linked GitHub settings smoke test, which saves into its assembly base directory.
+No existing planned binary hash changes. Access/helper shutdown is normal,
+registration restoration verifies and exact task removal requires no force.
+The unused build-copy variant is not executed. No native case is replayed to
+hide the failed aggregate receipt.
+
+The complete managed worker writes an exit-0 terminal with unchanged compiled
+source and existing binary hashes. Its helper and worker subsequently disappear
+without a helper terminal receipt; the exact scheduled task reports
+`0xC000013A`. The interruption's cause is unknown. This does not invalidate the
+individual TRX outcomes, but checked helper close and normal lifecycle acceptance
+are not established for that run. No test rerun or normal-close claim is made.
+Task-only cleanup verifies the original worker/helper PIDs absent and sentinel
+invalid, then removes the exact Ready task with no process termination. Its
+receipt retains the unknown interruption and `DesktopCloseVerified=false`.
+
+The existing-file Publisher diagnostic is
+`publisher-general-manager-readonlyselection`. Native list selection is verified,
+Load is already checked, and the sole manager action is Cancel. There are no
+Load/Connect/startup/registry writes, macro execution or trust changes. The
+candidate's bridge starts before any manager action, so this run does not show
+that the manager repaired activation. `fresh-disk-comparison.json` records the
+independent comparison. Exact task removal follows normal host/helper close.
+
+The subsequent standard Publisher fixture fails on a newly created publication,
+before native metadata operations. The failed first cleanup extracts no original
+identity and refuses without any native termination. Corrected launch-and-canary
+evidence retains that refusal, records no invented query handle, and permits one
+exact host/helper termination after registration restoration. The task is
+removed; forced exits do not qualify normal startup, shutdown or persistence.
+
+Independent read-only compound-file inspection finds an empty `/VBA` storage
+in the new-publication startup failure's saved file, whereas the successful
+existing-file input contains `PROJECT`, `dir`, `_VBA_PROJECT` and its document,
+module and class streams. This establishes different serialized VBA inputs,
+not the state of the live project after ShowVbe or a causal autoload fix. The
+initial SaveAs precedes ShowVbe in the failing fixture. No trust or registration
+change is justified by this observation.
+
+Evidence is under `C:\Users\init-\Documents\Codex\q012-20261003-next` in the
+named campaign directories and corresponding `desktop-*` receipts. Q-012 remains
+**PARTIAL**. No coverage measurement or whole-host acceptance follows.
+
+## Q-012 guarded General and Access persistence (2026-10-03)
+
+The `publisher-general-ansiguard` and `access-general-ansiguard` plans bind
+source `d24960ee61025465e698c2256ebb79ffa74668f9` plus their frozen pending
+manifests on `codex/q012-office-20261002`. Product MVID is
+`46f52ddc-3dac-46d5-88f1-ba853e163644`. Each plan records exact product,
+test and helper binary hashes; later fixture changes do not inherit these gates.
+
+| Gate | Result | Scope |
+| --- | --- | --- |
+| Publisher focused managed gate | 656 passed, 0 failed, 0 skipped | Includes strict text representation and checked desktop-close regressions. |
+| Access focused managed gate | 656 passed, 0 failed, 0 skipped | Same frozen source and binary candidate. |
+| Access native General HelpFile, row 20 | PASS | Exact accented path, single adapter Save, independent fresh-process General/source/reference readback, normal original/fresh exits. |
+| Access native General HelpContextID, row 21 | PASS | Exact value 321, single adapter Save, independent fresh-process General/source/reference readback, normal original/fresh exits. |
+| Publisher native General HelpContextID, row 17 | FAIL | Original native write and adapter Save verified; original exits normally. Fresh add-in bridge connection unavailable before request emission. |
+| Publisher compatible HelpFile and Unicode refusal, rows 18/19 | BLOCKED, zero invocations | Stop after row 17. |
+| Complete managed suite for this candidate | 4,353 passed, 0 failed, 211 not executed; 4,564 total | Native opt-ins disabled; frozen compiled source and binaries unchanged. Not-executed count comes from individual TRX results. |
+
+The complete gate is `general-full-managed-fixed`. Product SHA-256 is
+`61A747E1DE546FDDC2819B426099DA2DDB77306E588868DA6D238CDA2B1B1994`,
+test assembly SHA-256 is
+`5E2F6CF1419CDE52B841E44EF07B2F051942D001252CBE3958768FB10A652062`,
+and helper SHA-256 is
+`96E990FCE811B9F59966B93FF2EE78F91BB55A7368D72D4309A283A21CC3ECE7`.
+Its terminal receipt verifies unchanged compiled source and binaries, normal
+worker exit and successful checked creator-desktop close. The earlier
+`general-full-managed` attempt refused source drift before any test command;
+it is not an executed failing test suite. The exact source formatting was
+restored before the accepted run. No native acceptance follows from this gate.
+
+Access's terminal gate is `DIAGNOSTIC_PASS`, with `FullMatrixQualified=false`.
+Both cases compare all General fields and synthetic module/class hashes and
+references. They do not invoke the legacy COM metadata setters, normalize the
+malformed COM HelpFile getter, enable macro content, change trust policy or
+qualify compiled CHM help content. Earlier failed scalar metadata paths remain
+failed; the explicit native General path has separate acceptance.
+
+The Access helper observes original worker exit code 0, sentinel thread exit
+and absence of remaining host windows, followed by one successful creator
+`CloseDesktop` with error 0. The input desktop remains Default with no switches
+or owned foreground observations. Registration restoration is verified; exact
+task removal uses no forced host/helper termination. No Access remains.
+
+Publisher's original PID `183824` verifies native HelpContextID 321 after one
+field write and one OK. Its sole adapter Save reports verified, certain and
+code-preserved. The original process exits normally with code 0. Fresh PID
+`182060` opens the disposable publication, but all pipe connection attempts
+fail before any `status` request is emitted. The add-in load log contains no
+construction/connection/bridge entry for that fresh PID. Its AddIn.Connect and
+LoadBehavior are not observed in this campaign, so their values are unknown.
+Independent Astra high review identifies this as a fresh activation gap, not
+a native General timeout or a reason to repeat the metadata write.
+
+The Publisher helper correctly retains ownership while that fresh host still
+has windows; creator-desktop close is not attempted. Guarded cleanup terminates
+the exact fresh host and helper once each, without Save or Quit, after verified
+registration restoration. Their task is removed and no Publisher remains.
+This forced fresh exit does not qualify shutdown or disk readback.
+
+Two subsequent read-only API diagnostics use the same compiled candidate.
+`publisher-general-nativeom-dispatch` queries each of the three exact owned
+VBE command bars once through `OBJID_NATIVEOM` and standard `IID_IDispatch`.
+Every successful return identifies `IAccessible`, not a CommandBar object;
+no Application getter or AddIn.Connect setter is invoked. This proves no
+supported route through those observed objects, not universal API absence.
+
+`publisher-general-manager-readonly` opens a verified copy of the publication
+saved by the normally exited original process. Its fixed 45-second budget
+expires during MSAA exploration after expansion of the Add-Ins popup, before
+the manager or any bridge request. The observed popup is not unavailable;
+the manager command's post-expansion enabled state remains unobserved. There
+are no Load writes, metadata writes or saves. Both diagnostics dispose their
+fixtures normally, verify registration restoration and checked desktop close,
+and remove their exact tasks without forced host/helper termination.
+
+The subsequent `publisher-general-manager-menuroles` diagnostic preserves
+complete child-role discovery and reads names only for actual menu items. It
+reaches the exact manager before its fixed deadline. Its historical load gate
+then refuses the read-only scenario because load authorization is deliberately
+false. MSAA selection and the checked Load control are observed, but the new
+native selection getters, Cancel and bridge readback are not reached. There
+are no Load, Connect, metadata or Save writes. The unsettled manager retains
+the original host for separately guarded cleanup; this harness refusal does
+not establish a product activation or selection defect.
+Cleanup verifies registration restoration and the exact original launch,
+birth, image and private-desktop ownership before terminating that host and
+retained helper once each. The exact task is removed, no Publisher remains,
+and no Save or Quit is replayed. These forced exits are not normal shutdown
+or fresh-disk acceptance.
+
+Evidence is under `C:\Users\init-\Documents\Codex\q012-20261003-next`:
+`publisher-general-ansiguard`, `access-general-ansiguard` and their corresponding
+`desktop-*` lifecycle/cleanup receipts, `general-full-managed-fixed`,
+`publisher-general-nativeom-dispatch` and `publisher-general-manager-readonly`.
+At that checkpoint, Q-012 remained **PARTIAL**; no code
+coverage measurement is taken.
+
+## Q-012 native General candidate and desktop API investigation (2026-10-03)
+
+The `publisher-general-approvalfix` campaign is bound to source
+`d24960ee61025465e698c2256ebb79ffa74668f9` plus its frozen pending-source
+manifest on `codex/q012-office-20261002`. Product MVID is
+`6f0ca8b6-a167-4237-b939-3a72435b1bef`, SHA-256
+`D84D6BECE1AB0B80133A187B99137D21C1B906F806BC120A9297E77AFA7DA3EA`.
+
+| Gate | Result | Scope |
+| --- | --- | --- |
+| Focused managed gate | 637 passed, 0 failed, 0 skipped | General operation, native controls, project guards, debugger command, assistant approvals, bridge/session boundaries and previous focused cases. |
+| Native General HelpFile, row 16 | Failed | One field write; exact readback mismatch; no OK, adapter Save or fresh reopen. |
+| Native General HelpContextID, row 17 | BLOCKED, zero invocations | Stopped after the HelpFile failure. |
+| Complete managed suite for this candidate | NOT_RUN | Earlier complete-suite acceptance belongs to a different candidate. |
+
+The original Publisher process is `159512`, started
+`2026-10-03T19:19:40.2424286Z`. A bounded read-only Win32 snapshot confirms
+that the five General edit controls are ANSI. The HelpFile value contains
+`Owned help été_??_ß.chm` instead of the requested Japanese characters; the
+other four values match their baseline. This is actual native character loss,
+not successful Unicode persistence. The write receipt reports one field
+attempt, retained-modal uncertainty, no retry and no persistence proof.
+
+Temporary registration restoration is verified. Guarded cleanup observes the
+original Publisher and helper exits after one forced termination each, removes
+their exact limited task, and confirms no Publisher remains. It sends no Save
+or Quit and never inspects or launches Access. Forced termination is not normal
+shutdown acceptance.
+
+Earlier General managed attempts remain aborted evidence: the original
+contract/preparation failure and the later approval-dialog synchronization
+context hang do not qualify the suite. The corrected focused gate pumps an
+explicit bounded test context on its owning thread; production STA dispatch
+is unchanged by that test correction.
+
+A separate real Win32 probe, without Office, observes successful single
+`CloseDesktop` calls in two MTA cases: creator close and close after creator
+exit. The parent and input desktop stay Default; borrowed handles are never
+closed. These cases do not prove the helper's STA lifecycle, global desktop
+destruction or correctness of an unchecked close. Independent Astra high
+review recommends recording close attempt/result and retaining failed ownership
+without a native close retry. Later source changes require a new candidate gate.
+
+Evidence is under `C:\Users\init-\Documents\Codex\q012-20261003-next`:
+`publisher-general-approvalfix`, `desktop-publisher-general-approvalfix`,
+`publisher-general-approvalfix/native-ui-snapshot.json` and
+`desktop-close-api-results.json`. At that checkpoint, Q-012 remained **PARTIAL**; no code coverage
+measurement is taken.
+
+## Q-012 typed VBIDE and normal Publisher candidate (2026-10-03)
+
+These results are bound to source `d24960ee61025465e698c2256ebb79ffa74668f9`
+plus each frozen pending-source manifest on `codex/q012-office-20261002`.
+The tested product MVID is `49d558b2-d62b-4a83-8db3-e327e0391dcd`, SHA-256
+`0EB259BC6B36A3ED83101886EA44AF69720D4E781C3289C26D6321C9AF529055`.
+Later native General work is a different candidate and does not inherit this acceptance.
+
+| Gate | Result | Candidate-specific limit |
+| --- | --- | --- |
+| Original complete managed run | 4,201 passed, 1 failed, 205 skipped | Session deletion test preparation race; original failure retained. |
+| Corrected complete managed run | 4,202 passed, 0 failed, 205 skipped | Test SHA-256 `86FFB9049C3320F4CBF4253A05AAB46C9D26AE0DAA4DDA120AFFEF2BC2793EDB`; native opt-ins disabled. |
+| Publisher security focused gate | 532 passed, 0 failed | Test SHA-256 `C26E11385BF8E7FEFD1F0C243614118B31CCAB04CBC23C7EB794B084A43B4CAB`. |
+| Publisher connected native bank | 5 passed, 1 failed, 1 blocked | Selected rows 7–11 and 13 passed/failed respectively; row 15 stopped before invocation. |
+| Separate Publisher HelpContextID | 1 failed | Only previously unexecuted row 15; no repetition of accepted native rows. |
+
+The accepted Publisher operations are adapter-only Save with fresh module,
+class and UserForm-state readback, reference addition by GUID/file, reference
+removal and Description. They prove the connected candidate, one final adapter
+Save, independent fresh-process disk readback and normal original/fresh exits.
+The security-bank plan SHA-256 is
+`8805B09D9DB9378E429B5EB784D4A6C6022EC551D41C73E52F3FFF997132F5E6`.
+It uses a private Windows desktop, process-local ForceDisable before synthetic
+Open, stop after the first native failure and a native hang deadline without dumps.
+
+Publisher HelpFile fresh metadata readback expects `C` but receives `U+3A43`.
+The failure is preserved without heuristic Unicode decoding. Its processes exit
+normally. The separate HelpContextID setter fails with HRESULT `0xA04FF470`;
+final Save and fresh reopen are not executed. Its retained original process and
+helper require guarded forced cleanup. Forced cleanup is not normal-exit proof.
+Both campaigns verify temporary registration restoration. Their limited tasks
+are removed and no owned Access or Publisher remains after cleanup.
+
+A real, read-only PrintWindow capture proves the retained Publisher VBE,
+code pane and docked assistant are visible on the private desktop. White WPF
+regions may reflect capture/compositor limitations; this is not complete UI or
+UserForm Designer acceptance. The capture invokes no COM, keyboard action or
+desktop switch. At that checkpoint, Q-012 remained **PARTIAL**; no coverage measurement is taken.
+
+Evidence is under `C:\Users\init-\Documents\Codex\q012-20261003-next`:
+`publisher-disabled-bank`, `publisher-helpcontext-single`, their desktop/cleanup
+receipts, `publisher-disabled-ui-capture/result`, and the complete managed-run
+receipts. The later journal regression build succeeds, but has a different
+test assembly and is not covered by the earlier full managed result.
+
+## Q-012 current Access metadata candidate (2026-10-03)
+
+D6 is bound to source `188d50c32835a3efe5f06caa475a5df1f8c4adb6` plus its
+frozen pending-source manifest on `codex/q012-office-20261002`. Product MVID is
+`c6100492-0933-4923-9026-7f466bed44a7`, SHA-256
+`5C97CA688347BFF16CE79623395FA556D1690FB97EB1AF106E039DB1E0E82A79`.
+Test assembly SHA-256 is
+`21145CE645F49F79BDA0071AEFE7445FE8E8B155B3855B2C78D87989AADE4E41`.
+The isolated solution build succeeds without warnings or errors. Native plan
+SHA-256 is `9B27F3B5841EAD61F2C2B4B9F316A7454F0E79865FC55FE0FF007802783125D4`.
+
+| Gate | Result | Scope |
+| --- | --- | --- |
+| Focused managed gate | 454 passed, 0 failed | Includes the two selected cached-scope UI cases. |
+| Native adapter matrix | 1 failed, 14 NOT_RUN | Only row 14, Access HelpContextID, selected; one scenario invocation. |
+| Complete default managed gate | 4,151 passed, 0 failed, 205 skipped, 4,356 total | No native opt-ins; one complete run, runner exit 0. |
+
+Independent static review finds no blocker in the scoped implementation; this
+does not prove native acceptance. The new Access-only dispatch validates the
+VBProject I4 GET/PROPERTYPUT contract, identity, revision, owning VBE UI thread
+and current authorization before one Invoke. The final cached authorization
+refreshes the actual chat selection without another host read. Failed outcomes
+never trigger an alternative setter or mutation replay. This candidate is
+**not a qualified native setter repair**.
+
+Original Access PID `30876`, start `2026-10-03T10:36:48.7539228Z`, is verified
+on `VBAiTests_2b8deda63259404896e22f3f54a288fe`. Bridge status proves Connected,
+the exact PID and loaded D6 MVID. The already connected add-in requires no
+Connect setter. Sequence 28 requests HelpContextID 321 with revision
+`60c46597f373f9af72089b1c92c38c989e2d42d47ab67f476b935d7195ffce9d`.
+The terminal response fails with HRESULT `0x80020009` (DISP_E_EXCEPTION),
+EXCEPINFO scode `0xEC2B11D8`, without a deferred callback.
+
+The planned read-only post-failure probe observes **0 to 321**: descriptor, CLR
+and raw getters agree, and Saved changes from true to false. This establishes
+a partial live mutation despite a failed call. The getter canary does not prove
+production PUT buffer integrity; PUT integrity observations are not serialized
+in the failure receipt. The failure remains a failure. Adapter Save after this
+mutation and fresh-process persistence are **NOT_RUN**; the earlier disposable
+baseline save is preparation. The read-only probe is enabled in the frozen plan;
+setter probes remain disabled. No causal setter workaround is established.
+
+One original Quit returns; normal Access exit code 0 is observed at
+`2026-10-03T10:36:59.3861225Z`. Native terminal state is `FAILED_OR_BLOCKED`,
+with verified registration restoration. Worker `300` and helper `34000` exit
+naturally with code 1. Their Ready task is removed; no owned Office process
+remains. Input desktop stays Default with zero switches. The cleanup receipt's
+initial `Addins` lookup is not comparable to the fixture's `Addins64` snapshots.
+The separate corrected read-only receipt observes HKCU Addins64 DWord 3 and
+no HKLM key; neither registry key nor the original receipt is rewritten.
+
+The complete managed gate finishes at `2026-10-03T10:55:49.4002221Z`, console
+duration 13 m 43 s. Its terminal receipt confirms the candidate bytes and all
+**1,047 frozen C# files unchanged**; this inventory is not a coverage denominator.
+The 205 individual NotExecuted TRX rows establish skipped scenarios, despite
+the aggregate notExecuted counter being zero. The child PATH includes the
+existing Node runtime, SHA-256
+`3602F2BB1A10F2CBAB4C36886218A33C1AB3DB87290E73B033C46C77147D0237`;
+no global PATH or native opt-in is changed.
+
+The managed worker runs on `VBAiTests_3882889fd8f147749f28f4bf738feeca` and
+records test exit 0. Helper/campaign and outer limited-task terminal receipts
+are missing. Helper `38640`, worker `10888` and their testhost `8196` are
+subsequently absent; the task is Ready with result `0xC000013A` and is removed.
+No termination is sent. The cause remains unproven: passing tests do not prove
+normal helper exit or a complete helper lifecycle. No Office process remains.
+
+Evidence under `artifacts/q012-20261003`: `d6-access-i4`,
+`desktop-d6-access-i4`, `d6-build.log`, `d6-loadbehavior-correction.json`,
+`managed-i4-final`, `desktop-managed-i4-final/cleanup.json`,
+`scalar-native-independent-review` and `scalar-native-dispatch-review`.
+At that checkpoint, Q-012 remained **PARTIAL**. HelpFile and Publisher remain separate open gates;
+no coverage measurement is taken.
+
+## Q-012 preceding scalar and connection gates (2026-10-03)
+
+D4 and D5 use product MVID `ca41e0b5-6894-44b1-9f47-1054e0d0ffc0`, SHA-256
+`5CF152C779E14F323011E1DB014380FE77EBB25A96A448F9EEC0E7CB462A49A5`,
+from the same source HEAD plus their respective frozen pending manifests.
+D4 test SHA-256 is
+`AFE292C6E4AA5167C6334A1D2CA0FD6995BA686B7C00542B373E51D9FFE178B6`;
+D5's later fixture-only assembly SHA-256 is
+`15FFF58AAE670C86D9BFF7D09E14567420E8D4E8BF9FCC5E96ED3CB16D3AD5B1`.
+
+| Candidate / gate | Result | Native limit |
+| --- | --- | --- |
+| D4 focused | 385 passed, 0 failed | Explicit scalar PROPERTYPUT; no native repair acceptance. |
+| D4 native | 1 failed, 14 NOT_RUN | Initial status timeout before setter; loaded MVID unproven. |
+| D4 complete default managed | 4,082 passed, 0 failed, 205 skipped, 4,287 total | Exit 0; no native opt-ins. |
+| D5 focused | 400 passed, 0 failed | Later test assembly; product bytes unchanged. |
+| D5 native | 1 failed, 14 NOT_RUN | One claimed Connect succeeds; native HelpContextID setter fails. |
+
+D4's default run freezes 1,043 C# files without drift and uses the same Node
+runtime above. Its helper lifecycle also lacks terminal receipts; Ready task
+result `0xC000013A` is not normal-exit proof. The task is removed and its helper
+and worker are absent. D4 native original Access `20856` and helper `42828`
+require checked forced cleanup; normal exit and persistence are unqualified.
+The separate read-only loading preflight observes Access `35712` disconnected
+before and after VBE visibility, without bridge request or Connect setter.
+It is forced closed once; helper `20176` exits normally and its task is removed.
+
+D5 proves the original Access `45900` and loaded product MVID after one guarded
+Connect setter. Sequence 27's value-PROPERTYPUT fails with HRESULT `0xE19D7318`;
+the post-setter value is **NOT_OBSERVED**, Save/reopen **NOT_RUN**. One Quit
+produces normal original exit 0; worker and helper exit naturally with code 1.
+Registration restoration is verified and the Ready task is removed. The later
+HKCU LoadBehavior observation differs from its in-process snapshot without
+a fixture/root registry write; no causal attribution or rewrite is inferred.
+These prior gates do not qualify D6 or later assemblies.
+
+Evidence under `artifacts/q012-20261003`: `d4-scalar`, `desktop-d4-scalar`,
+`access-load-preflight`, `desktop-access-load-preflight`, `managed-scalar-final`,
+`desktop-managed-scalar-final`, `managed-scalar-source-check.json`,
+`d5-owned-connect`, `desktop-d5-owned-connect` and `d5-product-copy.json`.
+
+## Q-012 remaining Publisher and HelpFile prerequisites (2026-10-03)
+
+The finite two-bar Publisher diagnostic obtains accessible IDispatch objects,
+but both exact CommandBar queries fail with `0x80004002` and Application name
+binding with `0x80020006`. No property Invoke, document creation or Save occurs.
+The separate reverse-association trial dismisses only the exact owned recovery
+question once; normal mode remains unproven. Application.CommandBars then fails
+with `0x8004002F` before Count/Item, NativeOM, document creation or Save.
+Publisher `9160` and `46788` are each forced closed once through checked owned
+handles, their helper tasks removed, and no owned Office process remains.
+Forced cleanup and interface diagnostics do not qualify normal exit or persistence.
+
+Installed Publisher metadata exposes no Application.VBE member; valid downstream
+VBIDE MainWindow/HWnd metadata cannot supply this missing association. No guessed
+API or native worker is introduced for that hypothesis. The offline HelpFile
+inspection preserves the disposable ACE database hash and finds matching path
+bytes in PROJECT-like blocks, without identifying an active VBA stream. It does
+not prove persistence or justify heuristic decoding of a malformed live value.
+The Publisher matrix is not replayed behind failed prerequisites.
+
+Evidence under `artifacts/q012-20261003`: `publisher-dispatch-probe-v2`,
+`desktop-publisher-dispatch-probe-v2`, `publisher-commandbars-probe`,
+`desktop-publisher-commandbars-probe`, `publisher-vbe-association-review` and
+`access-helpfile-storage-review`. These diagnostics expand no native acceptance.
+
+
+## Q-012 Publisher raw-dispatch diagnostic refusal (2026-10-03)
+
+A single separately claimed diagnostic starts a disposable owned Publisher
+process on an inactive desktop. Its reviewed plan SHA-256 is
+`07368451126B788A13C754E0B525684B2C9CADA403DDB2FA113D7009CDD48CD0`.
+The result is **BLOCKED before NativeOM**, with worker state
+`READONLY_DIAGNOSTIC_REFUSED_OR_UNAVAILABLE`; it is not Publisher adapter
+acceptance and does not expand D3 or change Q-012's PARTIAL verdict.
+
+The first complete startup inventory visits one window and finds no owned
+root. The next complete inventory visits 19 windows, finds 12 owned roots
+and no command bars, and records `KnownModalObserved=true`. That flag is
+derived solely from window class `#32770` or a `bosa_sdm` prefix. A startup
+dialog-class candidate therefore triggers conservative refusal. No visibility,
+enabled-state, caption or control evidence is captured: the receipt does not
+establish a visible modal, recovery prompt or causal startup explanation.
+The lack of bars in this startup snapshot does not establish broader interface
+absence.
+
+The diagnostic records **0 NativeOM attempts, 0 CommandBar queries, 0 type/name
+interrogations, 0 COM property getters, 0 Invoke calls, 0 UI actions,
+0 COM activations, 0 Save attempts and 0 Quit attempts**. No native-interface
+fallback, request replay or diagnostic rerun occurs.
+
+Owned Publisher PID `56776`, original start
+`2026-10-03T00:56:52.7449011Z`, retains native process handle `2816` for cleanup.
+The single authorized termination returns successfully; original exit code
+`3759276033` (`0xE0120001`) is observed at
+`2026-10-03T00:56:53.1629696Z`, with no cleanup error. This is forced cleanup,
+not normal Quit or saved-document acceptance. The watchdog observes the
+terminal worker after **2,932 ms**, with **0 native actions**, rather than
+expiring or terminating it. Helper PID `44816` exits naturally with code 1;
+the owned limited task is observed Ready and removed at
+`2026-10-03T00:58:06.5934942Z`. No owned Office process remains.
+
+Evidence is under `artifacts/q012-20261003/publisher-dispatch-probe`:
+`plan.json`, `worker-claim.json`, `worker-journal.jsonl`,
+`worker-receipt.json` and `watchdog-receipt.json`, together with the
+`desktop-publisher-dispatch-probe` worker/exit receipts and
+`publisher-probe-task-cleanup.json` in the parent evidence directory.
+No product/test C# source or D3 assembly changes for this diagnostic.
+Earlier full-managed, D3, D2 and D1 results below retain their recorded scope.
+
+## Q-012 final default managed gate and Node controls (2026-10-03)
+
+The complete default managed suite uses the unchanged D3 compiled candidate:
+product MVID `fff6a372-bd26-48b8-b47d-27acaa90c7b9`, SHA-256
+`82F556FF777462C0EBA5B9D6A96EEB6E6A96A55A4E9CACEDD3B36AB65411A24E`,
+bound to source `488de2d38bd134d97ab84bf7103626dedefdcfd5` plus the frozen D3
+pending-source manifest. `managed-source-check.json` compares **1,032 compiled
+source files**, reports no changes and matches the frozen product hash.
+No C# source or compiled candidate is changed for these runs.
+
+`managed-final/managed-final.trx` and its console report **4,078 passed,
+2 failed, 205 skipped, 4,285 total**. The default gate is **FAILED**, with runner
+exit 1, reported duration **14 m 31 s**, and TRX finish
+`2026-10-03T00:50:40.1551331Z`. The failed scenarios are:
+
+- `VBAi.Tests.NativeExportTraceTests.TraceScriptPreservesPidPathPrivacyAndPairedNativeStatus`.
+- `VBAi.Tests.Scenarios.Editor.MonacoLanguageScriptScenarios.LanguageAndEditingProvidersPassTheirCompleteScenarioMatrix`.
+
+Both fail with `System.ComponentModel.Win32Exception` reporting file not found
+when starting `node`/`node.exe` from the worker PATH. Their original failures
+remain recorded. The console and result-row outcomes identify the skipped
+cases; the TRX aggregate `notExecuted` counter itself is zero and is not used
+to silently reclassify those skips as passes.
+
+A separate filter containing exactly those methods changes only its child
+worker PATH to include the existing Node executable. Node SHA-256 is
+`3602F2BB1A10F2CBAB4C36886218A33C1AB3DB87290E73B033C46C77147D0237`.
+`node-controls/node-controls.trx` reports **2 passed, 0 failed, 0 skipped**,
+with runner exit 0 and TRX finish `2026-10-03T00:41:22.3641564Z`.
+That scope verifies the Node-dependent scripts with the explicit runtime;
+it neither repairs production source nor produces a green single-run complete
+suite. The separate results are not added to the failed full-suite counters.
+No new coverage measurement is collected.
+
+All `VBAi_RUN_*` opt-ins are removed from both workers; their terminal receipts
+record **0 native opt-ins**. The full worker stays on inactive desktop
+`VBAiTests_ed3c8470d407446ebd9dcb6b9cf4be6c`, and the Node control worker on
+`VBAiTests_33752937567e4e03baf5d97ea48d95c5`. Both record input desktop
+`Default` and zero desktop switches. No Office native-host application is
+opened or native mutation retried for these managed runs. The original helpers
+exit naturally with codes 1 and 0 respectively; their owned limited tasks are
+observed Ready and removed. No forced termination is needed.
+
+Evidence is retained under `artifacts/q012-20261003`:
+`managed-final/managed-final.trx`, `managed-final/console.log`,
+`managed-final/terminal.json`, `managed-source-check.json`,
+`node-controls/plan.json`, `node-controls/node-controls.trx`,
+`node-controls/terminal.json`, the `desktop-managed-final` and
+`desktop-node-controls` worker/exit receipts, `managed-task-cleanup.json`
+and `node-task-cleanup.json`. The separate post-D3 parser/verdict checks below
+remain unchanged. Native D3 and earlier D2/D1 acceptance limits remain in their
+own records; this failed full managed gate does not expand them.
+
+## Q-012 final-boundary and typed-Publisher refresh (2026-10-03)
+
+The frozen D3 plan records source `488de2d38bd134d97ab84bf7103626dedefdcfd5`,
+branch `codex/q012-office-20261002`, and the pending-source SHA-256 manifest.
+Product MVID is `fff6a372-bd26-48b8-b47d-27acaa90c7b9`; SHA-256 is
+`82F556FF777462C0EBA5B9D6A96EEB6E6A96A55A4E9CACEDD3B36AB65411A24E`.
+This working-tree candidate includes the final pre-confirmation deadline guard
+and the typed Publisher CommandBar acquisition fixture. It is not a clean-source
+full managed-suite gate and supplies no new coverage measurement.
+
+The focused managed gate reports **383 passed, 0 failed**. The **2** final
+confirmation deadline cases and **9** typed acquisition/refusal cases now pass.
+The subset native matrix reports **15 scenarios: 1 PASS, 1 FAIL, 6 BLOCKED,
+7 NOT_RUN**. Only the module/class Access case and initial Publisher case are
+invoked, once each. Other Access cases are not selected; remaining Publisher
+cases are blocked by the retained same-host process. The terminal is
+`2026-10-03T00:30:48.207013Z`.
+
+| Native scope | D3 terminal observation |
+| --- | --- |
+| Access module/class adapter Save/reopen | PASS on the candidate containing the final deadline guard. The normal approved confirmation records `ConfirmationAttempts=1`, `ConfirmationQueued=true`, `ConfirmationPending=false`, `Verified=true`, `Uncertain=false`. Exact source survives independent fresh-process disk readback; original and fresh processes exit normally with code 0. This native success does not exercise an expired-deadline refusal. |
+| Publisher adapter Save/reopen | FAIL before publication creation or Save. Complete native inventory observes 54 windows, 17 owned roots and two `MsoCommandBar` windows in 9 ms. The first retained bar, HWND `72820236`, returns `E_NOINTERFACE` (`0x80004002`) and pointer 0 for exact CommandBar IID `000c0304-0000-0000-c000-000000000046`. No typed cast, NativeOM Application getter or NativeOM Application IUnknown comparison occurs. The retained ROT application's baseline IUnknown was read beforehand; it does not associate the bar with that application. No fallback, second-bar query or NativeOM retry occurs. This does not establish that every bar or Publisher version lacks the interface, or identify a broader cause. |
+| Remaining Publisher reference and metadata scenarios | BLOCKED without invocation by retained Publisher PID `39584`. No Publisher adapter acceptance is added. |
+| Other Access source/reference/metadata scenarios | NOT_RUN on D3. Earlier D2 active-module, reference additions by GUID/file, reference removal and Description acceptance retains its exact candidate scope. D2 HelpFile readback and HelpContextID setter failures remain unresolved. |
+
+The exact inactive desktop is
+`VBAiTests_da3d3cab914746039507212cf8fa25f6`, with successful private/input
+window and sentinel inventories. Temporary COM registration restoration is
+verified. Original campaign worker PID `6736` exits with code 1. No input-desktop
+switch, focus-dependent input, shared trust/profile change or uncertain
+mutation retry occurs.
+
+Separate authorized cleanup closes the retained owned Publisher process with
+one termination attempt, then observes its absence. Its exit-code receipt was
+not persisted because a subsequent helper DateTime/string identity comparison
+refused; no cleanup replay is made. Do not infer a Publisher exit code or normal
+exit from absence. Original helper PID `45396` has forced exit -1 observed
+at `2026-10-03T00:32:15.1952303Z`. The limited task is observed Ready and removed
+after terminal completion. All owned Office processes and the helper are closed.
+These cleanup facts do not qualify Publisher persistence or normal shutdown.
+
+Evidence is retained under `artifacts/q012-20261003`: `d3/plan.json`,
+`d3/summary.json`, `d3/unit/unit.trx`, native TRX files and their `host-evidence`
+save/readback/lifecycle receipts, `desktop-d3/desktop/campaign-exit.json`,
+`d3-forced-cleanup.json` and `d3-task-cleanup.json`. Local artifacts are not
+release assets. Post-D3 product, fixture or campaign-runner changes remain
+outside this frozen evidence and require separate validation. D2/D1 records
+below retain their original outcomes. Q-012 remains PARTIAL; see
+[release qualification](release-qualification.md#q-012-inactive-desktop-checkpoint-2026-10-03).
+
+After D3, the campaign runner changes only its final qualification verdict:
+`FullMatrixQualified` requires an overall `PASS` and registration
+`Restored=true`, `Verified=true`, after restoration completes. Direct tests of
+the actual function AST in Windows PowerShell 5.1 report **6 passed, 0 parser
+errors, 0 native invocations** at `2026-10-03T00:34:35.9784215Z`, recorded in
+`artifacts/q012-20261003/final-verdict-check.json`. This separately validates
+the script verdict on runner SHA-256
+`F778CD5BF71F26A74501F91F4E14204F1C04870A2FAA927027D45127CA8EB43A`;
+no behavioral assembly change or native replay follows D3, and no expanded
+host acceptance is inferred. Final commit cleanup removes trailing whitespace
+from one blank line in the confirmation source after the recorded runs;
+the compiled candidate remains unchanged.
+
+## Q-012 Access confirmation and native matrix (2026-10-03)
+
+The frozen D2 plan records source `488de2d38bd134d97ab84bf7103626dedefdcfd5`,
+branch `codex/q012-office-20261002`, and the SHA-256 manifest of pending
+production, fixture and campaign changes. Product MVID is
+`13e099db-1193-4fdc-8a13-d99f319cb8a4`; product SHA-256 is
+`3B84577330261ECCA8DA2B3BA1488B36F08BDC1FED3F30D8E0F8D64C84AA22FA`.
+This manifest-bound working-tree candidate is not a clean-source full managed
+suite gate and has no new coverage measurement.
+
+The focused managed gate reports **372 passed, 0 failed**, including the
+**56** pure Access confirmation cases and approved-context/runtime-policy guards.
+The native matrix reports **15 scenarios: 6 PASS, 3 FAIL, 6 BLOCKED**.
+Every invoked native case has one original invocation; blocked cases have none.
+The campaign terminal is `2026-10-03T00:11:08.9436104Z`.
+
+| Native scope | D2 terminal observation |
+| --- | --- |
+| Access active module and module/class adapter Save/reopen | PASS. Exact source survives a fresh process reading the existing disposable database from disk. The module/class response records `ConfirmationAttempts=1`, `ConfirmationQueued=true`, `ConfirmationPending=false`, `Verified=true`, `Uncertain=false`. Original and fresh processes exit normally with code 0. |
+| Access reference addition by GUID/file, reference removal and Description | PASS. Each case verifies its source/reference/metadata scope after native adapter Save and independent fresh-process disk readback, with normal original and fresh exits. |
+| Access HelpFile | FAIL on exact fresh-process metadata readback. Original adapter Save is verified and both processes exit normally. The expected path begins with `E`; the exposed fresh value begins with `㩅`. This does not establish accepted metadata persistence, a stored-byte cause or a heuristic conversion repair. |
+| Access HelpContextID | FAIL at the original scalar setter with HRESULT `0xF76262F8`. The response preserves possible partial mutation and forbids automatic retry. Native adapter Save and fresh reopen are NOT_RUN. The owned original process exits normally with code 0. |
+| Publisher adapter Save/reopen | FAIL during fixture bootstrap. Complete class inventory observes 54 windows, 17 owned roots and two owned `MsoCommandBar` windows in 9 ms. The first retained bar returns `S_OK` for NativeOM `IDispatch`; its dynamic `Application` getter throws `RuntimeBinderException` before IUnknown association, `NewDocument` or Save. This establishes a reached dispatch/binding failure rather than absent bars; its cause remains unproven. |
+| Remaining Publisher reference and metadata scenarios | BLOCKED without invocation by retained same-host PID `8080`. No Publisher adapter mutation or persistence acceptance is added by D2. |
+
+The Access product guard accepts only the observed French save-all prompt,
+on the exact native VBE process/UI thread, with qualified controls and a
+complete selected list of approved Type1/Type2 module/class objects. It refuses
+preexisting, changed, unknown or ambiguous dialogs. Approved identity, source,
+revision, native selection and runtime authorization are revalidated before
+its single queued affirmative response. Queuing alone is not saved-state
+acceptance: the modal must disappear and existing saved-state guards must pass.
+Unknown locales and prompt shapes remain refused.
+
+Owned windows and the worker remain on inactive desktop
+`VBAiTests_e2d35c767d4a4413962d924ef9b4d04d`, with successful private/input and
+sentinel inventories. No input-desktop switch, focus-dependent input, shared
+trust/profile change or uncertain mutation retry occurs. Temporary COM
+registration restoration is verified. Original campaign worker PID `26752`
+exits with code 1. No Access process remains retained.
+
+Separate maintainer-authorized exact-start/image-checked cleanup observes
+Publisher PID `8080` forced exit at `2026-10-03T00:12:57.9908008Z` and helper
+PID `27684` forced exit at `2026-10-03T00:12:58.0068998Z`. The owned limited task
+is observed Ready and removed after terminal completion; its cleanup receipt
+records exit -1 from the forced helper exit. These forced exits do not qualify
+Publisher normal exit or persistence. No Save or Quit is replayed.
+
+Evidence is retained under `artifacts/q012-20261003`: `d2/plan.json`,
+`d2/summary.json`, `d2/unit/unit.trx`, native case TRX files and their
+`host-evidence` save/readback/lifecycle receipts,
+`desktop-d2/desktop/campaign-exit.json`, `d2-forced-cleanup.json` and
+`d2-task-cleanup.json`. These local artifacts are not release assets.
+
+After D2, source adds a final confirmation deadline refusal and **2 new pure
+cases, NOT_RUN at this checkpoint**. That change and the pending typed
+Publisher ownership follow-up require a separately frozen candidate. D2 does
+not qualify later source or expand earlier host acceptance. Q-012 remains
+PARTIAL for Access help metadata and Publisher bootstrap/persistence; see
+[release qualification](release-qualification.md#q-012-inactive-desktop-checkpoint-2026-10-03).
+
+## Q-012 Access save-confirmation and Publisher ownership diagnostic (2026-10-03)
+
+The frozen D1 plan selects the Access module/class and Publisher adapter-only
+save/reopen cases on an inactive Windows desktop. It records source
+`488de2d38bd134d97ab84bf7103626dedefdcfd5`, branch
+`codex/q012-office-20261002`, and the SHA-256 manifest of the pending diagnostic
+and ownership-fixture changes. Product MVID is
+`f4c810aa-f877-45f8-bf05-268f14890f39`; product SHA-256 is
+`AC2FA448E3C4CB77F730FBAC1FB25105D450B97152D82ED96194D818D880E131`.
+This is a manifest-bound working-tree candidate, not a clean-source full-suite
+gate or a production repair.
+
+The focused managed gate reports **234 passed, 0 failed**; it includes the
+Publisher ownership probe's pure guard/refusal tests and the existing classes
+named in the frozen filter. It is not the full managed suite and has no new
+coverage measurement. The native matrix reports **0 PASS, 2 FAIL, 13 NOT_RUN**.
+Each selected case has one original invocation; unselected cases have none.
+The campaign terminal is `2026-10-02T23:27:55.2625815Z`.
+
+| Selected native scope | Terminal observation |
+| --- | --- |
+| Access module/class adapter Save/reopen | FAIL. Owned PID `44812` invokes `VBE.CommandBars.ID3` once. The original response retains `Verified=false`, `Uncertain=true` and the timeout reason `ProjectSaved remains false`. The immediate read-only native snapshot, captured before cleanup, observes the owned `Enregistrer` multi-object confirmation with `Oui`, `Non pour tout`, `Annuler` and a ListBox; the VBE root is disabled. This establishes a pending native save confirmation for this invocation, rather than an unexplained command no-op. One returned Quit does not produce original process exit within the 15-second bound; the process is retained at the campaign terminal and fresh-disk reopen is NOT_RUN. |
+| Publisher adapter Save/reopen | FAIL during bootstrap. Owned PID `55952` queries the retained ROT application's `IOleWindow` once and receives `E_NOINTERFACE` (`0x80004002`); `GetWindow` is never called. The documented command-bar fallback then refuses an incomplete or ambiguous inventory before any NativeOM/container getter, ownership verification, `NewDocument` or Save. That candidate's failure receipt omits the bar count and enumeration result, so it does not establish whether bars were absent, multiple or incompletely enumerated. The original process is retained at the campaign terminal. |
+
+The exact French Publisher recovery prompt receives one bounded native No click,
+which returns; normal mode is not thereby proven. The worker/owned-window and
+sentinel inventories establish separation from the input desktop
+on `VBAiTests_3527fc12886d4ed196fda39e5d3cd496`. No input-desktop switch,
+focus-dependent input or shared trust/profile configuration change occurs.
+Temporary COM registration restoration is verified in the terminal summary.
+Retention above describes the campaign terminal, not a later process inventory.
+
+A subsequent Access read-only forensic request from the `Default` desktop
+refuses its first owned-HWND guard before control messages. Its receipt reports
+`READONLY_UNAVAILABLE`, no native mutation and no Save/Quit retry. It supplies
+no proof that the native UI changed and does not supersede the pre-cleanup
+confirmation snapshot. No production fix, saved-disk acceptance or normal exit
+is established by D1 or this refusal. A separately claimed limited worker on
+the exact private desktop later reads the Access confirmation: native button
+IDs are Yes `1`, No to All `7` and Cancel `2`; ListBox `5142` has style
+`0x5001016B` and both `Module: AdapterOnlyClass` and
+`Module: AdapterOnlyModule` selected. The worker then refuses Publisher identity
+before any Publisher read because its frozen start-time string omits the
+trailing fractional zero present in the actual identity. The original failed
+worker result is preserved without retry; it does not prove that Publisher
+changed process identity.
+
+Following the maintainer's instruction to close all owned Office instances after
+each campaign, separate original-start/image-checked forced cleanup observes
+Access PID `44812` and Publisher PID `55952` exit at
+`2026-10-02T23:55:08Z`, and helper PID `27996` exit at
+`2026-10-02T23:55:42Z`. The owned limited task is observed Ready and removed.
+The cleanup inventory finds no remaining MSACCESS/MSPUB process. No Save or Quit
+is replayed, and these forced exits do not replace the failed normal-exit results.
+The post-force database byte copy has matching SHA-256
+`DF56C43A0B793CD36310204DD86322335314CE87B6E5783427702EB8C173D0F1`,
+without database consistency or native reopen acceptance. The preceding PID
+`6880` cleanup and active-module-only acceptance remain as recorded below.
+
+Evidence is retained under `artifacts/q012-20261003`: `d1/plan.json`,
+`d1/summary.json`, `d1/unit/unit.trx`, the selected native TRX files, Access
+`adapter-only-progress.json` and `shutdown-lifecycle.json`, and Publisher
+`adapter-only-progress.json` in their native `host-evidence` folders. The
+separate forensic receipts are `access-dialog-read.json` and
+`access-dialog-read-context.json`, followed by
+`diagnostics-d1-modal-read/worker-receipt.json`. Separate cleanup receipts are
+`d1-forced-cleanup.json`, `d1-helper-forced-cleanup.json`,
+`d1-access-byte-copy.json` and `d1-task-cleanup.json`.
+These local artifacts are not release assets.
+Q-012 remains PARTIAL; the current gate is in
+[release qualification](release-qualification.md#q-012-inactive-desktop-checkpoint-2026-10-03).
+
+## Q-012 inactive-desktop persistence campaign (2026-10-03)
+
+The frozen `campaign-visible-access` plan records source
+`a9e7609bf48bcb556fddfa9c62318f692ec86008` on
+`codex/q012-office-20261002` together with the SHA-256 manifest of the pending
+desktop-launch, fixture and campaign infrastructure. This is a manifest-bound
+working-tree candidate, not a clean-source full-suite gate. Product MVID is
+`98d873fd-d783-49db-95e8-4f84036479d0`; product SHA-256 is
+`4E14EE21C0B5496612E9DF33371F3FA858888989B87582E56CB841AB18B31EA1`.
+
+The targeted managed filter reports **220 passed, 0 failed**. It covers the
+other-host persistence, project reopen identity, Publisher startup/cleanup,
+metadata mutation, scalar-property and private-desktop fixture tests named in
+the frozen plan; it is not the complete managed suite and has no new coverage
+measurement. The native plan has **15 scenarios: 1 PASS, 1 FAIL, 13 BLOCKED**.
+Each invoked native scenario has one original invocation; blocked scenarios have
+none. The campaign terminal is `2026-10-02T22:29:02.9386840Z`.
+
+| Native scope | Terminal observation |
+| --- | --- |
+| Access active-module-only adapter Save/reopen | PASS. The MVID-verified candidate selected by temporary registration saves the disposable existing database through the product adapter. Original PID `36324` exits normally, a distinct fresh PID `36664` reads the exact saved module from disk, and that process also exits normally with code 0. |
+| Access module/class adapter Save/reopen | FAIL. The original save response has `Verified=false`, `Uncertain=true`, `SaveApi=VBE.CommandBars.ID3`; subsequent `ProjectSaved` remains false. One returned Quit does not produce original PID `6880` exit within the 15-second observation bound. The process and its native handle are retained at the campaign terminal; fresh-disk reopen is NOT_RUN. |
+| Remaining Access scenarios | Six BLOCKED by the retained same-host process: reference addition by GUID/file, reference removal, Description, HelpFile and HelpContextID. |
+| Publisher scenarios | Seven BLOCKED without another startup invocation. The preceding startup-gated candidate fails at the pre-NewDocument `ActiveWindow` ownership getter with `0x8004002F`. A subsequent read-only inventory of that exact owned process finds no dialog; it does not establish a causal fix or qualify publication creation/save. |
+
+The worker and owned Office windows remain on the generated inactive desktop
+`VBAiTests_6533a9425b254bb09e2b76f7fc781ac4`. Successful private/input window
+inventories and the retained sentinel support the isolation proof; no input
+desktop switch or focus-dependent input is used. This isolates windows, not the
+shared Windows profile. No shared user trust/profile configuration is changed,
+and temporary COM registration restoration is verified. At the campaign terminal,
+the private helper retains ownership because host windows remain. Following the
+maintainer's explicit request to close Access for another qualification session,
+separate exact-start/image-checked forced cleanup observes Access PID `6880` exit
+at `2026-10-02T22:42:05Z` and helper PID `55360` exit at
+`2026-10-02T22:42:46Z`. Neither remains retained. No Save or Quit is replayed;
+forced cleanup does not qualify normal exit or persistence.
+The owned limited task then reaches `CHILD_TERMINAL` with exit -1 from the forced
+helper exit, is observed Ready, and is unregistered; no other task is changed.
+
+The pre-exit byte backup is blocked by the exclusive file lock. The post-force
+byte copy has matching SHA-256
+`1CBC049F52EB5C2ACA138672F53EA379A07FA17727C24E4E6C0AD19CCB3A248B`,
+without consistency or native reopen acceptance. The attempted retained-host
+read-only snapshot fails during PowerShell script preparation before any native
+or bridge call. The cause of the module/class save result, command-ID routing or
+a possible modal state remains unproven; no production repair is inferred.
+
+Evidence is retained under `artifacts/q012-20261002`: frozen
+`campaign-visible-access/plan.json`, terminal `campaign-visible-access/summary.json`,
+managed `campaign-visible-access/unit/unit.trx`, native scenario TRX files and
+their `host-evidence/Access` save/lifecycle receipts,
+`run-visible-access-desktop/desktop/failure.json`, and the earlier owned Publisher
+`diagnostics/publisher-c3-dialog-read-receipt.json`. Separate cleanup receipts are
+`diagnostics/visible-access-forced-cleanup.json`,
+`diagnostics/visible-access-post-force-byte-copy.json`,
+`diagnostics/visible-access-helper-forced-cleanup.json`, and the pre-call refusal
+`diagnostics/visible-access-retained-read-receipt.json`. These local artifacts are not
+published release assets. Q-012 remains PARTIAL; earlier accepted scopes are
+preserved in [compatibility](compatibility.md), with the remaining gate in
+[release qualification](release-qualification.md#q-012-inactive-desktop-checkpoint-2026-10-03).
+
 ## Q024 resumption and PR20 integration (2026-10-03)
 
 ### Published integration candidate

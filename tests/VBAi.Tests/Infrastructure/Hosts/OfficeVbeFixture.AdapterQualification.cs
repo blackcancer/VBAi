@@ -90,6 +90,7 @@ namespace VBAi.Tests.Integration
             object window = null;
             try
             {
+                RecordAccessAdapterDiagnostic(phase, observation);
                 observation["ApplicationVersion"] = ObserveGetter(() => Convert.ToString(((dynamic)application).Version), phase, "Application.Version");
                 using (var process = Process.GetProcessById(ProcessId))
                 {

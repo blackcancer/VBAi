@@ -18,6 +18,47 @@ namespace VBAi.Tests.Unit
     /// <summary>Vérifie l’historique, la persistance locale et la réparation des conversations.</summary>
     public sealed partial class ChatWindowStateTests
     {
+        [STATestMethod, TestCategory("Unit")]
+        public void CachedMetadataScopeRefreshesBusyUiSelectionWithoutReadingTheHost()
+        {
+            using (var runtime = new RuntimeScope())
+            using (var window = LoadedWindow(runtime.Session))
+            {
+                var tools = Get<LlmVbeTools>(window, "tools");
+                var originalSession = Get<ChatSessionState>(window, "currentSession");
+                string originalBound = tools.BoundProject;
+                object other = AddScope(window, @"C:\Owned\Other.xlsm");
+                Set(window, "busy", true);
+                Get<ComboBox>(window, "scopePicker").SelectedItem = other;
+                Assert.AreEqual(originalBound, tools.BoundProject, "Busy scope switching leaves the old binding cached until guarded.");
+                int reads = 0; runtime.Host = request => { reads++; throw new InvalidOperationException("No host read is permitted here."); };
+                tools.ValidateCachedScope();
+                Assert.AreEqual(@"C:\Owned\Other.xlsm", tools.BoundProject); Assert.AreEqual(0, reads);
+                Assert.AreSame(originalSession, Get<ChatSessionState>(window, "currentSession"));
+                Set(window, "busy", false);
+            }
+        }
+
+        [STATestMethod, TestCategory("Unit")]
+        public void CachedMetadataScopeRefusesUnavailableLoadingAndMissingSelectionWithoutHostReads()
+        {
+            using (var runtime = new RuntimeScope())
+            using (var window = LoadedWindow(runtime.Session))
+            {
+                var tools = Get<LlmVbeTools>(window, "tools"); int reads = 0;
+                runtime.Host = request => { reads++; throw new InvalidOperationException("No host read is permitted here."); };
+                foreach (string flag in new[] { "sessionViewUnavailable", "loadingScope" })
+                {
+                    Set(window, flag, true);
+                    Assert.ThrowsException<InvalidOperationException>(() => tools.ValidateCachedScope());
+                    Set(window, flag, false);
+                }
+                Set(window, "busy", true); Get<ComboBox>(window, "scopePicker").SelectedIndex = -1;
+                Assert.ThrowsException<InvalidOperationException>(() => tools.ValidateCachedScope());
+                Assert.AreEqual(0, reads); Set(window, "busy", false);
+            }
+        }
+
         private static void UseLiveProjectCatalogue(RuntimeScope runtime)
         {
             runtime.Host = request => request.Command == "list_projects"
@@ -470,6 +511,48 @@ namespace VBAi.Tests.Unit
             }
         }
 
+        /// <summary>Settles the initial Codex save and its UI version before replacing its persistence worker.</summary>
+        private static void CompleteInitialSessionPersistence(ChatWindow window, ChatSessionState session)
+        {
+            var client = Get<CodexAppServerClient>(window, "codex");
+            var refresh = Get<ToolStripMenuItem>(window, "refreshModels");
+            var models = Get<ComboBox>(window, "modelPicker");
+            Assert.IsNotNull(client, "The initial Codex client was not created.");
+            var ready = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+            var dispatcher = System.Windows.Threading.Dispatcher.CurrentDispatcher;
+            bool observing = true;
+            Action observe = () => {
+                dispatcher.VerifyAccess();
+                if (!observing) return;
+                if (refresh.Enabled && models.Enabled && models.Items.Count != 0 &&
+                    !string.IsNullOrEmpty(client.ThreadId) && session.CodexThreadId == client.ThreadId)
+                    ready.TrySetResult(true);
+            };
+            EventHandler catalogueChanged = (sender, args) => observe();
+            Action<string> threadReady = id => {
+                if (!dispatcher.HasShutdownStarted) dispatcher.BeginInvoke(observe);
+            };
+            refresh.EnabledChanged += catalogueChanged;
+            client.ThreadReady += threadReady;
+            try { observe(); CompleteOnSta(ready.Task); }
+            finally
+            {
+                observing = false;
+                refresh.EnabledChanged -= catalogueChanged; client.ThreadReady -= threadReady;
+            }
+
+            Call(window, "SaveCurrentSession");
+            Assert.IsTrue(Get<ChatPersistenceWorker>(window, "persistenceWorker").Flush(5000));
+            // Flush guarantees notification enqueueing; this barrier runs after its Normal-priority UI callbacks.
+            CompleteOnSta(dispatcher.InvokeAsync(
+                new Action(() => { }), System.Windows.Threading.DispatcherPriority.Background).Task);
+            var saved = Get<ChatSessionStore>(window, "sessionStore").List(session.Scope).Find(item => item.Id == session.Id);
+            Assert.IsNotNull(saved);
+            Assert.IsFalse(string.IsNullOrWhiteSpace(session.StorageVersion));
+            Assert.AreEqual(saved.StorageVersion, session.StorageVersion,
+                "The initial save's durable version has not reached the UI session.");
+        }
+
         [STATestMethod, TestCategory("Unit")]
         public void DeletePendingBehindAnInFlightSaveBlocksSessionChangesAndLateDraftSaves()
         {
@@ -479,6 +562,7 @@ namespace VBAi.Tests.Unit
             using (var release = new ManualResetEventSlim())
             {
                 var deleted = Get<ChatSessionState>(window, "currentSession");
+                CompleteInitialSessionPersistence(window, deleted);
                 var previous = Get<ChatPersistenceWorker>(window, "persistenceWorker");
                 Get<System.Windows.Threading.DispatcherTimer>(window, "saveTimer").Stop();
                 Assert.IsTrue(previous.Flush(5000));
@@ -495,9 +579,11 @@ namespace VBAi.Tests.Unit
                 previous.Dispose();
                 int writes = 0;
                 Exception saveFailure = null;
+                string firstVersion = null;
+                Exception firstError = null;
                 using (var worker = new ChatPersistenceWorker(ChatWindow.HistoryPath(), (snapshot, version, error) => {
                     if (error != null) Interlocked.CompareExchange(ref saveFailure, error, null);
-                    if (Interlocked.Increment(ref writes) == 1) { inFlight.Set(); release.Wait(5000); }
+                    if (Interlocked.Increment(ref writes) == 1) { firstVersion = version; firstError = error; inFlight.Set(); release.Wait(5000); }
                 }))
                 {
                     Set(window, "persistenceWorker", worker);
@@ -512,6 +598,11 @@ namespace VBAi.Tests.Unit
                     try
                     {
                         Call(window, "SaveCurrentSession"); Assert.IsTrue(inFlight.Wait(5000));
+                        Assert.IsNull(firstError, firstError?.ToString());
+                        Assert.IsFalse(string.IsNullOrWhiteSpace(firstVersion), "The first save did not return a durable version.");
+                        var firstSaved = Get<ChatSessionStore>(window, "sessionStore").List(deleted.Scope).Find(item => item.Id == deleted.Id);
+                        Assert.IsNotNull(firstSaved);
+                        Assert.AreEqual(firstVersion, firstSaved.StorageVersion);
                         ChatWindow.ShowNotice = (owner, text, caption, buttons, icon) => DialogResult.Yes;
                         deletion = (Task)Call(window, "DeleteSelectedSessionAsync");
                         Assert.IsFalse(deletion.IsCompleted);

@@ -6,6 +6,86 @@ namespace VBAi.Tests.Unit
     public sealed partial class LlmVbeToolsBoundaryTests
     {
         [DataTestMethod]
+        [DataRow("policy")][DataRow("binding")][DataRow("mode")]
+        public void FinalMetadataAuthorizationUsesOnlyCachedGuardsAfterHostScopeRead(string changed)
+        {
+            var fixture = new ToolFixture(); fixture.Tools.BoundProject = "P"; int scopeReads = 0, writes = 0, cachedReads = 0, beforeFinal = -1; Request captured = null;
+            string actualSelection = "P";
+            fixture.Tools.ValidateScope = () => scopeReads++;
+            fixture.Tools.ValidateCachedScope = () => { cachedReads++; fixture.Tools.BoundProject = actualSelection; };
+            fixture.Tools.Execute = request => {
+                if (request.Command != "set_project_property") return VBAi.Tests.Infrastructure.VbeToolBoundaryFixture.Execute(request);
+                captured = request;
+                request.RevalidateProjectPropertyAuthorization(true);
+                beforeFinal = scopeReads;
+                if (changed == "policy") fixture.Settings.VbeEditApproval = "ReadOnly";
+                if (changed == "binding") actualSelection = "Other"; // The UI selector changes while the previous BoundProject remains cached.
+                if (changed == "mode") fixture.Tools.Mode = ChatMode.Plan;
+                try { request.RevalidateProjectPropertyAuthorization(false); writes++; }
+                finally { Assert.AreEqual(beforeFinal, scopeReads, "The final phase must not dispatch another host scope read."); }
+                return Response.Success(new { Changed = true });
+            };
+            Failed(fixture.Tools.InvokeAsync("set_project_property", Json.Serialize(new { Project = "P", Property = "HelpContextID", Value = 321, ExpectedProjectVersion = "version" })).GetAwaiter().GetResult(), "cached guard revoked");
+            Assert.AreEqual(0, writes); Assert.IsNull(captured.RevalidateProjectPropertyAuthorization);
+            Assert.AreEqual(1, cachedReads);
+            Assert.AreEqual(beforeFinal, scopeReads, "Final authorization cannot hide an extra host read inside an error response.");
+        }
+
+        [DataTestMethod]
+        [DataRow("policy", false)][DataRow("binding", false)][DataRow("mode", false)][DataRow("scope", false)]
+        [DataRow("policy", true)][DataRow("binding", true)]
+        public void ProjectMetadataAuthorizationRefusesRevokedDirectAndCatalogWrites(string changed, bool catalog)
+        {
+            var fixture = new ToolFixture(); fixture.Tools.BoundProject = "P"; int writes = 0; bool scope = true, callbackSeen = false; Request captured = null;
+            fixture.Tools.ValidateScope = () => { if (!scope) throw new InvalidOperationException("Scope revoked"); };
+            fixture.Tools.Execute = request => {
+                if (request.Command != "set_project_property") return VBAi.Tests.Infrastructure.VbeToolBoundaryFixture.Execute(request);
+                captured = request; Assert.IsNotNull(request.RevalidateProjectPropertyAuthorization);
+                callbackSeen = request.RevalidateProjectPropertyAuthorization != null;
+                if (changed == "policy") fixture.Settings.VbeEditApproval = "ReadOnly";
+                if (changed == "binding") fixture.Tools.BoundProject = "Other";
+                if (changed == "mode") fixture.Tools.Mode = ChatMode.Plan;
+                if (changed == "scope") scope = false;
+                request.RevalidateProjectPropertyAuthorization(true); request.RevalidateProjectPropertyAuthorization(false); writes++; return Response.Success(new { Changed = true });
+            };
+            string arguments = Json.Serialize(new { Project = "P", Property = "HelpContextID", Value = 321, ExpectedProjectVersion = "version" });
+            if (catalog) arguments = Json.Serialize(new { ToolName = "set_project_property", ArgumentsJson = arguments });
+            Failed(fixture.Tools.InvokeAsync(catalog ? "invoke_tool" : "set_project_property", arguments).GetAwaiter().GetResult(), "revoked metadata authorization");
+            Assert.AreEqual(0, writes); Assert.IsNotNull(captured); Assert.IsNull(captured.RevalidateProjectPropertyAuthorization);
+            Assert.IsTrue(callbackSeen, "The refusal must come from the installed runtime guard.");
+        }
+
+        [DataTestMethod]
+        [DataRow("Automatic", false)][DataRow("AskEachTime", false)][DataRow("Automatic", true)]
+        public void ProjectMetadataAuthorizationReusesApprovalAndClearsAfterOriginalDispatch(string policy, bool failed)
+        {
+            var fixture = new ToolFixture(); fixture.Tools.BoundProject = "P"; fixture.Settings.VbeEditApproval = policy;
+            int approvals = 0, writes = 0; Request captured = null;
+            fixture.Tools.ShowApproval = (dialog, owner) => { approvals++; return System.Windows.Forms.DialogResult.Yes; };
+            fixture.Tools.Execute = request => {
+                if (request.Command != "set_project_property") return VBAi.Tests.Infrastructure.VbeToolBoundaryFixture.Execute(request);
+                captured = request; Assert.IsNotNull(request.RevalidateProjectPropertyAuthorization);
+                request.RevalidateProjectPropertyAuthorization(true); request.RevalidateProjectPropertyAuthorization(false); writes++;
+                if (failed) throw new InvalidOperationException("Original setter failed");
+                return Response.Success(new { Changed = true });
+            };
+            string result = fixture.Tools.InvokeAsync("set_project_property", Json.Serialize(new { Project = "P", Property = "HelpContextID", Value = 321, ExpectedProjectVersion = "version" })).GetAwaiter().GetResult();
+            if (failed) Failed(result, "original metadata failure"); else Success(result, "metadata approval");
+            Assert.AreEqual(1, writes); Assert.AreEqual(policy == "AskEachTime" ? 1 : 0, approvals); Assert.IsNull(captured.RevalidateProjectPropertyAuthorization);
+        }
+
+        [TestMethod]
+        public void MetadataAuthorizationCannotBeSerializedOrInstalledByJson()
+        {
+            var request = new Request { Command = "set_project_property" };
+            request.RevalidateProjectPropertyAuthorization = validateScope => Assert.Fail("Serialization must not invoke authorization.");
+            Assert.IsFalse(Json.Serialize(request).Contains("RevalidateProjectPropertyAuthorization"));
+            Assert.IsNull(Json.Deserialize<Request>("{\"Command\":\"set_project_property\",\"RevalidateProjectPropertyAuthorization\":true}").RevalidateProjectPropertyAuthorization);
+            Assert.IsNull(typeof(Request).GetField("RevalidateProjectPropertyAuthorization"));
+            Assert.IsNull(typeof(Request).GetProperty("RevalidateProjectPropertyAuthorization"));
+        }
+
+        [DataTestMethod]
         [DataRow(false, false)][DataRow(true, false)][DataRow(false, true)][DataRow(true, true)]
         public void ScalarFailurePhaseSurvivesDirectAndCatalogResponsesWithoutRetry(bool catalog, bool readback)
         {
@@ -165,6 +245,124 @@ namespace VBAi.Tests.Unit
                 StringAssert.Contains(result, "\"Uncertain\":true");
                 StringAssert.Contains(result, "do not retry");
                 Assert.IsFalse(result.Contains("private-path")); Assert.AreEqual(1, saves);
+            }
+            finally { System.Threading.SynchronizationContext.SetSynchronizationContext(previous); }
+        }
+
+        [DataTestMethod]
+        [DataRow("readOnly", false)][DataRow("readOnly", true)]
+        [DataRow("binding", false)][DataRow("binding", true)]
+        [DataRow("askEachTime", false)][DataRow("unknownPolicy", false)]
+        [DataRow("scope", false)][DataRow("mode", false)]
+        public void DeferredSaveAuthorizationBlocksConfirmationAfterRevocation(string revoked, bool catalog)
+        {
+            var previous = System.Threading.SynchronizationContext.Current;
+            var context = new SaveQueueContext();
+            System.Threading.SynchronizationContext.SetSynchronizationContext(context);
+            try
+            {
+                var fixture = new ToolFixture(); fixture.Tools.BoundProject = "P";
+                bool scopeValid = true; int saves = 0, confirmations = 0, dialogs = 0;
+                fixture.Tools.ValidateScope = () => { if (!scopeValid) throw new InvalidOperationException("Scope revoked"); };
+                fixture.Tools.ShowApproval = (dialog, owner) => { dialogs++; return System.Windows.Forms.DialogResult.Yes; };
+                Request captured = null;
+                var ready = new System.Threading.Tasks.TaskCompletionSource<object>();
+                fixture.Tools.SaveHostDocumentNative = async request => {
+                    captured = request; Assert.IsNotNull(request.RevalidateSaveAuthorization);
+                    request.RevalidateSaveAuthorization(); saves++; // Simulates the original ID3 mutation.
+                    await ready.Task;
+                    try { request.RevalidateSaveAuthorization(); }
+                    catch (InvalidOperationException)
+                    {
+                        return new { SaveInvoked = true, Verified = false, Uncertain = true,
+                            Reason = "Authorization was revoked before native confirmation; no replay." };
+                    }
+                    confirmations++;
+                    return new { SaveInvoked = true, Verified = true, Uncertain = false };
+                };
+                string arguments = Json.Serialize(new { Project = "P", ExpectedProjectVersion = "version", ExpectedHostPath = @"C:\fixture\Owned.accdb" });
+                if (catalog) arguments = Json.Serialize(new { ToolName = "save_host_document", ArgumentsJson = arguments });
+                var pending = fixture.Tools.InvokeAsync(catalog ? "invoke_tool" : "save_host_document", arguments);
+                context.Drain(); Assert.AreEqual(1, saves); Assert.IsFalse(pending.IsCompleted);
+                if (revoked == "readOnly") fixture.Settings.VbeEditApproval = "ReadOnly";
+                if (revoked == "askEachTime") fixture.Settings.VbeEditApproval = "AskEachTime";
+                if (revoked == "unknownPolicy") fixture.Settings.VbeEditApproval = "Other";
+                if (revoked == "binding") fixture.Tools.BoundProject = "Other";
+                if (revoked == "scope") scopeValid = false;
+                if (revoked == "mode") fixture.Tools.Mode = ChatMode.Plan;
+                ready.SetResult(null); context.Drain();
+                string result = pending.GetAwaiter().GetResult();
+                Success(result, "original save remains uncertain after " + revoked);
+                StringAssert.Contains(result, "\"Uncertain\":true");
+                Assert.AreEqual(0, confirmations); Assert.AreEqual(1, saves); Assert.AreEqual(0, dialogs);
+                Assert.IsNull(captured.RevalidateSaveAuthorization, "The runtime authorization must end with the native await.");
+            }
+            finally { System.Threading.SynchronizationContext.SetSynchronizationContext(previous); }
+        }
+
+        [DataTestMethod]
+        [DataRow("Automatic")][DataRow("AskEachTime")]
+        public void DeferredSaveConfirmationReusesOriginalApprovalWithoutAnotherDialog(string policy)
+        {
+            var fixture = new ToolFixture(); fixture.Tools.BoundProject = "P"; fixture.Settings.VbeEditApproval = policy;
+            int approvals = 0, checks = 0, confirmations = 0;
+            Request captured = null;
+            fixture.Tools.ShowApproval = (dialog, owner) => { approvals++; return System.Windows.Forms.DialogResult.Yes; };
+            fixture.Tools.SaveHostDocumentNative = request => {
+                captured = request; Assert.IsNotNull(request.RevalidateSaveAuthorization);
+                request.RevalidateSaveAuthorization(); checks++;
+                request.RevalidateSaveAuthorization(); checks++; confirmations++;
+                return System.Threading.Tasks.Task.FromResult<object>(new { SaveInvoked = true, Verified = true });
+            };
+            Success(InvokeSaveContract(fixture, Json.Serialize(new { Project = "P", ExpectedProjectVersion = "version",
+                ExpectedHostPath = @"C:\fixture\Owned.accdb" })), "authorized native confirmation");
+            Assert.AreEqual(policy == "AskEachTime" ? 1 : 0, approvals);
+            Assert.AreEqual(2, checks); Assert.AreEqual(1, confirmations); Assert.IsNull(captured.RevalidateSaveAuthorization);
+        }
+
+        [TestMethod]
+        public void DeferredSaveAuthorizationClearsOnNativeFailure()
+        {
+            var fixture = new ToolFixture(); fixture.Tools.BoundProject = "P"; Request captured = null; int saves = 0;
+            fixture.Tools.SaveHostDocumentNative = request => {
+                captured = request; Assert.IsNotNull(request.RevalidateSaveAuthorization);
+                request.RevalidateSaveAuthorization(); saves++;
+                return System.Threading.Tasks.Task.FromException<object>(new InvalidOperationException("Original native failure"));
+            };
+            Failed(InvokeSaveContract(fixture, Json.Serialize(new { Project = "P", ExpectedProjectVersion = "version",
+                ExpectedHostPath = @"C:\fixture\Owned.accdb" })), "native failure");
+            Assert.AreEqual(1, saves); Assert.IsNull(captured.RevalidateSaveAuthorization);
+        }
+
+        [TestMethod]
+        public void SaveRuntimeAuthorizationIsNotPartOfTheJsonProtocol()
+        {
+            var request = new Request { Command = "save_host_document", Project = "P" };
+            request.RevalidateSaveAuthorization = () => Assert.Fail("Serialization cannot invoke a runtime authorization.");
+            string serialized = Json.Serialize(request);
+            Assert.IsFalse(serialized.Contains("RevalidateSaveAuthorization"));
+            var parsed = Json.Deserialize<Request>("{\"Command\":\"save_host_document\",\"RevalidateSaveAuthorization\":true}");
+            Assert.IsNull(parsed.RevalidateSaveAuthorization, "JSON cannot install a runtime delegate.");
+            Assert.IsNull(typeof(Request).GetField("RevalidateSaveAuthorization"));
+            Assert.IsNull(typeof(Request).GetProperty("RevalidateSaveAuthorization"));
+        }
+
+        [DataTestMethod]
+        [DataRow(false)][DataRow(true)]
+        public void SaveRuntimeAuthorizationCannotBeSuppliedAsToolArgument(bool catalog)
+        {
+            var fixture = new ToolFixture(); fixture.Tools.BoundProject = "P"; int saves = 0;
+            fixture.Tools.SaveHostDocumentNative = request => { saves++; return System.Threading.Tasks.Task.FromResult<object>(new { Saved = true }); };
+            string arguments = Json.Serialize(new { Project = "P", ExpectedProjectVersion = "version",
+                ExpectedHostPath = @"C:\fixture\Owned.accdb", RevalidateSaveAuthorization = true });
+            var previous = System.Threading.SynchronizationContext.Current;
+            var context = new SaveQueueContext(); System.Threading.SynchronizationContext.SetSynchronizationContext(context);
+            try
+            {
+                if (catalog) arguments = Json.Serialize(new { ToolName = "save_host_document", ArgumentsJson = arguments });
+                var pending = fixture.Tools.InvokeAsync(catalog ? "invoke_tool" : "save_host_document", arguments);
+                context.Drain(); Failed(pending.GetAwaiter().GetResult(), "runtime authorization is not a wire argument");
+                Assert.AreEqual(0, saves);
             }
             finally { System.Threading.SynchronizationContext.SetSynchronizationContext(previous); }
         }
@@ -734,9 +932,10 @@ namespace VBAi.Tests.Unit
             {
                 var function = Dict(Dict(Json.DeserializeObject(Json.Serialize(definition)))["function"]);
                 string name = (string)function["name"];
-                if (name == "read_immediate" || name == "inspect_local_scalars")
+                if (name == "read_immediate" || name == "inspect_local_scalars" ||
+                    name == "read_project_general" || name == "set_project_general")
                 {
-                    // Their awaited validation/dispatch matrix is in LlmVbeAsyncValidationTests.
+                    // Awaited validation/dispatch matrices cover these asynchronous commands separately.
                     string refused = tools.Invoke(name, "{}");
                     Failed(refused, name);
                     StringAssert.Contains(refused, "requires InvokeAsync");

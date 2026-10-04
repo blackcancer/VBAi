@@ -17,13 +17,14 @@ namespace VBAi.Tests.Integration
 
         /// <summary>Prepares a baseline before final mutations, preserving original adapter and independent cleanup failures.</summary>
         internal static void Run(string host, string scenario, Action<OfficeVbeFixture> baseline,
-            Action<OfficeVbeFixture> mutate, Action<OfficeVbeFixture> verify, TestContext context)
+            Action<OfficeVbeFixture> mutate, Action<OfficeVbeFixture> verify, TestContext context, bool serializedPublisherSeed = false)
         {
             OfficeVbeFixture fixture = null;
             Exception failure = null, originalOutcome = null;
             try
             {
-                fixture = OfficeVbeFixture.Start(host);
+                if (serializedPublisherSeed && host != "Publisher") throw new InvalidOperationException("Only Publisher has the explicit serialized qualification seed.");
+                fixture = serializedPublisherSeed ? OfficeVbeFixture.StartPublisherSerializedQualificationSeed() : OfficeVbeFixture.Start(host);
                 fixture.RequireAdapterOnlyCleanup();
                 fixture.RecordAdapterStage("ProjectQualificationScope", new { Scenario = scenario,
                     NativeMutationRetryAllowed = false, CompileAllowed = false, PostAdapterHelperSaveAllowed = false });
