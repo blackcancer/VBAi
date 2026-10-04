@@ -511,6 +511,17 @@ hosts have exited. Offline evidence gates can be run without Office:
 powershell.exe -NoProfile -File tools/probes/tests/Test-Q026RecoveryBaseline.ps1
 ```
 
+The existing `VBAi_VBE_INSPECTION_TRACE` opt-in also records bounded Options
+combo metadata on the public read/write completion paths. `OptionsComboInspection`
+distinguishes native ComboBox and UI Automation fallback, with a fixed Font,
+Size, Palette or Other role. Native records retain handle/parent/control identity,
+style, list counts before/after the existing single expansion, selection index
+and observed dropdown cleanup. Missing observations remain null. No labels,
+choice text, values, request content or exception messages are logged. These
+records share the existing event/file limits and can be truncated; unavailable
+logging cannot change the native result. They do not populate an empty catalogue,
+relax revision checks or qualify font-size writes without native acceptance.
+
 Optional `VBAi_TEST_Q026_CLR_TRACE_PLAN` enables test-only capture of the
 historical revision guard. Prefer a separately verified plan with
 `TraceMode: ExactGuardILBreakpoint` and a `GuardILOffset` derived from the frozen

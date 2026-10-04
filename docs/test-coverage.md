@@ -1412,6 +1412,40 @@ The failed native scenario is preserved. No further native campaign is scheduled
 pending the user's explicit confirmation that Q-012 has ended. Q-026 remains
 **OPEN** for the historical causal criterion.
 
+### Q-026 content-free combo observations (2026-10-04)
+
+Source `16ffa13` adds optional native/UIA Options combo observations through
+the existing bounded inspection trace. The isolated Debug/net48/x64 production
+candidate is MVID `9dc786a9-7128-41db-b21e-5bce14c0935f`, SHA-256
+`9F005722C6ED4749F428AD44E111FA4917EC468EC6A1990B96B0C311CA11C7CB`.
+It is **not installed or native VBE-qualified**. The first test-project build
+fails for missing test namespace imports; the corrected build passes without
+warnings/errors (`q026-combo-observation-build-final.log`).
+
+`q026-combo-observation-managed-v1/combo.trx` records **34 passed, 0 failed,
+0 skipped**. The scope includes the Options revision/write guards, bounded
+inspection trace, real disposable standard Win32 combos and simulated UIA
+providers. A genuinely empty list records zero native entries before/after its
+single expansion; a separately simulated native owner populates its list on
+the documented dropdown notification, and the existing reader sees those
+entries without another opening or any selection/edit notification. Empty,
+populated and fallback paths preserve their exact values and close only the
+temporary list they opened. Unavailable logging cannot suppress the native
+ownership refusal; mixed trace events retain the existing cap and exclude
+exception messages, control labels and choice values.
+
+The managed worker runs on inactive desktop
+`VBAiTests_2bb0865561ae456483fff2311c51073c`, with no Office activation,
+input-desktop switch or owned foreground observation. Its original child and
+GUI launcher both exit normally with code 0; its scheduled launch task is
+exported and removed. The user's existing SOLIDWORKS is untouched. Native
+font-size/catalogue diagnosis and the historical revision-drift acceptance
+remain **NOT_RUN / OPEN** pending an explicitly released host interval.
+These observations add evidence for the next native trial, not a causal
+correction or a new coverage percentage. Notification behavior is documented
+by [Microsoft](https://learn.microsoft.com/en-us/windows/win32/controls/cbn-dropdown)
+and its [published Win32 documentation source](https://github.com/MicrosoftDocs/win32/blob/docs/desktop-src/Controls/about-combo-boxes.md).
+
 ### Q-026 offline snapshot review (2026-10-03)
 
 Branch `codex/q026-qualification` starts from `origin/main` at `4b382b9`,
