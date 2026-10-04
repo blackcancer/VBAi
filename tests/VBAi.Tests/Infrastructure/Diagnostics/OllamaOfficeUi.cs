@@ -36,6 +36,7 @@ namespace VBAi.Tests.Integration
         private IntPtr toolContainer, nativeSite;
         private uint ownerThread;
         private AutomationElement root;
+        private readonly HashSet<IntPtr> recordedAncestors = new HashSet<IntPtr>();
         internal bool SentUnsettled { get; private set; }
         internal bool StopEmitted { get; private set; }
 
@@ -178,7 +179,14 @@ namespace VBAi.Tests.Integration
                 uint process; uint thread = GetWindowThreadProcessId(parent, out process);
                 if (process != pid || thread != ownerThread) return false;
                 var element = AutomationElement.FromHandle(parent);
-                if (element.Current.AutomationId != "ChatToolWindow") continue;
+                var cls = new StringBuilder(128); GetClassName(parent, cls, cls.Capacity);
+                var title = new StringBuilder(128); GetWindowText(parent, title, title.Capacity);
+                if (recordedAncestors.Add(parent)) record(new { Phase = "AssistantAncestorIdentity", Hwnd = parent.ToInt64(),
+                    ProcessId = process, NativeThread = thread, Class = cls.ToString(),
+                    AutomationId = element.Current.AutomationId, Type = element.Current.ControlType.ProgrammaticName,
+                    ContainerNameMatches = element.Current.Name == "ChatToolWindow", NativeToolCaptionMatches = title.ToString() == "VBAi",
+                    Parent = GetAncestor(parent, 1).ToInt64() });
+                if (element.Current.AutomationId != "ChatToolWindow" && element.Current.Name != "ChatToolWindow") continue;
                 container = parent; site = GetAncestor(parent, 2);
                 return site != IntPtr.Zero && (container == window || IsChild(container, window)) &&
                     (IsChild(vbe, window) || OwnedByVbe(site));
