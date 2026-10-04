@@ -29,7 +29,7 @@ if ($Prepare) {
     }
     $hosts = @()
     $toolExecutables = @('node.exe','dotnet.exe','git.exe' | ForEach-Object {
-        $tool = (Get-Command $_ -CommandType Application -ErrorAction Stop).Source
+        $tool = (Get-Command $_ -CommandType Application -ErrorAction Stop | Select-Object -First 1).Source
         @{Path=$tool;Sha256=(Get-FileHash -LiteralPath $tool).Hash}
     })
     foreach ($name in @('Excel','Word','PowerPoint','Access','Publisher','Outlook')) {
@@ -38,7 +38,7 @@ if ($Prepare) {
         $hosts += @{Name=$name;Executable=$exe;ProcessName=$exeName;Version=(Get-Item -LiteralPath $exe).VersionInfo.FileVersion;Sha256=(Get-FileHash -LiteralPath $exe).Hash}
     }
     if (-not $ProductSourceCommit) { $ProductSourceCommit = & git -C $repo rev-parse HEAD }
-    $managedClasses = @('NativeExportTraceTests','OllamaQualificationEndpointTests','OllamaQualificationModelTests',
+    $managedClasses = @('OllamaQualificationEndpointTests','OllamaQualificationModelTests',
         'OllamaQualificationProfileTests','OllamaSyntheticWireCaptureTests','OllamaOfficeStreamOracleTests',
         'LlmChatClientCoverageTests','StreamTests','ChatWindowStateTests','LlmVbeToolsBoundaryTests',
         'LlmVbeAsyncValidationTests','LlmVbeToolContractTests','LlmProjectPrivacyTests','ProjectPrivacyBoundaryTests',
@@ -46,7 +46,8 @@ if ($Prepare) {
         'OfficeVbeFixtureDesktopTests','OfficeVbeFixtureDesktopStartupRecoveryTests','OutlookPrivateDesktopTests',
         'OfficeOwnedShutdownEvidenceTests','OutlookVbaTestFixtureShutdownTests')
     $managedFilter = '(TestCategory=Unit|TestCategory=Scenario)&TestCategory!=OllamaUi&(' +
-        (($managedClasses | ForEach-Object {'FullyQualifiedName~VBAi.Tests.Unit.'+$_+'.'}) -join '|') + ')'
+        (($managedClasses | ForEach-Object {'FullyQualifiedName~VBAi.Tests.Unit.'+$_+'.'}) -join '|') +
+        '|FullyQualifiedName~VBAi.Tests.NativeExportTraceTests.)'
     $scenarios = @(
         @{Id='managed';Filter=$managedFilter;Oracle='Focused transport/chat/privacy/desktop/Office lifecycle regressions all pass; includes the Node lookup regression. This gate does not replace the failed broad aggregate. The real-provider OllamaUi case runs separately; native/provider opt-ins are absent'}
         @{Id='tool-roundtrip';Filter='FullyQualifiedName=VBAi.Tests.Integration.OllamaQualificationTests.LocalModelStreamsAndCompletesSyntheticToolRoundTrip';Oracle='Visible HTTP deltas, exactly one qualification_echo with scalar VB_AI_42, exact final marker; retained synthetic wire'}
