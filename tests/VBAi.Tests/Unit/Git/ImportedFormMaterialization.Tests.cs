@@ -417,9 +417,8 @@ namespace VBAi.Tests.Unit
         /// <summary>Changes one exact persisted font descriptor without rewriting the rest of the resource graph.</summary>
         private static VbaGitSnapshot ChangedOwner(VbaGitSnapshot target, int type)
         {
-            byte[] bytes = (byte[])target.Files["Form1.frx"].Clone(); byte[] descriptor = Bindings(target).Single(value => value.Type == type).Descriptor;
-            int offset = Enumerable.Range(0, bytes.Length - descriptor.Length + 1).Single(index => bytes.Skip(index).Take(descriptor.Length).SequenceEqual(descriptor));
-            Array.Copy(BitConverter.GetBytes(90000u), 0, bytes, offset + 6, 4); return Snapshot(bytes);
+            CollectionAssert.AreEqual(FormStreamPaddingTests.ContainerResourceBefore(), target.Files["Form1.frx"]);
+            return Snapshot(UserFormQualificationFontsTests.ResourceWithChangedDeclaredFont(type == 7 ? "Root" : "Frame", 9m));
         }
 
         /// <summary>Constructs a validated single-form snapshot from retained synthetic resources.</summary>

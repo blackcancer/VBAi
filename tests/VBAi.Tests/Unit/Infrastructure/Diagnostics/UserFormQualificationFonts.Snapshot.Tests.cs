@@ -58,9 +58,7 @@ namespace VBAi.Tests.Unit
         public void DeclaredInexactFontCannotBeHiddenByExactNativeReadback(string owner)
         {
             WithQualification(() => {
-                byte[] resource = FormStreamPaddingTests.ContainerResourceBefore();
-                int length = FormStreamPaddingTests.ContainerStreamsBefore()[owner == "Root" ? "/f" : "/i03/f"].Length;
-                RemoveFont(resource, DirectoryStream(resource, length), owner == "Root" ? 8.25m : 8.27m, owner == "Root" ? 9m : 8.25m);
+                byte[] resource = ResourceWithChangedDeclaredFont(owner, owner == "Root" ? 9m : 8.25m);
                 var snapshot = Snapshot(resource);
                 Assert.ThrowsException<AssertFailedException>(() => UserFormQualificationFonts.RequireSnapshot(snapshot, (form, layout) => Fonts()));
             });
@@ -92,6 +90,31 @@ namespace VBAi.Tests.Unit
                 UserFormQualificationFonts.RequireSnapshot(Snapshot(true), (form, layout) => throw new InvalidOperationException("Must not read native state."));
             }
             finally { Environment.SetEnvironmentVariable(UserFormQualificationFonts.OptIn, old); }
+        }
+
+        /// <summary>Changes one declared font through its bounded logical CFB stream, preserving duplicate raw payloads elsewhere.</summary>
+        internal static byte[] ResourceWithChangedDeclaredFont(string owner, decimal replacement)
+        {
+            if (owner != "Root" && owner != "Frame") throw new ArgumentException("A declared fixture font owner is required.", nameof(owner));
+            byte[] resource = FormStreamPaddingTests.ContainerResourceBefore();
+            int length = FormStreamPaddingTests.ContainerStreamsBefore()[owner == "Root" ? "/f" : "/i03/f"].Length;
+            RemoveFont(resource, DirectoryStream(resource, length), owner == "Root" ? 8.25m : 8.27m, replacement);
+            var snapshot = Snapshot(resource);
+            var updated = snapshot.FormFonts(snapshot.Manifest.Components[0]);
+            var original = FormStreamPadding.ReadFontBindings(FormStreamPaddingTests.ContainerStreamsBefore(), FormStreamPaddingTests.ContainerMetadata());
+            Assert.IsNotNull(updated, "The changed fixture must retain a supported complete resource graph.");
+            Assert.AreEqual(2, updated.Length);
+            string changedPath = owner == "Root" ? "" : "Controls/QualificationExtra";
+            foreach (var before in original)
+            {
+                var after = updated.Single(value => value.OwnerPath == before.OwnerPath && value.Type == before.Type);
+                byte[] expected = (byte[])before.Descriptor.Clone();
+                if (before.OwnerPath == changedPath)
+                    Array.Copy(BitConverter.GetBytes(checked((uint)(replacement * 10000m))), 0, expected, 6, 4);
+                CollectionAssert.AreEqual(expected, after.Descriptor, "Only the exact declared owner may change.");
+                FormFontRestoration.ValidateDescriptor(after.Descriptor);
+            }
+            return resource;
         }
 
         private static void WithQualification(Action scenario)
