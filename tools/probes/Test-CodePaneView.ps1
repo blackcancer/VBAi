@@ -46,7 +46,7 @@ try {
         $splitResult = Invoke-Session @{ Command = 'set_code_split'; Project = $project.Name; Module = $module.Name; ExpectedSha256 = $layout.Panes[0].State.Sha256; ExpectedMode = 2; StartLine = 2; Action = 'split'; ControlCaption = $splitControl.Caption }
         if (-not $splitResult.Verified) { throw 'Native code window did not split.' }
     }
-    & (Join-Path $PSScriptRoot 'Inspect-VbeWindowTree.ps1') -HostProcessId $probeProcess.Id | Set-Content -LiteralPath (Join-Path $directory 'code-view-window-tree.json') -Encoding UTF8
+    & (Join-Path $PSScriptRoot 'Inspect-VbeNativeWindows.ps1') -View Tree -HostProcessId $probeProcess.Id | Set-Content -LiteralPath (Join-Path $directory 'code-view-window-tree.json') -Encoding UTF8
     & (Join-Path $PSScriptRoot 'Inspect-DebugTree.ps1') -HostProcessId $probeProcess.Id -NamePattern '.*' | Set-Content -LiteralPath (Join-Path $directory 'code-view-accessibility.json') -Encoding UTF8
     $nativeTree = Get-Content -LiteralPath (Join-Path $directory 'code-view-window-tree.json') -Raw | ConvertFrom-Json
     $codeWindow = @($nativeTree | Where-Object { $_.Class -eq 'VbaWindow' -and $_.Title -eq 'EditorCommandProbe (Code)' -and $_.Visible })

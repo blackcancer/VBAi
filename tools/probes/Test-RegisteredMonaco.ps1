@@ -137,7 +137,7 @@ try {
    [Math]::Abs($bounds.Width-($client.Right-$client.Left)) -le 2 -and [Math]::Abs($bounds.Height-($client.Bottom-$client.Top)) -le 2
   })
  } finally {$vbe.MainWindow.Width=$originalWidth; $vbe.MainWindow.Height=$originalHeight}
- $treeSnapshot=& (Join-Path $PSScriptRoot 'Inspect-VbeWindowTree.ps1') -HostProcessId $probeProcess.Id
+ $treeSnapshot=& (Join-Path $PSScriptRoot 'Inspect-VbeNativeWindows.ps1') -View Tree -HostProcessId $probeProcess.Id
  $treeSnapshot | Set-Content (Join-Path $outputRoot 'window-tree.json')
  $rootRect=[MonacoProbeMouse+Rect]::new(); [void][MonacoProbeMouse]::GetWindowRect([IntPtr]$vbe.MainWindow.HWnd,[ref]$rootRect)
  $rootBitmap=[Drawing.Bitmap]::new($rootRect.Right-$rootRect.Left,$rootRect.Bottom-$rootRect.Top)
