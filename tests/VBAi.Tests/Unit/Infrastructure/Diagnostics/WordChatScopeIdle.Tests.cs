@@ -100,6 +100,26 @@ namespace VBAi.Tests.Unit
         }
 
         [DataTestMethod]
+        [DataRow("initial-guard", 0)]
+        [DataRow("second-good-read", 2)]
+        [DataRow("expanded-read", 1)]
+        [DataRow("collapse-guard", 1)]
+        public void DelayedGuardOrReadCannotAdmitLateAcceptanceOrCollapse(string phase, int expectedReads)
+        {
+            var p = new Probe();
+            p.Read = () => {
+                if (phase == "expanded-read" || phase == "second-good-read" && p.Reads == 2) p.Elapsed = 15000;
+                return Sample(state: phase == "expanded-read" || phase == "collapse-guard"
+                    ? ExpandCollapseState.Expanded : ExpandCollapseState.Collapsed);
+            };
+            p.Guard = () => {
+                if (phase == "initial-guard" || phase == "collapse-guard" && p.Guards == 2) p.Elapsed = 15000;
+            };
+            Assert.ThrowsException<TimeoutException>(() => p.Run());
+            Assert.AreEqual(expectedReads, p.Reads); Assert.AreEqual(0, p.Collapses);
+        }
+
+        [DataTestMethod]
         [DataRow(ExpandCollapseState.PartiallyExpanded)]
         [DataRow(ExpandCollapseState.LeafNode)]
         [DataRow((ExpandCollapseState)42)]

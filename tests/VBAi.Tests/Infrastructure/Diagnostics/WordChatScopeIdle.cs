@@ -28,7 +28,9 @@ namespace VBAi.Tests.Integration
             while (elapsedMilliseconds() < 15000)
             {
                 guard();
+                RequireWithinBound(elapsedMilliseconds);
                 Observation current = read();
+                RequireWithinBound(elapsedMilliseconds);
                 if (current == null) throw new InvalidOperationException("The owned Word scope observation is absent.");
                 if (current.State != ExpandCollapseState.Collapsed && current.State != ExpandCollapseState.Expanded)
                     throw new InvalidOperationException("The owned Word scope picker has an unexpected expansion state.");
@@ -46,6 +48,7 @@ namespace VBAi.Tests.Integration
                     if (current.Enabled && current.ExactSelection && current.State == ExpandCollapseState.Expanded && !collapseIssued)
                     {
                         guard();
+                        RequireWithinBound(elapsedMilliseconds);
                         collapseIssued = true;
                         collapse();
                     }
@@ -53,6 +56,13 @@ namespace VBAi.Tests.Integration
                 pause();
             }
             throw new TimeoutException("The selected saved Word chat scope did not become idle, exact and collapsed.");
+        }
+
+        /// <summary>A delayed UI read or owner guard cannot admit a late success or a late action.</summary>
+        private static void RequireWithinBound(Func<long> elapsedMilliseconds)
+        {
+            if (elapsedMilliseconds() >= 15000)
+                throw new TimeoutException("The selected saved Word chat scope observation exceeded its original bound.");
         }
     }
 }
