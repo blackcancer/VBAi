@@ -4,6 +4,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
+using System.Runtime.CompilerServices;
 using System.Runtime.ExceptionServices;
 using System.Web.Script.Serialization;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -22,6 +23,8 @@ namespace VBAi.Tests.Integration
 
         /// <summary>Instance COM Excel démarrée par la fixture.</summary>
         private object application;
+        /// <summary>Indicates that temporary scenario roots have left the non-inlined execution frame.</summary>
+        private bool scenarioFrameReturned;
         /// <summary>Collection COM des classeurs Excel.</summary>
         private object workbooks;
         /// <summary>Classeur temporaire créé pour isoler les commandes VBE.</summary>
@@ -154,8 +157,8 @@ namespace VBAi.Tests.Integration
         {
             var fixture = Start();
             Exception failure = null;
-            try { scenario(fixture); }
-            catch (Exception error) { failure = error; }
+            failure = ExecuteScenario(scenario, fixture);
+            fixture.scenarioFrameReturned = true;
             try { fixture.Dispose(); shutdownVerified?.Invoke(fixture); }
             catch (Exception cleanup)
             {
@@ -163,6 +166,14 @@ namespace VBAi.Tests.Integration
                 throw;
             }
             if (failure != null) ExceptionDispatchInfo.Capture(failure).Throw();
+        }
+
+        /// <summary>Returns after the scenario frame has released its temporary dynamic COM roots.</summary>
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static Exception ExecuteScenario(Action<ExcelVbeFixture> scenario, ExcelVbeFixture fixture)
+        {
+            try { scenario(fixture); return null; }
+            catch (Exception error) { return error; }
         }
 
         /// <summary>Envoie une commande nommée au pont du processus Excel.</summary>
@@ -232,6 +243,20 @@ namespace VBAi.Tests.Integration
             {
                 Marshal.Release(embeddedGitProjectIdentity);
                 embeddedGitProjectIdentity = IntPtr.Zero;
+            }
+            if (scenarioFrameReturned)
+            {
+                // Drain only after the non-inlined scenario frame returns, before
+                // the one Close/Quit. Preserve the original 10-second exit oracle.
+                diagnostics["ScenarioRcwDrainStarted"] = true;
+                diagnostics["ScenarioRcwDrainCompleted"] = false;
+                writeDiagnostics();
+                var drain = Stopwatch.StartNew();
+                GC.Collect(); GC.WaitForPendingFinalizers();
+                GC.Collect(); GC.WaitForPendingFinalizers();
+                diagnostics["ScenarioRcwDrainCompleted"] = true;
+                diagnostics["ScenarioRcwDrainElapsedMs"] = drain.ElapsedMilliseconds;
+                writeDiagnostics();
             }
             if (owned && workbook != null)
                 try { ((dynamic)workbook).Close(false); }
