@@ -64,9 +64,10 @@ namespace VBAi.Tests.Unit
             using (var host = new Form())
             {
                 string document = Path.Combine(runtime.Root, "Docked.docm");
+                runtime.Vbe.VBProjects[0].FileName = document;
                 runtime.Host = request => Response.Success(request.Command == "list_projects"
                     ? (object)new[] { new { Name = "P", FileName = document, Path = runtime.Root } }
-                    : new { SelectedProject = "P" });
+                    : new { SelectedProject = "P", SelectedProjectPath = document });
                 var priorCache = GitWindow.CacheDirectory;
                 try
                 {
@@ -86,7 +87,7 @@ namespace VBAi.Tests.Unit
                             return DialogResult.Cancel;
                         };
                         Call(chat, "GitHub_Click", null, EventArgs.Empty);
-                        Assert.AreEqual(1, dialogs);
+                        Assert.AreEqual(1, dialogs, Get<System.Windows.Forms.Label>(chat, "status").Text);
                     }
                 }
                 finally { GitWindow.CacheDirectory = priorCache; }
