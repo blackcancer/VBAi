@@ -4,14 +4,34 @@
 not a claim of universal Office compatibility. Test totals and measured coverage
 are maintained only in [recorded validation](test-coverage.md).
 
+## Q024 resumption checkpoint (2026-10-05)
+
+Q024 resumes from frozen main `22a7af6`. The isolated solution build, complete
+default managed gate and waited synthetic UI action matrix pass, with exact
+source/binary checks, normal original-process exits and verified private desktop
+release. Disabled native/provider/diagnostic scenarios remain skipped, not
+accepted. A read-only limited-user COM Preview passes. Exact identities, scope
+and results are in [recorded validation](test-coverage.md#q024-prerequisite-gate-on-main-2026-10-05).
+
+The complete native batch is prepared before execution, in this order: canonical
+same-name Word document isolation and stale SaveAs refusal; actual owner-menu
+Git capture/checkpoint/compare; actual embedded Chat-to-Git scope/modal entry.
+A first failure stops dependencies without replaying uncertain mutations.
+Registration Apply and all native cases remain NOT_RUN while the concurrent
+Q028 Office13 campaign lacks verified settings/COM restoration. Its terminal
+failed/uncertain Access receipt is preserved. No Q024 host is launched and no
+registration is changed by this preparation. Q024 remains OPEN; Q027 remains
+deferred and the overall release decision is unchanged.
+
 ## PR25 integration checkpoint (2026-10-05)
 
-PR preparation integrates main `447be8e` with the Q020/Q030 qualification source
-`66568b5`, preserving the separately accepted Q026 candidate and all historical
-outcomes. The native Q020/Q030 acceptance below remains tied to its frozen DLL
-and source-file manifest. The integrated source differs; no native replay or
-full release acceptance is inferred from the merge. Integration validation is
-recorded separately in [test coverage](test-coverage.md#pr25-integration-validation-2026-10-05).
+PR #25 is merged at `d17b16d9`; main includes its validation record at `22a7af6`.
+The merge combines main `447be8e` with qualification head `8971e645`, preserving
+the separately accepted Q026 candidate and historical outcomes. The native
+Q020/Q030 acceptance below remains tied to its frozen DLL and source-file
+manifest. The integrated source differs; no native replay or full release
+acceptance is inferred from the merge. Integration validation is recorded
+separately in [test coverage](test-coverage.md#pr25-merge-validation-2026-10-05).
 
 ## Q-020 and Q-030 native macro checkpoint (2026-10-05)
 

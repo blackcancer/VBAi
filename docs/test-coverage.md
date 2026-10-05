@@ -1,5 +1,51 @@
 # Recorded validation
 
+## Q024 prerequisite gate on main (2026-10-05)
+
+The complete prepared Q024 batch uses clean source
+`22a7af66ec7ad5b934c97eb8858acc26b61a8090` in a frozen worktree.
+Its isolated Debug solution build passes without warnings or errors.
+Product MVID is `7663dc70-a6d5-498c-8cc1-40a2a9f1c528`, SHA-256
+`7AE207D2E20DC7260DDD916441DFFCFAAD05AFA6AF660A15B6040A5850BFB0B7`.
+Test assembly SHA-256 is
+`8D1EE2C5A5307C08C9DFAEDDEDB09F2A8E6FD29C17921CB1961D7C35BFBC4B7F`;
+helper SHA-256 is
+`8FFCA4E5530655DFF4450C6CCB4E904DD5EC8AD3F68403D9AA2CABB3740A6050`.
+
+| Validation | Observed result |
+| --- | --- |
+| Complete default managed suite | 4,712 passed, 0 failed, 232 skipped |
+| Skipped-result audit | Every skip reports a disabled native, authenticated-provider or diagnostic opt-in; no native acceptance is inferred |
+| Waited synthetic UI matrix | All nine required actions pass before original child exit and desktop release |
+| Limited-user candidate registration preview | Verified read-only Preview; no Apply or Restore |
+| Native Word Q024 batch and coverage collection | NOT_RUN |
+
+TRX SHA-256 is
+`8F8A16E321DD101CB8685935D5FD663AA3C99092D201055912C1B707F1952DC4`.
+The actual TRX storage, clean source and unchanged product/test/helper hashes
+are verified. Process-local native/provider opt-ins are cleared before the
+complete suite. Both original workers and helpers exit normally, hidden
+sentinels close once, private desktop leases close successfully and completed
+owned tasks are removed. Input remains Default; no desktop switch or owned
+foreground observation occurs. No Office/SOLIDWORKS host is started by this bank.
+
+All three existing native scenarios are prepared before execution: canonical
+same-name document isolation and stale SaveAs refusal, actual owner-menu Git
+capture/checkpoint/compare, then actual embedded Chat-to-Git scope/modal entry.
+The ordered runner stops dependent cases on its first failure. It permits no
+uncertain mutation replay, forced termination, macro execution, import or push.
+The candidate, script packet, scenario oracles and foreign handoff inputs are
+frozen in `artifacts/q024-main-20261005/` alongside the retained raw receipts.
+
+Native registration Apply remains blocked by the concurrent Q028 Office13
+handoff. Its original worker has a terminal exit-code-one receipt; its campaign
+records an uncertain Access outcome and no settings/COM restoration. Absence of
+a process alone is not restoration evidence. Its failure and resources are not
+changed by Q024. Word had already ended when the maintainer-authorized normal
+close was checked; no close or termination was issued. These prerequisite
+results do not close Q024 or qualify the merged product in a native host.
+
+
 ## PR25 merge validation (2026-10-05)
 
 Merge source `d17b16d9ba865531a9183d221f807729576cde77` combines PR #25
