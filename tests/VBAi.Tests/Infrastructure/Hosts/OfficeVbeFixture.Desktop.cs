@@ -314,6 +314,7 @@ namespace VBAi.Tests.Integration
         /// <summary>Rejects a host on another desktop before document, visibility, bridge or teardown operations.</summary>
         private void RequirePrivateHostDesktop(bool requireWindow)
         {
+            if (mainWordDesktop) { ObserveMainWord(IntPtr.Zero, requireWindow, false); return; }
             if (privateDesktop == null) return;
             IsolatedTestDesktop.RequireCurrent(privateDesktop);
             if (privateDesktopChild == null || privateDesktopChild.Wait(0) || ownedProcess == null || ownedProcess.HasExited ||

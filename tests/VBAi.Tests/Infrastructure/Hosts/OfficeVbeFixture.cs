@@ -83,6 +83,9 @@ namespace VBAi.Tests.Integration
         {
             if (Environment.GetEnvironmentVariable("VBAi_RUN_OFFICE_TESTS") != "1")
                 Assert.Inconclusive("Set VBAi_RUN_OFFICE_TESTS=1 to qualify installed Office hosts.");
+            bool mainWord = SelectMainWordDesktop(kind, Environment.GetEnvironmentVariable(MainWordEnvironment),
+                Environment.GetEnvironmentVariable("VBAi_QUALIFICATION_DESKTOP"), Environment.GetEnvironmentVariable("VBAi_TEST_DESKTOP_NAME"),
+                IsolatedTestDesktop.RequireMainCurrent);
             string desktop = RequireOfficeDesktopPair(Environment.GetEnvironmentVariable("VBAi_QUALIFICATION_DESKTOP"),
                 Environment.GetEnvironmentVariable("VBAi_TEST_DESKTOP_NAME"));
             bool privateWord = kind == "Word" && desktop != null;
@@ -104,14 +107,14 @@ namespace VBAi.Tests.Integration
             string progId = ResolveHostProgId(kind, requestedProgId);
             var type = Type.GetTypeFromProgID(progId);
             if (type == null) Assert.Inconclusive(kind + " is not installed.");
-            var result = new OfficeVbeFixture { Kind = kind, hostProgId = progId };
+            var result = new OfficeVbeFixture { Kind = kind, hostProgId = progId, mainWordDesktop = mainWord };
             string output = Environment.GetEnvironmentVariable("VBAi_OFFICE_RESULTS") ?? Path.Combine(Path.GetTempPath(), "VBAi-Office-tests");
             result.Root = Path.Combine(Path.GetFullPath(output), kind, Guid.NewGuid().ToString("N"));
             Directory.CreateDirectory(result.Root);
             result.DocumentPath = Path.Combine(result.Root, "Disposable" + (kind == "Word" ? ".docm" : kind == "PowerPoint" ? ".pptm" : kind == "Access" ? ".accdb" : ".pub"));
             try
             {
-                if (privateWord) result.BootstrapPrivateWordDesktop(desktop);
+                if (privateWord || mainWord) result.BootstrapPrivateWordDesktop(mainWord ? "Default" : desktop);
                 else
                 {
                     if (desktop != null) result.StartPrivateOfficeHost(desktop);
@@ -140,15 +143,16 @@ namespace VBAi.Tests.Integration
                 dynamic app = result.application;
                 if (kind == "Word")
                 {
+                    result.RequireMainWordBeforeNative();
                     result.PrepareOwnedWordMacroSafety();
-                    app.DisplayAlerts = 0; app.Visible = true;
-                    if (privateWord)
+                    result.RequireMainWordBeforeNative(); app.DisplayAlerts = 0;
+                    result.RequireMainWordBeforeNative(); app.Visible = true;
+                    if (privateWord || mainWord)
                     {
                         object seed = result.document;
-                        result.document = result.CreateOrOpenDocument(false);
-                        ((dynamic)seed).Close(0);
-                        result.Release(seed);
-                        result.privateWordSeed = null;
+                        ReplaceWordSeedOnce(result.RequireMainWordBeforeNative,
+                            () => result.document = result.CreateOrOpenDocument(false),
+                            () => ((dynamic)seed).Close(0), () => result.Release(seed), () => result.privateWordSeed = null);
                     }
                     else result.document = result.CreateOrOpenDocument(false);
                 }
@@ -190,6 +194,7 @@ namespace VBAi.Tests.Integration
                 result.BindStartupProject(projects);
                 result.Items("list_modules");
                 result.RecordNativeProjectPath();
+                result.PersistMainWordReady(status);
                 if (serializedPublisherSeed != null) result.AuditPublisherSerializedSeed();
                 return result;
             }
@@ -198,7 +203,7 @@ namespace VBAi.Tests.Integration
                 result.startupFailure = startupError;
                 result.Failures.Add("Host startup: " + startupError);
                 result.steps.Add(new { StartupError = startupError.ToString(), HostProgId = progId, Result = "FAIL" });
-                if (privateWord && result.privateWordChild != null)
+                if ((privateWord || mainWord) && result.privateWordChild != null)
                 {
                     result.NativeExecutionUnsettled = true;
                     result.RetainUncertainOffice();
@@ -856,7 +861,7 @@ namespace VBAi.Tests.Integration
             try { Release(document); } catch (Exception error) { externalReferencesReleased = false; RecordCleanupFailure(error.Message); }
             document = null;
             if (owned && nativeIdentityVerified && Kind != "Access" && Kind != "Publisher")
-                try { QuitOwnedOnce(() => { if (Kind == "Word") ((dynamic)application).Quit(0); else ((dynamic)application).Quit(); }); }
+                try { QuitOwnedOnce(() => { if (mainWordDesktop) ObserveMainWord(IntPtr.Zero, false, false); if (Kind == "Word") ((dynamic)application).Quit(0); else ((dynamic)application).Quit(); }); }
                 catch (Exception error) { RetainUncertainOffice(); RecordCleanupFailure(error.Message); return; }
             try { Release(application); } catch (Exception error) { externalReferencesReleased = false; RecordCleanupFailure(error.Message); }
             application = null;

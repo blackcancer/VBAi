@@ -10,7 +10,7 @@ using System.Text;
 namespace VBAi.Tests.Integration
 {
     /// <summary>Starts owned test processes on an inactive Windows desktop without changing the input desktop.</summary>
-    internal static class IsolatedTestDesktop
+    internal static partial class IsolatedTestDesktop
     {
         private const uint DesktopAccess = 0x000000C7; // Read/create window/create menu/enumerate/write; no SwitchDesktop right.
         [DllImport("user32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
