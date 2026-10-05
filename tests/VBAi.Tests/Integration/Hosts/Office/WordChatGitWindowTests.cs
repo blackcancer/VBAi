@@ -457,16 +457,14 @@ namespace VBAi.Tests.Integration
                         selected = entries[0];
                     }
                     Pattern<SelectionItemPattern>(selected, SelectionItemPattern.Pattern).Select();
-                    Pattern<ExpandCollapsePattern>(scopePicker, ExpandCollapsePattern.Pattern).Collapse();
                 }
-                var watch = Stopwatch.StartNew(); int stable = 0;
-                while (watch.ElapsedMilliseconds < 15000 && stable < 2)
-                {
-                    Guard(context.ChatHandle);
-                    stable = scopePicker.Current.IsEnabled && SelectedLabel(scopeSelection, context.Label) ? stable + 1 : 0;
-                    if (stable < 2) Thread.Sleep(50);
-                }
-                if (stable != 2) throw new TimeoutException("The selected saved Word chat scope did not become idle and exact.");
+                var watch = Stopwatch.StartNew();
+                WordChatScopeIdle.Wait(() => Guard(context.ChatHandle), () => new WordChatScopeIdle.Observation {
+                    Enabled = scopePicker.Current.IsEnabled,
+                    ExactSelection = SelectedLabel(scopeSelection, context.Label),
+                    State = Pattern<ExpandCollapsePattern>(scopePicker, ExpandCollapsePattern.Pattern).Current.ExpandCollapseState
+                }, () => Pattern<ExpandCollapsePattern>(scopePicker, ExpandCollapsePattern.Pattern).Collapse(),
+                    () => watch.ElapsedMilliseconds, () => Thread.Sleep(50));
                 context.Record(new { Phase = "ChatScopeSelected", context.Label, CanonicalPath = context.Scope.Path,
                     ChatHandle = context.ChatHandle.ToInt64(), PickerHandle = scopePicker.Current.NativeWindowHandle });
             }
