@@ -69,6 +69,28 @@ namespace VBAi.Tests.Unit
         }
 
         [TestMethod]
+        public void NativeComboMetadataSharesTheEventBudgetAndKeepsExceptionTextPrivate()
+        {
+            var rows = new List<string>();
+            var trace = new VbeInspectionTrace(rows.Add);
+            var observed = new VbeInspectionTrace.OptionsComboEvidence {
+                Reader = VbeInspectionTrace.OptionsReader.NativeCombo, Role = VbeInspectionTrace.OptionsRole.Size,
+                Window = 17, CountBefore = 0, CountAfterExpansion = 0, ExpansionAttempted = true };
+            trace.RecordOptionsCombo(observed, new InvalidOperationException("SECRET_NATIVE_CONTROL_TEXT"));
+            for (int index = 0; index < 1000; index++)
+            {
+                trace.Record(VbeInspectionTrace.Phase.ObserverEntered);
+                trace.RecordOptionsCombo(observed);
+            }
+            Assert.AreEqual(VbeInspectionTrace.MaximumEvents, rows.Count);
+            var row = new JavaScriptSerializer().Deserialize<Dictionary<string, object>>(rows[0]);
+            Assert.AreEqual("OptionsComboInspection", row["Phase"]);
+            Assert.AreEqual("InvalidOperationException", row["ErrorType"]);
+            Assert.IsFalse(string.Join("", rows).Contains("SECRET_NATIVE_CONTROL_TEXT"));
+            Assert.AreEqual(1, rows.Select(text => new JavaScriptSerializer().Deserialize<Dictionary<string, object>>(text)["Correlation"]).Distinct().Count());
+        }
+
+        [TestMethod]
         public void DurableFileIsAppendedWithinByteLimitAndUnavailableParentIsPassive()
         {
             string directory = Path.Combine(Path.GetTempPath(), "VBAi-trace-" + Guid.NewGuid().ToString("N"));

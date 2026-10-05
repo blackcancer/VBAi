@@ -272,6 +272,12 @@ namespace VBAi.Tests.Integration
                             Assert.Fail("Excel did not exit after Quit and COM release. PID: " + ProcessId + "; fixture: " + Root + ". The process was left running for diagnosis; shutdown.json preserves each phase.");
                         Assert.AreEqual(0, process.ExitCode, "Excel exited abnormally. PID: " + ProcessId +
                             "; exit code: 0x" + unchecked((uint)process.ExitCode).ToString("X8") + "; fixture: " + Root);
+                        if (privateDesktopChild != null)
+                        {
+                            Assert.IsTrue(privateDesktopChild.Wait(0), "The original native Excel handle must independently observe exit.");
+                            Assert.AreEqual(0u, privateDesktopChild.ExitCode());
+                            privateDesktopChild.Dispose(); privateDesktopChild = null;
+                        }
                     }
                     catch (Exception exitFailure)
                     {

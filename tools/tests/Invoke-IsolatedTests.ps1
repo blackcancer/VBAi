@@ -2,7 +2,8 @@
 param(
     [Parameter(Mandatory=$true)][string]$ScriptPath,
     [Parameter(Mandatory=$true)][string]$HelperAssembly,
-    [Parameter(Mandatory=$true)][string]$EvidenceDirectory
+    [Parameter(Mandatory=$true)][string]$EvidenceDirectory,
+    [switch]$DirectGuiLauncher
 )
 $ErrorActionPreference='Stop'
 $env:PSModulePath=(Join-Path $env:WINDIR 'System32/WindowsPowerShell/v1.0/Modules')+';'+$env:PSModulePath
@@ -74,12 +75,17 @@ exit $code
 $ps=Join-Path $env:WINDIR 'System32/WindowsPowerShell/v1.0/powershell.exe'
 if($launch.Contains('"')){throw 'Invalid launcher path'}
 $action=New-ScheduledTaskAction -Execute $ps -Argument ('-NoProfile -NonInteractive -WindowStyle Hidden -File "'+$launch+'"')
+if($DirectGuiLauncher){
+    $planPath=Join-Path $EvidenceDirectory 'intent.json'
+    if($planPath.Contains('"')){throw 'Invalid launcher plan path'}
+    $action=New-ScheduledTaskAction -Execute $HelperAssembly -Argument ('--run-plan "'+$planPath+'"')
+}
 $principal=New-ScheduledTaskPrincipal -UserId ([Security.Principal.WindowsIdentity]::GetCurrent().Name) -LogonType Interactive -RunLevel Limited
 # No recurring trigger and no execution time limit that could stop an uncertain native host.
-$settings=New-ScheduledTaskSettingsSet -ExecutionTimeLimit ([TimeSpan]::Zero) -MultipleInstances IgnoreNew
+$settings=New-ScheduledTaskSettingsSet -ExecutionTimeLimit ([TimeSpan]::Zero) -MultipleInstances IgnoreNew -DisallowHardTerminate -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries
 Register-ScheduledTask -TaskName $taskName -Action $action -Principal $principal -Settings $settings | Out-Null
 Start-ScheduledTask -TaskName $taskName
 @{State='STARTED_ONCE';TaskName=$taskName;Terminal=$terminal;DesktopOutput=(Join-Path $EvidenceDirectory 'desktop');
-    NoDesktopSwitch=$true;Utc=[DateTime]::UtcNow.ToString('o')} |
+    NoDesktopSwitch=$true;DirectGuiLauncher=[bool]$DirectGuiLauncher;Utc=[DateTime]::UtcNow.ToString('o')} |
     ConvertTo-Json | Set-Content -LiteralPath (Join-Path $EvidenceDirectory 'wrapper.json') -Encoding UTF8
 Get-Content -LiteralPath (Join-Path $EvidenceDirectory 'wrapper.json') -Raw -Encoding UTF8
