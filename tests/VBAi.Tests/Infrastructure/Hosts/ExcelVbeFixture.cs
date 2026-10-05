@@ -155,7 +155,16 @@ namespace VBAi.Tests.Integration
         /// <summary>Preserves the scenario failure when cleanup independently fails.</summary>
         internal static void Run(Action<ExcelVbeFixture> scenario, Action<ExcelVbeFixture> shutdownVerified = null)
         {
-            var fixture = Start();
+            if (scenario == null) throw new ArgumentNullException(nameof(scenario));
+            RunPreparedScenario(Start(), scenario, shutdownVerified);
+        }
+
+        /// <summary>Runs an already identified owned fixture; mirrors supply only managed fake application objects.</summary>
+        internal static void RunPreparedScenario(ExcelVbeFixture fixture, Action<ExcelVbeFixture> scenario,
+            Action<ExcelVbeFixture> shutdownVerified = null)
+        {
+            if (fixture == null) throw new ArgumentNullException(nameof(fixture));
+            if (scenario == null) throw new ArgumentNullException(nameof(scenario));
             Exception failure = null;
             failure = ExecuteScenario(scenario, fixture);
             fixture.scenarioFrameReturned = true;
@@ -216,6 +225,19 @@ namespace VBAi.Tests.Integration
         /// <summary>Ferme les ressources COM et fichiers temporaires appartenant à cette fixture.</summary>
         public void Dispose()
         {
+            if (!ClaimShutdown()) return;
+            try { DisposeOwnedHostCore(); CompleteShutdown(); }
+            catch (Exception error) {
+                Exception combined = CombineShutdownFailure(error);
+                RetainFailedShutdown(combined);
+                if (ReferenceEquals(combined, error)) throw;
+                throw combined;
+            }
+        }
+
+        /// <summary>Runs the only permitted cleanup sequence on the original owner thread.</summary>
+        private void DisposeOwnedHostCore()
+        {
             var diagnostics = new Dictionary<string, object> {
                 ["ProcessId"] = ProcessId, ["FixtureRoot"] = Root, ["StartedUtc"] = DateTime.UtcNow.ToString("o"),
                 ["AssemblyMvid"] = typeof(VbeSession).Module.ModuleVersionId.ToString("D"), ["ForcedTermination"] = false
@@ -225,6 +247,9 @@ namespace VBAi.Tests.Integration
             diagnostics["CommandCount"] = commandSequence;
             diagnostics["CommandRecordsOmitted"] = Math.Max(0, commandSequence - MaximumCommandRecords);
             ShutdownDiagnostics = diagnostics;
+            RecordShutdownThread(diagnostics, "CleanupStarted");
+            if (owned && (ownedProcess == null || ProcessId <= 0 || ownedProcess.Id != ProcessId))
+                throw new InvalidOperationException("No exact retained original Excel process is available; no native cleanup is authorized.");
             if (PreserveForDiagnosticRecovery)
             {
                 diagnostics["CleanupSuspended"] = true;
@@ -236,7 +261,7 @@ namespace VBAi.Tests.Integration
             Exception closeFailure = null, quitFailure = null, evidenceFailure = null;
             Action writeDiagnostics = () => {
                 try { WriteShutdownDiagnostics(diagnostics); }
-                catch (Exception error) { evidenceFailure = error; }
+                catch (Exception error) { if (evidenceFailure == null) evidenceFailure = error; RememberShutdownFailure(error); }
             };
             BeginDiagnosticCleanup();
             if (embeddedGitProjectIdentity != IntPtr.Zero)
@@ -248,23 +273,23 @@ namespace VBAi.Tests.Integration
             {
                 // Drain only after the non-inlined scenario frame returns, before
                 // the one Close/Quit. Preserve the original 10-second exit oracle.
+                RecordShutdownThread(diagnostics, "ScenarioReturned");
                 diagnostics["ScenarioRcwDrainStarted"] = true;
                 diagnostics["ScenarioRcwDrainCompleted"] = false;
                 writeDiagnostics();
                 var drain = Stopwatch.StartNew();
-                GC.Collect(); GC.WaitForPendingFinalizers();
-                GC.Collect(); GC.WaitForPendingFinalizers();
+                CollectScenarioReferences();
                 diagnostics["ScenarioRcwDrainCompleted"] = true;
                 diagnostics["ScenarioRcwDrainElapsedMs"] = drain.ElapsedMilliseconds;
                 writeDiagnostics();
             }
             if (owned && workbook != null)
                 try { ((dynamic)workbook).Close(false); }
-                catch (Exception error) { closeFailure = error; }
+                catch (Exception error) { closeFailure = error; RememberShutdownFailure(error); }
             diagnostics["CloseElapsedMs"] = watch.ElapsedMilliseconds;
             if (owned && application != null)
                 try { ((dynamic)application).Quit(); }
-                catch (Exception error) { quitFailure = error; }
+                catch (Exception error) { quitFailure = error; RememberShutdownFailure(error); }
             diagnostics["QuitElapsedMs"] = watch.ElapsedMilliseconds;
             diagnostics["CloseError"] = closeFailure?.ToString();
             diagnostics["QuitError"] = quitFailure?.ToString();
@@ -286,25 +311,31 @@ namespace VBAi.Tests.Integration
                 }
             }
             var process = ownedProcess;
-            ownedProcess = null;
             if (process != null)
-                using (process)
                 {
-                    bool exited = process.WaitForExit(10000);
+                    RecordShutdownThread(diagnostics, "BeforeExitWait");
+                    cleanupStage = "EXIT_WAIT"; exitWaitAttempted = true;
+                    bool exited = WaitForOwnedExcelExit(process, 10000);
+                    exitWaitReturned = true;
+                    RecordShutdownThread(diagnostics, "AfterExitWait");
                     diagnostics["Exited"] = exited;
                     diagnostics["ElapsedMs"] = watch.ElapsedMilliseconds;
                     if (exited)
                     {
-                        diagnostics["ExitCode"] = process.ExitCode;
-                        diagnostics["ExitCodeHex"] = "0x" + unchecked((uint)process.ExitCode).ToString("X8");
+                        cleanupStage = "EXIT_CODE";
+                        int code = ReadOwnedExcelExitCode(process);
+                        exitCodeObserved = true;
+                        diagnostics["ExitCode"] = code;
+                        diagnostics["ExitCodeHex"] = "0x" + unchecked((uint)code).ToString("X8");
                     }
                     writeDiagnostics();
                     try
                     {
                         if (!exited)
                             Assert.Fail("Excel did not exit after Quit and COM release. PID: " + ProcessId + "; fixture: " + Root + ". The process was left running for diagnosis; shutdown.json preserves each phase.");
-                        Assert.AreEqual(0, process.ExitCode, "Excel exited abnormally. PID: " + ProcessId +
-                            "; exit code: 0x" + unchecked((uint)process.ExitCode).ToString("X8") + "; fixture: " + Root);
+                        int code = (int)diagnostics["ExitCode"];
+                        Assert.AreEqual(0, code, "Excel exited abnormally. PID: " + ProcessId +
+                            "; exit code: 0x" + unchecked((uint)code).ToString("X8") + "; fixture: " + Root);
                         if (privateDesktopChild != null)
                         {
                             Assert.IsTrue(privateDesktopChild.Wait(0), "The original native Excel handle must independently observe exit.");
@@ -319,6 +350,14 @@ namespace VBAi.Tests.Integration
                                 new[] { exitFailure, closeFailure, quitFailure, evidenceFailure }.Where(error => error != null));
                         throw;
                     }
+                    if (evidenceFailure != null) throw evidenceFailure;
+                    cleanupStage = "PROCESS_RELEASE";
+                    processReleaseEntered = true;
+                    ReleaseOwnedExcelProcess(process);
+                    processReleaseReturned = true;
+                    ownedProcess = null;
+                    diagnostics["ProcessHandleRetained"] = false;
+                    writeDiagnostics();
                 }
             else writeDiagnostics();
             if (privateDesktopChild != null)
@@ -346,6 +385,7 @@ namespace VBAi.Tests.Integration
 
         private void WriteShutdownDiagnostics(IDictionary<string, object> diagnostics)
         {
+            if (WriteShutdownReceipt != null) { WriteShutdownReceipt(diagnostics); return; }
             if (string.IsNullOrWhiteSpace(Root) || !Directory.Exists(Root)) return;
             try { System.IO.File.WriteAllText(Path.Combine(Root, "shutdown.json"), new JavaScriptSerializer().Serialize(diagnostics)); }
             catch (IOException) { }
