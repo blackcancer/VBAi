@@ -1,4 +1,5 @@
 using System;
+using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Automation;
 using System.Windows.Controls;
@@ -114,10 +115,36 @@ namespace VBAi
                     throw new InvalidOperationException(UiText.Get("Save the document before linking it to GitHub."));
                 string nativeScope = scopeSession.GitScope(scope.Project);
                 using (var window = new GitWindow(scopeSession.GitProject(scope.Project, nativeScope), nativeScope, scope.Label, settings.GitHubAccount))
-                    ShowModal(window,this);
+                    ShowModal(window, GitModalOwner());
             }
             catch (Exception ex) { SetStatus(UiText.Get("GitHub: ") + ex.Message); }
         }
+        /// <summary>Uses the native top-level chat root as the modal owner when the chat is hosted by VBE.</summary>
+        /// <returns>The standalone chat or an exact native root on the chat's owning thread.</returns>
+        internal System.Windows.Forms.IWin32Window GitModalOwner()
+        {
+            if (IsDisposed) throw new ObjectDisposedException(nameof(ChatWindow));
+            if (!IsHandleCreated) return this;
+            IntPtr root = GitOwnerAncestor(Handle, 2);
+            uint chatProcess, rootProcess;
+            uint chatThread = GitOwnerThread(Handle, out chatProcess);
+            uint rootThread = GitOwnerThread(root, out rootProcess);
+            if (root == IntPtr.Zero || chatThread == 0 || chatThread != rootThread || chatProcess != rootProcess)
+                throw new InvalidOperationException("The chat Git dialog has no verified owning window.");
+            return root == Handle ? (System.Windows.Forms.IWin32Window)this : new ChatGitWindowOwner(root);
+        }
+
+        private sealed class ChatGitWindowOwner : System.Windows.Forms.IWin32Window
+        {
+            public IntPtr Handle { get; }
+            internal ChatGitWindowOwner(IntPtr handle) { Handle = handle; }
+        }
+
+        [DllImport("user32.dll", EntryPoint = "GetAncestor")]
+        private static extern IntPtr GitOwnerAncestor(IntPtr window, uint flags);
+        [DllImport("user32.dll", EntryPoint = "GetWindowThreadProcessId")]
+        private static extern uint GitOwnerThread(IntPtr window, out uint processId);
+
         /// <summary>Inverse l’état épinglé de la session active et actualise son entrée d’historique.</summary>
         /// <param name="sender">Bouton déclencheur.</param>
         /// <param name="e">Données de l’événement.</param>
