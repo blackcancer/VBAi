@@ -91,7 +91,7 @@ namespace VBAi
                             object child = ((dynamic)collection).Item(parts[i + 1]); references.Add(child);
                             object parent = ((dynamic)child).Parent; references.Add(parent);
                             if (!string.Equals(Convert.ToString(((dynamic)child).Name), parts[i + 1], StringComparison.Ordinal) ||
-                                !string.Equals(Convert.ToString(((dynamic)parent).Name), Convert.ToString(((dynamic)current).Name), StringComparison.Ordinal))
+                                !SameFontOwnerParent(parent, current, ReferenceEquals(current, designer)))
                                 throw new InvalidOperationException("The imported font owner hierarchy changed.");
                             current = child;
                         }
@@ -216,6 +216,29 @@ namespace VBAi
                 { throw NativeFailure(operation, error); }
                 afterDelivery?.Invoke(ChildNames[index], values[index], children[index]);
             }
+        }
+
+        /// <summary>Validates a parent alias without requiring Name on the design-time UserForm wrapper.</summary>
+        /// <param name="parent">Parent acquired from the child selected in the validated owner collection.</param>
+        /// <param name="expected">Container whose collection supplied that child.</param>
+        /// <param name="root">Whether the expected container is the current component's exact designer.</param>
+        /// <returns>True for an identical COM object or the matching typed container alias.</returns>
+        internal static bool SameFontOwnerParent(object parent, object expected, bool root)
+        {
+            if (parent == null || expected == null) return false;
+            if (VbeProjectHostPath.SameProject(parent, expected)) return true;
+            string parentType = TypeDescriptor.GetClassName(parent);
+            string expectedType = TypeDescriptor.GetClassName(expected);
+            if (string.IsNullOrWhiteSpace(parentType) ||
+                !string.Equals(parentType, expectedType, StringComparison.OrdinalIgnoreCase)) return false;
+            // The owning project/component is revalidated before this traversal,
+            // and the child comes from this designer's Controls collection. Its
+            // design-time parent may be a distinct UserForm wrapper without Name.
+            if (root) return string.Equals(expectedType, "UserForm", StringComparison.OrdinalIgnoreCase);
+            string parentName = Convert.ToString(((dynamic)parent).Name);
+            string expectedName = Convert.ToString(((dynamic)expected).Name);
+            return !string.IsNullOrWhiteSpace(parentName) &&
+                string.Equals(parentName, expectedName, StringComparison.Ordinal);
         }
 
         /// <summary>Loads the exact descriptor into a new local font, then transfers it once to a nested owner.</summary>
