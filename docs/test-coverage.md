@@ -1,5 +1,52 @@
 # Recorded validation
 
+## PR25 merge validation (2026-10-05)
+
+Merge source `d17b16d9ba865531a9183d221f807729576cde77` combines PR #25
+head `8971e6454def138389d872e819fcab63a6359b59` with main `447be8e`
+without conflicts. The isolated Debug solution build passes with no warnings
+or errors. Product MVID is `1d948838-63df-42db-9901-ce6b148af2c8`, SHA-256
+`402CDA60CECDF15EC1AE18C4A495602D45B5D688463E19F1492EB67F795DB10E`.
+Test assembly SHA-256 is
+`25C71F47F001DA4DE3BEDF090F1A4FD5511A6E5D9FF0F8D40F163D8F7EEA384E`;
+TRX SHA-256 is
+`7DDABC4A052BE0D985214BA8E746E051FC55C5E19BF7C0E9DDA0985CACC88FF5`.
+
+| Validation | Observed result |
+| --- | --- |
+| Complete selected managed mirror classes | 404 passed, 0 failed, 0 skipped |
+| Synthetic UI matrix | All nine required actions pass |
+| Portable qualification helpers | All five scripts pass: snapshot comparator, cross-generation form oracle, reload designer materialization, bootstrap readiness and original process-handle identity |
+| Full default suite, authenticated providers, new native campaign and coverage collection | NOT_RUN for this merge candidate |
+
+The single prepared filter selects all observed tests from seventeen complete
+classes: `VbeSolidWorksMacroCreationTests`, `VbeSolidWorksMacroPublicationTests`,
+`VbeSolidWorksMacroGeneralSelectionTests`, `VbeProjectComponentsTests`,
+`VbeProjectLifecycleTests`, `VbeSessionTests`, `LlmVbeToolsSolidWorksMacrosTests`,
+`OlePictureLoaderTests`, `VbeFormsReservedFontTests`, `VbeDebugGeneralCommandTests`,
+`BridgeServerTests`, `LlmVbeToolContractTests`, `LlmVbeAsyncValidationTests`,
+`LlmVbeToolsBoundaryTests`, `ProjectPrivacyBoundaryTests`, `LlmProjectPrivacyTests`
+and `CatalogBoundaryTests`. Terminal verification checks the exact clean source,
+original test storage and unchanged product/test/helper hashes. Native/provider
+opt-ins are cleared process-locally.
+
+The managed bank and synthetic UI matrix run on separate inactive desktops.
+The UI child is held through its original process handle: all actions complete
+before its exit and desktop release. Both workers/helpers exit normally,
+sentinels close once, desktop leases close successfully and completed scheduled
+tasks are removed. There is no desktop switch or owned foreground observation.
+The portable identity canary launches two hidden, disposable PowerShell children
+and observes their normal exits through their original handles. No Office or
+SOLIDWORKS host is started; installed binaries, COM registration and host
+settings remain unchanged. The frozen manifest, selected filter, TRX, helper
+receipts and verification scripts are retained in
+`artifacts/pr25-integration-20261005/`.
+
+The preserved Q020/Q030 native evidence belongs to the earlier DLL11 candidate
+in [its evidence index](qualification/q020-q030.json), not to this merged DLL.
+The author integration checkpoint below remains separately identified. The
+intentional trailing space in the native FRM test literal is preserved.
+
 ## PR25 integration validation (2026-10-05)
 
 Integration combines qualification source `66568b5` with main `447be8e`.
