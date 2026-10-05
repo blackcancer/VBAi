@@ -45,23 +45,20 @@ namespace VBAi.Tests.Integration
         /// <summary>Writes known font members once through guarded commands on Excel's actual owning STA.</summary>
         internal void RestoreGitLayoutFontsViaBridge(string form, string layout, IDictionary<string, object> expected)
         {
-            object project = null;
-            string projectName;
-            try { project = ((dynamic)workbook).VBProject; projectName = Convert.ToString(((dynamic)project).Name); }
-            finally { Release(project); }
+            string projectPath = GitLayoutProjectSelector();
             foreach (string member in new[] { "Name", "Size", "Bold", "Italic", "Underline", "Strikethrough" })
             {
-                var tree = GitLayoutCommandData(Command(new { Command = "form_tree", Project = projectName, Form = form }));
-                GitLayoutCommandData(Command(new { Command = "set_form_property", Project = projectName, Form = form,
+                var tree = GitLayoutCommandData(Command(new { Command = "form_tree", Project = projectPath, Form = form }));
+                GitLayoutCommandData(Command(new { Command = "set_form_property", Project = projectPath, Form = form,
                     ExpectedFormVersion = tree["TreeVersion"], Property = "Font." + member, Value = expected["Form.Font." + member] }));
             }
             if (layout != "FrameMultiPage") return;
             foreach (string member in new[] { "Name", "Size", "Bold", "Italic", "Underline", "Strikethrough" })
             {
-                var tree = GitLayoutCommandData(Command(new { Command = "form_tree", Project = projectName, Form = form }));
+                var tree = GitLayoutCommandData(Command(new { Command = "form_tree", Project = projectPath, Form = form }));
                 var frame = ((object[])tree["Controls"]).Select(VbeBridgeClient.Object)
                     .Single(node => Convert.ToString(node["Name"]) == "QualificationExtra");
-                GitLayoutCommandData(Command(new { Command = "set_form_node_property", Project = projectName, Form = form,
+                GitLayoutCommandData(Command(new { Command = "set_form_node_property", Project = projectPath, Form = form,
                     ControlPath = frame["Path"], ExpectedTreeVersion = tree["TreeVersion"], Property = "Font." + member,
                     Value = expected["Frame.Font." + member] }));
             }
@@ -70,10 +67,7 @@ namespace VBAi.Tests.Integration
         /// <summary>Diagnoses a declared face change and restoration, with fresh revisions and no setter replay.</summary>
         internal void RestoreGitFontFacesThroughDistinctValues(string form, string layout, IDictionary<string, object> expected)
         {
-            object project = null;
-            string projectName;
-            try { project = ((dynamic)workbook).VBProject; projectName = Convert.ToString(((dynamic)project).Name); }
-            finally { Release(project); }
+            string projectPath = GitLayoutProjectSelector();
             string[] owners = layout == "FrameMultiPage" ? new[] { "Form", "Frame" } : new[] { "Form" };
             foreach (string owner in owners)
             {
@@ -81,15 +75,15 @@ namespace VBAi.Tests.Integration
                 string distinct = string.Equals(original, "Arial", StringComparison.OrdinalIgnoreCase) ? "Tahoma" : "Arial";
                 foreach (string value in new[] { distinct, original })
                 {
-                    var tree = GitLayoutCommandData(Command(new { Command = "form_tree", Project = projectName, Form = form }));
+                    var tree = GitLayoutCommandData(Command(new { Command = "form_tree", Project = projectPath, Form = form }));
                     if (owner == "Form")
-                        GitLayoutCommandData(Command(new { Command = "set_form_property", Project = projectName, Form = form,
+                        GitLayoutCommandData(Command(new { Command = "set_form_property", Project = projectPath, Form = form,
                             ExpectedFormVersion = tree["TreeVersion"], Property = "Font.Name", Value = value }));
                     else
                     {
                         var frame = ((object[])tree["Controls"]).Select(VbeBridgeClient.Object)
                             .Single(node => Convert.ToString(node["Name"]) == "QualificationExtra");
-                        GitLayoutCommandData(Command(new { Command = "set_form_node_property", Project = projectName, Form = form,
+                        GitLayoutCommandData(Command(new { Command = "set_form_node_property", Project = projectPath, Form = form,
                             ControlPath = frame["Path"], ExpectedTreeVersion = tree["TreeVersion"], Property = "Font.Name", Value = value }));
                     }
                 }

@@ -126,15 +126,12 @@ namespace VBAi.Tests.Integration
                 using (var graphics = Graphics.FromImage(bitmap)) graphics.Clear(Color.Crimson);
                 bitmap.Save(imagePath, ImageFormat.Bmp);
             }
-            object project = null;
-            string projectName;
-            try { project = ((dynamic)workbook).VBProject; projectName = ((dynamic)project).Name; }
-            finally { Release(project); }
-            var tree = GitLayoutCommandData(Command(new { Command = "form_tree", Project = projectName, Form = form }));
+            string projectPath = GitLayoutProjectSelector();
+            var tree = GitLayoutCommandData(Command(new { Command = "form_tree", Project = projectPath, Form = form }));
             var image = ((object[])tree["Controls"]).Select(VbeBridgeClient.Object)
                 .Single(node => Convert.ToString(node["Name"]) == "QualificationExtra");
             Assert.AreEqual("Control", image["Kind"]);
-            var installed = GitLayoutCommandData(Command(new { Command = "set_form_node_picture", Project = projectName,
+            var installed = GitLayoutCommandData(Command(new { Command = "set_form_node_picture", Project = projectPath,
                 Form = form, ControlPath = image["Path"], ExpectedTreeVersion = tree["TreeVersion"], Property = "Picture", Path = imagePath }));
             Assert.AreEqual(image["Path"], installed["ControlPath"]);
             Assert.AreEqual("Picture", installed["Property"]);
@@ -149,6 +146,49 @@ namespace VBAi.Tests.Integration
             object error; response.TryGetValue("Error", out error);
             Assert.AreEqual(true, response["Ok"], "Native layout command failed: " + Convert.ToString(error));
             return VbeBridgeClient.Object(response["Data"]);
+        }
+
+        /// <summary>Uses the exact saved workbook path after checking its live VBProject identity.</summary>
+        private string GitLayoutProjectSelector()
+        {
+            object project = null;
+            try
+            {
+                if (workbook == null) throw new InvalidOperationException("The owned workbook is unavailable.");
+                project = ((dynamic)workbook).VBProject;
+                return RequireGitLayoutProjectSelector(
+                    Convert.ToString(((dynamic)workbook).FullName),
+                    Convert.ToString(((dynamic)workbook).Path),
+                    VbeProjectHostPath.Read(project));
+            }
+            finally { Release(project); }
+        }
+
+        /// <summary>Rejects unsaved, missing, or mismatched workbook/project paths before bridge dispatch.</summary>
+        internal static string RequireGitLayoutProjectSelector(string workbookFullName, string workbookPath,
+            string projectHostPath)
+        {
+            if (string.IsNullOrWhiteSpace(workbookFullName) || string.IsNullOrWhiteSpace(workbookPath) ||
+                string.IsNullOrWhiteSpace(projectHostPath) ||
+                !IsGitLayoutAbsolutePath(workbookFullName) || !IsGitLayoutAbsolutePath(workbookPath) ||
+                !IsGitLayoutAbsolutePath(projectHostPath))
+                throw new InvalidOperationException("An exact saved owned workbook and VBProject HostPath are required.");
+            string owned = System.IO.Path.GetFullPath(workbookFullName);
+            string directory = System.IO.Path.GetFullPath(workbookPath);
+            string actual = System.IO.Path.GetFullPath(projectHostPath);
+            if (!string.Equals(System.IO.Path.GetDirectoryName(owned).TrimEnd('\\', '/'),
+                    directory.TrimEnd('\\', '/'), StringComparison.OrdinalIgnoreCase) ||
+                !string.Equals(owned, actual, StringComparison.OrdinalIgnoreCase))
+                throw new InvalidOperationException("The owned workbook and VBProject HostPath differ.");
+            return actual;
+        }
+
+        private static bool IsGitLayoutAbsolutePath(string path)
+        {
+            if (!System.IO.Path.IsPathRooted(path)) return false;
+            string root = System.IO.Path.GetPathRoot(path);
+            return !string.IsNullOrEmpty(root) &&
+                (root.EndsWith("\\", StringComparison.Ordinal) || root.EndsWith("/", StringComparison.Ordinal));
         }
 
         /// <summary>Changes a native persisted value appropriate to the selected control layout.</summary>
@@ -269,11 +309,8 @@ namespace VBAi.Tests.Integration
         /// <summary>Reads the actual installed image content through the production in-host descriptor.</summary>
         private void ReadGitLayoutPicture(string form, IDictionary<string, object> result)
         {
-            object project = null;
-            string projectName;
-            try { project = ((dynamic)workbook).VBProject; projectName = ((dynamic)project).Name; }
-            finally { Release(project); }
-            var tree = GitLayoutCommandData(Command(new { Command = "form_tree", Project = projectName, Form = form }));
+            string projectPath = GitLayoutProjectSelector();
+            var tree = GitLayoutCommandData(Command(new { Command = "form_tree", Project = projectPath, Form = form }));
             var image = ((object[])tree["Controls"]).Select(VbeBridgeClient.Object)
                 .Single(node => Convert.ToString(node["Name"]) == "QualificationExtra");
             var picture = ((object[])image["Properties"]).Select(VbeBridgeClient.Object)
