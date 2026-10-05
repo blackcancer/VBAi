@@ -194,6 +194,7 @@ namespace VBAi.Tests.Integration
                 Assert.AreEqual(typeof(VbeSession).Module.ModuleVersionId.ToString("D"), state["AssemblyModuleVersionId"]);
                 fixture.RecordStartup("Ready", existingIds, status);
                 launch["LoadedAssemblyMvid"] = state["AssemblyModuleVersionId"]; launch["Phase"] = "Ready"; record();
+                fixture.ArmAddInShutdownObservation(windowThread, state);
                 return fixture;
             }
             catch (Exception primary)

@@ -11,7 +11,7 @@ using VBAi.Tests.Integration;
 namespace VBAi.Tests.Unit
 {
     [TestClass, TestCategory("Unit")]
-    public sealed class ExcelVbeFixtureShutdownTests
+    public sealed partial class ExcelVbeFixtureShutdownTests
     {
         [TestMethod]
         public void SuccessfulOriginalObservationReleasesOnceAndSecondDisposeDoesNothing()

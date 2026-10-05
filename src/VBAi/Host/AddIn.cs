@@ -19,6 +19,8 @@ namespace VBAi
         internal static Action StartUpdateCheck = UpdateCoordinator.Start;
         /// <summary>Arrête les vérifications en cours quand le complément est déconnecté.</summary>
         internal static Action StopUpdateCheck = UpdateCoordinator.Stop;
+        /// <summary>Starts optional observations without changing host cleanup ownership.</summary>
+        internal static Func<string, AddInShutdownDiagnostic> CreateShutdownDiagnostic = AddInShutdownDiagnostic.TryBeginFromEnvironment;
         /// <summary>Crée le collecteur d’erreurs lié à la session et à son stockage local.</summary>
         internal static Func<Action<CrashReport>, CrashReporter> CreateCrashReporter = show => new CrashReporter(show);
         /// <summary>Démarre le pont de commandes local pour la session active.</summary>
@@ -442,9 +444,15 @@ private void ReportMenuError(Exception ex)
         /// <param name="custom">Données personnalisées transmises par l’hôte, éventuellement modifiées par l’add-in.</param>
 public void OnDisconnection(int removeMode, ref object[] custom)
         {
-            WriteLog("OnDisconnection: " + removeMode);
-            CleanupTemporaryToolbarCommands();
-            Dispose();
+            var diagnostic = BeginShutdownObservation("OnDisconnection");
+            try
+            {
+                WriteLog("OnDisconnection: " + removeMode);
+                CleanupTemporaryToolbarCommandsObserved(diagnostic);
+                DisposeObserved(diagnostic?.Child("Dispose"));
+                diagnostic?.Complete();
+            }
+            catch (Exception error) { diagnostic?.Fault(error); throw; }
         }
 
         /// <summary>Point d’extension COM appelé après la mise à jour de la collection d’add-ins.</summary>
@@ -455,46 +463,134 @@ public void OnAddInsUpdate(ref object[] custom) { }
 public void OnStartupComplete(ref object[] custom) { }
         /// <summary>Libère les services lorsque l’hôte commence son arrêt.</summary>
         /// <param name="custom">Données personnalisées transmises par l’hôte, éventuellement modifiées par l’add-in.</param>
-public void OnBeginShutdown(ref object[] custom) { CleanupTemporaryToolbarCommands(); Dispose(); }
+public void OnBeginShutdown(ref object[] custom)
+        {
+            var diagnostic = BeginShutdownObservation("OnBeginShutdown");
+            try
+            {
+                CleanupTemporaryToolbarCommandsObserved(diagnostic);
+                DisposeObserved(diagnostic?.Child("Dispose"));
+                diagnostic?.Complete();
+            }
+            catch (Exception error) { diagnostic?.Fault(error); throw; }
+        }
+
+        /// <summary>A failed diagnostic admission must not prevent the original cleanup.</summary>
+        private static AddInShutdownDiagnostic BeginShutdownObservation(string entryPoint)
+        {
+            try { return CreateShutdownDiagnostic?.Invoke(entryPoint); }
+            catch { return null; }
+        }
 
         /// <summary>Nettoie les boutons de session avant que la référence VBE soit libérée.</summary>
         private void CleanupTemporaryToolbarCommands()
         {
-            try { if (vbe != null) new VbeEditorWindows(vbe).RemoveTemporaryToolbarCommands(); }
-            catch (Exception error) { WriteLog("Temporary toolbar cleanup failed: " + error.Message); }
+            CleanupTemporaryToolbarCommandsObserved(null);
+        }
+
+        private void CleanupTemporaryToolbarCommandsObserved(AddInShutdownDiagnostic diagnostic)
+        {
+            try
+            {
+                if (vbe != null)
+                {
+                    diagnostic?.Enter("CleanupTemporaryToolbarCommands");
+                    new VbeEditorWindows(vbe).RemoveTemporaryToolbarCommands();
+                    diagnostic?.Returned("CleanupTemporaryToolbarCommands");
+                }
+            }
+            catch (Exception error)
+            {
+                diagnostic?.CaughtFault("CleanupTemporaryToolbarCommands", error);
+                WriteLog("Temporary toolbar cleanup failed: " + error.Message);
+            }
         }
 
         /// <summary>Détache et ferme les fenêtres, menus, serveur et contrôle de synchronisation.</summary>
         private void Dispose()
         {
-            try { if (!VbeNativeTheme.Disconnect()) WriteLog("Native VBE theme cleanup deferred: renderer still active."); }
-            catch (Exception error) { WriteLog("Native VBE theme cleanup failed: " + error.ToString()); }
-            editorNavigation?.Dispose(); editorNavigation = null;
-            editorWorkspace?.Dispose(); editorWorkspace = null;
-            modernEditor?.Dispose(); modernEditor = null;
-            if (nativeTestControl != null && testExplorerWindow != null && !testExplorerWindow.IsDisposed && !testExplorerWindow.TopLevel)
-                nativeTestControl.Detach(testExplorerWindow);
-            testExplorerWindow?.Dispose(); testExplorerWindow = null;
-            try { if (nativeTestWindow != null) ((dynamic)nativeTestWindow).Close(); } catch (COMException) { }
-            nativeTestWindow = null; nativeTestControl = null;
-            testExplorerService?.Dispose(); testExplorerService = null;
-            StopUpdateCheck();
-            crashReporter?.Dispose();
-            crashReporter = null;
-            menu?.Dispose();
-            menu = null;
-            if (nativeChatControl != null && chat != null && !chat.IsDisposed && docked) nativeChatControl.Detach(chat);
-            docked = false;
-            chat?.Dispose();
-            chat = null;
-            try { if (nativeChatWindow != null) ((dynamic)nativeChatWindow).Close(); } catch { }
-            nativeChatWindow = null; nativeChatControl = null; addIn = null;
-            server?.Dispose();
-            server = null;
+            DisposeObserved(BeginShutdownObservation("Dispose"));
+        }
 
-            dispatcher?.Dispose();
-            dispatcher = null;
-            vbe = null;
+        /// <summary>Observes existing calls and field assignments without asserting COM release.</summary>
+        private void DisposeObserved(AddInShutdownDiagnostic diagnostic)
+        {
+            try
+            {
+                string themeStage = "VbeNativeTheme.Disconnect";
+                try
+                {
+                    diagnostic?.Enter(themeStage);
+                    bool disconnected = VbeNativeTheme.Disconnect();
+                    diagnostic?.Returned(themeStage);
+                    if (!disconnected)
+                    {
+                        themeStage = "WriteLog.ThemeDeferred";
+                        diagnostic?.Enter(themeStage);
+                        WriteLog("Native VBE theme cleanup deferred: renderer still active.");
+                        diagnostic?.Returned(themeStage);
+                    }
+                }
+                catch (Exception error)
+                {
+                    diagnostic?.CaughtFault(themeStage, error);
+                    WriteLog("Native VBE theme cleanup failed: " + error.ToString());
+                }
+                if (editorNavigation != null) { diagnostic?.Enter("editorNavigation.Dispose"); editorNavigation.Dispose(); diagnostic?.Returned("editorNavigation.Dispose"); }
+                editorNavigation = null; diagnostic?.ManagedReferenceCleared("editorNavigation");
+                if (editorWorkspace != null) { diagnostic?.Enter("editorWorkspace.Dispose"); editorWorkspace.Dispose(); diagnostic?.Returned("editorWorkspace.Dispose"); }
+                editorWorkspace = null; diagnostic?.ManagedReferenceCleared("editorWorkspace");
+                if (modernEditor != null) { diagnostic?.Enter("modernEditor.Dispose"); modernEditor.Dispose(); diagnostic?.Returned("modernEditor.Dispose"); }
+                modernEditor = null; diagnostic?.ManagedReferenceCleared("modernEditor");
+                if (nativeTestControl != null && testExplorerWindow != null && !testExplorerWindow.IsDisposed && !testExplorerWindow.TopLevel)
+                {
+                    diagnostic?.Enter("nativeTestControl.Detach");
+                    nativeTestControl.Detach(testExplorerWindow);
+                    diagnostic?.Returned("nativeTestControl.Detach");
+                }
+                if (testExplorerWindow != null) { diagnostic?.Enter("testExplorerWindow.Dispose"); testExplorerWindow.Dispose(); diagnostic?.Returned("testExplorerWindow.Dispose"); }
+                testExplorerWindow = null; diagnostic?.ManagedReferenceCleared("testExplorerWindow");
+                try
+                {
+                    if (nativeTestWindow != null) { diagnostic?.Enter("nativeTestWindow.Close"); ((dynamic)nativeTestWindow).Close(); diagnostic?.Returned("nativeTestWindow.Close"); }
+                }
+                catch (COMException error) { diagnostic?.CaughtFault("nativeTestWindow.Close", error); }
+                nativeTestWindow = null; diagnostic?.ManagedReferenceCleared("nativeTestWindow");
+                nativeTestControl = null; diagnostic?.ManagedReferenceCleared("nativeTestControl");
+                if (testExplorerService != null) { diagnostic?.Enter("testExplorerService.Dispose"); testExplorerService.Dispose(); diagnostic?.Returned("testExplorerService.Dispose"); }
+                testExplorerService = null; diagnostic?.ManagedReferenceCleared("testExplorerService");
+                diagnostic?.Enter("StopUpdateCheck");
+                StopUpdateCheck();
+                diagnostic?.Returned("StopUpdateCheck");
+                if (crashReporter != null) { diagnostic?.Enter("crashReporter.Dispose"); crashReporter.Dispose(); diagnostic?.Returned("crashReporter.Dispose"); }
+                crashReporter = null; diagnostic?.ManagedReferenceCleared("crashReporter");
+                if (menu != null) { diagnostic?.Enter("menu.Dispose"); menu.Dispose(); diagnostic?.Returned("menu.Dispose"); }
+                menu = null; diagnostic?.ManagedReferenceCleared("menu");
+                if (nativeChatControl != null && chat != null && !chat.IsDisposed && docked)
+                {
+                    diagnostic?.Enter("nativeChatControl.Detach");
+                    nativeChatControl.Detach(chat);
+                    diagnostic?.Returned("nativeChatControl.Detach");
+                }
+                docked = false;
+                if (chat != null) { diagnostic?.Enter("chat.Dispose"); chat.Dispose(); diagnostic?.Returned("chat.Dispose"); }
+                chat = null; diagnostic?.ManagedReferenceCleared("chat");
+                try
+                {
+                    if (nativeChatWindow != null) { diagnostic?.Enter("nativeChatWindow.Close"); ((dynamic)nativeChatWindow).Close(); diagnostic?.Returned("nativeChatWindow.Close"); }
+                }
+                catch { diagnostic?.CaughtFault("nativeChatWindow.Close", null); }
+                nativeChatWindow = null; diagnostic?.ManagedReferenceCleared("nativeChatWindow");
+                nativeChatControl = null; diagnostic?.ManagedReferenceCleared("nativeChatControl");
+                addIn = null; diagnostic?.ManagedReferenceCleared("addIn");
+                if (server != null) { diagnostic?.Enter("server.Dispose"); server.Dispose(); diagnostic?.Returned("server.Dispose"); }
+                server = null; diagnostic?.ManagedReferenceCleared("server");
+                if (dispatcher != null) { diagnostic?.Enter("dispatcher.Dispose"); dispatcher.Dispose(); diagnostic?.Returned("dispatcher.Dispose"); }
+                dispatcher = null; diagnostic?.ManagedReferenceCleared("dispatcher");
+                vbe = null; diagnostic?.ManagedReferenceCleared("vbe");
+                diagnostic?.Complete();
+            }
+            catch (Exception error) { diagnostic?.Fault(error); throw; }
         }
     }
 }

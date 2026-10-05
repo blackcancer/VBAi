@@ -328,6 +328,7 @@ namespace VBAi.Tests.Integration
                         diagnostics["ExitCode"] = code;
                         diagnostics["ExitCodeHex"] = "0x" + unchecked((uint)code).ToString("X8");
                     }
+                    ObserveAddInShutdownTrace(diagnostics);
                     writeDiagnostics();
                     try
                     {
@@ -351,6 +352,7 @@ namespace VBAi.Tests.Integration
                         throw;
                     }
                     if (evidenceFailure != null) throw evidenceFailure;
+                    if (addInShutdownFailure != null) throw addInShutdownFailure;
                     cleanupStage = "PROCESS_RELEASE";
                     processReleaseEntered = true;
                     ReleaseOwnedExcelProcess(process);
@@ -367,9 +369,9 @@ namespace VBAi.Tests.Integration
                 privateDesktopChild.Dispose();
                 privateDesktopChild = null;
             }
-            if (closeFailure != null || quitFailure != null || evidenceFailure != null)
-                throw new AggregateException("Excel Close/Quit reported errors; shutdown.json preserves diagnostics.",
-                    new[] { closeFailure, quitFailure, evidenceFailure }.Where(error => error != null));
+            if (closeFailure != null || quitFailure != null || evidenceFailure != null || addInShutdownFailure != null)
+                throw new AggregateException("Excel Close/Quit or cleanup observation reported errors; shutdown.json preserves diagnostics.",
+                    new[] { closeFailure, quitFailure, evidenceFailure, addInShutdownFailure }.Where(error => error != null));
             if (retainEvidence) return;
             if (string.IsNullOrWhiteSpace(Root) || !Directory.Exists(Root)) return;
             if (retainEvidence) { WriteEvidence("shutdown.json", diagnostics); return; }
