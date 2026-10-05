@@ -13,9 +13,12 @@ namespace VBAi
     /// <summary>Initializes an imported designer only when its persisted resources differ from the declared target.</summary>
     internal static class ImportedFormMaterialization
     {
+        /// <summary>Records how initialization settled, independently of the final import acceptance.</summary>
+        internal enum MaterializationOutcome { ResourcesExactBeforeFocus = 1, Rendered = 2 }
+
         /// <summary>Preserves exact resources and returns only font owners still different after one initialization.</summary>
         internal static FormStreamPadding.FormFontBinding[] Prepare(VbaGitSnapshot target, VbaGitComponent component,
-            FormStreamPadding.FormFontBinding[] bindings, Func<VbaGitSnapshot> capture, Action materialize, Action revalidate)
+            FormStreamPadding.FormFontBinding[] bindings, Func<VbaGitSnapshot> capture, Func<Func<bool>, MaterializationOutcome> materialize, Action revalidate)
         {
             if (bindings == null || bindings.Length == 0) return bindings;
             revalidate();
@@ -23,10 +26,19 @@ namespace VBAi
             string resource = component.Name + ".frx";
             if (target.SameFile(actual, resource)) return new FormStreamPadding.FormFontBinding[0];
             revalidate();
-            materialize();
+            MaterializationOutcome outcome = materialize(() => {
+                revalidate();
+                VbaGitSnapshot probe = capture();
+                revalidate();
+                return target.SameFile(probe, resource);
+            });
+            if (outcome != MaterializationOutcome.ResourcesExactBeforeFocus && outcome != MaterializationOutcome.Rendered)
+                throw new InvalidOperationException("The imported designer initialization outcome is unrecognized.");
             revalidate();
             actual = capture();
             if (target.SameFile(actual, resource)) return new FormStreamPadding.FormFontBinding[0];
+            if (outcome == MaterializationOutcome.ResourcesExactBeforeFocus)
+                throw new InvalidOperationException("The imported form resources changed after restoring its prior view; font delivery is refused.");
             VbaGitComponent observedComponent = actual.Manifest.Components.Single(item => item.Name == component.Name && item.Type == 3);
             var observed = actual.FormFonts(observedComponent);
             if (observed == null)
@@ -36,12 +48,13 @@ namespace VBAi
         }
 
         /// <summary>Synchronously initializes only the verified designer on its actual owning VBE STA.</summary>
-        internal static void Materialize(object project, object component, Action revalidate)
+        internal static MaterializationOutcome Materialize(object project, object component, Func<bool> resourcesExactBeforeFocus, Action revalidate)
         {
             FormFontRestoration.RequireOwner(project);
             object window = null, editor = null, main = null, previous = null;
             bool originalVisible = false, originalViewKnown = false;
             Exception primary = null;
+            MaterializationOutcome? outcome = null;
             try
             {
                 revalidate();
@@ -51,14 +64,9 @@ namespace VBAi
                 window = ((dynamic)component).DesignerWindow();
                 originalVisible = Convert.ToBoolean(((dynamic)window).Visible);
                 originalViewKnown = true;
-                revalidate();
-                ((dynamic)window).Visible = true;
-                revalidate();
-                ((dynamic)window).SetFocus();
-                // The caller is inside a native import transaction, possibly under
-                // a modal Git dialog. Do not pump unrelated WinForms messages or
-                // force-enable the modal owner. PrintWindow renders synchronously.
-                Render(project, window, editor, main, revalidate);
+                outcome = ShowAndInitialize(() => { ((dynamic)window).Visible = true; }, resourcesExactBeforeFocus,
+                    () => ((dynamic)window).SetFocus(), () => Render(project, window, editor, main, revalidate), revalidate);
+                return outcome.Value;
             }
             catch (Exception error) { primary = error; throw; }
             finally
@@ -69,7 +77,8 @@ namespace VBAi
                     if (originalViewKnown)
                         RestoreView(originalVisible, previous != null && !VbeProjectHostPath.SameProject(previous, window),
                             () => IsActive(editor, window), () => IsActive(editor, previous),
-                            () => ((dynamic)previous).SetFocus(), () => { ((dynamic)window).Visible = false; }, revalidate);
+                            () => ((dynamic)previous).SetFocus(), () => { ((dynamic)window).Visible = false; }, revalidate,
+                            outcome == MaterializationOutcome.ResourcesExactBeforeFocus);
                 }
                 catch (Exception error) { restoreFailure = error; }
                 Exception combined = restoreFailure == null ? primary : primary == null ? restoreFailure :
@@ -81,12 +90,39 @@ namespace VBAi
             }
         }
 
-        /// <summary>Restores the prior view only while the expected native navigation remains current.</summary>
-        internal static void RestoreView(bool originallyVisible, bool previousDistinct, Func<bool> designerActive,
-            Func<bool> previousActive, Action focusPrevious, Action hideDesigner, Action revalidate)
+        /// <summary>Opens the owned designer once and avoids focus and rendering when an exact resource probe suffices.</summary>
+        internal static MaterializationOutcome ShowAndInitialize(Action show, Func<bool> resourcesExactBeforeFocus,
+            Action focus, Action render, Action revalidate)
         {
             revalidate();
-            if (!designerActive()) return;
+            show();
+            revalidate();
+            bool exact = resourcesExactBeforeFocus();
+            revalidate();
+            if (exact) return MaterializationOutcome.ResourcesExactBeforeFocus;
+            focus();
+            // Native import may run under a modal Git dialog. Rendering keeps all
+            // exact owning-STA, project, active-designer, visibility and PID guards.
+            // Do not pump messages, force-enable an owner or retry a native mutation.
+            render();
+            return MaterializationOutcome.Rendered;
+        }
+
+        /// <summary>Restores the prior view only while the expected native navigation remains current.</summary>
+        internal static void RestoreView(bool originallyVisible, bool previousDistinct, Func<bool> designerActive,
+            Func<bool> previousActive, Action focusPrevious, Action hideDesigner, Action revalidate, bool exactBeforeFocus = false)
+        {
+            revalidate();
+            if (!designerActive())
+            {
+                // Only a settled exact pre-focus probe permits restoring visibility
+                // without stealing focus from the still-current previous window.
+                if (!exactBeforeFocus || originallyVisible || !previousDistinct || !previousActive()) return;
+                revalidate();
+                if (designerActive() || !previousActive()) return;
+                hideDesigner();
+                return;
+            }
             if (previousDistinct)
             {
                 focusPrevious();

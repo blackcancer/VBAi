@@ -16,7 +16,7 @@ namespace VBAi.Tests.Unit
             var bindings = absent ? null : new FormStreamPadding.FormFontBinding[0];
             var result = ImportedFormMaterialization.Prepare(null, null, bindings,
                 () => throw new AssertFailedException("Unexpected export"),
-                () => throw new AssertFailedException("Unexpected initialization"),
+                _ => throw new AssertFailedException("Unexpected initialization"),
                 () => throw new AssertFailedException("Unexpected native access"));
             Assert.AreSame(bindings, result);
         }
@@ -29,7 +29,7 @@ namespace VBAi.Tests.Unit
             byte[] saved = (byte[])actual.Files["Form1.frx"].Clone();
             int captures = 0;
             var result = ImportedFormMaterialization.Prepare(target, target.Manifest.Components[0], Bindings(target),
-                () => { captures++; return actual; }, () => Assert.Fail("Exact imported resources must remain untouched"), () => { });
+                () => { captures++; return actual; }, _ => throw new AssertFailedException("Exact imported resources must remain untouched"), () => { });
             Assert.AreEqual(0, result.Length); Assert.AreEqual(1, captures);
             CollectionAssert.AreEqual(saved, actual.Files["Form1.frx"]);
         }
@@ -41,7 +41,7 @@ namespace VBAi.Tests.Unit
             var before = ChangedFrame(target);
             int captures = 0, initialized = 0;
             var result = ImportedFormMaterialization.Prepare(target, target.Manifest.Components[0], Bindings(target),
-                () => ++captures == 1 ? before : target, () => initialized++, () => { });
+                () => ++captures == 1 ? before : target, _ => { initialized++; return ImportedFormMaterialization.MaterializationOutcome.Rendered; }, () => { });
             Assert.AreEqual(1, initialized); Assert.AreEqual(2, captures); Assert.AreEqual(0, result.Length);
             Assert.AreEqual(82700u, BitConverter.ToUInt32(Bindings(target).Single(item => item.Type == 14).Descriptor, 6));
             Assert.IsFalse(target.SameFile(before, "Form1.frx"), "The strict font discrepancy must remain significant");
@@ -54,7 +54,7 @@ namespace VBAi.Tests.Unit
             var actual = ChangedFrame(target);
             var bindings = Bindings(target);
             var result = ImportedFormMaterialization.Prepare(target, target.Manifest.Components[0], bindings,
-                () => actual, () => { }, () => { });
+                () => actual, _ => ImportedFormMaterialization.MaterializationOutcome.Rendered, () => { });
             Assert.AreEqual(1, result.Length); Assert.AreSame(bindings.Single(item => item.Type == 14), result[0]);
             Assert.AreEqual("Controls/QualificationExtra", result[0].OwnerPath);
             Assert.AreEqual(82700u, BitConverter.ToUInt32(result[0].Descriptor, 6));
@@ -66,7 +66,7 @@ namespace VBAi.Tests.Unit
             var target = Snapshot(FormStreamPaddingTests.ContainerResourceBefore());
             var actual = Snapshot(target.Files["Form1.frx"].Concat(new byte[] { 71 }).ToArray());
             var result = ImportedFormMaterialization.Prepare(target, target.Manifest.Components[0], Bindings(target),
-                () => actual, () => { }, () => { });
+                () => actual, _ => ImportedFormMaterialization.MaterializationOutcome.Rendered, () => { });
             Assert.AreEqual(0, result.Length);
             Assert.IsFalse(target.SameFile(actual, "Form1.frx")); Assert.IsFalse(target.SameAs(actual));
         }
@@ -78,7 +78,7 @@ namespace VBAi.Tests.Unit
             byte[] bytes = (byte[])target.Files["Form1.frx"].Clone(); bytes[3048] ^= 1;
             var actual = Snapshot(bytes); int initialized = 0;
             Assert.ThrowsException<InvalidOperationException>(() => ImportedFormMaterialization.Prepare(target,
-                target.Manifest.Components[0], Bindings(target), () => actual, () => initialized++, () => { }));
+                target.Manifest.Components[0], Bindings(target), () => actual, _ => { initialized++; return ImportedFormMaterialization.MaterializationOutcome.Rendered; }, () => { }));
             Assert.AreEqual(1, initialized);
         }
 
@@ -89,7 +89,7 @@ namespace VBAi.Tests.Unit
             var failure = new InvalidOperationException("Owned project identity changed");
             int validations = 0, captures = 0, initialized = 0;
             var thrown = Assert.ThrowsException<InvalidOperationException>(() => ImportedFormMaterialization.Prepare(target,
-                target.Manifest.Components[0], Bindings(target), () => { captures++; return actual; }, () => initialized++,
+                target.Manifest.Components[0], Bindings(target), () => { captures++; return actual; }, _ => { initialized++; return ImportedFormMaterialization.MaterializationOutcome.Rendered; },
                 () => { if (validations++ == boundary) throw failure; }));
             Assert.AreSame(failure, thrown);
             Assert.AreEqual(boundary == 0 ? 0 : 1, captures);
@@ -103,7 +103,7 @@ namespace VBAi.Tests.Unit
             var failure = new InvalidOperationException("Native initialization result uncertain"); int captures = 0, initialized = 0;
             var thrown = Assert.ThrowsException<InvalidOperationException>(() => ImportedFormMaterialization.Prepare(target,
                 target.Manifest.Components[0], Bindings(target), () => { captures++; return actual; },
-                () => { initialized++; throw failure; }, () => { }));
+                _ => { initialized++; throw failure; }, () => { }));
             Assert.AreSame(failure, thrown); Assert.AreEqual(1, captures); Assert.AreEqual(1, initialized);
         }
 
@@ -114,7 +114,7 @@ namespace VBAi.Tests.Unit
             var failure = new InvalidOperationException("Native export failed"); int captures = 0, initialized = 0;
             var thrown = Assert.ThrowsException<InvalidOperationException>(() => ImportedFormMaterialization.Prepare(target,
                 target.Manifest.Components[0], Bindings(target), () => { if (++captures == failingCapture) throw failure; return actual; },
-                () => initialized++, () => { }));
+                _ => { initialized++; return ImportedFormMaterialization.MaterializationOutcome.Rendered; }, () => { }));
             Assert.AreSame(failure, thrown); Assert.AreEqual(failingCapture, captures); Assert.AreEqual(failingCapture - 1, initialized);
         }
 
@@ -240,6 +240,186 @@ namespace VBAi.Tests.Unit
             Sta(() => Assert.AreEqual(new IntPtr(12), ImportedFormMaterialization.SelectObservedTarget(
                 "immediately-before-PrintWindow", new IntPtr(11), new IntPtr(12), true, true, true, true, 1, 42,
                 _ => 42, () => throw new AssertFailedException("Unexpected refusal description"))));
+        }
+
+        /// <summary>Verifies production capture/show/probe/navigation callbacks and preserves the exact Frame descriptor.</summary>
+        [DataTestMethod, DataRow(true, false), DataRow(false, false), DataRow(false, true)]
+        public void ResourceProbeSettlesBeforeFocusAndRequiresDistinctCaptureAfterRestoration(bool earlyExact, bool residual)
+        {
+            var target = Snapshot(FormStreamPaddingTests.ContainerResourceBefore()); var different = ChangedFrame(target);
+            var events = new List<string>(); int captures = 0;
+            var result = ImportedFormMaterialization.Prepare(target, target.Manifest.Components[0], Bindings(target),
+                () => { events.Add("capture " + ++captures); return captures == 1 || captures == 2 && !earlyExact || residual ? different : target; },
+                probe => {
+                    bool designerActive = false;
+                    var outcome = ImportedFormMaterialization.ShowAndInitialize(() => events.Add("show"), probe,
+                        () => { designerActive = true; events.Add("focus"); }, () => events.Add("render"), () => { });
+                    ImportedFormMaterialization.RestoreView(false, true, () => designerActive, () => !designerActive,
+                        () => { designerActive = false; events.Add("restore focus"); }, () => events.Add("restore"), () => { },
+                        outcome == ImportedFormMaterialization.MaterializationOutcome.ResourcesExactBeforeFocus);
+                    return outcome;
+                }, () => { });
+            CollectionAssert.AreEqual(earlyExact ? new[] { "capture 1", "show", "capture 2", "restore", "capture 3" } :
+                new[] { "capture 1", "show", "capture 2", "focus", "render", "restore focus", "restore", "capture 3" }, events);
+            Assert.AreEqual(residual ? 1 : 0, result.Length);
+            if (residual) Assert.AreEqual("Controls/QualificationExtra", result[0].OwnerPath);
+            Assert.AreEqual(82700u, BitConverter.ToUInt32(Bindings(target).Single(value => value.Type == 14).Descriptor, 6));
+        }
+
+        /// <summary>Observed equality may never authorize later font repair when restoration changes resources.</summary>
+        [DataTestMethod, DataRow(7), DataRow(14), DataRow(0)]
+        public void ExactPrefocusResourcesThatDivergeAfterRestorationRefuseWithoutFontPlanOrAnotherInitialization(int changedOwner)
+        {
+            var target = Snapshot(FormStreamPaddingTests.ContainerResourceBefore());
+            var final = changedOwner == 0 ? Snapshot(target.Files["Form1.frx"].Concat(new byte[] { 71 }).ToArray()) : ChangedOwner(target, changedOwner);
+            int captures = 0, shows = 0;
+            var failure = Assert.ThrowsException<InvalidOperationException>(() => ImportedFormMaterialization.Prepare(target,
+                target.Manifest.Components[0], Bindings(target), () => ++captures == 2 ? target : captures == 1 ? ChangedFrame(target) : final,
+                probe => ImportedFormMaterialization.ShowAndInitialize(() => shows++, probe,
+                    () => Assert.Fail("No focus after exact resources"), () => Assert.Fail("No render after exact resources"), () => { }), () => { }));
+            StringAssert.Contains(failure.Message, "font delivery is refused"); Assert.AreEqual(3, captures); Assert.AreEqual(1, shows);
+        }
+
+        /// <summary>An unrecognized outcome cannot reach capture or residual font planning.</summary>
+        [TestMethod]
+        public void UnknownInitializationOutcomeRefusesBeforePostRestorationCapture()
+        {
+            var target = Snapshot(FormStreamPaddingTests.ContainerResourceBefore()); int captures = 0;
+            Assert.ThrowsException<InvalidOperationException>(() => ImportedFormMaterialization.Prepare(target, target.Manifest.Components[0],
+                Bindings(target), () => { captures++; return ChangedFrame(target); }, _ => (ImportedFormMaterialization.MaterializationOutcome)0, () => { }));
+            Assert.AreEqual(1, captures);
+        }
+
+        /// <summary>Native uncertainty is preserved regardless of whether a failed visibility setter already applied.</summary>
+        [DataTestMethod, DataRow(false), DataRow(true)]
+        public void VisibilityFailureCannotProbeFocusRenderOrBeReinterpretedAsSuccess(bool applied)
+        {
+            var failure = new InvalidOperationException("visibility uncertain"); int shows = 0; bool visible = false;
+            var thrown = Assert.ThrowsException<InvalidOperationException>(() => ImportedFormMaterialization.ShowAndInitialize(
+                () => { shows++; visible = applied; throw failure; }, () => throw new AssertFailedException("No probe after visibility failure"),
+                () => Assert.Fail("No focus"), () => Assert.Fail("No render"), () => { }));
+            Assert.AreSame(failure, thrown); Assert.AreEqual(1, shows); Assert.AreEqual(applied, visible);
+        }
+
+        /// <summary>A failed probe, focus or render stops the production sequence exactly once with its original exception.</summary>
+        [DataTestMethod, DataRow(0), DataRow(1), DataRow(2)]
+        public void ProbeFocusOrRenderFailureNeverReplaysOrAdvancesTheSequence(int boundary)
+        {
+            var failure = new InvalidOperationException("native " + boundary); var events = new List<string>();
+            var thrown = Assert.ThrowsException<InvalidOperationException>(() => ImportedFormMaterialization.ShowAndInitialize(
+                () => events.Add("show"), () => { events.Add("probe"); if (boundary == 0) throw failure; return false; },
+                () => { events.Add("focus"); if (boundary == 1) throw failure; },
+                () => { events.Add("render"); throw failure; }, () => { }));
+            Assert.AreSame(failure, thrown);
+            CollectionAssert.AreEqual(new[] { "show", "probe", "focus", "render" }.Take(boundary + 2).ToArray(), events);
+        }
+
+        /// <summary>Project revocation stops initialization before show, probe or focus on both exact and render paths.</summary>
+        [DataTestMethod]
+        [DataRow(0, true), DataRow(1, true), DataRow(2, true)]
+        [DataRow(0, false), DataRow(1, false), DataRow(2, false)]
+        public void InitializationGuardFailureStopsAtEveryNewBoundary(int boundary, bool exact)
+        {
+            var failure = new InvalidOperationException("identity changed"); int guards = 0; var events = new List<string>();
+            var thrown = Assert.ThrowsException<InvalidOperationException>(() => ImportedFormMaterialization.ShowAndInitialize(
+                () => events.Add("show"), () => { events.Add("probe"); return exact; }, () => events.Add("focus"), () => events.Add("render"),
+                () => { if (guards++ == boundary) throw failure; }));
+            Assert.AreSame(failure, thrown); Assert.AreEqual(boundary + 1, guards);
+            CollectionAssert.AreEqual(new[] { "show", "probe" }.Take(boundary).ToArray(), events);
+        }
+
+        /// <summary>Each export failure is terminal and a failed pre-focus export performs no focus or rendering.</summary>
+        [DataTestMethod, DataRow(1), DataRow(2), DataRow(3)]
+        public void CaptureFailureAtInitialProbeOrRestoredViewIsNeverRetried(int failedCapture)
+        {
+            var target = Snapshot(FormStreamPaddingTests.ContainerResourceBefore()); int captures = 0, shows = 0;
+            var failure = new InvalidOperationException("export failed");
+            var thrown = Assert.ThrowsException<InvalidOperationException>(() => ImportedFormMaterialization.Prepare(target,
+                target.Manifest.Components[0], Bindings(target), () => {
+                    if (++captures == failedCapture) throw failure; return captures == 1 ? ChangedFrame(target) : target;
+                }, probe => ImportedFormMaterialization.ShowAndInitialize(() => shows++, probe,
+                    () => Assert.Fail("The probe never returns nonexact"), () => Assert.Fail("No render"), () => { }), () => { }));
+            Assert.AreSame(failure, thrown); Assert.AreEqual(failedCapture, captures); Assert.AreEqual(failedCapture == 1 ? 0 : 1, shows);
+        }
+
+        /// <summary>Only a settled exact probe and the still-current previous window allow an inactive designer to be hidden.</summary>
+        [DataTestMethod]
+        [DataRow(false, true, true, true, 1), DataRow(true, true, true, true, 0)]
+        [DataRow(false, false, true, true, 0), DataRow(false, true, false, true, 0)]
+        [DataRow(false, true, true, false, 0), DataRow(true, false, false, false, 0)]
+        public void InactiveDesignerRestorationNeverStealsFocusAndRequiresTheExactSettledPreviousView(bool visible, bool previousDistinct,
+            bool previousActive, bool exact, int expectedHides)
+        {
+            int hidden = 0;
+            ImportedFormMaterialization.RestoreView(visible, previousDistinct, () => false, () => previousActive,
+                () => Assert.Fail("No focus for an inactive designer"), () => hidden++, () => { }, exact);
+            Assert.AreEqual(expectedHides, hidden);
+        }
+
+        /// <summary>Navigation changing during revalidation cancels the new visibility restoration.</summary>
+        [DataTestMethod, DataRow(false), DataRow(true)]
+        public void ConcurrentNavigationDuringExactInactiveRestorationPreventsHide(bool designerBecomesActive)
+        {
+            int checks = 0; bool changed = false;
+            ImportedFormMaterialization.RestoreView(false, true, () => changed && designerBecomesActive,
+                () => !changed, () => Assert.Fail("No focus"), () => Assert.Fail("No hide after concurrent navigation"),
+                () => { if (++checks == 2) changed = true; }, true);
+            Assert.AreEqual(2, checks);
+        }
+
+        /// <summary>Revocation at the final inactive-view guard forbids visibility mutation.</summary>
+        [TestMethod]
+        public void RevokedIdentityDuringExactInactiveRestorationPreservesItsFailureWithoutHide()
+        {
+            var failure = new InvalidOperationException("identity revoked"); int guards = 0;
+            var thrown = Assert.ThrowsException<InvalidOperationException>(() => ImportedFormMaterialization.RestoreView(false, true,
+                () => false, () => true, () => Assert.Fail("No focus"), () => Assert.Fail("No hide"),
+                () => { if (++guards == 2) throw failure; }, true));
+            Assert.AreSame(failure, thrown);
+        }
+
+        /// <summary>A failed hide is never attempted again even when it changed the designer visibility first.</summary>
+        [DataTestMethod, DataRow(false), DataRow(true)]
+        public void ExactInactiveHideFailureRemainsFatalWithoutRetry(bool applied)
+        {
+            var failure = new InvalidOperationException("hide uncertain"); int hides = 0; bool hidden = false;
+            var thrown = Assert.ThrowsException<InvalidOperationException>(() => ImportedFormMaterialization.RestoreView(false, true,
+                () => false, () => true, () => Assert.Fail("No focus"), () => { hides++; hidden = applied; throw failure; }, () => { }, true));
+            Assert.AreSame(failure, thrown); Assert.AreEqual(1, hides); Assert.AreEqual(applied, hidden);
+        }
+
+        /// <summary>Project revocation inside the actual Prepare probe forbids export or any later initialization.</summary>
+        [DataTestMethod, DataRow(4), DataRow(5)]
+        public void PrefocusCaptureIdentityGuardsRefuseBeforeAndAfterTheProbeExport(int failedGuard)
+        {
+            var target = Snapshot(FormStreamPaddingTests.ContainerResourceBefore());
+            var failure = new InvalidOperationException("probe identity changed"); int guards = 0, captures = 0, shows = 0;
+            Action revalidate = () => { if (guards++ == failedGuard) throw failure; };
+            var thrown = Assert.ThrowsException<InvalidOperationException>(() => ImportedFormMaterialization.Prepare(target,
+                target.Manifest.Components[0], Bindings(target), () => { captures++; return captures == 1 ? ChangedFrame(target) : target; },
+                probe => ImportedFormMaterialization.ShowAndInitialize(() => shows++, probe,
+                    () => Assert.Fail("No focus after revoked probe identity"), () => Assert.Fail("No render"), revalidate), revalidate));
+            Assert.AreSame(failure, thrown); Assert.AreEqual(failedGuard + 1, guards);
+            Assert.AreEqual(failedGuard == 4 ? 1 : 2, captures); Assert.AreEqual(1, shows);
+        }
+
+        /// <summary>An unavailable navigation readback fails closed at each inactive-restoration query without mutation.</summary>
+        [DataTestMethod, DataRow(0), DataRow(1), DataRow(2), DataRow(3)]
+        public void ExactInactiveNavigationReadbackFailureCannotInventAHideOrFocusTarget(int failedRead)
+        {
+            var failure = new InvalidOperationException("active window unavailable"); int reads = 0;
+            Func<bool, bool> read = result => { if (reads++ == failedRead) throw failure; return result; };
+            var thrown = Assert.ThrowsException<InvalidOperationException>(() => ImportedFormMaterialization.RestoreView(false, true,
+                () => read(false), () => read(true), () => Assert.Fail("No focus"), () => Assert.Fail("No hide"), () => { }, true));
+            Assert.AreSame(failure, thrown); Assert.AreEqual(failedRead + 1, reads);
+        }
+
+        /// <summary>Changes one exact persisted font descriptor without rewriting the rest of the resource graph.</summary>
+        private static VbaGitSnapshot ChangedOwner(VbaGitSnapshot target, int type)
+        {
+            byte[] bytes = (byte[])target.Files["Form1.frx"].Clone(); byte[] descriptor = Bindings(target).Single(value => value.Type == type).Descriptor;
+            int offset = Enumerable.Range(0, bytes.Length - descriptor.Length + 1).Single(index => bytes.Skip(index).Take(descriptor.Length).SequenceEqual(descriptor));
+            Array.Copy(BitConverter.GetBytes(90000u), 0, bytes, offset + 6, 4); return Snapshot(bytes);
         }
 
         /// <summary>Constructs a validated single-form snapshot from retained synthetic resources.</summary>

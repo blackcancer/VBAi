@@ -197,7 +197,7 @@ namespace VBAi
                                         if (observation == null || observation.FormName != next.Name)
                                             bindings = ImportedFormMaterialization.Prepare(target, next, bindings,
                                                 () => CaptureImportedForm(next.Name, (object)imported),
-                                                () => ImportedFormMaterialization.Materialize(CheckedProject(), (object)imported,
+                                                probe => ImportedFormMaterialization.Materialize(CheckedProject(), (object)imported, probe,
                                                     () => RequireImportedForm(next.Name, (object)imported)),
                                                 () => RequireImportedForm(next.Name, (object)imported));
                                         FormFontRestoration.Restore((object)imported, bindings,
