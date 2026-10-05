@@ -77,8 +77,7 @@ namespace VBAi.Tests.Unit
                 Assert.AreEqual(0, calls, "An unsupported complete font plan is refused before native reads.");
                 byte[] resource = FormStreamPaddingTests.ContainerResourceBefore();
                 int directory = DirectoryStream(resource, FormStreamPaddingTests.ContainerStreamsBefore()["/i03/f"].Length);
-                int start = Find(resource, FormStreamPaddingTests.ContainerStreamsBefore()["/i03/f"]);
-                RemoveFont(resource, start, directory, FormStreamPaddingTests.ContainerStreamsBefore()["/i03/f"], 8.27m);
+                RemoveFont(resource, directory, 8.27m);
                 var missing = Snapshot(resource);
                 Assert.ThrowsException<AssertFailedException>(() => UserFormQualificationFonts.RequireSnapshot(missing, (form, layout) => Fonts(), "FrameMultiPage"));
             });
@@ -109,7 +108,7 @@ namespace VBAi.Tests.Unit
             if (implicitRoot)
             {
                 byte[] root = FormStreamPaddingTests.ContainerStreamsBefore()["/f"];
-                RemoveFont(resource, Find(resource, root), DirectoryStream(resource, root.Length), root, 8.25m);
+                RemoveFont(resource, DirectoryStream(resource, root.Length), 8.25m);
             }
             return Snapshot(resource);
         }
@@ -124,20 +123,45 @@ namespace VBAi.Tests.Unit
         }
 
         /// <summary>Removes only the declared Form font and updates the existing bounded CFB stream extent.</summary>
-        private static void RemoveFont(byte[] resource, int streamStart, int directory, byte[] stream, decimal size)
+        private static void RemoveFont(byte[] resource, int directory, decimal size)
         {
+            int length = checked((int)BitConverter.ToUInt32(resource, directory + 120));
+            int origin = 24, sectorSize = 512, miniSize = 64;
+            int directoryRoot = origin + sectorSize * (checked((int)BitConverter.ToUInt32(resource, origin + 48)) + 1);
+            uint miniRoot = BitConverter.ToUInt32(resource, directoryRoot + 116);
+            uint fat = BitConverter.ToUInt32(resource, origin + 76);
+            uint miniFat = BitConverter.ToUInt32(resource, origin + 60);
+            Func<uint, int> sector = value => checked(origin + sectorSize * ((int)value + 1));
+            Func<uint, uint> nextSector = value => BitConverter.ToUInt32(resource, sector(fat) + checked((int)value * 4));
+            var rootSectors = new List<uint>();
+            for (uint current = miniRoot; current != 0xfffffffe; current = nextSector(current))
+            {
+                Assert.IsTrue(rootSectors.Count < resource.Length / sectorSize && !rootSectors.Contains(current));
+                rootSectors.Add(current);
+            }
+            var addresses = new List<int>();
+            uint mini = BitConverter.ToUInt32(resource, directory + 116);
+            var seen = new HashSet<uint>();
+            while (mini != 0xfffffffe)
+            {
+                Assert.IsTrue(seen.Add(mini) && mini / 8 < rootSectors.Count);
+                addresses.Add(sector(rootSectors[checked((int)(mini / 8))]) + checked((int)(mini % 8) * miniSize));
+                mini = BitConverter.ToUInt32(resource, sector(miniFat) + checked((int)mini * 4));
+            }
+            Assert.AreEqual((length + miniSize - 1) / miniSize, addresses.Count);
+            byte[] stream = new byte[length];
+            for (int i = 0; i < length; i++) stream[i] = resource[addresses[i / miniSize] + i % miniSize];
             byte[] descriptor = UserFormQualificationFonts.Descriptor(size);
             int payload = Find(stream, descriptor) - 16;
             Assert.IsTrue(payload >= 8);
-            int length = 16 + descriptor.Length;
-            byte[] omitted = stream.Take(payload).Concat(stream.Skip(payload + length)).ToArray();
+            byte[] omitted = stream.Take(payload).Concat(stream.Skip(payload + 16 + descriptor.Length)).ToArray();
             uint mask = BitConverter.ToUInt32(omitted, 4);
             Assert.IsTrue((mask & (1u << 20)) != 0);
             Buffer.BlockCopy(BitConverter.GetBytes(mask & ~(1u << 20)), 0, omitted, 4, 4);
-            // Keep the same mini-FAT chain valid: both lengths occupy the same number of mini sectors.
-            Assert.AreEqual((stream.Length + 63) / 64, (omitted.Length + 63) / 64);
-            Array.Clear(resource, streamStart, stream.Length);
-            Buffer.BlockCopy(omitted, 0, resource, streamStart, omitted.Length);
+            Assert.AreEqual((stream.Length + miniSize - 1) / miniSize, (omitted.Length + miniSize - 1) / miniSize);
+            // Preserve the actual mini-FAT graph: native streams can use noncontiguous mini sectors.
+            for (int i = 0; i < addresses.Count * miniSize; i++)
+                resource[addresses[i / miniSize] + i % miniSize] = i < omitted.Length ? omitted[i] : (byte)0;
             Buffer.BlockCopy(BitConverter.GetBytes((uint)omitted.Length), 0, resource, directory + 120, 4);
         }
 
