@@ -24,14 +24,14 @@ namespace VBAi.Tests.Integration
             if (actual == null) throw new ArgumentNullException(nameof(actual));
             if (evidence == null) throw new ArgumentNullException(nameof(evidence));
             string root = Path.Combine(ownedRoot, "post-import-raw");
-            if (Directory.Exists(root) || File.Exists(root)) throw new IOException("Post-import raw evidence already exists; no overwrite.");
+            if (Directory.Exists(root) || System.IO.File.Exists(root)) throw new IOException("Post-import raw evidence already exists; no overwrite.");
             Directory.CreateDirectory(root);
             var targetRows = RetainEmbeddedRawSide(root, "target", target);
             var actualRows = RetainEmbeddedRawSide(root, "actual", actual);
             var receipt = new { Phase = "PostImportRawSnapshotsRetained", Root = root,
                 TargetRole = "PreparedBaseline", ActualRole = "ActualPostImportCapture",
                 Target = targetRows, Actual = actualRows, CaptureCount = 1, ImportReplay = false };
-            File.WriteAllText(Path.Combine(root, "raw-evidence.json"),
+            System.IO.File.WriteAllText(Path.Combine(root, "raw-evidence.json"),
                 new JavaScriptSerializer().Serialize(receipt), new UTF8Encoding(false));
             evidence(receipt);
         }
