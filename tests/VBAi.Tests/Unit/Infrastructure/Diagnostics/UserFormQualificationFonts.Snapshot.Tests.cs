@@ -59,9 +59,8 @@ namespace VBAi.Tests.Unit
         {
             WithQualification(() => {
                 byte[] resource = FormStreamPaddingTests.ContainerResourceBefore();
-                byte[] descriptor = UserFormQualificationFonts.Descriptor(owner == "Root" ? 8.25m : 8.27m);
-                int location = Find(resource, descriptor);
-                Buffer.BlockCopy(BitConverter.GetBytes(owner == "Root" ? 90000u : 82500u), 0, resource, location + 6, 4);
+                int length = FormStreamPaddingTests.ContainerStreamsBefore()[owner == "Root" ? "/f" : "/i03/f"].Length;
+                RemoveFont(resource, DirectoryStream(resource, length), owner == "Root" ? 8.25m : 8.27m, owner == "Root" ? 9m : 8.25m);
                 var snapshot = Snapshot(resource);
                 Assert.ThrowsException<AssertFailedException>(() => UserFormQualificationFonts.RequireSnapshot(snapshot, (form, layout) => Fonts()));
             });
@@ -123,7 +122,7 @@ namespace VBAi.Tests.Unit
         }
 
         /// <summary>Removes only the declared Form font and updates the existing bounded CFB stream extent.</summary>
-        private static void RemoveFont(byte[] resource, int directory, decimal size)
+        private static void RemoveFont(byte[] resource, int directory, decimal size, decimal? replacementSize = null)
         {
             int length = checked((int)BitConverter.ToUInt32(resource, directory + 120));
             int origin = 24, sectorSize = 512, miniSize = 64;
@@ -154,10 +153,25 @@ namespace VBAi.Tests.Unit
             byte[] descriptor = UserFormQualificationFonts.Descriptor(size);
             int payload = Find(stream, descriptor) - 16;
             Assert.IsTrue(payload >= 8);
-            byte[] omitted = stream.Take(payload).Concat(stream.Skip(payload + 16 + descriptor.Length)).ToArray();
-            uint mask = BitConverter.ToUInt32(omitted, 4);
-            Assert.IsTrue((mask & (1u << 20)) != 0);
-            Buffer.BlockCopy(BitConverter.GetBytes(mask & ~(1u << 20)), 0, omitted, 4, 4);
+            byte[] omitted;
+            if (replacementSize.HasValue)
+            {
+                omitted = stream;
+                Buffer.BlockCopy(BitConverter.GetBytes(checked((uint)(replacementSize.Value * 10000m))),
+                    0, omitted, payload + 16 + 6, 4);
+            }
+            else
+            {
+                omitted = stream.Take(payload).Concat(stream.Skip(payload + 16 + descriptor.Length)).ToArray();
+                // fFont has a 0xffff scalar plus two alignment bytes in FormDataBlock.
+                int marker = Find(omitted, new byte[] { 0xff, 0xff, 0, 0 });
+                omitted = omitted.Take(marker).Concat(omitted.Skip(marker + 4)).ToArray();
+                ushort blockLength = BitConverter.ToUInt16(omitted, 2);
+                Buffer.BlockCopy(BitConverter.GetBytes(checked((ushort)(blockLength - 4))), 0, omitted, 2, 2);
+                uint mask = BitConverter.ToUInt32(omitted, 4);
+                Assert.IsTrue((mask & (1u << 20)) != 0);
+                Buffer.BlockCopy(BitConverter.GetBytes(mask & ~(1u << 20)), 0, omitted, 4, 4);
+            }
             Assert.AreEqual((stream.Length + miniSize - 1) / miniSize, (omitted.Length + miniSize - 1) / miniSize);
             // Preserve the actual mini-FAT graph: native streams can use noncontiguous mini sectors.
             for (int i = 0; i < addresses.Count * miniSize; i++)
