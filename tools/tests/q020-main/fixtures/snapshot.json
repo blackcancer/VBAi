@@ -1,0 +1,52 @@
+{
+  "FixtureScope": "Synthetic sanitized snapshot for offline comparison rejection; no native persistence or rendering evidence.",
+  "General": [
+    { "Name": "Name", "Value": "SourceProject", "Error": null },
+    { "Name": "Description", "Value": "", "Error": null },
+    { "Name": "HelpFile", "Value": "", "Error": null },
+    { "Name": "HelpContextID", "Value": 0, "Error": null },
+    { "Name": "ConditionalCompilation", "Value": "", "Error": null }
+  ],
+  "Components": [
+    { "Name": "Q020Module", "Type": 1 },
+    { "Name": "Q020Class", "Type": 2 },
+    { "Name": "Q020PublishedForm", "Type": 3 }
+  ],
+  "References": [
+    { "Guid": "000204ef-0000-0000-c000-000000000046", "Major": 4, "Minor": 0, "BuiltIn": true, "IsBroken": false }
+  ],
+  "Code": {
+    "Q020Module": { "Code": "Option Explicit\r\nPublic Function Value() As Long\r\nValue = 42\r\nEnd Function", "Sha256": "fixture-module-revision" },
+    "Q020Class": { "Code": "Option Explicit", "Sha256": "fixture-class-revision" },
+    "Q020PublishedForm": { "Code": "Option Explicit", "Sha256": "fixture-form-revision" }
+  },
+  "Attributes": {
+    "Q020Class": "Attribute VB_Name = \"Q020Class\"\nAttribute VB_Creatable = False",
+    "Q020PublishedForm": "Attribute VB_Name = \"Q020PublishedForm\"\nAttribute VB_PredeclaredId = True"
+  },
+  "Resources": { "Q020PublishedForm": { "Path": "synthetic.frx", "Bytes": 4, "Sha256": "synthetic-resource-revision" } },
+  "PictureDigest": "synthetic-picture-content",
+  "Form": {
+    "Project": "SourceProject", "Form": "Q020PublishedForm", "Caption": "Synthetic form", "Width": 200, "Height": 120,
+    "Version": "source-local-revision",
+    "Controls": [ { "Name": "Q020Label", "Type": "Forms.Label.1", "Left": 12, "Top": 12, "Width": 160, "Height": 24, "Caption": "Synthetic label" } ]
+  },
+  "FormTree": {
+    "Form": "Q020PublishedForm", "TreeVersion": "source-local-revision",
+    "Properties": [
+      { "Name": "Caption", "Kind": "scalar", "Type": "System.String", "Value": "Synthetic form", "ReadOnly": false, "Error": null },
+      { "Name": "Width", "Kind": "scalar", "Type": "System.Single", "Value": 200, "ReadOnly": false, "Error": null },
+      { "Name": "Height", "Kind": "scalar", "Type": "System.Single", "Value": 120, "ReadOnly": false, "Error": null },
+      { "Name": "Visible", "Kind": "scalar", "Type": "System.Boolean", "Value": true, "ReadOnly": false, "Error": null },
+      { "Name": "Font", "Kind": "font", "Type": "stdole.IFontDisp", "ReadOnly": false, "Error": null, "Members": [ { "Name": "Name", "Value": "Tahoma", "Error": null }, { "Name": "Size", "Value": 8.25, "Error": null } ] },
+      { "Name": "Picture", "Kind": "picture", "Type": "stdole.IPictureDisp", "Digest": "synthetic-picture-content", "ReadOnly": false, "Error": null }
+    ],
+    "Controls": [
+      { "Name": "Q020Label", "Type": "Forms.Label.1", "Properties": [
+        { "Name": "Caption", "Kind": "scalar", "Type": "System.String", "Value": "Synthetic label", "Error": null },
+        { "Name": "Visible", "Kind": "scalar", "Type": "System.Boolean", "Value": true, "Error": null },
+        { "Name": "Font", "Kind": "font", "Type": "stdole.IFontDisp", "Error": null, "Members": [ { "Name": "Name", "Value": "Tahoma", "Error": null } ] }
+      ] }
+    ]
+  }
+}

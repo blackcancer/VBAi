@@ -10,7 +10,7 @@ using System.Text.RegularExpressions;
 namespace VBAi
 {
         /// <summary>Route les commandes du protocole vers les services VBE et Excel.</summary>
-    internal sealed class VbeSession
+    internal sealed partial class VbeSession
     {
         /// <summary>Fournit la fenêtre d’éditeur moderne, en pouvant la créer à la demande.</summary>
         internal Func<bool, ModernEditorWindow> ModernEditor;
@@ -192,6 +192,7 @@ namespace VBAi
         private int bridgeOperationsInFlight;
         internal void RequireGeneralSettled()
         {
+            RequireMacroSettled();
             if (generalInFlight || generalQuarantined)
                 throw new InvalidOperationException("An original General operation is pending or uncertain. No further native operation is permitted in this session.");
         }
@@ -272,12 +273,15 @@ namespace VBAi
 
             // The live conversation authorization reads the project inventory. Permit
             // that read during the operation, while retaining all mutation exclusions.
-            if (request.Command != "status" && (generalQuarantined ||
+            if (request.Command != "status" && (MacroDispatchBlocked(request.Command) || generalQuarantined ||
                 (generalInFlight && !(generalAuthorizationDepth > 0 && request.Command == "list_projects"))))
                 return Response.Failure("An original General operation is pending or uncertain. No further session operation is permitted.");
 
             switch (request.Command)
             {
+                case "create_solidworks_macro":
+                case "publish_solidworks_macro":
+                    return Response.Failure("Explicit native macro creation/publication requires InvokeAsync or the bridge worker.");
                 case "read_project_general":
                 case "set_project_general":
                     return Response.Failure("The native General command requires InvokeAsync or the bridge worker.");
@@ -766,13 +770,21 @@ namespace VBAi
             foreach (dynamic project in vbe.VBProjects)
             {
                 string fileName = null;
+                int? fileNameErrorHResult = null;
+                string fileNameErrorType = null;
                 try { fileName = (string)project.FileName; }
-                catch (Exception) { } // An unsaved host document has no accessible path.
+                catch (Exception error)
+                {
+                    // Preserve the original getter outcome without classifying it as unsaved.
+                    fileNameErrorHResult = error.HResult;
+                    fileNameErrorType = error.GetType().FullName;
+                }
                 string hostPath = null, hostPathError = null;
                 try { hostPath = VbeProjectHostPath.Read((object)project); }
                 catch (Exception error) { hostPathError = error.Message; }
                 result.Add(new { Name = (string)project.Name, FileName = fileName, HostPath = hostPath,
-                    HostPathError = hostPathError, Mode = (int)project.Mode });
+                    HostPathError = hostPathError, Mode = (int)project.Mode,
+                    FileNameErrorHResult = fileNameErrorHResult, FileNameErrorType = fileNameErrorType });
             }
             return result;
         }

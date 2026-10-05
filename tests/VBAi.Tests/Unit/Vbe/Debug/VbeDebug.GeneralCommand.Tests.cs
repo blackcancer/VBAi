@@ -23,6 +23,26 @@ namespace VBAi.Tests.Unit
             var other=new Bar{Name="Project Context"};other.Controls.Add(new Control());host.CommandBars.Add(other);return host;
         }
         [TestMethod]
+        public void GeneralCaptionDiscoveryUsesExactLocalizedActiveMenuWithoutExecution()
+        {
+            var control=new Control{Caption="Propriétés de Source..."};var host=Create(control);
+            Assert.AreEqual(control.Caption,new VbeDebug(host).ReadGeneralCommandCaption());
+            Assert.AreEqual(0,control.Executes);
+        }
+        [DataTestMethod][DataRow("disabled")][DataRow("duplicate")][DataRow("type")][DataRow("id")][DataRow("empty-menu")][DataRow("empty-caption")]
+        public void GeneralCaptionDiscoveryRefusesUnknownOrAmbiguousActiveMenu(string fault)
+        {
+            var control=new Control();var host=Create(control);
+            if(fault=="disabled")control.Enabled=false;
+            if(fault=="duplicate")host.CommandBars[0].Controls.Add(new Control());
+            if(fault=="type")control.Type=10;
+            if(fault=="id")control.Id=1;
+            if(fault=="empty-menu")host.CommandBars[0].Name="";
+            if(fault=="empty-caption")control.Caption="";
+            Assert.ThrowsException<InvalidOperationException>(()=>new VbeDebug(host).ReadGeneralCommandCaption());
+            Assert.AreEqual(0,control.Executes);
+        }
+        [TestMethod]
         public void ExactMenuRouteIgnoresOtherContextsAndExecutesOnlyAfterEntryGuardOnce()
         {
             var control=new Control();var host=Create(control);var service=new VbeDebug(host);int live=0,entry=0;

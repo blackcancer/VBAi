@@ -303,6 +303,8 @@ namespace VBAi
                     Type = descriptor.PropertyType?.FullName, ReadOnly = descriptor.IsReadOnly,
                     AllowedValues = EnumChoices(descriptor.PropertyType),
                     SetterStatus = DesignerSetterStatus(targetType, descriptor) };
+                if (TryDescribeReservedFontWriteOnly(item, descriptor, info))
+                { result.Add(info); continue; }
                 try
                 {
                     object value = descriptor.GetValue(item);
@@ -510,6 +512,8 @@ namespace VBAi
                     result.Add(info);
                     continue;
                 }
+                if (TryDescribeReservedFontWriteOnly(designer, descriptor, info))
+                { result.Add(info); continue; }
                 try { info.NumIndices = (int)property.NumIndices; }
                 catch (Exception ex) { info.Error = ex.Message; }
                 object raw = null;

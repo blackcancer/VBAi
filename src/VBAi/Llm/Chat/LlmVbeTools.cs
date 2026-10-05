@@ -66,6 +66,7 @@ namespace VBAi
         internal Func<Request, Task<object>> InspectLocalScalarsNative;
         /// <summary>Saves and observes completion on the owning VBE STA.</summary>
         internal Func<Request, Task<object>> SaveHostDocumentNative;
+        internal Func<Request, Task<object>> SolidWorksMacroNative;
         /// <summary>Interroge la disponibilité native d’une récupération dans le concepteur VBE.</summary>
         internal Func<Request, bool> CanRecoverDesignerCut;
         /// <summary>Demande la sauvegarde de signature au document hôte.</summary>
@@ -115,6 +116,7 @@ namespace VBAi
             ReadImmediateNative = request => session.ReadImmediateAsync(request);
             InspectLocalScalarsNative = request => session.InspectLocalScalarsAsync(request);
             SaveHostDocumentNative = request => session.SaveHostDocumentAsync(request);
+            SolidWorksMacroNative = request => session.SolidWorksMacroAsync(request);
             ProjectGeneralNative = (request, write) => session.ProjectGeneralAsync(request, write);
             CanRecoverDesignerCut = request => session.CanRecoverFormCut(request);
             PersistSignature = project => session.PersistProjectSignature(project);
@@ -268,10 +270,10 @@ namespace VBAi
                 new[] { "Project" }, "Project"),
             Definition("project_persistence_status", "Read VBProject.Saved and the exact Excel workbook, Word document, PowerPoint presentation, existing SOLIDWORKS SWP host project (Type=100), or standalone SWP project (Type=101) state. Documents are matched by native project identity and host PID. Unsupported hosts remain unavailable. Word/PowerPoint and SWP runtime qualification is pending. This does not write to disk.",
                 new[] { "Project" }, "Project"),
-            Definition("save_host_document", "Save the already-named writable Excel workbook, Word macro document, PowerPoint macro presentation or existing SOLIDWORKS SWP host project (Type=100), or standalone SWP project (Type=101) owning the exact design-mode VBE project. Requires InvokeAsync, ExpectedProjectVersion and ExpectedHostPath from project_persistence_status. Word/PowerPoint and SOLIDWORKS Type100 guard native identity, host PID and unchanged VBA after saving. SOLIDWORKS invokes the built-in VBE Save command once on its owning UI thread, then yields while checking completion; timeout or changed state is Uncertain and must not trigger an automatic retry. Type100 SaveAs, unsupported host projects and unsaved paths are refused. Saved flags are not proof that code, resources or signatures survive reload.",
+            Definition("save_host_document", "Save the already-named writable Excel workbook, Word macro document, PowerPoint macro presentation or existing SOLIDWORKS SWP host project (Type=100), or generic standalone SWP project (Type=101) outside SOLIDWORKS owning the exact design-mode VBE project. Requires InvokeAsync, ExpectedProjectVersion and ExpectedHostPath from project_persistence_status. Word/PowerPoint and SOLIDWORKS Type100 guard native identity, host PID and unchanged VBA after saving. SOLIDWORKS invokes the built-in VBE Save command once on its owning UI thread, then yields while checking completion; timeout or changed state is Uncertain and must not trigger an automatic retry. Type100 SaveAs, unsupported host projects and unsaved paths are refused. Saved flags are not proof that code, resources or signatures survive reload.",
                 new[] { "Project", "ExpectedProjectVersion", "ExpectedHostPath" },
                 "Project", "ExpectedProjectVersion", "ExpectedHostPath"),
-            Definition("save_host_document_as", "First-save an unsaved Excel VBA project as .xlsm, Word as .docm/.dotm, PowerPoint as .pptm/.potm/.ppsm, or a native standalone project (Type=101) as .swp to a new Path explicitly supplied by the user. Refuses overwrite and checks ExpectedProjectVersion, design mode, native identity and saved paths. Unsupported host projects are refused. Word/PowerPoint and SWP runtime/reload remains unqualified; reopen the file to prove persistence. VBE edit policy applies.",
+            Definition("save_host_document_as", "First-save an unsaved Excel VBA project as .xlsm, Word as .docm/.dotm, PowerPoint as .pptm/.potm/.ppsm, or a generic standalone project (Type=101) outside SOLIDWORKS as .swp to a new Path explicitly supplied by the user. Refuses overwrite and checks ExpectedProjectVersion, design mode, native identity and saved paths. Unsupported host projects are refused. Word/PowerPoint and generic SWP runtime/reload remains unqualified; reopen the file to prove persistence. In SOLIDWORKS, generic Type101 SaveAs is refused: use explicit publish_solidworks_macro to preserve the draft and create a new native identity, or create_solidworks_macro with a destination from the start. VBE edit policy applies.",
                 new[] { "Project", "ExpectedProjectVersion", "Path" },
                 "Project", "ExpectedProjectVersion", "Path"),
             Definition("project_signature_status", "Read whether the exact Excel workbook owning this VBE project has a signed VBA project. Returns Available=false when the host is not Excel, the registered Excel instance differs from this VBE, or its project cannot be matched. This does not sign, validate the certificate, or inspect pending edits.",
@@ -403,7 +405,7 @@ namespace VBAi
         /// <returns>JSON d’une réponse réussie ou d’erreur.</returns>
         public string Invoke(string name, string arguments)
         {
-            if (name == "save_host_document" || IsProjectGeneralTool(name))
+            if (name == "save_host_document" || IsProjectGeneralTool(name) || IsSolidWorksMacroTool(name))
                 return json.Serialize(Response.Failure(name + " requires InvokeAsync."));
             // The synchronous path never reaches an await: native Save is async-only.
             return InvokeCoreAsync(name, arguments, false).GetAwaiter().GetResult();
@@ -494,7 +496,7 @@ namespace VBAi
                     return json.Serialize(ReadUserFile((string)values["Path"]));
                 if ((name == "set_form_picture" || name == "set_form_node_picture" ||
                     name == "add_reference_file" || name == "insert_code_file" || name == "import_component" || name == "open_standalone_project" || (name == "set_project_protection" && values.ContainsKey("Path")) ||
-                    name == "save_host_document_as" ||
+                    name == "save_host_document_as" || IsSolidWorksMacroTool(name) ||
                     name == "inspect_code_file" || name == "export_component") &&
                     !IsExplicitUserPath((string)values["Path"]))
                     return json.Serialize(Response.Failure("L'utilisateur doit fournir explicitement le chemin absolu du fichier."));
@@ -562,6 +564,11 @@ namespace VBAi
                         };
                         try { result = Response.Success(await SaveHostDocumentNative(request)); }
                         finally { request.RevalidateSaveAuthorization = null; }
+                    }
+                    else if (IsSolidWorksMacroTool(name))
+                    {
+                        if (!asyncSave) return json.Serialize(Response.Failure(name + " requires InvokeAsync."));
+                        result = await InvokeSolidWorksMacroAsync(name, arguments, request, editApproved);
                     }
                     else if (IsProjectGeneralTool(name))
                     {
@@ -745,7 +752,7 @@ namespace VBAi
             if (IsCatalogTool(name)) return await InvokeCatalogAsync(name, arguments);
             // Unwind the WebView callback before potentially modal native Save. The
             // regular Invoke pipeline below revalidates schema, scope and approval.
-            if (name == "save_host_document" || IsProjectGeneralTool(name)) await Task.Yield();
+            if (name == "save_host_document" || IsProjectGeneralTool(name) || IsSolidWorksMacroTool(name)) await Task.Yield();
             if (name.StartsWith("monaco_", StringComparison.Ordinal)) return await InvokeMonacoAsync(name, arguments);
             try
             {

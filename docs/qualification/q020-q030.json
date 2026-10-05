@@ -1,0 +1,4539 @@
+{
+  "Schema": "Q020Q030EvidenceIndexV1",
+  "SourceBaseCommit": "4a5b05e0f9efc20fda3ee61f93c45d45cd32cef1",
+  "SourceFiles": [
+    {
+      "Path": "src/VBAi/VBAi.csproj",
+      "Sha256": "6232BB6E0CE9E2F5578E6553CE6A069A0DD29AE0BBD19C8A053346E0828E0DFE"
+    },
+    {
+      "Path": "src/VBAi/Bridge/BridgeRequestReader.cs",
+      "Sha256": "D0505ADCD9F6B294796BE2F19CD064D473D6BF6BA0EE4253BE717FDFD5F031CC"
+    },
+    {
+      "Path": "src/VBAi/Bridge/BridgeResponseWriter.cs",
+      "Sha256": "21FF7AFF59441E3E1CDCA66DA1638A11A53C851847AFDAE2FDAB8FB958227A11"
+    },
+    {
+      "Path": "src/VBAi/Bridge/BridgeServer.cs",
+      "Sha256": "B9C5C2F2394030C8E4D1913319D4042F358FF81167402B9505E93004AAFDF8EB"
+    },
+    {
+      "Path": "src/VBAi/Bridge/ProcessInput.cs",
+      "Sha256": "8F59BB7DB1AB9A2EAEACAFE64B50292F812A5DCDE1AB85C56D8EFE4DFDDFF6CA"
+    },
+    {
+      "Path": "src/VBAi/Bridge/Protocol.cs",
+      "Sha256": "4AF1F9937366A698839DEC60FC09C2B0EF0CE5F4C9E1BB92ED5F2B5B0416AD0B"
+    },
+    {
+      "Path": "src/VBAi/Bridge/Diagnostics/EffectiveTokenObservation.cs",
+      "Sha256": "260E629E84A99E047D99657A0A6113480FC1AE358CF6E1B244B6439BA9120777"
+    },
+    {
+      "Path": "src/VBAi/Bridge/Diagnostics/PathVisibilityDiagnostic.cs",
+      "Sha256": "7ED025D58387CB2C6F7CE61DAB2E4A04865D8EC7BE91083250BAFD1E985EC4A7"
+    },
+    {
+      "Path": "src/VBAi/Bridge/Diagnostics/PathVisibilityObservation.cs",
+      "Sha256": "FC505C07AA6AD7E0427E98D9FE003588022F6B2BFB98117D91E5CC54CDD2FD64"
+    },
+    {
+      "Path": "src/VBAi/Editor/EditorAttributeRewrite.cs",
+      "Sha256": "303A0A016A3C6755A747CF3D3954C7C7CAEAB004648D446EA05B3A74EBDA1B87"
+    },
+    {
+      "Path": "src/VBAi/Editor/EditorBrowserProfile.cs",
+      "Sha256": "D86123B05A1EB09DFE30F0482CFDD3821F079D6E42CB1BEE0A3EB01BC7449507"
+    },
+    {
+      "Path": "src/VBAi/Editor/EditorDesignerSnapshot.cs",
+      "Sha256": "1A3D850D5BF3B87E391A4F5544A6C8D378EB6AACF430F7E77E4E1EB669156889"
+    },
+    {
+      "Path": "src/VBAi/Editor/EditorDocument.cs",
+      "Sha256": "62328BBE6E78175C2DB72B9083250D36C7D23B731382C36550A1669016382E85"
+    },
+    {
+      "Path": "src/VBAi/Editor/EditorDraftStore.cs",
+      "Sha256": "28E8EC0D42522A59F8AA2833E75AA0A64BB1BAC27BFC3F5072363539E48B42F3"
+    },
+    {
+      "Path": "src/VBAi/Editor/EditorLanguageCache.cs",
+      "Sha256": "A2E20B7E3966C9430D905D442427C49A8771B00A229B67A9D8235139A37D26F3"
+    },
+    {
+      "Path": "src/VBAi/Editor/EditorLanguageIndex.cs",
+      "Sha256": "037A1EA7F66D8E72F43D06F64B50E2A806D7263872B151D261DAD873113680E6"
+    },
+    {
+      "Path": "src/VBAi/Editor/EditorProjectNavigation.cs",
+      "Sha256": "8B9C79072A84DCD6FB043AF882BD5BE519AE758FDB1A424E73C5315D1E3F32F5"
+    },
+    {
+      "Path": "src/VBAi/Editor/EditorReferenceIndex.cs",
+      "Sha256": "DFBBC341A8C6948C004BF8C9103E785613124E0300E87C0EBCB98AA9E38493EE"
+    },
+    {
+      "Path": "src/VBAi/Editor/EditorSyncWorker.cs",
+      "Sha256": "86328999A030A666D4DB54691C14E577DF699CC82FD10CA351A6552C7597BD25"
+    },
+    {
+      "Path": "src/VBAi/Editor/EditorTextChange.cs",
+      "Sha256": "09C4A214ABA2A465DF490FA0EF8CAD09DF078ECDFAE81E36043B310B0083C572"
+    },
+    {
+      "Path": "src/VBAi/Editor/EditorVbeModule.cs",
+      "Sha256": "499ADC8DB81BB0AE31AF3B20DB0CE659E8AE739D1F42386A113B3CF5B3B3CDD9"
+    },
+    {
+      "Path": "src/VBAi/Editor/EditorWorkspaceHost.cs",
+      "Sha256": "5B30262A634AD7C61A5BFEAF1B7CAAD00092C2783C6C050A3563292677C61477"
+    },
+    {
+      "Path": "src/VBAi/Editor/ModernEditorWindow.Activation.cs",
+      "Sha256": "9FDC0A071AAACB0FC5E3F0B61089AC037886E96D866B59F5CFB242C1483577B5"
+    },
+    {
+      "Path": "src/VBAi/Editor/ModernEditorWindow.cs",
+      "Sha256": "3A98220D96E0C8A6941E8EC56B679EEEF45BA950703BF12BB22B6C695FD8E272"
+    },
+    {
+      "Path": "src/VBAi/Editor/ModernEditorWindow.Debug.cs",
+      "Sha256": "5A22367A2456F3E9642F590A8126D330129D50FA47D8D95868AA389151F15F63"
+    },
+    {
+      "Path": "src/VBAi/Editor/ModernEditorWindow.Designer.cs",
+      "Sha256": "D5A524C138D02A4853D96BC089CDFFB55CA59A477DFF4C98E3EF2C4CB8B4A8AE"
+    },
+    {
+      "Path": "src/VBAi/Editor/ModernEditorWindow.Language.cs",
+      "Sha256": "BBA4248FFA3E65C4E51A12DF8C7A6987FC9C92764EBD168FB21B801C40BB75B2"
+    },
+    {
+      "Path": "src/VBAi/Editor/ModernEditorWindow.Save.cs",
+      "Sha256": "77792B8245F8D1A1589B371F2A9913225573E6AF8576D850CC48A3F41CD7D845"
+    },
+    {
+      "Path": "src/VBAi/Editor/ModernEditorWindow.Tools.cs",
+      "Sha256": "DF68932F87E205690A9329DCEB549D98FE0C5B666252B6B45B4A0424562A27BD"
+    },
+    {
+      "Path": "src/VBAi/Git/FormFontObservation.cs",
+      "Sha256": "AC88A35680EFECC2E438D1B0A4EF48A820AEE636247EB905E51C8DF35B5BB2EC"
+    },
+    {
+      "Path": "src/VBAi/Git/FormFontRestoration.cs",
+      "Sha256": "EF5179EBDCDFCCC38B006486C2EB54FF0A30549996F0253065855E0424648922"
+    },
+    {
+      "Path": "src/VBAi/Git/FormResourcePreflight.cs",
+      "Sha256": "F75961DDEA258F5C56DD70B32C676C16E621D12DB17DC2E097DD4E66EFDA1D12"
+    },
+    {
+      "Path": "src/VBAi/Git/FormStreamPadding.Containers.cs",
+      "Sha256": "08B2CF2BC241C5BA46D71C1F48D46B8280A4AEF9ACF14C300848DE53DAE2573F"
+    },
+    {
+      "Path": "src/VBAi/Git/FormStreamPadding.Controls.cs",
+      "Sha256": "A44C1904BD4E3A31A8FB305D7C97AFC584FF46C401E7EAE198A087D86E034871"
+    },
+    {
+      "Path": "src/VBAi/Git/FormStreamPadding.cs",
+      "Sha256": "AC3B4C97F2B09E1F23A78CE7D9846090534534054AE8AD8170C9F6691ECB24E9"
+    },
+    {
+      "Path": "src/VBAi/Git/FormStreamPadding.Morph.cs",
+      "Sha256": "5EE6002D36AB234BE718ED6847CDE9D42B3E7933E1382BABE5EF54E763840430"
+    },
+    {
+      "Path": "src/VBAi/Git/GitFailureDiagnostic.cs",
+      "Sha256": "7913BAB68D7AD418369E2478CF745F12A4E7D3EB388E50F7F8E2B0048C1E9913"
+    },
+    {
+      "Path": "src/VBAi/Git/GitHubAccountService.cs",
+      "Sha256": "40D138F5BB2AB53B3B3C896695EF99578892BD754484962982D014382BB9726B"
+    },
+    {
+      "Path": "src/VBAi/Git/GitHubApi.cs",
+      "Sha256": "E9493000CAE6067DEFD401CA02BCFE135190BF61F2D4717A3F9EBDC66D34DE01"
+    },
+    {
+      "Path": "src/VBAi/Git/GitHubPane.cs",
+      "Sha256": "A4B27EF2C3A9621DF8E98570AE43FC7CEDF3A7CD01D627F40A905E66CF44D50E"
+    },
+    {
+      "Path": "src/VBAi/Git/GitHubPane.Designer.cs",
+      "Sha256": "D7A99B38E80FCE435FDAC75D0665DA6897ACE45AA4B6FE8DDF54E1DBDF92CDAA"
+    },
+    {
+      "Path": "src/VBAi/Git/GitHubPane.Views.cs",
+      "Sha256": "C1E747355B8F9D11773C428890EA52DA657C60F277E334096FD7F7A26372B6D8"
+    },
+    {
+      "Path": "src/VBAi/Git/GitWindow.cs",
+      "Sha256": "05417B60D9DB7488A6D5B2D84C8AE70D30C8B412161975AF7F322F6EF8265A7A"
+    },
+    {
+      "Path": "src/VBAi/Git/GitWindow.Designer.cs",
+      "Sha256": "1D7237DEB56884BDCAD2FF791C8B75008F55B7C566B4B9686621CF635F16F31D"
+    },
+    {
+      "Path": "src/VBAi/Git/GitWindow.Review.cs",
+      "Sha256": "EC6E91CC7EC86826AC0174839839C4C64535235D5D02AF7B55F3451CABE14D2B"
+    },
+    {
+      "Path": "src/VBAi/Git/GitWindow.Views.cs",
+      "Sha256": "FFEB039A8FC9E938C6C971C4CF1FAA202A5A3EFD202208CEA38C1F42586611A0"
+    },
+    {
+      "Path": "src/VBAi/Git/MacroGitOperations.cs",
+      "Sha256": "9DE0BC9C468C4A25088C04F2A5F27D883FA10FAFF7230F7E9F63BB0C180FF2C0"
+    },
+    {
+      "Path": "src/VBAi/Git/MacroGitRepository.cs",
+      "Sha256": "553274F05F8A74EDE7B4ECA782C5144BD0E8E418AB39399F857EC63310EBBDD1"
+    },
+    {
+      "Path": "src/VBAi/Git/MacroGitRepository.History.cs",
+      "Sha256": "291E63E6B264B0805179DFB151546AD39FC78F69F8157EB26E87DE6935F053C8"
+    },
+    {
+      "Path": "src/VBAi/Git/MacroGitRepository.Review.cs",
+      "Sha256": "AC4D7A289073FB2C4409A160CA297BF9DC9298367D53A8434EB6B72C50B13B7C"
+    },
+    {
+      "Path": "src/VBAi/Git/MacroGitRepository.Scope.cs",
+      "Sha256": "9DFFDFC992264D914B2F245CF8A332666BFA9C474B455F142D2B3F8814745432"
+    },
+    {
+      "Path": "src/VBAi/Git/VbaGitProject.cs",
+      "Sha256": "2C84E60F6A78CBE907ACC656FB71B392E38BE529310C2738BD3583817228348E"
+    },
+    {
+      "Path": "src/VBAi/Git/VbaGitSnapshot.cs",
+      "Sha256": "9F7D5F85261D94F8854FA022C0C16F8981C1AF60F16A1CD0B288829B93036840"
+    },
+    {
+      "Path": "src/VBAi/Git/Views/GitBranchesView.cs",
+      "Sha256": "B7B8B1DC75CC578635A293894B01FBA7EB79929C9E35E2219B845B244C0ECA8A"
+    },
+    {
+      "Path": "src/VBAi/Git/Views/GitBranchesView.Designer.cs",
+      "Sha256": "56F4F1562CE7A4D9947530B62CB56A33938E1B229DCEE39E3F0CAAD5A98A1FEC"
+    },
+    {
+      "Path": "src/VBAi/Git/Views/GitChangesView.cs",
+      "Sha256": "C44A8B04AC73BA20821124CCE80DBF2052ACE7CDB30183F5209EBDAA75879DEE"
+    },
+    {
+      "Path": "src/VBAi/Git/Views/GitChangesView.Designer.cs",
+      "Sha256": "3A349EC76F75ED5FA23E10E792B678852533B04E88D62E7F4E395AD320E91BDB"
+    },
+    {
+      "Path": "src/VBAi/Git/Views/GitCheckpointsView.cs",
+      "Sha256": "9F30B33EAC17052F22C8EFD0CC28A53DDC14C1E0C27EA0C89834B3237AB3D6B0"
+    },
+    {
+      "Path": "src/VBAi/Git/Views/GitCheckpointsView.Designer.cs",
+      "Sha256": "8FEB85D27E5BC8EDA145B864F0FE39CCBBDD7351413405A90D49578F88CF52BC"
+    },
+    {
+      "Path": "src/VBAi/Git/Views/GitConflictsView.cs",
+      "Sha256": "A2D23DBDA9F24DCEFF101678CC17F02B0C5D4947D5785D19BAB68E057267CA78"
+    },
+    {
+      "Path": "src/VBAi/Git/Views/GitConflictsView.Designer.cs",
+      "Sha256": "2A66BBC063411C043809E93B34C05B574CE8BB1C89723EB5FDDB6F1F9E1A181B"
+    },
+    {
+      "Path": "src/VBAi/Git/Views/GitConnectionView.cs",
+      "Sha256": "C73CADE33CF42182DFEB553CC2C353249C2D4A14BB1F74086DAE10DA3FC893DB"
+    },
+    {
+      "Path": "src/VBAi/Git/Views/GitConnectionView.Designer.cs",
+      "Sha256": "CEF90C893C42E0419E8DB3541DC52A12B27CF3A68473640104CE31C725D208B4"
+    },
+    {
+      "Path": "src/VBAi/Git/Views/GitHistoryView.cs",
+      "Sha256": "09F664C2EF428608261FCBB629A192BBB7C270B83BCD916C57F28D8A7262E480"
+    },
+    {
+      "Path": "src/VBAi/Git/Views/GitHistoryView.Designer.cs",
+      "Sha256": "C52287322BD4B52E439758F191F7F854FB1CCC2B9BDF5C6F13A5D83D2A009508"
+    },
+    {
+      "Path": "src/VBAi/Git/Views/GitHubPullChecksView.cs",
+      "Sha256": "E6725DB8AEAD7BBD3F52BBE85798695F7D3EC6A5C8C04074EF41D1C4FCA79C20"
+    },
+    {
+      "Path": "src/VBAi/Git/Views/GitHubPullChecksView.Designer.cs",
+      "Sha256": "4230117F24202A34518AEE46903AD47D453FEB34428F2F6A17E9E0FB5E984377"
+    },
+    {
+      "Path": "src/VBAi/Git/Views/GitHubPullCommentsView.cs",
+      "Sha256": "A7DF3986681C66183B266CFFFFDFA753E493523C7BE8365D9D81C07D32CF4BEF"
+    },
+    {
+      "Path": "src/VBAi/Git/Views/GitHubPullCommentsView.Designer.cs",
+      "Sha256": "68C25A5EE395AA48F8A5D2C7B12AB698030B91064179C2AF477DB1D315DBF104"
+    },
+    {
+      "Path": "src/VBAi/Git/Views/GitHubPullComposeView.cs",
+      "Sha256": "CE644BB9317A68434C3155F48213030717DD1593DD8193B821060BD6F65DE7D3"
+    },
+    {
+      "Path": "src/VBAi/Git/Views/GitHubPullComposeView.Designer.cs",
+      "Sha256": "8ECDB52F3F2CDBC09754B04470879384A88D8E67681FA215CA539850BDD08A11"
+    },
+    {
+      "Path": "src/VBAi/Git/Views/GitHubPullDetailsView.cs",
+      "Sha256": "16B8956674CB4C550227640808BA185DCC264AE2CD1F095A57CA2601960D4444"
+    },
+    {
+      "Path": "src/VBAi/Git/Views/GitHubPullDetailsView.Designer.cs",
+      "Sha256": "47D3EC2E346886DA47BCE9C7A3F28BE5CA630CA0714BD4E9EA07E01F0830EDFB"
+    },
+    {
+      "Path": "src/VBAi/Git/Views/GitHubPullFilesView.cs",
+      "Sha256": "F59883E109DFAB4430A3C5216F7D82C43E9C575E06B5B844E191DD2D5703508E"
+    },
+    {
+      "Path": "src/VBAi/Git/Views/GitHubPullFilesView.Designer.cs",
+      "Sha256": "A1E50F7272AFADFD00DF162575D52259EEF2DA44E1DBB8F929A21672A13B6762"
+    },
+    {
+      "Path": "src/VBAi/Git/Views/GitHubPullRequestsView.cs",
+      "Sha256": "A56A30164BD416812D0C94420C1ADD95B1766CC4365A5F6FC75A142FAE2815DC"
+    },
+    {
+      "Path": "src/VBAi/Git/Views/GitHubPullRequestsView.Designer.cs",
+      "Sha256": "907BFC4A77FCCCFCD735EECBC4A2A6E5572E5CEA1DBC64F9457E4A0940BE0F97"
+    },
+    {
+      "Path": "src/VBAi/Git/Views/GitHubRepositoriesView.cs",
+      "Sha256": "1F3736EE13E66E518AC7E6D7CCAD7802BBF6FD556307FF7CB251A2742803B78D"
+    },
+    {
+      "Path": "src/VBAi/Git/Views/GitHubRepositoriesView.Designer.cs",
+      "Sha256": "698C8007D8C8E06DCF7EF9B116672F829314B0C937DCB3B2027D0913C6E27C0D"
+    },
+    {
+      "Path": "src/VBAi/Git/Views/GitImportView.cs",
+      "Sha256": "4A96E467C277024877B5491A0654CAF867528D2DE04581C0A0AA3BFDF7792CC7"
+    },
+    {
+      "Path": "src/VBAi/Git/Views/GitImportView.Designer.cs",
+      "Sha256": "55BF19AF527D0A979DCD08E452B07713AA77C624FD329A150E3629C1941A4910"
+    },
+    {
+      "Path": "src/VBAi/Host/AddIn.cs",
+      "Sha256": "B362A93103A098D64C50DFD1D7E6218FE30038A75D7AFDF01F051B0269E339C3"
+    },
+    {
+      "Path": "src/VBAi/Host/ChatToolWindow.cs",
+      "Sha256": "9F46C38EF940F58EE780D54D9F92CE1121A8CADE71E1987E4FD6052A2D7B9B22"
+    },
+    {
+      "Path": "src/VBAi/Host/ChatToolWindow.Designer.cs",
+      "Sha256": "9E2FD55217153E5C3EB5C22B2C64AC237E60499937F54FCC657437761023149B"
+    },
+    {
+      "Path": "src/VBAi/Host/Extensibility.cs",
+      "Sha256": "C9A9BF5D4E38BADBA0EEBFBEEBA469592486FD9F6F739FFFEDBC13A53FEA1115"
+    },
+    {
+      "Path": "src/VBAi/Host/LoadLog.cs",
+      "Sha256": "58816B5A4321B7C61D156F0EDE86EAA38C1176BDF6C182FBDEDB931E4DA68FC5"
+    },
+    {
+      "Path": "src/VBAi/Host/VbeMenu.cs",
+      "Sha256": "0E51EB9162A7F5781C5957C6D00B8BC6B036B63D7EEE2432AC250FC284E6BC7E"
+    },
+    {
+      "Path": "src/VBAi/Host/VbeWindowIcons.cs",
+      "Sha256": "BBE75A91C8512C0F5E32E39D87A1BD2AA9973DBB880C54D17895875A1090636E"
+    },
+    {
+      "Path": "src/VBAi/Host/VbeWindowInterop.cs",
+      "Sha256": "DA0D600BFB759A20854D0732D50C959C8E8D0C72B98C813DE1B0DF063044EB8E"
+    },
+    {
+      "Path": "src/VBAi/Llm/Chat/ChatPersistenceWorker.cs",
+      "Sha256": "06DC159F8C154AC33A31A2A3422EFCF75B80ACBF52F4435B08BA99F559C8E38E"
+    },
+    {
+      "Path": "src/VBAi/Llm/Chat/ChatQueuedMessageView.cs",
+      "Sha256": "A2821205418A6DB08B2FE4FE8B1582D541F1A034B62A37656D6A7E8136C18BAD"
+    },
+    {
+      "Path": "src/VBAi/Llm/Chat/ChatQueuedMessageView.Designer.cs",
+      "Sha256": "3282E85107987B63EF6DED6BC4B63402FD4DF0A52A7F82F6A11F088E63C40385"
+    },
+    {
+      "Path": "src/VBAi/Llm/Chat/ChatSessionStore.Bookmarks.cs",
+      "Sha256": "ACA2F800FD85736E54589B52C4D3991E8333B8BA983800A0157F6F18750233A8"
+    },
+    {
+      "Path": "src/VBAi/Llm/Chat/ChatSessionStore.cs",
+      "Sha256": "A7DDDE1E58D9C17940EB5DB053118F6FFB99954AE8D16DAB59EA451BF87C5785"
+    },
+    {
+      "Path": "src/VBAi/Llm/Chat/ChatSessionStore.ToolbarProfiles.cs",
+      "Sha256": "E19C3A863992BE36844F536D252EBC52DA3B9C3E80B882936B8F9E1866D59E65"
+    },
+    {
+      "Path": "src/VBAi/Llm/Chat/ChatWindow.Activities.cs",
+      "Sha256": "59CE824835FE39D71A2A06937B45FBD8F749258C2922912FBDFE92690AC5F845"
+    },
+    {
+      "Path": "src/VBAi/Llm/Chat/ChatWindow.Budget.cs",
+      "Sha256": "9C03730D7BA791E695087AFD8D3B33B1FB2CCCDCDFF9AEB101D6D193973C1986"
+    },
+    {
+      "Path": "src/VBAi/Llm/Chat/ChatWindow.Composer.cs",
+      "Sha256": "8D8754A73FB7A3F391964D0EB06E8E8243CEA25097D34DA37181DF4E2DCCFB0B"
+    },
+    {
+      "Path": "src/VBAi/Llm/Chat/ChatWindow.ContextMonitor.cs",
+      "Sha256": "757235D65D0B189F8914DB8BF955D69050918427984171FB5535081B5D7E06F3"
+    },
+    {
+      "Path": "src/VBAi/Llm/Chat/ChatWindow.cs",
+      "Sha256": "164658420F97DD9FDFB13244C11502A0D692FD9324D16D6DCD8EE78487316F4B"
+    },
+    {
+      "Path": "src/VBAi/Llm/Chat/ChatWindow.Designer.cs",
+      "Sha256": "1201A9DA31879A78C64683B83A516BA3E8E02CBF0A54A8E9EA02BA0F571B4238"
+    },
+    {
+      "Path": "src/VBAi/Llm/Chat/ChatWindow.FormRecovery.cs",
+      "Sha256": "48B09BA7F904303756EE09ADE597B3B7AA2259BA5B23547093A4D095C4BE2CFB"
+    },
+    {
+      "Path": "src/VBAi/Llm/Chat/ChatWindow.ProjectAccess.cs",
+      "Sha256": "B75182B2807526460792FD7010FCB7258A7F1329E71E42996153403DE7CD7093"
+    },
+    {
+      "Path": "src/VBAi/Llm/Chat/ChatWindow.Queue.cs",
+      "Sha256": "C5DC9DC918812FE04737FB5E93A855FCC395BEAAB9E465DA09E9AB930667A746"
+    },
+    {
+      "Path": "src/VBAi/Llm/Chat/ChatWindow.Sessions.cs",
+      "Sha256": "8F7BEF6BE6362FD127C8C3B74C4B9CF5E361DA3D971212DC5609741E9620AF8A"
+    },
+    {
+      "Path": "src/VBAi/Llm/Chat/ChatWindow.Shell.cs",
+      "Sha256": "C29B780C97D24DE57DA53A3B558053B5C574A8219E4818E5E0B2B36A7C394B88"
+    },
+    {
+      "Path": "src/VBAi/Llm/Chat/ChatWindow.Transcript.cs",
+      "Sha256": "3EB97B51F222EB544B3B69BCF652D61E1A2AB3A54220F2D65554195AA3E05B61"
+    },
+    {
+      "Path": "src/VBAi/Llm/Chat/ChatWindow.Workflow.cs",
+      "Sha256": "C7C58A4B63BA06586C00B08D0D3C04211DEEC9BC44828AF11C63FBB03F92D18F"
+    },
+    {
+      "Path": "src/VBAi/Llm/Chat/ChatWorkflow.cs",
+      "Sha256": "8F49E9706CFB6B60E1418BFA22CB005C6D6561F3C1B7F907F2B974E4C6313084"
+    },
+    {
+      "Path": "src/VBAi/Llm/Chat/CodeChange.cs",
+      "Sha256": "3F2F1C1742327738D121B98D37603715108FD5EF568B90E175237EEFAE275529"
+    },
+    {
+      "Path": "src/VBAi/Llm/Chat/CodeRollback.cs",
+      "Sha256": "6116852B4A7BA2B95922594E236E092C40A5FDDD8E3061FF5B9EB1E8723E86B8"
+    },
+    {
+      "Path": "src/VBAi/Llm/Chat/FormCutChange.cs",
+      "Sha256": "39A70B16FC40342C8CD2521C10689B1A9D0608302C85FC8C0549568C4DBF116E"
+    },
+    {
+      "Path": "src/VBAi/Llm/Chat/LlmChatClient.cs",
+      "Sha256": "D14BD23CF392C005A080EE96B740632548DB41C0C63DC3DF1FA7366FF155C500"
+    },
+    {
+      "Path": "src/VBAi/Llm/Chat/LlmVbeContext.cs",
+      "Sha256": "438F08A8E478387F56F6E5F41CE2FD11455AFFB89E7820362FDA16A12514E337"
+    },
+    {
+      "Path": "src/VBAi/Llm/Chat/LlmVbeTools.Catalog.cs",
+      "Sha256": "CA6C02FC8F98F024B701B92BE5F339F8B0E5986DFD17B76DBB29AAD4111C4960"
+    },
+    {
+      "Path": "src/VBAi/Llm/Chat/LlmVbeTools.cs",
+      "Sha256": "3504255044AF21545FBFA23E7CA281E754F1DA927F62EFEC961F94CD58807F20"
+    },
+    {
+      "Path": "src/VBAi/Llm/Chat/LlmVbeTools.Editor.cs",
+      "Sha256": "624456935FBBEB49D977BD881AE301BF12A88A17C418AFB234DFFDAA3A288739"
+    },
+    {
+      "Path": "src/VBAi/Llm/Chat/LlmVbeTools.FormRecovery.cs",
+      "Sha256": "0291552192DF2FD5E4BECBFEC31FB444A0D08F4F3ACEE0989C160DFC467595B6"
+    },
+    {
+      "Path": "src/VBAi/Llm/Chat/LlmVbeTools.Git.cs",
+      "Sha256": "6F1C755978E5E550376BA969268B5FECD393B350EA1A6001DE8789730E49AF25"
+    },
+    {
+      "Path": "src/VBAi/Llm/Chat/LlmVbeTools.Monaco.cs",
+      "Sha256": "491F9FE303478E3BF7C3438C54E96E93191A3A0BFD5F908FA0B6EB491DCB3662"
+    },
+    {
+      "Path": "src/VBAi/Llm/Chat/LlmVbeTools.Privacy.cs",
+      "Sha256": "81C0AEF35B7509FD4F20B2F668EF4DFB4598E0DF3223E2BAD811CA63FEE94559"
+    },
+    {
+      "Path": "src/VBAi/Llm/Chat/LlmVbeTools.ProcedureValues.cs",
+      "Sha256": "62AA0B7C1F394D838E6FD160B9E6E0EC469F518F8786E7654595B14BCE571F1F"
+    },
+    {
+      "Path": "src/VBAi/Llm/Chat/LlmVbeTools.ProjectEdits.cs",
+      "Sha256": "3EE47134ACD32810F67CE9C6BE1B6CE30EAA8867FF4864632631B3A1D9BDC5FA"
+    },
+    {
+      "Path": "src/VBAi/Llm/Chat/LlmVbeTools.ProjectGeneral.cs",
+      "Sha256": "C210DC16075E25E89FD34A3021525855AC244C762DDE7103AE24B34AA0C1F493"
+    },
+    {
+      "Path": "src/VBAi/Llm/Chat/LlmVbeTools.SolidWorksMacros.cs",
+      "Sha256": "F23AD7861F0D5C34972EB6BDF7D0FA5CBBD3F5AE294CF4B6CE38232204696186"
+    },
+    {
+      "Path": "src/VBAi/Llm/Chat/LlmVbeTools.Testing.cs",
+      "Sha256": "D9E94D4FBC8B24067B82F4942F60141418C1C13DAA484A09E8677BDCB4D0142D"
+    },
+    {
+      "Path": "src/VBAi/Llm/Chat/ProjectAccessWindow.cs",
+      "Sha256": "1889CB30CF4DEB9B71D4FEA30D378547791D87E3CA5601C0E8EB9B0114EDE179"
+    },
+    {
+      "Path": "src/VBAi/Llm/Chat/ProjectAccessWindow.Designer.cs",
+      "Sha256": "D3E47494502F6B25F3091FAB14F417417B814D4198CF0C1295F851EF347E4E4B"
+    },
+    {
+      "Path": "src/VBAi/Llm/Chat/VbeApprovalDialog.cs",
+      "Sha256": "3E0D5F6E62DE1292782BF26A18FDEDB1F88ECC3F1191DC8BF08DB3238D39096F"
+    },
+    {
+      "Path": "src/VBAi/Llm/Chat/VbeApprovalDialog.Designer.cs",
+      "Sha256": "1BBFAB4C2CB2893D3F869561D2DB926D1F96D9D59C03A7BF26BF077AE9D59A41"
+    },
+    {
+      "Path": "src/VBAi/Llm/Chat/VbeChatReferences.cs",
+      "Sha256": "0A215DA0265C03B225733495EC0A05CBC933ED0173118F4968F1590DD9205780"
+    },
+    {
+      "Path": "src/VBAi/Llm/Chat/VbeCollectionEvents.cs",
+      "Sha256": "012CB17A6026DFD9199A7467A957C564D0A2C0D5823AD88C14AEDDA4C1C03B1D"
+    },
+    {
+      "Path": "src/VBAi/Llm/Chat/VbeContextMonitor.cs",
+      "Sha256": "B535E2311FBDED180F9A7D8B9314991E851AF8ACD91AEF08CBE4B3E67319A17C"
+    },
+    {
+      "Path": "src/VBAi/Llm/Chat/VbeReferenceEvents.cs",
+      "Sha256": "2872EC6582F4F5B8CB0502003B25F9AF5B7DA74A689068D9AC4DE68F448ED654"
+    },
+    {
+      "Path": "src/VBAi/Llm/Controls/ChatContentHost.cs",
+      "Sha256": "2F103C47B16C7BD06198D854B89F47DC8421EB56DD44381808C2C9D74EAEDDE4"
+    },
+    {
+      "Path": "src/VBAi/Llm/Controls/ChatContextChipView.cs",
+      "Sha256": "F73CFF01FFB750D9FDEC3FD15BE3687B497FBDE1918C1A7279DDE5ADC23C914B"
+    },
+    {
+      "Path": "src/VBAi/Llm/Controls/ChatContextChipView.Designer.cs",
+      "Sha256": "65155CE7EF48BBF683D0A24E2B22C581AB449703E91E6F0BFA0E700B95108BCC"
+    },
+    {
+      "Path": "src/VBAi/Llm/Controls/ChatContextPreviewView.cs",
+      "Sha256": "30FD9944C4067881F1AAF6B195E82CBEEC1DAAB39E78197CCBDF6DE60DDCB132"
+    },
+    {
+      "Path": "src/VBAi/Llm/Controls/ChatContextPreviewView.Designer.cs",
+      "Sha256": "5CEFD7B47E722B27143A40FD8BCE214DE0EF9960A950F13DD8D210E113AFFB8C"
+    },
+    {
+      "Path": "src/VBAi/Llm/Controls/ChatDesignerControls.cs",
+      "Sha256": "327BDC1CE5B88F8D69B1EB5A1C035964FCF1F7817F920113546C6FD911CEF9FD"
+    },
+    {
+      "Path": "src/VBAi/Llm/Controls/ChatInputView.cs",
+      "Sha256": "897DDAF8798DD9D6DF024BDDA493C5DFCAA5D5D2C354F1BF0E7F873574C2207D"
+    },
+    {
+      "Path": "src/VBAi/Llm/Controls/ChatInputView.Designer.cs",
+      "Sha256": "8F7F4C4DB694CB004FDB8848761DD1DC8CA9AB4F0F641E95699407887990E28F"
+    },
+    {
+      "Path": "src/VBAi/Llm/Controls/Transcript/ChatActivityGroupView.cs",
+      "Sha256": "56B1D2564E01C9190B0F138B31E40A47903892364C62BE22DEC90A36C7A8DA42"
+    },
+    {
+      "Path": "src/VBAi/Llm/Controls/Transcript/ChatActivityGroupView.Designer.cs",
+      "Sha256": "5CE91E796302245037FDFCF5A36772F37B33A7B34D9231275BE79FCB5FCF54D4"
+    },
+    {
+      "Path": "src/VBAi/Llm/Controls/Transcript/ChatActivityStepView.cs",
+      "Sha256": "E2513E6D60848E30E028D30FB3D7FD9838AB2AAC3B058A01761334B5FD6038CD"
+    },
+    {
+      "Path": "src/VBAi/Llm/Controls/Transcript/ChatActivityStepView.Designer.cs",
+      "Sha256": "688B7F04BBDB6A2A63ED699CC1B81DAB9F31E54E95DFF8F49A883F02F18C24F8"
+    },
+    {
+      "Path": "src/VBAi/Llm/Controls/Transcript/ChatAttachmentView.cs",
+      "Sha256": "8299CC5928EC3E80FFC33167966DC8C1D9CA05345E9B14B6F1C12665709E81AE"
+    },
+    {
+      "Path": "src/VBAi/Llm/Controls/Transcript/ChatAttachmentView.Designer.cs",
+      "Sha256": "288E0517A02E9D11C7173EE9583CCE0EA5D9347F9588995DB4BA95C1D902EED3"
+    },
+    {
+      "Path": "src/VBAi/Llm/Controls/Transcript/ChatChangeCardView.cs",
+      "Sha256": "2FFF3A3B5B858D34C898009C3D69F1F10A49F53A5AAE330F2FB129288165F597"
+    },
+    {
+      "Path": "src/VBAi/Llm/Controls/Transcript/ChatChangeCardView.Designer.cs",
+      "Sha256": "E38C92081AC5933B701118592ED5664C37192CAC6683F09BDEC9B6DD43C82BC7"
+    },
+    {
+      "Path": "src/VBAi/Llm/Controls/Transcript/ChatDesignerHost.cs",
+      "Sha256": "8646F99EBEB597432E511AA129DC0B4E0069CB5EFD43A28F8F7DDAA3ECACE0EA"
+    },
+    {
+      "Path": "src/VBAi/Llm/Controls/Transcript/ChatDesignerView.cs",
+      "Sha256": "E3825B4949799CC1D2E52805D937941FB0522D3EC32CEF832CFD431030987202"
+    },
+    {
+      "Path": "src/VBAi/Llm/Controls/Transcript/ChatDisclosureDesigner.cs",
+      "Sha256": "065A8049D188DAED7118179508E851ECD786F8BB8A3F4256B1983ED04FAA38BE"
+    },
+    {
+      "Path": "src/VBAi/Llm/Controls/Transcript/ChatDisclosureView.cs",
+      "Sha256": "676CED85017BC9833615EAAE2D5E632586AC16A64EB0A6ED9E6CC72B5BCA948F"
+    },
+    {
+      "Path": "src/VBAi/Llm/Controls/Transcript/ChatDisclosureView.Designer.cs",
+      "Sha256": "1B9A9D6DEDA099EDCD17CFE5D42D620075D8E97253B09DB26506AC012A743395"
+    },
+    {
+      "Path": "src/VBAi/Llm/Controls/Transcript/ChatFormRecoveryView.cs",
+      "Sha256": "2A0FF3E389F85449F125CEC03F50A7F8044327BAB177829F29B860C3380AE966"
+    },
+    {
+      "Path": "src/VBAi/Llm/Controls/Transcript/ChatFormRecoveryView.Designer.cs",
+      "Sha256": "752B6AE7E0D59356E1F6EC3F5FCEB9D9C8AE8D3DFA0206A3710BC35E896D7392"
+    },
+    {
+      "Path": "src/VBAi/Llm/Controls/Transcript/ChatLinkView.cs",
+      "Sha256": "5CE172CFA0CC24EA9F14C1584417B61431C735420310C85C00B3AD63222AE84C"
+    },
+    {
+      "Path": "src/VBAi/Llm/Controls/Transcript/ChatLinkView.Designer.cs",
+      "Sha256": "874A03CEFB3FF987724F00B7013EED6FE3B2EB686923A5708E4A459B720DF0AB"
+    },
+    {
+      "Path": "src/VBAi/Llm/Controls/Transcript/ChatMessageView.cs",
+      "Sha256": "C023F04BDBD08114D1F0ADD2EC711BBB366C9E1257D6B5675B4F0C0C6B9F6CF2"
+    },
+    {
+      "Path": "src/VBAi/Llm/Controls/Transcript/ChatMessageView.Designer.cs",
+      "Sha256": "377341FE033073B854044AE2E60067C30D831F6F6C7D49F848C727BDC506A982"
+    },
+    {
+      "Path": "src/VBAi/Llm/Controls/Transcript/ChatNativeMarkdown.cs",
+      "Sha256": "A701D974E7C170A70041FCEA79ECE3470E7C8BBC39935B1EC5B3A8DE1E695152"
+    },
+    {
+      "Path": "src/VBAi/Llm/Controls/Transcript/ChatSuggestionsView.cs",
+      "Sha256": "B6A0F68B120CF6F04510A837A613F1B100471A183710E80B28E0B59805A64206"
+    },
+    {
+      "Path": "src/VBAi/Llm/Controls/Transcript/ChatSuggestionsView.Designer.cs",
+      "Sha256": "DB8BF6D97402217E9B9FE36E1133803CDEAFDD9732A1440E43AB730E4331067D"
+    },
+    {
+      "Path": "src/VBAi/Llm/Controls/Transcript/ChatTextContentView.cs",
+      "Sha256": "EC54A008767CB20EBEA6D5A302737CC4CE634C494719DF4D525D46DA2DA05C08"
+    },
+    {
+      "Path": "src/VBAi/Llm/Controls/Transcript/ChatTextContentView.Designer.cs",
+      "Sha256": "FD0F1C31F04DD1405FB6EFE714961483F130516E8C0C24DAB30C7C5C3929C3A8"
+    },
+    {
+      "Path": "src/VBAi/Llm/Controls/Transcript/ChatWelcomeView.cs",
+      "Sha256": "3C8FDB6FE37E0E42F7A591AB17BFB8A79AE20A9947353D1D200EAD46CB790487"
+    },
+    {
+      "Path": "src/VBAi/Llm/Controls/Transcript/ChatWelcomeView.Designer.cs",
+      "Sha256": "C1CFF49C1F14779A799A1D39C5CE9CE7AB63914CB64DCA3C1F7B19B9F95F55E6"
+    },
+    {
+      "Path": "src/VBAi/Llm/Providers/BedrockProtocol.cs",
+      "Sha256": "B951A05968D93A917A2090CFADC535E4306ECC03D3BF97296B7733D458ED920C"
+    },
+    {
+      "Path": "src/VBAi/Llm/Providers/ChatStreamReader.cs",
+      "Sha256": "6841C8509F0AA5312AE9EE37B1FB786D50936E99EFEB38FDF951C7776B858287"
+    },
+    {
+      "Path": "src/VBAi/Llm/Providers/ClaudeProtocol.cs",
+      "Sha256": "5F110F071F7DCE16E81185272AB372BDF07E3947F99ABB1EA0ACFD7C55BF11A6"
+    },
+    {
+      "Path": "src/VBAi/Llm/Providers/CodexAccount.cs",
+      "Sha256": "0B72BFF4B53EFF685DCDBB400783C837B5E8725E6D8B3B96A0FA0837266133C4"
+    },
+    {
+      "Path": "src/VBAi/Llm/Providers/CodexAgentActivity.cs",
+      "Sha256": "86E2F28A17B0FEA8B31969D82367D5443D301CAF26D809D35DCADDE1E3735ECC"
+    },
+    {
+      "Path": "src/VBAi/Llm/Providers/CodexAppServerClient.cs",
+      "Sha256": "C26996385A85D180C31202BB5448FF50C0602B752897D9837C9BC1F022778BB2"
+    },
+    {
+      "Path": "src/VBAi/Llm/Providers/CodexCliLocator.cs",
+      "Sha256": "985D5FFE7F9C1E25BCB695C75B4AA0D0022E42082470B26C1B86DF34B92657D0"
+    },
+    {
+      "Path": "src/VBAi/Llm/Providers/CopilotClient.cs",
+      "Sha256": "BA4709EC13CA918B195B1286BA977DF08A7D3D634F8DD3008669BA6AC7FEC1F7"
+    },
+    {
+      "Path": "src/VBAi/Llm/Providers/LlmModelOption.cs",
+      "Sha256": "809653897F2CB9396CCC72C40D8B5E69E07EB3A9A52E77D0F73F47828D7801BA"
+    },
+    {
+      "Path": "src/VBAi/Llm/Providers/LlmProviders.cs",
+      "Sha256": "41F1D077073E1DBA5E0785713E18EC2F49B7092352C0708D7C548602BBD7051E"
+    },
+    {
+      "Path": "src/VBAi/Llm/Providers/ProviderSessionStorage.cs",
+      "Sha256": "2D9FA76F1759012A93A6AFE3216287729978DB3FBF7E3E905F73FE54D964B135"
+    },
+    {
+      "Path": "src/VBAi/Llm/Settings/LlmSettings.cs",
+      "Sha256": "CCE33BDD56C2E589277C01D78CC0905431844A82B6DCD0DC691E055CC3B2EA0A"
+    },
+    {
+      "Path": "src/VBAi/Llm/Settings/LlmSettings.Persistence.cs",
+      "Sha256": "59D9FBDA649A28FC7454258F3F55C1A82DC3E5FDEB429030DE931712372953E0"
+    },
+    {
+      "Path": "src/VBAi/Llm/Settings/LlmSettingsWindow.cs",
+      "Sha256": "0BF80FDB428465D75D97351F18E957C4833EBE414E4FD89989D863F18E83A2FD"
+    },
+    {
+      "Path": "src/VBAi/Llm/Settings/LlmSettingsWindow.Designer.cs",
+      "Sha256": "7AFDC90C6888ABE27844BC319739A4F786F1903C63D83EA6E692A37BC6DB00AE"
+    },
+    {
+      "Path": "src/VBAi/Llm/Settings/LlmSettingsWindow.Views.cs",
+      "Sha256": "703144EE54C5CC280BECC3B4375EE8EEF05D6FE4B6B1869945A4B337E90534E6"
+    },
+    {
+      "Path": "src/VBAi/Llm/Settings/Views/AppearanceSettingsView.cs",
+      "Sha256": "9E0AE9E42D9B94BAB8459ED4CAEFB402B341563D80C89B6C3D01265D923E597B"
+    },
+    {
+      "Path": "src/VBAi/Llm/Settings/Views/AppearanceSettingsView.Designer.cs",
+      "Sha256": "DA622B1CD90F5A927ABF602FF07C51F15AF776BF6500050B2FA11A5E3D1FB9CD"
+    },
+    {
+      "Path": "src/VBAi/Llm/Settings/Views/GitHubAccountSettingsView.cs",
+      "Sha256": "97C1ECD443F3FD8185C588A36B20CD71C3BDAC357D682A91D6AB0D5B2DA5CA50"
+    },
+    {
+      "Path": "src/VBAi/Llm/Settings/Views/GitHubAccountSettingsView.Designer.cs",
+      "Sha256": "FEB325960E96D5051CC4037CB45624FA7138BF5A16001752ED24A1893DF995D1"
+    },
+    {
+      "Path": "src/VBAi/Llm/Settings/Views/ProviderSettingsView.cs",
+      "Sha256": "89A9CC14894D98A3A11B9B179EF349DA86CAF5B4D358EA942C48B3FE8E614D7F"
+    },
+    {
+      "Path": "src/VBAi/Llm/Settings/Views/ProviderSettingsView.Designer.cs",
+      "Sha256": "822814B1BAC124058C4C2CCAE5F677362E49A6A599ED9E6CD5501075420BFD66"
+    },
+    {
+      "Path": "src/VBAi/Localization/UiLanguages.cs",
+      "Sha256": "7B88B81E3E85461B946902E1201A6336865D6491B286564476531C0EABAE91E4"
+    },
+    {
+      "Path": "src/VBAi/Localization/UiText.cs",
+      "Sha256": "B26A1D22529CA791BD11BC327E3E54B78230138455F5337FA736A9EB185DDD42"
+    },
+    {
+      "Path": "src/VBAi/Properties/AssemblyInfo.cs",
+      "Sha256": "E41FA30199C1B9671AD98FC9D358E13B0A8955763A38E805FF0D931B1470014A"
+    },
+    {
+      "Path": "src/VBAi/Testing/TestExplorerWindow.cs",
+      "Sha256": "2128BB0845437B5CDBE62EFE3240344DE0C386E1C4130508A4A3FF87145053D7"
+    },
+    {
+      "Path": "src/VBAi/Testing/TestExplorerWindow.Designer.cs",
+      "Sha256": "B6A178F0D5C0D3B3B639DCB6E1C025AA8653486BADB6A3CE3DA1974D1071FD63"
+    },
+    {
+      "Path": "src/VBAi/Testing/TestSupportReviewDialog.cs",
+      "Sha256": "A0FF465249363366ED7977D15D28940DC96B4EEE20D26A4476F1DC18A98C1E97"
+    },
+    {
+      "Path": "src/VBAi/Testing/TestSupportReviewDialog.Designer.cs",
+      "Sha256": "4F4E29D78B8236310A9DB898F145F684BD99DBE41430D910E62012EA3F83ECFC"
+    },
+    {
+      "Path": "src/VBAi/Testing/VbaCoverageInstrumentation.cs",
+      "Sha256": "57AC948D0BC21F54C35C8543C9F6F7B6A71B05451542D043F7D0A65EEA7A2C4E"
+    },
+    {
+      "Path": "src/VBAi/Testing/VbaNativeTestExecutionHost.cs",
+      "Sha256": "D80BD7A3C011469FB3C298902F774CFF7DDED622EB5C21ACF432431366154F74"
+    },
+    {
+      "Path": "src/VBAi/Testing/VbaNativeTestWindowFocus.cs",
+      "Sha256": "8FCD4C0619CC600F40B7D0F93A9F92FDBF38B26ABF51A10FB7ADD1E8AD9D19BA"
+    },
+    {
+      "Path": "src/VBAi/Testing/VbaTestCoverageClone.cs",
+      "Sha256": "E5F38AED5AE32D27E11609DFE0ADCDBAFF8CD9F22C1A457BC76B2639DD36BBA5"
+    },
+    {
+      "Path": "src/VBAi/Testing/VbaTestDiscovery.cs",
+      "Sha256": "2B922E1CD223C99EDC0C5C046B994DE697A90BA371E68AC5D636484FD0C6BE5A"
+    },
+    {
+      "Path": "src/VBAi/Testing/VbaTestExplorerService.cs",
+      "Sha256": "6AA5255FC7592FFF2C73E6912A2DC6E262F61D5AFB4F16551281F2BDCB08F3AA"
+    },
+    {
+      "Path": "src/VBAi/Testing/VbaTestModels.cs",
+      "Sha256": "BB481B09C3D57216E1E3CC155F756EC0211B2DB5555CF1A01391B83CDDF34164"
+    },
+    {
+      "Path": "src/VBAi/Testing/VbaTestOwnerAwaitable.cs",
+      "Sha256": "1020E76D3870164BBB5F472C4B1923901372937ADF8C240BA20C3D66674458AA"
+    },
+    {
+      "Path": "src/VBAi/Testing/VbaTestPowerPointCoverageClone.cs",
+      "Sha256": "992587961D325831BA3877F1409FEADAD2D02035AF260014CE8112A4448DD6DF"
+    },
+    {
+      "Path": "src/VBAi/Testing/VbaTestPowerPointValuesHost.cs",
+      "Sha256": "BBFB46EBC790C05B6D4DC0BE219A89F53E563611A1C08302530250778FBB6FA7"
+    },
+    {
+      "Path": "src/VBAi/Testing/VbaTestReports.cs",
+      "Sha256": "26F08E5DA193FC4CADFA8CF9A390D448868B66E7EFB26180A520AF7936864915"
+    },
+    {
+      "Path": "src/VBAi/Testing/VbaTestResultSink.cs",
+      "Sha256": "3246680DBF706BBBE076EF21BF343BAFDDFCA52DB673AF6059311ECD25086764"
+    },
+    {
+      "Path": "src/VBAi/Testing/VbaTestRunner.cs",
+      "Sha256": "0D3FB7A5D379392DF3FC0C397D3E2664009080D4BB00120B2AC4CC395F3322D3"
+    },
+    {
+      "Path": "src/VBAi/Testing/VbaTestRuntime.cs",
+      "Sha256": "9B2BB1105F7AF4FE524342740CB04764250A81DACB7A4FD8A1A58FAFAEAC1D88"
+    },
+    {
+      "Path": "src/VBAi/Testing/VbaTestRuntimeSource.cs",
+      "Sha256": "A1E3C70C228D7453F8793F67E5B35D7061FF5B1A7B79B6230EE7DD3C4E5AD744"
+    },
+    {
+      "Path": "src/VBAi/Testing/VbaTestWordCoverageClone.cs",
+      "Sha256": "0188B47FE95FEF69075A14E8654360807379758CE8AACD36A442DEC3A2D49392"
+    },
+    {
+      "Path": "src/VBAi/Testing/VbaTestWordValuesHost.cs",
+      "Sha256": "B6A179609DA1EF910E9ACF6E812185C7439DE400E7FC8047CECC53393665F1DA"
+    },
+    {
+      "Path": "src/VBAi/Testing/VbeTestExplorerService.Compilation.cs",
+      "Sha256": "AB4DA6DA1D1C9A1B0EE723C9D265E231C95B2A4C06FB15217A54497B5008F4D7"
+    },
+    {
+      "Path": "src/VBAi/Testing/VbeTestExplorerService.Coverage.cs",
+      "Sha256": "F2167DE4C1F0EB8F72E9561F07F6E9DB800829DC725512B228EFD5EFBA1EB996"
+    },
+    {
+      "Path": "src/VBAi/Testing/VbeTestExplorerService.cs",
+      "Sha256": "7C9F9470B0310A4D2FB498115DDD309FD5FFD25F7735E474F61140A26A66C7A4"
+    },
+    {
+      "Path": "src/VBAi/Testing/VbeTestExplorerService.Native.cs",
+      "Sha256": "05B5270842B25795EDC09E9860FE09D55D73243F9A2923A5D43F2591A03C64A1"
+    },
+    {
+      "Path": "src/VBAi/Ui/AboutWindow.cs",
+      "Sha256": "94C4E059BD665B2E2D1FBC852F1A4A8239E655556607DEB8CB1FAD6A32986EE4"
+    },
+    {
+      "Path": "src/VBAi/Ui/AboutWindow.Designer.cs",
+      "Sha256": "254C8A2E8A2E23A364D9220243C7130D80D79147866F606CDAC0EF9EBBC4F792"
+    },
+    {
+      "Path": "src/VBAi/Ui/ChatDiffView.cs",
+      "Sha256": "31F71326CEB9C65B357A47D2DA631BD7506A76B20067099E5B4459D3FFF9A088"
+    },
+    {
+      "Path": "src/VBAi/Ui/ChatMarkdown.cs",
+      "Sha256": "704C61002D042E5C8E641C40EBBEE8FFAA19A74ACB7B9B539ADD4BF9CD009F84"
+    },
+    {
+      "Path": "src/VBAi/Ui/CodeDiffView.cs",
+      "Sha256": "170F4182A598FD7A4AD1A6C3A93325B25581E621C46FFDA9C22EF548F301B1B2"
+    },
+    {
+      "Path": "src/VBAi/Ui/CodeDiffView.Designer.cs",
+      "Sha256": "044F021B5C5F4CA04D36406AE746B754F64C65E490B26401E721D5B2B8CCBB2C"
+    },
+    {
+      "Path": "src/VBAi/Ui/CrashReport.cs",
+      "Sha256": "2F60D26D4362D362EAD52E913A65B8645861E345C22E3103F6C834696FAC196C"
+    },
+    {
+      "Path": "src/VBAi/Ui/CrashReportDelivery.cs",
+      "Sha256": "8CD5D23CB3F85BA6228185CB7980D94487E2A9E7DC25A9CA08CEB3CD1CBCFC51"
+    },
+    {
+      "Path": "src/VBAi/Ui/CrashReporter.cs",
+      "Sha256": "B45DD74A6D45DC80EF2D661F64CED5F15FD892EFF176BB3661EEBF37E3B7EDD3"
+    },
+    {
+      "Path": "src/VBAi/Ui/CrashReportWindow.cs",
+      "Sha256": "BBC982ABC686EB7FE44CF2EC04AAB71BA2116F6CF848899FA09AD182118E483C"
+    },
+    {
+      "Path": "src/VBAi/Ui/CrashReportWindow.Designer.cs",
+      "Sha256": "13B18EE8598F66EF49FAA6F374568DF1097570F669C171C881FCD3AEEAAADDE5"
+    },
+    {
+      "Path": "src/VBAi/Ui/DiffModel.cs",
+      "Sha256": "750726338840B1C023B2DEC6E9AE37B716EF4E3A89B64AF1AE1E251091A096C4"
+    },
+    {
+      "Path": "src/VBAi/Ui/SafeLinks.cs",
+      "Sha256": "398B81282EA54E1B8DC6A5839D25E9BF27C3422A4CA87EFB89F0E3145D39B0EA"
+    },
+    {
+      "Path": "src/VBAi/Ui/ThemedTabControl.cs",
+      "Sha256": "06CE659CD10E2BFD7703F3A476F8BD621F88E1692A2176EBEBA82DDFA47A90B2"
+    },
+    {
+      "Path": "src/VBAi/Ui/TranscriptItem.cs",
+      "Sha256": "D7D33374B2AF2CEF724A067B067DC359CB519226E6795689780D23E2B3A78F9B"
+    },
+    {
+      "Path": "src/VBAi/Ui/UiActionButton.cs",
+      "Sha256": "C90701AFC496A2C0898C5B03DBF2CB317C7C8E3D3641B8A900D93F0DDD2495CE"
+    },
+    {
+      "Path": "src/VBAi/Ui/UiCommandIcons.cs",
+      "Sha256": "B7983410E19E77D369C7C0F1394777F2BCD8EE9D1184C30280F945F970D4D431"
+    },
+    {
+      "Path": "src/VBAi/Ui/UiInputControls.cs",
+      "Sha256": "5632D4A3743F49DEB900EA473DE6979874485E0B34D6B09D0519D8E4F963915B"
+    },
+    {
+      "Path": "src/VBAi/Ui/UiTheme.cs",
+      "Sha256": "BE542E0A34EA323F11165D0DEB75D554166C4CFA977C4372989FEE5F383E7D95"
+    },
+    {
+      "Path": "src/VBAi/Ui/VbaSyntax.cs",
+      "Sha256": "7A58DBC734594F6722D91BBBDCCAF0582466C1BAF7160023DB54103E5D2473EE"
+    },
+    {
+      "Path": "src/VBAi/Ui/VbeNativeChrome.cs",
+      "Sha256": "74D4A5B0F8E1206B25771D361D14FE083B357DB5505A7A78FEAD761D98FBB01B"
+    },
+    {
+      "Path": "src/VBAi/Ui/VbeNativePalette.cs",
+      "Sha256": "31DEF27C6B417278F419A611D2827DB127D71D82C2DBD14A20003D5621DD73EA"
+    },
+    {
+      "Path": "src/VBAi/Ui/VbeNativePaletteDialog.cs",
+      "Sha256": "01400A2D9F5843D8A4CE249CE25942455B8A63B068F5AE918AB828D3A52ECB35"
+    },
+    {
+      "Path": "src/VBAi/Ui/VbeNativePaletteState.cs",
+      "Sha256": "844CEE3E9A7E929FA0C532DDCDF6807189C3C834C4ECC1D67E8871C006F00E44"
+    },
+    {
+      "Path": "src/VBAi/Ui/VbeNativePropertyTabs.cs",
+      "Sha256": "15FDE7CFD5569170D540B9BB6CB6C0E56238953502CFF0EC5DA6FE6CD4BAD73A"
+    },
+    {
+      "Path": "src/VBAi/Ui/VbeNativeRenderer.cs",
+      "Sha256": "574705EBECA1458B276902E2AE5E28D55967D2666476D7ADF32EBB2828EDA35B"
+    },
+    {
+      "Path": "src/VBAi/Ui/VbeNativeTheme.cs",
+      "Sha256": "F1B4E3A861A5C0788A064895638DB5452EBBDD9E58CE31259FABD6B74C160A2B"
+    },
+    {
+      "Path": "src/VBAi/Ui/VbeUiTask.cs",
+      "Sha256": "0A22C899747189141B7D1987C8B48680D3A37A448FF367CE5220620312676CB6"
+    },
+    {
+      "Path": "src/VBAi/Updates/UpdateCoordinator.cs",
+      "Sha256": "EA4DBC0A1A3F0F067F3EE2817AFDB41495E1176B937AE90BAB13D2F3ED28F74E"
+    },
+    {
+      "Path": "src/VBAi/Updates/UpdateFeed.cs",
+      "Sha256": "CD27C6395367F8C352BBFE0FBBCB7E0E46FF6BEA35E540C8908F64B90AC9D9F2"
+    },
+    {
+      "Path": "src/VBAi/Updates/UpdateInstallerRunner.cs",
+      "Sha256": "380337EA5F85D92009F9D5D2A16A86774F9288B017D50568929679828416F234"
+    },
+    {
+      "Path": "src/VBAi/Updates/UpdateInstallJob.cs",
+      "Sha256": "D9D900CB659559A39A39112A6AC64555DA2CB60090D0E6FAACD9F9AF85F95027"
+    },
+    {
+      "Path": "src/VBAi/Updates/UpdatePaths.cs",
+      "Sha256": "A99E412B88B0075E5263E1A77E12EC796749CAA1646DA98BFAF23FAA0E6A397C"
+    },
+    {
+      "Path": "src/VBAi/Updates/UpdateProgressWindow.cs",
+      "Sha256": "8767F33867A6B8B29E90A991B0A7298EF8B2BCA2AB96F382847E091DB3C533C4"
+    },
+    {
+      "Path": "src/VBAi/Updates/UpdateProgressWindow.Designer.cs",
+      "Sha256": "0DD313F1295A1AFB53355C65491273B4C95C5918B73F74A555237E3110CCCF10"
+    },
+    {
+      "Path": "src/VBAi/Updates/UpdatePublisherPolicy.cs",
+      "Sha256": "B10E727B728921F3A096ECE8D9D70F837E58A3797459FC74F28CC57AD741E1D7"
+    },
+    {
+      "Path": "src/VBAi/Updates/UpdateRelease.cs",
+      "Sha256": "AEFAFFC0C5D8A378FBC112F86A9BB9FE376265D36F356DABD98AA436D81CE43A"
+    },
+    {
+      "Path": "src/VBAi/Updates/UpdateState.cs",
+      "Sha256": "B02414AA0793E2DBE2DB984F3BCEDEFF9A639AA18BB408B9B0FFA7AF535AC606"
+    },
+    {
+      "Path": "src/VBAi/Updates/UpdateText.cs",
+      "Sha256": "659DC7C9581652CC3079286C8313E18B963AE55B043EA2FFE95D30CB72691F70"
+    },
+    {
+      "Path": "src/VBAi/Updates/UpdateWindow.cs",
+      "Sha256": "1A54FB2DE4AEF45FA9C467EC7B8CD448843CA1E894B6C4AA9DD88544BDB16C01"
+    },
+    {
+      "Path": "src/VBAi/Updates/UpdateWindow.Designer.cs",
+      "Sha256": "F1F837301BE31887EB79FD8AE0EEBD35E7837039319086D10E6752EC88E6E240"
+    },
+    {
+      "Path": "src/VBAi/Updates/WebViewRuntimePrerequisite.cs",
+      "Sha256": "610AF10861915136F6972C50CE4054B0CD67F77946BBE4E330CD9820AF4EDF48"
+    },
+    {
+      "Path": "src/VBAi/Vbe/VbeProjectHostPath.cs",
+      "Sha256": "68A9EEBB9DF67EB5B1149C89B0AF5CD8EAF8B710FF0704FF8D0A3CEE85EF68C7"
+    },
+    {
+      "Path": "src/VBAi/Vbe/VbeProjectResolver.cs",
+      "Sha256": "22E8581908673A754E9ACDD2F560AB97873FE3D818734B0117B30FB2EA93B2A1"
+    },
+    {
+      "Path": "src/VBAi/Vbe/VbeScalarProperty.cs",
+      "Sha256": "A95A2613AEAAC073F12D4413CB97055BA3D2658DECA913CAC941A943CC537AFB"
+    },
+    {
+      "Path": "src/VBAi/Vbe/VbeSession.cs",
+      "Sha256": "2BA0D49601F904B345A14CA8A8EAAF2CAEE17267707BED26FA74C216C6186E11"
+    },
+    {
+      "Path": "src/VBAi/Vbe/VbeSession.SolidWorksMacroGeneral.cs",
+      "Sha256": "E92266CDC0AB91D1BF3B3F1C1371BBD572EA2ACFD4392524E902A58CE4ABAC91"
+    },
+    {
+      "Path": "src/VBAi/Vbe/VbeSession.SolidWorksMacros.cs",
+      "Sha256": "D5B52D134FFBC060138763DE506D2FEE15AC943B25823EDB7D3FC2871F048449"
+    },
+    {
+      "Path": "src/VBAi/Vbe/Code/VbaClassMemberRename.cs",
+      "Sha256": "97DEFC67F9D368A346D59D8B910E8829359D74B56E8FF0E5A2C2F2826B247EF0"
+    },
+    {
+      "Path": "src/VBAi/Vbe/Code/VbaDeclarationIndex.cs",
+      "Sha256": "A57114B75DFF0329A66001A2EF3AD8A7F6E6FD00E152A0BFA6255EC09437B6FF"
+    },
+    {
+      "Path": "src/VBAi/Vbe/Code/VbaLocalRename.cs",
+      "Sha256": "0E91C9E924906F4F782BE4DC19A40292256088BFA3855B7AC0E25C277C872F89"
+    },
+    {
+      "Path": "src/VBAi/Vbe/Code/VbaParameterRename.cs",
+      "Sha256": "E2726F693197918772888E7EA4C93F3F7B04580F98AFA67F96CCD3B76954D50E"
+    },
+    {
+      "Path": "src/VBAi/Vbe/Code/VbaProcedureRename.cs",
+      "Sha256": "BC049F5CB3938D8FA5AC213924F806CBD4BA528A8847FE4A04CFE4C4768CC09F"
+    },
+    {
+      "Path": "src/VBAi/Vbe/Code/VbaTextEdits.cs",
+      "Sha256": "BBB8AE0EDF56270CEE98B92DF7B256EEE084EC2CA517B810FFC98CC17170965B"
+    },
+    {
+      "Path": "src/VBAi/Vbe/Code/VbeCodeClipboard.cs",
+      "Sha256": "1DAC10BA74044EFCA371411D26517EA57A57C2C9F735D920270DFCDB5B110609"
+    },
+    {
+      "Path": "src/VBAi/Vbe/Code/VbeCodeEdits.ClassMembers.cs",
+      "Sha256": "580480EBB99EF42AEB233BB845A393BDE91DFEC617F86004D32386493CB3A999"
+    },
+    {
+      "Path": "src/VBAi/Vbe/Code/VbeCodeEdits.cs",
+      "Sha256": "AB31C615D23DA986D2BEA16B0D96232A490E044E2345BE5D84E59DDD0D1B4452"
+    },
+    {
+      "Path": "src/VBAi/Vbe/Code/VbeCodeEdits.ParameterRename.cs",
+      "Sha256": "0C341C6B3FFEBD41E31854CC035920FAC086D347590C79AB3188C7006D027EBF"
+    },
+    {
+      "Path": "src/VBAi/Vbe/Code/VbeCodeEdits.ProcedureRename.cs",
+      "Sha256": "755C60A29B4D00AE86A56C66AB59DB591D0AD3C7F0822A53AAF735B7AA3A54F7"
+    },
+    {
+      "Path": "src/VBAi/Vbe/Code/VbeCodeNavigation.cs",
+      "Sha256": "48CFE20ECB67A5DE955DAC6F64FE3A7EC97769BD1B2B8F44B4EE9DA754E15E15"
+    },
+    {
+      "Path": "src/VBAi/Vbe/Code/VbeCodeNavigation.Symbols.cs",
+      "Sha256": "5D78E617B0986B4683A8C6098E2D41FF362F3F9F4CD4AE7F3CE512C14C3053D8"
+    },
+    {
+      "Path": "src/VBAi/Vbe/Code/VbeNavigationHistory.cs",
+      "Sha256": "B9F31B42EBD4BA2A42C2D604A78209A369EA55BAEC77D4CEC71D6961C1286DAF"
+    },
+    {
+      "Path": "src/VBAi/Vbe/Debug/VbaBreakpointLocation.cs",
+      "Sha256": "49983E9F8D01DE75EE32C3E3208E55DF6DA659B6A69AA1FFE4BFDB09B0EDBC1E"
+    },
+    {
+      "Path": "src/VBAi/Vbe/Debug/VbaLocalScalarCandidates.cs",
+      "Sha256": "29E6181197054C9DB5BBD6F7D7454D6D8227773AE3D7E9668D63AB31395D5A8A"
+    },
+    {
+      "Path": "src/VBAi/Vbe/Debug/VbaProcedureValues.cs",
+      "Sha256": "EDEDAB4605B94E856FFDA9E145665CE531C0A83130B8B6979ABA1BC4F2D4ED10"
+    },
+    {
+      "Path": "src/VBAi/Vbe/Debug/VbaProcedureValues.ParamArray.cs",
+      "Sha256": "663259A1EA580F1DD6B4492B1CA76E93501F2181AF38B64E7F9552B579297852"
+    },
+    {
+      "Path": "src/VBAi/Vbe/Debug/VbeDebug.Arrangement.cs",
+      "Sha256": "634833F93080186F7C67A26E530D37871055B29AF1AF30353765C82767F3D0C8"
+    },
+    {
+      "Path": "src/VBAi/Vbe/Debug/VbeDebug.CodePanes.cs",
+      "Sha256": "A3880414D72CB6B0A561F58BC2B3CD92BA08674E2998FCF4B7184D86AB1575E7"
+    },
+    {
+      "Path": "src/VBAi/Vbe/Debug/VbeDebug.cs",
+      "Sha256": "D017EB1F2255F8BF430ABC1A8A0EB9B16A80E6E15010B908794E864BE9ECAB21"
+    },
+    {
+      "Path": "src/VBAi/Vbe/Debug/VbeDebug.Editor.cs",
+      "Sha256": "0BFEC8703045B553B9A6AADF886DF77B080A75800DDD2897F9CDFCA485915370"
+    },
+    {
+      "Path": "src/VBAi/Vbe/Debug/VbeDebug.GeneralCommand.cs",
+      "Sha256": "B12FB98F4673D4DDC0D2E6F6AC1A1ECFEE6700145251D7400A47A8DDC7095A84"
+    },
+    {
+      "Path": "src/VBAi/Vbe/Debug/VbeDebug.Immediate.cs",
+      "Sha256": "AC2532775616CD51F8ABCBBE6CB49BB957C3AD5219F33759DC402B2F6B11726C"
+    },
+    {
+      "Path": "src/VBAi/Vbe/Debug/VbeDebug.LocalScalars.cs",
+      "Sha256": "7942C6B6B0C112ED6070F832E8F39B6F6BA5BABC09DCB673472CBCA943BDFAFA"
+    },
+    {
+      "Path": "src/VBAi/Vbe/Debug/VbeDebug.Macros.cs",
+      "Sha256": "C6D3035FC99DDBDE3E8BCC2B31F62695F52C50DF043D3457208704993B6B9FD5"
+    },
+    {
+      "Path": "src/VBAi/Vbe/Debug/VbeDebug.NativeDialogs.cs",
+      "Sha256": "E67AF43701EA4CC99D46D9313BB939D88FFAA6F479F94CE37CB24C3505A1E403"
+    },
+    {
+      "Path": "src/VBAi/Vbe/Debug/VbeDebug.NativeHistory.cs",
+      "Sha256": "49B5B9170FE47875CC7D77F6718A1396A504AC47CE423C123F880DA73C7C08F1"
+    },
+    {
+      "Path": "src/VBAi/Vbe/Debug/VbeDebug.NativeNavigation.cs",
+      "Sha256": "2FA8CE6755DA5F61CF248AAA4063C907B7C4E6A5FB8CF9F16E7C12D0F4825003"
+    },
+    {
+      "Path": "src/VBAi/Vbe/Debug/VbeDebug.Procedures.cs",
+      "Sha256": "ABE9FA3685C3BC17E30F6F12DBA3ABCBA8ACA8BBFC1924AE5915C25566C1AF67"
+    },
+    {
+      "Path": "src/VBAi/Vbe/Debug/VbeDebug.ProcedureValues.cs",
+      "Sha256": "2A01279EABA0AD6F037661E3CF0B2EDE61AEAE7BC3787B683181102AF34B8CF9"
+    },
+    {
+      "Path": "src/VBAi/Vbe/Debug/VbeDebug.ProjectDialogs.cs",
+      "Sha256": "4421A41E41B01EEAF1CC0F734F348138C8B82CD1A757011B0432E3BF512E1996"
+    },
+    {
+      "Path": "src/VBAi/Vbe/Debug/VbeDebugClipboard.cs",
+      "Sha256": "0FC85654D94DEF2C92B84C6B548E66B30E4F9C46B638AE03C44100F752F538A7"
+    },
+    {
+      "Path": "src/VBAi/Vbe/Debug/VbeDebugInspection.cs",
+      "Sha256": "D6E8DBB5086C8118BA5F9C76F5B0C1B04D32C4DA349293C2526CC00E0FCBFEA6"
+    },
+    {
+      "Path": "src/VBAi/Vbe/Debug/VbeDebugWindows.CodeView.cs",
+      "Sha256": "C06C868F60B49B6757826C87ACE0531B2CF9A204532BCAFA6A3905BDF77C2704"
+    },
+    {
+      "Path": "src/VBAi/Vbe/Debug/VbeDebugWindows.Context.cs",
+      "Sha256": "1387D042C06F7AD8D99AA5CEB4E0613DA41DAAE910F5E9FAEC7547C918A5CE34"
+    },
+    {
+      "Path": "src/VBAi/Vbe/Debug/VbeDebugWindows.cs",
+      "Sha256": "90F2A073BF26BA3BC21FF131EC228FE1123D4AA1B08200051228321D7CB57D4F"
+    },
+    {
+      "Path": "src/VBAi/Vbe/Debug/VbeDebugWindows.NavigationSurfaces.cs",
+      "Sha256": "6694E80467B3543D3D72A8FDAB2F7BAA02774C3786A74FF29827E9518324C7EB"
+    },
+    {
+      "Path": "src/VBAi/Vbe/Debug/VbeDebugWindows.ObjectBrowser.cs",
+      "Sha256": "1F56F657506AEA2F2886034D33CBBBF21DBE8DA0AAE17C29BF6FABA827959B93"
+    },
+    {
+      "Path": "src/VBAi/Vbe/Debug/VbeDebugWindows.ObserverText.cs",
+      "Sha256": "7262EB526E4D3CBAECC672871FB512D4CBAEA65DB8B17113986FD57C262E47F1"
+    },
+    {
+      "Path": "src/VBAi/Vbe/Debug/VbeDebugWindows.Options.cs",
+      "Sha256": "8E6CAC483736A2DAE75C205CF2A6E44B6387D1C2FDF0FC27B6B2E60234E7721F"
+    },
+    {
+      "Path": "src/VBAi/Vbe/Debug/VbeDebugWindows.ProjectProtection.cs",
+      "Sha256": "DF8A10E6533A4C891AEFB1BAADE3D66011D148B99FBEA575F7385677A7C48E9A"
+    },
+    {
+      "Path": "src/VBAi/Vbe/Debug/VbeDebugWindows.RuntimeForms.cs",
+      "Sha256": "655973803CFF31DACB25CDB0A808356F39F04BA0D7724A25F77D20AD50DEEFC7"
+    },
+    {
+      "Path": "src/VBAi/Vbe/Debug/VbeDebugWindows.ToolboxPages.cs",
+      "Sha256": "83006025995A9714A186A6110852BD8674E79DD8731AB7A333A2577205077E08"
+    },
+    {
+      "Path": "src/VBAi/Vbe/Debug/VbeImmediateContext.cs",
+      "Sha256": "6C16A33E441DC5C98F4826CD5B8E78D99B111E3F5FC7204CC5D94889F0513D3A"
+    },
+    {
+      "Path": "src/VBAi/Vbe/Debug/VbeInspectionTrace.cs",
+      "Sha256": "BA93DED66D33C0202BC603F3BD41E49E355EFB0B7F7FACB9A17D8D9D462B7DF4"
+    },
+    {
+      "Path": "src/VBAi/Vbe/Forms/DesignerClipboardBackup.cs",
+      "Sha256": "D2C11B25ACAD063DB5FDD43ED415A56B1B4BA3152493C4D16AC5856D81DAFA5E"
+    },
+    {
+      "Path": "src/VBAi/Vbe/Forms/FormHistoryDiff.cs",
+      "Sha256": "DA7779FD575AEDA89E1B19927558476763C54D872B2F15AE164E4D7D80795951"
+    },
+    {
+      "Path": "src/VBAi/Vbe/Forms/FormLayoutPlan.cs",
+      "Sha256": "E3C519784A619985735AC3A409A6D47D12AD3CE01775C3C095B20A086AA4B552"
+    },
+    {
+      "Path": "src/VBAi/Vbe/Forms/OlePictureLoader.cs",
+      "Sha256": "94786C4FD4AF301D7165B854EBB94D093F78CB5500AAE4DE898C6D6EBC43A94D"
+    },
+    {
+      "Path": "src/VBAi/Vbe/Forms/VbeComEvents.cs",
+      "Sha256": "8B8EAEC9A3D642DB61EC1528F0B4B9135E220BF37843A56C1E1AA22CB5917347"
+    },
+    {
+      "Path": "src/VBAi/Vbe/Forms/VbeComPropertyAccessors.cs",
+      "Sha256": "4003E7D621D88BD75BAF71425D588CE2C2BCB935A32FB9FAF9AAB94D9249679A"
+    },
+    {
+      "Path": "src/VBAi/Vbe/Forms/VbeControlCatalog.cs",
+      "Sha256": "0206FDEA9D8DF9A2007BA39DC412D11E5A99534B209E7DB8474C810B5C28F29F"
+    },
+    {
+      "Path": "src/VBAi/Vbe/Forms/VbeForms.CheckBoxDuplication.cs",
+      "Sha256": "1F74477614D5E6C080CA5F48F7A1CA8DB7F631BF2630F310573E0BACCA01FA8A"
+    },
+    {
+      "Path": "src/VBAi/Vbe/Forms/VbeForms.Clipboard.cs",
+      "Sha256": "ACCE6B6E4D52705CEB6CE161614E9BFAF57D3B5B3A8634F27237FD0080965853"
+    },
+    {
+      "Path": "src/VBAi/Vbe/Forms/VbeForms.ComboBoxDuplication.cs",
+      "Sha256": "BFDA4CE48DD67CEFD1F0828A241020CCC6D8F125708D60A9AC52AC2E51C1156F"
+    },
+    {
+      "Path": "src/VBAi/Vbe/Forms/VbeForms.CommandButtonDuplication.cs",
+      "Sha256": "89612FEA04ED73991DCE62617261DFDDFC05EEE182BECE8195EF4863B252B64E"
+    },
+    {
+      "Path": "src/VBAi/Vbe/Forms/VbeForms.cs",
+      "Sha256": "C4E8ADD86CC00ED324E2CB9011373549E08953F89055A7FDE3802C7EEE407DE2"
+    },
+    {
+      "Path": "src/VBAi/Vbe/Forms/VbeForms.CutRecovery.cs",
+      "Sha256": "718103B51A6682A4EF736DFB9F1F7DC33D74C11A67A4D8E12B64A17F16D698C4"
+    },
+    {
+      "Path": "src/VBAi/Vbe/Forms/VbeForms.FitContent.cs",
+      "Sha256": "DBB1B4C2CBB7B6C0C130224C8A36BA1920CDF68CA222CE4E8912CC0A771D5CC7"
+    },
+    {
+      "Path": "src/VBAi/Vbe/Forms/VbeForms.FrameCopyPlan.cs",
+      "Sha256": "0A36E40A0FF4904C07EC0829646D51087DC75BB5FEE52829F70B4F06F7A69CFE"
+    },
+    {
+      "Path": "src/VBAi/Vbe/Forms/VbeForms.FrameDuplication.cs",
+      "Sha256": "28B88A76E450DD9840AE4BC5C554941F37F9F02A06A96E9A3BFCAE1D99F64416"
+    },
+    {
+      "Path": "src/VBAi/Vbe/Forms/VbeForms.FrameLabelDuplication.cs",
+      "Sha256": "09328686EBC6EBBCD997773572E40FFC49D38DB083F1D90E6BAEB21D499BC24C"
+    },
+    {
+      "Path": "src/VBAi/Vbe/Forms/VbeForms.FrameSimpleDuplication.cs",
+      "Sha256": "5989531FFAE90852275AABFD612E6312E66AA4D203D8FB4BA84DCD63659D462E"
+    },
+    {
+      "Path": "src/VBAi/Vbe/Forms/VbeForms.History.cs",
+      "Sha256": "F6C9761197D327517AAD9B23CF5528ECFB74A58D692BDA4CA1625B28B872BDE7"
+    },
+    {
+      "Path": "src/VBAi/Vbe/Forms/VbeForms.LabelDuplication.cs",
+      "Sha256": "C89E34028B8FF0904A993B1C9A19D9D797E4E0FF493FEDCE220D7F13276AAD46"
+    },
+    {
+      "Path": "src/VBAi/Vbe/Forms/VbeForms.Layout.cs",
+      "Sha256": "E9F2EC314C25ED2DBF7A924BA14DEF5131035936664461BBD5C83D93A7D3096C"
+    },
+    {
+      "Path": "src/VBAi/Vbe/Forms/VbeForms.ListBinding.cs",
+      "Sha256": "37770A42EAF722039648900D2BBF7B93847EAD43ADB8481E3AB51D210AAC9D33"
+    },
+    {
+      "Path": "src/VBAi/Vbe/Forms/VbeForms.ListInitializer.cs",
+      "Sha256": "EF06C15DA7A352022B2D1CEA674C77E68E6B2CE79650BC03043517D88F5B0C3C"
+    },
+    {
+      "Path": "src/VBAi/Vbe/Forms/VbeForms.ListItems.cs",
+      "Sha256": "756EB5CC1C995486BBED7689470C7CAF4EF6F9D9B2594E569116A36FE2304935"
+    },
+    {
+      "Path": "src/VBAi/Vbe/Forms/VbeForms.ListMutation.cs",
+      "Sha256": "4A44A9C3DBFAF9B17F33590BDD85D80CFF12DA5516B9AE3433D7A614E2D3CF99"
+    },
+    {
+      "Path": "src/VBAi/Vbe/Forms/VbeForms.ListRemoval.cs",
+      "Sha256": "24EB26B2C7A14823C20978BB4A26982EE6264FF4ADBEE220B39FA9274F8B7F8D"
+    },
+    {
+      "Path": "src/VBAi/Vbe/Forms/VbeForms.NativeScalarSetters.cs",
+      "Sha256": "05DE2A55030DDAA7AE7D05E6E98A21AB5AAE8BA066C131197D5D8D600F6CAB38"
+    },
+    {
+      "Path": "src/VBAi/Vbe/Forms/VbeForms.OptionButtonDuplication.cs",
+      "Sha256": "69AA42AADF774ECB246E48E1FBC6A043029174297345DDD89F7A6A59045AFBAC"
+    },
+    {
+      "Path": "src/VBAi/Vbe/Forms/VbeForms.ProfiledFrameDuplication.cs",
+      "Sha256": "4BFE449D397CE23DB0C26CECAB7B272819B398456F6875F1FE80BFFC52E4998E"
+    },
+    {
+      "Path": "src/VBAi/Vbe/Forms/VbeForms.ReservedFont.cs",
+      "Sha256": "B26251B1A9A5D158573FE238D6C3BD9C355B77ED41B05B0231E45230CDA5669A"
+    },
+    {
+      "Path": "src/VBAi/Vbe/Forms/VbeForms.Run.cs",
+      "Sha256": "205C72119D91650A1196B7B95231D1E76A83AE24697812A670B665DB9B93E6DC"
+    },
+    {
+      "Path": "src/VBAi/Vbe/Forms/VbeForms.TextBoxDuplication.cs",
+      "Sha256": "D6DB8401C55372EEEA57DD45FC860A522C9A3AD43FA7C0113DEB4D1A8CC41C4E"
+    },
+    {
+      "Path": "src/VBAi/Vbe/Forms/VbeForms.ToggleButtonDuplication.cs",
+      "Sha256": "834C5FF6E8DB28F1F93167AE395224559064DB03AEAC80AEFDAC56181FCFB815"
+    },
+    {
+      "Path": "src/VBAi/Vbe/Forms/VbePropertyInfo.cs",
+      "Sha256": "7C59BE5F4A75FDCA9A9326E04C03A4E9813E1E1AD84AED1FA7AC24AD3055EED3"
+    },
+    {
+      "Path": "src/VBAi/Vbe/Projects/ExcelOwnedApplication.cs",
+      "Sha256": "80588708117A9E5B7EB417281B93ECEAB92540B0CB299FD3ACAA7E537C393752"
+    },
+    {
+      "Path": "src/VBAi/Vbe/Projects/PowerPointWindow.cs",
+      "Sha256": "71A994A25E7713563B6DE65CA9A672511145C89A4304F15772D8FA6C091C92B3"
+    },
+    {
+      "Path": "src/VBAi/Vbe/Projects/VbeCertificateTrust.cs",
+      "Sha256": "D12F0A0C0984887F7ED03BD86527D8B91083919FE217125210C5ACB8A27FF66B"
+    },
+    {
+      "Path": "src/VBAi/Vbe/Projects/VbeProjectComponents.AccessHelpContext.cs",
+      "Sha256": "B30E7CD1D5EA8ECF23E3F43D4158860C82289EE4F214B366C12BB6C1C7C2459A"
+    },
+    {
+      "Path": "src/VBAi/Vbe/Projects/VbeProjectComponents.AccessPersistence.cs",
+      "Sha256": "FCC88C087ACC049317D71C395807123087D9F690DD7D73D5CFE27ECBC654ED02"
+    },
+    {
+      "Path": "src/VBAi/Vbe/Projects/VbeProjectComponents.AccessSaveConfirmation.cs",
+      "Sha256": "ECC567CB201F57C5A4466C5D13AA7CF6C87DFAC1703413C12D3DC345115AC98F"
+    },
+    {
+      "Path": "src/VBAi/Vbe/Projects/VbeProjectComponents.cs",
+      "Sha256": "C33C49A686A07078CB39F31011504899192A9F2D35D9F2C2B787A5B76EB2CBB6"
+    },
+    {
+      "Path": "src/VBAi/Vbe/Projects/VbeProjectComponents.General.cs",
+      "Sha256": "BC69D3B727A23D9D0FCE545C7B491F3C0E6EEE47E8A9CB944BB77E32332895E1"
+    },
+    {
+      "Path": "src/VBAi/Vbe/Projects/VbeProjectComponents.Help.cs",
+      "Sha256": "D79CA69774BC41D15BE3461ED3351C7E2DEE816944BF88A7373907E33E42E446"
+    },
+    {
+      "Path": "src/VBAi/Vbe/Projects/VbeProjectComponents.LegacyHelpMetadata.cs",
+      "Sha256": "9E66078D21448CD8B378B6E1B6FD4548726E4E1B29E8C225C84DFC73D19B2139"
+    },
+    {
+      "Path": "src/VBAi/Vbe/Projects/VbeProjectComponents.Lifecycle.cs",
+      "Sha256": "8AEDE8240D38E92889EDECAD201BAE242402EAB4778A7F5F9904A82941990B51"
+    },
+    {
+      "Path": "src/VBAi/Vbe/Projects/VbeProjectComponents.OtherHosts.cs",
+      "Sha256": "FCE6015D1F996311286D1B13D846EFDEA73E35A29BC9E46AF555B65926C9F0DE"
+    },
+    {
+      "Path": "src/VBAi/Vbe/Projects/VbeProjectComponents.Rename.cs",
+      "Sha256": "541692A3E20DDBEEF593A2064064A675A5750C74BED39CB56073C835C00C7FE8"
+    },
+    {
+      "Path": "src/VBAi/Vbe/Projects/VbeProjectComponents.SolidWorksMacroCreation.cs",
+      "Sha256": "BA59FF32F4CB6DB2A2F656F4178DD48328FB5302FDFF81FFCEB76732B458E44F"
+    },
+    {
+      "Path": "src/VBAi/Vbe/Projects/VbeProjectComponents.SolidWorksMacroGeneral.cs",
+      "Sha256": "3A8E4AE50116F9DCA7FB297E5F4CA967B352CF2D32D8027F8C9A8E8E34C87384"
+    },
+    {
+      "Path": "src/VBAi/Vbe/Projects/VbeProjectComponents.SolidWorksMacroPublication.Content.cs",
+      "Sha256": "59023001BF848B6B2150BE56616172D2B8F70C272342988A566B567A3F4189F0"
+    },
+    {
+      "Path": "src/VBAi/Vbe/Projects/VbeProjectComponents.SolidWorksMacroPublication.cs",
+      "Sha256": "CBF66EC36E663059528EE9DA99ACF18F5A067A394D003FF2260B80C72A8FA6F3"
+    },
+    {
+      "Path": "src/VBAi/Vbe/Projects/VbeProjectComponents.SolidWorksMacroPublication.PostSave.cs",
+      "Sha256": "815E38A552CE67D72DD54A24736C5CCD025603D7696616F5B85B858EC1A9A0B2"
+    },
+    {
+      "Path": "src/VBAi/Vbe/Projects/VbeProjectComponents.SolidWorksPersistence.cs",
+      "Sha256": "26F039A5C9EE5D2AAF1FD055570B5BAB62E69D5C153503B3C441B5F5499A9D7C"
+    },
+    {
+      "Path": "src/VBAi/Vbe/Projects/VbeProjectComponents.StandalonePersistence.cs",
+      "Sha256": "2517CB4567BB1A0B74EF14FF61407E56BD388309D9820B3F553B97299FB53946"
+    },
+    {
+      "Path": "src/VBAi/Vbe/Projects/VbeProjectGeneralNative.cs",
+      "Sha256": "A9C295FBB9EA5DACC855C827863E3C3A47EB94766ED92B952DAE8A12C921A233"
+    },
+    {
+      "Path": "src/VBAi/Vbe/Projects/VbeProjectGeneralOperation.cs",
+      "Sha256": "05D96FB10FACFB1BF5EA32D64D2E5FBE7E9EE15008D94A2D1995A158FF48BFF2"
+    },
+    {
+      "Path": "src/VBAi/Vbe/Projects/VbeReferenceTypes.cs",
+      "Sha256": "15A2B1DDB5AAE76D4EFAA07C667302FCE4BB23B8B85548D537C38E4B1D8FF37D"
+    },
+    {
+      "Path": "src/VBAi/Vbe/Projects/VbeSignatureVerifier.cs",
+      "Sha256": "3B9A907C2B075CC7971A146A4525458F64A4688F4D94907F5891920E16BFF8DC"
+    },
+    {
+      "Path": "src/VBAi/Vbe/Windows/VbeEditorWindows.AddIns.cs",
+      "Sha256": "75D7C1996543AA187CA56644442A66F448C4F22EDF7B6F855D069935F92F3432"
+    },
+    {
+      "Path": "src/VBAi/Vbe/Windows/VbeEditorWindows.cs",
+      "Sha256": "858C4A9EAC0D7745BA51B51B2A734A5E0BE56777AAC43EE3EB5B992D6F8438C3"
+    },
+    {
+      "Path": "src/VBAi/Vbe/Windows/VbeEditorWindows.Layout.cs",
+      "Sha256": "0CD1DDFEA8D1C174836C67F26B85434EDC1E50E949F60CEA5C2086E2B1707B33"
+    },
+    {
+      "Path": "src/VBAi/Vbe/Windows/VbeEditorWindows.ToolbarCustomization.cs",
+      "Sha256": "5F5F5736CDDA50B4EF9F360A9F793AD4A5A0A2F4F5FC313272241C2D038463B3"
+    },
+    {
+      "Path": "src/VBAi/Vbe/Windows/VbeEditorWindows.ToolbarProfiles.cs",
+      "Sha256": "F06483474F45DF109F9090A8049D067391A44AA0EA7BEAB2C8148566C89B6163"
+    },
+    {
+      "Path": "src/VBAi/Vbe/Windows/VbeEditorWindows.Toolbars.cs",
+      "Sha256": "2F141E5BCF0B24FC70CC4A082F47013250853106B4A2DF3C9CCAC8E593E7FD9F"
+    },
+    {
+      "Path": "src/VBAi/Vbe/Windows/VbeToolbarProfiles.cs",
+      "Sha256": "8C1C545CF65F6A0E49D4BEE99A79DC00B32FC7E3411D76E1502E3FEEB584C9E6"
+    },
+    {
+      "Path": "src/VBAi.Updater/Program.cs",
+      "Sha256": "F830B8F4336CAA7D12B042B32496890C78C73E92BF43D73D7F17CD14D6ABF0E3"
+    },
+    {
+      "Path": "src/VBAi.Updater/VBAi.Updater.csproj",
+      "Sha256": "5B797AD019AB32D1C2D820AD0ACAE5CD6AF88485BC20E93F7DC3FDB23E8E6A64"
+    },
+    {
+      "Path": "tests/VBAi.Desktop.Helper/NativeComboListDiscovery.cs",
+      "Sha256": "485A9C8C4C1DCA0CA90609BE9553217E76BE10D73604CD14A9514D3F8A3C3C60"
+    },
+    {
+      "Path": "tests/VBAi.Desktop.Helper/NativeToolStripPopupIdentity.cs",
+      "Sha256": "30D889E282955B959BF648F44D3C0845C1A82D8B384F92A30100B8A272DD259C"
+    },
+    {
+      "Path": "tests/VBAi.Desktop.Helper/PrivateUiActionCanary.cs",
+      "Sha256": "3EFB44FA8044F79D20E8D182990AC05AFB7E6E4D94841F7B2DCD1902621EA85D"
+    },
+    {
+      "Path": "tests/VBAi.Desktop.Helper/Program.cs",
+      "Sha256": "3824FD769BEB8D35B26A4CDBAA4D8B4723F9EEB55223216B9591CCC013BA8464"
+    },
+    {
+      "Path": "tests/VBAi.Desktop.Helper/VBAi.Desktop.Helper.csproj",
+      "Sha256": "951BD657B04A787317A43884EB1BA80FA277C4127B8A59FA7A19F33E24949EB6"
+    },
+    {
+      "Path": "tests/VBAi.Git.Smoke/AdvancedGitTests.cs",
+      "Sha256": "9FE7996B10E8B39442123E71AB628F17AF07E35A67895E76975CFA42B34E2B38"
+    },
+    {
+      "Path": "tests/VBAi.Git.Smoke/GitScratchDirectory.cs",
+      "Sha256": "BEB90C67E6A32F0F9B7581530E4C3EA8BABCC65D19038AB80AB95741171F26F3"
+    },
+    {
+      "Path": "tests/VBAi.Git.Smoke/GitTests.cs",
+      "Sha256": "F4ECE7F98DDA887E007ABE0EE5C068A278E83C46571439DB71A239ED412B5AEB"
+    },
+    {
+      "Path": "tests/VBAi.Git.Smoke/VBAi.Git.Smoke.csproj",
+      "Sha256": "A42540B11709BB8F7B8FAAF2EC0FA1FBA614AC903F5107D354436FE17EFAD62C"
+    },
+    {
+      "Path": "tests/VBAi.NativeTrace.Helper/Program.cs",
+      "Sha256": "2A2687E621BF795663EC5E93D1D12B2CAFEACCB1DB92DD9BB14474DF3DDE0820"
+    },
+    {
+      "Path": "tests/VBAi.NativeTrace.Helper/VBAi.NativeTrace.Helper.csproj",
+      "Sha256": "01064C1EFABBF4CDB2E9255DC0540DA110732CBF48CC0DBAAE75814FEED5D825"
+    },
+    {
+      "Path": "tests/VBAi.Providers.Smoke/ExtendedProviderTests.cs",
+      "Sha256": "8E42E3BD2008B27FE08836E40B7F87BACAA0DFFF907B88F6AE6E58F57F3717E2"
+    },
+    {
+      "Path": "tests/VBAi.Providers.Smoke/GitHubSettingsTests.cs",
+      "Sha256": "F90BE5E3005760BCA0A19A87016F25CFE07C4EF93804CE6180F7F7CA7F083C5A"
+    },
+    {
+      "Path": "tests/VBAi.Providers.Smoke/ProviderTests.cs",
+      "Sha256": "AF689A801F69B4C96BE2BE9A595177D601E87ECF20298653177B646769EA04F0"
+    },
+    {
+      "Path": "tests/VBAi.Providers.Smoke/VBAi.Providers.Smoke.csproj",
+      "Sha256": "B6145DBDFC5941D50EDDD3E2E0182F54717CC5B4B910C2D10F5CD334905B4115"
+    },
+    {
+      "Path": "tests/VBAi.Q006.Tests/VBAi.Q006.Tests.csproj",
+      "Sha256": "ACED4208E2CE816CA2483230CBAF91CC65D23C4C0BC1CCBA8537C0ACEC5EE0CB"
+    },
+    {
+      "Path": "tests/VBAi.Q014.Tests/VBAi.Q014.Tests.csproj",
+      "Sha256": "B05573FB00D57EF4D175F465126B54ACDAA4B5BEBA328CDAA267F0348422DFB9"
+    },
+    {
+      "Path": "tests/VBAi.Tests/VBAi.Tests.csproj",
+      "Sha256": "71620642D90B58B7F59CB4B30D219EC51D1F6E4EC975627D0D1714521CAA298D"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Infrastructure/Diagnostics/EmbeddedGitAutomation.cs",
+      "Sha256": "D7F86B021E49751DF86414B90545DD67CBAB76D0347451DEFA741944C8201B20"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Infrastructure/Diagnostics/EmbeddedGitPersistenceContract.cs",
+      "Sha256": "B924610006D0DB4E7E89D17BC25A1A1A9DAC9AD790D69B8094DDF1426779AAE7"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Infrastructure/Diagnostics/EmbeddedGitRepositoryBinding.cs",
+      "Sha256": "9A73913A8D6EDE3FBCD9336B447AE00E4E8C2B20F01F5F363F4DB579C7FE1362"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Infrastructure/Diagnostics/EmbeddedGitSnapshotOracle.cs",
+      "Sha256": "A1EC0BD8092D2E99A4783128C3DFDDC11FC018D97ED06C92C6783E823E44708B"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Infrastructure/Diagnostics/EmbeddedGitUiProtocol.cs",
+      "Sha256": "A42E2F9037D08819DA3DC0BA64B09AA536C447D6B53608BB9B2346DD1F93D7D3"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Infrastructure/Diagnostics/ExcelFormatOptionsQualification.cs",
+      "Sha256": "CBA4A24CF53F0F8ECED4AA5047A072B9573947487F5F06AAD5F3504C72F686BA"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Infrastructure/Diagnostics/ExcelOptionsQualification.cs",
+      "Sha256": "8DE76561F90B3BD42ED49ED4FAA0BA60CAA1CA245B96A4DB159199F921978367"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Infrastructure/Diagnostics/IsolatedTestDesktop.cs",
+      "Sha256": "7FF864ADE09A8D19728C95A7CA4516908CF45A631A60923E3B61406E749B6404"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Infrastructure/Diagnostics/NativeExportTraceGate.cs",
+      "Sha256": "E8FCEBCF62141CB2AE0F5BA23E4DA0E5022F0B69F1E2C7CFA0CFB3C4F022ADB8"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Infrastructure/Diagnostics/NativeMetadataGetterProbe.cs",
+      "Sha256": "5C7FA1F740A667288BDB915C4962B04739F60282725D648687B0E4FDEAB8CA66"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Infrastructure/Diagnostics/NativeMetadataSetterProbe.cs",
+      "Sha256": "FADA145992F15EFDD2313C4F2B60346DA767333DE85E01C0FA141F6337A0489C"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Infrastructure/Diagnostics/NativeProbeDaclCopy.cs",
+      "Sha256": "4D17290600FD2678BF52A906A6C2B7E0267534BEC6DD82901D4DD042A93F03B3"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Infrastructure/Diagnostics/NativeProcessTokenObservation.cs",
+      "Sha256": "DF0675829632FF2570582CA66BD9475025560B96BDE237BEABA4F863FAE084AD"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Infrastructure/Diagnostics/NativeTeardownTraceGate.cs",
+      "Sha256": "F794C80DFA1CBE222FA7F5373AB0FAE7868ECC168989218A48D040B9D12FB81D"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Infrastructure/Diagnostics/OllamaQualificationEndpoint.cs",
+      "Sha256": "1FF93207ECA7765087823C771BD69CB47C2A372FFDA9E6870682915BB438E0C8"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Infrastructure/Diagnostics/OllamaQualificationModel.cs",
+      "Sha256": "D43242C7D90F9F6ED2B1B10128AC23CAD874FABC6B74F4ABF5F64658CE8AB2E0"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Infrastructure/Diagnostics/OllamaQualificationProfile.cs",
+      "Sha256": "54B4D0D11AE202B10298B30C5B6452531146FF8E60FF5F9D3557BE28C56BB445"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Infrastructure/Diagnostics/OllamaSyntheticWireCapture.cs",
+      "Sha256": "E187D55115D2A872769FD8CFC0DFC25551E6227C165B28594EBE5F4D34FC29EC"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Infrastructure/Diagnostics/PrivateDesktopUiAction.cs",
+      "Sha256": "614A58D16A8A0521AFD5145C404878A66515877F3B71F1D50D4441A33F626BE0"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Infrastructure/Diagnostics/QualificationDesktopGuard.cs",
+      "Sha256": "782B186B339E7FEEBFE4337E02F57868F9B0CCC97AD39E5E192BF7E167BB3926"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Infrastructure/Diagnostics/WordChatGitMenuDiscovery.cs",
+      "Sha256": "82D6661267C3E326AE67CBF5EBB644ECB40EB399125ACEBA3D6FBF7747649F99"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Infrastructure/Diagnostics/WordChatTopWindowInventory.cs",
+      "Sha256": "6829438269ECE82F023CD6332D7DB512B8796DB308A5862CCC39D48F8A7EF6E3"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Infrastructure/Diagnostics/WordChatWindowDiscovery.cs",
+      "Sha256": "7F7CB894DB5A5ECE9C718EAFBE1CE4D3040E9233D06532264BD6984C6EE8E532"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Infrastructure/Fixtures/Bridge/BridgeServerTests.Fixture.cs",
+      "Sha256": "DDD6587D7C24FF479245A65CC15E8F52E658137456B5874983A0D2249C44A783"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Infrastructure/Fixtures/Bridge/ProcessInputTests.Fixture.cs",
+      "Sha256": "BA3D928AE1ED818DF70C52E2A8B954B91A11EE5EDA633A5AC10815BC3767DC1D"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Infrastructure/Fixtures/Editor/EditorDraftRetention.Fixture.cs",
+      "Sha256": "46387A469B6D2F729884EEF43C642E468BF84ADD4D6FB42A80DF062C3864399B"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Infrastructure/Fixtures/Editor/EditorFixture.cs",
+      "Sha256": "6F23D59E0EA6DA08E0BAE8B8F8D117BFBF78776E0ED7E53EA8E0EAFE83773F69"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Infrastructure/Fixtures/Editor/EditorProjectNavigation.Fixture.cs",
+      "Sha256": "E721BDEE6EB11CB39719D63F43AC896F7B88565BE82B58F699B99430EBF7F568"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Infrastructure/Fixtures/Editor/EditorReferenceIndex.Fixture.cs",
+      "Sha256": "D242E87C8D1F028099269BC3CAE320F21DA4754692109D25EAF60F3BB3339066"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Infrastructure/Fixtures/Editor/EditorUiTestFixture.cs",
+      "Sha256": "A10EFE178F8B5D327BE2C89D16BADD16D920BD3A21AED717927577D44929D858"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Infrastructure/Fixtures/Editor/EditorVbeContract.Fixture.cs",
+      "Sha256": "4065EB2D79ED1910ABF8EFE875A4C20E7F026FDE2E928E1CA2C3FF255F89C842"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Infrastructure/Fixtures/Editor/ModernEditorBrowser.Fixture.cs",
+      "Sha256": "5CA200BDCB25E251E5A1DE3C321479BCE68F1D895738C8DB47E40F4FBE7A0287"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Infrastructure/Fixtures/Editor/ModernEditorDebug.Fixture.cs",
+      "Sha256": "6CE99ED6754B0EC6E68F54C7070B947419BA638AB6CD0570D0CA5ADF5391CB92"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Infrastructure/Fixtures/Editor/ModernEditorLifetime.Fixture.cs",
+      "Sha256": "73F48140B07A2CB73F2A57E259EF771F4F18E715AEC3A936CAC0271D044537A5"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Infrastructure/Fixtures/Editor/ModernEditorTools.Fixture.cs",
+      "Sha256": "72A31E336E32F934BB25DACC14222B34CA910D7A72CA09D54F3EE1047B173F95"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Infrastructure/Fixtures/Editor/OwnedReferenceMetadata.Fixture.cs",
+      "Sha256": "3D87D2843ED3B083D560A557B4A5DC63005BF9672262557EF66FAFCB467DF5E1"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Infrastructure/Fixtures/Git/AccountProcessScope.cs",
+      "Sha256": "C362E967B41908C4454C7844736C78494131F9A8B67ECBF580620FFE0B964FB4"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Infrastructure/Fixtures/Git/GitHubPaneCoverageTests.Fixture.cs",
+      "Sha256": "1E3693ECA3B927C637FE8BB0E423D7BA652593102D8FA239C1AAEF3F6BBC1A13"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Infrastructure/Fixtures/Git/GitReviewTests.Fixture.cs",
+      "Sha256": "6F5B3664893A989E48B9192388676F64808525D7BFFAD6F92B7E570925450C53"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Infrastructure/Fixtures/Git/GitWindowCoverage.Fixture.cs",
+      "Sha256": "14967F8DE700776D0902D08797017754853F6FCB69C7048E59E68BB0EE4821ED"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Infrastructure/Fixtures/Git/GitWindowStateTests.Fixture.cs",
+      "Sha256": "FA59FCA0652A63E0997123D5D24D3EEC79191481A9EDF083DCCE456A57FE01CA"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Infrastructure/Fixtures/Git/MacroGitOperations.Fixture.cs",
+      "Sha256": "61BC5872AE7DA83991D89ED83039BCA78B1C3D05BC87612F65461F4294CC940E"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Infrastructure/Fixtures/Git/MacroGitRepository.Fixture.cs",
+      "Sha256": "49A32458B4F4405708966C2476EBE603A49F642F9814FE0EC240CC6A2000FEBA"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Infrastructure/Fixtures/Git/VbaGitProject.Fixture.cs",
+      "Sha256": "25992C726CF3461F25DD2462CB736BD0A5200CA6FEBA8349CD682B32C46FE223"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Infrastructure/Fixtures/Git/WinFormsTestMethodAttribute.cs",
+      "Sha256": "D2CA573BF35E188EB5531A665C7DD41AA1FCD19EC44670D1C1A614DE3166C2FD"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Infrastructure/Fixtures/Host/AddInCoverageTests.GitHubFixture.cs",
+      "Sha256": "4DA1B5710969368277ED0B4D94116E3770A29D46046481C0909A315C5126487B"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Infrastructure/Fixtures/Host/AddInModernEditor.Fixture.cs",
+      "Sha256": "770EDA9867A8B30AFDC797773EE6E5CB6EA22D7F49E1C811A6667F9FE30DFA7E"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Infrastructure/Fixtures/Host/HostSettingsCoverageTests.Fixture.cs",
+      "Sha256": "795A193ACC5400507BE44CD8826A9E347BA64048E429C931A922343F243D6EF2"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Infrastructure/Fixtures/Host/HostSettingsWindowTests.Fixture.cs",
+      "Sha256": "15FB1C15B546CC4116B5194C03F4EAE2F39102F287443F4F44E1DADA90587CD1"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Infrastructure/Fixtures/Host/HostUiBoundaryFixture.cs",
+      "Sha256": "DBC6AEEAA9E02E5375B7DC2A74228987B943B8493643D2258805F969B1A50915"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Infrastructure/Fixtures/Host/VbeMenuLifecycleTests.Fixture.cs",
+      "Sha256": "F43DD190218010956C958210B4A08A9375456BFF9B1E34C7A98C3C80B67B78A1"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Infrastructure/Fixtures/Infrastructure/Hosts/VbeBridgeClientTests.Fixture.cs",
+      "Sha256": "618567B315F3D285038E147E7D37D119BD5F250EE25522DEA4CE5B2B082D842A"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Infrastructure/Fixtures/Llm/Chat/ChatSessionStoreTests.Fixture.cs",
+      "Sha256": "9BE21219B6DD678192CEF2DD8BD1AC948DCEB10566C9720B993BA0B84E520431"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Infrastructure/Fixtures/Llm/Chat/ChatWindowCoverage.Fixture.cs",
+      "Sha256": "597920763AD25021568BDCA32B97F832B7C442967BE65F99AC5B43F375ACBACF"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Infrastructure/Fixtures/Llm/Chat/ChatWindowStateTests.Fixture.cs",
+      "Sha256": "93257087E2CB5808DA8852EAA32F656DD5FB8EB6AF1890590D9B8D385ED512A8"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Infrastructure/Fixtures/Llm/Chat/LlmVbeAsyncValidationTests.Fixture.cs",
+      "Sha256": "754A04DE44DA92CBB0F6AC375C461B53304A4AF0295E7062AE5976922229B4E4"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Infrastructure/Fixtures/Llm/Chat/LlmVbeToolContractTests.Fixture.cs",
+      "Sha256": "404C137BFBA9A3D9BEDEA927B3381C1D97D8E1286B37C7C802B7EE7DD06DAD41"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Infrastructure/Fixtures/Llm/Chat/LlmVbeToolsBoundaryTests.Fixture.cs",
+      "Sha256": "6B82E1568D4F07299F756F75848093451E79CFC472283DDC10491BE579C519F8"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Infrastructure/Fixtures/Llm/Chat/LlmVbeToolsGitTests.Fixture.cs",
+      "Sha256": "B8B028240762AED604B32D94116ACE8AA4E5D7BEC700C2F9EE028A5F79202BAA"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Infrastructure/Fixtures/Llm/Chat/LlmVbeToolsProcedureValuesTests.Fixture.cs",
+      "Sha256": "684F69236175713B687A5F0B439F05A4A1FD930F9440BB336BFB2521DAD9E938"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Infrastructure/Fixtures/Llm/Chat/ProjectAccessContracts.Fixture.cs",
+      "Sha256": "C81C0412FE08AD9CB2E8777E62D8F87270A2645BA2509340BA6C5D77E2B085E9"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Infrastructure/Fixtures/Llm/Chat/ToolbarStoreFixture.cs",
+      "Sha256": "75EBDEC4D8A91107E2FC5A3A1D1BEC73F63AA206DDEBDAFD3E886482C4F8205A"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Infrastructure/Fixtures/Llm/Chat/VbeChatReferenceTests.Fixture.cs",
+      "Sha256": "A658F3343E7968F04CE4A8FBBCF2C0C0E6AA40A5E00F6820F586A3B9384239D6"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Infrastructure/Fixtures/Llm/Chat/VbeToolBoundaryFixture.cs",
+      "Sha256": "2E02790082AC7A7AFE78CCB35E44A3599B5D560753C223558CE9D489752EE001"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Infrastructure/Fixtures/Llm/Controls/Transcript/PreferredHeightView.Fixture.cs",
+      "Sha256": "6C0A9EB2C0FCCC7E0649778DE045F9BA0BE991DC3090932BC53E3849AA13092F"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Infrastructure/Fixtures/Llm/Controls/Transcript/Transcript.Fixture.cs",
+      "Sha256": "CB612A07B4FE89A9D1FE4078A2B48F29274B7C4B91C0DC01DE5308BA5C395D23"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Infrastructure/Fixtures/Llm/Providers/CodexAppServerClientTests.Fixture.cs",
+      "Sha256": "1927E0A2EE439CF365A4D3D6CA953F8033273C0BC238908028D2A38A8C31FE29"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Infrastructure/Fixtures/Llm/Providers/CopilotFixtureProgram.cs",
+      "Sha256": "DB74EEADA36249A9F44A77A169F1B54013EAEA0E61A5AB25AD5D66F947FBCF34"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Infrastructure/Fixtures/Llm/Providers/LlmBoundaryFixture.cs",
+      "Sha256": "574AC00D34CB199224B03BE312521515F4399DC3673F49AF6F898FE12F70D852"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Infrastructure/Fixtures/Llm/Providers/NativeProtocolFixture.cs",
+      "Sha256": "8A14A4412BBC5A96D2B5BE324C2C867D1CE8B6013EA38C7037082742144CFE25"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Infrastructure/Fixtures/Llm/Providers/ProviderProtocolTests.Fixture.cs",
+      "Sha256": "F072028E238B1972BB5EAD3C575F9BFF9BA05AAF8373FDAA5D4202608D05435E"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Infrastructure/Fixtures/Llm/Providers/StreamTests.Fixture.cs",
+      "Sha256": "9B8A219FD8C32BDDE7E59D72E1F625114E912269B6CE653B4A65685698B76FBE"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Infrastructure/Fixtures/Localization/LocalizationScope.cs",
+      "Sha256": "2764557A34792C03172F9CED95483AF8A7F8A571624E6FD881EF3AA1EE80DBD8"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Infrastructure/Fixtures/Localization/UiLocalizationTests.Fixture.cs",
+      "Sha256": "8F3C24818BFEFD0EC1ADC123499D1DD65E99FB3FA2C752F9E65DB85F5181420C"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Infrastructure/Fixtures/Ui/CrashReportDelivery.Fixture.cs",
+      "Sha256": "7D3A4B83F5F181C1E7A85D01EBB24AE81C072BE2F7F0A37588ED0990709CA134"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Infrastructure/Fixtures/Ui/DiffPaintFixture.cs",
+      "Sha256": "9F9CEADC311996B3CF51A5F76B598A67FAA6422B56E1BD2713FF0E1444636A37"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Infrastructure/Fixtures/Ui/NativeChromeCanvas.Fixture.cs",
+      "Sha256": "16833C24189DDF48D1EE4E9C9A6E50D035E5295D4AD44FBF06C7AD703F090DD9"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Infrastructure/Fixtures/Ui/NativeChromePaint.Fixture.cs",
+      "Sha256": "318866E3A41CF5177B7A17F68DBBEF89BC304649E449CDDDDB17E6BDBC1A894C"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Infrastructure/Fixtures/Ui/NativePalette.Fixture.cs",
+      "Sha256": "0A69B21D096200E8DD7D5425796180910319D90DAEB0E15F1478773927781E53"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Infrastructure/Fixtures/Ui/NativePaletteDialog.Fixture.cs",
+      "Sha256": "A4AF83FF291A61280B81F90F862441F730A669D236141BD999FD4571C11113D4"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Infrastructure/Fixtures/Ui/NativePaletteScheduler.Fixture.cs",
+      "Sha256": "C2B6DE34024D8D751384B1748F9B52BDA02E0AD382777FBDF629224E251B74F2"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Infrastructure/Fixtures/Ui/NativePropertyTabs.Fixture.cs",
+      "Sha256": "3A56CB5BC85A475348221367B23E43C4A704CF2BF0DB9ECBD0FFEBF46D94CFEF"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Infrastructure/Fixtures/Ui/NativeRendererLoader.Fixture.cs",
+      "Sha256": "D5CB32770D4B189A34DA0DCF62E84FCD536F4A009B321376CFBEF410D9CA2756"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Infrastructure/Fixtures/Ui/NativeTheme.Fixture.cs",
+      "Sha256": "D21B3364636EEA2EC40851D83EB877553A1700CA1FDA233C211882360D24D74C"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Infrastructure/Fixtures/Ui/NativeThemeNative.Fixture.cs",
+      "Sha256": "77883023D4DF5FFA6B29ABD98EA804A70572309B94B94F2BBCAB396C4C07E658"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Infrastructure/Fixtures/Ui/NativeUiState.Fixture.cs",
+      "Sha256": "CEC472DC0266CAF81DAFDA19E0207173DB54D68CB760D41503CEDD251E4746E2"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Infrastructure/Fixtures/Ui/OwnedPaletteMessageBox.Fixture.cs",
+      "Sha256": "2C1241935AEDCCDF0A9D35064CBBFD88F1C099FBF9AD7F2D69C600C5C3A305FA"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Infrastructure/Fixtures/Ui/SharedUiFixture.cs",
+      "Sha256": "F2D5C13162BE7B2B22D7DEEE448ABC5E9AD01D776F4EEC57E7B4AB3C315D2259"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Infrastructure/Fixtures/Ui/TechnicalUiMetadata.Fixture.cs",
+      "Sha256": "F7DA0EF73689A454EFF155E84667E0A424CFBCAC710F8314D643BE051BAE96AB"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Infrastructure/Fixtures/Ui/VbeNativeRendererTests.Fixture.cs",
+      "Sha256": "F75E129A18A3453CD4FE74878D9C34649FAB9150720CAA5FC990A782EC6D33EC"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Infrastructure/Fixtures/Ui/WinFormsDesignerTests.Fixture.cs",
+      "Sha256": "81880562EED93B7498D62B625FB7D4CD88A17BFC46C244D469DC7CD1057BE19B"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Infrastructure/Fixtures/Updates/UpdateFeed.Fixture.cs",
+      "Sha256": "54D6D6C8BBA8B171CA11F3EC2557A7FEB9D6811E7A08B194C50CE825387C76B3"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Infrastructure/Fixtures/Updates/UpdateScope.cs",
+      "Sha256": "88C973B33E6FECFCD41F17F4AD527A23864519C8BA52A997C8690E1602E8CDBB"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Infrastructure/Fixtures/Updates/UpdatesNative.Fixture.cs",
+      "Sha256": "182146A50D2A14394F47259B4385EC37F88746E3FACB6E6FBE53506CCD0912B7"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Infrastructure/Fixtures/Updates/UpdateWindows.Fixture.cs",
+      "Sha256": "199AFB97DEE2DCCD2FDCCF7EA02288AD42034C6C44A55665D46A4D9F71B8FA79"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Infrastructure/Fixtures/Vbe/ProjectResolverTests.Fixture.cs",
+      "Sha256": "3F2011DCAAE30427BDD332016CBF2324469B90718C102A26FE4DA1865F48A173"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Infrastructure/Fixtures/Vbe/SessionDispatchFixture.cs",
+      "Sha256": "2B866418E58A8E9B2497CB7C2AA683FDB9459F16DE0C3C24E212F07204B08E81"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Infrastructure/Fixtures/Vbe/VbeSessionContractTests.Fixture.cs",
+      "Sha256": "7964B501B0F3287869CCDB947348C421A328506A01423FF3A04BD812652AC75F"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Infrastructure/Fixtures/Vbe/VbeSessionCoverageTests.Fixture.cs",
+      "Sha256": "C930CD92AF72B01131981D4E33506A780A96AED8BF57ECB399CAE76A0A525923"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Infrastructure/Fixtures/Vbe/VbeSessionTests.Fixture.cs",
+      "Sha256": "51E9BD7B8ED0AB4D721F451338924C6572EF35CD0676FF9C9BEFE9632734FD9D"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Infrastructure/Fixtures/Vbe/Code/ClassMemberRenameFixture.cs",
+      "Sha256": "18431ECD18A003C1765D3F967F85271569FFBDEF350C5AA974F5A69F9B69B287"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Infrastructure/Fixtures/Vbe/Code/CodeFileEncodingTests.Fixture.cs",
+      "Sha256": "C80280FBF206B50F20E835BEC20CB08DDDCEFAD1F86646513B55095991E38C1D"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Infrastructure/Fixtures/Vbe/Code/ProcedureRenameMatrix.cs",
+      "Sha256": "D8682114D92A3D23C6AB8D978993821DD784E462F418160C37BD835E63E57E96"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Infrastructure/Fixtures/Vbe/Code/ProcedureRenameWorkflowFixture.cs",
+      "Sha256": "E14A13AAB99D76DB93A731E7BFB0446257D0D3433E9D4B4B829DC2D178AAE122"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Infrastructure/Fixtures/Vbe/Code/VbeCodeEditsTests.Fixture.cs",
+      "Sha256": "4289CA06B4F067C9C9FC2B79AF2639537CB92DC5F7059BA0B8137064B5F2986B"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Infrastructure/Fixtures/Vbe/Code/VbeCodeNavigationCoverageTests.Fixture.cs",
+      "Sha256": "05DEE6315A41850326EFB61441866449E851E76D2FD32391D35AB26F76796E40"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Infrastructure/Fixtures/Vbe/Code/VbeProcedureMutationTests.Fixture.cs",
+      "Sha256": "6B0CB3347BA2F3F935B55699F9D9903AABCBDA13929CF73EC5E1DAB0325CA7BE"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Infrastructure/Fixtures/Vbe/Debug/DebugCommandTests.Fixture.cs",
+      "Sha256": "BE8A3CA272FAF4CC3F2F47B73F02D7A8E608E466C2A6AC01910867895DE896EF"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Infrastructure/Fixtures/Vbe/Debug/EditorDebugFixture.cs",
+      "Sha256": "64DFB9DBCC18B7DB2806ACF05388F0CB31E6BBBE9D6634A7AD82049A0A367629"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Infrastructure/Fixtures/Vbe/Debug/FormatOptionsMatrixProbe.cs",
+      "Sha256": "F5444FFA231D5B320B3064851D8565CDDCA43AB9ABB89C12BFCA40629FBFC15D"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Infrastructure/Fixtures/Vbe/Debug/IdeSurfaceFixture.cs",
+      "Sha256": "B7227D2F57CB396D2ABB2DBE58BAFFF1251D08EF068AC4A74D28E24A69BAAFE9"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Infrastructure/Fixtures/Vbe/Debug/NativeDebugScene.cs",
+      "Sha256": "C79E724BD99535068B62644A3A6BDD2572806DAAA2EDA3F0D33B39D5B7273FB0"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Infrastructure/Fixtures/Vbe/Debug/NativeNavigationContext.cs",
+      "Sha256": "E8FD5ABC27062A07E0E892792F7E070FD6027433EBAB8C9EE922699E85B80349"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Infrastructure/Fixtures/Vbe/Debug/NativeProcedureValues.Fixture.cs",
+      "Sha256": "C727FD9971F4E456A4B632120474844471AB90444E205EB4DE48B8D6D95FF043"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Infrastructure/Fixtures/Vbe/Debug/ObjectBrowserScene.cs",
+      "Sha256": "97AABB685E75C133E7A5908D9B46B1E6D47C4765410222F64F469484E1497120"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Infrastructure/Fixtures/Vbe/Debug/OptionsCompletionMatrix.cs",
+      "Sha256": "9505B8881BD8BB2230B99C1CF6EB4A764859A2924E343576F8070382FD089780"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Infrastructure/Fixtures/Vbe/Debug/OwnedCommandDispatchFixture.cs",
+      "Sha256": "582FA2BD97DA3C1CFBE3D660E18C87F5519F6B9FDB85D90C6721A7070C7F1424"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Infrastructure/Fixtures/Vbe/Debug/OwnedNativeOptionsControlsFixture.cs",
+      "Sha256": "EA8F52743D096441BDCD9842BE5A0F8693DA5DB57D962075050FA22AB88E2CC6"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Infrastructure/Fixtures/Vbe/Debug/OwnedOptionsAutomationFixture.cs",
+      "Sha256": "59FCD22F1D5AF41284B2149FE991B74B1F09395E5B6AB11A3D9DCB304115E400"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Infrastructure/Fixtures/Vbe/Debug/ParamArrayMatrix.cs",
+      "Sha256": "E6B0321E1DB1BD7B2A51FF816DB7E655BF6F56B182E0766E651C4E828002B8B4"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Infrastructure/Fixtures/Vbe/Debug/ProcedureScalarContracts.Fixture.cs",
+      "Sha256": "F0A0028458193BE2CC7ED8635808685FB8CAE691F87313FAEFD357C0A6DC876D"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Infrastructure/Fixtures/Vbe/Debug/ToolboxPagesTests.Fixture.cs",
+      "Sha256": "2055775D0A5B2EC6F0B56FC0C0671FCA30D438C3C3561869EF60EBA19464385B"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Infrastructure/Fixtures/Vbe/Debug/VbeDebugProcedureValuesTests.Fixture.cs",
+      "Sha256": "F0EFBCFCE9CC1C13F2E7FC117B6CD4D0376FB9E732945816F89985533FEFE0D0"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Infrastructure/Fixtures/Vbe/Debug/VbeDebugTests.Fixture.cs",
+      "Sha256": "CF7C3CE7355DB3AC877A1515FE8DE88FC21CBAA5A28F2B790C93857B4B2460A9"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Infrastructure/Fixtures/Vbe/Debug/VbeDebugWindowsAutomationFixture.cs",
+      "Sha256": "24823A2E261118047A883B17DCF226348C244954A304FE799A64979D1C697B8A"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Infrastructure/Fixtures/Vbe/Debug/VbeDebugWindowsBoundaryTests.Fixture.cs",
+      "Sha256": "E4AC460AF10F9DEA04D02457B102658E5324E6C940CC2D71C0BA91711D2F8C7F"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Infrastructure/Fixtures/Vbe/Debug/VbeDebugWindowsImmediateProbeTests.Fixture.cs",
+      "Sha256": "ACF27DD805C32022B461C4EDCEFF0AFA4110B1BE4D98685D576841389BC1E492"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Infrastructure/Fixtures/Vbe/Debug/VbeDebugWindowsNativeTests.Fixture.cs",
+      "Sha256": "E53FFA07606EBF02EA49A9DBA289DE8D7BD4AF2D8B581264D54E2615B5EC5CEE"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Infrastructure/Fixtures/Vbe/Debug/VbeDebugWindowsOptionsProbeTests.Fixture.cs",
+      "Sha256": "9EC34B6A70467CABE4AC1906EE53AEED33E399CADAC73C5E87B068859AE9612A"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Infrastructure/Fixtures/Vbe/Debug/VbeDebugWindowsSignatureProbeTests.Fixture.cs",
+      "Sha256": "9B397006A189A3E94B39939174C7BA289E8FB56CD94005273F6C3695A2135A3F"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Infrastructure/Fixtures/Vbe/Debug/VbeDebugWindowsSystemTests.Fixture.cs",
+      "Sha256": "CADB421B9F31043FB8A45F1E5707AE412F5A285B15AD99FACD8FA05E97972700"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Infrastructure/Fixtures/Vbe/Debug/VbeDebugWindowsWatchProbeTests.Fixture.cs",
+      "Sha256": "F3A611E71546E8F2E259D8C9C8D7350EAE3197087B9A5DF9E1E9C2B0DCE91E86"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Infrastructure/Fixtures/Vbe/Debug/VbeProjectProtectionTests.Fixture.cs",
+      "Sha256": "25534CD56A59E4C88DF0569ECF2962C55B57249A9943EA31C3FB4E08C300B3D3"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Infrastructure/Fixtures/Vbe/Debug/VbeProjectProtectionTests.Win32.Fixture.cs",
+      "Sha256": "92B406CF31560B31E5852679DF88BEB42B882E38297F0DC77F5225F91A0D5561"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Infrastructure/Fixtures/Vbe/Debug/WritableOptionsMatrixProbe.cs",
+      "Sha256": "9153BD84F02629DF03A855C99242E7D36381FA208AE9A47216D246AB18FAB0FF"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Infrastructure/Fixtures/Vbe/Forms/ComTypeInfoFixture.cs",
+      "Sha256": "7DEF2302313FC88BFD2363F418558B07675463D4BFF86C8ECF2A9AA12173A636"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Infrastructure/Fixtures/Vbe/Forms/DesignerDataFixture.cs",
+      "Sha256": "584EDE67ABB51F6C25CF8DB7AC79DC41B7BD3D9B28D681CBAC48844A694FEB9C"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Infrastructure/Fixtures/Vbe/Forms/FormsWorkflowFixture.cs",
+      "Sha256": "480514E7D302F4629920B39AC5686D8B649B3CC12051235EBA97453E7F98B3CE"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Infrastructure/Fixtures/Vbe/Forms/NativeDesignerScalarTarget.cs",
+      "Sha256": "90DD2E2D8842B4BF8247346E0BE49D72110F4131FDC68067419FA78C8CA9FCB3"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Infrastructure/Fixtures/Vbe/Forms/VbeFormsContractTests.Fixture.cs",
+      "Sha256": "E279EAEE8037F3A4502804CAB67BDE860D02179BCE13C8514739C5BF5546DB7C"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Infrastructure/Fixtures/Vbe/Forms/VbeFormsCoreBranchTests.Fixture.cs",
+      "Sha256": "B274A7A5F620AF804F4A27595654E6E795C49432D73E0175956798EFBC529225"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Infrastructure/Fixtures/Vbe/Forms/VbeFormsFitContentTests.Fixture.cs",
+      "Sha256": "F4DA2E90DC9991F20242393BB6CDE20E707AAEECC1AD014504DCAA0DF472A21C"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Infrastructure/Fixtures/Vbe/Forms/VbeFormsFrameBranchTests.Fixture.cs",
+      "Sha256": "6B3D4DD2FCF38CAB2B8A3E7CD51B01782A48F91995D97255E675AC3CA0774387"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Infrastructure/Fixtures/Vbe/Forms/VbeFormsFrameDuplicationTests.Fixture.cs",
+      "Sha256": "B089E5524BE0CBF3D15E65BEF326C39808264C79944498043A16F4244189DE13"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Infrastructure/Fixtures/Vbe/Forms/VbeFormsInitializerTests.Fixture.cs",
+      "Sha256": "DC953D3CAB61DED78027E443B7D8F615A3B9ADE2A3D14DA25B51B15B0605B6EE"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Infrastructure/Fixtures/Vbe/Forms/VbeFormsListBranchTests.Fixture.cs",
+      "Sha256": "B8DE6FD8E99C3AF655C73963FCD13D9989280E60FD7C514499D7F2180863CD6B"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Infrastructure/Fixtures/Vbe/Forms/VbeFormsMetadata.Fixture.cs",
+      "Sha256": "A106495181A4FEB167195B11570B45706448E1A98A68122130050DEB2E297B91"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Infrastructure/Fixtures/Vbe/Forms/VbeFormsPartialTests.Fixture.cs",
+      "Sha256": "56D4AA0221C22099B3E6DE71ED66AC09C6E21B6961B7CC3868CE2EDD0D74892D"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Infrastructure/Fixtures/Vbe/Forms/VbeFormsTests.Fixture.cs",
+      "Sha256": "4BE7884561FC4E1290BE2201FC967702ED0E8EC7E22725D70AC925CA22098152"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Infrastructure/Fixtures/Vbe/Forms/VbeFormsValueDuplicationTests.Fixture.cs",
+      "Sha256": "C1BC4C5C42D43B848147BE6CAF91276406A8AEFEBFBC06C3A5B9D7317D047176"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Infrastructure/Fixtures/Vbe/Projects/CertificateDispatchStore.cs",
+      "Sha256": "6388925085AF770CAD266D01837C4915F21D7342D8A0C91AF41956AF8C7EA2EF"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Infrastructure/Fixtures/Vbe/Projects/ComponentLifecycleContracts.Fixture.cs",
+      "Sha256": "D1A25686510DA9EE85AF9171BED20251FE0A54C6EC72379D1518C0737D19834B"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Infrastructure/Fixtures/Vbe/Projects/ExcelOwnedApplicationTests.Fixture.cs",
+      "Sha256": "DDC499CC5DC2BA66DA6DCC85810213BA465D3522D5C516E6B340A3647C7965F4"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Infrastructure/Fixtures/Vbe/Projects/NativeOtherHosts.Fixture.cs",
+      "Sha256": "8819432A829F678A3B8742A527D086186922B3C217435AACBE1BFC7DF505E83D"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Infrastructure/Fixtures/Vbe/Projects/ProjectPersistenceFaults.cs",
+      "Sha256": "B33712A960166737FCED725F768777A1A7F530F45F817F53D23449AC713C2492"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Infrastructure/Fixtures/Vbe/Projects/ScopedExcelHostProbe.cs",
+      "Sha256": "047F5C02D16B19378E3A8FA2948528DE1F1683C2134005CF4C77F271FF0FB90A"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Infrastructure/Fixtures/Vbe/Projects/VbeOtherHostPersistenceTests.Fixture.cs",
+      "Sha256": "090CDD6A928D3E80D056BF029420F0702A43A563B3DC4D18BABE923B40673B75"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Infrastructure/Fixtures/Vbe/Projects/VbeProjectComponentsTests.Fixture.cs",
+      "Sha256": "B9810D8DEF588A3410DF5A1046875BC3AB7C80A313E93E9836BB8B878EFCF2FE"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Infrastructure/Fixtures/Vbe/Projects/VbeProjectExcelHostTests.Fixture.cs",
+      "Sha256": "F1040AA5927CD10A58AA9DDD259AFA2A99A51966DFF9B980534FCDB0210C5958"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Infrastructure/Fixtures/Vbe/Projects/VbeProjectLifecycleTests.Fixture.cs",
+      "Sha256": "2BAB97AC9C3334FF9DFB3B68DE32637AC526B0077D9CC8222FED5C3F51A90298"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Infrastructure/Fixtures/Vbe/Projects/VbeProjectMetadata.Fixture.cs",
+      "Sha256": "DDCB21327D5F963C2F183CBF987A93AA9E78E3D1BF3BFF36DDA5F31705A96BD0"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Infrastructure/Fixtures/Vbe/Projects/VbeReferenceTypesBranchTests.Fixture.cs",
+      "Sha256": "86E5ABDCC403FECF69AAB66167115A2B6DFD0901863402423A37855DD5006E73"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Infrastructure/Fixtures/Vbe/Projects/VbeReferenceTypesTests.Fixture.cs",
+      "Sha256": "5E1F34796F83C7A0C70F6207A170979D540E48DDB047C7C960B5D87B70586720"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Infrastructure/Fixtures/Vbe/Windows/ToolbarCustomizationFixture.cs",
+      "Sha256": "A681EFAFAC7E616DED05B2BD96EA69AAE804EE1D82542A3CABC2AAAFD469499B"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Infrastructure/Fixtures/Vbe/Windows/ToolbarProfilesFixture.cs",
+      "Sha256": "1D8217D4EC0BE4E6E74F4888400613786A6A305A5C1A499CFA7723BBBD5D124C"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Infrastructure/Fixtures/Vbe/Windows/VbeEditorWindowsTests.Fixture.cs",
+      "Sha256": "D811F0C9ACEA3391822C6FF93A1B18D08A6E0CE6F5BCE63E4CBBABAD6EA782AB"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Infrastructure/Hosts/ExcelOwnedBootstrapPlan.cs",
+      "Sha256": "E0109B3F4E9F612C74316AFEF900310E2BA91194DC968520EBBDEE31AB678045"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Infrastructure/Hosts/ExcelOwnedProcessImage.cs",
+      "Sha256": "974362861279FE11E350C79D357BFEC59BFF7A5C02D96058FA868EF48C99F6BA"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Infrastructure/Hosts/ExcelScalarQualificationEvidence.cs",
+      "Sha256": "8698FA88BEFF16F663ED6AE5A655544FFDBD006FCEC93DC82E39F64BEF692113"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Infrastructure/Hosts/ExcelScenarioLifetime.cs",
+      "Sha256": "1D3C0232307192EE3BD095B97A314465307C4030CA309F67515E314055626F45"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Infrastructure/Hosts/ExcelVbeFixture.cs",
+      "Sha256": "ED051E0D7F0D31AFB6C88082C63AA53A942331316E938FB5A8FC5B1B42E1B07E"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Infrastructure/Hosts/ExcelVbeFixture.Designers.cs",
+      "Sha256": "1F6838E0AAF51D9991F7984F36AECE73743C671699590CE5A1F1ED6A3BEE6A31"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Infrastructure/Hosts/ExcelVbeFixture.EmbeddedGit.cs",
+      "Sha256": "09AC03E204287A54392ADEA186507A9BF5A784F31A2760D048E23ECBE347665C"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Infrastructure/Hosts/ExcelVbeFixture.EmbeddedGitPersistence.cs",
+      "Sha256": "5D0BC6CD40799A2B4000534F41D82303D761A8727E9F1B636C7B88351CDD0C2E"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Infrastructure/Hosts/ExcelVbeFixture.Evidence.cs",
+      "Sha256": "9D413AD8BA06DBF57765A7FD8626C967741FEB20158B6F98E2B1BAA746E33C6D"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Infrastructure/Hosts/ExcelVbeFixture.Git.cs",
+      "Sha256": "493805D270B482F81AE9C24BB973098F09601E44245AC7490E1D9770952120B7"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Infrastructure/Hosts/ExcelVbeFixture.GitExport.cs",
+      "Sha256": "12DCBE3D2F13C09378C3FD68733616B128E3035BDF4F46C8B201E6F3D8B1632E"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Infrastructure/Hosts/ExcelVbeFixture.GitFontIdentity.cs",
+      "Sha256": "AA580F42DDEB6CD520E2690D82C813B368AFFE09E692D1CB6247BC2F9D9BC1FC"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Infrastructure/Hosts/ExcelVbeFixture.GitFontPersistence.cs",
+      "Sha256": "12828CA18D4E48A47B32E037825037E438883C40B5193625AB7E46946A2D88B9"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Infrastructure/Hosts/ExcelVbeFixture.GitFonts.cs",
+      "Sha256": "237AF3924A7287C01DCFA93005CED8974E437B99853E16A5311E51C00D8F2B8B"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Infrastructure/Hosts/ExcelVbeFixture.GitLayouts.cs",
+      "Sha256": "3AE7CE16CE9037F199FC742EDBA030A42475BBFCE9563F455ED7909BED757B90"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Infrastructure/Hosts/ExcelVbeFixture.MonacoQualification.cs",
+      "Sha256": "8FFC06349CF74329F8DC7AE2C988CA383464D33DE357534C584529948BAA6429"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Infrastructure/Hosts/ExcelVbeFixture.OwnedBootstrap.cs",
+      "Sha256": "669E7F157790418F1C9C486E22E125C8FA57A20D2D0BDDD7F9CEC6932CA10D86"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Infrastructure/Hosts/ExcelVbeFixture.PairedExport.cs",
+      "Sha256": "C7C4F71754B04D890B0D70360706FB19B71B220EDBCA93E1C6CF2B27239DDE20"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Infrastructure/Hosts/ExcelVbeFixture.Signature.cs",
+      "Sha256": "8FDB5AA7E8D35F8C9C1176B059DE0301C1086CB90699E534AD484CE5C70246FD"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Infrastructure/Hosts/ExcelVbeFixture.TeardownTrace.cs",
+      "Sha256": "ECBE1E29C6D95055D8120C38B30717401DF6A2B06936D031B14EE99D46D7878B"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Infrastructure/Hosts/OfficeAdapterOnlyProjectQualification.cs",
+      "Sha256": "36CDE58E8F97879A82F5F064B99DD681CEA7B279CFCD00EB03985013AA65F8FE"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Infrastructure/Hosts/OfficeCommandContainment.cs",
+      "Sha256": "C7EF0C91B9C481A75F2A472CC881863304127075FC90C6AF9F362AECABA2DF0A"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Infrastructure/Hosts/OfficeMetadataMutationEvidence.cs",
+      "Sha256": "F7820E63854FE9D70746328771E31836003C521C2BE3420845A2432F4AB27F3A"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Infrastructure/Hosts/OfficeObservationRead.cs",
+      "Sha256": "29E388AE7754BF723B0A3EC07C87A19D14396EEDEE0672DF34A5E2CCCB10E482"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Infrastructure/Hosts/OfficeOwnedShutdownEvidence.cs",
+      "Sha256": "E90E459A7818A156B39154C9FB9E56BB4EE05AD068D033512BEFD0DE1B362CC7"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Infrastructure/Hosts/OfficeProjectReopenIdentity.cs",
+      "Sha256": "EAD5D82F33E9194AD536620DB6C9305CBCE8CF8057D628F454D56AA00707D323"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Infrastructure/Hosts/OfficeVbeFixture.AccessDiscard.cs",
+      "Sha256": "9F47C6C9859D3B4078D5040E1128E8C84FA524FCB05EE86BA4EEAE387A7A26B4"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Infrastructure/Hosts/OfficeVbeFixture.AccessIdentity.cs",
+      "Sha256": "3862885659E63CEB81888584928EB8AD4E7A27415BA6AB9ABF6B50F3E256EC71"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Infrastructure/Hosts/OfficeVbeFixture.AdapterDiagnostics.cs",
+      "Sha256": "FFD525CD8CD3B9923310BCCEE5B6041D9AC35A8253665C1BFD6B23A354FC8222"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Infrastructure/Hosts/OfficeVbeFixture.AdapterQualification.cs",
+      "Sha256": "CABBD6ECE74F4BB03C2476F4D725D5D074D9A1260CE5EB7B1063634721F3161D"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Infrastructure/Hosts/OfficeVbeFixture.ChatGit.cs",
+      "Sha256": "7A25389D27AF8E47EA37CED48EB6C2E765AB8F2DE2BE0FADA5E6BEFBFBECD958"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Infrastructure/Hosts/OfficeVbeFixture.cs",
+      "Sha256": "247A8D17B8F62C4570A2292F8807D7A3AD74C56F1C757583D51C1793ADF94CF3"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Infrastructure/Hosts/OfficeVbeFixture.Desktop.cs",
+      "Sha256": "2F9F2899544A70EEBAEE0922BB4A8ADC54D9799536C93DCDF921691B081A1078"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Infrastructure/Hosts/OfficeVbeFixture.DesktopAddInConnection.cs",
+      "Sha256": "5BCBE662174387C6A29246181863CC4D02BAD97DA89C998BF7415F642CB848E6"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Infrastructure/Hosts/OfficeVbeFixture.DesktopStartupRecovery.cs",
+      "Sha256": "36DB89B0E67F8167A17D68BEA5E46366C92C3606F3D0527BBDF396C263FF0277"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Infrastructure/Hosts/OfficeVbeFixture.EmbeddedGit.cs",
+      "Sha256": "DB55B3953D309642938D02582961D56DFE68B11182C72D8E41292C1A45E19D7B"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Infrastructure/Hosts/OfficeVbeFixture.Git.cs",
+      "Sha256": "73ACA83E8F5DA91AF9EEB0D89CB2FB178E00B540B2D7701B89B1E3038BD50362"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Infrastructure/Hosts/OfficeVbeFixture.MetadataGetters.cs",
+      "Sha256": "CEAB6D32D04FFA995B913F893519AFE48DFB16D42D30A4CE09B0B6C2A6987370"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Infrastructure/Hosts/OfficeVbeFixture.MetadataSetters.cs",
+      "Sha256": "8F630B8D0EF5A1053F5F0776187E07FFF8A989681CDC7206A9AB4895F4CFF665"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Infrastructure/Hosts/OfficeVbeFixture.PrivateWordDesktop.cs",
+      "Sha256": "EE93B500D1D27CE0908B342BBBB31F1FEEF47877A01AC297DEEAB98789167776"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Infrastructure/Hosts/OfficeVbeFixture.PublisherBinding.cs",
+      "Sha256": "A8638139225AE286B92958CB64B2BACFFBC92587C9DFF490FDC6C5F6E0CAD94E"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Infrastructure/Hosts/OfficeVbeFixture.PublisherBootstrap.cs",
+      "Sha256": "BB82C6E0CEB7BAF08389E869986E06AD70E52F1ACC84F7352090398BCAA14865"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Infrastructure/Hosts/OfficeVbeFixture.PublisherOwnership.cs",
+      "Sha256": "CBB311A5A41A5C740F7F49A495230E94D127E88018D3B42B60E88AC6246EEE87"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Infrastructure/Hosts/OfficeVbeFixture.PublisherSerializedSeed.cs",
+      "Sha256": "234C5A9D1F335C5F245ECA9601EBCB41D0815BDAD96E6BB6941C61563C9C157F"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Infrastructure/Hosts/OfficeVbeFixture.PublisherTestCleanup.cs",
+      "Sha256": "9FB238CBD369E64919EC20F4E4ECE1ED80A0F90AA96BF0EFEB7BD458E459C36A"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Infrastructure/Hosts/OfficeVbeFixture.Shutdown.cs",
+      "Sha256": "7CB8D2C11536CA3FA45A5775D57111F52506BE958D8F4BB98130780C33E1D20B"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Infrastructure/Hosts/OfficeVbeFixture.WordMacroSafety.cs",
+      "Sha256": "EEA0DED23249E48899A5052EF106ED10F68247E28DC39D67FD807C4D54D4B9DC"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Infrastructure/Hosts/OutlookVbaTestFixture.cs",
+      "Sha256": "7133ADC9272BFC620AB03CC6B4889223119AB978C75B290AA4C051AA1D4B2DB3"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Infrastructure/Hosts/PairedExportQualificationState.cs",
+      "Sha256": "BA619460521A084AF067732578598726B2831A39EFE6D11ADC0F52DF6216A87B"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Infrastructure/Hosts/RetainedRootFontWorkbook.cs",
+      "Sha256": "9BEEC421D592F3F3CC30E805788942BCE192FDCA42661BB796DAE4DB8B97C9ED"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Infrastructure/Hosts/RootFontObservationManifest.cs",
+      "Sha256": "175C23D9AFC43DEACB47139FF5E8FA9FBEFA47790ACE59FDC5B37D526BF77FB0"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Infrastructure/Hosts/VbeBridgeClient.cs",
+      "Sha256": "61141EB3B7663E0122848E95F5CDD0956E276C49674AC5D59A7E884EEE58522F"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Integration/EditorBrowserProfileRuntimeTests.cs",
+      "Sha256": "A747CA181BD149AE658C712BEF879897E06C239FD1339D7BC718578E44466392"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Integration/MonacoBreakpointExcelTests.cs",
+      "Sha256": "E1E2956042E7C9DA39913E233A91416BC3B15E61F444E8819DEB368CD2302370"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Integration/MonacoExcelTests.cs",
+      "Sha256": "133C34276E886CD6DF99BAF7AD87FC5A060F18D6A4B448C25B3CF8F7DEF236E7"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Integration/MonacoLanguageExcelTests.cs",
+      "Sha256": "8E7EB62F4CC64E4E4E8CFBF474F5D442BE148E1E23C0A7D86D2930F4D305A1F0"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Integration/MonacoLlmTests.cs",
+      "Sha256": "78E48C12517649A261236DDED176E60C8C74E1C11BDE12C1906FA1E207A1EBD3"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Integration/MonacoRuntimeTests.cs",
+      "Sha256": "3C60AFD4FC1992618EBCAD7A142D7447AA0047617D33B0823DF1F286D6061FD8"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Integration/MonacoSaveExcelTests.cs",
+      "Sha256": "62B76CF496FF0D9BA6A5D43BA139117C21F7976C71240FAA1F3A4774ACDDFE7D"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Integration/ProjectPrivacyExcelTests.cs",
+      "Sha256": "7FF0B2C18958F8384BFFFE4887BD2D767784F6F8CA953112CAF21042E81A086E"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Integration/VbePaletteExcelTests.cs",
+      "Sha256": "DF3FEB12C88F2F81047762B59BEE08B59B7A48B03C50E88AFF5D7016EC7C1C84"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Integration/Git/EmbeddedGitWindowTests.cs",
+      "Sha256": "84160B92B1FC746C8A903AC07E1AF049E6DE7B1642D838D5C7FA550DC2A93267"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Integration/Git/EmbeddedGitWindowTests.Persistence.cs",
+      "Sha256": "2BBD95BC19A40B843280B8301A28141B93BA56B77FA29A813AD60802D53A731E"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Integration/Git/GitCoverageTests.cs",
+      "Sha256": "2DFABFFAF37BD9C6BBA5EB986A8DEB8FEF1433AA09AECB15AA25E3603085DEFC"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Integration/Git/NativeUserFormExportProbeTests.cs",
+      "Sha256": "88A70EC295DB28599834488BFC28412DACD06A88780BCAD958FDF07AB3B91740"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Integration/Git/NativeUserFormGitHubTests.cs",
+      "Sha256": "0C0F0313431B1D9192006382E17B8E173D38E377517B7396AB72D0EC9C544C71"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Integration/Git/NativeUserFormGitHubTests.ExplicitSequential.cs",
+      "Sha256": "A8AFF315239A05F17BA37ED724A0E65DA2CB4DD90E6F6EE11D61C5D95A2FC25C"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Integration/Git/NativeUserFormLocalGitTests.cs",
+      "Sha256": "1E55937D5F8FD1BA1A5FC0A045F876FFD7CC2E95A144EC3CAE815DAFBEDF8F38"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Integration/Git/NativeUserFormLocalGitTests.ExplicitBootstrap.cs",
+      "Sha256": "0784BF0FA8B847A1E85174275201CB0AE384E1832289706B6B2CB2EEB740B604"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Integration/Git/NativeUserFormLocalGitTests.FontObservation.cs",
+      "Sha256": "8FBB9CD022B8233698C4BF16AF9973BBB52D42EB67ADFC835D284A6AF3AF156E"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Integration/Git/NativeUserFormLocalGitTests.PersistenceBaseline.cs",
+      "Sha256": "F5813A079CD3119B237FBAD8DA1864C0D3D380509FA98F06098F397BBA7E49C3"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Integration/Hosts/Excel/ExcelClassMemberTests.cs",
+      "Sha256": "AE3C3C2B4A920D52D321257420180C4CDD2464B8029EF8B1EFAF9D4D4F87A990"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Integration/Hosts/Excel/ExcelFormatOptionsTests.cs",
+      "Sha256": "4A7FED66911324B9715CF2EC8694CB9F0DF920CBABBC5CA16B4CE260FD2E2A61"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Integration/Hosts/Excel/ExcelHostTests.cs",
+      "Sha256": "AF5767960B8BA9EBBE67A22D1A453B08C9511807DCEB108DFE79053E7D54D090"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Integration/Hosts/Excel/ExcelIdeSurfaceTests.cs",
+      "Sha256": "DC100E63B4D1FAD86EEE65B5F17596221E3D09E68263553B20E3E84D55ED3A17"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Integration/Hosts/Excel/ExcelImmediateProjectIsolationTests.cs",
+      "Sha256": "82186334B56A5A96553B56DB935EA0E764F49FF58E5AB73606F04742338B2408"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Integration/Hosts/Excel/ExcelLocalScalarInspectionTests.cs",
+      "Sha256": "E6CCE64B487FD6C24D688E3FC64FE4C60DCD940FD02FF51049672AB6C68CDABE"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Integration/Hosts/Excel/ExcelNativeMonacoClosedProjectTests.cs",
+      "Sha256": "2E8231C3BE85EB9BABA40D2061A9633935F00D355DE8C4DD57753CE19304B53E"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Integration/Hosts/Excel/ExcelPairedExportPathVisibilityTests.cs",
+      "Sha256": "A185C3A1119D443091E7B22E50833C500783786DA0EA62E6CBDC8EC52EC14F25"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Integration/Hosts/Excel/ExcelParameterRenameTests.cs",
+      "Sha256": "6C6DF0371C543FE5D17D8EF7EB047D0ED30F78F3F0CD1C001F6803BB9A88046F"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Integration/Hosts/Excel/ExcelPathVisibilityTests.cs",
+      "Sha256": "A8660838803CF7B0C6FE7BD4EAA164D89F8C24BE02B5741BE570232ECAB4B12D"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Integration/Hosts/Excel/ExcelProcedureValuesTests.cs",
+      "Sha256": "F3A5AF39006E9A963B2CBF43F1C32813ADA6B4EDF845008221B6F285859C7FB9"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Integration/Hosts/Excel/ExcelProjectPersistenceTests.cs",
+      "Sha256": "DC94B94C4720C77B22908FE6C0A952AB9F5C856E59A2A12CEED72BF25AAAB2F6"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Integration/Hosts/Excel/ExcelQualificationPersistenceTests.cs",
+      "Sha256": "30EDEBD2454C17270F2C5E0FCCFDEE9E7B830278F4EA968473F7441A45A6A3BF"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Integration/Hosts/Excel/ExcelSignatureQualificationTests.cs",
+      "Sha256": "747BAE5A32AC59538D1636C2488D148E64479418C9E746BC227F5C06B58A1E91"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Integration/Hosts/Excel/VbaTestExplorerExcelTests.cs",
+      "Sha256": "95E9714CE3459EBD8F3425AD14C476806B79577693E0BB134D19D364FCD67CD5"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Integration/Hosts/Excel/VbaTestExplorerLargeCatalogueTests.cs",
+      "Sha256": "4E959A35E01A8E42BFEFEB8CB78054B4C8955A2A4F57F9950CE853360BFB93E2"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Integration/Hosts/Office/AccessReadOnlyIdentityQualificationTests.cs",
+      "Sha256": "41F7BEAD7775AD40C616DE43C05AE3D4AAA09ACB0FACDA7FE144EB96BB2AB83B"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Integration/Hosts/Office/OfficeAdapterOnlyMetadataQualificationTests.cs",
+      "Sha256": "D912FF13E36D594428AFC8610FE44748FE776ED48401E159EB847AD835079A12"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Integration/Hosts/Office/OfficeAdapterOnlyQualificationTests.cs",
+      "Sha256": "B499258816129D1264D626928F0E1F2D8FF5BE853026C66F79B7B5FF834B9761"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Integration/Hosts/Office/OfficeAdapterOnlyReferenceQualificationTests.cs",
+      "Sha256": "8472963EC33AB99B29521B7A9769291F2264918EE51B160B52B971395DB45F94"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Integration/Hosts/Office/OfficeHostTests.cs",
+      "Sha256": "C3C0FD152736B1B6D4BCDD000505D4A637E62534E94CC8EF7100D781C1269994"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Integration/Hosts/Office/OfficeMetadataGetterProbeTests.cs",
+      "Sha256": "F2B8A658A78B38613A76470058AB682A94BFABC092413B0B608E158BA5E222D6"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Integration/Hosts/Office/OfficeMetadataSetterProbeTests.cs",
+      "Sha256": "4674EF7BF6A5FA5AEDF98A59244AD1B75B27DFBD72543F8E66D1A07343956517"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Integration/Hosts/Office/OutlookHostTests.cs",
+      "Sha256": "BAE571D20FD489D93BCF5F318CD338D3B1AFA6475A685086FD0D04D16A85CB03"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Integration/Hosts/Office/VbaTestExplorerOfficeTests.cs",
+      "Sha256": "E1C2F2E90D62E39B405AE1E6F9316266F3675DC1EE101FEF7AD802A6AEEF4D86"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Integration/Hosts/Office/VbaTestExplorerOutlookTests.cs",
+      "Sha256": "4CD87F58703549DE27BDDADE313658D3249813828981869C275C4EFEBE078427"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Integration/Hosts/Office/VbaTestWordMacroResolutionTests.cs",
+      "Sha256": "C8C65EBBB6095A204E93DD863E7E4128D231B8F86804424BBC40F682F82F9F8F"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Integration/Hosts/Office/WordChatGitWindowTests.cs",
+      "Sha256": "80364F3BEB35F104295A194D9A68FEC0E539D3B0196797029F48811884CC33A9"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Integration/Hosts/Office/WordEmbeddedGitWindowTests.cs",
+      "Sha256": "3CF4ED495B77F8E7C97719AFF4717F66550556308C9158F0510575278096295C"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Integration/Hosts/Office/WordGitProjectIsolationTests.cs",
+      "Sha256": "780733E3D0DEB3E05A98E01935F742CD0BFEFFC0185C1047B731C2C21A266064"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Integration/Hosts/Office/Native/LegacyHelpMetadataRefusal.Tests.cs",
+      "Sha256": "94AD0A4A7C9107044327045E84F483556A10F611F6FDE5D7B0374F37B959CF2C"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Integration/Hosts/Office/Native/PublisherGeneralQualification.Tests.cs",
+      "Sha256": "528AB90B50FCDEF3B537D72253AAF5863A1787C3BA28B8FC0EB3DC11A677FC72"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Integration/Hosts/SolidWorks/SolidWorksHostTests.cs",
+      "Sha256": "4143EB6D0555E52EBAAECC51D47128D022DB67F9D31045FA6DF2EAA669352557"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Integration/Hosts/SolidWorks/VbaTestExplorerSolidWorksTests.cs",
+      "Sha256": "56081F8FEE5A3ED510A128B06FCD9F26A32FB9677755C93284EE704574897ACE"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Integration/Llm/Chat/ChatWindowPersistenceScenarios.cs",
+      "Sha256": "5DAE1E7F99B2FBC09C49AEB84CD4D2A5B49F84783712B55DF4758A7BB9CF42B4"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Integration/Llm/Chat/SessionStoreTests.cs",
+      "Sha256": "DCEC57FE188F0C8FF075C7D57992C73D92C7EE4D1BCA41D3BA0800938995D700"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Integration/Llm/Providers/ConnectedProviderTests.cs",
+      "Sha256": "D49DCF26A883B12FA935D7F39AC8947102CCC3A2E91FA510D1491C3A95D2CD22"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Integration/Llm/Providers/ProviderCoverageTests.cs",
+      "Sha256": "996F5F822B9EB8035B81589F472ECE895240D1304EECF1CEAEC45AAC12E39995"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Integration/Providers/OllamaExcelQualificationTests.cs",
+      "Sha256": "F97D7F8AE6A17627FC8635C64B12F2D28A4204A2123FDB5D6A30E21B9F7B9B69"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Integration/Providers/OllamaQualificationTests.cs",
+      "Sha256": "5E2E94C43C2C53A8658C2FDD58FB5D7543E27E0D65ABE88858787696A2D7C7A4"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Integration/Providers/OllamaUiQualificationTests.cs",
+      "Sha256": "3741A40DCC202F6A6D3C83E795089C0BCC01EC210C111B815A1C5765F9EB1504"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Scenarios/ChatWindow.ProjectPrivacyMigration.Tests.cs",
+      "Sha256": "4E12EB8D7BAA391A93B7F3F2C319CA428F62D599DB1583886002C057C362AE25"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Scenarios/Bridge/BridgeServer.NativeBrowser.Tests.cs",
+      "Sha256": "F6C9344553E3747289102A6BD78D873297ACE0B5BC40896BAEC87BF6DC1221DA"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Scenarios/Editor/ModernEditorTheme.Tests.cs",
+      "Sha256": "DCC46B2B24988BBE79AD418B49E77D87E648A9F57C41FC0212EA3B5CFECF68AB"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Scenarios/Editor/ModernEditorWindow.Performance.Tests.cs",
+      "Sha256": "53D6D165B3D4B278A1B00F250C7CDE49708BF967EEF2F420EE5D4FAD45825D78"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Scenarios/Editor/ModernEditorWindow.Reconciliation.Tests.cs",
+      "Sha256": "CF7D24F5010C9575496307FFFB048C0B7D0C1B57176F04E63E55F806E4B28C36"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Scenarios/Editor/MonacoLanguageScriptScenarios.cs",
+      "Sha256": "802A0B67BD70B9444FBE035716826D2D282F05904D2B656555BC75E655C063B0"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Scenarios/Git/GitWindowFixtureLifecycleScenarios.cs",
+      "Sha256": "156408D5D8A20C6AF89ABCE20FD7EB21DCEAB9A2D2DB856D7ABD69FC62142702"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Scenarios/Git/NativeDesignerCaptureContractTests.cs",
+      "Sha256": "D138E71276F155AAD34BF88373ACFB5F78AFE4783BD99F63B72F4EA737A5BF62"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Scenarios/Host/ChatToolWindow.Disposal.Tests.cs",
+      "Sha256": "991EE3B7D7E498F6D7907878AA7491025A6F9343B4DC45F8059F83ABE5AC552B"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Scenarios/Infrastructure/GitScratchDirectoryTests.cs",
+      "Sha256": "6606C8AFACCBFD1A171F4E36974A86A8DF11D7761A4ABCFD66362852C58F908F"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Scenarios/Infrastructure/Hosts/ExcelOwnedBootstrapPlanTests.cs",
+      "Sha256": "27FC8E981C4249D0AC5BAE0B9B53D3D9C5C1DB533ED4DB84750DB63342AFAA56"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Scenarios/Infrastructure/Hosts/ExcelOwnedProcessImageTests.cs",
+      "Sha256": "4AC8E6A4929C63C5AEC7BC494FC4B92E9C67B4C8CE92ACE570179463548B74E4"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Scenarios/Infrastructure/Hosts/ExcelScalarQualificationEvidenceTests.cs",
+      "Sha256": "70CB735A4F891E09E4E41BE3FF3AA14338C4232CC473754928E4529F506074AB"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Scenarios/Infrastructure/Hosts/ExcelVbeFixture.Git.Tests.cs",
+      "Sha256": "DCCC7AD7173B46A0B543736793861ADFF7FDBC97DDA73C047EB6CAA065C4F9B5"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Scenarios/Infrastructure/Hosts/ExcelVbeFixture.MonacoQualification.Tests.cs",
+      "Sha256": "A4DB4922AAD26FBB44CDB966A4142C2BC15BA1483350741347B9F09C34E5ECE1"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Scenarios/Infrastructure/Hosts/OfficeCommandContainmentTests.cs",
+      "Sha256": "A83BDEFEE709DABE766D678BB641908DFE1BE23D626B57C869FA19664FC31CAC"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Scenarios/Infrastructure/Hosts/OfficeProjectReopenIdentity.Tests.cs",
+      "Sha256": "DFA5D3B0422292BAACAEE24F3975D7EE74EC97899C3309E8838AC9A6DDD58597"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Scenarios/Infrastructure/Hosts/OfficeVbeFixture.PublisherBinding.Tests.cs",
+      "Sha256": "C14EB37D7ACC9A82125A0FA6EF6147E353CEFF8507471221945A3E327B873772"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Scenarios/Infrastructure/Hosts/VbeBridgeClientTests.cs",
+      "Sha256": "B9B0B56455047D2F703D9BA269A7EC33C3149BCBD7CC6E6AC39BB6E772C781F0"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Scenarios/Llm/Chat/ChatSessionStore.Concurrency.Tests.cs",
+      "Sha256": "3364055674085694E6FC35A822481C89FACC278265605299180D0538021B77C4"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Scenarios/Llm/Chat/ChatSessionStore.Promotion.Tests.cs",
+      "Sha256": "344601E04185576BFB113328F61F0E05E2F8D1855958334758385EDBDDE99822"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Scenarios/Llm/Chat/ChatSurfaceScenarios.cs",
+      "Sha256": "1C2BFB996BA8E21A91900E7627102BA5B6B99CEAA429320CEED23822F6B8E404"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Scenarios/Llm/Chat/ChatTranscriptNativeViews.Tests.cs",
+      "Sha256": "27882511C40B4F244978E3E50DA0ED40B8FFA8DD7E2D3060F335BEFA0D1F8D3E"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Scenarios/Llm/Chat/ChatWindow.CompactPresentation.Tests.cs",
+      "Sha256": "05DA773B3D170E3D7F79F615140B03379EF852C150A4888B669B97E0FA54A166"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Scenarios/Llm/Chat/ChatWindow.Robustness.Tests.cs",
+      "Sha256": "0F8BDB51662FCDDDD7D7F820CA807D96106F53B5C17A6D4BDAC882B235242CFC"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Scenarios/Llm/Chat/ChatWindow.Transcript.FormRecovery.Tests.cs",
+      "Sha256": "2AE02C70C7F66CE37ADAB06386D937116E6574FFB94DE0AACBA3AA9B8EA3ADDC"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Scenarios/Llm/Chat/ComposerContextScenarios.cs",
+      "Sha256": "EBC3D25E6841610F4405F067EF3D621E7689E59E87E8EEEFDD68FF5FA9016249"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Scenarios/Llm/Chat/LlmVbeTools.NativeBrowser.Tests.cs",
+      "Sha256": "BA41C3F22B029024FA020E5FD06D7C6BD1D66D4E9915123E07126BBFE4D73B5F"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Scenarios/Llm/Chat/LlmVbeTools.NativeEdits.Tests.cs",
+      "Sha256": "6F5515552304862DA0EB0491909A1AEADBAAC0037A01B22DA036CB0F4997EC7B"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Scenarios/Llm/Chat/TranscriptContextScenarios.cs",
+      "Sha256": "F6B7BA84A7A59192D7D24351AF0207602B0BF135606A1DD5B11E897B24827036"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Scenarios/Llm/Settings/LlmSettings.Concurrency.Tests.cs",
+      "Sha256": "2857313251F6BBFAE455B8561811B9DCDB738AA6ADB72D6B193DEA5C9C2BB4CA"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Scenarios/Llm/Settings/LlmSettingsWindow.Layout.Tests.cs",
+      "Sha256": "274B309958B610839479A3BE69FCBC5EC021AFB519AFE416FED8A8EF75BE664E"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Scenarios/Localization/LanguageCatalogueScenarios.cs",
+      "Sha256": "21383E5B6E5F249B0B9E5A97AE6B3E1BC0F640BA17C546E6D69097AD5100DD46"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Scenarios/Ui/ChatTranscriptPresentation.Scenarios.cs",
+      "Sha256": "6DC5650EE7E40E99E1EEA2C6D072E4D4D234385D2442D813BBFAB68D2756F5A1"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Scenarios/Ui/UiDesignerPalette.Tests.cs",
+      "Sha256": "06E28371B61E133CE48CE251505EDD1B8D5DE9E5AB036A06CC3A4AB9A53B6692"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Scenarios/Ui/ViewDesignerDisposalScenarios.cs",
+      "Sha256": "E077143CA20EE0A9CE04ADD1BA0375B77EAEA2A7E6E130C8EAAD618C2A213F08"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Scenarios/Ui/WindowDesignerCompatibility.Tests.cs",
+      "Sha256": "12DCFFFCA737FC27CAE40C6073AF34C9A0546E69639A66D1C3623B71309CC7B4"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Scenarios/Ui/WinFormsDesignerScenarios.cs",
+      "Sha256": "9221C7C40409FD4D229EC607F98CDC21F803B1F51E87B18E2ED7036B4187F1B5"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Scenarios/Vbe/EditorCompletionScenarios.cs",
+      "Sha256": "25DE38C44FA29C27F3FACDEB1D23EEE94AC0A2EF761C75C5DD45AD13718FC17A"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Scenarios/Vbe/EditorSessionDispatchScenarios.cs",
+      "Sha256": "17D2FDFFEB15D5C7651AD429E30C98FA45CFDAA07AF1B78E1F08A94BB50FD42B"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Scenarios/Vbe/FormsSessionDispatchScenarios.cs",
+      "Sha256": "44237EB0B5A0BDC3594C5BB7B4D96C8AB2EE5CC2A65364347118FE9A46FA616F"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Scenarios/Vbe/ToolbarCertificateSessionDispatchScenarios.cs",
+      "Sha256": "836FBE34A6027A0B599DB46C644EBF0D376B10B489BD704B1A98CF1C3853DC34"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Scenarios/Vbe/Code/VbeCodeClipboard.Coverage.Tests.cs",
+      "Sha256": "6CBEDC7FA320FC7A2C7DBB196464366E1544D386E2D8D7AB5A5F8A31833DCE3E"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Scenarios/Vbe/Code/WindowsCodeClipboard.Tests.cs",
+      "Sha256": "76E8B8EC04150125082B6332CFB3A8ED6B0F81787B791E725190D3BD3FB66AA5"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Scenarios/Vbe/Forms/ComMetadataScenarios.cs",
+      "Sha256": "AA14737513D510FFE790EDCC87193FE44CEA7296B85EC8A363610AAB811F4DBD"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Scenarios/Vbe/Windows/VbeEditorWindows.AddIns.Coverage.Tests.cs",
+      "Sha256": "0625EB2E973ADA4E21B94D89450B68B5C3907ECB391D340466B699C063676DCC"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Scenarios/Vbe/Windows/VbeEditorWindows.Layout.Coverage.Tests.cs",
+      "Sha256": "1262589DD28A1BB6E9501FAE86833D5D725342B35CDC64775BD333F76EB4875F"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Scenarios/Vbe/Windows/VbeEditorWindows.Toolbars.Coverage.Tests.cs",
+      "Sha256": "F2623B703D3A6CE2C80FEF55DED353C43953CA53E4FF30EBADE812A315E71392"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Bridge/BridgeRequestReader.Tests.cs",
+      "Sha256": "3DF2FF20864AB691F9C0A6E4EB818A0DA728CC8F850E2AC831677EEF46722EB1"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Bridge/BridgeResponseWriter.Tests.cs",
+      "Sha256": "1F2B489DEE0D14562F5BD8F39BA41EA25D17741F5F565A1D638247B9AA10FD3F"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Bridge/BridgeServer.PathVisibility.Tests.cs",
+      "Sha256": "8B185CE44F498D5E9A1FEA984C76C4E0553E8E3B5EAC3B83EEA85E7B54809192"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Bridge/BridgeServer.Tests.cs",
+      "Sha256": "7C06EC3BB29553CCC7B4BE5084315AF2F34B99A7298104B320C6CE2B1EDEDBBC"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Bridge/ProcessInput.Tests.cs",
+      "Sha256": "417C38FC21857E6043A7198BCC2AE7D99262E61776A53BFBF3B69D8A1F59BAE6"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Bridge/Protocol.Tests.cs",
+      "Sha256": "2C99AB736D9F0E154C3879827800E27452BFA570FBD068513A56A6F5086F8A02"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Bridge/Diagnostics/EffectiveTokenObservation.Tests.cs",
+      "Sha256": "DB11BABB3F6CB73F01487B04F62735E7D30F1BB0BC04409BBFD950EBB1AA644D"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Bridge/Diagnostics/PathVisibilityDiagnostic.Tests.cs",
+      "Sha256": "4CD6A3AC67246CB7D4D12AAF0237013361DFB9F2F93012E001124FCF589FD1E1"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Bridge/Diagnostics/PathVisibilityObservation.Tests.cs",
+      "Sha256": "C9C013727EF876FFA5C5A78E7F685EBE1A815F524893E41AB34DAC52DDAF78CC"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Editor/EditorAttributeRewrite.Tests.cs",
+      "Sha256": "1DFD51AF6ACC24B6D6BD4B776D98CBACD4F4996BB69FFD35E1B2A93199867882"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Editor/EditorBrowserProfile.Tests.cs",
+      "Sha256": "A4FE643AFCF93B2D23E871C23AC85112AEC95553A8822E6FDED9F947DC2626C5"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Editor/EditorDesignerSnapshot.Tests.cs",
+      "Sha256": "1EF26C002BE73EDD5D511B5B286AC475B3D41891116C7936045DF7A3EFA907FB"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Editor/EditorDocument.Tests.cs",
+      "Sha256": "5CF7EDCD54CF01B11DFDB3F59AC9870C783A4283CFC2B1D0AEBFCAD3EE1BE3B6"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Editor/EditorDraftStore.Tests.cs",
+      "Sha256": "F16078A93909066BD6795AB44A4D818AA3B896941A4194E917C2EDCD0FB6053D"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Editor/EditorLanguageCache.Tests.cs",
+      "Sha256": "723503E76AA5A2291FB95B15917BB93403E6A1434170864C8D6D37F9E58E055C"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Editor/EditorLanguageIndex.Tests.cs",
+      "Sha256": "3F9F8768943AD72BA055321424A6E5AAC49819B5C79680C9DFFE22FDD838CA84"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Editor/EditorProjectNavigation.Tests.cs",
+      "Sha256": "ADF4545B5962E7667BE9518444003F7DCD8FD979EAFF7935E2AE28D3499BF3D6"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Editor/EditorReferenceIndex.Tests.cs",
+      "Sha256": "A8556E767EC9A77176ABD5D1B688D2E23E12FC01D0193CBB3219203D3ED5D819"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Editor/EditorSyncWorker.Tests.cs",
+      "Sha256": "1EEB4CA768B28940899705357191A6F648A8F2401D6FC059966E71CF55477E77"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Editor/EditorTextChange.Tests.cs",
+      "Sha256": "3FF40745852B5705F3A81BCE2D1004510F2444B7C028DC6B022B586246D57A16"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Editor/EditorVbeModule.Tests.cs",
+      "Sha256": "9B247FE7F93A926650CE4E8630380C89A265FEDA9C95F2463C4E08C0EC0FED04"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Editor/EditorWorkspaceHost.Tests.cs",
+      "Sha256": "0626FDFD7285EAD10DE14D11B9C8F063F0E60A7BC2BF4791D078C04ABF864EC6"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Editor/ModernEditorWindow.Activation.Tests.cs",
+      "Sha256": "CEE8644924E9C43A91B211F4363876B9116FC144AC3DF76B50A6B6BBCF88DD64"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Editor/ModernEditorWindow.Debug.Tests.cs",
+      "Sha256": "6D89A6480F21E6CA3744937312A568DD3F77CBD4F79113DE6777AA6EDADF80CC"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Editor/ModernEditorWindow.Language.Tests.cs",
+      "Sha256": "F78E6369EBADC2AEA3B330FEA4E646BFA55D303DA4A7715F3FB8408B94D244BF"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Editor/ModernEditorWindow.Save.Tests.cs",
+      "Sha256": "DECF25AA011F639AC85C72C682ACDCCFFBD2BFE69D3A64E24AD92355DDECF77B"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Editor/ModernEditorWindow.Tests.cs",
+      "Sha256": "75E6D679011F633B0216A7F69A598FA36E63148475113D8ADEDA886F61A3AF37"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Editor/ModernEditorWindow.Tools.Tests.cs",
+      "Sha256": "650093DE9CC9D4C79214E46685BDBF3F48A05F0F6E63EAA08300ED371BFB2664"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Git/FormFontObservation.Tests.cs",
+      "Sha256": "5E26E5AECACD65E25DF7744BE0002ADC7E80010D6CD4BFF37E11761F15DAAD2F"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Git/FormFontRestoration.Tests.cs",
+      "Sha256": "8AFA4F19FDFB8C7B5CF490CB223FB0D8FD132F6D71767433FDFC13DA012B75D3"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Git/FormResourcePreflight.CompoundFile.Contracts.Tests.cs",
+      "Sha256": "C3B85BA08F44552FEFB76F094EEB715B6F3F3A81E974BAE5C23AACD6D9F18D58"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Git/FormResourcePreflight.CompoundFile.Tests.cs",
+      "Sha256": "55D60AD0D9F25B613851393AE6C530C1CF60C53AA30A011031642F2FA6CEE78F"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Git/FormResourcePreflight.Containers.Tests.cs",
+      "Sha256": "B7C811AA682BC1748894061C5AFA5BE62732D963213F353BD9069042583DA3B7"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Git/FormResourcePreflight.Tests.cs",
+      "Sha256": "5D41D243730AF7B0E2E9D041261523D36886D083546F17B3FDAFED2F3B5B2032"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Git/FormStreamPadding.Containers.Native.Tests.cs",
+      "Sha256": "F958E2FF8BE0FF1790BFDF7362574395C16F7282A455FD960E478DBB527D7A2C"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Git/FormStreamPadding.Containers.Tests.cs",
+      "Sha256": "BF7503C164AC7A44C0233F4AB2A46C03A3BABF54BE181B18AE5DFEB2999C1FE7"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Git/FormStreamPadding.Controls.Native.Tests.cs",
+      "Sha256": "C8853EEC8657449A9D400B6E6168135FDF8F24BE906A6E665ED941E282131334"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Git/FormStreamPadding.Controls.Tests.cs",
+      "Sha256": "AF6EFAB21B3278CD3283F298B459071A12406D1382DA22683CC4F0D9FF4E9283"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Git/FormStreamPadding.FontBindings.Tests.cs",
+      "Sha256": "92FC9B7E433688D3C7261633567F2F325AE59905C76F5C4106F67C438F719C9D"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Git/FormStreamPadding.Morph.NativeFixtures.Tests.cs",
+      "Sha256": "BE6FD79732AA9AA3B7211A6BB0F1C918C77BF0DED6BC0C7D22DD2608AA5FCBF4"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Git/FormStreamPadding.Morph.Tests.cs",
+      "Sha256": "C2BE0533999B94D64E92FD6DA4830818F5BA657EF358BDF5622D4A4927A17820"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Git/FormStreamPadding.StdFont.Tests.cs",
+      "Sha256": "CC62331FEEDD2A854E28B5852353A34A7D5594A03D0627DF579434D747B45A27"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Git/FormStreamPadding.Tests.cs",
+      "Sha256": "9D31842B7D562994FBDD186C0A1DA2A5E4C1FEEEB029C47FDC1742D9439B7164"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Git/GitFailureDiagnostic.Tests.cs",
+      "Sha256": "FF73DA6FE0E16D170902CD505391108E6D5592CCE5784DF9650C57C17B255AAA"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Git/GitHubAccountService.Tests.cs",
+      "Sha256": "326DFAD21979B33E64FD2AF72CD4C58075CAAB59175A975676B9DCAFFE3C74D2"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Git/GitHubApi.Tests.cs",
+      "Sha256": "857A494B34AE95D4F5378B6C4F26E05D81CE17BD5A353D25CCE45D026CC61A7F"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Git/GitHubPane.Tests.cs",
+      "Sha256": "F60F4CF8EB0C29B35CD7634FBDB3C00D6846880EF1568BEE2A933FB06372A891"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Git/GitWindow.Review.Tests.cs",
+      "Sha256": "1C8C8105015EA4029DA3ACBB1FD1520CE79966EC0F6CADAB3913957244233A89"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Git/GitWindow.Tests.cs",
+      "Sha256": "6078F7FED020C92D5A7E2ACC4B67516B9D8003567D0F0F1E6831A17EDF208167"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Git/MacroGitOperations.Recovery.Tests.cs",
+      "Sha256": "A30B239D15793D248D0A5C66F76AD8CABB0891E402D23614EDF1F47012AC5E03"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Git/MacroGitOperations.Tests.cs",
+      "Sha256": "D137AC7CA4AA609396CFCEE6733B609AF04E1198AE38DA94B43545563025E006"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Git/MacroGitRepository.History.Tests.cs",
+      "Sha256": "D8D76337D1FE9AC6B98FF0648279CC5A2C56E026C94FC130A87E40CC59EF2A7C"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Git/MacroGitRepository.Recovery.Tests.cs",
+      "Sha256": "091E470C091A245C8F2797AE88242170F757E1B2AB8702A4B8763E1F6A2B5665"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Git/MacroGitRepository.Review.Tests.cs",
+      "Sha256": "EF57A1DC6F87F0E09E10F3F9636DA04CEE89AB63A439E2B16C5CD1E6AF439372"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Git/MacroGitRepository.Scope.Tests.cs",
+      "Sha256": "AD1DFF00FB25787BEA18C49ACDF5D239E3AEAC32BB24FE0E43C00DBE62F3BB1C"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Git/MacroGitRepository.Tests.cs",
+      "Sha256": "CAD248ADED838503E2017A0C58B954A60098428E71BBDF921DCE8126986CDDE1"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Git/VbaGitProject.Tests.cs",
+      "Sha256": "574B6451A6F2424886E74A2F0A94BBE989A1C3A4620E39960D2D94C183D1EBFA"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Git/VbaGitSnapshot.Fonts.Tests.cs",
+      "Sha256": "D9BAC15BC4AB26B738C1AE951583575249012FF1DF1F30DA247D089DB769B261"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Git/VbaGitSnapshot.Tests.cs",
+      "Sha256": "223885FBAE75703EB5ECC9C7536911EE44D979B23CDC3C48BD888D41CD76FBC0"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Host/AddIn.Tests.cs",
+      "Sha256": "FC38281C922BA16C6B55BC384147780636DF58B268B41BD6F1C858150F616524"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Host/ChatToolWindow.Tests.cs",
+      "Sha256": "7EAA2DFF695A045494DEBB1F96A68741CE49E4A59789AD2BE634A282095A010D"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Host/LoadLog.Tests.cs",
+      "Sha256": "6850C370A0468F1D48C52D989CC12F8BC9840324475B89BA2517DF57B5958133"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Host/VbeMenu.Tests.cs",
+      "Sha256": "8F28A0240DC71BBF78AA761C8D2E2F0E3D720519DF43352021A96874470489D9"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Host/VbeWindowIcons.Tests.cs",
+      "Sha256": "DAB99B52E4E761BC120BFE1904364BEE4B65821DF26A35A6203CFAFD66E1B0D0"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Infrastructure/Diagnostics/EmbeddedGitPersistenceContract.Tests.cs",
+      "Sha256": "2698616EB0BBB51BE562372A60216A3FEC25A86BFCFDB0B37D25A47242DD95CE"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Infrastructure/Diagnostics/EmbeddedGitRepositoryBinding.Tests.cs",
+      "Sha256": "80CCEC6928F755F9218D3591AA1616EC869C82E434E3A896B83604EBCA2D2551"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Infrastructure/Diagnostics/EmbeddedGitSnapshotOracle.Tests.cs",
+      "Sha256": "91F30151E17A6F90970407243B9E9CF836F3DAB994592DB86913E29CB4C42672"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Infrastructure/Diagnostics/EmbeddedGitUiProtocol.Tests.cs",
+      "Sha256": "5AC9C9AA92A9B7439768CBA0EBBF853A4B001C90EAD54B924B22EBB62830F986"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Infrastructure/Diagnostics/ExcelFormatOptionsQualification.Tests.cs",
+      "Sha256": "4EBDA9C95CC497C70815452BA15391F7E8B65546538BBC0F23DF37A15A8D98C4"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Infrastructure/Diagnostics/ExcelOptionsQualification.Tests.cs",
+      "Sha256": "B1BAACADD6D340EB8149A3B36E42D983E743275277423AE8FD04C43594282DB1"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Infrastructure/Diagnostics/IsolatedTestDesktop.Tests.cs",
+      "Sha256": "9F95E83E2EF1DB5A3ADC6EC43E212DC8FCABB6A596746E48EE284E83C574FCF7"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Infrastructure/Diagnostics/NativeComboListDiscovery.Tests.cs",
+      "Sha256": "46D141BBDCDC6E56DF409CAD503D3A664B99BCE1CFC580488E49679E726D46AB"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Infrastructure/Diagnostics/NativeExportTrace.Tests.cs",
+      "Sha256": "3C0C1EFF9F52061FEEE0175574FC2771E2A7FC14C4F97D45E277AE4780356744"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Infrastructure/Diagnostics/NativeMetadataGetterProbe.Tests.cs",
+      "Sha256": "7A7A327F94E79DAA17FABA3BC309EC3E864B7603E1043390A07787BCC31C5B90"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Infrastructure/Diagnostics/NativeMetadataSetterProbe.Tests.cs",
+      "Sha256": "6D7B08C43B6E3B1571C27F6ED80593B87C5E5E9AFC63E143EE5F7B03443546AB"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Infrastructure/Diagnostics/NativeProbeDaclCopy.Tests.cs",
+      "Sha256": "FCD5B709590CDB71327D9C9902441B17B98B9900B9B1191402F06DE892B16ACC"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Infrastructure/Diagnostics/NativeTeardownTraceGate.Tests.cs",
+      "Sha256": "8C9BAD6931EA8C33F1BC38DCB0B4980E648ACC7E17DFB5A23031DE5F2A868BFF"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Infrastructure/Diagnostics/NativeToolStripPopupIdentity.Tests.cs",
+      "Sha256": "EEFE3EE54EBD5D325AF7AD72DD58DAA1085B6C8F916141ACAD6418C27D1D8A22"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Infrastructure/Diagnostics/OllamaQualificationEndpoint.Tests.cs",
+      "Sha256": "210C6EF2F74E44146086486DC90818C31A0462425C280CB5B6859775C6DD972C"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Infrastructure/Diagnostics/OllamaQualificationModel.Tests.cs",
+      "Sha256": "27A3352323A9E1DA94688741F6AE1990A27B7DE0CF61A8DFB49EB55314F781D8"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Infrastructure/Diagnostics/OllamaQualificationProfile.Tests.cs",
+      "Sha256": "F077E54452880E7942D46D9B0507EF77BEABF6A1F6E433486E99063E5CCD6D1C"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Infrastructure/Diagnostics/OllamaSyntheticWireCapture.Tests.cs",
+      "Sha256": "632BCACADE09615E3385987D5480048B578FB95847BCE9BA3DB390F8A2DAFEB4"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Infrastructure/Diagnostics/PrivateDesktopUiAction.Tests.cs",
+      "Sha256": "DD058D62D7C2E1606965308F18040F49D9E8AEAAD5A14938E75839B7CF9BA37F"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Infrastructure/Diagnostics/QualificationDesktopGuard.Tests.cs",
+      "Sha256": "340947C53706084E69C8D0D060D22F31D1A36BB56557B9856C439CA4FC246693"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Infrastructure/Diagnostics/WordChatGitMenuDiscovery.Tests.cs",
+      "Sha256": "1C92C2F08AEA4E3734378458791D17A22CD7F551E0B9EEA0FCD1DE7A91CC1618"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Infrastructure/Diagnostics/WordChatTopWindowInventory.Tests.cs",
+      "Sha256": "B3C4A201E8A711754E0E86353F5D7F26B844C5E9C0CD40E868C31C9252A81C68"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Infrastructure/Diagnostics/WordChatWindowDiscovery.Tests.cs",
+      "Sha256": "EF45BC804D600B80B035BDAD625FD1D96059FD30E1C3820BAE3794EBEF3EC9E7"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Infrastructure/Hosts/ExcelSequentialQualification.Tests.cs",
+      "Sha256": "F00CBD14FA09CA1B77754012DFBC6214E501B3FFF4E4E5DA7039B6FAAF857EF5"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Infrastructure/Hosts/ExcelVbeFixture.EmbeddedGit.Tests.cs",
+      "Sha256": "B3E4C74244E59677D24AC3A3D0BDC25AEAB626CB2A1F52B68404A51C1838B157"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Infrastructure/Hosts/OfficeMetadataMutationEvidence.Tests.cs",
+      "Sha256": "CB20FA9D8827D2B33AA5D9334F4817682FBF9011C87912B04C5C645FE3BF3285"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Infrastructure/Hosts/OfficeObservationRead.Tests.cs",
+      "Sha256": "F967DBED591A12BCE118105738FE97F708C32C314E7C1AE672560F492C1C0B40"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Infrastructure/Hosts/OfficeOwnedShutdownEvidence.Tests.cs",
+      "Sha256": "523141C0BE844B2A180C59DA5CB056E6FDC01DADE8BE61130A40AC02A7BAB2AF"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Infrastructure/Hosts/OfficeVbeFixture.AccessDiscard.Tests.cs",
+      "Sha256": "0CC7F4BB271605A1A719394FC438B46D18DC914D1508B75F61BCE4F620D19B0D"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Infrastructure/Hosts/OfficeVbeFixture.Desktop.Tests.cs",
+      "Sha256": "913BA208B07B4C8D48E2D24AA720CBD2D5475576A18F4C85DC2E1B50E33FC689"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Infrastructure/Hosts/OfficeVbeFixture.DesktopAddInConnection.Tests.cs",
+      "Sha256": "35E4E9484F469DC33A222710579876043D66D37D9C1DA526262C1790B2F44345"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Infrastructure/Hosts/OfficeVbeFixture.DesktopStartupRecovery.Tests.cs",
+      "Sha256": "B8E786F2571CF5743126C466FCB155398DEA116691DD47E65577DC1091EF2B6D"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Infrastructure/Hosts/OfficeVbeFixture.EmbeddedGit.Tests.cs",
+      "Sha256": "CE0500DCE6DE7E489E93DF0790423CC098F762339D103BF37FFAB072839E0D0F"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Infrastructure/Hosts/OfficeVbeFixture.PrivateWordDesktop.Tests.cs",
+      "Sha256": "4C10939B99BB1A387FCCAEBFD42778744912A5861D0B4D66D647123D881086B3"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Infrastructure/Hosts/OfficeVbeFixture.PublisherBootstrap.Tests.cs",
+      "Sha256": "9A6C50B141702E50C5B692C1C3A14EA5BF24A4D762A828B8BF569BBC7DDC389D"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Infrastructure/Hosts/OfficeVbeFixture.PublisherOwnership.Tests.cs",
+      "Sha256": "1F8D8D39F49CE43F9982B90FCC30D71CC5DE3D3D3934164A507E7BC4B714796F"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Infrastructure/Hosts/OfficeVbeFixture.PublisherSerializedSeed.Tests.cs",
+      "Sha256": "4864073FE004AD4193FC3D6E4933793DBDBDBEBC4599F9B72088002DB00F10B4"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Infrastructure/Hosts/OfficeVbeFixture.PublisherTestCleanup.Tests.cs",
+      "Sha256": "452C4B1CA7522B9943B4C9C9722269D0E0B10E0CF147EF57A1A7391E10E78350"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Infrastructure/Hosts/OfficeVbeFixture.Shutdown.Tests.cs",
+      "Sha256": "884E845A269611A59043929F361C11774660437E3970D26EBD127C9C6EE71802"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Infrastructure/Hosts/OfficeVbeFixture.WordMacroSafety.Tests.cs",
+      "Sha256": "CA2D255335E62BD91595EB4837D8C0D17EE5F9A41E0E33C753B805AF4C4F5189"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Infrastructure/Hosts/OutlookVbaTestFixture.Shutdown.Tests.cs",
+      "Sha256": "462FA610D1B98A2F0D3B96AB9879E4E7AFDF2F1A20B3BC9975039CFEF285160D"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Infrastructure/Hosts/PairedExportQualificationState.Tests.cs",
+      "Sha256": "16D565706484689F3866163B514841FF88414F722526C30BA83E8101561D86B1"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Infrastructure/Hosts/RetainedRootFontWorkbook.Tests.cs",
+      "Sha256": "F04AAD350B19EBBC74BA83FA926484E001D9EB17AFBD5E05302300DEC1365506"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Infrastructure/Hosts/RootFontObservationManifest.Tests.cs",
+      "Sha256": "E06576446D56A93CA18EB4D6D54B39E03842E476074BF72B4CEC97158E7B80A6"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Llm/Chat/ChatPersistenceWorker.Tests.cs",
+      "Sha256": "426C704A72570961D66FCA41E33DB7E98D2013FB3AC7305518BAA6BAA8F125CE"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Llm/Chat/ChatQueuedMessageView.Designer.Tests.cs",
+      "Sha256": "C9C6A562A15FA3CBF74B014F6EE093C60775C642AF6D51FF0F057700CAE39EB9"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Llm/Chat/ChatQueuedMessageView.Tests.cs",
+      "Sha256": "883504EA578721FF39AB4EEC90B0270E444FA369657486AB8E766A79A129DE50"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Llm/Chat/ChatSessionStore.Bookmarks.Tests.cs",
+      "Sha256": "99A6F4E3250D215B8B9D1875DBE4D146C997EDBBAEE5C4203C95F7D5230CA772"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Llm/Chat/ChatSessionStore.Tests.cs",
+      "Sha256": "32DC5B6CCBC217F060B6AC1705CE883273F36EC0A1DF080208088D1610BD4EEA"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Llm/Chat/ChatSessionStore.ToolbarProfiles.Tests.cs",
+      "Sha256": "66933F377275F9F47A788061BD143C3821F490C05DE4F89AE9D28BE1E3CE25A8"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Llm/Chat/ChatWindow.Activities.Tests.cs",
+      "Sha256": "3B7EE76307EDFB785083E4AC5F5A18CC7B1864545CA0B11F8524E9626A887A5D"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Llm/Chat/ChatWindow.Budget.Tests.cs",
+      "Sha256": "A96AE7ED431F471BC63416787C296FAD7476D475CAA6F7B451AEFDB3AEFAC99C"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Llm/Chat/ChatWindow.Composer.Tests.cs",
+      "Sha256": "89B816057879961B6C96B4E96AC96A573862CF46DE89975BF94E29DADBCBC7C5"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Llm/Chat/ChatWindow.ContextMonitor.Tests.cs",
+      "Sha256": "3AC3A7DE6B043FB82B418407F7335011C4602D4E8B9D85F48AEE21A757086F5D"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Llm/Chat/ChatWindow.FormRecovery.Tests.cs",
+      "Sha256": "145DABDA4C46927D671C95543FE2693FE9F13FA27979EA127EEACFF7C3CCD04A"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Llm/Chat/ChatWindow.ProjectAccess.Tests.cs",
+      "Sha256": "A1D114466CA8CF608CC439BB9F0CDC05F6EC91BF41AB84E0B0525D68D56B5E5A"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Llm/Chat/ChatWindow.Queue.Tests.cs",
+      "Sha256": "CEC563846491A2D760B8E5CA4624B0D6DDAE84C66CB3FBD1014A227461098D38"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Llm/Chat/ChatWindow.Sessions.Tests.cs",
+      "Sha256": "E19779EBAA18F96714D36623C85828E581429D01579B38DF012E1CDC6350AD6B"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Llm/Chat/ChatWindow.Shell.Tests.cs",
+      "Sha256": "C6FC55B68660270B2F527A20518ABB15FDF6D847AEDB161B0CB855D3DF4413AE"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Llm/Chat/ChatWindow.Tests.cs",
+      "Sha256": "33CEF2DFF498FEFD9608C05CD26D5BFE59AAEFFB7A5C2A07383D92C8519E0629"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Llm/Chat/ChatWindow.Transcript.Tests.cs",
+      "Sha256": "0A9FB41698F7CCF3FB15D8116E834ACF1090D02569973C67AF91A368906C15FE"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Llm/Chat/ChatWindow.Workflow.Tests.cs",
+      "Sha256": "02F1EAE28C77480AB4FEA2565AF42015E77A5DDBC45B1574E6DE687E30066279"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Llm/Chat/ChatWorkflow.Tests.cs",
+      "Sha256": "F30BD2E6003C069FD67059D4A37808641C1FEF7D3E8661E42294E82908E1FAAD"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Llm/Chat/CodeChange.Tests.cs",
+      "Sha256": "C21A1DC128956C42D3591B3AF15C73E8F9391E7968A0044EDB83BEEE4582284E"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Llm/Chat/CodeRollback.Tests.cs",
+      "Sha256": "DC4B51D01300946FE784A74DE8CEE0AAF7793B2E84878ED6205E0514DFBC4405"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Llm/Chat/FormCutChange.Tests.cs",
+      "Sha256": "7D121D702DE1B560F5A695982041263C07C243FFC276C585F087005BCC94494D"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Llm/Chat/LlmChatClient.Tests.cs",
+      "Sha256": "6DFE49407F1A34EC162FD8614E8A5080EE01C694502EDD5A7664461E5E2154C3"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Llm/Chat/LlmVbeContext.Tests.cs",
+      "Sha256": "48421428A5F16F81B831A8F9A3762597C3F5FE3CC1862B53E047F1239D1913F7"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Llm/Chat/LlmVbeTools.Catalog.Tests.cs",
+      "Sha256": "82EE2ADB35C0AD61245F1BD5F88FDA94DC97DB16D8672A04C7502C5ABE8C4CE3"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Llm/Chat/LlmVbeTools.FormRecovery.Tests.cs",
+      "Sha256": "0C8431C954035370D9CAE4C948B1F6DAD015A3BA2BE7C12581A1EA10DBE81E3C"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Llm/Chat/LlmVbeTools.Git.Tests.cs",
+      "Sha256": "E5D6E1AD0E653E1786F36EAEF2B1949CE759DE6E31BC36EA873E8A2FDFEF538A"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Llm/Chat/LlmVbeTools.Monaco.Tests.cs",
+      "Sha256": "318051C82FD23D0344BA3679B1D1F9D8699806BE61EA78E8594AACC338119A8C"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Llm/Chat/LlmVbeTools.Privacy.Tests.cs",
+      "Sha256": "1D14AA9E81FCAA3ED4FFD8C3ABBAA40B04659FC11A86602509B3E5FE6D37786C"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Llm/Chat/LlmVbeTools.ProcedureValues.Tests.cs",
+      "Sha256": "AC2A93868FDD91C47C41E27B4840191145D94DF09C5EEF62854812BE9E26D287"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Llm/Chat/LlmVbeTools.ProjectEdits.Tests.cs",
+      "Sha256": "8FC7BA316AA1A48FDCDC0559E46826E1C91EC50D42831FB2C57854C7119491B1"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Llm/Chat/LlmVbeTools.ProjectGeneral.Tests.cs",
+      "Sha256": "6907FDC9A60B7ACC54BACD66B3D450771D277E5E649919934986F52DA37DB412"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Llm/Chat/LlmVbeTools.SolidWorksMacros.Tests.cs",
+      "Sha256": "78717772C232B03574B33BB09523F866552FEAAD7BF7DCB4AA7020C833253CD7"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Llm/Chat/LlmVbeTools.Testing.Tests.cs",
+      "Sha256": "C0BC296C54A828BCDA4231D0E0E06941C69A672CE0787EB8A42440677223B02A"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Llm/Chat/LlmVbeTools.Tests.cs",
+      "Sha256": "5859BA7BE386AC5C815B95D8FE749146538169269AB25BE590ED2004A0FE7E17"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Llm/Chat/ProjectAccessWindow.Designer.Tests.cs",
+      "Sha256": "CB9EE5107CE57C07C0266BB83CE786215E33947ED5A94FF07165AC004B836379"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Llm/Chat/ProjectAccessWindow.Tests.cs",
+      "Sha256": "E8EB79308B57876E6122276F264C1AE59D9852078EFFFC74559D023A6052E906"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Llm/Chat/VbeChatReferences.Tests.cs",
+      "Sha256": "7D84D126ED3A81C79F55C3D9D0C8E54688363E616F26D70099D9D018DFA321AA"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Llm/Chat/VbeCollectionEvents.Tests.cs",
+      "Sha256": "4A7322A605BFD24DBA29F32FF8D110A2BFB5A87EDE68B0A1AD4F3A6F021FFC45"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Llm/Chat/VbeContextMonitor.Tests.cs",
+      "Sha256": "41EEC046D1FBC01A021A5CF585A68AD5488E1FCAD09517ACFBF3E1421DCDB8DD"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Llm/Chat/VbeReferenceEvents.Tests.cs",
+      "Sha256": "344E0B51EEDF6DCAF569AD113AD0ED4AEA1B8F12A8F52AC9769B2F725A14E330"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Llm/Controls/ChatContentHost.Tests.cs",
+      "Sha256": "824F917D745A6976C3DD1E3E17D80920350547E8CD1182808AB31D200FB2A053"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Llm/Controls/ChatContextChipView.Tests.cs",
+      "Sha256": "7114C6768A80FF048BCFFA631602A47D39B1065B8B834AE57F521AC3A20B3A27"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Llm/Controls/ChatContextPreviewView.Tests.cs",
+      "Sha256": "776655170D460C5C4ACA6E5FA52569704FE65EB488CEADF83011163C8B2AB6E4"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Llm/Controls/ChatDesignerControls.Tests.cs",
+      "Sha256": "3B0AA35D2FF0B60580A79041E2766BB5EA2BB767A5F942402C822B336BFCB89E"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Llm/Controls/ChatInputView.Tests.cs",
+      "Sha256": "177751392C160DBEA8263E4736BF5697FA22C2D4CAC4F14742C5DBDAFC92AD5A"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Llm/Controls/Transcript/ChatActivityGroupView.Designer.Tests.cs",
+      "Sha256": "D14FAFC29B5342A7F84007E9B99A9D86EFCF56459C777A54E7B267F2493F217F"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Llm/Controls/Transcript/ChatActivityGroupView.Tests.cs",
+      "Sha256": "EECFF1E2FC1A1CAD75E4332C72E50E8C58EC6C0F00EA2BE113DF300AF86203B6"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Llm/Controls/Transcript/ChatActivityStepView.Designer.Tests.cs",
+      "Sha256": "5244BE8C08D86F5C78EA8472AE12533F1794492CF120CFEDAEE0F64A2939D82F"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Llm/Controls/Transcript/ChatActivityStepView.Tests.cs",
+      "Sha256": "22F255FA3D0CD049D68701FDAA9F51A40A7EC5144F53659AFF85D0CEC983B27C"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Llm/Controls/Transcript/ChatAttachmentView.Designer.Tests.cs",
+      "Sha256": "83C44AE5458F843EBCCEB61902857FDCC360714228121316D0C93EB543E2D7C3"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Llm/Controls/Transcript/ChatAttachmentView.Tests.cs",
+      "Sha256": "C81F3A794B6C383CF871D59924E1AB2ABF0B70D1F94CA9A9CBAFE932E561CF19"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Llm/Controls/Transcript/ChatChangeCardView.Designer.Tests.cs",
+      "Sha256": "02C2F7E6212BF77990A8D9959F7D5BE2E77A19562FA825E7DF56ED9627A69C15"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Llm/Controls/Transcript/ChatChangeCardView.Tests.cs",
+      "Sha256": "8746FEC4F877BCCD88C5949D557D6F8D35F0F7B14D42C7AC60E652CDE8293A0A"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Llm/Controls/Transcript/ChatDesignerHost.Tests.cs",
+      "Sha256": "48F0DE058A79B3A2072B8D8C02E15AFFC2955467D57AB9E736BCA0D489BFA642"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Llm/Controls/Transcript/ChatDesignerView.Tests.cs",
+      "Sha256": "EE5615D0295FD6473B783B8DD61B3D8B45810D929340924CF2C91238C8B580B6"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Llm/Controls/Transcript/ChatDisclosureDesigner.Tests.cs",
+      "Sha256": "DE4967F1733BE88A628A64633864CA23E3A3C2DB84A3693A57160EE53EA79C78"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Llm/Controls/Transcript/ChatDisclosureView.Designer.Tests.cs",
+      "Sha256": "2DFAF15D850DAF9948ED46E3202EDACCC2D70259954B67A2B40096909BB35A47"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Llm/Controls/Transcript/ChatDisclosureView.Tests.cs",
+      "Sha256": "DD939F3688BD4C3F5C3A913DB36ABAC8E1AAD50FDE02E60920AE015B487C9870"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Llm/Controls/Transcript/ChatFormRecoveryView.Designer.Tests.cs",
+      "Sha256": "29C0732B9AAE32DC2C38571B2DB2881B5517752E1AAF0AE83AC6D6AC9EC87F5F"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Llm/Controls/Transcript/ChatFormRecoveryView.Tests.cs",
+      "Sha256": "DABDD31DBECB7B31D042D4FCFBD1FE06108110F212122EF1F9FF81091C87D2A3"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Llm/Controls/Transcript/ChatLinkView.Designer.Tests.cs",
+      "Sha256": "1C8C9564047558B6D36963E81BE3FE03ABA936F54FAE938A6511B5464217AFD1"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Llm/Controls/Transcript/ChatLinkView.Tests.cs",
+      "Sha256": "2C0A5B8C2A3D35DCE43B8BAA6AA3A36A362C3DC1928FCE042909718716927C48"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Llm/Controls/Transcript/ChatMessageView.Designer.Tests.cs",
+      "Sha256": "892FD98A21F8F9943845614911C44BEF95990E2A8A118F069EC1849C85E627F4"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Llm/Controls/Transcript/ChatMessageView.Tests.cs",
+      "Sha256": "E36859C5F0AE9C0EF08E68506B14E9AB401B5D1255C5AFB88C417DB20457DA9A"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Llm/Controls/Transcript/ChatNativeMarkdown.Tests.cs",
+      "Sha256": "984C60F08CD473FD7435F8983011A9093903A824397DF3E972606094E3F60935"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Llm/Controls/Transcript/ChatSuggestionsView.Designer.Tests.cs",
+      "Sha256": "1E504D623AB0E728ED3509EF7CBCD6DA74C205C6FB051C2B57B31C5516FA901B"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Llm/Controls/Transcript/ChatSuggestionsView.Tests.cs",
+      "Sha256": "A91CCD965D9F5FA4A56AC743CE63C7DB9E7080E29977F0EA51B35F863E919C2E"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Llm/Controls/Transcript/ChatTextContentView.Designer.Tests.cs",
+      "Sha256": "82FD0A01195323DD9C5C0E67D8621A6E23ED93E4E25B5D1108C778FA85C87442"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Llm/Controls/Transcript/ChatTextContentView.Tests.cs",
+      "Sha256": "32863F0A21560DD6EF30005738A39C6FC6C4EA059C56EF2C40D05B63EF65D512"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Llm/Controls/Transcript/ChatWelcomeView.Designer.Tests.cs",
+      "Sha256": "BD0D0566D79AE767D5F2DC68B903F7C248D36FDC97E7313319B43A33521963C0"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Llm/Controls/Transcript/ChatWelcomeView.Tests.cs",
+      "Sha256": "7B7DC9028F588B40B33D60F5D5B80B227BE8B2E13E624AD0D097D5F8E6E2B1D0"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Llm/Providers/BedrockProtocol.Tests.cs",
+      "Sha256": "39B31A3E9E46D4BB5DF3431FCA9B0AB2DA7C9F90915CDDFAC72694ADE03D1A9A"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Llm/Providers/ChatStreamReader.Tests.cs",
+      "Sha256": "99FBCABCBE40AC0B323DC5C277FC098FE9D1031F050650F247A660B93042CDCE"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Llm/Providers/ClaudeProtocol.Tests.cs",
+      "Sha256": "3FDCDFCBC0272043BB2BCE41762CFF4213E2DBF7BE9028596CFA4F4B7C0C2411"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Llm/Providers/CodexAccount.Tests.cs",
+      "Sha256": "D5440A2E2753650A346A358B1C4F9EFD90382AAADC06425D630DBEEA13500124"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Llm/Providers/CodexAgentActivity.Tests.cs",
+      "Sha256": "C77F8A2A1EFE2F79B2DCBE0E7DA99D011A2CBC87DF69E039C3012D05549DAFBE"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Llm/Providers/CodexAppServerClient.Tests.cs",
+      "Sha256": "A06667EE6F65CD62AA450A2BABE3B9104FA06082D23BAB4869B25BB6E121F1F5"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Llm/Providers/CodexCliLocator.Tests.cs",
+      "Sha256": "AFCF3A51E839F4C5FB229F24BDAF9C62C13F1CB07AB6D27B571356BAE914BB12"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Llm/Providers/CopilotClient.Tests.cs",
+      "Sha256": "73693138387613594A3E727F368A87C5B3EA37F0CFFFE8F86BFC95FF169BF5AD"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Llm/Providers/LlmModelOption.Tests.cs",
+      "Sha256": "52F2934CCBD2F093F817DE939D6485504FD9F26A063D640E99ECF37DA0DE3CE2"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Llm/Providers/LlmProviders.Tests.cs",
+      "Sha256": "D9147E1FE342D495F7447D1E9D586ADB7B5AC8DCB40F5D0E124A732B35E0DF39"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Llm/Providers/ProviderSessionStorage.Tests.cs",
+      "Sha256": "4F36768BFE6A230E75887263D621D20BD424803F3613C1A5318EBC962E1362A3"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Llm/Settings/LlmSettings.Tests.cs",
+      "Sha256": "157AB1E1E48B7A4FBF4CE53093B9EC98361352FAC89DB8CC6F50AB51E2CABD3E"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Llm/Settings/LlmSettingsWindow.Tests.cs",
+      "Sha256": "9DA0B00C8F9118E372694D94FA9CD3EC41144C8BE52772FEA109F3909731920A"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Llm/Settings/Views/ProviderSettingsView.Tests.cs",
+      "Sha256": "7A3C1D76CE32FA79AFD2DAC96544FA476DD37B759C02FA5228466F590ADBA660"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Localization/UiLanguages.Tests.cs",
+      "Sha256": "0FB671BF66A2E36354764B38B0224B3A2BEF3209144D00711A0D6D86AC02958F"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Localization/UiText.Tests.cs",
+      "Sha256": "4F2BC4D14527D7E19C41AA4A59B1B22F5DB76091C478217B61A09C571A8D2786"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Testing/TestExplorerWindow.Designer.Tests.cs",
+      "Sha256": "4ED8CF0D94828AB3320F0E3416DD7B0CFDC466F77E76F457B14F3FEEC6795517"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Testing/TestExplorerWindow.Tests.cs",
+      "Sha256": "5E405AE6126110ACBCD0CD5BFC8B770989454F548AF18A0B441FA45B4DACAE58"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Testing/TestSupportReviewDialog.Designer.Tests.cs",
+      "Sha256": "E7881FEBB905AE9616A80B7D108E1E7A73B0D78C6CEE7567D7981A59A993AE5A"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Testing/TestSupportReviewDialog.Tests.cs",
+      "Sha256": "B77648E01A863392A5544D4077ADDC6FFDCEC97D14EB9FF7BB73854D9F54C3F4"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Testing/VbaCoverageInstrumentation.Tests.cs",
+      "Sha256": "74F621FEBBD2046CA633D9EF232E7F8A320F3F4D621DC1EE0E3AE9B6F345E175"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Testing/VbaNativeTestExecutionHost.Tests.cs",
+      "Sha256": "B30496E9B745CBCA8CE14E2AF8BC4226CB5287E2B585B775DBD16429662CF314"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Testing/VbaNativeTestWindowFocus.Tests.cs",
+      "Sha256": "3B753C805424AA8AEA00795AF6D46AAFF28379DC69D7D6EDCF6009EA86B3AF9F"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Testing/VbaTestCoverageClone.Tests.cs",
+      "Sha256": "9363941F3667962C0D0091825ABC9CDF09A64EEA72EECCC0E3217C6BDCB7F789"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Testing/VbaTestDiscovery.Tests.cs",
+      "Sha256": "6A92FCC41A99F23B4E510DD9F972A6B7EA54CC129EBEECC0D27C3081C59A4C3D"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Testing/VbaTestModels.Tests.cs",
+      "Sha256": "A60A7A1DF4E14357225510F8D60596B49C257F09A109B2A88534CF72CAAAE6C5"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Testing/VbaTestOwnerAwaitable.Tests.cs",
+      "Sha256": "468526C1D7CDB5F351F7C75D76370E601C12228F28D866E1582316DD17611C65"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Testing/VbaTestPowerPointCoverageClone.Tests.cs",
+      "Sha256": "66792848C0DDD585E01F4D53C1A3C2EA5835E6AF4CE41D1B254DD7375455B4B5"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Testing/VbaTestPowerPointValuesHost.Tests.cs",
+      "Sha256": "51F2437FD0CD4F3ADFAE52235B7EA0B1A98F2E63DDE2B7F836900A678B98B8CC"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Testing/VbaTestReports.Tests.cs",
+      "Sha256": "31E2815CA52756178788C0B4D8399B54B9E5F273FA6AB9D8115B6077E64CA593"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Testing/VbaTestResultSink.Tests.cs",
+      "Sha256": "9DF0BB2F219FB870B5E5AE4C772B5D358B6420CBBE0C8D165E68F0F80E443CD0"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Testing/VbaTestRunner.Tests.cs",
+      "Sha256": "2A97CF6078A554632F5EA5B332F2C4374B87B2B848C4B342A7B675E574F05528"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Testing/VbaTestRuntime.Tests.cs",
+      "Sha256": "9AF027B3B19E3F5790A3FD99C32975FB400BDA0E20A4192224F5E26B329B7FAE"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Testing/VbaTestRuntimeSource.Tests.cs",
+      "Sha256": "108460F0EB23918C8EAD3099262B5352E842B7E51D9C9B3FD9E3A90DDDB97805"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Testing/VbaTestWordCoverageClone.Tests.cs",
+      "Sha256": "59C22B0CA4F8DFD3E8DB60784E7E9275FE6A61755CA220BCC072711F4049E8BC"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Testing/VbaTestWordValuesHost.Tests.cs",
+      "Sha256": "650ADC8D2A251DBC0A292A23D50198C0C08854F45C93A57917100449F836D79B"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Testing/VbeTestExplorerService.Compilation.Tests.cs",
+      "Sha256": "58136B21F4A58BC67E0FC43E579558678F1D1F4D10896B1058ACD1A9D8372972"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Testing/VbeTestExplorerService.Coverage.Tests.cs",
+      "Sha256": "F2670BC0F30D88E71A485B786A309132EF82F8227B11843954239D8A0DE21F6D"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Testing/VbeTestExplorerService.Tests.cs",
+      "Sha256": "06492194C388A423B1FB14782F4D669D6D614B0D60C34C2915757BD1D7B38D55"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Tools/Probes/OwnedTeardownTraceHelper.Tests.cs",
+      "Sha256": "4D89AFD8CBCD20F3590DE5BEB20A423A4B415D8B2CBB2691E9A4930F1E5B004B"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Tools/Probes/TraceNativeUserFormExport.Tests.cs",
+      "Sha256": "4D78850228200E3EF6A3B0305573A70545507611CDC4352BF4AB28FF3C363381"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Tools/Probes/TraceOwnedExcelTeardown.Tests.cs",
+      "Sha256": "83DE880AAD84D8316FF3560075E5EF25914DB5D3EA24A74F859E5859FBD35096"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Ui/AboutWindow.Tests.cs",
+      "Sha256": "EDEA1E2E5E92ACB62CD7BE7C28FD5A77F6E6088A85D581641E96851EC64F80D5"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Ui/ChatDiffView.Tests.cs",
+      "Sha256": "3E627860AEC733F46E5DF3FFC1EE610A8DA669116D01B2BD4E8BC0A1CF95C8D8"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Ui/ChatMarkdown.Tests.cs",
+      "Sha256": "124E6BB853B5E64A79F7D68A08D06B11E629D4650429748A891A3438C9C6C739"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Ui/CodeDiffView.Tests.cs",
+      "Sha256": "25B2DB29C3C8503E5F4CEE4F3C0868100396B5C0826336F940F3F7C25E12C91F"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Ui/CrashReport.Tests.cs",
+      "Sha256": "BB230F78E2A2EA9E8487302ADB4EF326B07A9278D688BACA42E44FEF1437DA3F"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Ui/CrashReportDelivery.Tests.cs",
+      "Sha256": "83FD75CFECC2B55E8850DD76DF369FA9ADD414F2178854B3C61E4994045587A9"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Ui/CrashReporter.Tests.cs",
+      "Sha256": "690CEFD71A42A76F6204CDD4CE87724CDEC530DE63B5CA04AABC442C90A725D0"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Ui/CrashReportWindow.Tests.cs",
+      "Sha256": "38E6A8CBE26D55378964B44B3762A243A7CC50E92605E474D0046DE5321D74F4"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Ui/DiffModel.Tests.cs",
+      "Sha256": "E6AA9A9AE0D0EFA0C821786CF7EED01D790767A884B919E0CD8EE30B3DA50BFE"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Ui/SafeLinks.Tests.cs",
+      "Sha256": "F1EC97D00F8DEE95824E09D623DB876F7CABDA4397EF128708A0C55E00C796F6"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Ui/ThemedTabControl.Tests.cs",
+      "Sha256": "B30F6FF30AD2767ED08F6FB182D6A80A00BD7909394C4CEC10F8B3B04E8A6B58"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Ui/TranscriptItem.Tests.cs",
+      "Sha256": "990CC5F7B41F222E5AD5CA138968462430E6A0737198F868947C7A176AC7AAE4"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Ui/UiActionButton.Tests.cs",
+      "Sha256": "D16A01E9D889BE463476005916242C3A75778FEDEC6982B39335293AE67CAB7A"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Ui/UiCommandIcons.Tests.cs",
+      "Sha256": "A47B12540F2FA8F53C84065262EAD46FF5AC6BFB9AF10BBA91DE84F0E1FFCAB0"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Ui/UiInputControls.Tests.cs",
+      "Sha256": "9EC965D838AD0016F2A5156D400673AFB1FB408071814C48CE9E9E995862B12F"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Ui/UiTheme.Tests.cs",
+      "Sha256": "5117E5B80A274A847AD3AF277F4FAE5E3B65C983D4DEE5D980BCF9F8A13EC37D"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Ui/VbaSyntax.Tests.cs",
+      "Sha256": "FB3C6AC7238FD18B494923F8E226EC651F26BFBDC08A49746929D1D20059387C"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Ui/VbeNativeChrome.Tests.cs",
+      "Sha256": "A455ED73A113FE5B077B2386DBDF3B2BB935412A3976E3AD264BF56686C3F007"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Ui/VbeNativePalette.Tests.cs",
+      "Sha256": "30AFB6467D572E8F48580A0A272530E0BB1D30C9C5ADF6844D638150CA723E30"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Ui/VbeNativePaletteDialog.Tests.cs",
+      "Sha256": "6C1D661ABD2A5A70132E14DDE2FD3AC970B0E94087940CE0FBAD9733FE920A4F"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Ui/VbeNativePaletteState.Tests.cs",
+      "Sha256": "2440245052FD9546F4C150B343BE678D834B8ED361FDA7D1D0865722B9C40ECB"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Ui/VbeNativePropertyTabs.Tests.cs",
+      "Sha256": "765DFFB59D3A028250A6736FEE86D6352345E52B281D1CC62104F82C6AE79057"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Ui/VbeNativeRenderer.Tests.cs",
+      "Sha256": "A74B6B94EE78294A4501606C64D77E0F779AEB7C9580A249E94E4B6FC22E6727"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Ui/VbeNativeTheme.Tests.cs",
+      "Sha256": "D67269754BEC941EB5EB523166A59DE35558F4A336AFBB0239EE404B603E9EC0"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Ui/VbeUiTask.Tests.cs",
+      "Sha256": "D4186A40DB1E3C682B98A08B2152FF64AABC162F9914576BFCCD6011754A2A3D"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Updates/UpdateCoordinator.Tests.cs",
+      "Sha256": "E6916CEA33CDCD4377F27EF2BE7719441619EA1F88DB6CE93B6B5C5FB92EFCAE"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Updates/UpdateFeed.Tests.cs",
+      "Sha256": "08F7391D10EF73FEE331741CC7AB4EE562AF47985162AAB7F3FA32A2C7894356"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Updates/UpdateInstallerRunner.Tests.cs",
+      "Sha256": "1B3A8ED8EDD69BCE9798048499FD4DC273F49F8E9E8CD1635FAABD5D5DDFF4D1"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Updates/UpdateInstallJob.Tests.cs",
+      "Sha256": "AE72D26E79C29BCB27AECA2FB949951B8517C1573B8508CAC24EE82941157654"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Updates/UpdatePaths.Tests.cs",
+      "Sha256": "8C9EE7847B7EFE151E82FFE4CC3635465CAF445A65B965E00CDCDEA6535915C4"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Updates/UpdateProgressWindow.Tests.cs",
+      "Sha256": "329814310AB9AF2661DD50B8F68010A8C3BEE2BFE260808383E72D8E12D5CFF4"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Updates/UpdatePublisherPolicy.Tests.cs",
+      "Sha256": "27997596A2B9DA10186077657BCEDA5CA5B1AB7784B053835A163627821F9100"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Updates/UpdateRelease.Tests.cs",
+      "Sha256": "38F1C86D64E249613F1F7F13037AFDFB0965621D131433F96109CE96E17A833A"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Updates/UpdateState.Tests.cs",
+      "Sha256": "B4FD97773791FEB893B9DD29B3E912EA6ABA325B09DFF4523DAF13D99A5FE0D9"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Updates/UpdateText.Tests.cs",
+      "Sha256": "6FB5AF3BBD304AD55A4365B1F1348C4B7F8298EAC76481FB773CCF4DC0FA52A5"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Updates/UpdateWindow.Tests.cs",
+      "Sha256": "25FC37DB0E95BA6CEAD0B57A5A489AA7B9FC0F6BB8E362EB312D03B3599AA75E"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Updates/WebViewRuntimePrerequisite.Tests.cs",
+      "Sha256": "13736417CA85542E3AC42B9741E6895905E1D352BA18CCFC8876084107A72B86"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Vbe/VbeProjectHostPath.Tests.cs",
+      "Sha256": "FCF28B0C2D23310246ECABE1D8E0B92DAD455C8DF2C03CA723DC241EBDD24F93"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Vbe/VbeProjectResolver.Tests.cs",
+      "Sha256": "5C94F41F5BEA1CEDDA1AF6A791443F9A9EB573DA7DB4AAA20D690E35F3A28692"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Vbe/VbeScalarProperty.Tests.cs",
+      "Sha256": "A951834ACD01171571EC073AB659EC708470C83A405AE257A3E698DB4BBDC18E"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Vbe/VbeSession.SolidWorksMacroGeneral.Tests.cs",
+      "Sha256": "09DD4F07201390BD22E0461CCB063A66534DC19B27649AFD11FDCC52F2922D66"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Vbe/VbeSession.SolidWorksMacros.Tests.cs",
+      "Sha256": "4089DAEE6816E5794FC7A2EE2AC2FF277FCC3048C746D4DA37B751D8220645A7"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Vbe/VbeSession.Tests.cs",
+      "Sha256": "BBF55149F979D70FCF2970AAD6FB5C0146940BDE39F082E07F7055668D3D2BC4"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Vbe/Code/VbaClassMemberRename.Tests.cs",
+      "Sha256": "B4F087588728704DDE7BB7ABAB02FA4B27BA65BC16D2DB64FB4D1B8155919DC6"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Vbe/Code/VbaDeclarationIndex.Tests.cs",
+      "Sha256": "19E81E58FF5C1EA34B0F9D5F322F21A2EDDA205372783C7772E6237840BBBF71"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Vbe/Code/VbaLocalRename.Tests.cs",
+      "Sha256": "7C262599C331D6CD254672EF958B4D32BE411B3CA4C4E28E4887FAEB94B5F97C"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Vbe/Code/VbaParameterRename.Tests.cs",
+      "Sha256": "27660BEC2E7915D51C8547D64EC5E88811B06B1BBF1E97D232A7DD159E9D9809"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Vbe/Code/VbaProcedureRename.Tests.cs",
+      "Sha256": "9406C30095F35C4AF5E78458F32517DD47DF0BF2F93E779F49AD096C302B09FF"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Vbe/Code/VbaTextEdits.Tests.cs",
+      "Sha256": "754903CB5F520192626DCF97E06C6B8F624E0CABE34D8B13348099C00A00D106"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Vbe/Code/VbeCodeClipboard.Tests.cs",
+      "Sha256": "FE672D9359B89B5D19ECA2930E1BFB36BBCA09CBD0B47BEC33D1E886AE1DCC6F"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Vbe/Code/VbeCodeEdits.ClassMembers.Tests.cs",
+      "Sha256": "E8E65FDF4E8D1E4248F0E1A13FC2D8A11C7F70CFA7D94AFC7E6081B4EB50AF3D"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Vbe/Code/VbeCodeEdits.ParameterRename.Tests.cs",
+      "Sha256": "D54D35AEA9845C96A90D991020E9FF033E03F59B255CC3F52ACEE01085F5451C"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Vbe/Code/VbeCodeEdits.ProcedureRename.Tests.cs",
+      "Sha256": "0BC19D397CAE7F1F0670B16AAA925F67D51E79DEE28F8168E6B3E695C48805DC"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Vbe/Code/VbeCodeEdits.Tests.cs",
+      "Sha256": "C14C54E9064B60F57830D9D9520CA8CF93798044169375B0568DBAFFB5981BF2"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Vbe/Code/VbeCodeNavigation.Symbols.Tests.cs",
+      "Sha256": "5EEA83985B4C1D77E56FDE0B31D97B53DCD1D23F1A380562FCB482C0E08FB0E2"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Vbe/Code/VbeCodeNavigation.Tests.cs",
+      "Sha256": "3FEA580482E182B13FC2F526DA1BEC9AEB5382D2AD64A65487087C8FCF9B8B8B"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Vbe/Code/VbeNavigationHistory.Tests.cs",
+      "Sha256": "6973CF1A86F4F2799BDD309C70626BFADC13292A9D0A4863034CBC675E129402"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Vbe/Debug/VbaBreakpointLocation.Tests.cs",
+      "Sha256": "38EB7CA5AE0233BF5859819D6455BED58B83088569B8713C537D4877AB2BB32A"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Vbe/Debug/VbaLocalScalarCandidates.Tests.cs",
+      "Sha256": "F291413038C331E007B702EAFF05438FE4AFBE28AC8F47189DA814A370B4C147"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Vbe/Debug/VbaProcedureValues.ParamArray.Tests.cs",
+      "Sha256": "1A6EC1FA1D73C1558740D5BEB3DF4817BD11E30D3CC96E346696A7C509F7FEFD"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Vbe/Debug/VbaProcedureValues.Tests.cs",
+      "Sha256": "5C4F4707D121BB0AF3A513DC6740CF5552EA57A2A1D6938A777CECE3D1848947"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Vbe/Debug/VbeDebug.Arrangement.Tests.cs",
+      "Sha256": "39FB634EF70B90A69B06CE41216B4269DE52D23AD41292F216378A89F7D51419"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Vbe/Debug/VbeDebug.CodePanes.Tests.cs",
+      "Sha256": "06F8DB62C370C5154C6C9F9290C12E97A31A2067C6F63255802C76D142E957BB"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Vbe/Debug/VbeDebug.Editor.Tests.cs",
+      "Sha256": "33A27C2BA8ECB6E6B6EB5D97393828D5B0F88699BE274477B6B87D78E560D7B6"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Vbe/Debug/VbeDebug.GeneralCommand.Tests.cs",
+      "Sha256": "71CCBDB885CDA8168D398332A4829B62449F0D2E18701755A8C84E31000A469A"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Vbe/Debug/VbeDebug.Immediate.Tests.cs",
+      "Sha256": "128148395CCEB5C96D01635D96F93EC187E8ADE63E5DBF6C4EF1BD912E4F3AC8"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Vbe/Debug/VbeDebug.LocalScalars.Tests.cs",
+      "Sha256": "CCAD686C2A1106054C8DF017593BB2D1D799793ED3724429010C33A68B420BEF"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Vbe/Debug/VbeDebug.Macros.Tests.cs",
+      "Sha256": "0DD074A02EE685A8F081D6CDF05BAE6D0F020027F90837BC8978B4A4A720CEAB"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Vbe/Debug/VbeDebug.NativeDialogs.Tests.cs",
+      "Sha256": "5870B64DB0621F5CE88AFB6E65F1DEC321B68A460201D46B8C7E680C865C6CD0"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Vbe/Debug/VbeDebug.NativeHistory.Tests.cs",
+      "Sha256": "99C95C82FF077AA6F045EE354F7E11F19A9C1C427C6D416CF7610B99989966DE"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Vbe/Debug/VbeDebug.NativeNavigation.Tests.cs",
+      "Sha256": "AA0971A3C1AFDB78CE46A72F8C4D5C48CBB4D29B98547C97752C3D40A5C8F661"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Vbe/Debug/VbeDebug.Procedures.Tests.cs",
+      "Sha256": "D2DC3C0C68051EB7CDFB24853B767DE1C4CC5EB520B8D732B7BE28A8BEB7DF6C"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Vbe/Debug/VbeDebug.ProcedureValues.Tests.cs",
+      "Sha256": "C0EE2F4DE287A3BDC462C29E07BD6A4F0707BFBCF7E64E306C64719B54936BAF"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Vbe/Debug/VbeDebug.ProjectDialogs.Tests.cs",
+      "Sha256": "9032F90542E1F511F0CA4CF523FBE5A6FC8B1F2B641FE3FB610C3F226C333509"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Vbe/Debug/VbeDebug.Tests.cs",
+      "Sha256": "336EE7891A14A6C4681AB9C188C78008BDB1AD7E23DF9420F2CAB90F4FFEB8A8"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Vbe/Debug/VbeDebugClipboard.Tests.cs",
+      "Sha256": "04420E912FF1E74A8CC6A883A1D11AE61E3654C1508025F5CC2184D62FD09747"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Vbe/Debug/VbeDebugInspection.Tests.cs",
+      "Sha256": "1FD82557087700C5B4F26EE3DA8EBE80F2EC956DF47ABD855549201D2A66C276"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Vbe/Debug/VbeDebugWindows.CodeView.Tests.cs",
+      "Sha256": "5223757F60B5D54926D76ECA44592BE45A452F8096BC9CF50EBA8BFAA555502D"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Vbe/Debug/VbeDebugWindows.Context.Tests.cs",
+      "Sha256": "A0851F3C2DF11AA1B8BC2D2D8B3F1485C6A605C6D35487A279F0D22BBC0C9721"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Vbe/Debug/VbeDebugWindows.NavigationSurfaces.Tests.cs",
+      "Sha256": "D9270DE7EE8F9E258CD35A9AC76E75B9BD1D9588B38178EFFAC1DE1B9AD19F28"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Vbe/Debug/VbeDebugWindows.ObjectBrowser.Tests.cs",
+      "Sha256": "3E4F6DFD5000ED3BC6C520306DE644FD2E897AE3A79F4224763942B6F86780BD"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Vbe/Debug/VbeDebugWindows.ObserverText.Tests.cs",
+      "Sha256": "9BD3C5E4910C244F7C6D9428E439BD400582467E1605B628A9BA70E7D57B68D1"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Vbe/Debug/VbeDebugWindows.Options.Cancellation.Tests.cs",
+      "Sha256": "379B1FB51CEFD2564A0DBB7206E72F227F96ED9D2E325A109DACF9E69CABD933"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Vbe/Debug/VbeDebugWindows.Options.Tests.cs",
+      "Sha256": "C622472E2995D5CB46915D3131DCDF684CEAAD916512DC3C0170D5F03C2D0407"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Vbe/Debug/VbeDebugWindows.ProjectProtection.Tests.cs",
+      "Sha256": "C44CEED7578A0A47AABFDF1AA035D69ED86AE747D353CC742108A6537F947531"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Vbe/Debug/VbeDebugWindows.RuntimeForms.Tests.cs",
+      "Sha256": "DC7CE67E4C4EBB63B336D881F29D64F367B6C585BA28801FB9519B1B6D6F3752"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Vbe/Debug/VbeDebugWindows.Tests.cs",
+      "Sha256": "432F03A052543C9CC6A739DE7C9BFBCD275DAEDA67F77EEB14C96D087ED55F02"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Vbe/Debug/VbeDebugWindows.ToolboxPages.Tests.cs",
+      "Sha256": "7D20AC8C7DF08E1C5D69E7E09EF2FE6381C87A0C15956D74BCDFB9A9AFD5F562"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Vbe/Debug/VbeImmediateContext.Tests.cs",
+      "Sha256": "8F6A76BF69C10765D7E1930922A8DA55534F8184ED1BBF7669DE6CD3711DA0A8"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Vbe/Debug/VbeInspectionTrace.Tests.cs",
+      "Sha256": "416DAFBE72B3B1FBEF07BC3566246F1621C2CE78E9299F906F10DE17B37CA27F"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Vbe/Forms/DesignerClipboardBackup.Tests.cs",
+      "Sha256": "C4723DED35614F088DBDD2D89803E5A174C52F366D194BBC5B043F28DB31BE9F"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Vbe/Forms/FormHistoryDiff.Tests.cs",
+      "Sha256": "C35C47CF68F1E2424162224BCBCE139D92B31675A6DF53250B33A9A39162165D"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Vbe/Forms/FormLayoutPlan.Tests.cs",
+      "Sha256": "E262E408E9076D08ADD5C2DBC376721739AD66E7F1A8984A0948BC09C4A3F678"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Vbe/Forms/OlePictureLoader.Tests.cs",
+      "Sha256": "9D8F44CA0E4C7A8D6AE218435AD4F3E5C43B29BBBBA1B4EE0D0BC1563BF8F737"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Vbe/Forms/VbeComEvents.Tests.cs",
+      "Sha256": "A5182C568697FAB8E2FB4C093E958D164C6309C6EAC5205EE7A5C9FA1C2A42A9"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Vbe/Forms/VbeComPropertyAccessors.Tests.cs",
+      "Sha256": "681A82A1C4433DF6847A95203B519B133C8A45FF3E59F29284B9862505DC3373"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Vbe/Forms/VbeControlCatalog.Tests.cs",
+      "Sha256": "945F9D5D3FD38E566A9CF7EE181E3475AAFCB139D55E58364F7B0727D15917EC"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Vbe/Forms/VbeForms.CheckBoxDuplication.Tests.cs",
+      "Sha256": "A49F07E54534B45E5175EC0DD239048CB8863474BACFFE77EAA072DA419CEE17"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Vbe/Forms/VbeForms.Clipboard.Tests.cs",
+      "Sha256": "A27F3A234CC92D26CCCEE013D87F72193D6F9C58189C87B7A46DBB367B97C88F"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Vbe/Forms/VbeForms.ComboBoxDuplication.Tests.cs",
+      "Sha256": "42FEA1AAF6E8123C3C093400BA3B44639633F386289F1025C320DCFD76FAF706"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Vbe/Forms/VbeForms.CommandButtonDuplication.Tests.cs",
+      "Sha256": "161F127828FAE5E9567B97A66D86866976B33E17E8F2BC86406A8F97590F35CF"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Vbe/Forms/VbeForms.CutRecovery.Tests.cs",
+      "Sha256": "25D37D7B0A87860543A63C58A232E963B02661CBED9EEF18C6C4BCC0116A1A67"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Vbe/Forms/VbeForms.FitContent.Tests.cs",
+      "Sha256": "D872AA42AEBBCE1D7441C35EF139F5979539243F247262A89A6054591C66D6FF"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Vbe/Forms/VbeForms.FrameCopyPlan.Tests.cs",
+      "Sha256": "F9B3B0663BAA4CE22FC7C0BE767B89C4C81BE69F9659B27236C69B40687987E5"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Vbe/Forms/VbeForms.FrameDuplication.Tests.cs",
+      "Sha256": "13F38CF949C19B3B2D963D16ED7048CA2FEBBAA61133C63ADBD97DFD94EA663C"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Vbe/Forms/VbeForms.FrameLabelDuplication.Tests.cs",
+      "Sha256": "76999D7A85C48347B99B7D7DE644F786175B69CDE885F785EC739E966F0B688D"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Vbe/Forms/VbeForms.FrameSimpleDuplication.Tests.cs",
+      "Sha256": "CDE12D6AAB9B0EE7A06DE8E7A01D66C7DC7DC0E2CAEE41B34833B17C852D3C3E"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Vbe/Forms/VbeForms.History.Tests.cs",
+      "Sha256": "C38B7962966218A8E1640B3417E0E1BCAFB47B6B909D046A671A470A44203D97"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Vbe/Forms/VbeForms.LabelDuplication.Tests.cs",
+      "Sha256": "0A63CA444A9CAB209AC30A14A687F83ED48054BB5AF3BBC7757FE7328724645A"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Vbe/Forms/VbeForms.Layout.Tests.cs",
+      "Sha256": "43157B1F36E56D092ABC933BD9127C2C12D90555C88884997289553449DA6D3F"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Vbe/Forms/VbeForms.ListBinding.Tests.cs",
+      "Sha256": "57E9D87B4B9C1FBD0C5F488C9176B5887CDF9C2981656EFE4037423E0FC23242"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Vbe/Forms/VbeForms.ListInitializer.Tests.cs",
+      "Sha256": "7BB835EE4FCD37BF8186AF53B93CFC0A2D0ADB0861C9E7981C490292B58D56BC"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Vbe/Forms/VbeForms.ListItems.Tests.cs",
+      "Sha256": "BE6D4B8F30DB5F533F2448B6E71E893D72EC12E9EF87769113CB05833B3AB8A1"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Vbe/Forms/VbeForms.ListMutation.Tests.cs",
+      "Sha256": "E5F183BC7AA496396507C7D53E7A920BF65EA70C452AEF9F126B23F75117424C"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Vbe/Forms/VbeForms.ListRemoval.Tests.cs",
+      "Sha256": "EF437F24FF1E2F953694A2E347E4EF4ACE13CE19CC8BCAD28A5F92396E267848"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Vbe/Forms/VbeForms.NativeScalarSetters.Tests.cs",
+      "Sha256": "4AF849C9081A48D7FF641AD52A2AC76BC07F21729B41FAFA4D5A7A229C971E07"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Vbe/Forms/VbeForms.OptionButtonDuplication.Tests.cs",
+      "Sha256": "24D9111A596DC68AC633F639DCBDCA28B8C68085E778C8F6513E0C1CD6F1B07B"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Vbe/Forms/VbeForms.ProfiledFrameDuplication.Tests.cs",
+      "Sha256": "A142FA6443BED2EBE5716A8EE7A55765444592766F6DC67C94BC31CCD9C44989"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Vbe/Forms/VbeForms.ReservedFont.Tests.cs",
+      "Sha256": "8F3C207AB4227AB7CD83341F7660C898E4B6EA427CED2D527FD5E6A17692434D"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Vbe/Forms/VbeForms.Run.Tests.cs",
+      "Sha256": "95CD2D1F5220CB331EA231C9155198524C5AB144F1513F3909EE61156A7EE0D5"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Vbe/Forms/VbeForms.Tests.cs",
+      "Sha256": "C4D27088835FF74BE32035FEC929088F270577661A73068AC7615DC5863C5299"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Vbe/Forms/VbeForms.TextBoxDuplication.Tests.cs",
+      "Sha256": "EDEF9DE9112C7B074DE9D88FA961B27726462075248AE3963BF56B82AE2FF862"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Vbe/Forms/VbeForms.ToggleButtonDuplication.Tests.cs",
+      "Sha256": "B149804BEA54441EB7F22A6F89BD26C1BC9AD856B629A44CE4AD91C3DC47BFDD"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Vbe/Forms/VbePropertyInfo.Tests.cs",
+      "Sha256": "B054BA0319FA74592D394D205C8172FEC4B4CE729A7F44D665AF01528AB5C20B"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Vbe/Projects/ExcelOwnedApplication.Tests.cs",
+      "Sha256": "8AFB2D3201880B65209AA954259D523093ADD838BE18354B1BA5CECB0DB5674D"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Vbe/Projects/VbeCertificateTrust.Tests.cs",
+      "Sha256": "CF604C2404C44D9D33173ACE0C39BCBFD22113E86AD85CDCA9A195D23C9AA080"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Vbe/Projects/VbeProjectComponents.AccessHelpContext.Tests.cs",
+      "Sha256": "82362CDC217511E54DD6CB1E4406FF121AC88DBEBEF76F704BAA464A25DABEBB"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Vbe/Projects/VbeProjectComponents.AccessPersistence.Tests.cs",
+      "Sha256": "FCC2ED36A585D89BCB269574F030C906692102F2352962027BA1CCA0CAFBEFB0"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Vbe/Projects/VbeProjectComponents.AccessSaveConfirmation.Tests.cs",
+      "Sha256": "53F25A946C37E072A9AF5F98056B22BAFA48E39F64C1E02E27305EBECE819D62"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Vbe/Projects/VbeProjectComponents.General.Tests.cs",
+      "Sha256": "21818DFA24525BD7A473BFD8A4796707CBD133CB0997E0D0C8777F0827A369CB"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Vbe/Projects/VbeProjectComponents.Help.Tests.cs",
+      "Sha256": "12C48F6D60D1B2A0DB696456F27E3654D457024D1205FCB4E9955EC9FFDCF4D6"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Vbe/Projects/VbeProjectComponents.LegacyHelpMetadata.Tests.cs",
+      "Sha256": "29A1B5D6A5EB7D19DFA6679B50EB046E98D540B42B88776E86EB166758616E18"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Vbe/Projects/VbeProjectComponents.Lifecycle.Tests.cs",
+      "Sha256": "21D2B153C28BADFFCB7446120694851628736F72DD00E260FD4C75F670D6C363"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Vbe/Projects/VbeProjectComponents.OtherHosts.Tests.cs",
+      "Sha256": "23707AA0A1F3D149BD8FE1EC35BDFA6A8FB6DF942867966F6B6C38C0F587EC1E"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Vbe/Projects/VbeProjectComponents.Rename.Tests.cs",
+      "Sha256": "5CBCF57F774CD463D220C97EA5BF97A5EA5738817FF66E66BF58736436DC583B"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Vbe/Projects/VbeProjectComponents.ScalarFailure.Tests.cs",
+      "Sha256": "949A949FFC3F2E32C25623F6DD99701FE9ECA1335694A8D7EC77A7A271E0AECF"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Vbe/Projects/VbeProjectComponents.SolidWorksMacroCreation.Tests.cs",
+      "Sha256": "1121909216C66E014A5CE46DE9C514FA6F378ECB7F1EFD2A3D68FFFCD9534D0C"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Vbe/Projects/VbeProjectComponents.SolidWorksMacroGeneral.Tests.cs",
+      "Sha256": "5FED73E762A546C3DB5987742C533847451D9CA65E99A19E34645B3AAB5F0663"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Vbe/Projects/VbeProjectComponents.SolidWorksMacroPublication.Content.Tests.cs",
+      "Sha256": "F21F7283F2C1AB5A9A6A85353314F8D5F95C6DFA5F5607769541EE0240F9508C"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Vbe/Projects/VbeProjectComponents.SolidWorksMacroPublication.PostSave.Tests.cs",
+      "Sha256": "587FF63A28AC99ECFEEF251EDEE22129464193E82508CDFEACCD05A1994AECF4"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Vbe/Projects/VbeProjectComponents.SolidWorksMacroPublication.Tests.cs",
+      "Sha256": "45D0ECA31F77F90D2E8483B798EC383E802F569C9083DF3D2FE080B1C2B89F2F"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Vbe/Projects/VbeProjectComponents.SolidWorksPersistence.Tests.cs",
+      "Sha256": "F05F516FFEA3DE1D34AC92C70551E9E96125916ED34D4649C91158485C48FB55"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Vbe/Projects/VbeProjectComponents.StandalonePersistence.Tests.cs",
+      "Sha256": "DC2CB4DCE6D1E7157EB1CCA2B70864C7570B22D1B95485EE4EE676986179B671"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Vbe/Projects/VbeProjectComponents.Tests.cs",
+      "Sha256": "9152EE6FCE29DC12F357AF5B28CB14ED2E6C6C9AB46E703364BEC5405195A9FE"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Vbe/Projects/VbeProjectGeneralNative.Tests.cs",
+      "Sha256": "C72600FBBC0E959DC3B3DCF72067FFF4EF6638F566065C44770A74E8F36795BB"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Vbe/Projects/VbeProjectGeneralOperation.Tests.cs",
+      "Sha256": "EC5B18647B36E72EB4C78B289429F4BAA86D2D7686B17BE46E778CE9F3B49FD9"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Vbe/Projects/VbeReferenceTypes.Tests.cs",
+      "Sha256": "9293A81EACDBA009ED97EEB11807D6B670E02CA126835D9DC4CB53AF42DD82C3"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Vbe/Projects/VbeSignatureVerifier.Tests.cs",
+      "Sha256": "7444C58A782E592FDA02B750F4C32C3B20A3047DD2698EB1A780CAC86323CBC7"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Vbe/Windows/VbeEditorWindows.AddIns.Tests.cs",
+      "Sha256": "1208FEBEF5CFF789A1E0342D872636DBA2C01C1165E0FA8AF77E4F8966311CCF"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Vbe/Windows/VbeEditorWindows.Layout.Tests.cs",
+      "Sha256": "72E2D74AFE6965A3AB9F3D55A6C023E1391B0D8DCD36C0111695AC8995B52D90"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Vbe/Windows/VbeEditorWindows.Tests.cs",
+      "Sha256": "CE2BE1E5C35765AF60BEBD05396E10ABBD16AED5F903EA54EF3751B893C60D78"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Vbe/Windows/VbeEditorWindows.ToolbarCustomization.Tests.cs",
+      "Sha256": "0E5626DEDBF66C1C2AE0BFB1858C6A4583FCC228E93E3730E7B863B3A6194775"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Vbe/Windows/VbeEditorWindows.ToolbarProfiles.Tests.cs",
+      "Sha256": "9D50BCA86D23865604C6439E8DBC29E852E10BABCC3B7CB634E0E24EED9EFBC0"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Vbe/Windows/VbeEditorWindows.Toolbars.Tests.cs",
+      "Sha256": "FA29F35756B7390FE117EA5E52EBFA641F63A018ECCFED5D0499173DB810787B"
+    },
+    {
+      "Path": "tests/VBAi.Tests/Unit/Vbe/Windows/VbeToolbarProfiles.Tests.cs",
+      "Sha256": "80B7A0ED3C1E9B2DB09C86AA421C488383DAFDA59EC6ADE3EE44AA40EC0E1D43"
+    }
+  ],
+  "ProductMvid": "08689325-53fe-4d8d-86a5-3c02aa5c4a81",
+  "ProductSha256": "3A1B0A92803C737156EE381CE66070C22CA5A932715528E3B622C2DA8101F1B7",
+  "ManagedTrxSha256": "3C057E3C67C840672E9D1B5848EDD15299687FC4252CCEAC7CFFDD1F0F160737",
+  "Native2019": {
+    "Receipt": "root-2019-phase-acceptance.json",
+    "Sha256": "DF677BD710FA5C14244D4D78F39CF1EC8CCD74AD053D48144BAA3907E97C5911",
+    "State": "PASS_WITH_EXPLICIT_DESIGNER_PRECONDITION",
+    "OriginalAggregateFailuresPreserved": true,
+    "Phases": [
+      {
+        "Bank": "native-macro-main-2019-13",
+        "Id": "managed",
+        "State": "PASS"
+      },
+      {
+        "Bank": "native-macro-main-2019-13",
+        "Id": "launch-1",
+        "State": "PASS"
+      },
+      {
+        "Bank": "native-macro-main-2019-13",
+        "Id": "bootstrap-1",
+        "State": "PASS"
+      },
+      {
+        "Bank": "native-macro-main-2019-13",
+        "Id": "connected-1",
+        "State": "PASS"
+      },
+      {
+        "Bank": "native-macro-main-2019-13",
+        "Id": "negative",
+        "State": "PASS"
+      },
+      {
+        "Bank": "native-macro-main-2019-13",
+        "Id": "create",
+        "State": "PASS"
+      },
+      {
+        "Bank": "native-macro-main-2019-13",
+        "Id": "publish",
+        "State": "PASS"
+      },
+      {
+        "Bank": "native-macro-main-2019-13",
+        "Id": "q030",
+        "State": "PASS"
+      },
+      {
+        "Bank": "native-macro-main-2019-13",
+        "Id": "normal-close-1",
+        "State": "PASS"
+      },
+      {
+        "Bank": "native-macro-main-2019-13",
+        "Id": "closed-bytes",
+        "State": "PASS"
+      },
+      {
+        "Bank": "main2019-existing-host-18",
+        "Id": "checkpoint",
+        "State": "PASS"
+      },
+      {
+        "Bank": "main2019-existing-host-18",
+        "Id": "adopt-existing",
+        "State": "PASS"
+      },
+      {
+        "Bank": "main2019-existing-host-18",
+        "Id": "connected",
+        "State": "PASS"
+      },
+      {
+        "Bank": "main2019-existing-host-18",
+        "Id": "inspect-existing-create",
+        "State": "PASS"
+      },
+      {
+        "Bank": "main2019-existing-host-18",
+        "Id": "visual-create",
+        "State": "PASS"
+      },
+      {
+        "Bank": "main2019-publish-designer-22",
+        "Id": "checkpoint",
+        "State": "PASS"
+      },
+      {
+        "Bank": "main2019-publish-designer-22",
+        "Id": "adopt-existing",
+        "State": "PASS"
+      },
+      {
+        "Bank": "main2019-publish-designer-22",
+        "Id": "connected",
+        "State": "PASS"
+      },
+      {
+        "Bank": "main2019-publish-designer-22",
+        "Id": "materialize-published-designer",
+        "State": "PASS"
+      },
+      {
+        "Bank": "main2019-publish-designer-22",
+        "Id": "inspect-existing-publish",
+        "State": "PASS"
+      },
+      {
+        "Bank": "main2019-publish-designer-22",
+        "Id": "visual-publish",
+        "State": "PASS"
+      },
+      {
+        "Bank": "main2019-publish-designer-22",
+        "Id": "normal-close",
+        "State": "PASS"
+      }
+    ]
+  },
+  "Native2025": {
+    "Receipt": "native-macro-main-2025-18/root-final-acceptance.json",
+    "Sha256": "8AE73982D580DE049F4F76A341FCF80E79A1625DE89FF4570B3BE6043429B52C",
+    "NativeRevision": "33.1.1",
+    "AllOrderedStagesPassed": true,
+    "OriginalOwnedHostExitsNormal": true
+  },
+  "ExplicitDesignerOpeningRequired": true,
+  "ClosedDesignerComponentPropertiesQualified": false,
+  "NoMacroExecution": true,
+  "EmbeddedAssistantQualified": false,
+  "Release100Qualified": false
+}

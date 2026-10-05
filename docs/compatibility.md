@@ -492,6 +492,31 @@ SaveAs, code/form preparation, compilation, save and close. A subsequent
 SOLIDWORKS. Native Edit Macro is the separately tested path for opening saved
 Type100 copies, and does not restore standalone Open support.
 
+The current source also implements two explicit SOLIDWORKS creation routes.
+`create_solidworks_macro` requests a fresh absolute `.swp` path before native
+creation. `publish_solidworks_macro` copies an unprotected Type101 draft into a
+separate native Type100 macro and reports the original and destination identities;
+the original project is retained. It verifies transported code, attributes,
+UserForms and pictures, references and permitted General metadata around one
+native save. Nondefault help or conditional-compilation metadata, project
+references and uncertain native outcomes are refused. Signatures are not
+transported. Generic Type101 Save/SaveAs remains unavailable in SOLIDWORKS.
+These implemented routes do not inherit the earlier candidates' host acceptance:
+their first-save and independent original-file reopening gates remain
+candidate-specific. See [the recorded candidate validation](test-coverage.md#q-020-and-q-030-native-macro-candidate-2026-10-05).
+
+The current frozen native-macro candidate qualifies native creation and explicit
+publication on selected SOLIDWORKS 2019 SP5 and 2025 SP1.1. Both versions retain
+complete synthetic code/class/form/picture content through verified save and
+same-original-file reopening in a fresh host, with reviewed native designer
+images, normal owned-host exits and restored temporary COM registration.
+Cold published-form inspection requires an explicit designer opening before
+reading component properties; the observed closed-designer E_FAIL remains a
+documented limit. Generic standalone Open and Type101 SaveAs remain unavailable.
+These are operation-specific results, not complete UI or release acceptance.
+See the [current qualification checkpoint](release-qualification.md#q-020-and-q-030-native-macro-checkpoint-2026-10-05)
+for candidate identity, retained failures and scope.
+
 On aaf3, `solidworks/type100-2019/async-save-02/` and
 `solidworks/type100-2025/async-save-01/` independently record a single product
 Save followed by verified deferred completion. Their

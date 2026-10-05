@@ -4,6 +4,44 @@ The test suite covers the shared VBE core, provider protocols, storage, editor
 services and selected host integrations. A passing local suite is not a claim
 that every feature works in every application that embeds the VBE.
 
+## Q020/Q030 main-desktop macro qualification
+
+The [main-desktop runner](../tools/tests/q020-main/Invoke-Q020MainNativeMacroQualification.ps1)
+prepares the ordered native creation, explicit standalone publication, unsafe-open
+refusal, normal exit and fresh-host readback matrix. It requires explicit
+maintainer authorization for the selected SOLIDWORKS version and uses only owned
+disposable macros. It never executes their procedures or launches Visual Studio.
+The private-desktop runners and their helpers remain separate.
+
+Use Windows PowerShell 5.1 x64 with `-Prepare -MainDesktopAuthorized`, an explicit
+fresh `EvidenceRoot`, `RepositoryRoot`, isolated candidate/build paths, managed
+TRX inputs, selected executable/revision and profile solution. Pass a positive
+`ProtectedVisualStudioPid`, as required by the main-desktop gate; that identifier
+does not prove that an IDE is currently running. Preparation freezes the inputs,
+scenario order and oracles without launching a host. Execution of the copied
+`Invoke-FrozenNativeMacro.ps1` requires the reviewed same-user Limited STA
+coordinator, candidate registration and restoration envelope. Do not dispatch it
+directly or repeat a claimed campaign after an uncertain outcome.
+
+`tools/tests/q020-main/Test-SnapshotComparator.ps1 -OutputRoot <fresh-absolute-path>`
+checks the actual snapshot comparator with a sanitized synthetic fixture. It
+starts no host. `Test-OriginalHandleIdentity.ps1` takes the same output parameter
+and creates only disposable hidden PowerShell children to test early native-handle
+identity and failure retention. Neither check qualifies SOLIDWORKS persistence or
+rendering. Candidate-specific results and test counts belong in
+[test coverage](../docs/test-coverage.md); screenshots prove only their recorded
+designer scope, not macro execution or assistant acceptance.
+
+The same folder provides `Test-FormCrossGeneration.ps1`,
+`Test-ReloadDesignerMaterialization.ps1` and `Test-BootstrapReadiness.ps1`.
+Each requires a fresh absolute `-OutputRoot`. They exercise the actual frozen
+comparator and runner definitions with synthetic inputs, including strict
+descriptor failures, closed-designer initialization and bounded startup
+readiness. They never launch SOLIDWORKS, dismiss dialogs or execute VBA.
+Cold form inspection opens the mapped designer once before inspecting its
+properties and reuses that settled result for the addressed PNG capture.
+Unknown persistent startup dialogs stop the campaign before the first command.
+
 ## Q-014 inactive-desktop SOLIDWORKS qualification
 
 `tests/VBAi.Q014.Tests` is a scoped frozen-product harness for SOLIDWORKS

@@ -91,6 +91,7 @@ namespace VBAi
         internal Func<Request, Task<object>> InspectLocalScalarsNative;
         /// <summary>Saves and observes completion while yielding to the owning VBE STA.</summary>
         internal Func<Request, Task<object>> SaveHostDocumentNative;
+        internal Func<Request, Task<object>> SolidWorksMacroNative;
         /// <summary>Runs the guarded native General operation on the VBE UI thread.</summary>
         internal Func<Request, bool, Task<object>> ProjectGeneralNative;
         /// <summary>Demande la sauvegarde de signature au document hôte.</summary>
@@ -125,6 +126,7 @@ namespace VBAi
             ReadImmediateNative = request => session.ReadImmediateAsync(request);
             InspectLocalScalarsNative = request => session.InspectLocalScalarsAsync(request);
             SaveHostDocumentNative = request => session.SaveHostDocumentAsync(request);
+            SolidWorksMacroNative = request => session.SolidWorksMacroAsync(request);
             ProjectGeneralNative = (request, write) => session.ProjectGeneralAsync(request, write);
             PersistSignature = project => session.PersistProjectSignature(project);
             pipeName = "VBAi." + processId;
@@ -227,6 +229,28 @@ namespace VBAi
                                         try { completion.TrySetResult(Response.Success(await ProjectGeneralNative(request, command == "set_project_general"))); }
                                         catch (Exception ex) { completion.TrySetResult(Response.Failure(ex.Message)); }
                                         finally { request.RevalidateProjectPropertyAuthorization = null; }
+                                    }));
+                                    response = completion.Task.GetAwaiter().GetResult();
+                                }
+                                else if (request != null && (request.Command == "create_solidworks_macro" || request.Command == "publish_solidworks_macro"))
+                                {
+                                    var completion = new TaskCompletionSource<Response>(TaskCreationOptions.RunContinuationsAsynchronously);
+                                    dispatcher.BeginInvoke(new Action(async () => {
+                                        int ownerThread = Thread.CurrentThread.ManagedThreadId;
+                                        string command = request.Command, project = request.Project, path = request.Path;
+                                        string version = request.ExpectedProjectVersion;
+                                        int mode = request.ExpectedMode;
+                                        request.RevalidateMacroAuthorization = live => {
+                                            if (dispatcher.IsDisposed || !dispatcher.IsHandleCreated || dispatcher.InvokeRequired ||
+                                                Thread.CurrentThread.ManagedThreadId != ownerThread ||
+                                                Thread.CurrentThread.GetApartmentState() != ApartmentState.STA ||
+                                                request.Command != command || request.Project != project || request.Path != path ||
+                                                request.ExpectedProjectVersion != version || request.ExpectedMode != mode || mode != 2)
+                                                throw new InvalidOperationException("Original bridge macro request/UI context changed.");
+                                        };
+                                        try { completion.TrySetResult(Response.Success(await SolidWorksMacroNative(request))); }
+                                        catch (Exception ex) { completion.TrySetResult(Response.Failure(ex.Message)); }
+                                        finally { request.RevalidateMacroAuthorization = null; }
                                     }));
                                     response = completion.Task.GetAwaiter().GetResult();
                                 }
@@ -422,7 +446,8 @@ namespace VBAi
                     Thread.CurrentThread.GetApartmentState() != ApartmentState.STA)
                     throw new InvalidOperationException("Bridge admission requires its owning VBE UI STA.");
                 session.RequireGeneralSettled();
-                if (request?.Command == "read_project_general" || request?.Command == "set_project_general") return null;
+                if (request?.Command == "read_project_general" || request?.Command == "set_project_general" ||
+                    request?.Command == "create_solidworks_macro" || request?.Command == "publish_solidworks_macro") return null;
                 return session.AdmitBridgeOperation();
             }));
         }

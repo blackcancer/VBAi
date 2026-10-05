@@ -32,6 +32,7 @@ namespace VBAi.Tests.Unit
             internal short Parameters;
             internal bool DescriptorFailure, NamesFailure;
             internal int NameCount = 1;
+            internal int? MemberId;
         }
         internal sealed class Inherited
         {
@@ -60,11 +61,12 @@ namespace VBAi.Tests.Unit
             pointer = IntPtr.Zero;
             var function = Functions[index];
             if (function.DescriptorFailure) throw new COMException("Disposable function failure");
-            pointer = Allocate(new FUNCDESC { memid = index + 1, invkind = function.Kind, cParams = function.Parameters });
+            pointer = Allocate(new FUNCDESC { memid = function.MemberId ?? index + 1, invkind = function.Kind, cParams = function.Parameters });
         }
         public void GetNames(int member, string[] names, int maxNames, out int count)
         {
-            var function = Functions[member - 1];
+            int mapped = Functions.FindIndex(f => f.MemberId == member);
+            var function = Functions[mapped < 0 ? member - 1 : mapped];
             if (function.NamesFailure) throw new COMException("Disposable names failure");
             count = function.NameCount;
             if (maxNames > 0) names[0] = function.Name;

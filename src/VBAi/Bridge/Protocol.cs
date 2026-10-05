@@ -9,6 +9,9 @@ namespace VBAi
         /// <summary>Revalidates originating chat policy/binding immediately before native project metadata mutation; never serialized.</summary>
         [System.Web.Script.Serialization.ScriptIgnore]
         internal System.Action<bool> RevalidateProjectPropertyAuthorization;
+        /// <summary>Revalidates an explicit native macro creation/publication authorization on its owning UI thread.</summary>
+        [System.Web.Script.Serialization.ScriptIgnore]
+        internal System.Action<bool> RevalidateMacroAuthorization;
         /// <summary>Nom de la commande demandée au pont.</summary>
         /// <value>Nom de la commande demandée au pont.</value>
         public string Command { get; set; }

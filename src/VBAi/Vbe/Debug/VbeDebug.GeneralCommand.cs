@@ -1,10 +1,22 @@
-using System;
+﻿using System;
 using System.Linq;
 
 namespace VBAi
 {
     internal sealed partial class VbeDebug
     {
+        internal string ReadGeneralCommandCaption()
+        {
+            string menuName = (string)vbe.CommandBars.ActiveMenuBar.Name;
+            if (string.IsNullOrWhiteSpace(menuName)) throw new InvalidOperationException("Original VBE menu route is unavailable.");
+            var matches = EnumerateCommands().Where(entry => entry.Id == 2578 && entry.Enabled &&
+                entry.Path.StartsWith(menuName + " > ", StringComparison.Ordinal) &&
+                (int)((dynamic)entry.Control).Type == 1).ToArray();
+            if (matches.Length != 1 || string.IsNullOrWhiteSpace(matches[0].Caption))
+                throw new InvalidOperationException("Unique observed active-menu General command required.");
+            return matches[0].Caption;
+        }
+
         internal Action<Action> CaptureGeneralCommand(Request request, Action requireApprovedTarget)
         {
             if (request == null || requireApprovedTarget == null || string.IsNullOrWhiteSpace(request.ControlCaption))

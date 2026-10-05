@@ -41,8 +41,9 @@ namespace VBAi
                 /// <param name="selector">Identifiant du projet à inclure dans le résultat.</param>
                 /// <param name="project">Projet VBIDE dont l’état de persistance est lu.</param>
                 /// <returns>Un instantané sérialisable des indicateurs de sauvegarde et du fichier hôte.</returns>
-        private static object StandalonePersistence(string selector, dynamic project)
+        private object StandalonePersistence(string selector, dynamic project)
         {
+            bool solidWorksDraft = SolidWorksSaveProbe().IsSolidWorks;
             string path = StandaloneAwareProjectPath((object)project);
             bool hasPath = !string.IsNullOrWhiteSpace(path) && Path.IsPathRooted(path);
             bool exists = hasPath && File.Exists(path);
@@ -50,8 +51,9 @@ namespace VBAi
             return new { Project = selector, ProjectSaved = (bool)project.Saved, HostAvailable = true,
                 HostPath = hasPath ? Path.GetFullPath(path) : null, HostSaved = exists ? (bool?)(bool)project.Saved : null,
                 HostReadOnly = readOnly, HostHasPath = (bool?)hasPath, FileExists = exists,
-                SaveApi = "Standalone VBProject.SaveAs", Reason = (string)null,
-                Limit = "Native standalone SWP only. A save/readback of flags and file metadata is not proof of reload fidelity or signature trust." };
+                SaveApi = solidWorksDraft ? null : "Standalone VBProject.SaveAs", SaveSupported = !solidWorksDraft,
+                Reason = solidWorksDraft ? "A generic Type101 SaveAs does not create a native SOLIDWORKS container. Use publish_solidworks_macro to retain this draft and create a new native macro, or create_solidworks_macro with a path from the start." : null,
+                Limit = "Generic standalone VBIDE persistence is distinct from native SOLIDWORKS SWP hosting. File metadata is not proof of reload fidelity or signature trust." };
         }
                 /// <summary>Enregistre une macro SWP autonome par VBIDE après contrôle de sa version et de son chemin.</summary>
                 /// <param name="request">Requête contenant le projet, sa version attendue et éventuellement le chemin de destination.</param>
@@ -59,6 +61,8 @@ namespace VBAi
                 /// <returns>Le résultat de l’enregistrement et la vérification du chemin, de l’état et du fichier produit.</returns>
         private object SaveStandaloneMacro(Request request, bool saveAs)
         {
+            if (SolidWorksSaveProbe().IsSolidWorks)
+                throw new InvalidOperationException("Generic Type101 Save/SaveAs is refused in SOLIDWORKS because it does not create a native SWP container. Use publish_solidworks_macro to preserve the draft and create a new native identity, or create_solidworks_macro with an explicit path from the start.");
             dynamic project = GetDesignProject(request.Project);
             if (!SupportsStandaloneMacro((object)project))
                 throw new InvalidOperationException("This host project has no supported save API. VBProject.SaveAs is only available for standalone SWP projects (Type=101).");

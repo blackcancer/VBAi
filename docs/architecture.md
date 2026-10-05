@@ -70,6 +70,94 @@ actual document and report an unsupported operation or failed prerequisite rathe
 than simulate success. The [compatibility guide](compatibility.md) records outcomes
 per operation instead of maintaining a misleading all-or-nothing host whitelist.
 
+SOLIDWORKS macro creation has two explicit asynchronous routes.
+`create_solidworks_macro` requires a fresh absolute `.swp` destination and invokes
+the selected host's native New Macro command once. The owning STA handles its
+addressed save dialog and verifies the resulting Type100 project, native
+`ThisLibrary`, file and original project collection. A successful creation result
+does not prove persistence after an independent reopen.
+
+`publish_solidworks_macro` preserves an unprotected Type101 draft and creates a
+separate native macro at the explicit destination. It reports both identities,
+transports standard modules, classes and UserForms with their resource companions,
+and verifies code, hidden attributes, complete designer state, pictures, references
+and Description before and after one native save. Staging exports remain available
+on failure. Nondefault help or conditional-compilation metadata and project
+references are refused; digital signatures are not transported or qualified.
+Publication never promotes the original project object in place.
+
+Live MSForms descriptor type names can include a process-local COM type-info
+pointer. Opaque form revisions remain live concurrency tokens; they are not
+cross-process persistence hashes. Qualification compares recognized enum
+families, ordered choices and typed values without rewriting the raw protocol
+objects or suppressing other descriptor errors. Native cold inspection explicitly
+opens the designer before enumerating form properties; the observed closed-form
+inspection limit is recorded in the qualification guide.
+
+Publication compares persisted designer content separately from each live
+project's concurrency revision. The canonical source and destination FRM headers
+must agree; only the validated companion FRX filename is normalized. Missing
+root `Visible`, `HelpContextID`, `ShowModal`, `WhatsThisButton` and `WhatsThisHelp`
+properties use their documented defaults only after their exported settings have
+been checked. Control properties, ordinary font members, pictures, unknown root
+properties and read errors remain strict. Live undo, redo and clipboard
+capabilities are excluded only from this transport comparison; raw revisions
+still include them. These boundaries follow the
+[VBFrame specification](https://learn.microsoft.com/en-us/openspecs/office_file_formats/ms-ovba/76ecef26-5e1c-4729-8074-c76584e25b6b)
+and [Microsoft Forms property reference](https://learn.microsoft.com/en-us/office/vba/language/reference/user-interface-help/properties-microsoft-forms).
+
+An imported UserForm may receive surplus initial empty CRLF lines. After a
+verification export proves its other content and hidden attributes, publication
+can remove only that exact surplus prefix, once, from the guarded imported
+component. Exact code readback and a distinct verification export must succeed
+before Save. Other code differences are refused, and an uncertain call is never
+replayed. The source draft and its raw revision remain unchanged.
+
+After a verified publication Save, the destination content check permits only an
+error-free Boolean `Saved` transition from false to true, or an unchanged value.
+This is the documented edited-since-save flag; it is not persisted component
+content. All other component descriptors, including `HasOpenDesigner`, remain
+strict. A distinct guarded post-save export verifies code, hidden attributes and
+persisted form content. Source fingerprints and pre-save raw component versions
+remain unchanged; they still include `Saved` and live designer revision data.
+A remaining mismatch records bounded immutable observations in owned staging,
+keeps the successful Save result as a partial outcome and quarantines the
+operation. It does not repeat Save. See the
+[VBIDE Saved property contract](https://learn.microsoft.com/en-us/office/vba/language/reference/visual-basic-add-in-model/properties-visual-basic-add-in-model#saved).
+
+MSForms exposes `_Font_Reserved` as a write-only alias. Designer inspection skips
+its getter only when complete COM type metadata proves the exact reserved DISPID
+and setter-only accessors. The ordinary `Font` property and its members remain
+part of the snapshot. Missing or ambiguous metadata, and actual font or resource
+read errors, still prevent publication.
+
+Publication reads General metadata through the existing addressed native Project
+Properties command and closes the dialog with Cancel. Conditional compilation
+arguments are not an exposed VBIDE project COM property. A scoped reader verifies
+all General fields before staging, before and after native creation, and before
+and after save. It retains the original source identity and restores the prior
+active project only after the read settles; an uncertain modal call stops the
+operation without another attempt. The reader remains on the owning STA and
+preserves approval, privacy, revision and cross-session quarantine checks.
+
+UserForm picture revisions compare OLE persistence data, type and dimensions,
+using SHA-256 rather than a process-local GDI handle. Inspection calls
+`IPersistStream.Save(false)` without clearing the picture's dirty flag; it bounds
+the declared and actual stream sizes to 64 MiB and releases only its owned stream.
+An unreadable size/content contract is refused. Empty OLE pictures have no content
+digest. Windows may adapt a WMF handle during persistence inspection, so a stable
+handle is not the content oracle. Import and independent host reopening remain
+separate qualification gates for preservation of those data.
+
+Generic Type101 Save/SaveAs is refused inside SOLIDWORKS because its output has not
+passed native reopening. Existing native Type100 macro save remains a separate
+route. Unsafe `VBProjects.Open` remains disabled; reopening uses the host's native
+Edit Macro workflow. Both new mutation routes revalidate identity, revision, mode,
+approval and privacy on the owning STA, including the final cached authorization
+boundary. A pending or uncertain native mutation quarantines further operations
+on that STA until host restart; it is not retried or rolled back automatically.
+These implemented contracts require candidate-specific native qualification.
+
 Adding a host means qualifying shared behavior first, then implementing and testing
 only the missing application-specific operations. Keep knowledge of a particular
 application out of provider protocols and reusable editor code where possible.
