@@ -151,8 +151,8 @@ namespace VBAi
                 return SelectTarget(new IntPtr(Convert.ToInt64(((dynamic)main).HWnd)),
                     new IntPtr(Convert.ToInt64(((dynamic)window).HWnd)),
                     VbeProjectHostPath.SameProject(project, activeProject), VbeProjectHostPath.SameProject(window, activeWindow),
-                    Convert.ToBoolean(((dynamic)main).Visible) && Convert.ToBoolean(((dynamic)window).Visible),
-                    Convert.ToInt32(((dynamic)window).Type),
+                    (bool)Convert.ToBoolean(((dynamic)main).Visible) && (bool)Convert.ToBoolean(((dynamic)window).Visible),
+                    (int)Convert.ToInt32(((dynamic)window).Type),
                     (uint)Process.GetCurrentProcess().Id, handle => {
                         uint pid; GetWindowThreadProcessId(handle, out pid); return pid;
                     });
