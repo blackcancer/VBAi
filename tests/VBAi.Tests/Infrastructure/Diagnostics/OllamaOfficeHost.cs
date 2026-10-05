@@ -93,6 +93,7 @@ namespace VBAi.Tests.Integration
                 result.Items = command => office.Items(command);
                 result.Retain = () => office.NativeExecutionUnsettled = true;
                 publish(result);
+                if (kind == "Access") office.RequireAdapterOnlyCleanup();
             }
             result.NativeDispatchUnsettled = true;
             var projects = result.Items("list_projects");
@@ -119,6 +120,13 @@ namespace VBAi.Tests.Integration
         internal void TrackOutlookModule(string name)
         {
             (fixture as OutlookVbaTestFixture)?.TrackOwnedModule(name);
+        }
+
+        internal void PrepareSyntheticBaseline(string module)
+        {
+            var office = fixture as OfficeVbeFixture;
+            if (office != null && office.Kind == "Publisher")
+                office.SaveAdapterBaseline(new[] { module });
         }
 
         public void Dispose()

@@ -7521,3 +7521,31 @@ the marker. This is not an empty stream or backend failure. Word's original
 normal shutdown and campaign restoration/backend/proxy/desktop closure passed;
 the worker exited 1. PowerPoint, Access, Publisher and Outlook remain NOT_RUN.
 The Excel pass does not turn this aggregate into acceptance of all Office hosts.
+
+At harness `6c18b1d`, `q028-office-13` passed **519 selected managed tests** and
+the three real-provider prerequisites. Excel PID 200296, Word PID 35412 and
+PowerPoint PID 47544 passed their complete embedded banks. Independent wire
+review corroborated the numbered stream, cancellation, exact next reply,
+canonical `read_module` selector, baseline source/hash and the random marker's
+absence before the tool result. Original process receipts independently recorded
+normal exit 0 for all three hosts. The native transcript and tool-window owners
+matched the prepared private desktop and frozen product MVID `0174389e`.
+
+Access PID 178424 completed streaming, cancellation, the next reply and the
+native marker. Its final bridge source/reference reads returned, but the bank
+never flushed final invariance or shutdown acceptance. The teardown receipt
+remains `TEARDOWN_PREPARED`, with zero recorded Quit entries and no observed
+process exit. The series timed out after its declared 900000 ms bound; the exact
+blocking COM operation is not proven. Publisher and Outlook were NOT_RUN. The
+original worker exited 1. Later process absence and private desktop release do
+not qualify Access normal shutdown or turn this aggregate into a pass.
+
+Separate scheduled recovery under `q028-recovery-office13-restore` verified the
+six-field restoration and COM backup restoration, with zero native mutation
+entries and an explicitly unqualified receipt. Only the exact owned headless
+backend was stopped. Recovery's original worker exited 0 and released its private
+desktop; these resource receipts remain distinct from the failed Office bank.
+The offline reviewer was corrected to match `read_module`'s actual echoed request
+selector, rather than a saved project's display name; its **15 pure self-tests**
+pass, including canonical Word path acceptance and foreign/generic target refusal.
+Global wire acceptance still refuses the incomplete matrix.

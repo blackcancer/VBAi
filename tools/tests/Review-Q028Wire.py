@@ -257,6 +257,16 @@ def require_native_tool_arguments(arguments, bank):
             "Native tool canonical target differs")
 
 
+
+def require_native_read_identity(data, bank):
+    # VbeSession.ReadModule echoes the resolved request selector, which is a
+    # canonical path for saved documents; it does not return the native name.
+    require(data["Project"] == tool_project(bank) and data["Module"] == "Q028Marker" and
+            data["Sha256"] == bank["SourceBeforeSha256"] and
+            hashlib.sha256(data["Code"].encode()).hexdigest() == data["Sha256"],
+            "Native read canonical identity/source differs from independent baseline")
+
+
 def require_native_transcript(observations, embedded, bank):
     bounds = [(index, row) for index, row in enumerate(observations) if row.get("Phase") == "NativeTranscriptBound"]
     require(len(bounds) == 1, "Native transcript binding is missing or ambiguous")
@@ -340,8 +350,7 @@ def review(root):
         native = json.loads(results[0]["content"])
         require(native["Ok"] is True, "Native tool was refused")
         data = native["Data"]
-        require(data["Project"] == bank["Project"] and data["Module"] == "Q028Marker" and data["Sha256"] == bank["SourceBeforeSha256"] and
-                hashlib.sha256(data["Code"].encode()).hexdigest() == data["Sha256"], "Native read identity/source differs from independent baseline")
+        require_native_read_identity(data, bank)
         markers = set(re.findall(r"NATIVE_[0-9a-f]{32}", data["Code"]))
         require(len(markers) == 1, "Native module has no unique marker")
         marker = markers.pop()
@@ -426,6 +435,18 @@ class OracleTests(unittest.TestCase):
         for invalid in (None, "", " ", " Project "):
             with self.assertRaises(ValueError):
                 tool_project({"ToolProject": invalid})
+
+    def test_word_read_result_echoes_canonical_selector_not_native_name(self):
+        path = r"E:\Private\Word\Disposable.docm"
+        code = 'Option Explicit\r\nPublic Const ObservedMarker As String = "NATIVE_0123456789abcdef0123456789abcdef"\r\n'
+        digest = hashlib.sha256(code.encode()).hexdigest()
+        bank = {"Project": "Project", "ToolProject": path, "SourceBeforeSha256": digest}
+        data = {"Project": path, "Module": "Q028Marker", "Code": code, "Sha256": digest}
+        require_native_read_identity(data, bank)
+        for change in ({"Project": "Project"}, {"Project": r"E:\Private\Other\Foreign.docm"},
+                       {"Module": "OtherModule"}, {"Code": code + "' changed"}):
+            with self.assertRaises(ValueError):
+                require_native_read_identity(dict(data, **change), bank)
 
     def test_native_transcript_requires_exact_owner_before_composer_and_send(self):
         bound = {"Phase": "NativeTranscriptBound", "ProcessId": 10, "NativeThread": 11, "Panel": 12}

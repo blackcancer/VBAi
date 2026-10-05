@@ -1461,6 +1461,22 @@ normal-exit receipts remain distinct from stopping the owned headless model
 server. Historical Q028 failures and unknown historical causes are not erased
 by a successful later profile.
 
+The embedded bank persists functional acceptance before entering native teardown;
+that receipt remains pending until the original normal exit is verified. Access
+uses the fixture's existing guarded discard cleanup for its synthetic objects.
+Publisher saves its owned synthetic baseline before assistant requests, so its
+normal-exit guard does not require saving model changes after the trial. Neither
+preparation executes VBA or qualifies document persistence. The wire reviewer
+checks the canonical request selector echoed by `read_module`, independently of
+the native project's display name.
+
+After a terminated failed campaign, `Restore-Q028Qualification.ps1
+-AfterTerminatedFailedCampaign` permits resource restoration only with the failed
+original-worker exit and closed private-desktop receipts, absent original host
+PIDs and no live Office hosts. Applied-value and registry fingerprint guards
+still apply. Its receipt explicitly remains unqualified: process absence does
+not establish normal native exit, and it dispatches no native cleanup mutation.
+
 `VBAi_RUN_OLLAMA_TESTS=1` enables `TestCategory=Ollama` against the loopback
 server through the production HTTP client. `VBAi_TEST_OLLAMA_MODEL` selects an
 already-installed model (default `qwen2.5:7b-instruct`). The shared selector applies

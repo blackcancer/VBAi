@@ -61,6 +61,9 @@ namespace VBAi.Tests.Integration
                 host.Data("replace_lines", "Module", module, "StartLine", 1, "Count", lines,
                     "ExpectedSha256", empty["Sha256"], "Text", "Option Explicit\r\nPublic Const ObservedMarker As String = \"" + marker + "\"\r\n");
                 host.TrackOutlookModule(module);
+                report["BaselinePreparationStarted"] = true; flush();
+                host.PrepareSyntheticBaseline(module);
+                report["BaselinePreparationCompleted"] = true; flush();
                 var before = host.Data("read_module", "Module", module);
                 host.Data("select_code", "Module", module, "StartLine", 1, "ExpectedSha256", before["Sha256"]);
                 string references = Convert.ToString(host.Data("list_references")["Version"]);
@@ -121,7 +124,8 @@ namespace VBAi.Tests.Integration
                 Assert.AreEqual(sources.Count, host.Items("list_modules").Length);
                 foreach (var source in sources) Assert.AreEqual(source.Value, host.Data("read_module", "Module", source.Key)["Sha256"]);
                 report["SourceAndReferencesUnchanged"] = true;
-                report["State"] = "PASS";
+                report["State"] = "FUNCTIONAL_PASS_PENDING_SHUTDOWN";
+                flush(); // Preserve functional evidence if the native teardown never returns.
             }
             catch (Exception error)
             {
@@ -140,7 +144,8 @@ namespace VBAi.Tests.Integration
                 }
                 else if (host != null)
                 {
-                    try { host.Dispose(); report["FixtureShutdownVerified"] = true; }
+                    try { host.Dispose(); report["FixtureShutdownVerified"] = true;
+                        if (failure == null) report["State"] = "PASS"; }
                     catch (Exception cleanup)
                     {
                         report["State"] = "FAIL"; report["CleanupError"] = cleanup.ToString();
