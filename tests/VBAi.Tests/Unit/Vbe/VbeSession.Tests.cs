@@ -615,6 +615,29 @@ namespace VBAi.Tests.Unit
             Assert.AreEqual(1, (int)((dynamic)projects[1]).Mode);
         }
 
+        [DataTestMethod, DataRow(0), DataRow(1), DataRow(2), DataRow(3)]
+        public void ListProjectsPreservesOriginalFileNameGetterDiagnostics(int scenario)
+        {
+            var f = Create();
+            Exception error = scenario == 1 ? new System.Runtime.InteropServices.COMException("Missing path", unchecked((int)0x800A004C)) :
+                scenario == 2 ? (Exception)new DirectoryNotFoundException("Missing path") :
+                scenario == 3 ? new System.Runtime.InteropServices.COMException("Unrelated failure", unchecked((int)0x80004005)) : null;
+            f.Project.FileNameFailure = error;
+            var response = f.Session.Execute(new Request { Command = "list_projects" });
+            Assert.IsTrue(response.Ok, response.Error);
+            dynamic row = ((IEnumerable)response.Data).Cast<object>().Single();
+            Assert.AreEqual(f.Project.Name, (string)row.Name);
+            Assert.AreEqual(f.Project.Mode, (int)row.Mode);
+            Assert.AreEqual(error == null ? f.Project.FileName : null, (string)row.FileName);
+            Assert.AreEqual(error?.HResult, (int?)row.FileNameErrorHResult);
+            Assert.AreEqual(error?.GetType().FullName, (string)row.FileNameErrorType);
+            if (error == null)
+            {
+                Assert.AreEqual(f.Project.FileName, (string)row.HostPath);
+                Assert.IsNull((string)row.HostPathError);
+            }
+        }
+
         [TestMethod]
         public void ListModulesAndReadModuleDispatchToSelectedProject()
         {

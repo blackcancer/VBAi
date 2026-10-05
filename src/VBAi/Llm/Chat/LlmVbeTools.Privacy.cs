@@ -31,7 +31,7 @@ namespace VBAi
             "debug_global", "immediate_execute", "read_immediate", "inspect_local_scalars", "run_procedure", "procedure_run_status",
             "run_procedure_values", "procedure_values_status", "edit_watch", "remove_watch",
             "run_vba_tests", "stop_vba_tests",
-            "read_project_signature_dialog", "close_standalone_project"
+            "read_project_signature_dialog", "close_standalone_project", "publish_solidworks_macro"
         };
 
         /// <summary>Performs the set read access operation for LlmVbeTools.</summary>

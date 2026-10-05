@@ -1,5 +1,44 @@
 # Recorded validation
 
+## PR25 integration validation (2026-10-05)
+
+Integration combines qualification source `66568b5` with main `447be8e`.
+The isolated Debug solution build succeeds with no warnings or errors. It
+preserves Q026's accepted candidate and the Q020/Q030 native evidence as separate
+candidate-specific records. The integrated product has MVID
+`94ddb4fd-a561-48a9-8313-1e4bd964779f`, SHA-256
+`27621889CD9D533C6CE175854BAFFDCDA442002FA6F6D7715A03BE27322B7768`.
+
+The expanded selected managed bank passes **955 tests, 0 failed, 0 skipped**.
+It selects the complete classes observed in the earlier scoped macro TRX, plus
+`WritableOptionsTests`, `VbeDebugWindowsSystemTests`, `OptionsCheckboxTests`,
+`VbeInspectionTraceTests`, `ExcelFormatOptionsQualificationTests`,
+`IsolatedTestDesktopTests` and `NativeWindowEnumerationOwnershipTests` from main.
+No native-host fixture or authenticated provider is selected. The corrected TRX
+SHA-256 is `7FF5FB98937B2E11459B3A60B24CDD90AD7CB29DB12A738561518809863F2AB9`; test assembly
+SHA-256 is `F233E79718272DFF5F539DF76C29FC08BE89E1CCD72A2105EC528A1C8B5DE329`. The commands, filter,
+build log and both TRX files are retained in the local `q020-20261004` evidence bank.
+
+The first expanded bank remains FAILED: its synchronous schema matrix expected
+success from `create_solidworks_macro`, although both new macro commands require
+`InvokeAsync`. The test correction adds the two names to the existing explicit
+synchronous-refusal assertions; dedicated tests still verify their awaited
+native/catalogue routes and approval/privacy/revocation guards. Product source
+and the integrated product DLL are unchanged by this correction. The entire
+selected bank is rerun after rebuilding only the test project. The original red
+TRX SHA-256 is
+`41F3CD015C8C632C139962DDA0E2DB27EF03F0C23DF15578A50D97EEFA03E105`.
+
+This integration has **no new native replay**, complete default managed suite,
+macro execution, embedded assistant acceptance or coverage percentage. The
+native qualification remains attached to the earlier frozen DLL and
+[source-file evidence index](qualification/q020-q030.json), whose hashes describe
+that candidate rather than this merged source. Installed binaries and COM
+registration are unchanged during integration. One native FRM test literal
+intentionally preserves its trailing space; the remaining staged whitespace
+check passes. A final runner trailing-space cleanup changes no behavior, while
+its actual campaign bytes remain archived unchanged.
+
 ## PR24 merge validation (2026-10-04)
 
 Merge source `2a2dd5238731b567b8e6bc4823a8d4b13a05d47e` reconciles PR #24
@@ -7356,3 +7395,47 @@ Q-006 remains **OPEN** for these distinct boundaries:
 No current pass establishes causality for an earlier crash or acceptance for a
 different host. The reusable [testing procedure](../tests/README.md#q-006-inactive-desktop-excel-qualification)
 preserves refusals and uncertain ownership instead of replaying native work.
+
+## Q-020 and Q-030 native macro candidate, 2026-10-05
+
+The isolated DLL was built from base commit
+`4a5b05e0f9efc20fda3ee61f93c45d45cd32cef1` plus frozen creation, publication,
+General-reader, picture-persistence and post-save verification changes. Its
+MVID is `08689325-53fe-4d8d-86a5-3c02aa5c4a81`, SHA-256
+`3A1B0A92803C737156EE381CE66070C22CA5A932715528E3B622C2DA8101F1B7`.
+Build completed without warnings or errors. The scoped managed bank passes
+**579 tests**, with zero failures or skips, in
+`native-macros-managed-11/native-macros-managed-11.trx`, SHA-256
+`3C057E3C67C840672E9D1B5848EDD15299687FC4252CCEAC7CFFDD1F0F160737`.
+It covers the changed routes and admission, identity, revision, mode, owning
+thread, metadata, transport, privacy and uncertainty guards, including real
+Windows OLE picture persistence. It is not the full managed suite or a coverage
+measurement. The earlier post-save false-to-true Saved transition has a retained
+failing regression on the previous candidate and a passing focused correction.
+
+| Native scope | Actual evidence and result |
+| --- | --- |
+| SOLIDWORKS 2019 SP5, revision 27.5.0 | Scoped phase acceptance: first-generation bank13, full original A readback and designer review in continuation18, full original B readback after explicit designer opening and designer review in continuation22. Both workflows preserve code/attributes/form/picture/references/General. First host exits normally; fresh host's settled typed ExitApp is correlated with exit zero on its original retained creation handle. Prior failed aggregate banks and the raw failed exit receipt remain unchanged. |
+| SOLIDWORKS 2025 SP1.1, revision 33.1.1 | Full bank18: all 16 ordered stages PASS, including first-save creation/publication, source preservation, refusal of unsafe generic Open, fresh-host original A/B readback, and normal exit of both original host handles. Three actual native designer PNGs reviewed. |
+| Cleanup | Actual per-user COM baselines restored exactly after each campaign; original worker exits observed and exact owned scheduled tasks removed. No production macro or user project is executed. |
+
+The frozen candidate is identical across both hosts. Record source-file hashes
+and acceptance receipt hashes in [the machine-readable evidence index](qualification/q020-q030.json).
+Native acceptance requires explicit designer initialization before cold inspection.
+The observed closed-designer E_FAIL remains a limit. Default form metadata,
+resource content and recognized MSForms enum descriptors are compared with strict
+negative checks; raw snapshots and revisions are not rewritten. The installed
+.NET Framework WinForms implementation generates enum names from an ITypeInfo
+pointer, also shown in the [official WinForms source](https://github.com/dotnet/winforms/blob/v3.1.0/src/System.Windows.Forms/src/System/Windows/Forms/ComponentModel/COM2Interop/COM2TypeInfoProcessor.cs#L868-L890).
+The portable canaries cover complete snapshot guards, original-handle startup
+identity, cross-generation enum descriptors, one-time designer materialization,
+and transient/persistent startup readiness. They make no native acceptance claim.
+
+Failed evidence remains recorded: first-generation bank13's second launch,
+cold14's pre-open helper lookup, cold15's enum comparator, continuation18's closed
+designer inspection, diagnostic19's result collection, and 2025-17's transient
+startup dialog. None is relabeled green by later scoped evidence. See the
+[authoritative acceptance limits](release-qualification.md#q-020-and-q-030-native-macro-checkpoint-2026-10-05).
+No result qualifies arbitrary UserForms, signatures, macro runtime execution,
+the complete embedded assistant UI, generic standalone Open, Type101 promotion,
+or v1.0.0 release acceptance.

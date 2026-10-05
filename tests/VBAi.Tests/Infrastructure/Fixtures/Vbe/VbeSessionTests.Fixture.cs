@@ -59,11 +59,13 @@ namespace VBAi.Tests.Unit
             public bool Saved { get; set; } = true;
             public bool ThrowFileName { get; set; }
             public bool ThrowDirectoryNotFound { get; set; }
+            public Exception FileNameFailure { get; set; }
 
             public string FileName
             {
                 get
                 {
+                    if (FileNameFailure != null) throw FileNameFailure;
                     if (ThrowFileName)
                         throw new InvalidOperationException("Unsaved");
                     if (ThrowDirectoryNotFound)

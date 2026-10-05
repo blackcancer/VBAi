@@ -7,6 +7,22 @@ namespace VBAi.Tests.Unit
 
     public sealed partial class VbeProjectComponentsTests
     {
+        [TestMethod]
+        public void SolidWorksGenericDraftSaveAndSaveAsRefuseBeforeAnyNativeSave()
+        {
+            var probe = new VbeSolidWorksPersistenceTests.Probe();
+            probe.Project.Type = 101;
+            var request = probe.Request();
+            var save = Assert.ThrowsException<InvalidOperationException>(() => probe.Service.SaveHostDocument(request));
+            var saveAs = Assert.ThrowsException<InvalidOperationException>(() => probe.Service.SaveHostDocumentAs(request));
+            StringAssert.Contains(save.Message, "publish_solidworks_macro");
+            StringAssert.Contains(saveAs.Message, "create_solidworks_macro");
+            Assert.AreEqual(0, probe.Saves); Assert.AreEqual(0, probe.Selections);
+            dynamic state = probe.Service.PersistenceStatus("P");
+            Assert.IsFalse((bool)state.SaveSupported); Assert.IsNull(state.SaveApi);
+            Assert.IsTrue((bool)state.HostHasPath, "A readable draft path remains diagnostic information.");
+        }
+
         [DataTestMethod, DataRow(false), DataRow(true)]
         public void UnsavedStandalonePathNotFoundAllowsOnlyExplicitFirstSaveAs(bool clrMapped)
         {
