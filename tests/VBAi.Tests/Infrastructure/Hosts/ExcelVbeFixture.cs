@@ -111,7 +111,14 @@ namespace VBAi.Tests.Integration
                 if (!fixture.owned)
                     Assert.Inconclusive("Excel returned an existing session; no workbook was opened.");
                 fixture.ownedProcess = Process.GetProcessById(fixture.ProcessId);
-                _ = fixture.ownedProcess.Handle;
+                IntPtr retainedHandle = fixture.ownedProcess.Handle;
+                uint windowThread = GetWindowThreadProcessId(new IntPtr(Convert.ToInt64(excel.Hwnd)), out uint observedPid);
+                string ownerDesktop = IsolatedTestDesktop.DesktopName(IsolatedTestDesktop.GetCurrentThreadId());
+                string windowDesktop = IsolatedTestDesktop.DesktopName(windowThread);
+                RecordComAttachedIdentity(fixture.startupEvidence, fixture.ProcessId, (int)observedPid,
+                    retainedHandle.ToInt64(), fixture.ownedProcess.StartTime.ToUniversalTime().ToString("o"),
+                    windowThread, ownerDesktop, windowDesktop, IsolatedTestDesktop.InputDesktopName());
+                fixture.RecordStartup("OwnedComIdentityObserved", existingIds);
                 excel.Visible = true;
                 excel.DisplayAlerts = false;
                 fixture.workbooks = excel.Workbooks;
@@ -202,6 +209,7 @@ namespace VBAi.Tests.Integration
                 ["ProcessId"] = ProcessId, ["FixtureRoot"] = Root, ["StartedUtc"] = DateTime.UtcNow.ToString("o"),
                 ["AssemblyMvid"] = typeof(VbeSession).Module.ModuleVersionId.ToString("D"), ["ForcedTermination"] = false
             };
+            CopyComAttachedIdentityToShutdown(startupEvidence, diagnostics);
             diagnostics["DurableEvidence"] = retainEvidence;
             diagnostics["CommandCount"] = commandSequence;
             diagnostics["CommandRecordsOmitted"] = Math.Max(0, commandSequence - MaximumCommandRecords);
