@@ -164,6 +164,28 @@ application out of provider protocols and reusable editor code where possible.
 
 ## Threading and mutation lifecycle
 
+### Git imports from an owned modal window
+
+Checkpoint restoration, branch switching, module restoration, pull, merge
+completion and rollback share a one-shot modal handoff. The Git window captures
+the action arguments and expected revision while holding its repository lease.
+Import admission follows the actual return of its modal call on the original
+owner STA. The owner, project and revision are revalidated before dispatch, and
+the exact owner is checked again immediately before the first native mutation.
+The window, dispatcher and lease remain alive through operation cleanup and
+terminal presentation. A pending or failed native mutation is not replayed.
+
+Add-in menus and Chat use the same owner lease to prevent overlapping Git
+sessions. Their complete callbacks, including disposal and error presentation,
+run on the owning STA even when the event starts without a synchronization
+context. Read-only accessibility metadata lets the test coordinator correlate
+the same session and request across the temporary modal-window disappearance.
+
+Imported UserForm materialization checks exported resource identity before
+opening the exact owned designer. It preserves strict component, active-window,
+font and resource guards. These implemented contracts still require the native
+qualification recorded in [release qualification](release-qualification.md).
+
 The test explorer uses the shared owning-thread project/revision guards. A
 registered x64 `VBAi.TestRuntime` COM callback binds only to an already authorized
 pending attempt on the VBA thread. Versioned project-local support publishes a

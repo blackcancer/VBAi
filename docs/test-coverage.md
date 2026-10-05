@@ -1,6 +1,64 @@
 # Recorded validation
 
+## Q024/Q027 paused handoff candidate (2026-10-06)
+
+Qualification is paused at the maintainer's request. The published source
+consolidates the owned-modal Git handoff, strict imported-form resource and font
+checks, bounded diagnostics, native fixtures and their regression mirrors.
+No new Office campaign was started after the pause.
+
+The exact tested source is `5f0f605c6ca003b822b888452734a956e335da4a`.
+Its isolated Debug solution build completed without warnings or errors.
+Product MVID is `a8f95d1d-132e-4d27-8198-4c899ff9c9b0`; product SHA-256 is
+`12DB85FFD48D491415A717748CF0C107D0F0AA1251D00F069C2C309AFC3473F1`. Test assembly SHA-256 is
+`B5B97EA9EFCB025588B5DD9D22057F5CBA2CE04898CAF3D9D19EF30DB1A69923`; helper SHA-256 is
+`A3280BA1E320C37D765395E00C0D8553A541528DBBBEAA34436EB8984DDA5E44`.
+
+| Validation on this exact candidate | Observed result |
+| --- | --- |
+| Complete default managed suite | 5,551 passed, 0 failed, 234 skipped |
+| Prepared modal-handoff mirrors | All 119 rows across 36 methods passed within that complete suite |
+| Synthetic UI matrix | All nine prepared actions passed |
+| New Word Q024 or Excel Q027 native campaign | NOT_RUN |
+| Coverage collection | NOT_RUN; no line or branch percentage claimed |
+
+Original process exits and private-desktop release were independently verified.
+There were no desktop switches or owned foreground observations. Both completed
+owned tasks were removed. Native/provider opt-ins were cleared process-locally.
+The unchanged source and product/test/helper bytes, original TRX storage and
+terminal receipts are retained in
+`artifacts/q027-git-modal-handoff-gates-20261006/`.
+TRX SHA-256 is
+`3067D1034EEB42D078716AFFF241897614995B60A7D5D65BB38408FE35FC0CB2`.
+
+### Candidate-specific native evidence retained
+
+| Earlier source and native scope | Actual result and limit |
+| --- | --- |
+| `d367ea0cca440b1fbb5b92480896ba6721073cad`, Word Q024 | Three selected Git workflows qualified on real `WinSta0\Default`: canonical document isolation/stale SaveAs refusal, installed owner capture/checkpoint/compare, and actual Chat-Git entry/normal modal close. All three original Word processes exited normally within the unchanged 15-second bound. |
+| Same `d367ea0c`, ordered Excel Q027 | 14 PASS, 10 FAIL, 28 NOT_RUN; 36 original normal exits. Import failures stop dependent banks. This is not Q027 acceptance. |
+| `d727af3ae0ac8c9bbc05b4fb023d19515a56e311`, Excel failure-only diagnostic bank | 0 PASS, 12 FAIL: eight import refusals, one pre-menu construction refusal and three pre-launch refusals. Eight original normal exits are proved; the retained ninth host closed in a separate owned recovery, which does not qualify its original shutdown. |
+
+The Word product has MVID `43765561-bf36-4396-9fbe-1a6786aaa01b`, SHA-256
+`0CCC95305864AB235A088D88C38706039FE4E0BF0AA14E4FC86A8BD30E9303ED`.
+Its scoped receipt is retained in
+`artifacts/q024-real-scope-solidworks-sta-native-20261005/qualification.json`.
+Failed Excel receipts and exact temporary HKCU restoration remain in
+`artifacts/q027-real-scope-solidworks-sta-prepared-20261005/` and
+`artifacts/q027-import-focus-diagnostic-native-20261005/`.
+Their owned workers and tasks were released. Those results apply to their exact
+candidates, not to the new handoff DLL or a complete release.
+
+The complete ordered 52-scenario UserForm matrix remains the outstanding native
+gate: persisted baselines, installed owner import and fresh-process persistence,
+local Git recovery, invalid FRX preflight and the authorized remote workflow.
+It retains the original 10-second Excel exit bound and actual designer review.
+No narrower result closes that gate.
+
 ## Q024 prerequisite gate on main (2026-10-05)
+
+This earlier checkpoint is historical; the current paused candidate and native
+limits are recorded above.
 
 The complete prepared Q024 batch uses clean source
 `22a7af66ec7ad5b934c97eb8858acc26b61a8090` in a frozen worktree.
