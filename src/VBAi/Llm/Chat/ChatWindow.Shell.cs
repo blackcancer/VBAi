@@ -104,12 +104,21 @@ namespace VBAi
         /// <summary>Ouvre l’intégration GitHub pour le document enregistré de la portée courante.</summary>
         /// <param name="sender">Commande GitHub.</param>
         /// <param name="e">Données de l’événement.</param>
-        private void GitHub_Click(object sender, EventArgs e)
+        private async void GitHub_Click(object sender, EventArgs e)
         {
             if (busy) return;
+            await VbeUiTask.Run(async () => { await GitHubOnOwnerAsync(); return true; });
+        }
+
+        private async System.Threading.Tasks.Task GitHubOnOwnerAsync()
+        {
             ChatGitModalDiagnostic diagnostic = null;
             try
             {
+                var owner = GitModalOwner();
+                using (var lease = GitModalSession.TryAcquire(owner))
+                {
+                if (lease == null) return;
                 EnsureCurrentScope();
                 var scope = scopePicker.SelectedItem as MacroScope;
                 if (scope == null || scope.Key.StartsWith("temporary:", StringComparison.Ordinal))
@@ -119,9 +128,10 @@ namespace VBAi
                 var window = new GitWindow(scopeSession.GitProject(scope.Project, nativeScope), nativeScope, scope.Label, settings.GitHubAccount);
                 if (diagnostic == null)
                 {
-                    using (window) ShowModal(window, GitModalOwner());
+                    using (window) await lease.ShowAsync(window, ShowModal);
                 }
-                else diagnostic.RunModal(() => ShowModal(window, GitModalOwner()), window.Dispose);
+                else await diagnostic.RunModalAsync(() => lease.ShowAsync(window, ShowModal), window.Dispose);
+                }
             }
             catch (Exception ex)
             {

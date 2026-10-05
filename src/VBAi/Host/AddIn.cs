@@ -337,10 +337,16 @@ public void OnConnection(object application, int connectMode, object addInInstan
         }
 
         /// <summary>Ouvre l’interface GitHub pour le projet actif enregistré.</summary>
-        private void ShowGitHub()
+        private async void ShowGitHub()
+        {
+            await VbeUiTask.Run(async () => { await ShowGitHubOnOwnerAsync(); return true; });
+        }
+
+        private async System.Threading.Tasks.Task ShowGitHubOnOwnerAsync()
         {
             try
             {
+                if (GitModalSession.HasActiveOwner && GitModalSession.IsActive(VbeOwner())) return;
                 dynamic project = null;
                 try { project = ((dynamic)vbe).ActiveVBProject; }
                 catch (System.IO.DirectoryNotFoundException) { }
@@ -355,9 +361,14 @@ public void OnConnection(object application, int connectMode, object addInInstan
                     throw new InvalidOperationException(UiText.Get("Save the macro before opening GitHub."));
                 var session = CreateEditorSession();
                 string scope = System.IO.Path.GetFullPath(path);
-                using (var dialog = new GitWindow(session.GitProject(path, scope), scope,
-                    (string)project.Name, ReadSettings().GitHubAccount))
-                    ShowModal(dialog, VbeOwner());
+                var owner = VbeOwner();
+                using (var lease = GitModalSession.TryAcquire(owner))
+                {
+                    if (lease == null) return;
+                    using (var dialog = new GitWindow(session.GitProject(path, scope), scope,
+                        (string)project.Name, ReadSettings().GitHubAccount))
+                        await lease.ShowAsync(dialog, ShowModal);
+                }
             }
             catch (Exception ex) { ReportMenuError(ex); }
         }

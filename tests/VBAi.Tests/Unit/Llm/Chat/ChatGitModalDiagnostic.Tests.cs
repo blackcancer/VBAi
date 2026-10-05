@@ -11,7 +11,7 @@ namespace VBAi.Tests.Unit
 {
     /// <summary>Exercises the actual opt-in transaction, deferred dispatch evidence, strict identity and atomic publication without an Office host.</summary>
     [TestClass, TestCategory("Unit"), DoNotParallelize]
-    public sealed class ChatGitModalDiagnosticTests
+    public sealed partial class ChatGitModalDiagnosticTests
     {
         private const string Nonce = "3dbce6bfb1dc49cb9b6c14c450b5e324";
         private static readonly JavaScriptSerializer Json = new JavaScriptSerializer();

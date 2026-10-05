@@ -143,15 +143,37 @@ namespace VBAi
         /// <returns>Tâche terminée après l’opération et la comparaison de suivi.</returns>
         private async Task RunGitAction(string action, string name = null, string text = null, string choice = null, string path = null)
         {
-            await Perform(async () => {
+            if (running || project == null) return;
+            string[] selected = changes.CheckedItems.Cast<ModuleChange>().Where(x => x.Name != null).Select(x => x.Name).ToArray();
+            bool references = changes.CheckedItems.Cast<ModuleChange>().Any(x => x.Name == null);
+            GitModalSession.Request request = null;
+            Func<Task<bool>> execute = async () => {
+            try { await Perform(async () => {
                 var operations = new MacroGitOperations(project, repository) { ImportPreview = ShowImportSummary };
                 if (action == "commit_selected" && !repository.RecoveryPending && displayedLive != null && !project.Capture().SameAs(displayedLive))
                     throw new InvalidOperationException(UiText.Get("The Git/VBA state changed. Read git_status again before making changes."));
                 repository.Progress = ReportProgress;
                 repository.Cancellation = action == "fetch" ? operationCancellation.Token : System.Threading.CancellationToken.None;
                 cancelOperation.Enabled = action == "fetch";
-                string[] selected = changes.CheckedItems.Cast<ModuleChange>().Where(x => x.Name != null).Select(x => x.Name).ToArray();
-                object result = await operations.ExecuteAsync(action, name: name, text: text, choice: choice, path: path, modules: selected, references: changes.CheckedItems.Cast<ModuleChange>().Any(x => x.Name == null));
+                string expectedState = null;
+                if (GitModalSession.RequiresHandoff(action))
+                {
+                    if (Modal && modalSession == null) throw new InvalidOperationException("A modal import requires its owning Git session.");
+                    if (modalSession != null)
+                    {
+                        var live = project.Capture();
+                        expectedState = await Task.Run(() => operations.Revision(live));
+                        request = new GitModalSession.Request(action, name, text, choice, path, selected, references, expectedState, async () => {
+                            var observed = project.Capture();
+                            if (expectedState != await Task.Run(() => operations.Revision(observed)))
+                                throw new InvalidOperationException(UiText.Get("The Git/VBA state changed. Read git_status again before making changes."));
+                        });
+                        await AdmitImport(request);
+                        operations.ImportOwnerPreflight = () => modalSession.RequireImportOwner(request);
+                    }
+                }
+                object result = await operations.ExecuteAsync(action, expectedState, name: name, text: text, choice: choice, path: path,
+                    modules: request == null ? selected : request.Modules, references: references);
                 repository.Cancellation = System.Threading.CancellationToken.None;
                 await Compare();
                 status.Text = (action == "commit" || action == "commit_selected") ? UiText.Get("Local commit created. Use Push to publish it.") :
@@ -159,7 +181,31 @@ namespace VBAi
                     action == "rollback" || action == "checkpoint_restore" ? UiText.Get("VBA restored. Check and save the document.") :
                     repository.PendingMerge != null ? UiText.Get("Merge prepared: resolve conflicts, then click Complete merge.") : UiText.Get("Operation complete: ") + action;
                 if (repository.PendingMerge != null) tabs.SelectedTab = conflictsTab;
-            });
+            }); }
+            catch (Exception error)
+            {
+                operationFailure = operationFailure == null || ReferenceEquals(operationFailure, error) ? error :
+                    new AggregateException("The Git operation and its cleanup both failed.", operationFailure, error);
+                status.Text = operationFailure.Message + " [" + GitFailureDiagnostic.Describe(operationFailure) + "] · " +
+                    UiText.Get("Check the connection, account and Git state, then retry.");
+            }
+            return true;
+            };
+            try
+            {
+                if (modalSession != null) await VbeUiTask.Run(execute);
+                else await execute();
+            }
+            catch (Exception error)
+            {
+                operationFailure = operationFailure == null ? error : new AggregateException(operationFailure, error);
+                throw;
+            }
+            finally
+            {
+                if (request != null && (request.Phase == "Executing" || request.Phase == "Refused"))
+                    request.Complete(operationFailure, PublishHandoffState);
+            }
         }
         /// <summary>Affiche le diff correspondant au changement sélectionné.</summary>
         /// <param name="sender">Liste des changements.</param>
@@ -276,6 +322,7 @@ namespace VBAi
         {
             if (running || project == null) return;
             running = true; operationCancellation = new System.Threading.CancellationTokenSource(); operationProgress.Visible = true; cancelOperation.Visible = true; UpdateButtons(); status.Text = UiText.Get("Operation in progress…");
+            operationFailure = null;
             try {
                 // Lock only the transaction so the chat agent can use Git while this window is idle.
                 if (cache != null) cacheLock = new FileStream(Path.Combine(cache, "session.lock"), FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None);
@@ -287,9 +334,9 @@ namespace VBAi
                 }
                 await action();
             }
-            catch (OperationCanceledException) { status.Text = UiText.Get("Operation cancelled."); }
-            catch (Exception ex) { status.Text = ex.Message + " [" + GitFailureDiagnostic.Describe(ex) + "] · " + UiText.Get("Check the connection, account and Git state, then retry."); }
-            finally { cacheLock?.Dispose(); cacheLock = null; if (repository != null) { repository.Cancellation = System.Threading.CancellationToken.None; repository.Progress = null; } operationCancellation.Dispose(); operationCancellation = null; operationProgress.Visible = false; cancelOperation.Visible = false; cancelOperation.Enabled = false; running = false; UpdateButtons(); }
+            catch (OperationCanceledException error) { operationFailure = error; status.Text = UiText.Get("Operation cancelled."); }
+            catch (Exception ex) { operationFailure = ex; status.Text = ex.Message + " [" + GitFailureDiagnostic.Describe(ex) + "] · " + UiText.Get("Check the connection, account and Git state, then retry."); }
+            finally { FinishOperation(); }
         }
         /// <summary>Recalcule l’activation des commandes selon l’opération, le dépôt et l’état de revue.</summary>
         private void UpdateButtons()
@@ -309,7 +356,8 @@ namespace VBAi
         /// <param name="e">Annulation et données de l’événement de fermeture.</param>
         protected override void OnFormClosing(FormClosingEventArgs e)
         {
-            if (running || githubPane.Busy) { e.Cancel = true; return; }
+            if ((running && !(leavingForImport && modalRequest != null && modalRequest.Phase == "AwaitingModalReturn" &&
+                DialogResult == DialogResult.OK && e.CloseReason == CloseReason.None)) || githubPane.Busy) { e.Cancel = true; return; }
             base.OnFormClosing(e);
         }
         /// <summary>Libère le verrou de cache et les composants du formulaire.</summary>

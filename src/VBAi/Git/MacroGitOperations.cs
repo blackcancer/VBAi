@@ -20,6 +20,8 @@ namespace VBAi
         private FileStream cacheLock;
         /// <summary>Callback facultatif appelé avant l’import pour présenter son résumé.</summary>
         internal Action<string> ImportPreview;
+        /// <summary>Optional read-only modal-owner admission immediately before the existing native mutation boundary.</summary>
+        internal Action ImportOwnerPreflight;
         /// <summary>Résout le répertoire de cache de la portée, notamment pour isoler les tests.</summary>
         internal static Func<string, string> CacheDirectory = MacroGitRepository.ResolveScopeDirectory;
         /// <summary>Crée un coordinateur pour le projet et le dépôt fournis.</summary>
@@ -210,7 +212,7 @@ namespace VBAi
             }
             bool started = false;
             Exception importFailure = null;
-            try { project.Apply(target, expected, () => started = true); }
+            try { project.Apply(target, expected, () => { ImportOwnerPreflight?.Invoke(); started = true; }); }
             catch (Exception error) { importFailure = error; throw; }
             finally
             {

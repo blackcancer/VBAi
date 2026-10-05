@@ -45,7 +45,7 @@ namespace VBAi
         private readonly Func<Identity> observe;
         private readonly Action<string, object> write;
         private readonly List<Exception> errors = new List<Exception>();
-        private bool modalReturned, disposeReturned, postAttempted, queueReturned, callbackEntered, failureAttempted;
+        private bool modalStarted, modalReturned, disposeReturned, postAttempted, queueReturned, callbackEntered, failureAttempted;
         /// <summary>Whether the later dispatcher observation was successfully published for this invocation.</summary>
         internal bool Completed { get; private set; }
         /// <summary>Whether any operation, identity or publication error permanently prevents success.</summary>
@@ -95,8 +95,22 @@ namespace VBAi
         internal void RunModal(Action show, Action dispose)
         {
             if (show == null || dispose == null) throw new ArgumentNullException("Modal dependencies");
-            if (modalReturned || disposeReturned || Failed || postAttempted) throw new InvalidOperationException("One modal invocation only.");
+            if (modalStarted || modalReturned || disposeReturned || Failed || postAttempted) throw new InvalidOperationException("One modal invocation only.");
+            modalStarted = true;
             try { show(); modalReturned = true; Record("ShowModalReturned", false); }
+            catch (Exception error) { AddError(error); }
+            try { dispose(); disposeReturned = true; Record("DisposeReturned", false); }
+            catch (Exception error) { AddError(error); }
+            if (Failed) throw Error;
+        }
+
+        /// <summary>Observes the complete Git session, including any intermediate modal handoff, before disposal.</summary>
+        internal async System.Threading.Tasks.Task RunModalAsync(Func<System.Threading.Tasks.Task> show, Action dispose)
+        {
+            if (show == null || dispose == null) throw new ArgumentNullException("Modal dependencies");
+            if (modalStarted || modalReturned || disposeReturned || Failed || postAttempted) throw new InvalidOperationException("One modal invocation only.");
+            modalStarted = true;
+            try { await show(); modalReturned = true; Record("ShowModalReturned", false); }
             catch (Exception error) { AddError(error); }
             try { dispose(); disposeReturned = true; Record("DisposeReturned", false); }
             catch (Exception error) { AddError(error); }
