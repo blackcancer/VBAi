@@ -208,6 +208,7 @@ namespace VBAi.Tests.Integration
             [DllImport("user32.dll")] private static extern bool IsChild(IntPtr parent, IntPtr child);
             [DllImport("user32.dll")] private static extern bool IsWindow(IntPtr window);
             [DllImport("user32.dll")] private static extern bool IsWindowVisible(IntPtr window);
+            [DllImport("user32.dll", SetLastError = true)] private static extern bool PostMessage(IntPtr window, uint message, IntPtr wparam, IntPtr lparam);
             [DllImport("user32.dll")] private static extern IntPtr GetWindow(IntPtr window, uint command);
             [DllImport("user32.dll")] private static extern IntPtr GetAncestor(IntPtr window, uint flags);
             [DllImport("user32.dll")] private static extern IntPtr GetParent(IntPtr window);
@@ -219,7 +220,6 @@ namespace VBAi.Tests.Integration
             private IntPtr gitPopupHandle;
             private WordChatGitMenuDiscovery.Candidate selectedPopup;
             private SelectionPattern scopeSelection;
-            private WindowPattern gitWindow;
             private WordChatWindowDiscovery.OwnerIdentity modalOwner;
             private WordChatGitMenuDiscovery.OwnerShape exactScopePickerOwner;
             internal WordChatGitAutomation(Context context) { this.context = context; }
@@ -687,7 +687,6 @@ namespace VBAi.Tests.Integration
                     if (git.Current.ProcessId != context.Fixture.ProcessId ||
                         unchecked((uint)git.Current.NativeWindowHandle) != unchecked((uint)context.GitHandle.ToInt64()))
                         throw new InvalidOperationException("The Word Git modal UIA identity differs from its native HWND.");
-                    gitWindow = Pattern<WindowPattern>(git, WindowPattern.Pattern);
                 }
                 if (git == null) throw new TimeoutException("The chat Git action has no observed exact modal; no retry or cleanup.");
                 context.ModalObserved = true;
@@ -700,8 +699,14 @@ namespace VBAi.Tests.Integration
             {
                 Guard(context.GitHandle);
                 RequireSameModalOwner(GetWindow(context.GitHandle, 4));
-                context.Record(new { Phase = "ChatGitCloseIntent", Handle = context.GitHandle.ToInt64() });
-                gitWindow.Close();
+                // Emit one native close to the exact owned modal. The UIA Close
+                // provider returned without destroying this dialog in the frozen
+                // Word qualification; no fallback or second close is permitted.
+                context.Record(new { Phase = "ChatGitCloseIntent", Handle = context.GitHandle.ToInt64(),
+                    Message = "WM_CLOSE", InvocationLimit = 1, FocusChanges = 0 });
+                WordChatModalClose.PostOnce(context.GitHandle,
+                    () => { Guard(context.GitHandle); RequireSameModalOwner(GetWindow(context.GitHandle, 4)); },
+                    window => PostMessage(window, 0x0010, IntPtr.Zero, IntPtr.Zero));
                 var watch = Stopwatch.StartNew();
                 while (watch.ElapsedMilliseconds < 10000)
                 {

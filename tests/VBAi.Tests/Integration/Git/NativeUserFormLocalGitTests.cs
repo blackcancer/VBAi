@@ -259,6 +259,7 @@ namespace VBAi.Tests.Integration
         {
             var snapshot = project.Capture();
             SaveSnapshot(output, name, snapshot);
+            UserFormQualificationFonts.RequireSnapshot(snapshot);
             return snapshot;
         }
 

@@ -60,19 +60,25 @@ namespace VBAi.Tests.Integration
                         const string form = "QualificationForm";
                         VbaGitSnapshot captured = null;
                         IDictionary<string, object> sourceView = null;
+                        IDictionary<string, object> sourceLayout = null;
+                        string savedTarget = Path.Combine(output, "saved-reopened.xlsm");
                         report["Stage"] = "source-native-capture"; WriteReport(output, report);
                         SequentialHost(source => {
                             report["SourcePid"] = source.ProcessId;
                             report["SourceFixtureRoot"] = source.Root;
                             string sourcePath = source.File("explicit-userform-source.xlsm");
-                            source.PrepareGitForm(form, "Synthetic remote form", "USERFORM_" + Guid.NewGuid().ToString("N"), sourcePath);
+                            if (UserFormQualificationFonts.Enabled) source.PrepareGitLayout(form, "LabelButton", sourcePath, persistedBaseline: true);
+                            else source.PrepareGitForm(form, "Synthetic remote form", "USERFORM_" + Guid.NewGuid().ToString("N"), sourcePath);
                             File.Copy(sourcePath, Path.Combine(output, "source-before-import.xlsm"));
                             source.WithGitProject(sourcePath, project => {
                                 captured = project.Capture();
                                 Assert.IsTrue(captured.Manifest.Components.Single(item => item.Name == form).HasResources);
                                 Assert.IsTrue(captured.SameAs(project.Capture()), "Unchanged source revision must be stable before transport.");
                                 SaveSnapshot(output, "source-export", captured);
+                                UserFormQualificationFonts.RequireSnapshot(captured, "LabelButton");
                                 sourceView = source.ReadGitForm(form);
+                                sourceLayout = source.ReadGitLayout(form, "LabelButton");
+                                report["SourceNativeLayout"] = sourceLayout;
                                 source.CaptureGitFormDesigner(form, Path.Combine(output, "source-designer.png"));
                             });
                         }, shutdown => { report["SourceShutdown"] = shutdown; });
@@ -106,11 +112,20 @@ namespace VBAi.Tests.Integration
                             report["TargetFixtureRoot"] = target.Root;
                             Assert.AreNotEqual(report["SourceFixtureRoot"], target.Root, "Distinct owned bootstrap identities are required, independently of PID reuse.");
                             string targetPath = target.File("explicit-userform-target.xlsm");
-                            target.PrepareGitForm(form, "Existing target sentinel", "SENTINEL", targetPath);
+                            if (UserFormQualificationFonts.Enabled)
+                            {
+                                target.PrepareGitLayout(form, "LabelButton", targetPath, persistedBaseline: true);
+                                target.MutateGitLayout(form, "LabelButton", persistedBaseline: true);
+                                // Persist the changed sentinel once before its disk
+                                // backup; later import comparisons never repair it.
+                                target.SaveAndReopenGitLayout(targetPath);
+                            }
+                            else target.PrepareGitForm(form, "Existing target sentinel", "SENTINEL", targetPath);
                             File.Copy(targetPath, Path.Combine(output, "target-before-import.xlsm"));
                             target.WithGitProject(targetPath, project => {
                                 int ownerThread = Thread.CurrentThread.ManagedThreadId;
                                 var before = project.Capture(); SaveSnapshot(output, "target-backup", before);
+                                Assert.IsFalse(captured.SameAs(before), "The target must be a distinct native sentinel before remote import.");
                                 using (var operations = new MacroGitOperations(project, fetchedRepository))
                                 {
                                     ExecuteGuardedImport(() => Await(operations.ExecuteAsync("pull", operations.Revision(before))),
@@ -122,20 +137,58 @@ namespace VBAi.Tests.Integration
                                     SaveSnapshot(output, "imported", project.Capture());
                                 }
                                 AssertExactNativeForm(sourceView, target.ReadGitForm(form));
+                                AssertExactNativeForm(sourceLayout, target.ReadGitLayout(form, "LabelButton"));
                             });
                             report["ImportAndBackupVerified"] = true;
                             report["Stage"] = "helper-save-reopen"; WriteReport(output, report);
                             target.SaveAndReopenGitLayout(targetPath);
                             AssertExactNativeForm(sourceView, target.ReadGitForm(form));
+                            AssertExactNativeForm(sourceLayout, target.ReadGitLayout(form, "LabelButton"));
                             target.WithGitProject(targetPath, project => {
                                 var reopened = project.Capture(); Assert.IsTrue(reopened.SameAs(captured));
                                 SaveSnapshot(output, "reopened", reopened);
                             });
-                            File.Copy(targetPath, Path.Combine(output, "saved-reopened.xlsm"));
+                            File.Copy(targetPath, savedTarget);
                             target.CaptureGitFormDesigner(form, Path.Combine(output, "reopened-designer.png"));
                             report["HelperSaveReopenVerified"] = true;
                         }, shutdown => { report["TargetShutdown"] = shutdown; });
                         report["TargetNormalShutdownVerified"] = true;
+                        string savedHash = ExcelVbeFixture.EmbeddedRawHash(savedTarget);
+                        report["SavedWorkbookSha256"] = savedHash;
+                        report["Stage"] = "fresh-process-read-only-reopen"; WriteReport(output, report);
+                        SequentialHost(fresh => {
+                            Assert.AreNotEqual(report["TargetFixtureRoot"], fresh.Root, "A distinct fresh bootstrap is required after target exit.");
+                            report["FreshPid"] = fresh.ProcessId;
+                            report["FreshFixtureRoot"] = fresh.Root;
+                            bool pending = false;
+                            try
+                            {
+                                pending = true;
+                                fresh.OpenOwnedReadOnlyWorkbook(savedTarget);
+                                pending = false;
+                                fresh.VerifyEmbeddedPersistenceCandidate(
+                                    typeof(VbeSession).Module.ModuleVersionId,
+                                    ExcelVbeFixture.EmbeddedRawHash(typeof(VbeSession).Assembly.Location),
+                                    value => pending = value, proof => report["FreshCandidateProof"] = proof);
+                                Assert.AreEqual(savedHash, ExcelVbeFixture.EmbeddedRawHash(savedTarget));
+                                AssertExactNativeForm(sourceView, fresh.ReadGitForm(form));
+                                AssertExactNativeForm(sourceLayout, fresh.ReadGitLayout(form, "LabelButton"));
+                                fresh.WithGitProject(savedTarget, project => {
+                                    var reopened = project.Capture();
+                                    SaveSnapshot(output, "fresh-process-reopened", reopened);
+                                    UserFormQualificationFonts.RequireSnapshot(reopened, "LabelButton");
+                                    Assert.IsTrue(captured.SameAs(reopened), "Fetched remote import must remain exact in a distinct read-only process.");
+                                });
+                                fresh.CaptureGitFormDesigner(form, Path.Combine(output, "fresh-process-designer.png"));
+                                Assert.AreEqual(savedHash, ExcelVbeFixture.EmbeddedRawHash(savedTarget), "Fresh readback must not save or repair the workbook.");
+                                report["FreshReadOnlyReopenVerified"] = true;
+                                report["FreshSaves"] = 0;
+                                report["FreshImports"] = 0;
+                            }
+                            catch { if (pending) RetainSequentialHost(fresh); throw; }
+                        }, shutdown => { report["FreshShutdown"] = shutdown; });
+                        Assert.AreEqual(savedHash, ExcelVbeFixture.EmbeddedRawHash(savedTarget), "Normal fresh process exit must preserve the saved file.");
+                        report["FreshNormalShutdownVerified"] = true;
                         VerifyRepository(api, manifest, deadline.Token);
                         report["MainUnchanged"] = true;
                         report["DesignerCaptureAcceptance"] = "CAPTURED_PENDING_VISUAL_REVIEW";

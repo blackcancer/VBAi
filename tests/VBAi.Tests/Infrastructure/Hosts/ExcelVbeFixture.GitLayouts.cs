@@ -211,6 +211,12 @@ namespace VBAi.Tests.Integration
                 }
             });
             if (layout == "Image") ReadGitLayoutPicture(form, result);
+            if (UserFormQualificationFonts.Enabled)
+            {
+                var fonts = ReadGitLayoutFonts(form, layout);
+                UserFormQualificationFonts.RequireNative(fonts, layout);
+                foreach (var item in fonts) result.Add(item.Key, item.Value);
+            }
             return result;
         }
 
@@ -308,6 +314,18 @@ namespace VBAi.Tests.Integration
             try
             {
                 ((dynamic)frame).Caption = "Synthetic frame";
+                if (UserFormQualificationFonts.Enabled)
+                {
+                    // Seed once during fixture construction; never repair an imported
+                    // or reopened font to make a qualification comparison pass.
+                    var descriptor = new Dictionary<string, object> {
+                        ["Frame.Font.Name"] = "Tahoma", ["Frame.Font.Size"] = 8.27m,
+                        ["Frame.Font.Weight"] = (short)400, ["Frame.Font.Charset"] = (short)0,
+                        ["Frame.Font.Italic"] = false, ["Frame.Font.Underline"] = false,
+                        ["Frame.Font.Strikethrough"] = false
+                    };
+                    LoadGitFontOnce(frame, "Frame.Font", descriptor, true);
+                }
                 controls = ((dynamic)frame).Controls;
                 multi = ((dynamic)controls).Add("Forms.MultiPage.1", "QualificationMultiPage", true);
                 SetGitLayoutGeometry(multi, 6d, 18d, 220d, 140d);

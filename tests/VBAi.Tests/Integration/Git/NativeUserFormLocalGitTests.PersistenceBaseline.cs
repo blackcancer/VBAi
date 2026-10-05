@@ -79,12 +79,16 @@ namespace VBAi.Tests.Integration
                     string path = host.File("baseline-source.xlsm");
                     host.PrepareGitLayout(form, layout, path, persistedBaseline);
                     before = host.ReadGitLayout(form, layout);
+                    if (UserFormQualificationFonts.Enabled)
+                        host.WithGitProject(path, project => UserFormQualificationFonts.RequireSnapshot(project.Capture()));
                     report["NativePrepared"] = before;
                     File.Copy(path, saved);
                     // PrepareGitLayout already saved once. Reopen closes without Save;
                     // neither export nor a second Save may repair the observed baseline.
                     Assert.AreEqual(0, host.ReopenAndReadProjectProtection(path));
                     sameProcess = host.ReadGitLayout(form, layout);
+                    if (UserFormQualificationFonts.Enabled)
+                        host.WithGitProject(path, project => UserFormQualificationFonts.RequireSnapshot(project.Capture()));
                     report["NativeSameProcessReopen"] = sameProcess;
                     report["SameProcessDifferences"] = DescribeNativeDifferences(before, sameProcess);
                     report["Stage"] = "same-process-observed";
@@ -103,6 +107,8 @@ namespace VBAi.Tests.Integration
                     host.OpenOwnedReadOnlyWorkbook(saved);
                     report["FreshStatus"] = host.Command("status");
                     freshProcess = host.ReadGitLayout(form, layout);
+                    if (UserFormQualificationFonts.Enabled)
+                        host.WithGitProject(saved, project => UserFormQualificationFonts.RequireSnapshot(project.Capture()));
                     report["NativeFreshProcessReopen"] = freshProcess;
                     report["FreshProcessDifferences"] = DescribeNativeDifferences(before, freshProcess);
                     Assert.AreEqual(savedHash, BaselineFileHash(saved), "Read-only reopen/export must preserve the saved file.");
