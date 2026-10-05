@@ -41,6 +41,8 @@ namespace VBAi.Tests.Unit
         [DataRow("Q027Private", "exact.jsonl", "other.jsonl", null, false)]
         [DataRow("Q027Private", "exact.jsonl", null, null, false)]
         [DataRow("Q027Private", null, null, null, false)]
+        [DataRow("Q027Private", " ", " ", null, false)]
+        [DataRow("Q027Private", "exact.jsonl", " ", null, false)]
         [DataRow("Q027Private", "exact.jsonl", "exact.jsonl", "diagnostic.json", false)]
         [DataRow("Q027Private", "exact.jsonl", "other.jsonl", "diagnostic.json", false)]
         public void LaunchIntentIsRecordedOnceOnlyAfterEveryPrivateGuard(
