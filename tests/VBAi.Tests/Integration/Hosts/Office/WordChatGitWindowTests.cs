@@ -246,6 +246,7 @@ namespace VBAi.Tests.Integration
             [DllImport("user32.dll", CharSet = CharSet.Unicode)] private static extern int GetWindowText(IntPtr window, StringBuilder text, int capacity);
             private readonly Context context;
             private AutomationElement chat, scopePicker, gitItem, git;
+            private IntPtr scopePickerHandle;
             private IntPtr gitPopupHandle;
             private WordChatGitMenuDiscovery.Candidate selectedPopup;
             private SelectionPattern scopeSelection;
@@ -433,6 +434,8 @@ namespace VBAi.Tests.Integration
                     pickers[0].Current.ProcessId != context.Fixture.ProcessId)
                     throw new InvalidOperationException("The owned chat scope picker is absent or ambiguous.");
                 scopePicker = pickers[0];
+                scopePickerHandle = UiHandle(scopePicker.Current.NativeWindowHandle);
+                GuardScopePicker();
                 scopeSelection = Pattern<SelectionPattern>(scopePicker, SelectionPattern.Pattern);
                 if (!SelectedLabel(scopeSelection, context.Label))
                 {
@@ -459,7 +462,7 @@ namespace VBAi.Tests.Integration
                     Pattern<SelectionItemPattern>(selected, SelectionItemPattern.Pattern).Select();
                 }
                 var watch = Stopwatch.StartNew();
-                WordChatScopeIdle.Wait(() => Guard(context.ChatHandle), () => new WordChatScopeIdle.Observation {
+                WordChatScopeIdle.Wait(GuardScopePicker, () => new WordChatScopeIdle.Observation {
                     Enabled = scopePicker.Current.IsEnabled,
                     ExactSelection = SelectedLabel(scopeSelection, context.Label),
                     State = Pattern<ExpandCollapsePattern>(scopePicker, ExpandCollapsePattern.Pattern).Current.ExpandCollapseState
@@ -471,10 +474,25 @@ namespace VBAi.Tests.Integration
 
             private void RequireSelectedScope()
             {
-                Guard(context.ChatHandle);
+                GuardScopePicker();
                 if (scopePicker == null || scopeSelection == null || !scopePicker.Current.IsEnabled ||
                     !SelectedLabel(scopeSelection, context.Label))
                     throw new InvalidOperationException("The exact saved Word chat scope changed before Git invocation.");
+            }
+
+            private void GuardScopePicker()
+            {
+                Guard(context.ChatHandle);
+                if (scopePicker == null) throw new InvalidOperationException("The owned Word scope picker is absent.");
+                var current = scopePicker.Current;
+                IntPtr actual = UiHandle(current.NativeWindowHandle);
+                uint processId; uint threadId = GetWindowThreadProcessId(actual, out processId);
+                WordChatScopeIdle.RequirePicker(scopePickerHandle.ToInt64(), context.Fixture.ProcessId, context.Scope.ThreadId,
+                    new WordChatScopeIdle.PickerIdentity {
+                        Handle = actual.ToInt64(), NativeProcessId = (int)processId, NativeThreadId = threadId,
+                        UiProcessId = current.ProcessId, WithinChat = IsChild(context.ChatHandle, actual),
+                        IsComboBox = current.ControlType == ControlType.ComboBox, AutomationId = current.AutomationId
+                    });
             }
 
             private WordChatWindowDiscovery.OwnerIdentity ReadModalOwner()
@@ -523,10 +541,11 @@ namespace VBAi.Tests.Integration
                     context.Fixture.ProcessId, context.Scope.ThreadId);
             }
 
-            private static bool SelectedLabel(SelectionPattern selection, string label)
+            private bool SelectedLabel(SelectionPattern selection, string label)
             {
                 var items = selection.Current.GetSelection();
-                return items.Length == 1 && string.Equals(items[0].Current.Name, label, StringComparison.Ordinal);
+                return items.Length == 1 && items[0].Current.ProcessId == context.Fixture.ProcessId &&
+                    string.Equals(items[0].Current.Name, label, StringComparison.Ordinal);
             }
 
             internal void OpenChatOptionsAndFindGit()

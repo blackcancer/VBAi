@@ -10,6 +10,37 @@ namespace VBAi.Tests.Unit
     [TestClass]
     public sealed class WordChatScopeIdleTests
     {
+        [DataTestMethod]
+        [DataRow("exact")]
+        [DataRow("zero")]
+        [DataRow("replaced")]
+        [DataRow("native-process")]
+        [DataRow("ui-process")]
+        [DataRow("thread")]
+        [DataRow("parent")]
+        [DataRow("type")]
+        [DataRow("id")]
+        [DataRow("missing")]
+        [DataRow("expected-zero")]
+        public void PickerGuardRequiresTheFrozenNativeAndUiIdentity(string change)
+        {
+            var actual = new WordChatScopeIdle.PickerIdentity {
+                Handle = 41, NativeProcessId = 10, UiProcessId = 10, NativeThreadId = 20,
+                WithinChat = true, IsComboBox = true, AutomationId = "scopePicker"
+            };
+            if (change == "zero") actual.Handle = 0;
+            if (change == "replaced") actual.Handle = 42;
+            if (change == "native-process") actual.NativeProcessId = 11;
+            if (change == "ui-process") actual.UiProcessId = 11;
+            if (change == "thread") actual.NativeThreadId = 21;
+            if (change == "parent") actual.WithinChat = false;
+            if (change == "type") actual.IsComboBox = false;
+            if (change == "id") actual.AutomationId = "replacement";
+            if (change == "missing") actual = null;
+            if (change == "exact") WordChatScopeIdle.RequirePicker(41, 10, 20, actual);
+            else Assert.ThrowsException<InvalidOperationException>(() => WordChatScopeIdle.RequirePicker(change == "expected-zero" ? 0 : 41, 10, 20, actual));
+        }
+
         private static WordChatScopeIdle.Observation Sample(bool enabled = true, bool exact = true,
             ExpandCollapseState state = ExpandCollapseState.Collapsed)
         { return new WordChatScopeIdle.Observation { Enabled = enabled, ExactSelection = exact, State = state }; }

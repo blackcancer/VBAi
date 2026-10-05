@@ -6,6 +6,25 @@ namespace VBAi.Tests.Integration
     /// <summary>Observes an already selected Word scope and closes an expanded picker at most once.</summary>
     internal static class WordChatScopeIdle
     {
+        /// <summary>Current native and UI Automation identity of the frozen picker.</summary>
+        internal sealed class PickerIdentity
+        {
+            internal long Handle;
+            internal int NativeProcessId, UiProcessId;
+            internal uint NativeThreadId;
+            internal bool WithinChat, IsComboBox;
+            internal string AutomationId;
+        }
+
+        /// <summary>Rejects picker replacement, foreign ownership or a changed control shape.</summary>
+        internal static void RequirePicker(long expectedHandle, int processId, uint threadId, PickerIdentity actual)
+        {
+            if (actual == null || expectedHandle == 0 || processId <= 0 || threadId == 0 ||
+                actual.Handle != expectedHandle || actual.NativeProcessId != processId || actual.UiProcessId != processId ||
+                actual.NativeThreadId != threadId || !actual.WithinChat || !actual.IsComboBox || actual.AutomationId != "scopePicker")
+                throw new InvalidOperationException("The exact owned Word chat scope picker identity changed.");
+        }
+
         /// <summary>One read-only sample of the exact owned scope picker after selection.</summary>
         internal sealed class Observation
         {
