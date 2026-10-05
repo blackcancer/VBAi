@@ -7482,3 +7482,24 @@ normal Close/Quit, unchanged product bytes, restored settings/COM registration,
 closed proxy/backend and private desktop release are separately verified;
 original worker exit 1 remains the campaign outcome. Evidence is retained under
 `artifacts/q028-office-09` and `artifacts/q028-office-10`.
+
+At harness `67585b6`, `q028-office-11` passed **519 selected managed tests**,
+including the native transcript reader checks, and the three real prerequisites.
+The native Excel bank failed before any Q028 source mutation or Send: its sole
+unsaved workbook was ready, but the terminal native project inventory contained
+two identically named projects. The factory threw before transferring fixture
+ownership to the scenario, so Excel PID 117460 remained alive and restoration
+was deferred. The other five Office banks were NOT_RUN. This is a failed native
+bank; it does not qualify the revised transcript observer.
+
+On 2026-10-05, a separate identity-guarded read-only recovery observed that the
+same original process had one native project, matching the sole unchanged
+`Classeur1` by IUnknown identity. That later observation demonstrates that the
+duplicate count settled; it does not establish its duration or cause. One
+Close(false) and one Quit returned, and the recovery-held process handle observed
+exit 0. The original helper then released its retained desktop and observed its
+original worker's exit 1. A separate scheduled-context recovery restored and
+verified the six fields and COM registry backup, then stopped only the owned
+headless backend. All failed receipts remain intact under `q028-office-11` and
+`q028-recovery-office11-*`. The first read-only recovery failed its COM Item
+lookup with zero Close/Quit entries; the subsequent exact method lookup passed.

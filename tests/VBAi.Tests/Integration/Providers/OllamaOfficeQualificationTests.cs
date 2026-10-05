@@ -44,7 +44,10 @@ namespace VBAi.Tests.Integration
             ExceptionDispatchInfo failure = null;
             try
             {
-                host = OllamaOfficeHost.Start(kind);
+                host = OllamaOfficeHost.Start(kind, assigned => {
+                    host = assigned; report["ProcessId"] = assigned.ProcessId;
+                    report["NativeEvidenceRoot"] = assigned.Root; flush();
+                });
                 report["ProcessId"] = host.ProcessId; report["Project"] = host.Project; report["NativeEvidenceRoot"] = host.Root;
                 var status = host.Data("status");
                 Assert.AreEqual(typeof(VbeSession).Module.ModuleVersionId.ToString("D"), status["AssemblyModuleVersionId"]);
@@ -127,7 +130,7 @@ namespace VBAi.Tests.Integration
             }
             finally
             {
-                if (ui != null && ui.SentUnsettled)
+                if ((ui != null && ui.SentUnsettled) || (host != null && (host.NativeDispatchUnsettled || host.IsRetained)))
                 {
                     report["HostRetained"] = true;
                     report["State"] = "FAILED_OR_UNCERTAIN";

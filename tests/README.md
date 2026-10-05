@@ -1423,6 +1423,17 @@ read-only diagnosis and a separately guarded close of the unchanged saved seed
 after an independent disconnected-add-in observation. Recovery never qualifies
 the failed bank.
 
+After the single seed Close and new-workbook Add, the Excel bank observes native
+project readiness without repeating either action. It verifies the exact sole
+unsaved workbook and matches its VBProject against the native collection by
+balanced IUnknown identity reads. Both that collection and a terminal bridge
+inventory must expose the same unambiguous project within the declared bound.
+The assigned fixture is transferred to the outer scenario before validation;
+settled structural failures receive one normal teardown, while an unclassified
+dispatch retains the original host. The bootstrap probe also supports an exact
+unsaved-fixture failure before any chat action, with a separate read-only receipt
+required before normal Close/Quit. It does not close edited or foreign documents.
+
 Recovery must read and restore settings/registration in the same scheduled
 execution context as the campaign. Identical user SIDs and paths alone do not
 prove identical views: `tools/probes/Read-Q028ProcessContext.ps1` provides a

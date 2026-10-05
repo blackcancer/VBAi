@@ -1,5 +1,7 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.Threading;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace VBAi.Tests.Integration
@@ -18,30 +20,56 @@ namespace VBAi.Tests.Integration
         internal Action Retain;
         private IDisposable fixture;
         private bool retained;
+        internal bool NativeDispatchUnsettled { get; private set; }
+        internal bool IsRetained => retained;
         private static readonly List<OllamaOfficeHost> Retained = new List<OllamaOfficeHost>();
 
-        internal static OllamaOfficeHost Start(string kind)
+        internal static OllamaOfficeHost Start(string kind, Action<OllamaOfficeHost> assigned)
         {
             var result = new OllamaOfficeHost();
+            Action<OllamaOfficeHost> publish = value => {
+                var retainFixture = value.Retain;
+                value.Retain = () => { if (value.retained) return; value.retained = true; Retained.Add(value); retainFixture(); };
+                assigned(value); // Transfer exact fixture ownership before any structural validation.
+            };
             if (kind == "Excel")
             {
                 var excel = ExcelVbeFixture.Start();
                 result.fixture = excel; result.Root = excel.Root; result.ProcessId = excel.ProcessId;
                 result.Retain = () => excel.PreserveForDiagnosticRecovery = true;
+                publish(result);
                 result.Data = (command, pairs) => {
                     var request = new Dictionary<string, object> { ["Command"] = command };
                     if (result.Project != null) request["Project"] = result.Project;
                     for (int i = 0; i < pairs.Length; i += 2) request[(string)pairs[i]] = pairs[i + 1];
-                    var reply = excel.Command(request);
+                    var reply = result.TerminalExcel(excel, request);
                     Assert.IsNotNull(reply, "No terminal bridge response; do not retry.");
                     Assert.AreEqual(true, reply["Ok"], command + ": " + reply["Error"]);
                     return VbeBridgeClient.Object(reply["Data"]);
                 };
-                var rows = (object[])excel.Command("list_projects")["Data"];
-                Assert.AreEqual(1, rows.Length, "The disposable Excel instance must expose exactly one project.");
-                result.Project = Convert.ToString(VbeBridgeClient.Object(rows[0])["Name"]);
+                var watch = Stopwatch.StartNew(); int observations = 0;
+                while (true)
+                {
+                    result.NativeDispatchUnsettled = true;
+                    var identity = excel.ReadOwnedProjectIdentity();
+                    result.NativeDispatchUnsettled = false;
+                    var rows = (object[])result.TerminalExcel(excel, new Dictionary<string, object> { ["Command"] = "list_projects" })["Data"];
+                    string name = Convert.ToString(identity["ProjectName"]);
+                    bool ready = Convert.ToInt32(identity["NativeProjectCount"]) == 1 &&
+                        Convert.ToInt32(identity["OwnedIdentityMatches"]) == 1 && rows.Length == 1 &&
+                        Convert.ToString(VbeBridgeClient.Object(rows[0])["Name"]) == name;
+                    bool expired = watch.Elapsed.TotalSeconds >= 30 || observations + 1 >= 128;
+                    excel.WriteQualificationEvidence("q028-project-readiness.json", new {
+                        State = ready && !expired ? "READY" : (expired ? "FAILED_TIMEOUT" : "OBSERVING"), excel.ProcessId, Identity = identity,
+                        BridgeProjectCount = rows.Length, ObservationCount = ++observations,
+                        ElapsedMilliseconds = watch.ElapsedMilliseconds, CloseOrAddReplayed = false });
+                    if (ready && !expired) { result.Project = name; break; }
+                    if (expired)
+                        throw new TimeoutException("The exact owned workbook's native project did not become unambiguous; no Close/Add or source mutation will be replayed.");
+                    System.Windows.Forms.Application.DoEvents(); Thread.Sleep(100);
+                }
                 result.Items = command => {
-                    var reply = excel.Command(new Dictionary<string, object> { ["Command"] = command, ["Project"] = result.Project });
+                    var reply = result.TerminalExcel(excel, new Dictionary<string, object> { ["Command"] = command, ["Project"] = result.Project });
                     Assert.IsNotNull(reply); Assert.AreEqual(true, reply["Ok"]);
                     return Array.ConvertAll((object[])reply["Data"], VbeBridgeClient.Object);
                 };
@@ -54,6 +82,7 @@ namespace VBAi.Tests.Integration
                 result.Items = outlook.Items;
                 // Outlook's existing containment retains unsettled native commands itself.
                 result.Retain = () => { };
+                publish(result);
             }
             else
             {
@@ -62,16 +91,28 @@ namespace VBAi.Tests.Integration
                 result.Project = office.Project; result.Data = office.Data;
                 result.Items = command => office.Items(command);
                 result.Retain = () => office.NativeExecutionUnsettled = true;
+                publish(result);
             }
-            var retainFixture = result.Retain;
-            result.Retain = () => { result.retained = true; Retained.Add(result); retainFixture(); };
+            result.NativeDispatchUnsettled = true;
             var projects = result.Items("list_projects");
+            result.NativeDispatchUnsettled = false;
             var matched = Array.FindAll(projects, row => Convert.ToString(row["Name"]) == result.Project ||
                 string.Equals(VbeProjectHostPath.FromFields(row), result.Project, StringComparison.OrdinalIgnoreCase));
             Assert.AreEqual(1, matched.Length, "The exact owned project must have one scope label.");
             result.projectPath = VbeProjectHostPath.FromFields(matched[0]);
             result.projectName = Convert.ToString(matched[0]["Name"]);
             return result;
+        }
+
+        private IDictionary<string, object> TerminalExcel(ExcelVbeFixture excel, IDictionary<string, object> request)
+        {
+            NativeDispatchUnsettled = true;
+            var reply = excel.Command(request);
+            if (reply == null || !reply.ContainsKey("Ok") || !(reply["Ok"] is bool))
+                throw new InvalidOperationException("No classified terminal bridge response; retain the exact fixture.");
+            NativeDispatchUnsettled = false;
+            Assert.AreEqual(true, reply["Ok"], Convert.ToString(reply["Error"]));
+            return reply;
         }
 
         internal void TrackOutlookModule(string name)

@@ -5,7 +5,7 @@ if($PSVersionTable.PSEdition -ne 'Desktop'){throw 'Desktop PowerShell required'}
 $output=if($OutputPath){$OutputPath}else{Join-Path $EvidenceRoot 'recovery-restoration.json'}
 if(Test-Path -LiteralPath $output){throw 'Recovery restoration is one-shot'}
 $shutdown=Get-Content (Join-Path $EvidenceRoot 'bootstrap-shutdown.json') -Raw -Encoding UTF8|ConvertFrom-Json
-if($shutdown.State -ne 'BOOTSTRAP_FAILURE_HOST_NORMAL_EXIT' -or $shutdown.ExitCode -ne 0){throw 'Owned host normal-exit receipt required'}
+if($shutdown.State -notin @('BOOTSTRAP_FAILURE_HOST_NORMAL_EXIT','OWNED_FAILURE_HOST_NORMAL_EXIT') -or $shutdown.ExitCode -ne 0){throw 'Owned host normal-exit receipt required'}
 if(@(Get-Process EXCEL,WINWORD,POWERPNT,MSACCESS,MSPUB,OUTLOOK -ErrorAction SilentlyContinue).Count){throw 'Office hosts remain; restoration refused'}
 $plan=Get-Content (Join-Path $EvidenceRoot 'q028-plan.json') -Raw -Encoding UTF8|ConvertFrom-Json
 $intent=Get-Content (Join-Path $EvidenceRoot 'settings-intent.json') -Raw -Encoding UTF8|ConvertFrom-Json
