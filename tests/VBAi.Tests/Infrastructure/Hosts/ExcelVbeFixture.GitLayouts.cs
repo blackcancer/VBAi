@@ -100,10 +100,21 @@ namespace VBAi.Tests.Integration
                 Layout = layout, Form = form, ProjectPath = path, ExpectedFrameSize = 8.27m,
                 NativeFonts = native, BeforeNativeRead = directory, AfterNativeRead = afterDirectory,
                 NativeReadPreservedSnapshot = before.SameAs(after), Changes = after.Changes(before),
-                BeforeBindings = before.FormFonts(before.Manifest.Components.Single(item => item.Name == form)),
-                AfterBindings = after.FormFonts(after.Manifest.Components.Single(item => item.Name == form)),
+                BeforeBindings = DescribeGitFontBindings(before, form),
+                AfterBindings = DescribeGitFontBindings(after, form),
+                FrameFontAssignments = 0, Construction = "NativeInheritedFontNoReplacement",
                 FontRepairs = 0, GitImports = 0, MacroExecutions = 0
             });
+        }
+
+        /// <summary>Projects internal binding fields into durable JSON properties without losing their owner or descriptor.</summary>
+        internal static object[] DescribeGitFontBindings(VbaGitSnapshot snapshot, string form)
+        {
+            var bindings = snapshot.FormFonts(snapshot.Manifest.Components.Single(item => item.Name == form));
+            return bindings == null ? null : bindings.Select(binding => (object)new {
+                binding.OwnerPath, binding.Type,
+                DescriptorHex = BitConverter.ToString(binding.Descriptor).Replace("-", "")
+            }).ToArray();
         }
 
         /// <summary>Loads a synthetic bitmap through the production command in Excel, without crossing a process-local GDI handle.</summary>
@@ -349,18 +360,10 @@ namespace VBAi.Tests.Integration
             try
             {
                 ((dynamic)frame).Caption = "Synthetic frame";
-                if (UserFormQualificationFonts.Enabled)
-                {
-                    // Seed once during fixture construction; never repair an imported
-                    // or reopened font to make a qualification comparison pass.
-                    var descriptor = new Dictionary<string, object> {
-                        ["Frame.Font.Name"] = "Tahoma", ["Frame.Font.Size"] = 8.27m,
-                        ["Frame.Font.Weight"] = (short)400, ["Frame.Font.Charset"] = (short)0,
-                        ["Frame.Font.Italic"] = false, ["Frame.Font.Underline"] = false,
-                        ["Frame.Font.Strikethrough"] = false
-                    };
-                    LoadGitFontOnce(frame, "Frame.Font", descriptor, true);
-                }
+                // The native source's inherited Frame font is already fractional.
+                // Replacing it with an external StdFont changes the source before
+                // import. Qualification reads and asserts the native default; it
+                // never seeds or repairs it through an owner Font assignment.
                 controls = ((dynamic)frame).Controls;
                 multi = ((dynamic)controls).Add("Forms.MultiPage.1", "QualificationMultiPage", true);
                 SetGitLayoutGeometry(multi, 6d, 18d, 220d, 140d);
