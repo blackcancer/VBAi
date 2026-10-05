@@ -63,20 +63,37 @@ namespace VBAi.Tests.Integration
                     finally { Release(control); Release(controls); }
                 });
             if (layout == "Image") InstallGitLayoutPicture(form);
-            if (UserFormQualificationFonts.Enabled && layout == "FrameMultiPage")
-                CaptureGitFontSeedEvidence(form, layout, path, "before-save");
-            ((dynamic)workbook).Save();
-            if (UserFormQualificationFonts.Enabled && layout == "FrameMultiPage")
-                CaptureGitFontSeedEvidence(form, layout, path, "after-save");
             // Qualification on the exact saved designer must begin after native
             // persistence. Independent baseline trials proved that initial geometry,
             // PNG representation and AddItem runtime rows can change without any
             // Git import. Never ignore those differences in snapshot comparison.
+            PersistGitLayoutWithEvidence(UserFormQualificationFonts.Enabled, persistedBaseline, layout,
+                () => CaptureGitFormDesigner(form, File("layout-construction-designer.png")),
+                phase => CaptureGitFontSeedEvidence(form, layout, path, phase),
+                () => ((dynamic)workbook).Save(),
+                () => Assert.AreEqual(0, ReopenAndReadProjectProtection(path)));
+        }
+
+        /// <summary>Materializes the real native designer before any qualified font observation and one Save.</summary>
+        internal static void PersistGitLayoutWithEvidence(bool qualifyFonts, bool persistedBaseline, string layout,
+            Action renderDesigner, Action<string> captureFontSeed, Action save, Action reopen)
+        {
+            bool frameEvidence = qualifyFonts && layout == "FrameMultiPage";
+            if (save == null) throw new ArgumentNullException(nameof(save));
+            if (qualifyFonts && renderDesigner == null) throw new ArgumentNullException(nameof(renderDesigner));
+            if (frameEvidence && captureFontSeed == null) throw new ArgumentNullException(nameof(captureFontSeed));
+            if (persistedBaseline && reopen == null) throw new ArgumentNullException(nameof(reopen));
+            // Controlled native probes establish that displaying the initial designer
+            // creates the exact inherited Frame 8.27 resource. Font reads and export
+            // alone leave it at 8.25. Persist that real UI baseline without a setter.
+            if (qualifyFonts) renderDesigner();
+            if (frameEvidence) captureFontSeed("before-save");
+            save();
+            if (frameEvidence) captureFontSeed("after-save");
             if (persistedBaseline)
             {
-                Assert.AreEqual(0, ReopenAndReadProjectProtection(path));
-                if (UserFormQualificationFonts.Enabled && layout == "FrameMultiPage")
-                    CaptureGitFontSeedEvidence(form, layout, path, "after-reopen");
+                reopen();
+                if (frameEvidence) captureFontSeed("after-reopen");
             }
         }
 
@@ -102,7 +119,7 @@ namespace VBAi.Tests.Integration
                 NativeReadPreservedSnapshot = before.SameAs(after), Changes = after.Changes(before),
                 BeforeBindings = DescribeGitFontBindings(before, form),
                 AfterBindings = DescribeGitFontBindings(after, form),
-                FrameFontAssignments = 0, Construction = "NativeInheritedFontNoReplacement",
+                FrameFontAssignments = 0, Construction = "NativeInheritedFontRenderedBeforeSave",
                 FontRepairs = 0, GitImports = 0, MacroExecutions = 0
             });
         }
