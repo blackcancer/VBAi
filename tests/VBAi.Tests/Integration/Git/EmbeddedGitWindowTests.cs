@@ -108,7 +108,8 @@ namespace VBAi.Tests.Integration
             bool nativePending = false;
             try
             {
-                context.Fixture = ExcelVbeFixture.StartOwnedWithTrace(Path.Combine(context.Output, "unused-scalar-trace.jsonl"));
+                context.Fixture = ExcelVbeFixture.StartOwnedWithTrace(ExcelVbeFixture.SelectOwnedTracePath(
+                    Path.Combine(context.Output, "unused-scalar-trace.jsonl")));
                 context.Record(new { Phase = "OwnedStaReady", context.Fixture.ProcessId, OwnerSta = Thread.CurrentThread.ManagedThreadId });
                 nativePending = true;
                 var status = context.Fixture.Command("status"); Assert.IsNotNull(status);

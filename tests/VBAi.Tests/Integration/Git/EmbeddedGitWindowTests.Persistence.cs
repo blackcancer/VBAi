@@ -47,7 +47,8 @@ namespace VBAi.Tests.Integration
                 context.Record(new { Phase = "FreshProcessLaunchIntent", Path = context.Scope.Path,
                     OriginalRoot = originalRoot, OriginalProcessId = context.Fixture.ProcessId, OriginalStartedUtc = originalStart,
                     SavedWorkbookSha256 = savedHash, ImportReplayAttempts = 0 });
-                fresh = ExcelVbeFixture.StartOwnedWithTrace(Path.Combine(context.Output, "fresh-process-unused-trace.jsonl"));
+                fresh = ExcelVbeFixture.StartOwnedWithTrace(ExcelVbeFixture.SelectOwnedTracePath(
+                    Path.Combine(context.Output, "fresh-process-unused-trace.jsonl")));
                 EmbeddedGitPersistenceContract.RequireFreshIdentity(originalRoot, originalStart, context.Fixture.ProcessId,
                     fresh.Root, fresh.EmbeddedProcessStartedUtc, fresh.ProcessId);
                 observePending(true);

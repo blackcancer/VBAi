@@ -222,7 +222,8 @@ namespace VBAi.Tests.Integration
         {
             string root = ExcelOwnedBootstrapPlan.RequireLocalAbsolutePath(Environment.GetEnvironmentVariable("VBAi_EXCEL_RESULTS"));
             Directory.CreateDirectory(root);
-            var host = ExcelVbeFixture.StartOwnedWithTrace(Path.Combine(root, "unused-inspection-" + Guid.NewGuid().ToString("N") + ".jsonl"));
+            var host = ExcelVbeFixture.StartOwnedWithTrace(ExcelVbeFixture.SelectOwnedTracePath(
+                Path.Combine(root, "unused-inspection-" + Guid.NewGuid().ToString("N") + ".jsonl")));
             Exception failure = null;
             try { scenario(host); }
             catch (Exception error)
