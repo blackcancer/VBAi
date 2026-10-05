@@ -189,9 +189,21 @@ namespace VBAi
                                     });
                                     if (System.Runtime.InteropServices.Marshal.IsComObject((object)imported) &&
                                         (observation == null || !observation.IsAfterInitialCapture || observation.FormName != next.Name))
-                                        FormFontRestoration.Restore((object)imported, formFonts[next.Name],
+                                    {
+                                        // Explicit diagnostic observations preserve their declared original
+                                        // order. Ordinary imports retain fonts that already match and first
+                                        // initialize the actual native designer when its resources differ.
+                                        var bindings = formFonts[next.Name];
+                                        if (observation == null || observation.FormName != next.Name)
+                                            bindings = ImportedFormMaterialization.Prepare(target, next, bindings,
+                                                () => CaptureImportedForm(next.Name, (object)imported),
+                                                () => ImportedFormMaterialization.Materialize(CheckedProject(), (object)imported,
+                                                    () => RequireImportedForm(next.Name, (object)imported)),
+                                                () => RequireImportedForm(next.Name, (object)imported));
+                                        FormFontRestoration.Restore((object)imported, bindings,
                                             () => RequireImportedForm(next.Name, (object)imported),
                                             observation != null && observation.FormName == next.Name ? observation : null);
+                                    }
                                 }
                             }
                         }
@@ -276,6 +288,25 @@ namespace VBAi
                     if (value != null && System.Runtime.InteropServices.Marshal.IsComObject(value))
                         System.Runtime.InteropServices.Marshal.ReleaseComObject(value);
                 }, primary);
+            }
+        }
+
+        /// <summary>Exports only the verified imported component without reading or assigning font properties.</summary>
+        private VbaGitSnapshot CaptureImportedForm(string name, object imported)
+        {
+            RequireImportedForm(name, imported);
+            using (var scratch = new Scratch())
+            {
+                string file = Path.Combine(scratch.Path, name + ".frm");
+                ((dynamic)imported).Export(file);
+                RequireImportedForm(name, imported);
+                string resource = Path.Combine(scratch.Path, name + ".frx");
+                var component = new VbaGitComponent { Name = name, Type = 3, HasResources = File.Exists(resource) };
+                var files = new Dictionary<string, byte[]> {
+                    { component.FileName, VbaGitSnapshot.Utf8.GetBytes(Normalize(File.ReadAllText(file, NativeEncoding))) }
+                };
+                if (component.HasResources) files.Add(name + ".frx", File.ReadAllBytes(resource));
+                return new VbaGitSnapshot(new VbaGitManifest { Components = new[] { component }, References = "" }, files);
             }
         }
 
