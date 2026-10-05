@@ -1,5 +1,7 @@
 using System;
 using System.Diagnostics;
+using System.Collections.Generic;
+using System.Globalization;
 using System.Drawing;
 using System.Linq;
 using System.Runtime.InteropServices;
@@ -115,7 +117,7 @@ namespace VBAi
         private static void Render(object project, object window, object editor, object main, Action revalidate)
         {
             revalidate();
-            IntPtr target = ReadTarget(project, window, editor, main);
+            IntPtr target = ReadTarget(project, window, editor, main, "before-first-render");
             Rectangle native;
             if (!GetWindowRect(target, out native)) throw new InvalidOperationException("The imported designer bounds are unavailable.");
             int width = checked(native.Right - native.Left), height = checked(native.Bottom - native.Top);
@@ -128,7 +130,7 @@ namespace VBAi
                 try
                 {
                     revalidate();
-                    if (ReadTarget(project, window, editor, main) != target)
+                    if (ReadTarget(project, window, editor, main, "immediately-before-PrintWindow") != target)
                         throw new InvalidOperationException("The imported designer render target changed.");
                     if (!PrintWindow(target, dc, 2))
                         throw new InvalidOperationException("The imported designer could not be initialized by native rendering.");
@@ -136,31 +138,70 @@ namespace VBAi
                 finally { graphics.ReleaseHdc(dc); }
             }
             revalidate();
-            if (ReadTarget(project, window, editor, main) != target)
+            if (ReadTarget(project, window, editor, main, "after-PrintWindow") != target)
                 throw new InvalidOperationException("The imported designer changed during native initialization.");
         }
 
         /// <summary>Refuses a foreign, hidden or inactive designer before acquiring its drawing surface.</summary>
-        private static IntPtr ReadTarget(object project, object window, object editor, object main)
+        private static IntPtr ReadTarget(object project, object window, object editor, object main, string stage)
         {
             object activeProject = null, activeWindow = null;
             try
             {
                 activeProject = ((dynamic)editor).ActiveVBProject;
                 activeWindow = ((dynamic)editor).ActiveWindow;
-                return SelectTarget(new IntPtr(Convert.ToInt64(((dynamic)main).HWnd)),
-                    new IntPtr(Convert.ToInt64(((dynamic)window).HWnd)),
-                    VbeProjectHostPath.SameProject(project, activeProject), VbeProjectHostPath.SameProject(window, activeWindow),
-                    (bool)Convert.ToBoolean(((dynamic)main).Visible) && (bool)Convert.ToBoolean(((dynamic)window).Visible),
-                    (int)Convert.ToInt32(((dynamic)window).Type),
-                    (uint)Process.GetCurrentProcess().Id, handle => {
-                        uint pid; GetWindowThreadProcessId(handle, out pid); return pid;
-                    });
+                IntPtr root = new IntPtr(Convert.ToInt64(((dynamic)main).HWnd));
+                IntPtr designer = new IntPtr(Convert.ToInt64(((dynamic)window).HWnd));
+                bool projectMatches = VbeProjectHostPath.SameProject(project, activeProject);
+                bool designerMatches = VbeProjectHostPath.SameProject(window, activeWindow);
+                bool mainVisible = Convert.ToBoolean(((dynamic)main).Visible);
+                bool? designerVisible = mainVisible ? (bool?)Convert.ToBoolean(((dynamic)window).Visible) : null;
+                int type = Convert.ToInt32(((dynamic)window).Type);
+                // Read native ownership only if the unchanged selector evaluates
+                // it. Reuse that observation in the refusal, never query again to
+                // manufacture evidence after the failed guard.
+                var owners = new Dictionary<IntPtr, uint>();
+                var observations = new Dictionary<IntPtr, string>();
+                Func<IntPtr, uint> owner = handle => {
+                    uint pid;
+                    if (owners.TryGetValue(handle, out pid)) return pid;
+                    uint thread = GetWindowThreadProcessId(handle, out pid);
+                    int error = thread == 0 ? Marshal.GetLastWin32Error() : 0;
+                    owners.Add(handle, pid);
+                    observations.Add(handle, string.Format(CultureInfo.InvariantCulture,
+                        "HWND={0},Pid={1},Thread={2},Error={3}", handle.ToInt64(), pid, thread, error));
+                    return pid;
+                };
+                return SelectObservedTarget(stage, root, designer, projectMatches, designerMatches,
+                    mainVisible, designerVisible, type, (uint)Process.GetCurrentProcess().Id, owner,
+                    () => observations.Count == 0 ? "not-evaluated" : string.Join("|",
+                        observations.OrderBy(pair => pair.Key.ToInt64()).Select(pair => pair.Value)));
             }
             finally
             {
                 if (activeWindow != null && Marshal.IsComObject(activeWindow)) Marshal.ReleaseComObject(activeWindow);
                 if (activeProject != null && Marshal.IsComObject(activeProject)) Marshal.ReleaseComObject(activeProject);
+            }
+        }
+
+        /// <summary>Preserves the native refusal and reports only the operands observed at that validation stage.</summary>
+        internal static IntPtr SelectObservedTarget(string stage, IntPtr root, IntPtr designer, bool projectMatches,
+            bool designerMatches, bool mainVisible, bool? designerVisible, int designerType, uint expectedPid,
+            Func<IntPtr, uint> owner, Func<string> ownershipObservation)
+        {
+            try
+            {
+                return SelectTarget(root, designer, projectMatches, designerMatches, mainVisible && designerVisible == true,
+                    designerType, expectedPid, owner);
+            }
+            catch (InvalidOperationException failure)
+            {
+                string context = string.Format(CultureInfo.InvariantCulture,
+                    " Stage={0};Apartment={1};ExpectedPid={2};Root={3};Designer={4};ProjectMatches={5};" +
+                    "DesignerMatches={6};MainVisible={7};DesignerVisible={8};DesignerType={9};NativeOwners={10}.",
+                    stage, Thread.CurrentThread.GetApartmentState(), expectedPid, root.ToInt64(), designer.ToInt64(),
+                    projectMatches, designerMatches, mainVisible, designerVisible.HasValue ? designerVisible.Value.ToString() : "not-evaluated", designerType, ownershipObservation());
+                throw new InvalidOperationException(failure.Message + context, failure);
             }
         }
 
@@ -185,6 +226,6 @@ namespace VBAi
         /// <summary>Synchronously renders the owned window into an in-memory surface without storing an image.</summary>
         [DllImport("user32.dll")] private static extern bool PrintWindow(IntPtr window, IntPtr dc, uint flags);
         /// <summary>Reads native process ownership without activating another window.</summary>
-        [DllImport("user32.dll")] private static extern uint GetWindowThreadProcessId(IntPtr window, out uint pid);
+        [DllImport("user32.dll", SetLastError = true)] private static extern uint GetWindowThreadProcessId(IntPtr window, out uint pid);
     }
 }

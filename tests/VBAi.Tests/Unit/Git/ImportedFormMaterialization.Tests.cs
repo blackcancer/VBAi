@@ -188,6 +188,60 @@ namespace VBAi.Tests.Unit
             Assert.AreSame(failure, thrown);
         }
 
+        /// <summary>Separates both visibility failures without changing the guard or adding an ownership read.</summary>
+        [TestMethod, DataRow(false, null), DataRow(true, false), DataRow(true, null)]
+        public void DiagnosticRefusalSeparatesObservedVisibilityWithoutNativeRequery(bool main, bool? designer)
+        {
+            Sta(() => {
+                int reads = 0, descriptions = 0;
+                var failure = Assert.ThrowsException<InvalidOperationException>(() => ImportedFormMaterialization.SelectObservedTarget(
+                    "before-first-render", new IntPtr(11), IntPtr.Zero, true, true, main, designer, 1, 42,
+                    _ => { reads++; return 42; }, () => { descriptions++; return "not-evaluated"; }));
+                Assert.AreEqual(0, reads); Assert.AreEqual(1, descriptions);
+                StringAssert.Contains(failure.Message, "MainVisible=" + main + ";DesignerVisible=" + (designer.HasValue ? designer.Value.ToString() : "not-evaluated"));
+                StringAssert.Contains(failure.Message, "NativeOwners=not-evaluated");
+                Assert.IsInstanceOfType(failure.InnerException, typeof(InvalidOperationException));
+            });
+        }
+
+        /// <summary>Identifies every prepared render validation stage while preserving an inactive-window refusal.</summary>
+        [TestMethod, DataRow("before-first-render"), DataRow("immediately-before-PrintWindow"), DataRow("after-PrintWindow")]
+        public void DiagnosticInactiveDesignerKeepsTheStageAndRefusesBeforeNativeOwnership(string stage)
+        {
+            Sta(() => {
+                var failure = Assert.ThrowsException<InvalidOperationException>(() => ImportedFormMaterialization.SelectObservedTarget(
+                    stage, new IntPtr(11), IntPtr.Zero, true, false, true, true, 1, 42,
+                    _ => throw new AssertFailedException("Unexpected ownership read"), () => "not-evaluated"));
+                StringAssert.Contains(failure.Message, "Stage=" + stage + ";Apartment=STA");
+                StringAssert.Contains(failure.Message, "ProjectMatches=True;DesignerMatches=False");
+            });
+        }
+
+        /// <summary>A foreign root reports only the ownership observation used in its original rejection.</summary>
+        [TestMethod]
+        public void DiagnosticForeignRootPreservesExactlyOneOwnerReadAndOriginalFailure()
+        {
+            Sta(() => {
+                int reads = 0;
+                var failure = Assert.ThrowsException<InvalidOperationException>(() => ImportedFormMaterialization.SelectObservedTarget(
+                    "before-first-render", new IntPtr(11), new IntPtr(12), true, true, true, true, 1, 42,
+                    value => { reads++; Assert.AreEqual(new IntPtr(11), value); return 99; },
+                    () => { Assert.AreEqual(1, reads); return "HWND=11,Pid=99,Thread=123,Error=0"; }));
+                Assert.AreEqual(1, reads);
+                StringAssert.Contains(failure.Message, "NativeOwners=HWND=11,Pid=99,Thread=123,Error=0");
+                StringAssert.StartsWith(failure.InnerException.Message, "Only the exact active owned form designer");
+            });
+        }
+
+        /// <summary>Successful selection keeps its established target and never evaluates failure-only diagnostics.</summary>
+        [TestMethod]
+        public void DiagnosticSuccessfulSelectionDoesNotCollectOrPublishARefusalDescription()
+        {
+            Sta(() => Assert.AreEqual(new IntPtr(12), ImportedFormMaterialization.SelectObservedTarget(
+                "immediately-before-PrintWindow", new IntPtr(11), new IntPtr(12), true, true, true, true, 1, 42,
+                _ => 42, () => throw new AssertFailedException("Unexpected refusal description"))));
+        }
+
         /// <summary>Constructs a validated single-form snapshot from retained synthetic resources.</summary>
         private static VbaGitSnapshot Snapshot(byte[] resource)
         {
