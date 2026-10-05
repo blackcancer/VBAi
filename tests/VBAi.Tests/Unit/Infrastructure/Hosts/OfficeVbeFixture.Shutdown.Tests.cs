@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Reflection;
 using System.Web.Script.Serialization;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -362,6 +363,24 @@ namespace VBAi.Tests.Unit
             }
             finally { Environment.SetEnvironmentVariable("VBAi_TEST_WORD_EXIT_WAIT_BOUND_MS", prior); }
         }
+        [DataTestMethod][DataRow(false)][DataRow(true)]
+        public void FirstWordDocumentCloseRejectionOrUncertaintyNeverEntersQuitOrRetriesCleanup(bool timeout)
+        {
+            WithFakeFixture((fixture, application, document, process, root) => {
+                document.CloseError = timeout ? (Exception)new TimeoutException("uncertain original Close") :
+                    new System.Runtime.InteropServices.COMException("original Word Close rejected", unchecked((int)0x80010001));
+                fixture.WaitForOwnedExit = (_, __) => { Assert.Fail("Quit never entered; no manufactured exit observation"); return false; };
+                Assert.ThrowsException<AssertFailedException>(() => fixture.Dispose());
+                Assert.AreEqual(1, document.CloseCount); Assert.AreEqual(0, application.QuitCount);
+                Assert.AreSame(process, Field(fixture, "ownedProcess")); Assert.AreEqual(true, Field(fixture, "hostTeardownRefused"));
+                var life = (IDictionary<string, object>)Read(Path.Combine(root, "shutdown-lifecycle.json"))["Lifecycle"];
+                Assert.AreEqual(0, life["QuitEntries"]); Assert.AreEqual("NOT_ENTERED", life["QuitOutcome"]);
+                Assert.AreEqual(false, life["ProcessExitObserved"]); Assert.AreEqual(true, life["OwnershipRetained"]);
+                Assert.ThrowsException<AssertFailedException>(() => fixture.Dispose());
+                Assert.AreEqual(1, document.CloseCount); Assert.AreEqual(0, application.QuitCount);
+                StringAssert.Contains(string.Join(";", ((object[])Read(Path.Combine(root, "qualification.json"))["Failures"]).Select(Convert.ToString)), document.CloseError.Message);
+            });
+        }
         private static void WithFakeFixture(Action<OfficeVbeFixture, FakeApplication, FakeDocument, Process, string> action)
         {
             string root = Path.Combine(Path.GetTempPath(), "VBAi-OwnedShutdown-" + Guid.NewGuid().ToString("N"));
@@ -389,6 +408,6 @@ namespace VBAi.Tests.Unit
         private static void SetProperty(object target, string name, object value) => target.GetType().GetProperty(name, BindingFlags.Instance | BindingFlags.NonPublic).SetValue(target, value);
         private static IDictionary<string, object> Read(string path) => (IDictionary<string, object>)new JavaScriptSerializer().DeserializeObject(File.ReadAllText(path));
         public sealed class FakeApplication { public int QuitCount; public Exception QuitError; public Action OnQuit; public void Quit(int option) { QuitCount++; OnQuit?.Invoke(); if (QuitError != null) throw QuitError; } }
-        public sealed class FakeDocument { public int CloseCount; public void Close(int option) { CloseCount++; } }
+        public sealed class FakeDocument { public int CloseCount; public Exception CloseError; public void Close(int option) { CloseCount++; if (CloseError != null) throw CloseError; } }
     }
 }

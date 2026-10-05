@@ -140,72 +140,12 @@ namespace VBAi.Tests.Integration
         }
 
         [STATestMethod]
-        public void CorruptFrxRefusesBeforeReplacingOwnedFormOrReportsRecovery()
+        [DataRow("Missing")]
+        [DataRow("Empty")]
+        [DataRow("SignatureCorrupt")]
+        public void CorruptFrxRefusesBeforeReplacingOwnedFormOrReportsRecovery(string corruption)
         {
-            if (Environment.GetEnvironmentVariable("VBAi_RUN_USERFORM_CORRUPTION_TESTS") != "1")
-                Assert.Inconclusive("Separate explicit disposable-form corruption diagnostic opt-in required.");
-            string output = Environment.GetEnvironmentVariable("VBAi_TEST_USERFORM_GIT_OUTPUT");
-            Assert.IsTrue(!string.IsNullOrWhiteSpace(output) && Path.IsPathRooted(output));
-            output = Path.Combine(output, "corruption"); Directory.CreateDirectory(output);
-            var report = new Dictionary<string, object> { ["Stage"] = "preflight", ["RemoteMutation"] = false,
-                ["AssemblyMvid"] = typeof(VbeSession).Module.ModuleVersionId.ToString("D"), ["Corruption"] = "Empty existing FRX companion" };
-            var previousContext = SynchronizationContext.Current;
-            using (var dispatcher = new Control())
-            {
-                dispatcher.CreateControl(); SynchronizationContext.SetSynchronizationContext(new WindowsFormsSynchronizationContext());
-                try
-                {
-                    ExcelVbeFixture.Run(host => {
-                        report["Pid"] = host.ProcessId;
-                        string path = host.File("corruption-sentinel.xlsm"); const string form = "QualificationForm";
-                        host.PrepareGitForm(form, "Preserve this sentinel", "CORRUPTION_SENTINEL", path);
-                        File.Copy(path, Path.Combine(output, "sentinel-before-import.xlsm"));
-                        host.WithGitProject(path, project => {
-                            var before = project.Capture(); SaveSnapshot(output, "backup-export", before);
-                            var files = before.Serialize(); files[form + ".frx"] = new byte[0];
-                            VbaGitSnapshot corrupt;
-                            try { corrupt = VbaGitSnapshot.Read(files); }
-                            catch (InvalidOperationException)
-                            {
-                                Assert.IsTrue(project.Capture().SameAs(before)); report["PreflightRejected"] = true;
-                                report["ChangedBeforeRecovery"] = false; return;
-                            }
-                            report["PreflightRejected"] = false;
-                            var repository = NewRepository(Path.Combine(output, "diagnostic.git"), "qualification-corrupt-local-only",
-                                "https://github.com/blackcancer/vbai-qualification-20260929203712-7267b1e6.git", null);
-                            string checkpoint = repository.Checkpoint(corrupt, "Local-only empty FRX diagnostic").Id;
-                            Exception importFailure = null;
-                            using (var operations = new MacroGitOperations(project, repository))
-                            {
-                                report["Stage"] = "corrupt-import-once-backup-prepared-by-production"; WriteReport(output, report);
-                                try { Await(operations.ExecuteAsync("checkpoint_restore", operations.Revision(before), name: checkpoint)); }
-                                catch (Exception error) { importFailure = error; report["ImportError"] = error.ToString(); }
-                                report["RecoveryPending"] = repository.RecoveryPending;
-                                var backup = repository.Read(repository.Resolve(MacroGitRepository.Backup));
-                                report["BackupVerified"] = backup != null && backup.SameAs(before);
-                                var actual = project.Capture();
-                                bool changed = !actual.SameAs(before); report["ChangedBeforeRecovery"] = changed;
-                                SaveSnapshot(output, "actual-after-attempt", actual); WriteReport(output, report);
-                                if (repository.RecoveryPending)
-                                {
-                                    var recorded = repository.Read(repository.Resolve(MacroGitRepository.AfterImport));
-                                    Assert.IsTrue(recorded != null && recorded.SameAs(actual), "Unknown current state; recovery was not attempted.");
-                                    Assert.IsTrue(backup != null && backup.SameAs(before), "Backup mismatch; recovery was not attempted.");
-                                    // Explicit recovery of the measured post-import state, never a retry of the corrupt import.
-                                    Await(operations.ExecuteAsync("rollback", operations.Revision(actual)));
-                                    report["ExplicitRecoveryVerified"] = project.Capture().SameAs(before);
-                                    Assert.AreEqual(true, report["ExplicitRecoveryVerified"]);
-                                }
-                                Assert.IsNotNull(importFailure, "Corrupt resource import was accepted; preflight is insufficient.");
-                                Assert.IsFalse(changed, "Corrupt FRX changed the live project before recovery. Recoverability does not satisfy refusal-before-overwrite.");
-                            }
-                        });
-                    });
-                    report["NormalShutdownVerified"] = true; report["Stage"] = "PASS";
-                }
-                catch (Exception error) { report["Failure"] = error.ToString(); throw; }
-                finally { WriteReport(output, report); SynchronizationContext.SetSynchronizationContext(previousContext); }
-            }
+            AssertCorruptCompanionRejectedByProductionRestore(corruption);
         }
 
         private static MacroGitRepository NewRepository(string path, string branch, string remote, string account)

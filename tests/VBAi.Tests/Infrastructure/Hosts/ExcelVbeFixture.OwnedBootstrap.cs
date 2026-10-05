@@ -17,6 +17,46 @@ namespace VBAi.Tests.Integration
         private Func<string> ownedImagePath;
         private IsolatedTestDesktop.NativeChild privateDesktopChild;
 
+        /// <summary>Selects the inherited private-desktop trace or preserves the caller's main-desktop trace.</summary>
+        internal static string SelectOwnedTracePath(string customTrace, string desktop, string inheritedTrace)
+        {
+            return string.IsNullOrWhiteSpace(desktop) ? customTrace :
+                ExcelOwnedBootstrapPlan.RequireLocalAbsolutePath(inheritedTrace);
+        }
+
+        internal static string SelectOwnedTracePath(string customTrace)
+        {
+            return SelectOwnedTracePath(customTrace, Environment.GetEnvironmentVariable("VBAi_TEST_DESKTOP_NAME"),
+                Environment.GetEnvironmentVariable(VbeInspectionTrace.EnvironmentName));
+        }
+
+        /// <summary>Refuses unsupported private-child settings before durable launch intent is recorded.</summary>
+        internal static void RecordLaunchIntentAfterPrivateGuards(string desktop, string tracePath,
+            string inheritedTrace, string pathVisibilityManifest, Action recordIntent)
+        {
+            if (recordIntent == null) throw new ArgumentNullException(nameof(recordIntent));
+            if (!string.IsNullOrWhiteSpace(desktop))
+            {
+                if (pathVisibilityManifest != null)
+                    throw new InvalidOperationException("Per-child path visibility is not supported by this private-desktop bootstrap.");
+                if (string.IsNullOrWhiteSpace(inheritedTrace) || string.IsNullOrWhiteSpace(tracePath) ||
+                    !string.Equals(inheritedTrace, tracePath, StringComparison.Ordinal))
+                    throw new InvalidOperationException("Private Excel must inherit the exact frozen trace path.");
+            }
+            recordIntent();
+        }
+
+        /// <summary>Requires the owned Excel window on the observed launch thread's desktop.</summary>
+        internal static void RequireOwnedWindowDesktop(string configuredPrivateDesktop,
+            string launchThreadDesktop, string applicationWindowDesktop)
+        {
+            if (string.IsNullOrWhiteSpace(launchThreadDesktop) || string.IsNullOrWhiteSpace(applicationWindowDesktop) ||
+                !string.Equals(launchThreadDesktop, applicationWindowDesktop, StringComparison.OrdinalIgnoreCase) ||
+                (!string.IsNullOrWhiteSpace(configuredPrivateDesktop) &&
+                 !string.Equals(configuredPrivateDesktop, applicationWindowDesktop, StringComparison.OrdinalIgnoreCase)))
+                throw new InvalidOperationException("The owned Excel window desktop differs from its launch thread or configured private desktop.");
+        }
+
         /// <summary>Explicit environment-controlled launch used only by the scalar diagnostic pages.</summary>
         internal static ExcelVbeFixture StartOwnedWithTrace(string tracePath, string pathVisibilityManifest = null)
         {
@@ -34,6 +74,9 @@ namespace VBAi.Tests.Integration
             string executable = ExcelOwnedBootstrapPlan.ResolveExecutable();
             string desktop = Environment.GetEnvironmentVariable("VBAi_TEST_DESKTOP_NAME");
             if (!string.IsNullOrWhiteSpace(desktop)) IsolatedTestDesktop.RequireCurrent(desktop);
+            uint launchThread = IsolatedTestDesktop.GetCurrentThreadId();
+            string launchDesktop = IsolatedTestDesktop.DesktopName(launchThread);
+            string inputDesktop = IsolatedTestDesktop.InputDesktopName();
             string output = Environment.GetEnvironmentVariable("VBAi_EXCEL_RESULTS");
             string parent = ExcelOwnedBootstrapPlan.RequireLocalAbsolutePath(string.IsNullOrWhiteSpace(output)
                 ? Path.Combine(Path.GetTempPath(), "VBAi-VSTest") : output);
@@ -45,6 +88,8 @@ namespace VBAi.Tests.Integration
                 ["ExecutableFileVersion"] = FileVersionInfo.GetVersionInfo(executable).FileVersion,
                 ["Seed"] = seed, ["EnvironmentName"] = VbeInspectionTrace.EnvironmentName,
                 ["TracePath"] = tracePath, ["StartAttempts"] = 0, ["ExistingExcelProcessIds"] = existingIds,
+                ["Desktop"] = launchDesktop, ["LaunchThreadId"] = launchThread,
+                ["LaunchThreadDesktop"] = launchDesktop, ["InputDesktopAtPreflight"] = inputDesktop,
                 ["ExpectedAssemblyMvid"] = typeof(VbeSession).Module.ModuleVersionId.ToString("D"),
                 ["BootstrapCloseAttempts"] = 0, ["BootstrapQuitAttempts"] = 0, ["ForceTerminationAttempts"] = 0,
                 ["StartupFileLoadingSuppressed"] = true
@@ -72,16 +117,14 @@ namespace VBAi.Tests.Integration
                 Assert.AreEqual(launch["ExecutableFileVersion"], FileVersionInfo.GetVersionInfo(executable).FileVersion,
                     "Excel executable identity changed after preflight; no launch is permitted.");
                 fixture.RecordStartup("ExplicitLaunchPrepared", existingIds);
-                launch["Phase"] = "LaunchIntent"; launch["StartAttempts"] = 1; record();
+                RecordLaunchIntentAfterPrivateGuards(desktop, tracePath,
+                    Environment.GetEnvironmentVariable(VbeInspectionTrace.EnvironmentName), pathVisibilityManifest,
+                    () => { launch["Phase"] = "LaunchIntent"; launch["StartAttempts"] = 1; record(); });
                 if (string.IsNullOrWhiteSpace(desktop)) fixture.ownedProcess = Process.Start(info);
                 else
                 {
                     // The private child inherits the worker's exact trace opt-in. Unsupported
-                    // per-child diagnostics are refused rather than silently omitted.
-                    if (pathVisibilityManifest != null)
-                        throw new InvalidOperationException("Per-child path visibility is not supported by this private-desktop bootstrap.");
-                    if (!string.Equals(Environment.GetEnvironmentVariable(VbeInspectionTrace.EnvironmentName), tracePath, StringComparison.Ordinal))
-                        throw new InvalidOperationException("Private Excel must inherit the exact frozen trace path.");
+                    // per-child diagnostics were refused before launch intent.
                     fixture.privateDesktopChild = IsolatedTestDesktop.Launch(executable,
                         new[] { "/x", "/automation", seed }, Path.GetDirectoryName(seed), desktop);
                     if (fixture.privateDesktopChild.Wait(0))
@@ -92,6 +135,7 @@ namespace VBAi.Tests.Integration
                 }
                 if (fixture.ownedProcess == null) throw new InvalidOperationException("Process.Start returned no owned process; no COM activation fallback.");
                 IntPtr retainedHandle = fixture.ownedProcess.Handle;
+                if (string.IsNullOrWhiteSpace(desktop)) launch["OriginalLaunchHandle"] = retainedHandle.ToInt64();
                 fixture.ownedImagePath = () => ExcelOwnedProcessImage.Read(retainedHandle);
                 fixture.ProcessId = fixture.ownedProcess.Id;
                 string processStart = fixture.ownedProcess.StartTime.ToUniversalTime().ToString("o");
@@ -116,14 +160,14 @@ namespace VBAi.Tests.Integration
                 if (fixture.application == null) throw new InvalidOperationException("The owned EXCEL7 document could not be attached; retain process and evidence.");
                 dynamic excel = fixture.application;
                 uint actualPid;
-                GetWindowThreadProcessId(new IntPtr(Convert.ToInt64(excel.Hwnd)), out actualPid);
+                uint windowThread = GetWindowThreadProcessId(new IntPtr(Convert.ToInt64(excel.Hwnd)), out actualPid);
+                string actualDesktop = IsolatedTestDesktop.DesktopName(windowThread);
+                launch["ApplicationWindowThreadId"] = windowThread;
+                launch["ApplicationWindowDesktop"] = actualDesktop;
+                RequireOwnedWindowDesktop(desktop, launchDesktop, actualDesktop);
                 if (!string.IsNullOrWhiteSpace(desktop))
                 {
-                    uint windowThread = GetWindowThreadProcessId(new IntPtr(Convert.ToInt64(excel.Hwnd)), out actualPid);
-                    string actualDesktop = IsolatedTestDesktop.DesktopName(windowThread);
-                    Assert.AreEqual(desktop, actualDesktop, "The exact owned Excel window must remain on its inactive desktop.");
                     IsolatedTestDesktop.RequireCurrent(desktop);
-                    launch["ApplicationWindowDesktop"] = actualDesktop;
                 }
                 ExcelOwnedBootstrapPlan.VerifyAttachedIdentity(fixture.ProcessId, executable, processStart, (int)actualPid,
                     fixture.ownedImagePath(), fixture.ownedProcess.StartTime.ToUniversalTime().ToString("o"));
@@ -150,6 +194,7 @@ namespace VBAi.Tests.Integration
                 Assert.AreEqual(typeof(VbeSession).Module.ModuleVersionId.ToString("D"), state["AssemblyModuleVersionId"]);
                 fixture.RecordStartup("Ready", existingIds, status);
                 launch["LoadedAssemblyMvid"] = state["AssemblyModuleVersionId"]; launch["Phase"] = "Ready"; record();
+                fixture.ArmAddInShutdownObservation(windowThread, state);
                 return fixture;
             }
             catch (Exception primary)

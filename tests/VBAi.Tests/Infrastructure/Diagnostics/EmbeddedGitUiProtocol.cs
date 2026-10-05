@@ -49,6 +49,34 @@ namespace VBAi.Tests.Integration
         internal static bool IsTerminal(bool idle, bool busyObserved, string before, string after)
             => idle && (busyObserved || !string.Equals(before, after, StringComparison.Ordinal));
 
+        internal static string[] ReadSession(string description)
+        {
+            string[] fields = (description ?? "").Split('/'); Guid parsed;
+            if (fields.Length != 6 || fields[0] != "VBAi.GitSession" || fields[1] != "1" ||
+                !Guid.TryParseExact(fields[2], "N", out parsed) ||
+                (fields[3] != "none" && !Guid.TryParseExact(fields[3], "N", out parsed)))
+                throw new InvalidOperationException("Exact Git session correlation is absent.");
+            if (fields[3] == "none" && (fields[4] != "none" || fields[5] != "Idle"))
+                throw new InvalidOperationException("An idle Git session cannot claim an operation.");
+            return fields;
+        }
+
+        internal static bool HandoffTerminal(string expectedSession, string previousOperation, string expectedAction,
+            string description, ref string observedOperation, out bool success)
+        {
+            string[] state = ReadSession(description); success = false;
+            if (state[2] != expectedSession) throw new InvalidOperationException("A different Git session appeared during handoff.");
+            if (state[3] == previousOperation || state[3] == "none") return false;
+            if (state[4] != expectedAction || observedOperation != null && observedOperation != state[3])
+                throw new InvalidOperationException("The one delivered Git operation changed during handoff.");
+            observedOperation = state[3];
+            if (state[5] == "Succeeded") { success = true; return true; }
+            if (state[5] == "Failed") return true;
+            if (state[5] != "AwaitingModalReturn" && state[5] != "Executing" && state[5] != "Refused")
+                throw new InvalidOperationException("Unknown Git handoff phase.");
+            return false;
+        }
+
         internal static bool MustRetainOwner(bool nativePending, bool menuEmitted, bool modalClosed)
             => nativePending || menuEmitted && !modalClosed;
 

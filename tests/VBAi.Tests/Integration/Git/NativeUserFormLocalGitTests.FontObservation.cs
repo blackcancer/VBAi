@@ -88,9 +88,9 @@ namespace VBAi.Tests.Integration
                     using (var sourceFonts = retainSource ? host.CaptureGitSourceFonts(form, layout, report) : null)
                     {
                         host.WithGitProject(path, project => {
-                            var before = Capture(project, output, "before");
+                            var before = Capture(project, host, layout, output, "before");
                             host.MutateGitLayout(form, layout, persistedBaseline: true);
-                            var changed = Capture(project, output, "changed");
+                            var changed = Capture(project, host, layout, output, "changed");
                             Assert.IsFalse(before.SameAs(changed), "The single Apply must have a real native source change to undo.");
                             report["Stage"] = "one-native-import";
                             report["NativeImports"] = 1;
@@ -119,7 +119,7 @@ namespace VBAi.Tests.Integration
                                 {
                                     if (retainSource) host.RestoreGitSourceFonts(form, layout, sourceFonts);
                                     else host.RestoreGitLayoutPersistedFonts(form, layout, fontBefore, distinctObject);
-                                    var withoutGetters = Capture(project, output, "after-persisted-font-before-getters");
+                                    var withoutGetters = Capture(project, host, layout, output, "after-persisted-font-before-getters");
                                     report["ExactSnapshotBeforeFontGetter"] = before.SameAs(withoutGetters);
                                     write();
                                 }
@@ -129,7 +129,7 @@ namespace VBAi.Tests.Integration
                                 report["NativeFontsAfterExplicitRestoration"] = fontAfter;
                                 report["FontDifferencesAfterExplicitRestoration"] = DescribeNativeDifferences(fontBefore, fontAfter);
                             }
-                            var observed = Capture(project, output, "after-font-observation");
+                            var observed = Capture(project, host, layout, output, "after-font-observation");
                             report["ExactSnapshotAfterFontRead"] = before.SameAs(observed);
                             report["RemainingChangedFiles"] = observed.Changes(before);
                             report["NativeAfter"] = host.ReadGitLayout(form, layout);

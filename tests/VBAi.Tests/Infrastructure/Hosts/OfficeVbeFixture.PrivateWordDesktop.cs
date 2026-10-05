@@ -49,7 +49,7 @@ namespace VBAi.Tests.Integration
 
         private void BootstrapPrivateWordDesktop(string desktopName)
         {
-            IsolatedTestDesktop.RequireCurrent(desktopName);
+            RequireWordBootstrapDesktop(desktopName);
             string expectedHash = Environment.GetEnvironmentVariable("VBAi_TEST_WORD_EXE_SHA256");
             string executable = RequireExactWordExecutable(Environment.GetEnvironmentVariable("VBAi_TEST_WORD_EXE"),
                 expectedHash, File.Exists, HashOwnedFile);
@@ -57,22 +57,24 @@ namespace VBAi.Tests.Integration
             WriteMacroFreeSeed(seed);
             string seedHash = HashOwnedFile(seed);
             // /a prevents automatic loading of Normal/global templates before NativeOM attachment.
-            // Use one documented switch; splash windows remain on the inactive desktop.
+            // Use one documented switch on the explicitly selected desktop.
             // The only file argument is the freshly created macro-free DOCX in this owned results directory.
-            privateWordChild = IsolatedTestDesktop.Launch(executable, WordPrivateArguments(seed), Root, desktopName);
+            mainWordExecutable = mainWordDesktop ? executable : null;
+            privateWordChild = mainWordDesktop ? IsolatedTestDesktop.LaunchMain(executable, WordPrivateArguments(seed), Root) :
+                IsolatedTestDesktop.Launch(executable, WordPrivateArguments(seed), Root, desktopName);
             ProcessId = privateWordChild.ProcessId;
-            PreparePrivateWordLaunch(desktopName, privateWordChild.ThreadId,
-                () => PersistPrivateWordLaunch(seed, seedHash, executable, expectedHash, desktopName),
-                () => {
+            Action persist = () => PersistPrivateWordLaunch(seed, seedHash, executable, expectedHash, desktopName);
+            Action capture = () => {
                     Assert.IsFalse(privateWordChild.Wait(0), "Original Word exited before its identity capture.");
                     CaptureOwnedProcess();
+                    mainWordBirth = mainWordDesktop ? ownedProcess.StartTime.ToUniversalTime().ToString("o") : null;
                     Assert.AreEqual(ProcessId, ownedProcess.Id);
                     Assert.AreEqual(executable, ExcelOwnedProcessImage.Read(privateWordChild.ProcessHandle), true);
                     Assert.IsFalse(privateWordChild.Wait(0), "Original Word exited during its identity capture.");
-                    steps.Add(new { Phase = "PrivateWordOriginalProcessCaptured", Identity = shutdownEvidence.Record });
+                    steps.Add(new { Phase = mainWordDesktop ? "MainWordOriginalProcessCaptured" : "PrivateWordOriginalProcessCaptured", Identity = shutdownEvidence.Record });
                     FlushAdapterEvidence();
-                },
-                () => {
+                };
+            Action inventory = () => {
                     var wordProcesses = Process.GetProcessesByName("WINWORD");
                     try
                     {
@@ -80,18 +82,21 @@ namespace VBAi.Tests.Integration
                         Assert.AreEqual(ProcessId, wordProcesses[0].Id);
                     }
                     finally { foreach (var process in wordProcesses) process.Dispose(); }
-                },
+                };
+            Action attach = () => AttachOnlyLaunchedWordNativeObjectModel(seed, desktopName);
+            if (mainWordDesktop) PrepareMainWordLaunch(persist, capture, inventory, RequireMainWordOriginal, attach);
+            else PreparePrivateWordLaunch(desktopName, privateWordChild.ThreadId, persist, capture, inventory,
                 () => IsolatedTestDesktop.ReadThreadDesktop(privateWordChild.ThreadId),
                 observation => {
                     steps.Add(new { Phase = "PrivateWordPrimaryThreadObservation", Observation = observation,
                         PlacementProved = false, ActualDocumentUiDesktopRequired = true });
                     FlushAdapterEvidence();
                 },
-                () => AttachOnlyLaunchedWordNativeObjectModel(seed, desktopName));
+                attach);
             string observedSeedHash = RequireUnchangedOpenWordSeed(seed, seedHash);
             owned = true;
             privateWordSeed = document;
-            steps.Add(new { ApplicationOwnershipVerifiedBeforeMutation = true, Method = "LaunchedPrivateWordNativeObjectModel",
+            steps.Add(new { ApplicationOwnershipVerifiedBeforeMutation = true, Method = mainWordDesktop ? "LaunchedMainWordNativeObjectModel" : "LaunchedPrivateWordNativeObjectModel",
                 ProcessId, LaunchThreadId = privateWordChild.ThreadId, Desktop = desktopName,
                 SeedPath = seed, SeedSha256 = observedSeedHash, Executable = executable,
                 ExecutableSha256 = expectedHash.ToUpperInvariant(), ForceTermination = false });
@@ -99,7 +104,7 @@ namespace VBAi.Tests.Integration
 
         private void PersistPrivateWordLaunch(string seed, string seedHash, string executable, string hash, string desktop)
         {
-            var receipt = new { Phase = "PrivateWordCreateProcessReturned", ProcessId,
+            var receipt = new { Phase = mainWordDesktop ? "MainWordCreateProcessReturned" : "PrivateWordCreateProcessReturned", ProcessId,
                 LaunchThreadId = privateWordChild.ThreadId,
                 OriginalLaunchProcessHandle = privateWordChild.ProcessHandle.ToInt64(),
                 Desktop = desktop, Executable = executable, ExecutableSha256 = hash,
@@ -212,7 +217,12 @@ namespace VBAi.Tests.Integration
         private IntPtr[] LaunchedWordDocumentWindows(string desktop)
         {
             return CollectPrivateWordDocumentWindows((uint)ProcessId,
-                callback => IsolatedTestDesktop.InventoryWindows(desktop, callback),
+                callback => {
+                    if (!mainWordDesktop) { IsolatedTestDesktop.InventoryWindows(desktop, callback); return; }
+                    var windows = ObserveMainWord(IntPtr.Zero, false, false);
+                    foreach (var window in windows.Windows) if (!callback(new IntPtr(window.Handle))) break;
+                    RequireMainWordOriginal();
+                },
                 (root, callback) => {
                     Exception failure = null;
                     EnumChildWindows(root, (child, unused) => {
@@ -256,38 +266,45 @@ namespace VBAi.Tests.Integration
                 documentHandle => ObservePrivateWordWindowReadiness(documentHandle, desktopName));
             uint pid; uint uiThread = GetWindowThreadProcessId(documentWindow, out pid);
             Assert.AreEqual((uint)ProcessId, pid);
-            Assert.AreEqual(desktopName, IsolatedTestDesktop.DesktopName(uiThread), true,
+            if (mainWordDesktop) RequireMainWordWindow(documentWindow, true, "OpusApp");
+            else Assert.AreEqual(desktopName, IsolatedTestDesktop.DesktopName(uiThread), true,
                 "The actual Word document UI thread is outside the exact private desktop.");
             object native = null, app = null, documents = null, seed = null, active = null, window = null;
             IntPtr seedUnknown = IntPtr.Zero, activeUnknown = IntPtr.Zero;
             try
             {
-                IsolatedTestDesktop.RequireCurrent(desktopName);
+                RequireWordBootstrapDesktop(desktopName);
                 RequirePrivateWordDocumentWindow(documentWindow, desktopName);
                 Assert.IsFalse(privateWordChild.Wait(0), "Original Word exited before the NativeOM call.");
                 Guid dispatch = new Guid("00020400-0000-0000-C000-000000000046");
                 int hr = NativeAccessibleObjectFromWindow(documentWindow, NativeObjectModel, ref dispatch, out native);
                 if (hr != 0 || native == null) throw new InvalidOperationException("Launched-PID Word NativeOM attachment refused with HRESULT 0x" +
                     unchecked((uint)hr).ToString("X8") + ".");
+                RequireMainWordBeforeNative();
                 app = ((dynamic)native).Application;
                 var probe = new VbeProjectComponents.NativeOtherHostProbe { ReadHostKind = () => "Word" };
+                RequireMainWordBeforeNative();
                 Assert.AreEqual((uint)ProcessId, probe.ApplicationProcessId(app),
                     "NativeOM returned an application outside the launched Word PID.");
-                documents = ((dynamic)app).Documents;
+                RequireMainWordBeforeNative(); documents = ((dynamic)app).Documents;
+                RequireMainWordBeforeNative();
                 Assert.AreEqual(1, Convert.ToInt32(((dynamic)documents).Count), "Only the inert owned seed document may be open before mutation.");
-                seed = ((dynamic)documents).Item(1);
+                RequireMainWordBeforeNative(); seed = ((dynamic)documents).Item(1);
+                RequireMainWordBeforeNative();
                 Assert.AreEqual(seedPath, Path.GetFullPath((string)((dynamic)seed).FullName), true);
-                active = ((dynamic)app).ActiveDocument;
+                RequireMainWordBeforeNative(); active = ((dynamic)app).ActiveDocument;
                 seedUnknown = Marshal.GetIUnknownForObject(seed); activeUnknown = Marshal.GetIUnknownForObject(active);
                 Assert.AreEqual(seedUnknown, activeUnknown);
-                window = ((dynamic)app).ActiveWindow;
+                RequireMainWordBeforeNative(); window = ((dynamic)app).ActiveWindow;
+                RequireMainWordBeforeNative();
                 IntPtr activeHandle = new IntPtr(Convert.ToInt64(((dynamic)window).hWnd));
                 uint activePid; uint activeThread = GetWindowThreadProcessId(activeHandle, out activePid);
                 Assert.AreEqual((uint)ProcessId, activePid);
-                Assert.AreEqual(desktopName, IsolatedTestDesktop.DesktopName(activeThread), true);
+                if (mainWordDesktop) RequireMainWordWindow(activeHandle, true, "OpusApp");
+                else Assert.AreEqual(desktopName, IsolatedTestDesktop.DesktopName(activeThread), true);
                 application = app; document = seed;
                 app = null; seed = null;
-                steps.Add(new { Phase = "PrivateWordNativeObjectModelAttached", ProcessId,
+                steps.Add(new { Phase = mainWordDesktop ? "MainWordNativeObjectModelAttached" : "PrivateWordNativeObjectModelAttached", ProcessId,
                     NativeObjectModelHandle = documentWindow.ToInt64(), UiThreadId = uiThread,
                     ActiveWindowHandle = activeHandle.ToInt64(), ActiveWindowThreadId = activeThread,
                     Desktop = desktopName, SeedPath = seedPath, OpenDocumentCount = 1 });
@@ -342,6 +359,12 @@ namespace VBAi.Tests.Integration
             var childClass = new StringBuilder(64); var rootClass = new StringBuilder(64);
             GetClassName(handle, childClass, childClass.Capacity);
             GetClassName(root, rootClass, rootClass.Capacity);
+            if (mainWordDesktop)
+            {
+                RequirePrivateWordWindowStructure(handle, root, pid, rootPid, tid, rootTid, childClass.ToString(), rootClass.ToString(), (uint)ProcessId);
+                RequireMainWordWindow(handle, true, "OpusApp");
+                return;
+            }
             RequirePrivateWordWindowIdentity(handle, root, pid, rootPid, tid, rootTid,
                 childClass.ToString(), rootClass.ToString(), IsWindowVisible(handle), IsWindowVisible(root),
                 (uint)ProcessId, desktop, IsolatedTestDesktop.DesktopName);
@@ -357,11 +380,17 @@ namespace VBAi.Tests.Integration
             GetClassName(handle, childClass, childClass.Capacity);
             GetClassName(root, rootClass, rootClass.Capacity);
             bool visible = IsWindowVisible(handle), rootVisible = IsWindowVisible(root);
-            steps.Add(new { Phase = "PrivateWordWindowReadinessObserved", Handle = handle.ToInt64(),
+            steps.Add(new { Phase = mainWordDesktop ? "MainWordWindowReadinessObserved" : "PrivateWordWindowReadinessObserved", Handle = handle.ToInt64(),
                 Root = root.ToInt64(), ProcessId = pid, RootProcessId = rootPid, ThreadId = tid,
                 RootThreadId = rootTid, ChildClass = childClass.ToString(), RootClass = rootClass.ToString(),
                 Visible = visible, RootVisible = rootVisible, ComCalls = 0, UiActions = 0 });
             FlushAdapterEvidence();
+            if (mainWordDesktop)
+            {
+                RequirePrivateWordWindowStructure(handle, root, pid, rootPid, tid, rootTid, childClass.ToString(), rootClass.ToString(), (uint)ProcessId);
+                RequireMainWordWindow(handle, false, "OpusApp");
+                return visible && rootVisible;
+            }
             return PrivateWordWindowReady(handle, root, pid, rootPid, tid, rootTid,
                 childClass.ToString(), rootClass.ToString(), visible, rootVisible,
                 (uint)ProcessId, desktop, IsolatedTestDesktop.DesktopName);

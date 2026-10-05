@@ -1,0 +1,87 @@
+using System;
+using System.Windows.Automation;
+
+namespace VBAi.Tests.Integration
+{
+    /// <summary>Observes an already selected Word scope and closes an expanded picker at most once.</summary>
+    internal static class WordChatScopeIdle
+    {
+        /// <summary>Current native and UI Automation identity of the frozen picker.</summary>
+        internal sealed class PickerIdentity
+        {
+            internal long Handle;
+            internal int NativeProcessId, UiProcessId;
+            internal uint NativeThreadId;
+            internal bool WithinChat, IsComboBox;
+            internal string AutomationId;
+        }
+
+        /// <summary>Rejects picker replacement, foreign ownership or a changed control shape.</summary>
+        internal static void RequirePicker(long expectedHandle, int processId, uint threadId, PickerIdentity actual)
+        {
+            if (actual == null || expectedHandle == 0 || processId <= 0 || threadId == 0 ||
+                actual.Handle != expectedHandle || actual.NativeProcessId != processId || actual.UiProcessId != processId ||
+                actual.NativeThreadId != threadId || !actual.WithinChat || !actual.IsComboBox || actual.AutomationId != "scopePicker")
+                throw new InvalidOperationException("The exact owned Word chat scope picker identity changed.");
+        }
+
+        /// <summary>One read-only sample of the exact owned scope picker after selection.</summary>
+        internal sealed class Observation
+        {
+            internal bool Enabled;
+            internal bool ExactSelection;
+            internal ExpandCollapseState State;
+        }
+
+        /// <summary>Requires two enabled, exact, collapsed observations within the original fifteen-second bound.</summary>
+        internal static void Wait(Action guard, Func<Observation> read, Action collapse,
+            Func<long> elapsedMilliseconds, Action pause)
+        {
+            if (guard == null) throw new ArgumentNullException(nameof(guard));
+            if (read == null) throw new ArgumentNullException(nameof(read));
+            if (collapse == null) throw new ArgumentNullException(nameof(collapse));
+            if (elapsedMilliseconds == null) throw new ArgumentNullException(nameof(elapsedMilliseconds));
+            if (pause == null) throw new ArgumentNullException(nameof(pause));
+            int stable = 0;
+            bool collapseIssued = false;
+            while (elapsedMilliseconds() < 15000)
+            {
+                guard();
+                RequireWithinBound(elapsedMilliseconds);
+                Observation current = read();
+                RequireWithinBound(elapsedMilliseconds);
+                if (current == null) throw new InvalidOperationException("The owned Word scope observation is absent.");
+                if (current.State != ExpandCollapseState.Collapsed && current.State != ExpandCollapseState.Expanded)
+                    throw new InvalidOperationException("The owned Word scope picker has an unexpected expansion state.");
+                if (current.Enabled && current.ExactSelection && current.State == ExpandCollapseState.Collapsed)
+                {
+                    if (++stable == 2) return;
+                }
+                else
+                {
+                    stable = 0;
+                    // Select can synchronously close and disable a WinForms picker.
+                    // A disabled or changed scope only receives observations. If an
+                    // exact enabled picker stays expanded, close once under guard;
+                    // exceptions or an unchanged popup never cause another action.
+                    if (current.Enabled && current.ExactSelection && current.State == ExpandCollapseState.Expanded && !collapseIssued)
+                    {
+                        guard();
+                        RequireWithinBound(elapsedMilliseconds);
+                        collapseIssued = true;
+                        collapse();
+                    }
+                }
+                pause();
+            }
+            throw new TimeoutException("The selected saved Word chat scope did not become idle, exact and collapsed.");
+        }
+
+        /// <summary>A delayed UI read or owner guard cannot admit a late success or a late action.</summary>
+        private static void RequireWithinBound(Func<long> elapsedMilliseconds)
+        {
+            if (elapsedMilliseconds() >= 15000)
+                throw new TimeoutException("The selected saved Word chat scope observation exceeded its original bound.");
+        }
+    }
+}

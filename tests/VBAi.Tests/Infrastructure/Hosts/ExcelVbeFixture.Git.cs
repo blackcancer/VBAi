@@ -181,10 +181,40 @@ namespace VBAi.Tests.Integration
         {
             // Workbook.VBProject returns a shared RCW. Nested fixture reads can release
             // that wrapper; only the unique wrapper acquired here belongs to this scope.
-            object borrowed = ((dynamic)workbook).VBProject;
-            IntPtr identity = Marshal.GetIUnknownForObject(borrowed);
-            try { return Marshal.GetUniqueObjectForIUnknown(identity); }
-            finally { Marshal.Release(identity); }
+            return AcquireIndependentGitProject(() => ((dynamic)workbook).VBProject,
+                Marshal.GetIUnknownForObject, Marshal.GetUniqueObjectForIUnknown,
+                identity => Marshal.Release(identity),
+                alias => { if (Marshal.IsComObject(alias)) Marshal.ReleaseComObject(alias); });
+        }
+
+        /// <summary>Balances the shared acquisition and preserves every failure before handing off a unique wrapper.</summary>
+        internal static object AcquireIndependentGitProject(Func<object> borrowedProject, Func<object, IntPtr> identify,
+            Func<IntPtr, object> uniqueProject, Action<IntPtr> releaseIdentity, Action<object> releaseWrapper)
+        {
+            object borrowed = null, unique = null;
+            IntPtr identity = IntPtr.Zero;
+            var failures = new List<Exception>();
+            try
+            {
+                borrowed = borrowedProject();
+                identity = identify(borrowed);
+                unique = uniqueProject(identity);
+            }
+            catch (Exception error) { failures.Add(error); }
+            if (identity != IntPtr.Zero)
+                try { releaseIdentity(identity); } catch (Exception error) { failures.Add(error); }
+            if (borrowed != null)
+                try { releaseWrapper(borrowed); } catch (Exception error) { failures.Add(error); }
+            if (failures.Count != 0)
+            {
+                // A wrapper whose handoff failed remains ours, even when another
+                // release failed. Shared and unique acquisitions are balanced once.
+                if (unique != null)
+                    try { releaseWrapper(unique); } catch (Exception error) { failures.Add(error); }
+                if (failures.Count == 1) System.Runtime.ExceptionServices.ExceptionDispatchInfo.Capture(failures[0]).Throw();
+                throw new AggregateException("Independent Git project acquisition and release failed.", failures);
+            }
+            return unique;
         }
 
         internal void WithGitProject(string path, Action<VbaGitProject> action)

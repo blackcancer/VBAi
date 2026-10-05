@@ -6,22 +6,23 @@ are maintained only in [recorded validation](test-coverage.md).
 
 ## Q024 resumption checkpoint (2026-10-05)
 
-Q024 resumes from frozen main `22a7af6`. The isolated solution build, complete
-default managed gate and waited synthetic UI action matrix pass, with exact
-source/binary checks, normal original-process exits and verified private desktop
-release. Disabled native/provider/diagnostic scenarios remain skipped, not
-accepted. A read-only limited-user COM Preview passes. Exact identities, scope
-and results are in [recorded validation](test-coverage.md#q024-prerequisite-gate-on-main-2026-10-05).
+Updated 2026-10-06: qualification is paused at the maintainer's request.
+The latest published handoff candidate is based on tested source `5f0f605c`.
+Its complete managed gate, synthetic UI matrix and original worker cleanup pass;
+no native Word or Excel replay was started for that DLL. Exact identities,
+counts and retained receipts are in
+[recorded validation](test-coverage.md#q024q027-paused-handoff-candidate-2026-10-06).
 
-The complete native batch is prepared before execution, in this order: canonical
-same-name Word document isolation and stale SaveAs refusal; actual owner-menu
-Git capture/checkpoint/compare; actual embedded Chat-to-Git scope/modal entry.
-A first failure stops dependencies without replaying uncertain mutations.
-Registration Apply and all native cases remain NOT_RUN while the concurrent
-Q028 Office13 campaign lacks verified settings/COM restoration. Its terminal
-failed/uncertain Access receipt is preserved. No Q024 host is launched and no
-registration is changed by this preparation. Q024 remains OPEN; Q027 remains
-deferred and the overall release decision is unchanged.
+The earlier exact `d367ea0c` candidate has scoped Word acceptance on the real
+Windows desktop for canonical Git document isolation/stale SaveAs refusal,
+installed owner capture/checkpoint/compare and actual Chat-Git modal entry and
+closure. This does not qualify all Word features or the latest handoff DLL.
+
+Q027 remains OPEN. The earlier real-desktop aggregate and the later diagnostic
+bank failed; their original failures, separate recovery and exact COM restoration
+are preserved. The full ordered UserForm matrix, original native exits,
+persistence/readback and actual designer review remain required. Overall release
+acceptance is unchanged.
 
 ## PR25 integration checkpoint (2026-10-05)
 

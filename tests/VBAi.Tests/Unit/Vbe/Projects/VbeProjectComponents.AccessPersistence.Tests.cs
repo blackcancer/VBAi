@@ -13,7 +13,7 @@ namespace VBAi.Tests.Unit
     public sealed partial class VbeOtherHostPersistenceTests
     {
         /// <summary>Models Access's native factory getters while keeping every true project/context guard observable.</summary>
-        [STATestMethod]
+        [AccessStaTestMethod]
         [DataRow("unchanged"), DataRow("reopenedproject"), DataRow("mappedproject"), DataRow("application")]
         [DataRow("path"), DataRow("pid"), DataRow("owner"), DataRow("documentmissing"), DataRow("documentduplicate")]
         [DataRow("source"), DataRow("metadata"), DataRow("references"), DataRow("readonly"), DataRow("format")]
@@ -43,7 +43,7 @@ namespace VBAi.Tests.Unit
                     Format = wrapper.Format, ReadOnly = wrapper.ReadOnly, Saved = null };
             };
             f.Probe.AfterInvocation = () => { f.Probe.Observation.Format = 12; f.Probe.Project.Saved = false; };
-            var pending = f.Service.SaveHostDocumentAsync(f.Probe.Request());
+            var pending = f.SaveAsync(f.Probe.Request());
             Assert.IsFalse(pending.IsCompleted);
             var replacement = new OtherProject { Name = "P", FileName = f.Probe.Project.FileName, Saved = true };
             switch (change)
@@ -92,7 +92,7 @@ namespace VBAi.Tests.Unit
         }
 
         /// <summary>Reproduces the single Save returning before Access processes its Saved notification.</summary>
-        [STATestMethod]
+        [AccessStaTestMethod]
         public void AccessSaveYieldsForDelayedOwnerThreadSavedReadbackWithoutInvokingAgain()
         {
             var f = new AsyncAccessFixture();
@@ -109,7 +109,7 @@ namespace VBAi.Tests.Unit
                         f.Probe.Project.Saved = true;
                     }));
                 };
-                var pending = f.Service.SaveHostDocumentAsync(f.Probe.Request());
+                var pending = f.SaveAsync(f.Probe.Request());
                 Assert.IsFalse(pending.IsCompleted, "Access must yield after its single Save before reading the deferred saved flag.");
                 dynamic result = CompleteAccessSave(pending);
                 Assert.IsTrue((bool)result.Verified); Assert.IsFalse((bool)result.Uncertain);
@@ -120,7 +120,7 @@ namespace VBAi.Tests.Unit
         }
 
         /// <summary>Preserves exact context/revision guards throughout the yielded notification window.</summary>
-        [STATestMethod]
+        [AccessStaTestMethod]
         [DataRow("source"), DataRow("metadata"), DataRow("references"), DataRow("path")]
         [DataRow("projectpath"), DataRow("projectidentity"), DataRow("documentidentity"), DataRow("pane")]
         [DataRow("component"), DataRow("activeproject"), DataRow("mode"), DataRow("protected")]
@@ -130,7 +130,7 @@ namespace VBAi.Tests.Unit
         {
             var f = new AsyncAccessFixture();
             f.Probe.AfterInvocation = () => { f.Probe.Observation.Format = 12; f.Probe.Observation.Saved = null; f.Probe.Project.Saved = false; };
-            var pending = f.Service.SaveHostDocumentAsync(f.Probe.Request());
+            var pending = f.SaveAsync(f.Probe.Request());
             Assert.IsFalse(pending.IsCompleted);
             switch (change)
             {
@@ -161,27 +161,29 @@ namespace VBAi.Tests.Unit
         }
 
         /// <summary>A failed Saved notification expires read-only, clears ownership, and never repeats native Save.</summary>
-        [STATestMethod]
+        [AccessStaTestMethod]
         public void AccessDeferredTimeoutAndCrossSessionPendingGuardNeverReplayNativeSave()
         {
             var f = new AsyncAccessFixture();
             f.Service.AccessSaveVerificationTimeout = TimeSpan.FromMilliseconds(80);
             f.Probe.AfterInvocation = () => { f.Probe.Observation.Format = 12; f.Probe.Project.Saved = false; };
-            var pending = f.Service.SaveHostDocumentAsync(f.Probe.Request());
-            Assert.ThrowsException<InvalidOperationException>(() => CompleteAccessSave(f.Service.SaveHostDocumentAsync(f.Probe.Request())));
+            var pending = f.SaveAsync(f.Probe.Request());
+            StringAssert.Contains(Assert.ThrowsException<InvalidOperationException>(() => CompleteAccessSave(f.SaveAsync(f.Probe.Request()))).Message,
+                "An Access save is already awaiting verification");
             var second = new AsyncAccessFixture();
-            Assert.ThrowsException<InvalidOperationException>(() => CompleteAccessSave(second.Service.SaveHostDocumentAsync(second.Probe.Request())));
+            StringAssert.Contains(Assert.ThrowsException<InvalidOperationException>(() => CompleteAccessSave(second.SaveAsync(second.Probe.Request()))).Message,
+                "An Access save is already awaiting verification");
             Assert.AreEqual(0, second.Probe.Attempts);
             dynamic expired = CompleteAccessSave(pending);
             Assert.IsFalse((bool)expired.Verified); Assert.IsTrue((bool)expired.Uncertain);
             StringAssert.Contains((string)expired.Reason, "timed out");
             Assert.AreEqual(1, f.Probe.Attempts);
-            dynamic next = CompleteAccessSave(second.Service.SaveHostDocumentAsync(second.Probe.Request()));
+            dynamic next = CompleteAccessSave(second.SaveAsync(second.Probe.Request()));
             Assert.IsTrue((bool)next.Verified); Assert.AreEqual(1, second.Probe.Attempts);
         }
 
         /// <summary>Refuses unsafe approval snapshots before crossing the native mutation boundary.</summary>
-        [STATestMethod]
+        [AccessStaTestMethod]
         [DataRow("version"), DataRow("readonly"), DataRow("path"), DataRow("format")]
         [DataRow("owner"), DataRow("pane"), DataRow("selection"), DataRow("protected"), DataRow("mode")]
         [DataRow("application"), DataRow("applicationfinal")]
@@ -205,19 +207,20 @@ namespace VBAi.Tests.Unit
                     f.Probe.ReadApplication = () => ++reads <= (failure == "application" ? 2 : 3) ? originalApplication : new object();
                     break;
             }
-            Assert.ThrowsException<InvalidOperationException>(() => CompleteAccessSave(f.Service.SaveHostDocumentAsync(request)), failure);
+            var refusal = Assert.ThrowsException<InvalidOperationException>(() => CompleteAccessSave(f.SaveAsync(request)), failure);
+            Assert.IsFalse(refusal.Message.Contains("already awaiting verification"), "A leftover task must not satisfy a preflight refusal oracle.");
             Assert.AreEqual(0, f.Probe.Attempts, failure);
         }
 
         /// <summary>Preserves a native error unchanged and refuses the old synchronous mutation route.</summary>
-        [STATestMethod]
+        [AccessStaTestMethod]
         public void AccessSynchronousDispatchAndNativeFailuresCannotBypassDeferredContract()
         {
             var f = new AsyncAccessFixture();
             Assert.ThrowsException<InvalidOperationException>(() => f.Service.SaveHostDocument(f.Probe.Request()));
             Assert.AreEqual(0, f.Probe.Attempts);
             f.Probe.Failure = "native error";
-            dynamic failed = CompleteAccessSave(f.Service.SaveHostDocumentAsync(f.Probe.Request()));
+            dynamic failed = CompleteAccessSave(f.SaveAsync(f.Probe.Request()));
             Assert.IsFalse((bool)failed.Verified); Assert.IsTrue((bool)failed.Uncertain);
             StringAssert.Contains((string)failed.Reason, "Native save failed after invocation");
             Assert.AreEqual(1, f.Probe.Attempts);
@@ -263,13 +266,13 @@ namespace VBAi.Tests.Unit
         }
 
         /// <summary>One synthetic confirmation must yield before the original Save receives verified saved-state evidence.</summary>
-        [STATestMethod]
+        [AccessStaTestMethod]
         public void AccessConfirmationQueuesOnceAndStillRequiresFullOwnerThreadSavedVerification()
         {
             var f = new AsyncAccessFixture();
             var confirmation = AttachAccessConfirmation(f);
             confirmation.AfterEnqueue = () => f.Probe.Project.Saved = true;
-            dynamic result = CompleteAccessSave(f.Service.SaveHostDocumentAsync(f.Probe.Request()));
+            dynamic result = CompleteAccessSave(f.SaveAsync(f.Probe.Request()));
             Assert.IsTrue((bool)result.Verified); Assert.IsFalse((bool)result.Uncertain);
             Assert.AreEqual(1, f.Probe.Attempts); Assert.AreEqual(1, confirmation.ConfirmEntries);
             Assert.AreEqual(1, (int)result.ConfirmationAttempts);
@@ -280,20 +283,21 @@ namespace VBAi.Tests.Unit
         }
 
         /// <summary>A preexisting prompt is refused before the original native Save, without attaching to an earlier uncertain operation.</summary>
-        [STATestMethod]
+        [AccessStaTestMethod]
         public void AccessPreexistingConfirmationRefusesBeforeOriginalSaveOrEnqueue()
         {
             var f = new AsyncAccessFixture();
             var confirmation = AttachAccessConfirmation(f);
             confirmation.PreparationFailure = new InvalidOperationException("Preexisting owned save prompt");
-            Assert.ThrowsException<InvalidOperationException>(() => CompleteAccessSave(f.Service.SaveHostDocumentAsync(f.Probe.Request())));
+            Assert.AreSame(confirmation.PreparationFailure,
+                Assert.ThrowsException<InvalidOperationException>(() => CompleteAccessSave(f.SaveAsync(f.Probe.Request()))));
             Assert.AreEqual(0, f.Probe.Attempts); Assert.AreEqual(0, confirmation.ObserveEntries);
             Assert.AreEqual(0, confirmation.ConfirmEntries); Assert.AreEqual(0, confirmation.ConfirmationAttempts);
             Assert.IsFalse(confirmation.ConfirmationQueued);
         }
 
         /// <summary>Changes inside the confirmation boundary must be caught before its one possible native enqueue.</summary>
-        [STATestMethod]
+        [AccessStaTestMethod]
         [DataRow("owner"), DataRow("pid"), DataRow("source"), DataRow("references"), DataRow("metadata")]
         [DataRow("mode"), DataRow("protected"), DataRow("path"), DataRow("projectpath"), DataRow("readonly")]
         [DataRow("pane"), DataRow("activeproject"), DataRow("format"), DataRow("application")]
@@ -328,7 +332,7 @@ namespace VBAi.Tests.Unit
                     case "application": application = new object(); break;
                 }
             };
-            dynamic result = CompleteAccessSave(f.Service.SaveHostDocumentAsync(request));
+            dynamic result = CompleteAccessSave(f.SaveAsync(request));
             Assert.IsFalse((bool)result.Verified, change); Assert.IsTrue((bool)result.Uncertain, change);
             Assert.AreEqual(1, f.Probe.Attempts, "The original ID3 Save is never replayed.");
             Assert.AreEqual(1, confirmation.ConfirmEntries, "Exercise the immediate confirmation-context guard.");
@@ -339,7 +343,7 @@ namespace VBAi.Tests.Unit
         }
 
         /// <summary>Queued confirmation is not persistence; a remaining prompt or unsaved project must expire without another action.</summary>
-        [STATestMethod]
+        [AccessStaTestMethod]
         [DataRow(true), DataRow(false)]
         public void AccessQueuedConfirmationWithoutSavedCompletionRemainsUncertain(bool promptRemains)
         {
@@ -348,7 +352,7 @@ namespace VBAi.Tests.Unit
             f.Service.AccessSaveVerificationTimeout = TimeSpan.FromMilliseconds(80);
             confirmation.PromptRemainsAfterEnqueue = promptRemains;
             if (promptRemains) confirmation.AfterEnqueue = () => f.Probe.Project.Saved = true;
-            dynamic result = CompleteAccessSave(f.Service.SaveHostDocumentAsync(f.Probe.Request()));
+            dynamic result = CompleteAccessSave(f.SaveAsync(f.Probe.Request()));
             Assert.IsFalse((bool)result.Verified); Assert.IsTrue((bool)result.Uncertain);
             Assert.AreEqual(1, f.Probe.Attempts); Assert.AreEqual(1, confirmation.ConfirmEntries);
             Assert.AreEqual(1, (int)result.ConfirmationAttempts);
@@ -357,13 +361,13 @@ namespace VBAi.Tests.Unit
         }
 
         /// <summary>A verification deadline already elapsed before confirmation must never enqueue a late native action.</summary>
-        [STATestMethod]
+        [AccessStaTestMethod]
         public void AccessConfirmationDeadlineBeforeConfirmNeverQueuesOrRetries()
         {
             var f = new AsyncAccessFixture();
             var confirmation = AttachAccessConfirmation(f);
             f.Service.AccessSaveVerificationTimeout = TimeSpan.FromMilliseconds(1);
-            dynamic result = CompleteAccessSave(f.Service.SaveHostDocumentAsync(f.Probe.Request()));
+            dynamic result = CompleteAccessSave(f.SaveAsync(f.Probe.Request()));
             Assert.IsFalse((bool)result.Verified); Assert.IsTrue((bool)result.Uncertain);
             Assert.AreEqual(1, f.Probe.Attempts); Assert.AreEqual(0, confirmation.ConfirmEntries);
             Assert.AreEqual(0, (int)result.ConfirmationAttempts);
@@ -371,13 +375,13 @@ namespace VBAi.Tests.Unit
         }
 
         /// <summary>A known failure from the initial native call cannot be converted into another native confirmation.</summary>
-        [STATestMethod]
+        [AccessStaTestMethod]
         public void AccessInitialNativeFailureNeverObservesOrConfirmsItsPrompt()
         {
             var f = new AsyncAccessFixture();
             var confirmation = AttachAccessConfirmation(f);
             f.Probe.Failure = "native error";
-            dynamic result = CompleteAccessSave(f.Service.SaveHostDocumentAsync(f.Probe.Request()));
+            dynamic result = CompleteAccessSave(f.SaveAsync(f.Probe.Request()));
             Assert.IsFalse((bool)result.Verified); Assert.IsTrue((bool)result.Uncertain);
             StringAssert.Contains((string)result.Reason, "Native save failed after invocation");
             Assert.AreEqual(1, f.Probe.Attempts); Assert.AreEqual(0, confirmation.ObserveEntries);
@@ -456,7 +460,7 @@ namespace VBAi.Tests.Unit
             var watch = Stopwatch.StartNew();
             while (!pending.IsCompleted && watch.Elapsed.TotalSeconds < 5)
             { Application.DoEvents(); Thread.Sleep(1); }
-            Assert.IsTrue(pending.IsCompleted, "Deferred Access verification did not complete.");
+            if (!pending.IsCompleted) Assert.Fail("Deferred Access verification did not complete. " + AccessStaTestMethodAttribute.Describe(pending));
             return pending.GetAwaiter().GetResult();
         }
 
@@ -466,8 +470,10 @@ namespace VBAi.Tests.Unit
             internal readonly Fixture Probe = new Fixture { Kind = "Access" };
             internal readonly AsyncAccessEditor Editor = new AsyncAccessEditor();
             internal readonly VbeProjectComponents Service;
+            internal Task<object> SaveAsync(Request request) => AccessStaTestMethodAttribute.StartSave(() => Service.SaveHostDocumentAsync(request));
             internal AsyncAccessFixture()
             {
+                Assert.IsTrue(Application.MessageLoop, "The synthetic Access fixture requires its dedicated WinForms test loop.");
                 Probe.Observation.Path = @"C:\fixture\Owned.accdb";
                 Probe.Project.FileName = Probe.Observation.Path;
                 Probe.Observation.Format = 12; Probe.Observation.Saved = null; Probe.Project.Saved = false;

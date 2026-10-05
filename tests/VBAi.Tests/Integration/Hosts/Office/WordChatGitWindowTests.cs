@@ -77,7 +77,10 @@ namespace VBAi.Tests.Integration
         {
             try
             {
-                context.Fixture = OfficeVbeFixture.Start("Word");
+                string previousDiagnostic = Environment.GetEnvironmentVariable(ChatGitModalDiagnostic.EnvironmentName);
+                Environment.SetEnvironmentVariable(ChatGitModalDiagnostic.EnvironmentName, context.DiagnosticManifest);
+                try { context.Fixture = OfficeVbeFixture.Start("Word"); }
+                finally { Environment.SetEnvironmentVariable(ChatGitModalDiagnostic.EnvironmentName, previousDiagnostic); }
                 var status = context.Fixture.Data("status");
                 Assert.AreEqual(expected.ToString("D"), status["AssemblyModuleVersionId"]);
                 Assert.AreEqual(hash, Sha(Convert.ToString(status["AssemblyPath"])), true);
@@ -148,6 +151,7 @@ namespace VBAi.Tests.Integration
                 if (!context.ScopeAuthorized.Wait(TimeSpan.FromSeconds(30)) || context.Stop || context.OwnerError != null)
                     throw new InvalidOperationException("Canonical Word scope was not authorized before chat Git invocation.");
                 automation.CaptureModalOwner();
+                context.WriteDiagnosticRequest();
                 automation.OpenChatOptionsAndFindGit();
                 automation.RequireNoGitModal();
                 context.InvocationThread = new Thread(() => automation.InvokeGitOnce()) { IsBackground = true };
@@ -161,9 +165,12 @@ namespace VBAi.Tests.Integration
                 context.Record(new { Phase = "ChatGitOpenCloseTerminal", context.ChatHandle, context.GitHandle,
                     context.Scope.Path, ReplayAttempts = 0 });
                 context.ModalClosed = true;
+                object[] diagnosticChain = ChatGitDiagnosticReceipt.Wait(context.DiagnosticRoot, context.DiagnosticNonce, context.DiagnosticIdentity);
+                context.Record(new { Phase = "InstalledChatGitPostHandlerChainVerified", Chain = diagnosticChain,
+                    Meaning = "Observed later owning-STA dispatch after ShowModal and Dispose; not a guarantee Word will accept the first Close." });
                 context.Fixture.NativeExecutionUnsettled = false;
             }
-            catch (Exception error) { context.UiError = error; }
+            catch (Exception error) { context.UiError = error; if (context.ActionIssued) context.Retain = true; }
             finally { context.ScopeObserved.Set(); context.UiDone.Set(); }
         }
 
@@ -188,7 +195,29 @@ namespace VBAi.Tests.Integration
             internal volatile bool Stop, Retain, ActionIssued, ModalObserved, ModalClosed;
             private readonly object sync = new object();
             private int sequence;
-            internal Context(string root) { Root = root; Directory.CreateDirectory(root); }
+            internal readonly string DiagnosticNonce = Guid.NewGuid().ToString("N");
+            internal readonly string DiagnosticRoot, DiagnosticManifest;
+            internal ChatGitModalDiagnostic.Identity DiagnosticIdentity;
+            internal Context(string root)
+            {
+                Root = root; Directory.CreateDirectory(root);
+                DiagnosticRoot = Path.Combine(Path.GetTempPath(), ChatGitModalDiagnostic.DirectoryName, DiagnosticNonce);
+                Assert.IsFalse(Directory.Exists(DiagnosticRoot)); Directory.CreateDirectory(DiagnosticRoot);
+                DiagnosticManifest = Path.Combine(DiagnosticRoot, "request.json");
+            }
+            internal void WriteDiagnosticRequest()
+            {
+                using (var process = Process.GetProcessById(Fixture.ProcessId))
+                    DiagnosticIdentity = new ChatGitModalDiagnostic.Identity { DocumentPath = Scope.Path, ProcessId = process.Id,
+                        ProcessStartedUtc = process.StartTime.ToUniversalTime().ToString("o"), ThreadId = Scope.ThreadId,
+                        ChatHandle = ChatHandle.ToInt64(), RootHandle = Scope.VbeHandle.ToInt64(),
+                        ProductMvid = typeof(VbeSession).Module.ModuleVersionId.ToString("D"), ProductSha256 = Sha(typeof(VbeSession).Assembly.Location) };
+                ChatGitModalDiagnostic.RequireManifestPath(DiagnosticManifest, Path.GetTempPath());
+                using (var file = new FileStream(DiagnosticManifest, FileMode.CreateNew, FileAccess.Write, FileShare.None))
+                using (var writer = new StreamWriter(file, new UTF8Encoding(false)))
+                    writer.Write(new JavaScriptSerializer().Serialize(new { Version = 1, Nonce = DiagnosticNonce, Identity = DiagnosticIdentity }));
+                Record(new { Phase = "ChatGitDiagnosticRequestPrepared", Manifest = DiagnosticManifest, DiagnosticNonce, DiagnosticIdentity });
+            }
             internal void Record(object value)
             {
                 lock (sync)
@@ -208,6 +237,7 @@ namespace VBAi.Tests.Integration
             [DllImport("user32.dll")] private static extern bool IsChild(IntPtr parent, IntPtr child);
             [DllImport("user32.dll")] private static extern bool IsWindow(IntPtr window);
             [DllImport("user32.dll")] private static extern bool IsWindowVisible(IntPtr window);
+            [DllImport("user32.dll", SetLastError = true)] private static extern bool PostMessage(IntPtr window, uint message, IntPtr wparam, IntPtr lparam);
             [DllImport("user32.dll")] private static extern IntPtr GetWindow(IntPtr window, uint command);
             [DllImport("user32.dll")] private static extern IntPtr GetAncestor(IntPtr window, uint flags);
             [DllImport("user32.dll")] private static extern IntPtr GetParent(IntPtr window);
@@ -216,10 +246,10 @@ namespace VBAi.Tests.Integration
             [DllImport("user32.dll", CharSet = CharSet.Unicode)] private static extern int GetWindowText(IntPtr window, StringBuilder text, int capacity);
             private readonly Context context;
             private AutomationElement chat, scopePicker, gitItem, git;
+            private IntPtr scopePickerHandle;
             private IntPtr gitPopupHandle;
             private WordChatGitMenuDiscovery.Candidate selectedPopup;
             private SelectionPattern scopeSelection;
-            private WindowPattern gitWindow;
             private WordChatWindowDiscovery.OwnerIdentity modalOwner;
             private WordChatGitMenuDiscovery.OwnerShape exactScopePickerOwner;
             internal WordChatGitAutomation(Context context) { this.context = context; }
@@ -404,6 +434,8 @@ namespace VBAi.Tests.Integration
                     pickers[0].Current.ProcessId != context.Fixture.ProcessId)
                     throw new InvalidOperationException("The owned chat scope picker is absent or ambiguous.");
                 scopePicker = pickers[0];
+                scopePickerHandle = UiHandle(scopePicker.Current.NativeWindowHandle);
+                GuardScopePicker();
                 scopeSelection = Pattern<SelectionPattern>(scopePicker, SelectionPattern.Pattern);
                 if (!SelectedLabel(scopeSelection, context.Label))
                 {
@@ -428,26 +460,39 @@ namespace VBAi.Tests.Integration
                         selected = entries[0];
                     }
                     Pattern<SelectionItemPattern>(selected, SelectionItemPattern.Pattern).Select();
-                    Pattern<ExpandCollapsePattern>(scopePicker, ExpandCollapsePattern.Pattern).Collapse();
                 }
-                var watch = Stopwatch.StartNew(); int stable = 0;
-                while (watch.ElapsedMilliseconds < 15000 && stable < 2)
-                {
-                    Guard(context.ChatHandle);
-                    stable = scopePicker.Current.IsEnabled && SelectedLabel(scopeSelection, context.Label) ? stable + 1 : 0;
-                    if (stable < 2) Thread.Sleep(50);
-                }
-                if (stable != 2) throw new TimeoutException("The selected saved Word chat scope did not become idle and exact.");
+                var watch = Stopwatch.StartNew();
+                WordChatScopeIdle.Wait(GuardScopePicker, () => new WordChatScopeIdle.Observation {
+                    Enabled = scopePicker.Current.IsEnabled,
+                    ExactSelection = SelectedLabel(scopeSelection, context.Label),
+                    State = Pattern<ExpandCollapsePattern>(scopePicker, ExpandCollapsePattern.Pattern).Current.ExpandCollapseState
+                }, () => Pattern<ExpandCollapsePattern>(scopePicker, ExpandCollapsePattern.Pattern).Collapse(),
+                    () => watch.ElapsedMilliseconds, () => Thread.Sleep(50));
                 context.Record(new { Phase = "ChatScopeSelected", context.Label, CanonicalPath = context.Scope.Path,
                     ChatHandle = context.ChatHandle.ToInt64(), PickerHandle = scopePicker.Current.NativeWindowHandle });
             }
 
             private void RequireSelectedScope()
             {
-                Guard(context.ChatHandle);
+                GuardScopePicker();
                 if (scopePicker == null || scopeSelection == null || !scopePicker.Current.IsEnabled ||
                     !SelectedLabel(scopeSelection, context.Label))
                     throw new InvalidOperationException("The exact saved Word chat scope changed before Git invocation.");
+            }
+
+            private void GuardScopePicker()
+            {
+                Guard(context.ChatHandle);
+                if (scopePicker == null) throw new InvalidOperationException("The owned Word scope picker is absent.");
+                var current = scopePicker.Current;
+                IntPtr actual = UiHandle(current.NativeWindowHandle);
+                uint processId; uint threadId = GetWindowThreadProcessId(actual, out processId);
+                WordChatScopeIdle.RequirePicker(scopePickerHandle.ToInt64(), context.Fixture.ProcessId, context.Scope.ThreadId,
+                    new WordChatScopeIdle.PickerIdentity {
+                        Handle = actual.ToInt64(), NativeProcessId = (int)processId, NativeThreadId = threadId,
+                        UiProcessId = current.ProcessId, WithinChat = IsChild(context.ChatHandle, actual),
+                        IsComboBox = current.ControlType == ControlType.ComboBox, AutomationId = current.AutomationId
+                    });
             }
 
             private WordChatWindowDiscovery.OwnerIdentity ReadModalOwner()
@@ -496,10 +541,11 @@ namespace VBAi.Tests.Integration
                     context.Fixture.ProcessId, context.Scope.ThreadId);
             }
 
-            private static bool SelectedLabel(SelectionPattern selection, string label)
+            private bool SelectedLabel(SelectionPattern selection, string label)
             {
                 var items = selection.Current.GetSelection();
-                return items.Length == 1 && string.Equals(items[0].Current.Name, label, StringComparison.Ordinal);
+                return items.Length == 1 && items[0].Current.ProcessId == context.Fixture.ProcessId &&
+                    string.Equals(items[0].Current.Name, label, StringComparison.Ordinal);
             }
 
             internal void OpenChatOptionsAndFindGit()
@@ -687,7 +733,6 @@ namespace VBAi.Tests.Integration
                     if (git.Current.ProcessId != context.Fixture.ProcessId ||
                         unchecked((uint)git.Current.NativeWindowHandle) != unchecked((uint)context.GitHandle.ToInt64()))
                         throw new InvalidOperationException("The Word Git modal UIA identity differs from its native HWND.");
-                    gitWindow = Pattern<WindowPattern>(git, WindowPattern.Pattern);
                 }
                 if (git == null) throw new TimeoutException("The chat Git action has no observed exact modal; no retry or cleanup.");
                 context.ModalObserved = true;
@@ -700,8 +745,14 @@ namespace VBAi.Tests.Integration
             {
                 Guard(context.GitHandle);
                 RequireSameModalOwner(GetWindow(context.GitHandle, 4));
-                context.Record(new { Phase = "ChatGitCloseIntent", Handle = context.GitHandle.ToInt64() });
-                gitWindow.Close();
+                // Emit one native close to the exact owned modal. The UIA Close
+                // provider returned without destroying this dialog in the frozen
+                // Word qualification; no fallback or second close is permitted.
+                context.Record(new { Phase = "ChatGitCloseIntent", Handle = context.GitHandle.ToInt64(),
+                    Message = "WM_CLOSE", InvocationLimit = 1, FocusChanges = 0 });
+                WordChatModalClose.PostOnce(context.GitHandle,
+                    () => { Guard(context.GitHandle); RequireSameModalOwner(GetWindow(context.GitHandle, 4)); },
+                    window => PostMessage(window, 0x0010, IntPtr.Zero, IntPtr.Zero));
                 var watch = Stopwatch.StartNew();
                 while (watch.ElapsedMilliseconds < 10000)
                 {

@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Linq;
 using System.Runtime.InteropServices;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -301,6 +302,60 @@ namespace VBAi.Tests.Unit
                 Assert.IsFalse(stages.Contains("returned"), failed);
                 Assert.AreEqual(failed == "Designer.Font.put" ? 1 : 0, stages.Count(item => item == "Designer.Font.put"));
             }
+        }
+
+        [TestMethod]
+        public void DesignTimeUserFormParentAliasDoesNotReadUnsupportedName()
+        {
+            var expected = new NamelessFontContainer("UserForm");
+            Assert.IsTrue(FormFontRestoration.SameFontOwnerParent(
+                new NamelessFontContainer("UserForm"), expected, true));
+            Assert.IsFalse(FormFontRestoration.SameFontOwnerParent(
+                new NamelessFontContainer("Frame"), expected, true));
+            Assert.IsFalse(FormFontRestoration.SameFontOwnerParent(
+                new NamelessFontContainer("Frame"), new NamelessFontContainer("Frame"), true));
+        }
+
+        [DataTestMethod]
+        [DataRow("Frame", "Frame", "Panel", "Panel", true)]
+        [DataRow("Frame", "Frame", "Panel", "Other", false)]
+        [DataRow("Frame", "MultiPage", "Panel", "Panel", false)]
+        [DataRow("Page", "Page", "PageOne", "PageOne", true)]
+        [DataRow("Frame", "Frame", "", "", false)]
+        [DataRow("", "", "Panel", "Panel", false)]
+        public void NestedFontParentRequiresExactTypedName(string actualType, string expectedType,
+            string actualName, string expectedName, bool accepted)
+        {
+            Assert.AreEqual(accepted, FormFontRestoration.SameFontOwnerParent(
+                new NamedFontContainer(actualType, actualName),
+                new NamedFontContainer(expectedType, expectedName), false));
+        }
+
+        [TestMethod]
+        public void ParentIdentityRejectsMissingOwnersAndPreservesNameFailure()
+        {
+            var same = new NamelessFontContainer("Frame");
+            Assert.IsTrue(FormFontRestoration.SameFontOwnerParent(same, same, false));
+            Assert.IsFalse(FormFontRestoration.SameFontOwnerParent(null, same, true));
+            Assert.IsFalse(FormFontRestoration.SameFontOwnerParent(same, null, true));
+            Assert.ThrowsException<NotSupportedException>(() => FormFontRestoration.SameFontOwnerParent(
+                new NamelessFontContainer("Frame"), new NamelessFontContainer("Frame"), false));
+        }
+
+        public sealed class NamelessFontContainer : CustomTypeDescriptor
+        {
+            private readonly string className;
+            public NamelessFontContainer(string className) { this.className = className; }
+            public override string GetClassName() { return className; }
+            public string Name { get { throw new NotSupportedException("Design-time parent has no Name."); } }
+        }
+
+        public sealed class NamedFontContainer : CustomTypeDescriptor
+        {
+            private readonly string className;
+            public NamedFontContainer(string className, string name) { this.className = className; Name = name; }
+            public override string GetClassName() { return className; }
+            public string Name { get; private set; }
         }
 
         private static object[] RootChildren(FakeChildren children)

@@ -33,6 +33,7 @@ namespace VBAi.Tests.Integration
         private IntPtr window;
         private AutomationElement root;
         private WindowPattern windowPattern;
+        private string sessionId, previousOperation, observedOperation;
         internal bool HasObservedWindow => windowPattern != null;
         private readonly HashSet<string> inventories = new HashSet<string>(StringComparer.Ordinal);
         internal EmbeddedGitAutomation(ExcelVbeFixture fixture, ExcelVbeFixture.EmbeddedGitScope scope, Action<object> record, Func<bool> stop)
@@ -70,6 +71,7 @@ namespace VBAi.Tests.Integration
             if (window == IntPtr.Zero) { Protocol.MarkUncertain("Modal menu has no observed GitWindow."); throw new TimeoutException("Owned embedded GitWindow did not become visible; no menu replay or cleanup."); }
             root = AutomationElement.FromHandle(window); Guard(root, window);
             windowPattern = Pattern<WindowPattern>(root, WindowPattern.Pattern);
+            sessionId = EmbeddedGitUiProtocol.ReadSession(root.Current.HelpText)[2];
             record(new { Phase = "OwnedModalObserved", ProcessId = processId, ThreadId = scope.ThreadId,
                 Handle = window.ToInt64(), Owner = scope.VbeHandle.ToInt64(), WindowPatternObserved = true });
         }
@@ -228,6 +230,8 @@ namespace VBAi.Tests.Integration
         }
         private void Invoke(string id)
         {
+            if (id == "checkpointRestore")
+            { previousOperation = EmbeddedGitUiProtocol.ReadSession(root.Current.HelpText)[3]; observedOperation = null; }
             var item = Leaf(id); RequireInteractive(item);
             if (PrivateDesktopUiAction.Enabled)
             {
@@ -249,6 +253,8 @@ namespace VBAi.Tests.Integration
             bool busy = false; var watch = Stopwatch.StartNew();
             while (watch.ElapsedMilliseconds < 60000)
             {
+                bool handoffSuccess = false;
+                if (id == "checkpointRestore" && !ObserveHandoffTerminal(out handoffSuccess)) { Thread.Sleep(50); continue; }
                 string text = Text("status"); bool idle = Leaf("compare").Current.IsEnabled || Leaf("connect").Current.IsEnabled;
                 busy |= !idle;
                 if (HasKnownTerminal(id, idle, busy, before, text))
@@ -259,6 +265,8 @@ namespace VBAi.Tests.Integration
                     // label; never acknowledge or replay the native operation.
                     record(new { Phase = "UiTerminalObserved", Action = id, Status = text, BusyObserved = busy, Idle = idle });
                     bool error = classification < 0;
+                    if (id == "checkpointRestore" && error == handoffSuccess)
+                        throw new InvalidOperationException("The correlated operation terminal and visible result disagree.");
                     Protocol.Terminal(id, true, !error);
                     if (error) throw new InvalidOperationException("Embedded Git returned a known terminal error: " + text);
                     return;
@@ -267,6 +275,39 @@ namespace VBAi.Tests.Integration
             }
             Protocol.MarkUncertain("No terminal operation evidence before bounded deadline.");
             throw new TimeoutException("Embedded Git operation remains uncertain; no replay or automatic Close/Quit.");
+        }
+
+        private bool ObserveHandoffTerminal(out bool success)
+        {
+            success = false;
+            if (stop()) throw new InvalidOperationException("Coordinator stopped handoff observation.");
+            requireOwner(); var matches = new List<IntPtr>(); int count = 0;
+            Visitor visit = (hwnd, unused) => {
+                if (++count > 4096) return false;
+                uint pid; uint tid = GetWindowThreadProcessId(hwnd, out pid);
+                if (pid != processId || tid != scope.ThreadId || GetWindow(hwnd, 4) != scope.VbeHandle || !IsWindowVisible(hwnd)) return true;
+                var caption = new StringBuilder(256); GetWindowText(hwnd, caption, caption.Capacity);
+                var cls = new StringBuilder(256); GetClassName(hwnd, cls, cls.Capacity);
+                if (caption.ToString() == "GitHub · VBAi" && cls.ToString().StartsWith("WindowsForms", StringComparison.Ordinal)) matches.Add(hwnd);
+                return true;
+            };
+            if (!EnumWindows(visit, IntPtr.Zero) || count > 4096 || matches.Count > 1)
+                throw new InvalidOperationException("Bounded owned handoff window inventory failed or is ambiguous.");
+            if (matches.Count == 0) return false; // Read-only observation; never replay Invoke or close a pending dialog.
+            IntPtr candidate = matches[0];
+            try
+            {
+                var element = AutomationElement.FromHandle(candidate);
+                if (element.Current.ProcessId != processId) throw new InvalidOperationException("Handoff UIA owner differs.");
+                if (!EmbeddedGitUiProtocol.HandoffTerminal(sessionId, previousOperation, "checkpoint_restore",
+                    element.Current.HelpText, ref observedOperation, out success)) return false;
+                window = candidate; root = element; Guard(root, window);
+                windowPattern = Pattern<WindowPattern>(root, WindowPattern.Pattern);
+                record(new { Phase = "OwnedHandoffTerminalObserved", Session = sessionId, Operation = observedOperation,
+                    Handle = window.ToInt64(), ProcessId = processId, ThreadId = scope.ThreadId, Success = success });
+                return true;
+            }
+            catch (ElementNotAvailableException) { return false; } // Only a disappearing read-only provider, never an identity refusal.
         }
         /// <summary>Requires a recognized result in addition to independently observed enabled controls.</summary>
         internal static bool HasKnownTerminal(string action, bool idle, bool busy, string before, string after)

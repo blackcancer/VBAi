@@ -68,8 +68,9 @@ namespace VBAi.Tests.Integration
                 var ui = new Thread(() => Ui(context)) { IsBackground = true };
                 ui.SetApartmentState(ApartmentState.MTA); ui.Start();
                 if (!context.UiReady.Wait(TimeSpan.FromSeconds(10))) throw new TimeoutException("MTA UIA discovery was not armed before modal invocation.");
+                context.UiDeadline = System.Diagnostics.Stopwatch.StartNew();
                 context.StartMenu.Set();
-                if (!context.UiDone.Wait(TimeSpan.FromSeconds(300))) throw new TimeoutException("UIA operation delivery/observation remains uncertain.");
+                if (!context.UiDone.Wait(context.RemainingUiMilliseconds)) throw new TimeoutException("UIA operation delivery/observation remains uncertain.");
                 if (!context.OwnerDone.Wait(TimeSpan.FromSeconds(persistence ? 180 : 30))) throw new TimeoutException("Modal Execute, persistence readback or native shutdown has no terminal evidence.");
                 var failures = new[] { context.UiError, context.OwnerError }.Where(x => x != null).ToArray();
                 context.Record(new { Phase = failures.Length == 0 ? "PASS" : "FAILED", NativeScope = persistence ? "PersistedFormOneSaveFreshProcessReopen" : layout == null ? "CaptureCheckpointOnly" : "PersistedFormCheckpointImport", Shutdown = context.Fixture.ShutdownDiagnostics });
@@ -108,7 +109,8 @@ namespace VBAi.Tests.Integration
             bool nativePending = false;
             try
             {
-                context.Fixture = ExcelVbeFixture.StartOwnedWithTrace(Path.Combine(context.Output, "unused-scalar-trace.jsonl"));
+                context.Fixture = ExcelVbeFixture.StartOwnedWithTrace(ExcelVbeFixture.SelectOwnedTracePath(
+                    Path.Combine(context.Output, "unused-scalar-trace.jsonl")));
                 context.Record(new { Phase = "OwnedStaReady", context.Fixture.ProcessId, OwnerSta = Thread.CurrentThread.ManagedThreadId });
                 nativePending = true;
                 var status = context.Fixture.Command("status"); Assert.IsNotNull(status);
@@ -142,7 +144,7 @@ namespace VBAi.Tests.Integration
                     if (new JavaScriptSerializer().Serialize(value).Contains("MenuExecuteIntent"))
                     { context.MenuEmitted = true; context.MenuIntent.Set(); }
                 });
-                if (!context.UiDone.Wait(TimeSpan.FromSeconds(15))) throw new TimeoutException("Modal returned without terminal UIA closure observation.");
+                if (!context.UiDone.Wait(context.RemainingUiMilliseconds)) throw new TimeoutException("Git callback returned without terminal UIA closure observation before the original operation deadline.");
                 if (!context.ModalClosed) throw new InvalidOperationException("Modal returned without the exact known UIA close proof.");
                 if (context.Plan.Layout == null) context.Fixture.VerifyEmbeddedGitState(context.Scope);
                 else context.Fixture.VerifyEmbeddedImportedForm(context.Scope, context.Record);
@@ -284,6 +286,8 @@ namespace VBAi.Tests.Integration
             internal RootFontObservationManifest.Configuration FontObservation;
             internal string WorkbookSha256;
             internal Exception OwnerError, UiError;
+            internal System.Diagnostics.Stopwatch UiDeadline;
+            internal int RemainingUiMilliseconds => UiDeadline == null ? 0 : (int)Math.Max(0, 300000 - UiDeadline.ElapsedMilliseconds);
             internal volatile bool Stop, Retain, MenuEmitted, ModalClosed;
             private int sequence;
             private readonly object sync = new object();

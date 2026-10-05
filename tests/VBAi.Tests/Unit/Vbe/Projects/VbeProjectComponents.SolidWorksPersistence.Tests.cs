@@ -10,6 +10,7 @@ namespace VBAi.Tests.Unit
     [TestClass, TestCategory("Unit")]
     public sealed class VbeSolidWorksPersistenceTests
     {
+        internal const string PendingSaveMessage = "A SOLIDWORKS save is already awaiting verification; no second save was invoked.";
         public sealed class HostProject : VbeProjectComponentsTests.FakeProject
         { public int Type { get; set; } = 100; public int Protection { get; set; } }
         internal sealed class Probe : VbeProjectComponents.ISolidWorksSaveProbe
@@ -36,6 +37,11 @@ namespace VBAi.Tests.Unit
                 return new Request { Project = "P", ExpectedProjectVersion = state.Version,
                     ExpectedHostPath = @"C:\fixture\Owned.swp", Path = @"C:\fixture\Different.swp" };
             }
+            // Trace admission precedes VbeUiTask.Run, and the original task stays owned by this test STA.
+            internal Task<object> SaveHostAsync(Request request) =>
+                SolidWorksStaTestMethodAttribute.StartSave(() => Service.SaveHostDocumentAsync(request));
+            internal Task<object> SaveAdapterAsync(Request request) =>
+                SolidWorksStaTestMethodAttribute.StartSave(() => Service.SaveSolidWorksMacroAsync(request, this));
             public bool IsSolidWorks => Host;
             public int ProcessId => Pid;
             public VbeProjectComponents.SolidWorksSaveSelection Selection { get; } = new VbeProjectComponents.SolidWorksSaveSelection();
@@ -119,7 +125,7 @@ namespace VBAi.Tests.Unit
             Assert.AreEqual(!userChangedSelection, native.Selection.Restored);
             Assert.AreEqual(0, previous.CodeModule.CodePane.Shows); Assert.AreEqual(0, previous.CodeModule.CodePane.Window.Focuses);
         }
-        [STATestMethod]
+        [SolidWorksStaTestMethod]
         public void ExistingType100SaveUsesSeparateAdapterAndNeverClaimsReloadOrAllowsSaveAs()
         {
             var p = new Probe(); var request = p.Request();
@@ -128,7 +134,7 @@ namespace VBAi.Tests.Unit
             Assert.AreEqual("VBE.CommandBars.ID3", (string)before.SaveApi);
             Assert.ThrowsException<InvalidOperationException>(() => p.Service.SaveHostDocument(request));
             Assert.AreEqual(0, p.Saves, "Synchronous calls must refuse before the queued native mutation.");
-            dynamic result = Complete(p.Service.SaveHostDocumentAsync(request));
+            dynamic result = Complete(p.SaveHostAsync(request));
             Assert.IsTrue((bool)result.Verified); Assert.IsFalse((bool)result.Uncertain);
             Assert.IsTrue((bool)result.SaveInvoked); Assert.IsFalse((bool)result.SaveAsInvoked);
             Assert.IsFalse((bool)result.PersistenceReopenVerified);
@@ -136,7 +142,7 @@ namespace VBAi.Tests.Unit
             Assert.ThrowsException<InvalidOperationException>(() => p.Service.SaveHostDocumentAs(p.Request()));
             Assert.AreEqual(1, p.Saves);
         }
-        [STATestMethod]
+        [SolidWorksStaTestMethod]
         [DataRow("host")][DataRow("owner")][DataRow("type")][DataRow("path")]
         [DataRow("extension")][DataRow("missing")][DataRow("readonly")][DataRow("empty")]
         [DataRow("protected")][DataRow("mode")][DataRow("version")]
@@ -158,10 +164,11 @@ namespace VBAi.Tests.Unit
             if (failure == "selection changed") p.OnSelect = () => p.Selected = false;
             if (failure == "pid changed") p.OnSelect = () => p.Pid++;
             if (failure == "code changed") p.OnSelect = () => p.Component.CodeModule.Source += "'changed";
-            Assert.ThrowsException<InvalidOperationException>(() => Complete(p.Service.SaveSolidWorksMacroAsync(request, p)));
+            var refusal = Assert.ThrowsException<InvalidOperationException>(() => Complete(p.SaveAdapterAsync(request)));
+            Assert.AreNotEqual(PendingSaveMessage, refusal.Message, "An unfinished earlier scenario cannot satisfy this preflight oracle.");
             Assert.AreEqual(0, p.Saves);
         }
-        [STATestMethod]
+        [SolidWorksStaTestMethod]
         [DataRow("native error")][DataRow("unsaved")][DataRow("missing")][DataRow("empty")]
         [DataRow("path")][DataRow("code")][DataRow("identity")][DataRow("owner")][DataRow("mode")]
         public void PostInvocationFailureRemainsUncertainAndIsNeverRetried(string failure)
@@ -178,7 +185,7 @@ namespace VBAi.Tests.Unit
                 if (failure == "owner") p.Owner = false;
                 if (failure == "mode") p.Project.Mode = 1;
             };
-            dynamic result = Complete(p.Service.SaveSolidWorksMacroAsync(request, p));
+            dynamic result = Complete(p.SaveAdapterAsync(request));
             Assert.AreEqual(1, p.Saves); Assert.IsTrue((bool)result.MutationInvoked);
             Assert.IsTrue((bool)result.Uncertain); Assert.IsFalse((bool)result.Verified);
             StringAssert.Contains((string)result.Next, "do not retry");
@@ -187,7 +194,7 @@ namespace VBAi.Tests.Unit
             if (failure == "code") StringAssert.Contains((string)result.Reason, "live VBA source");
         }
 
-        [STATestMethod]
+        [SolidWorksStaTestMethod]
         public void QueuedSaveCompletesOnOwnerThreadWithOneMutationAndRejectsOverlappingSave()
         {
             var p = new Probe(); var request = p.Request();
@@ -202,12 +209,14 @@ namespace VBAi.Tests.Unit
                         p.Project.Saved = true;
                     }));
                 };
-                var pending = p.Service.SaveHostDocumentAsync(request);
+                var pending = p.SaveHostAsync(request);
                 Assert.IsFalse(pending.IsCompleted, "Native save must yield before observing completion.");
                 Assert.AreEqual(1, p.Saves);
-                Assert.ThrowsException<InvalidOperationException>(() => Complete(p.Service.SaveHostDocumentAsync(request)));
+                Assert.AreEqual(PendingSaveMessage,
+                    Assert.ThrowsException<InvalidOperationException>(() => Complete(p.SaveHostAsync(request))).Message);
                 var anotherSession = new Probe();
-                Assert.ThrowsException<InvalidOperationException>(() => Complete(anotherSession.Service.SaveHostDocumentAsync(anotherSession.Request())));
+                Assert.AreEqual(PendingSaveMessage,
+                    Assert.ThrowsException<InvalidOperationException>(() => Complete(anotherSession.SaveHostAsync(anotherSession.Request()))).Message);
                 Assert.AreEqual(0, anotherSession.Saves, "The bridge and chat must share the pending-save gate.");
                 dynamic result = Complete(pending);
                 Assert.IsTrue((bool)result.Verified); Assert.IsFalse((bool)result.Uncertain);
@@ -216,14 +225,14 @@ namespace VBAi.Tests.Unit
             }
         }
 
-        [STATestMethod]
+        [SolidWorksStaTestMethod]
         [DataRow("code")][DataRow("path")][DataRow("identity")][DataRow("selection")]
         [DataRow("mode")][DataRow("owner")][DataRow("pid")][DataRow("metadata")][DataRow("protected")]
         public void ChangesWhileYieldedNeverBecomeSuccessfulOrReplaySave(string change)
         {
             var p = new Probe();
             p.OnSave = () => p.Project.Saved = false;
-            var pending = p.Service.SaveHostDocumentAsync(p.Request());
+            var pending = p.SaveHostAsync(p.Request());
             Assert.IsFalse(pending.IsCompleted);
             if (change == "code") p.Component.CodeModule.Source += "'intervening edit";
             if (change == "path") p.Project.FileName = @"C:\fixture\Changed.swp";
@@ -240,12 +249,12 @@ namespace VBAi.Tests.Unit
             Assert.AreEqual(1, p.Saves);
         }
 
-        private static object Complete(Task<object> pending)
+        internal static object Complete(Task<object> pending)
         {
             var watch = Stopwatch.StartNew();
             while (!pending.IsCompleted && watch.Elapsed.TotalSeconds < 5)
             { Application.DoEvents(); Thread.Sleep(1); }
-            Assert.IsTrue(pending.IsCompleted, "Owner-thread save verification did not finish.");
+            if (!pending.IsCompleted) Assert.Fail("Owner-thread save verification did not finish. " + SolidWorksStaTestMethodAttribute.Describe(pending));
             return pending.GetAwaiter().GetResult();
         }
     }

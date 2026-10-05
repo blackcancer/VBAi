@@ -271,6 +271,8 @@ namespace VBAi.Tests.Integration
             }
             var result = new VbaGitSnapshot(new VbaGitManifest { Components = manifest.ToArray(), References = scope.References }, files);
             evidence(new { Phase = "IndependentBridgeBaselineVerified", Files = EmbeddedGitSnapshotOracle.Describe(result) });
+            UserFormQualificationFonts.RequireSnapshot(result,
+                (form, currentLayout) => ReadGitLayoutFonts(form, currentLayout), scope.Layout);
             return result;
         }
 
@@ -413,18 +415,23 @@ namespace VBAi.Tests.Integration
         internal void VerifyEmbeddedImportedForm(EmbeddedGitScope scope, Action<object> evidence)
         {
             RequireEmbeddedProcess(scope);
+            VbaGitSnapshot actual = null;
             WithGitProject(scope.Path, project => {
-                var actual = project.Capture();
+                actual = project.Capture();
+                RetainEmbeddedImportRawEvidence(Root, scope.Baseline.Serialize(), actual.Serialize(), evidence);
                 evidence(new { Phase = "IndependentPostImportSnapshot", Exact = scope.Baseline.SameAs(actual),
                     Changes = actual.Changes(scope.Baseline), Files = EmbeddedGitSnapshotOracle.Describe(actual) });
-                Assert.IsTrue(scope.Baseline.SameAs(actual), "Owner-dispatched import did not preserve the complete snapshot.");
             });
-            var layout = ReadGitLayout("EmbeddedForm", scope.Layout);
-            var fonts = ReadGitLayoutFonts("EmbeddedForm", scope.Layout);
-            evidence(new { Phase = "IndependentPostImportNativeReadback", Properties = layout, Fonts = fonts });
-            foreach (var expected in scope.NativeLayout) Assert.AreEqual(expected.Value, layout[expected.Key], expected.Key);
-            foreach (var expected in scope.NativeFonts) Assert.AreEqual(expected.Value, fonts[expected.Key], expected.Key);
-            Assert.IsFalse(Convert.ToBoolean(((dynamic)workbook).Saved), "An import is an unsaved edit, even after exact checkpoint restoration.");
+            VerifyEmbeddedImportReadbacks(
+                () => Assert.IsTrue(scope.Baseline.SameAs(actual), "Owner-dispatched import did not preserve the complete snapshot."),
+                () => {
+                    var layout = ReadGitLayout("EmbeddedForm", scope.Layout);
+                    var fonts = ReadGitLayoutFonts("EmbeddedForm", scope.Layout);
+                    evidence(new { Phase = "IndependentPostImportNativeReadback", Properties = layout, Fonts = fonts });
+                    foreach (var expected in scope.NativeLayout) Assert.AreEqual(expected.Value, layout[expected.Key], expected.Key);
+                    foreach (var expected in scope.NativeFonts) Assert.AreEqual(expected.Value, fonts[expected.Key], expected.Key);
+                    Assert.IsFalse(Convert.ToBoolean(((dynamic)workbook).Saved), "An import is an unsaved edit, even after exact checkpoint restoration.");
+                });
         }
 
         private string ReadEmbeddedState(EmbeddedGitScope scope, out Dictionary<string, string> source, out Dictionary<string, int> types, out string referenceRevision)

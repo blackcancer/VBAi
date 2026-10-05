@@ -36,7 +36,7 @@ namespace VBAi.Tests.Integration
             Directory.CreateDirectory(output);
             string trace = Path.Combine(output, "unused-inspection-" + Guid.NewGuid().ToString("N") + ".jsonl");
             // Reuse the existing exact-PID/seed/MVID bootstrap. No visibility/token manifest is supplied.
-            var host = ExcelVbeFixture.StartOwnedWithTrace(trace);
+            var host = ExcelVbeFixture.StartOwnedWithTrace(ExcelVbeFixture.SelectOwnedTracePath(trace));
             Exception failure = null;
             try { scenario(host); }
             catch (Exception error)

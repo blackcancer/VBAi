@@ -78,6 +78,7 @@ namespace VBAi.Tests.Integration
         /// <summary>Checks only the retained process and its frozen native window, safe for the MTA UI worker.</summary>
         internal void RequireWordEmbeddedOwner(ExcelVbeFixture.EmbeddedGitScope scope)
         {
+            if (mainWordDesktop) RequireMainWordWindow(scope.VbeHandle, true, "wndclass_desked_gsk");
             if (!owned || ownedProcess == null || ownedProcess.HasExited)
                 throw new InvalidOperationException("The original owned Word process is no longer available.");
             uint pid; uint tid = GetWindowThreadProcessId(scope.VbeHandle, out pid);

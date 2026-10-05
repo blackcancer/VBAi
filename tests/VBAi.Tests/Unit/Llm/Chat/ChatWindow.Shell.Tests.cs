@@ -17,6 +17,83 @@ namespace VBAi.Tests.Unit
     /// <summary>Vérifie les actions d’édition et le changement de mode dans la fenêtre de discussion.</summary>
     public sealed partial class ChatWindowStateTests
     {
+        [STATestMethod, TestCategory("Unit")]
+        public void GitModalOwnerPreservesStandaloneAndUncreatedChatIdentity()
+        {
+            using (var chat = new ChatWindow())
+            {
+                Assert.IsFalse(chat.IsHandleCreated);
+                Assert.AreSame(chat, chat.GitModalOwner());
+                Assert.IsFalse(chat.IsHandleCreated, "Resolving an uncreated owner must not create a window.");
+                IntPtr handle = chat.Handle;
+                Assert.AreSame(chat, chat.GitModalOwner());
+                Assert.AreEqual(handle, chat.GitModalOwner().Handle);
+            }
+        }
+
+        [STATestMethod, TestCategory("Unit")]
+        public void GitModalOwnerUsesHostRootInsteadOfDockedChatOrFocusedComboBox()
+        {
+            using (var host = new Form())
+            using (var chat = new ChatWindow { TopLevel = false })
+            {
+                host.Controls.Add(chat);
+                IntPtr hostHandle = host.Handle, chatHandle = chat.Handle;
+                var picker = Get<System.Windows.Forms.ComboBox>(chat, "scopePicker");
+                IntPtr pickerHandle = picker.Handle;
+                var owner = chat.GitModalOwner();
+                Assert.AreEqual(hostHandle, owner.Handle);
+                Assert.AreNotEqual(chatHandle, owner.Handle);
+                Assert.AreNotEqual(pickerHandle, owner.Handle);
+            }
+        }
+
+        [STATestMethod, TestCategory("Unit")]
+        public void GitModalOwnerRejectsDisposedChatWithoutRecreatingItsHandle()
+        {
+            var chat = new ChatWindow();
+            chat.Dispose();
+            Assert.ThrowsException<ObjectDisposedException>(() => chat.GitModalOwner());
+            Assert.IsFalse(chat.IsHandleCreated);
+        }
+
+        [STATestMethod, TestCategory("Unit")]
+        public void GitShellPassesTheDockingHostRootToTheActualDialogBoundary()
+        {
+            using (var runtime = new RuntimeScope())
+            using (var host = new Form())
+            {
+                string document = Path.Combine(runtime.Root, "Docked.docm");
+                runtime.Vbe.VBProjects[0].FileName = document;
+                runtime.Host = request => Response.Success(request.Command == "list_projects"
+                    ? (object)new[] { new { Name = "P", FileName = document, Path = runtime.Root } }
+                    : new { SelectedProject = "P", SelectedProjectPath = document });
+                var priorCache = GitWindow.CacheDirectory;
+                try
+                {
+                    GitWindow.CacheDirectory = key => Path.Combine(runtime.Root, "docked-git-cache");
+                    int dialogs = 0;
+                    using (var chat = LoadedWindow(runtime.Session))
+                    {
+                        chat.TopLevel = false;
+                        host.Controls.Add(chat);
+                        IntPtr hostHandle = host.Handle, chatHandle = chat.Handle;
+                        ChatWindow.ShowModal = (dialog, owner) =>
+                        {
+                            Assert.IsInstanceOfType<GitWindow>(dialog);
+                            Assert.AreEqual(hostHandle, owner.Handle);
+                            Assert.AreNotEqual(chatHandle, owner.Handle);
+                            dialogs++;
+                            return DialogResult.Cancel;
+                        };
+                        Call(chat, "GitHub_Click", null, EventArgs.Empty);
+                        Assert.AreEqual(1, dialogs, Get<System.Windows.Forms.Label>(chat, "status").Text);
+                    }
+                }
+                finally { GitWindow.CacheDirectory = priorCache; }
+            }
+        }
+
         /// <summary>Vérifie que l’action d’éditeur prépare une commande uniquement lorsque la fenêtre est inactive.</summary>
         [TestMethod]
         [STATestMethod]

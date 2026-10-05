@@ -61,7 +61,7 @@ namespace VBAi.Tests.Unit
                         LlmBoundaryScope.Call(client, "Dispatch", LlmBoundaryScope.Object(new { method = "session.event", @params = new { sessionId = LlmBoundaryScope.Get<string>(client, "sessionId"), @event = new { type = "session.idle", data = new { } } } }));
                     }
                 }
-                scope.UseCopilot("models-null"); using (var client = Client()) Assert.AreEqual(0, (await client.ListModelsAsync()).Length); scope.UseCopilot(); CopilotClient.StartLogin(); var marker = Path.Combine(scope.Root, "login.marker"); var deadline = DateTime.UtcNow.AddSeconds(5); while (!File.Exists(marker) && DateTime.UtcNow < deadline) await Task.Delay(10); Assert.AreEqual("fixture login only", File.ReadAllText(marker)); StringAssert.Contains(await CopilotClient.ReadStatusAsync(), "2");
+                scope.UseCopilot("models-null"); using (var client = Client()) Assert.AreEqual(0, (await client.ListModelsAsync()).Length); scope.UseCopilot(); CopilotClient.StartLogin(); var marker = Path.Combine(scope.Root, "login.marker"); var deadline = DateTime.UtcNow.AddSeconds(5); while (!File.Exists(marker + ".ready") && DateTime.UtcNow < deadline) await Task.Delay(10); Assert.IsTrue(File.Exists(marker + ".ready"), "The fixture must finish publishing its login marker before readback."); Assert.AreEqual("fixture login only", File.ReadAllText(marker)); StringAssert.Contains(await CopilotClient.ReadStatusAsync(), "2");
             }
         }
         /// <summary>Termine les requêtes en attente après erreurs RPC, outils défaillants ou délais dépassés.</summary>

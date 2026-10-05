@@ -63,12 +63,75 @@ namespace VBAi.Tests.Integration
                     finally { Release(control); Release(controls); }
                 });
             if (layout == "Image") InstallGitLayoutPicture(form);
-            ((dynamic)workbook).Save();
             // Qualification on the exact saved designer must begin after native
             // persistence. Independent baseline trials proved that initial geometry,
             // PNG representation and AddItem runtime rows can change without any
             // Git import. Never ignore those differences in snapshot comparison.
-            if (persistedBaseline) Assert.AreEqual(0, ReopenAndReadProjectProtection(path));
+            PersistGitLayoutWithEvidence(UserFormQualificationFonts.Enabled, persistedBaseline, layout,
+                () => CaptureGitFormDesigner(form, File("layout-construction-designer.png")),
+                phase => CaptureGitFontSeedEvidence(form, layout, path, phase),
+                () => ((dynamic)workbook).Save(),
+                () => Assert.AreEqual(0, ReopenAndReadProjectProtection(path)));
+        }
+
+        /// <summary>Materializes the real native designer before any qualified font observation and one Save.</summary>
+        internal static void PersistGitLayoutWithEvidence(bool qualifyFonts, bool persistedBaseline, string layout,
+            Action renderDesigner, Action<string> captureFontSeed, Action save, Action reopen)
+        {
+            bool frameEvidence = qualifyFonts && layout == "FrameMultiPage";
+            if (save == null) throw new ArgumentNullException(nameof(save));
+            if (qualifyFonts && renderDesigner == null) throw new ArgumentNullException(nameof(renderDesigner));
+            if (frameEvidence && captureFontSeed == null) throw new ArgumentNullException(nameof(captureFontSeed));
+            if (persistedBaseline && reopen == null) throw new ArgumentNullException(nameof(reopen));
+            // Controlled native probes establish that displaying the initial designer
+            // creates the exact inherited Frame 8.27 resource. Font reads and export
+            // alone leave it at 8.25. Persist that real UI baseline without a setter.
+            if (qualifyFonts) renderDesigner();
+            if (frameEvidence) captureFontSeed("before-save");
+            save();
+            if (frameEvidence) captureFontSeed("after-save");
+            if (persistedBaseline)
+            {
+                reopen();
+                if (frameEvidence) captureFontSeed("after-reopen");
+            }
+        }
+
+        /// <summary>Records the actual seeded resource and native font before import without changing or repairing it.</summary>
+        private void CaptureGitFontSeedEvidence(string form, string layout, string path, string phase)
+        {
+            VbaGitSnapshot before = null, after = null;
+            string directory = File("font-seed-" + phase);
+            System.IO.Directory.CreateDirectory(directory);
+            WithGitProject(path, project => before = project.Capture());
+            foreach (var item in before.Serialize())
+                System.IO.File.WriteAllBytes(System.IO.Path.Combine(directory, item.Key), item.Value);
+            var native = ReadGitLayoutFonts(form, layout);
+            WithGitProject(path, project => after = project.Capture());
+            string afterDirectory = System.IO.Path.Combine(directory, "after-native-read");
+            System.IO.Directory.CreateDirectory(afterDirectory);
+            foreach (var item in after.Serialize())
+                System.IO.File.WriteAllBytes(System.IO.Path.Combine(afterDirectory, item.Key), item.Value);
+            WriteEvidence("font-seed-" + phase + ".json", new {
+                Phase = phase, ProcessId, AssemblyMvid = typeof(VbeSession).Module.ModuleVersionId.ToString("D"),
+                Layout = layout, Form = form, ProjectPath = path, ExpectedFrameSize = 8.27m,
+                NativeFonts = native, BeforeNativeRead = directory, AfterNativeRead = afterDirectory,
+                NativeReadPreservedSnapshot = before.SameAs(after), Changes = after.Changes(before),
+                BeforeBindings = DescribeGitFontBindings(before, form),
+                AfterBindings = DescribeGitFontBindings(after, form),
+                FrameFontAssignments = 0, Construction = "NativeInheritedFontRenderedBeforeSave",
+                FontRepairs = 0, GitImports = 0, MacroExecutions = 0
+            });
+        }
+
+        /// <summary>Projects internal binding fields into durable JSON properties without losing their owner or descriptor.</summary>
+        internal static object[] DescribeGitFontBindings(VbaGitSnapshot snapshot, string form)
+        {
+            var bindings = snapshot.FormFonts(snapshot.Manifest.Components.Single(item => item.Name == form));
+            return bindings == null ? null : bindings.Select(binding => (object)new {
+                binding.OwnerPath, binding.Type,
+                DescriptorHex = BitConverter.ToString(binding.Descriptor).Replace("-", "")
+            }).ToArray();
         }
 
         /// <summary>Loads a synthetic bitmap through the production command in Excel, without crossing a process-local GDI handle.</summary>
@@ -80,15 +143,12 @@ namespace VBAi.Tests.Integration
                 using (var graphics = Graphics.FromImage(bitmap)) graphics.Clear(Color.Crimson);
                 bitmap.Save(imagePath, ImageFormat.Bmp);
             }
-            object project = null;
-            string projectName;
-            try { project = ((dynamic)workbook).VBProject; projectName = ((dynamic)project).Name; }
-            finally { Release(project); }
-            var tree = GitLayoutCommandData(Command(new { Command = "form_tree", Project = projectName, Form = form }));
+            string projectPath = GitLayoutProjectSelector();
+            var tree = GitLayoutCommandData(Command(new { Command = "form_tree", Project = projectPath, Form = form }));
             var image = ((object[])tree["Controls"]).Select(VbeBridgeClient.Object)
                 .Single(node => Convert.ToString(node["Name"]) == "QualificationExtra");
             Assert.AreEqual("Control", image["Kind"]);
-            var installed = GitLayoutCommandData(Command(new { Command = "set_form_node_picture", Project = projectName,
+            var installed = GitLayoutCommandData(Command(new { Command = "set_form_node_picture", Project = projectPath,
                 Form = form, ControlPath = image["Path"], ExpectedTreeVersion = tree["TreeVersion"], Property = "Picture", Path = imagePath }));
             Assert.AreEqual(image["Path"], installed["ControlPath"]);
             Assert.AreEqual("Picture", installed["Property"]);
@@ -103,6 +163,49 @@ namespace VBAi.Tests.Integration
             object error; response.TryGetValue("Error", out error);
             Assert.AreEqual(true, response["Ok"], "Native layout command failed: " + Convert.ToString(error));
             return VbeBridgeClient.Object(response["Data"]);
+        }
+
+        /// <summary>Uses the exact saved workbook path after checking its live VBProject identity.</summary>
+        private string GitLayoutProjectSelector()
+        {
+            object project = null;
+            try
+            {
+                if (workbook == null) throw new InvalidOperationException("The owned workbook is unavailable.");
+                project = ((dynamic)workbook).VBProject;
+                return RequireGitLayoutProjectSelector(
+                    Convert.ToString(((dynamic)workbook).FullName),
+                    Convert.ToString(((dynamic)workbook).Path),
+                    VbeProjectHostPath.Read(project));
+            }
+            finally { Release(project); }
+        }
+
+        /// <summary>Rejects unsaved, missing, or mismatched workbook/project paths before bridge dispatch.</summary>
+        internal static string RequireGitLayoutProjectSelector(string workbookFullName, string workbookPath,
+            string projectHostPath)
+        {
+            if (string.IsNullOrWhiteSpace(workbookFullName) || string.IsNullOrWhiteSpace(workbookPath) ||
+                string.IsNullOrWhiteSpace(projectHostPath) ||
+                !IsGitLayoutAbsolutePath(workbookFullName) || !IsGitLayoutAbsolutePath(workbookPath) ||
+                !IsGitLayoutAbsolutePath(projectHostPath))
+                throw new InvalidOperationException("An exact saved owned workbook and VBProject HostPath are required.");
+            string owned = System.IO.Path.GetFullPath(workbookFullName);
+            string directory = System.IO.Path.GetFullPath(workbookPath);
+            string actual = System.IO.Path.GetFullPath(projectHostPath);
+            if (!string.Equals(System.IO.Path.GetDirectoryName(owned).TrimEnd('\\', '/'),
+                    directory.TrimEnd('\\', '/'), StringComparison.OrdinalIgnoreCase) ||
+                !string.Equals(owned, actual, StringComparison.OrdinalIgnoreCase))
+                throw new InvalidOperationException("The owned workbook and VBProject HostPath differ.");
+            return actual;
+        }
+
+        private static bool IsGitLayoutAbsolutePath(string path)
+        {
+            if (!System.IO.Path.IsPathRooted(path)) return false;
+            string root = System.IO.Path.GetPathRoot(path);
+            return !string.IsNullOrEmpty(root) &&
+                (root.EndsWith("\\", StringComparison.Ordinal) || root.EndsWith("/", StringComparison.Ordinal));
         }
 
         /// <summary>Changes a native persisted value appropriate to the selected control layout.</summary>
@@ -211,17 +314,20 @@ namespace VBAi.Tests.Integration
                 }
             });
             if (layout == "Image") ReadGitLayoutPicture(form, result);
+            if (UserFormQualificationFonts.Enabled)
+            {
+                var fonts = ReadGitLayoutFonts(form, layout);
+                UserFormQualificationFonts.RequireNative(fonts, layout);
+                foreach (var item in fonts) result.Add(item.Key, item.Value);
+            }
             return result;
         }
 
         /// <summary>Reads the actual installed image content through the production in-host descriptor.</summary>
         private void ReadGitLayoutPicture(string form, IDictionary<string, object> result)
         {
-            object project = null;
-            string projectName;
-            try { project = ((dynamic)workbook).VBProject; projectName = ((dynamic)project).Name; }
-            finally { Release(project); }
-            var tree = GitLayoutCommandData(Command(new { Command = "form_tree", Project = projectName, Form = form }));
+            string projectPath = GitLayoutProjectSelector();
+            var tree = GitLayoutCommandData(Command(new { Command = "form_tree", Project = projectPath, Form = form }));
             var image = ((object[])tree["Controls"]).Select(VbeBridgeClient.Object)
                 .Single(node => Convert.ToString(node["Name"]) == "QualificationExtra");
             var picture = ((object[])image["Properties"]).Select(VbeBridgeClient.Object)
@@ -308,6 +414,10 @@ namespace VBAi.Tests.Integration
             try
             {
                 ((dynamic)frame).Caption = "Synthetic frame";
+                // The native source's inherited Frame font is already fractional.
+                // Replacing it with an external StdFont changes the source before
+                // import. Qualification reads and asserts the native default; it
+                // never seeds or repairs it through an owner Font assignment.
                 controls = ((dynamic)frame).Controls;
                 multi = ((dynamic)controls).Add("Forms.MultiPage.1", "QualificationMultiPage", true);
                 SetGitLayoutGeometry(multi, 6d, 18d, 220d, 140d);
