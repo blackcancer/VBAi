@@ -77,7 +77,10 @@ namespace VBAi.Tests.Integration
         {
             try
             {
-                context.Fixture = OfficeVbeFixture.Start("Word");
+                string previousDiagnostic = Environment.GetEnvironmentVariable(ChatGitModalDiagnostic.EnvironmentName);
+                Environment.SetEnvironmentVariable(ChatGitModalDiagnostic.EnvironmentName, context.DiagnosticManifest);
+                try { context.Fixture = OfficeVbeFixture.Start("Word"); }
+                finally { Environment.SetEnvironmentVariable(ChatGitModalDiagnostic.EnvironmentName, previousDiagnostic); }
                 var status = context.Fixture.Data("status");
                 Assert.AreEqual(expected.ToString("D"), status["AssemblyModuleVersionId"]);
                 Assert.AreEqual(hash, Sha(Convert.ToString(status["AssemblyPath"])), true);
@@ -148,6 +151,7 @@ namespace VBAi.Tests.Integration
                 if (!context.ScopeAuthorized.Wait(TimeSpan.FromSeconds(30)) || context.Stop || context.OwnerError != null)
                     throw new InvalidOperationException("Canonical Word scope was not authorized before chat Git invocation.");
                 automation.CaptureModalOwner();
+                context.WriteDiagnosticRequest();
                 automation.OpenChatOptionsAndFindGit();
                 automation.RequireNoGitModal();
                 context.InvocationThread = new Thread(() => automation.InvokeGitOnce()) { IsBackground = true };
@@ -161,9 +165,12 @@ namespace VBAi.Tests.Integration
                 context.Record(new { Phase = "ChatGitOpenCloseTerminal", context.ChatHandle, context.GitHandle,
                     context.Scope.Path, ReplayAttempts = 0 });
                 context.ModalClosed = true;
+                object[] diagnosticChain = ChatGitDiagnosticReceipt.Wait(context.DiagnosticRoot, context.DiagnosticNonce, context.DiagnosticIdentity);
+                context.Record(new { Phase = "InstalledChatGitPostHandlerChainVerified", Chain = diagnosticChain,
+                    Meaning = "Observed later owning-STA dispatch after ShowModal and Dispose; not a guarantee Word will accept the first Close." });
                 context.Fixture.NativeExecutionUnsettled = false;
             }
-            catch (Exception error) { context.UiError = error; }
+            catch (Exception error) { context.UiError = error; if (context.ActionIssued) context.Retain = true; }
             finally { context.ScopeObserved.Set(); context.UiDone.Set(); }
         }
 
@@ -188,7 +195,29 @@ namespace VBAi.Tests.Integration
             internal volatile bool Stop, Retain, ActionIssued, ModalObserved, ModalClosed;
             private readonly object sync = new object();
             private int sequence;
-            internal Context(string root) { Root = root; Directory.CreateDirectory(root); }
+            internal readonly string DiagnosticNonce = Guid.NewGuid().ToString("N");
+            internal readonly string DiagnosticRoot, DiagnosticManifest;
+            internal ChatGitModalDiagnostic.Identity DiagnosticIdentity;
+            internal Context(string root)
+            {
+                Root = root; Directory.CreateDirectory(root);
+                DiagnosticRoot = Path.Combine(Path.GetTempPath(), ChatGitModalDiagnostic.DirectoryName, DiagnosticNonce);
+                Assert.IsFalse(Directory.Exists(DiagnosticRoot)); Directory.CreateDirectory(DiagnosticRoot);
+                DiagnosticManifest = Path.Combine(DiagnosticRoot, "request.json");
+            }
+            internal void WriteDiagnosticRequest()
+            {
+                using (var process = Process.GetProcessById(Fixture.ProcessId))
+                    DiagnosticIdentity = new ChatGitModalDiagnostic.Identity { DocumentPath = Scope.Path, ProcessId = process.Id,
+                        ProcessStartedUtc = process.StartTime.ToUniversalTime().ToString("o"), ThreadId = Scope.ThreadId,
+                        ChatHandle = ChatHandle.ToInt64(), RootHandle = Scope.VbeHandle.ToInt64(),
+                        ProductMvid = typeof(VbeSession).Module.ModuleVersionId.ToString("D"), ProductSha256 = Sha(typeof(VbeSession).Assembly.Location) };
+                ChatGitModalDiagnostic.RequireManifestPath(DiagnosticManifest, Path.GetTempPath());
+                using (var file = new FileStream(DiagnosticManifest, FileMode.CreateNew, FileAccess.Write, FileShare.None))
+                using (var writer = new StreamWriter(file, new UTF8Encoding(false)))
+                    writer.Write(new JavaScriptSerializer().Serialize(new { Version = 1, Nonce = DiagnosticNonce, Identity = DiagnosticIdentity }));
+                Record(new { Phase = "ChatGitDiagnosticRequestPrepared", Manifest = DiagnosticManifest, DiagnosticNonce, DiagnosticIdentity });
+            }
             internal void Record(object value)
             {
                 lock (sync)

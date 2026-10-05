@@ -107,6 +107,7 @@ namespace VBAi
         private void GitHub_Click(object sender, EventArgs e)
         {
             if (busy) return;
+            ChatGitModalDiagnostic diagnostic = null;
             try
             {
                 EnsureCurrentScope();
@@ -114,10 +115,24 @@ namespace VBAi
                 if (scope == null || scope.Key.StartsWith("temporary:", StringComparison.Ordinal))
                     throw new InvalidOperationException(UiText.Get("Save the document before linking it to GitHub."));
                 string nativeScope = scopeSession.GitScope(scope.Project);
-                using (var window = new GitWindow(scopeSession.GitProject(scope.Project, nativeScope), nativeScope, scope.Label, settings.GitHubAccount))
-                    ShowModal(window, GitModalOwner());
+                diagnostic = ChatGitModalDiagnostic.BeginFromEnvironment(this, nativeScope);
+                var window = new GitWindow(scopeSession.GitProject(scope.Project, nativeScope), nativeScope, scope.Label, settings.GitHubAccount);
+                if (diagnostic == null)
+                {
+                    using (window) ShowModal(window, GitModalOwner());
+                }
+                else diagnostic.RunModal(() => ShowModal(window, GitModalOwner()), window.Dispose);
             }
-            catch (Exception ex) { SetStatus(UiText.Get("GitHub: ") + ex.Message); }
+            catch (Exception ex)
+            {
+                if (diagnostic != null) diagnostic.Fail(ex);
+                SetStatus(UiText.Get("GitHub: ") + ex.Message);
+            }
+            finally
+            {
+                // Last handler operation. No message pumping or reentrant work follows this post.
+                if (diagnostic != null) diagnostic.SchedulePostHandler(callback => BeginInvoke(callback));
+            }
         }
         /// <summary>Uses the native top-level chat root as the modal owner when the chat is hosted by VBE.</summary>
         /// <returns>The standalone chat or an exact native root on the chat's owning thread.</returns>
