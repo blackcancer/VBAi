@@ -28,18 +28,29 @@ namespace VBAi.Tests.Integration
             Assert.AreEqual(400, Convert.ToInt32(fonts[owner + ".Weight"]), owner + " weight");
         }
 
-        /// <summary>Requires explicit exact persisted root and Frame descriptors in each actual exported resource.</summary>
-        internal static void RequireSnapshot(VbaGitSnapshot snapshot, string layout = null)
+        /// <summary>Accepts an omitted default root descriptor only with exact current native font evidence.</summary>
+        internal static void RequireSnapshot(VbaGitSnapshot snapshot,
+            Func<string, string, IDictionary<string, object>> readCurrentNativeFonts, string layout = null)
         {
             if (!Enabled) return;
+            Assert.IsNotNull(readCurrentNativeFonts, "The current native form font reader is required.");
             foreach (var form in snapshot.Manifest.Components.Where(x => x.Type == 3))
             {
                 var bindings = snapshot.FormFonts(form);
                 Assert.IsNotNull(bindings, "Complete form resource grammar must expose its font bindings.");
-                var root = bindings.Single(x => x.OwnerPath == "" && x.Type == 7);
-                CollectionAssert.AreEqual(Descriptor(8.25m), root.Descriptor, form.Name + " explicit default root descriptor");
-                bool frameLayout = layout == "FrameMultiPage" ||
+                bool frameLayout = bindings.Any(x => x.Type == 14) || layout == "FrameMultiPage" ||
                     VbaGitSnapshot.Utf8.GetString(snapshot.Files[form.FileName]).Contains("LOCAL_GIT_LAYOUT_FrameMultiPage");
+                var nativeFonts = readCurrentNativeFonts(form.Name, frameLayout ? "FrameMultiPage" : layout);
+                Assert.IsNotNull(nativeFonts, form.Name + " current native font evidence is required.");
+                RequireNative(nativeFonts, frameLayout ? "FrameMultiPage" : layout);
+                var roots = bindings.Where(x => x.OwnerPath == "").ToArray();
+                Assert.IsTrue(roots.Length <= 1 && roots.All(x => x.Type == 7),
+                    form.Name + " has an unsupported or ambiguous root font plan.");
+                if (roots.Length == 1)
+                    CollectionAssert.AreEqual(Descriptor(8.25m), roots[0].Descriptor,
+                        form.Name + " explicit default root descriptor");
+                // MS-OFORMS may omit a default Form font. The current native getter above
+                // then supplies the exact Tahoma 8.25/style/charset/weight proof.
                 if (frameLayout) Assert.AreEqual(1, bindings.Count(x => x.Type == 14), "The declared Frame needs its explicit font binding.");
                 foreach (var frame in bindings.Where(x => x.Type == 14))
                 {

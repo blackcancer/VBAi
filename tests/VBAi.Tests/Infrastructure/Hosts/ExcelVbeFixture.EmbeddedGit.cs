@@ -271,7 +271,8 @@ namespace VBAi.Tests.Integration
             }
             var result = new VbaGitSnapshot(new VbaGitManifest { Components = manifest.ToArray(), References = scope.References }, files);
             evidence(new { Phase = "IndependentBridgeBaselineVerified", Files = EmbeddedGitSnapshotOracle.Describe(result) });
-            UserFormQualificationFonts.RequireSnapshot(result, scope.Layout);
+            UserFormQualificationFonts.RequireSnapshot(result,
+                (form, currentLayout) => ReadGitLayoutFonts(form, currentLayout), scope.Layout);
             return result;
         }
 

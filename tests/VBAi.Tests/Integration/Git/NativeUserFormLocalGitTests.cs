@@ -109,11 +109,11 @@ namespace VBAi.Tests.Integration
                         report["DesignerCaptureAcceptance"] = "CAPTURED_PENDING_VISUAL_REVIEW";
                         host.WithGitProject(path, project => {
                             Phase(output, report, "repeat-unchanged-native-captures");
-                            var before = Capture(project, output, "before");
+                            var before = Capture(project, host, layout, output, "before");
                             Assert.IsTrue(before.Manifest.Components.Single(c => c.Name == form).HasResources);
                             for (int i = 1; i <= 3; i++)
                             {
-                                var repeated = Capture(project, output, "unchanged-" + i);
+                                var repeated = Capture(project, host, layout, output, "unchanged-" + i);
                                 Assert.IsTrue(before.SameAs(repeated), "Unedited native capture drift for " + layout + " at repetition " + i + ". Unsupported grammar must not weaken this comparison.");
                             }
                             report["UnchangedCapturesVerified"] = true;
@@ -123,9 +123,9 @@ namespace VBAi.Tests.Integration
                             var nativeChanged = host.ReadGitLayout(form, layout);
                             report["NativeChanged"] = nativeChanged;
                             Assert.IsTrue(nativeBefore.Any(pair => !Equals(pair.Value, nativeChanged[pair.Key])), "The fixture must actually change a persisted native value.");
-                            var changed = Capture(project, output, "changed");
+                            var changed = Capture(project, host, layout, output, "changed");
                             Assert.IsFalse(before.SameAs(changed), "The property change was lost by snapshot comparison: " + layout);
-                            var changedAgain = Capture(project, output, "changed-repeat");
+                            var changedAgain = Capture(project, host, layout, output, "changed-repeat");
                             Assert.IsTrue(changed.SameAs(changedAgain), "The changed native state must also have a stable revision: " + layout);
                             report["MeaningfulChangeDetected"] = true;
 
@@ -173,7 +173,7 @@ namespace VBAi.Tests.Integration
                                     }
                                     throw;
                                 }
-                                var restored = Capture(project, output, "checkpoint-restored");
+                                var restored = Capture(project, host, layout, output, "checkpoint-restored");
                                 Assert.IsTrue(restored.SameAs(before));
                                 AssertNativeState(nativeBefore, host.ReadGitLayout(form, layout), "checkpoint restore");
                                 Assert.IsFalse(repository.RecoveryPending);
@@ -186,7 +186,7 @@ namespace VBAi.Tests.Integration
                                 // completion; it is not a simulated COM error or fabricated state.
                                 repository.PrepareRecovery(restored);
                                 project.Apply(changed, restored);
-                                var after = Capture(project, output, "measured-interrupted-state");
+                                var after = Capture(project, host, layout, output, "measured-interrupted-state");
                                 Assert.IsTrue(after.SameAs(changed));
                                 AssertNativeState(nativeChanged, host.ReadGitLayout(form, layout), "native apply before rollback");
                                 repository.RecordImportedState(after);
@@ -197,7 +197,7 @@ namespace VBAi.Tests.Integration
 
                                 Phase(output, report, "production-explicit-rollback");
                                 Await(operations.ExecuteAsync("rollback", operations.Revision(after)));
-                                Assert.IsTrue(Capture(project, output, "rollback-restored").SameAs(before));
+                                Assert.IsTrue(Capture(project, host, layout, output, "rollback-restored").SameAs(before));
                                 AssertNativeState(nativeBefore, host.ReadGitLayout(form, layout), "explicit rollback");
                                 Assert.IsFalse(repository.RecoveryPending);
                                 report["ExplicitRollbackVerified"] = true;
@@ -216,7 +216,7 @@ namespace VBAi.Tests.Integration
                         host.WithGitProject(path, project => {
                             var expected = VbaGitSnapshot.Read(Directory.GetFiles(Path.Combine(output, "expected-reopened"))
                                 .ToDictionary(file => Path.GetFileName(file), file => File.ReadAllBytes(file), StringComparer.Ordinal));
-                            Assert.IsTrue(Capture(project, output, "reopened").SameAs(expected));
+                            Assert.IsTrue(Capture(project, host, layout, output, "reopened").SameAs(expected));
                         });
                         File.Copy(path, Path.Combine(output, "saved-reopened.xlsm"));
                         host.CaptureGitFormDesigner(form, Path.Combine(output, "reopened-designer.png"));
@@ -255,11 +255,13 @@ namespace VBAi.Tests.Integration
             Assert.IsTrue(expected.SameAs(actual));
         }
 
-        private static VbaGitSnapshot Capture(VbaGitProject project, string output, string name)
+        private static VbaGitSnapshot Capture(VbaGitProject project, ExcelVbeFixture host, string layout,
+            string output, string name)
         {
             var snapshot = project.Capture();
             SaveSnapshot(output, name, snapshot);
-            UserFormQualificationFonts.RequireSnapshot(snapshot);
+            UserFormQualificationFonts.RequireSnapshot(snapshot,
+                (form, currentLayout) => host.ReadGitLayoutFonts(form, currentLayout), layout);
             return snapshot;
         }
 

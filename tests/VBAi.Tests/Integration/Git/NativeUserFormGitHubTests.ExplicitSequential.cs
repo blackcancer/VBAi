@@ -75,7 +75,8 @@ namespace VBAi.Tests.Integration
                                 Assert.IsTrue(captured.Manifest.Components.Single(item => item.Name == form).HasResources);
                                 Assert.IsTrue(captured.SameAs(project.Capture()), "Unchanged source revision must be stable before transport.");
                                 SaveSnapshot(output, "source-export", captured);
-                                UserFormQualificationFonts.RequireSnapshot(captured, "LabelButton");
+                                UserFormQualificationFonts.RequireSnapshot(captured,
+                                    (name, currentLayout) => source.ReadGitLayoutFonts(name, currentLayout), "LabelButton");
                                 sourceView = source.ReadGitForm(form);
                                 sourceLayout = source.ReadGitLayout(form, "LabelButton");
                                 report["SourceNativeLayout"] = sourceLayout;
@@ -176,7 +177,8 @@ namespace VBAi.Tests.Integration
                                 fresh.WithGitProject(savedTarget, project => {
                                     var reopened = project.Capture();
                                     SaveSnapshot(output, "fresh-process-reopened", reopened);
-                                    UserFormQualificationFonts.RequireSnapshot(reopened, "LabelButton");
+                                    UserFormQualificationFonts.RequireSnapshot(reopened,
+                                        (name, currentLayout) => fresh.ReadGitLayoutFonts(name, currentLayout), "LabelButton");
                                     Assert.IsTrue(captured.SameAs(reopened), "Fetched remote import must remain exact in a distinct read-only process.");
                                 });
                                 fresh.CaptureGitFormDesigner(form, Path.Combine(output, "fresh-process-designer.png"));

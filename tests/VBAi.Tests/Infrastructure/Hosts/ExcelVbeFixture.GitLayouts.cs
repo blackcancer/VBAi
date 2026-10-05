@@ -63,12 +63,47 @@ namespace VBAi.Tests.Integration
                     finally { Release(control); Release(controls); }
                 });
             if (layout == "Image") InstallGitLayoutPicture(form);
+            if (UserFormQualificationFonts.Enabled && layout == "FrameMultiPage")
+                CaptureGitFontSeedEvidence(form, layout, path, "before-save");
             ((dynamic)workbook).Save();
+            if (UserFormQualificationFonts.Enabled && layout == "FrameMultiPage")
+                CaptureGitFontSeedEvidence(form, layout, path, "after-save");
             // Qualification on the exact saved designer must begin after native
             // persistence. Independent baseline trials proved that initial geometry,
             // PNG representation and AddItem runtime rows can change without any
             // Git import. Never ignore those differences in snapshot comparison.
-            if (persistedBaseline) Assert.AreEqual(0, ReopenAndReadProjectProtection(path));
+            if (persistedBaseline)
+            {
+                Assert.AreEqual(0, ReopenAndReadProjectProtection(path));
+                if (UserFormQualificationFonts.Enabled && layout == "FrameMultiPage")
+                    CaptureGitFontSeedEvidence(form, layout, path, "after-reopen");
+            }
+        }
+
+        /// <summary>Records the actual seeded resource and native font before import without changing or repairing it.</summary>
+        private void CaptureGitFontSeedEvidence(string form, string layout, string path, string phase)
+        {
+            VbaGitSnapshot before = null, after = null;
+            string directory = File("font-seed-" + phase);
+            System.IO.Directory.CreateDirectory(directory);
+            WithGitProject(path, project => before = project.Capture());
+            foreach (var item in before.Serialize())
+                System.IO.File.WriteAllBytes(System.IO.Path.Combine(directory, item.Key), item.Value);
+            var native = ReadGitLayoutFonts(form, layout);
+            WithGitProject(path, project => after = project.Capture());
+            string afterDirectory = System.IO.Path.Combine(directory, "after-native-read");
+            System.IO.Directory.CreateDirectory(afterDirectory);
+            foreach (var item in after.Serialize())
+                System.IO.File.WriteAllBytes(System.IO.Path.Combine(afterDirectory, item.Key), item.Value);
+            WriteEvidence("font-seed-" + phase + ".json", new {
+                Phase = phase, ProcessId, AssemblyMvid = typeof(VbeSession).Module.ModuleVersionId.ToString("D"),
+                Layout = layout, Form = form, ProjectPath = path, ExpectedFrameSize = 8.27m,
+                NativeFonts = native, BeforeNativeRead = directory, AfterNativeRead = afterDirectory,
+                NativeReadPreservedSnapshot = before.SameAs(after), Changes = after.Changes(before),
+                BeforeBindings = before.FormFonts(before.Manifest.Components.Single(item => item.Name == form)),
+                AfterBindings = after.FormFonts(after.Manifest.Components.Single(item => item.Name == form)),
+                FontRepairs = 0, GitImports = 0, MacroExecutions = 0
+            });
         }
 
         /// <summary>Loads a synthetic bitmap through the production command in Excel, without crossing a process-local GDI handle.</summary>

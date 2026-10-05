@@ -7,7 +7,7 @@ namespace VBAi.Tests.Unit
 {
     /// <summary>Checks that the native qualification oracle rejects the known fractional regression.</summary>
     [TestClass]
-    public sealed class UserFormQualificationFontsTests
+    public sealed partial class UserFormQualificationFontsTests
     {
         [TestMethod]
         public void RoundedFrameAndChangedDefaultRootCannotPass()

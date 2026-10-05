@@ -135,7 +135,7 @@ namespace VBAi.Tests.Integration
             foreach (var item in expected.Types) Assert.AreEqual(item.Value, types[item.Key], "Persisted component type: " + item.Key);
             string revision = string.Join(";", rows.OrderBy(x => x, StringComparer.Ordinal).Select(x => x.ToUpperInvariant()));
             Assert.AreEqual(expected.References, revision);
-            var actualScope = new EmbeddedGitScope { Path = expected.Path, Code = code, Types = types, References = revision };
+            var actualScope = new EmbeddedGitScope { Path = expected.Path, Layout = expected.Layout, Code = code, Types = types, References = revision };
             var snapshot = ExportEmbeddedBaseline(actualScope, pending, evidence, "owner-bridge-persistence-" + Guid.NewGuid().ToString("N"));
             evidence(new { Phase = readOnly ? "FreshProcessSnapshotReadback" : "SavedSnapshotReadback",
                 Exact = expected.Baseline.SameAs(snapshot), Changes = snapshot.Changes(expected.Baseline),
