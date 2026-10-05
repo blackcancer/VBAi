@@ -12,7 +12,7 @@ using VBAi;
 
 namespace VBAi.Tests.Unit
 {
-    /// <summary>Isolates the synthetic Access scenario and any unfinished dispatcher on a fresh STA.</summary>
+    /// <summary>Isolates a synthetic VBE persistence scenario and any unfinished dispatcher on a fresh STA.</summary>
     internal sealed class AccessStaTestMethodAttribute : TestMethodAttribute
     {
         [ThreadStatic] private static Scope current;
@@ -61,7 +61,7 @@ namespace VBAi.Tests.Unit
                 if (result.Outcome == UnitTestOutcome.Passed)
                 {
                     result.Outcome = UnitTestOutcome.Failed;
-                    result.TestFailureException = new AssertFailedException("The synthetic Access scenario returned with an unfinished original task. " + diagnostic);
+                    result.TestFailureException = new AssertFailedException("The synthetic VBE persistence scenario returned with an unfinished original task. " + diagnostic);
                 }
             }
             return results; // Existing failure objects/DataRow results are never replaced or rehabilitated.
@@ -112,15 +112,15 @@ namespace VBAi.Tests.Unit
             }) { IsBackground = true };
             scope.Thread.SetApartmentState(ApartmentState.STA);
             scope.Thread.Start();
-            // This bounds the test adapter itself, as the existing WinForms attribute does. Access remains bounded to five seconds.
+            // This bounds the test adapter itself, as the existing WinForms attribute does. Each persistence completion remains bounded to five seconds.
             TimeSpan initialRemaining = TimeSpan.FromMinutes(2) - adapterClock.Elapsed;
             if (initialRemaining <= TimeSpan.Zero || !finished.Wait(initialRemaining))
-                throw new TimeoutException("The synthetic Access test thread did not return its original result; no thread termination or replay is attempted.");
+                throw new TimeoutException("The synthetic VBE persistence test thread did not return its original result; no thread termination or replay is attempted.");
             if (!run.Retained)
             {
                 TimeSpan remaining = TimeSpan.FromMinutes(2) - adapterClock.Elapsed;
                 if (remaining <= TimeSpan.Zero || !scope.Thread.Join(remaining))
-                    throw new TimeoutException("The original synthetic Access STA did not exit within the original adapter bound.");
+                    throw new TimeoutException("The original synthetic VBE persistence STA did not exit within the original adapter bound.");
                 run.ThreadExitObserved = true;
                 finished.Dispose(); scope.Park.Dispose();
             }
@@ -132,11 +132,11 @@ namespace VBAi.Tests.Unit
         {
             if (start == null) throw new ArgumentNullException(nameof(start));
             if (current == null || current.Owner != Thread.CurrentThread.ManagedThreadId)
-                throw new InvalidOperationException("Synthetic Access Save requires its dedicated test STA scope.");
+                throw new InvalidOperationException("Synthetic VBE persistence Save requires its dedicated test STA scope.");
             var tracked = new Tracked();
             var trace = new VbeInspectionTrace(tracked.Events.Enqueue);
             using (trace.Enter()) tracked.Task = start();
-            if (tracked.Task == null) throw new InvalidOperationException("The original Access task is absent.");
+            if (tracked.Task == null) throw new InvalidOperationException("The original VBE persistence task is absent.");
             current.Tasks.Add(tracked);
             return (Task<object>)tracked.Task;
         }
