@@ -59,35 +59,15 @@ namespace VBAi.Tests.Integration
         {
             if (Environment.GetEnvironmentVariable("VBAi_RUN_EXCEL_TESTS") != "1")
                 Assert.Inconclusive("Excel automation is opt-in. Set VBAi_RUN_EXCEL_TESTS=1.");
-            string desktop = Environment.GetEnvironmentVariable("VBAi_TEST_DESKTOP_NAME");
-            if (!string.IsNullOrWhiteSpace(desktop))
-            {
-                IsolatedTestDesktop.RequireCurrent(desktop);
-                var privateFixture = StartOwnedWithTrace(ExcelOwnedBootstrapPlan.RequireLocalAbsolutePath(
-                    Environment.GetEnvironmentVariable(VbeInspectionTrace.EnvironmentName)));
-                // Generic scenarios require the same unsaved-workbook precondition as COM
-                // activation. Retire only the verified macro-free seed, after loaded MVID checks.
-                privateFixture.PreserveForDiagnosticRecovery = true;
-                try
-                {
-                    ((dynamic)privateFixture.workbook).Close(false);
-                    Release(privateFixture.workbook); privateFixture.workbook = null;
-                    privateFixture.workbook = ((dynamic)privateFixture.workbooks).Add();
-                    Assert.AreEqual(1, Convert.ToInt32(((dynamic)privateFixture.workbooks).Count));
-                    Assert.IsTrue(string.IsNullOrEmpty(Convert.ToString(((dynamic)privateFixture.workbook).Path)));
-                    privateFixture.WriteEvidence("private-unsaved-workbook.json", new {
-                        Desktop = desktop, privateFixture.ProcessId, Workbook = Convert.ToString(((dynamic)privateFixture.workbook).Name),
-                        SavedPath = Convert.ToString(((dynamic)privateFixture.workbook).Path), HelperSaveInvoked = false,
-                        SeedClosedWithoutSaving = true, Utc = DateTime.UtcNow.ToString("o") });
-                    privateFixture.PreserveForDiagnosticRecovery = false;
-                    return privateFixture;
-                }
-                catch
-                {
-                    lock (retainedBootstraps) retainedBootstraps.Add(privateFixture);
-                    throw; // Unknown Close/Add outcomes never authorize replay or cleanup.
-                }
-            }
+            return StartSelectedBootstrap(Environment.GetEnvironmentVariable("VBAi_TEST_DESKTOP_NAME"),
+                Environment.GetEnvironmentVariable("VBAi_RUN_USERFORM_EXPLICIT_BOOTSTRAP"),
+                Environment.GetEnvironmentVariable(VbeInspectionTrace.EnvironmentName),
+                IsolatedTestDesktop.RequireCurrent, trace => StartOwnedWithTrace(trace), StartCom);
+        }
+
+        /// <summary>Preserves the ordinary activation path when neither explicit launch condition is selected.</summary>
+        private static ExcelVbeFixture StartCom()
+        {
             var excelType = Type.GetTypeFromProgID("Excel.Application");
             if (excelType == null) Assert.Inconclusive("Excel.Application is unavailable.");
             var existing = Process.GetProcessesByName("EXCEL");
