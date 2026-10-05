@@ -14,6 +14,7 @@ namespace VBAi.Tests.Integration
         internal Func<string, IDictionary<string, object>[]> Items;
         internal string Project, Root;
         private string projectName, projectPath;
+        internal string ToolProject => !string.IsNullOrWhiteSpace(projectPath) && System.IO.Path.IsPathRooted(projectPath) ? projectPath : projectName;
         internal string Label => projectName + " · " + (!string.IsNullOrWhiteSpace(projectPath) &&
             System.IO.Path.IsPathRooted(projectPath) ? System.IO.Path.GetFileName(projectPath) : UiText.Get("unsaved document"));
         internal int ProcessId;

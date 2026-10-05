@@ -214,11 +214,47 @@ def require_embedded_owner(observed, bank, campaign):
 
 
 def is_stream_request(prompt):
-    return prompt == STREAM_PROMPT or "Write a long numbered list of 1000 everyday objects" in prompt
+    if prompt == STREAM_PROMPT or "Write a long numbered list of 1000 everyday objects" in prompt:
+        return True
+    # ChatWindow adds encoding and selected-project context before the user's
+    # text. Accept the exact prompt at that boundary, never an appended suffix.
+    boundary = "\n\n" + STREAM_PROMPT
+    if not prompt.endswith(boundary):
+        return False
+    prefix = prompt[:-len(boundary)]
+    closing = "\n</vbe-encoding-context>\n\n"
+    return (prefix.startswith("<vbe-encoding-context>\n") and
+            prefix.count("<vbe-encoding-context>") == 1 and
+            prefix.count("</vbe-encoding-context>") == 1 and
+            closing in prefix and bool(prefix.split(closing, 1)[1].strip()))
 
 
 def is_numbered_response(text):
     return len(text) > 20 and re.search(r"(?m)^\s*1[.)]\s+\S", text) is not None
+
+
+
+def tool_project(bank):
+    value = bank.get("ToolProject")
+    require(isinstance(value, str) and value.strip() and value == value.strip(), "Missing or invalid canonical ToolProject")
+    return value
+
+
+def require_tool_project_context(user, bank):
+    # The final context line is emitted from the actual selected conversation
+    # scope, independently of the fixture's native project name and prompt.
+    prefix, boundary, _ = user.partition("\n\nThis is a synthetic qualification.")
+    require(boundary and prefix.startswith("<vbe-encoding-context>\n") and
+            "\n</vbe-encoding-context>\n\n" in prefix, "Native request lacks actual selected-project context")
+    line = prefix.splitlines()[-1]
+    label, separator, identifier = line.partition(": ")
+    require(separator and "project" in label.casefold() and identifier == tool_project(bank),
+            "Canonical ToolProject differs from actual conversation context")
+
+
+def require_native_tool_arguments(arguments, bank):
+    require(arguments.get("Project") == tool_project(bank) and arguments.get("Module") == "Q028Marker",
+            "Native tool canonical target differs")
 
 
 def require_native_transcript(observations, embedded, bank):
@@ -275,9 +311,12 @@ def review(root):
         require(len(embedded) == 1, "Installed assistant owner observation is missing or ambiguous")
         require_embedded_owner(embedded[0], bank, campaign)
         require_native_transcript(bank["Observations"], embedded[0], bank)
-        candidates = [r for r in rows if "ObservedMarker" in r["user"] and ("Project=" + bank["Project"] + ",") in r["user"]]
+        project = tool_project(bank)
+        candidates = [r for r in rows if "ObservedMarker" in r["user"] and ("Project=" + project + ",") in r["user"]]
         require(len(candidates) == 2, host["Name"] + ": native read requires exactly two requests")
         first, final = candidates
+        for candidate in candidates:
+            require_tool_project_context(candidate["user"], bank)
         ready = [r for r in rows if "Reply with exactly UI_READY_42 and nothing else." in r["user"]]
         require(len(ready) == 1 and int(ready[0]["id"]) < int(first["id"]) < int(final["id"]), "Next-send/native wire order differs")
         complete(ready[0]); require_ready(response(root, ready[0], plan["Model"]))
@@ -295,7 +334,7 @@ def review(root):
         call = initial["calls"][0]
         require(call["id"], "Missing native tool call identity")
         arguments = json.loads(call["arguments"])
-        require(arguments.get("Project") == bank["Project"] and arguments.get("Module") == "Q028Marker", "Native tool target differs")
+        require_native_tool_arguments(arguments, bank)
         results = [m for m in final["request"]["messages"] if m.get("role") == "tool" and m.get("tool_call_id") == call["id"]]
         require(len(results) == 1, "Exact native tool result is absent")
         native = json.loads(results[0]["content"])
@@ -356,6 +395,37 @@ class OracleTests(unittest.TestCase):
         self.assertTrue(is_numbered_response("1) Object 1\n2) Object 2\n3) Object 3"))
         self.assertFalse(is_numbered_response("1\n2\n3\n" * 10))
         self.assertFalse(is_numbered_response("1. Object 1"))
+
+    def test_real_product_prefix_accepts_only_exact_final_stream_prompt(self):
+        prefix = ("<vbe-encoding-context>\n"
+                  "Before inserting a user-provided code file, call inspect_code_file on its exact path.\n"
+                  "</vbe-encoding-context>\n\n"
+                  "Mode de cette demande : Discussion. Analyse uniquement ; aucune modification ni exécution de macro.\r\n"
+                  "Projet VBA de cette conversation : VBAProject · document non enregistré\r\n"
+                  "Identifiant Project à utiliser dans les outils : VBAProject\n\n")
+        self.assertTrue(is_stream_request(prefix + STREAM_PROMPT))
+        for prompt in (prefix + STREAM_PROMPT + " Another instruction.", prefix + STREAM_PROMPT + "\n",
+                       "Unrelated context\n\n" + STREAM_PROMPT,
+                       prefix.replace("</vbe-encoding-context>", "</unknown>") + STREAM_PROMPT,
+                       prefix.rstrip() + STREAM_PROMPT):
+            self.assertFalse(is_stream_request(prompt))
+
+    def test_canonical_tool_project_name_and_document_path(self):
+        for project in ("VBAProject", r"E:\Private\Word\Disposable.docm"):
+            bank = {"Project": "Project", "ToolProject": project}
+            user = ("<vbe-encoding-context>\nEncoding guidance.\n</vbe-encoding-context>\n\n"
+                    "Mode de cette demande : Discussion.\r\nProjet VBA de cette conversation : Project · Disposable.docm\r\n"
+                    "Identifiant Project à utiliser dans les outils : " + project +
+                    "\n\nThis is a synthetic qualification. Call read_module exactly once for Project=" + project + ", Module=Q028Marker.")
+            require_tool_project_context(user, bank)
+            require_native_tool_arguments({"Project": project, "Module": "Q028Marker"}, bank)
+            with self.assertRaises(ValueError):
+                require_native_tool_arguments({"Project": "Project", "Module": "Q028Marker"}, bank)
+            with self.assertRaises(ValueError):
+                require_tool_project_context(user, dict(bank, ToolProject="Project"))
+        for invalid in (None, "", " ", " Project "):
+            with self.assertRaises(ValueError):
+                tool_project({"ToolProject": invalid})
 
     def test_native_transcript_requires_exact_owner_before_composer_and_send(self):
         bound = {"Phase": "NativeTranscriptBound", "ProcessId": 10, "NativeThread": 11, "Panel": 12}

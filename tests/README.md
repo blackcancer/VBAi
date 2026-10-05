@@ -1390,6 +1390,10 @@ procedure or Outlook send is requested. Outlook requires an absent personal OTM
 and an existing configured profile; it launches only the selected executable on
 the inactive desktop and attaches through the ROT after sole-process/native-window
 identity checks. It never falls back to COM activation on another desktop.
+The native tool request uses the conversation's canonical project identifier:
+the absolute host-document path when available, otherwise the exact unsaved
+project name. The native result's project name is checked separately. A basename
+or default project label does not override the conversation privacy boundary.
 
 Assistant discovery requires the actual ActiveX ancestor (`ChatToolWindow` or
 the VBE runtime name `ControlAxSourcingSite`), matching native process/thread,

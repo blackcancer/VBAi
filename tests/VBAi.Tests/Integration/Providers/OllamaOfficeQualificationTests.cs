@@ -67,6 +67,7 @@ namespace VBAi.Tests.Integration
                 var sources = host.Items("list_modules").ToDictionary(row => Convert.ToString(row["Name"]),
                     row => Convert.ToString(host.Data("read_module", "Module", row["Name"])["Sha256"]));
                 report["SourceBeforeSha256"] = before["Sha256"]; report["MarkerSha256"] = EditorDocument.Hash(marker);
+                report["ToolProject"] = host.ToolProject;
                 var worker = new Thread(() => {
                     try
                     {
@@ -95,7 +96,7 @@ namespace VBAi.Tests.Integration
                         ui.WaitIdle(125);
                         ui.Wait(() => ui.VisibleTranscript().Any(OllamaOfficeStreamOracle.IsReadyResponse), 10, "visible completed next reply");
                         report["NextSendCompleted"] = true; flush();
-                        string request = "This is a synthetic qualification. Inspect only the selected disposable project. Call read_module exactly once for Project=" + host.Project +
+                        string request = "This is a synthetic qualification. Inspect only the selected disposable project. Call read_module exactly once for Project=" + host.ToolProject +
                             ", Module=" + module + ". What is the exact value of the string constant ObservedMarker? The value is only in the module. Do not modify or execute code. Return the value after reading it.";
                         Assert.IsFalse(request.Contains(marker));
                         ui.SendOnce(request); ui.WaitIdle(125);

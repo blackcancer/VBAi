@@ -7503,3 +7503,21 @@ verified the six fields and COM registry backup, then stopped only the owned
 headless backend. All failed receipts remain intact under `q028-office-11` and
 `q028-recovery-office11-*`. The first read-only recovery failed its COM Item
 lookup with zero Close/Quit entries; the subsequent exact method lookup passed.
+
+At harness `1ca247c`, `q028-office-12` passed **519 selected managed tests** and
+the three real prerequisites. Excel PID 163444 passed the complete embedded
+scenario with unchanged source/references and original normal shutdown. Its
+independent wire inspection confirms the exact numbered stream, cancellation,
+`UI_READY_42` and a single successful native `read_module`; the random marker was
+absent before that tool result and its source/hash matched the fixture baseline.
+Native workbook/project identity and the terminal bridge inventory all agreed.
+
+Word PID 158188 passed streaming, Stop and completed recovery, but failed its
+marker phase. The test harness requested the generic project name `Project`
+while the bound conversation required the full `Disposable.docm` identifier.
+The captured single `read_module` was explicitly refused by the privacy guard;
+the assistant explained that refusal and completed normally, without reading
+the marker. This is not an empty stream or backend failure. Word's original
+normal shutdown and campaign restoration/backend/proxy/desktop closure passed;
+the worker exited 1. PowerPoint, Access, Publisher and Outlook remain NOT_RUN.
+The Excel pass does not turn this aggregate into acceptance of all Office hosts.
