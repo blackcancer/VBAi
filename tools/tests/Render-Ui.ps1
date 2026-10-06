@@ -1,19 +1,23 @@
 ﻿<#
 .SYNOPSIS
-Explicit standalone UI fixtures. Rendering may show windows on the test desktop.
+UI fixtures and explicit live-window help capture. Rendering may show windows.
 Chat fixtures capture their exact HWND. UtilityWindow retains screen-capture
 and clipping evidence. CompactUi retains design-time off-screen tab renders.
 .DESCRIPTION
 Select exactly one scenario. No aggregate scenario is provided. Assembly and
-output defaults remain specific to each scenario; Help renders its complete ordered
-interface bank without activation. Pass an explicit candidate
-assembly when required. Shared helper import opens no window or host.
+output defaults remain specific to each scenario. Help captures an explicitly
+selected live product window. Pass an explicit candidate assembly when required.
+Shared helper import opens no window or host.
 .EXAMPLE
 .\Render-Ui.ps1 -Scenario ChatUx -Mode Reasoning -Theme Dark -AssemblyPath artifacts/candidate/VBAi.dll
 .EXAMPLE
 .\Render-Ui.ps1 -Scenario UtilityWindow -Window About -Culture fr-FR
 #>
 param(
+    [int]$HostProcessId,
+    [long]$WindowHandle,
+    [string]$CaptureId,
+    [ValidateSet('Native','Screen')][string]$CaptureRenderer='Native',
     [Parameter(Mandatory=$true)]
     [ValidateSet('ChatDesignerViews','ChatUx','CompactUi','UtilityWindow','Help')][string]$Scenario,
     [string]$AssemblyPath, [string]$OutputDirectory,

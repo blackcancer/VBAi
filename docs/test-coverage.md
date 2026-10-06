@@ -21,37 +21,63 @@ native renderer code, provider services and host processes have separate checks.
 The qualification sections below are the retained current decisions; detailed
 failed attempts and superseded counters are available in Git history.
 
-## French user manual and usage hints (2026-10-06)
+## French user manual and chat UI (2026-10-06)
 
-Source `7f3263d434635f02f66ad9a046ab0095e52b9b69`, isolated Debug solution
-build on Windows. Product assembly SHA-256
-`0F184582B2395150A24CFF3A25366AC99EB18B9D8EF8B6080B70EAB8F1B23D9C`.
-This is a focused documentation/UI check, not a new native-host qualification
-or a measurement of whole-product test coverage.
+UI source `aae04569`, isolated Windows Debug solution build; assembly MVID
+`71f23df8-b13b-468b-bc5f-458235cee22b`, SHA-256
+`ACFD4EA4364F359DDAE9F1C29EF59E2EA713F4051BB86288F7957E1767B0060E`.
+The revised help sources are identified by the commit containing this section.
+This focused validation is not a whole-product coverage measurement or release
+qualification. It supersedes the synthetic screenshot bank rejected in review.
 
 | Check | Observed result |
 | --- | --- |
-| Local help, tooltip inventory, localization, theme, About and WPF composer tests | 32 passed, 0 failed, 0 skipped |
-| Help-builder contract and partial-compiler-failure tests | 10 passed |
+| History layout, native icon decoding and chat menu icon tests | 7 passed, 0 failed, 0 skipped; `ui-fixes-final.trx` |
+| Help-builder contracts, figure bounds, annotations and compiler failure handling | 14 passed |
 | Markdown checker self-tests | 21 passed |
-| Maintained Markdown links and structure | 42 files, 264 local links, 0 errors |
-| Managed IntelliSense documentation audit | 388 C# files, 8,076 declarations, 0 missing/invalid entries or syntax errors |
-| Synthetic interface capture bank | 47 captures, 0 capture failures; foreground window preserved |
-| Compiled French CHM readback | 73 source/asset files byte-identical after extraction; full-text index present |
-| Actual compiled pages loaded by Windows Trident | 23 chapters; French titles, body text and referenced images checked; foreground preserved |
+| Maintained Markdown links and structure | 42 files, 265 local links, 0 errors |
+| Real Excel screenshot bank | 17 reviewed captures; candidate and PNG hashes in the [manifest](help/fr-FR/screenshots/manifest.json) |
+| Compiled French CHM readback | 41 source/asset files byte-identical after extraction; full-text index present |
+| Actual compiled pages loaded by Windows Trident | 23 chapters; titles, text and images checked; foreground preserved |
 
-The CHM SHA-256 is
-`383FFFE1B4A800888557CE9C9692CCFB5F45E18856C4EDBBEC154DFFC975EE20`.
-The same archive is copied beside the add-in and updater outputs. Captures use
-fictional accounts, messages and results in actual controls; their candidate
-hashes and provenance are retained in the screenshot manifest. No Office host,
-provider request or user's macro was used. Interactive search in the Windows
-HTML Help viewer was not exercised.
+CHM SHA-256: `4abce63873da2db503a474290822bdc0b2e20ba9f2f786ae511496b41e835a74`. Interactive search in the standalone HTML Help
+viewer was not exercised. French is the review edition; other languages remain
+pending. Earlier tooltip and XML documentation checks belong to source `7f3263d4`
+and remain in this page's Git history, without implying a fresh full audit.
 
-The XML audit checks declaration coverage and rejects identified generic
-descriptions; it does not establish the correctness of every explanation.
-It excludes C++, JavaScript and test sources. Other help languages await review
-of this French model.
+### Real worked example and retained failures
+
+The disposable `CalculTVA.xlsm` example uses Codex with Luna/medium and separate
+implementation, test creation, correction and publication requests. The generated
+UserForm was actually run with 100 HT and 20% TVA and displayed 120.00 TTC.
+The real assistant reports and window captures are distinct from test verdicts.
+
+| Native test run | Observed verdict |
+| --- | --- |
+| `214e3b02578b4d25ae01060e71f0840c` | 5 passed, 1 failed: exact floating-point comparison; subsequently corrected. |
+| `223c2d7437ca4a789fd800ca0c7bd14a` | 1 outcome unknown, 5 blocked; native Macros selector and missing callback verdict. |
+| `1617a9d62dba4526a4bd346ef16fe408` | 6 passed in a fresh Excel instance; independent report readback, not stale. |
+| `cb78397988394ffc820fda1d7ac3b854` | Explorer UI rerun: 1 outcome unknown, 5 blocked on the same source revision. Defect remains open. |
+
+The successful run and later uncertain rerun share project revision
+`ABE7FA6CE41DEC1AD27EDAA19A1F4D1881E780DA216B4366EEA422B427F76F00`.
+No coverage run was requested. The passing run does not qualify repeat execution
+or erase either uncertain result. Explorer did not automatically display the
+assistant-initiated run when opened; this is another observed presentation limit.
+
+Sources were published only to branch `documentation/calcul-tva-20261006` of the
+existing private disposable repository `blackcancer/vbai-qualification-20260929203712-7267b1e6`,
+commit `89b80050c5e10a3090b97e02474c3608a46d579e`. Independent remote tree readback
+confirmed the manifest, modules, test support and paired form/resource files.
+The workbook binary was not published. Git UI then showed no incoming/outgoing
+commits. The owned Excel process exited normally with code zero and no forced
+termination; the temporary HKCU COM registration was restored and verified.
+
+Local receipts are under `artifacts/help-real-workflow/` in the documentation
+worktree; archive and viewer checks are `artifacts/help-archive-validation.json`
+and `artifacts/help-viewer-validation.json`. Their absence must not be treated as
+a reproduced result. The screenshots document this real example, not arbitrary
+host compatibility or full embedded-UI acceptance.
 
 ## Q028 Ollama and embedded Office assistant qualification (2026-10-06)
 
