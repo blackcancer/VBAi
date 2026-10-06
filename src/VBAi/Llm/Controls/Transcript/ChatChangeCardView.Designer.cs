@@ -20,7 +20,7 @@ namespace VBAi
         /// <summary>Displays the number of changed lines or blocks.</summary>
         internal System.Windows.Forms.Label count;
 
-        /// <summary>Maintains the section state for chat change card view.</summary>
+        /// <summary>Expandable section containing the proposed diff and its undo controls.</summary>
         internal ChatDisclosureView section;
 
         /// <summary>Displays the code diff for the proposed change.</summary>

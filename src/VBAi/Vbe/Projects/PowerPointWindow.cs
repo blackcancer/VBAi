@@ -7,9 +7,10 @@ namespace VBAi
     internal static class PowerPointWindow
     {
 
-        /// <summary>Reads  for power point window.</summary>
-        /// <param name="application">object that supplies the application for this operation.</param>
-        /// <returns>int ptr produced by the operation for read on power point window.</returns>
+        /// <summary>Reads PowerPoint's native main-window handle through its published COM vtable.</summary>
+        /// <param name="application">PowerPoint Application COM object.</param>
+        /// <returns>PowerPoint HWND as an IntPtr.</returns>
+        /// <exception cref="ArgumentNullException">The application object is null.</exception>
         internal static IntPtr Read(object application)
         {
             if (application == null) throw new ArgumentNullException(nameof(application));

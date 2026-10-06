@@ -17,10 +17,10 @@ namespace VBAi
         /// <summary>Commande qui ouvre les paramètres de l’application.</summary>
         private System.Windows.Forms.ToolStripMenuItem configure;
 
-        /// <summary>Maintains the project access state for chat window.</summary>
+        /// <summary>Panel that displays and applies project read/write consent for this conversation.</summary>
         private System.Windows.Forms.ToolStripMenuItem projectAccess;
 
-        /// <summary>Maintains the resume turn state for chat window.</summary>
+        /// <summary>Button that resumes a paused response when its session can continue.</summary>
         private System.Windows.Forms.ToolStripMenuItem resumeTurn;
 
         /// <summary>Commande de menu qui ouvre les informations de l’application.</summary>

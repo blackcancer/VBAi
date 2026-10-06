@@ -45,8 +45,8 @@ namespace VBAi
             /// <summary>Reads an already registered application without starting a process.</summary>
             internal Func<string, object> ReadActiveApplication = Marshal.GetActiveObject;
 
-            /// <summary>Handles current process name for native procedure values host.</summary>
-            /// <returns>Text produced by the operation for current process name on native procedure values host.</returns>
+            /// <summary>Gets the executable process name without its extension for same-host ownership checks.</summary>
+            /// <returns>The current process name reported by Windows.</returns>
             private static string CurrentProcessName()
             { using (var process = System.Diagnostics.Process.GetCurrentProcess()) return process.ProcessName; }
 

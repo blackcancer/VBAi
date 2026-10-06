@@ -14,7 +14,7 @@ namespace VBAi
         /// <summary>Flow layout panel that contains this transcript view&apos;s child controls.</summary>
         private System.Windows.Forms.TableLayoutPanel layout;
 
-        /// <summary>Maintains the section state for chat attachment view.</summary>
+        /// <summary>Expandable section containing attachment details and the optional open action.</summary>
         internal ChatDisclosureView section;
 
         /// <summary>Displays the attachment name and descriptive text.</summary>

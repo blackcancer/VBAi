@@ -44,10 +44,10 @@ namespace VBAi
         /// <summary>Contains the code change targets produced by this message.</summary>
         internal System.Windows.Forms.FlowLayoutPanel targets;
 
-        /// <summary>Maintains the undo turn state for chat message view.</summary>
+        /// <summary>Button that requests rollback of all changes in this conversation turn.</summary>
         internal ChatActionButton undoTurn;
 
-        /// <summary>Maintains the fix state for chat message view.</summary>
+        /// <summary>Button that prepares a follow-up fix request from the message and its code context.</summary>
         internal ChatActionButton fix;
 
         /// <summary>Releases the Designer components.</summary>

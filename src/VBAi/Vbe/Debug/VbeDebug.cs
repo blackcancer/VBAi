@@ -78,9 +78,9 @@ namespace VBAi
         }
 
         /// <summary>Finds an enabled control directly when possible, revalidating its identity and caption each time.</summary>
-        /// <param name="id">int that supplies the id for this operation.</param>
-        /// <param name="allowed">func&lt;command entry, bool&gt; that supplies the allowed for this operation.</param>
-        /// <returns>command entry produced by the operation for find available command on vbe debug.</returns>
+        /// <param name="id">Exact command-bar control ID, or zero to search by predicate only.</param>
+        /// <param name="allowed">Additional caption/path/mode predicate that the enabled command must satisfy.</param>
+        /// <returns>The first matching enabled command, or <see langword="null"/> when no candidate passes validation.</returns>
         private CommandEntry FindAvailableCommand(int id, Func<CommandEntry, bool> allowed)
         {
             if (id > 0)
@@ -99,9 +99,9 @@ namespace VBAi
         }
 
         /// <summary>Resolves an editor action without repeatedly rebuilding paginated command inventories.</summary>
-        /// <param name="action">Text that supplies the action value. Use the format required by the calling operation.</param>
-        /// <param name="mode">int that supplies the mode for this operation.</param>
-        /// <returns>object produced by the operation for find editor command on vbe debug.</returns>
+        /// <param name="action">Supported editor action token such as step_into or toggle_breakpoint.</param>
+        /// <param name="mode">Current VBE mode used to filter commands whose captions are safe for that action.</param>
+        /// <returns>Resolved command ID and caption, or <see langword="null"/> when no exact eligible command exists.</returns>
         internal object FindEditorCommand(string action, int mode)
         {
             int id = action == "toggle_breakpoint" ? 51 : action == "step_into" ? 188 : 0;
