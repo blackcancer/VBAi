@@ -25,7 +25,8 @@ namespace VBAi
         internal enum Phase { Enqueue, CallbackEntered, OwnerSta, ContextValidation, ContextValidated,
             Command229Before, Command229Returned, ObserverEntered, ObserverDialogFound, ObserverReadComplete,
             ObserverTerminal, ContinuationEnqueued, ContinuationEntered, ContinuationReturned,
-            CoreEntered, CoreTerminal, Terminal, OptionsComboInspection }
+            CoreEntered, CoreTerminal, Terminal, OptionsComboInspection,
+            ContinuationPostReturned, ContinuationPostFailed }
 
         internal enum OptionsReader { NativeCombo, UiAutomationCombo }
         internal enum OptionsRole { Other, Font, Size, Palette }

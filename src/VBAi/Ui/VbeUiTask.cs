@@ -46,7 +46,16 @@ namespace VBAi
             public override void Post(SendOrPostCallback callback, object state)
             {
                 trace?.Record(VbeInspectionTrace.Phase.ContinuationEnqueued);
-                dispatcher.BeginInvoke(new Action(() => Invoke(callback, state)));
+                try
+                {
+                    dispatcher.BeginInvoke(new Action(() => Invoke(callback, state)));
+                    trace?.Record(VbeInspectionTrace.Phase.ContinuationPostReturned);
+                }
+                catch (Exception error)
+                {
+                    trace?.Record(VbeInspectionTrace.Phase.ContinuationPostFailed, error);
+                    throw;
+                }
             }
             public override void Send(SendOrPostCallback callback, object state)
             {
