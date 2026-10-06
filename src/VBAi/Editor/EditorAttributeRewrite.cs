@@ -14,13 +14,13 @@ namespace VBAi
         private sealed class Procedure
         {
 
-            /// <summary>Maintains the name and kind state for procedure.</summary>
+            /// <summary>Procedure identifier and normalized kind; property kinds include their accessor (for example, <c>property:get</c>).</summary>
             internal string Name, Kind;
 
-            /// <summary>Maintains the first and last state for procedure.</summary>
+            /// <summary>One-based first and last visible source lines occupied by the declaration.</summary>
             internal int First, Last;
 
-            /// <summary>Maintains the attributes state for procedure.</summary>
+            /// <summary>Export-only Attribute lines attached to this declaration and re-emitted after its final line.</summary>
             internal readonly List<string> Attributes = new List<string>();
         }
 

@@ -17,13 +17,13 @@ namespace VBAi
     internal sealed class AddInShutdownDiagnostic
     {
 
-        /// <summary>Maintains the environment name state for add in shutdown diagnostic.</summary>
+        /// <summary>Opt-in environment variable naming the prepared temporary diagnostic root.</summary>
         internal const string EnvironmentName = "VBAi_TEST_ADDIN_SHUTDOWN_ROOT";
 
-        /// <summary>Maintains the directory name state for add in shutdown diagnostic.</summary>
+        /// <summary>Fixed child directory required beneath the local temporary root.</summary>
         internal const string DirectoryName = "VBAi.AddInShutdownDiagnostic";
 
-        /// <summary>Maintains the maximum invocations and maximum events and maximum bytes state for add in shutdown diagnostic.</summary>
+        /// <summary>Hard caps for nested cleanup invocations, published events, and serialized bytes per event.</summary>
         internal const int MaximumInvocations = 16, MaximumEvents = 2048, MaximumBytes = 16384;
 
         /// <summary>The actual process generation, loaded file and expected native callback thread; contains no project lease.</summary>
@@ -80,50 +80,50 @@ namespace VBAi
         private sealed class Session
         {
 
-            /// <summary>Maintains the nonce state for session.</summary>
+            /// <summary>Nonce read from the exact admitted request and repeated in every published receipt.</summary>
             internal string Nonce;
 
-            /// <summary>Maintains the identity state for session.</summary>
+            /// <summary>Independently observed process, loaded product, and owner-thread identity bound to the request.</summary>
             internal Identity Identity;
 
-            /// <summary>Maintains the observe thread state for session.</summary>
+            /// <summary>Fresh native/managed thread observation invoked for every event publication.</summary>
             internal Func<ThreadIdentity> ObserveThread;
 
-            /// <summary>Maintains the publish state for session.</summary>
+            /// <summary>Bounded receipt writer receiving event sequence, payload, and terminal-marker state.</summary>
             internal Action<int, object, bool> Publish;
 
-            /// <summary>Maintains the clock state for session.</summary>
+            /// <summary>Monotonic clock used to report elapsed cleanup ticks.</summary>
             internal readonly Stopwatch Clock = Stopwatch.StartNew();
 
-            /// <summary>Maintains the invocations and sequence state for session.</summary>
+            /// <summary>Counts admitted nested invocations and monotonically assigned events for this request.</summary>
             internal int Invocations, Sequence;
 
-            /// <summary>Maintains the error state for session.</summary>
+            /// <summary>First observer or publication failure; once set, later events are suppressed.</summary>
             internal Exception Error;
 
-            /// <summary>Maintains the active state for session.</summary>
+            /// <summary>Nested cleanup invocations still active, ordered outermost to innermost.</summary>
             internal readonly List<AddInShutdownDiagnostic> Active = new List<AddInShutdownDiagnostic>();
         }
 
-        /// <summary>Maintains the runtime lock state for add in shutdown diagnostic.</summary>
+        /// <summary>Serializes admission of the process-wide shutdown request.</summary>
         private static readonly object RuntimeLock = new object();
 
-        /// <summary>Maintains the runtime session state for add in shutdown diagnostic.</summary>
+        /// <summary>Admitted process-wide observer session shared by nested shutdown callbacks.</summary>
         private static Session runtimeSession;
 
-        /// <summary>Maintains the runtime request state for add in shutdown diagnostic.</summary>
+        /// <summary>Canonical request JSON retained only while its admitted runtime session is active.</summary>
         private static string runtimeRequest;
 
-        /// <summary>Maintains the session state for add in shutdown diagnostic.</summary>
+        /// <summary>Shared bounded publication state for this invocation and its nested children.</summary>
         private readonly Session session;
 
-        /// <summary>Maintains the entry point and parent state for add in shutdown diagnostic.</summary>
+        /// <summary>Original add-in shutdown entry point and exact active parent invocation ID.</summary>
         private readonly string entryPoint, parent;
 
-        /// <summary>Maintains the active stage state for add in shutdown diagnostic.</summary>
+        /// <summary>Currently entered cleanup stage awaiting its matching return or caught-fault marker.</summary>
         private string activeStage;
 
-        /// <summary>Maintains the terminal state for add in shutdown diagnostic.</summary>
+        /// <summary>Whether this invocation has published its single terminal result.</summary>
         private bool terminal;
 
         /// <summary>Gets or sets the invocation id.</summary>
@@ -138,16 +138,16 @@ namespace VBAi
         /// <value>Current publication error exposed by add in shutdown diagnostic.</value>
         internal Exception PublicationError { get { return session.Error; } }
 
-        /// <summary>Initializes a AddInShutdownDiagnostic instance with the supplied state.</summary>
-        /// <param name="shared">session that supplies the shared for this operation.</param>
-        /// <param name="entry">Text that supplies the entry value. Use the format required by the calling operation.</param>
-        /// <param name="parentId">Text that supplies the parent id value. Use the format required by the calling operation.</param>
+        /// <summary>Creates one linked observation for an existing shutdown cleanup invocation.</summary>
+        /// <param name="shared">Request-scoped session shared with nested cleanup callbacks.</param>
+        /// <param name="entry">Allowed existing entry point: OnBeginShutdown, OnDisconnection, or Dispose.</param>
+        /// <param name="parentId">Exact active parent invocation ID, or null for a top-level callback.</param>
         private AddInShutdownDiagnostic(Session shared, string entry, string parentId)
         { session = shared; entryPoint = entry; parent = parentId; InvocationId = Guid.NewGuid().ToString("N"); }
 
         /// <summary>Returns immediately when disabled; an admission or publication error never prevents original cleanup.</summary>
-        /// <param name="entryPoint">Text that supplies the entry point value. Use the format required by the calling operation.</param>
-        /// <returns>add in shutdown diagnostic produced by the operation for try begin from environment on add in shutdown diagnostic.</returns>
+        /// <param name="entryPoint">Existing shutdown callback name to observe.</param>
+        /// <returns>An admitted observer, or <see langword="null"/> when disabled or any opt-in admission check fails.</returns>
         internal static AddInShutdownDiagnostic TryBeginFromEnvironment(string entryPoint)
         {
             string requestedRoot = Environment.GetEnvironmentVariable(EnvironmentName);
@@ -196,13 +196,13 @@ namespace VBAi
         }
 
         /// <summary>Pure admission seam used by mirror tests and the independently bound native receipt reader.</summary>
-        /// <param name="json">Text that supplies the json value. Use the format required by the calling operation.</param>
-        /// <param name="nonce">Text that supplies the nonce value. Use the format required by the calling operation.</param>
-        /// <param name="entryPoint">Text that supplies the entry point value. Use the format required by the calling operation.</param>
-        /// <param name="observe">func&lt;identity&gt; that supplies the observe for this operation.</param>
-        /// <param name="observeThread">func&lt;thread identity&gt; that supplies the observe thread for this operation.</param>
-        /// <param name="publish">action&lt;int, object, bool&gt; that supplies the publish for this operation.</param>
-        /// <returns>add in shutdown diagnostic produced by the operation for begin on add in shutdown diagnostic.</returns>
+        /// <param name="json">Canonical bounded request JSON published by the owned fixture.</param>
+        /// <param name="nonce">Expected 32-character GUID nonce from the request directory name.</param>
+        /// <param name="entryPoint">Existing shutdown callback being observed.</param>
+        /// <param name="observe">Independent process/product identity reader.</param>
+        /// <param name="observeThread">Reader called for every event to verify the expected STA.</param>
+        /// <param name="publish">Receipt writer receiving sequence, payload, and terminal state.</param>
+        /// <returns>A new invocation after request and live identity match exactly.</returns>
         internal static AddInShutdownDiagnostic Begin(string json, string nonce, string entryPoint,
             Func<Identity> observe, Func<ThreadIdentity> observeThread, Action<int, object, bool> publish)
         {
@@ -212,12 +212,10 @@ namespace VBAi
             return NewInvocation(CreateSession(nonce, actual, observeThread, publish), entryPoint, null);
         }
 
-        /// <summary>Creates session for add in shutdown diagnostic.</summary>
-        /// <param name="nonce">Text that supplies the nonce value. Use the format required by the calling operation.</param>
-        /// <param name="actual">identity that supplies the actual for this operation.</param>
-        /// <param name="observe">func&lt;thread identity&gt; that supplies the observe for this operation.</param>
-        /// <param name="publish">action&lt;int, object, bool&gt; that supplies the publish for this operation.</param>
-        /// <returns>session produced by the operation for create session on add in shutdown diagnostic.</returns>
+        /// <summary>Copies the admitted identity into request-scoped state and binds thread observation and publication.</summary>
+        /// <param name="nonce">Admitted request nonce.</param><param name="actual">Independently observed process and product identity.</param>
+        /// <param name="observe">Fresh owning-thread reader.</param><param name="publish">Bounded event writer.</param>
+        /// <returns>New session with a monotonic elapsed clock and empty invocation stack.</returns>
         private static Session CreateSession(string nonce, Identity actual, Func<ThreadIdentity> observe,
             Action<int, object, bool> publish)
         {
@@ -226,11 +224,10 @@ namespace VBAi
                 ObserveThread = observe, Publish = publish };
         }
 
-        /// <summary>Handles new invocation for add in shutdown diagnostic.</summary>
-        /// <param name="shared">session that supplies the shared for this operation.</param>
-        /// <param name="entry">Text that supplies the entry value. Use the format required by the calling operation.</param>
-        /// <param name="parent">Text that supplies the parent value. Use the format required by the calling operation.</param>
-        /// <returns>add in shutdown diagnostic produced by the operation for new invocation on add in shutdown diagnostic.</returns>
+        /// <summary>Admits a bounded nested cleanup invocation only beneath its exact currently active parent.</summary>
+        /// <param name="shared">Request-scoped session whose invocation stack and limits are updated.</param>
+        /// <param name="entry">Existing shutdown entry point to record.</param><param name="parent">Active parent invocation ID, or null for a top-level invocation.</param>
+        /// <returns>The pushed invocation, or <see langword="null"/> after recording the first diagnostic failure.</returns>
         private static AddInShutdownDiagnostic NewInvocation(Session shared, string entry, string parent)
         {
             try
@@ -250,13 +247,13 @@ namespace VBAi
         }
 
         /// <summary>Creates a distinct linked invocation without retaining the resource being disposed.</summary>
-        /// <param name="childEntryPoint">Text that supplies the child entry point value. Use the format required by the calling operation.</param>
-        /// <returns>add in shutdown diagnostic produced by the operation for child on add in shutdown diagnostic.</returns>
+        /// <param name="childEntryPoint">Existing cleanup entry point invoked beneath this active operation.</param>
+        /// <returns>A linked child invocation, or <see langword="null"/> if admission fails.</returns>
         internal AddInShutdownDiagnostic Child(string childEntryPoint)
         { return NewInvocation(session, childEntryPoint, InvocationId); }
 
         /// <summary>Marks an operation about to run; no native or managed resource is captured.</summary>
-        /// <param name="stage">Text that supplies the stage value. Use the format required by the calling operation.</param>
+        /// <param name="stage">Non-empty label for the existing cleanup operation about to run.</param>
         internal void Enter(string stage)
         {
             if (DiagnosticFailed) return;
@@ -265,7 +262,7 @@ namespace VBAi
         }
 
         /// <summary>Marks only the normal return of the previously entered existing operation.</summary>
-        /// <param name="stage">Text that supplies the stage value. Use the format required by the calling operation.</param>
+        /// <param name="stage">Exact label passed to the preceding <see cref="Enter"/> call.</param>
         internal void Returned(string stage)
         {
             if (DiagnosticFailed) return;
@@ -274,8 +271,8 @@ namespace VBAi
         }
 
         /// <summary>Records an error absorbed by an existing catch without turning it into a normal operation return.</summary>
-        /// <param name="stage">Text that supplies the stage value. Use the format required by the calling operation.</param>
-        /// <param name="error">Exception describing the error failure.</param>
+        /// <param name="stage">Exact label for the existing stage whose catch absorbed the exception.</param>
+        /// <param name="error">Caught exception recorded as a fault rather than a normal return.</param>
         internal void CaughtFault(string stage, Exception error)
         {
             if (DiagnosticFailed) return;
@@ -284,7 +281,7 @@ namespace VBAi
         }
 
         /// <summary>Observes an existing null assignment, without claiming RCW release or native Close.</summary>
-        /// <param name="field">Text that supplies the field value. Use the format required by the calling operation.</param>
+        /// <param name="field">Name of the managed reference field observed being assigned null; this does not imply COM release.</param>
         internal void ManagedReferenceCleared(string field)
         {
             if (DiagnosticFailed) return;
@@ -310,9 +307,8 @@ namespace VBAi
             Finish("Returned", null);
         }
 
-        /// <summary>Handles finish for add in shutdown diagnostic.</summary>
-        /// <param name="phase">Text that supplies the phase value. Use the format required by the calling operation.</param>
-        /// <param name="error">Exception describing the error failure.</param>
+        /// <summary>Publishes this invocation's terminal phase and removes it from the active nesting stack.</summary>
+        /// <param name="phase">Terminal phase, either Returned or Fault.</param><param name="error">Optional exception included only for a fault phase.</param>
         private void Finish(string phase, Exception error)
         {
             if (session.Active.Count == 0 || session.Active.Last() != this) { Fail(new InvalidOperationException("Shutdown invocation cannot finish ahead of its active child.")); return; }
@@ -320,15 +316,15 @@ namespace VBAi
             session.Active.RemoveAt(session.Active.Count - 1);
         }
 
-        /// <summary>Handles fail for add in shutdown diagnostic.</summary>
-        /// <param name="error">Exception describing the error failure.</param>
+        /// <summary>Stores the first diagnostic-only failure and suppresses subsequent publication.</summary>
+        /// <param name="error">Admission, invariant, observation, or receipt-publication failure.</param>
         private void Fail(Exception error) { session.Error = session.Error ?? error; }
 
         /// <summary>Stops all subsequent publication on the first diagnostic error; never changes cleanup propagation.</summary>
-        /// <param name="phase">Text that supplies the phase value. Use the format required by the calling operation.</param>
-        /// <param name="stage">Text that supplies the stage value. Use the format required by the calling operation.</param>
-        /// <param name="error">Exception describing the error failure.</param>
-        /// <param name="caught">Indicates whether caught is enabled.</param>
+        /// <param name="phase">Lifecycle phase such as Entry, Returned, ManagedReferenceCleared, or Fault.</param>
+        /// <param name="stage">Optional label for an individual existing cleanup operation.</param>
+        /// <param name="error">Exception associated with a fault event; its message may appear in the diagnostic receipt.</param>
+        /// <param name="caught"><see langword="true"/> when the original cleanup caught and absorbed the fault.</param>
         private void Record(string phase, string stage, Exception error, bool caught = false)
         {
             if (DiagnosticFailed) return;
@@ -350,9 +346,10 @@ namespace VBAi
         }
 
         /// <summary>Accepts only the bounded canonical serializer format; duplicated properties cannot survive canonical equality.</summary>
-        /// <param name="text">Text that supplies the text value. Use the format required by the calling operation.</param>
-        /// <param name="nonce">Text that supplies the nonce value. Use the format required by the calling operation.</param>
-        /// <returns>identity produced by the operation for decode request on add in shutdown diagnostic.</returns>
+        /// <param name="text">UTF-8 request JSON, bounded by <see cref="MaximumBytes"/> and required to use the canonical serializer format.</param>
+        /// <param name="nonce">Expected request nonce, encoded as a 32-character GUID without separators.</param>
+        /// <returns>Exactly typed process, product, and native-thread identity from the request.</returns>
+        /// <exception cref="InvalidOperationException">The nonce, size, version, fields, types, or canonical serialization do not match.</exception>
         internal static Identity DecodeRequest(string text, string nonce)
         {
             Guid guid;
@@ -368,8 +365,8 @@ namespace VBAi
         }
 
         /// <summary>Requires exact identity members without permissive number or string coercions.</summary>
-        /// <param name="value">object that supplies the value for this operation.</param>
-        /// <returns>identity produced by the operation for decode identity on add in shutdown diagnostic.</returns>
+        /// <param name="value">Deserialized JSON object containing the seven identity fields.</param>
+        /// <returns>An identity object after rejecting missing, extra, or coerced field values.</returns>
         internal static Identity DecodeIdentity(object value)
         {
             var json = new JavaScriptSerializer();
@@ -383,8 +380,8 @@ namespace VBAi
         }
 
         /// <summary>Validates requested syntax and compares it to independent process/product observations.</summary>
-        /// <param name="expected">identity that supplies the expected for this operation.</param>
-        /// <param name="actual">identity that supplies the actual for this operation.</param>
+        /// <param name="expected">Identity decoded from the owned shutdown request.</param>
+        /// <param name="actual">Independently captured live process, loaded product, and owner-thread identity.</param>
         internal static void RequireSameIdentity(Identity expected, Identity actual)
         {
             DateTime birth; Guid mvid;
@@ -400,17 +397,17 @@ namespace VBAi
                 throw new InvalidOperationException("The owned process generation, native thread and actually loaded product must match.");
         }
 
-        /// <summary>Determines whether local canonical for add in shutdown diagnostic.</summary>
-        /// <param name="path">Path used for the path being processed.</param>
-        /// <returns>Boolean indicating the result of the check for is local canonical on add in shutdown diagnostic.</returns>
+        /// <summary>Accepts only fully qualified drive-letter paths already in their normalized local form.</summary>
+        /// <param name="path">Path to validate; UNC paths and non-canonical spellings are rejected.</param>
+        /// <returns><see langword="true"/> when the path is rooted on a drive and equals its full-path form.</returns>
         private static bool IsLocalCanonical(string path)
         { return !string.IsNullOrWhiteSpace(path) && Path.IsPathRooted(path) && !path.StartsWith(@"\\", StringComparison.Ordinal) &&
             path.Length >= 3 && path[1] == ':' && path[2] == '\\' && string.Equals(path, Path.GetFullPath(path), StringComparison.OrdinalIgnoreCase); }
 
         /// <summary>Bounds ordinary paths to a fixed temporary GUID child; this is not a hostile-race filesystem security primitive.</summary>
-        /// <param name="root">Text that supplies the root value. Use the format required by the calling operation.</param>
-        /// <param name="temporaryRoot">Text that supplies the temporary root value. Use the format required by the calling operation.</param>
-        /// <returns>Text produced by the operation for require root on add in shutdown diagnostic.</returns>
+        /// <param name="root">Prepared request directory expected to be a GUID child of the fixed diagnostic directory.</param>
+        /// <param name="temporaryRoot">Local temporary root against which the diagnostic directory is resolved.</param>
+        /// <returns>The validated canonical request directory.</returns>
         internal static string RequireRoot(string root, string temporaryRoot)
         {
             Guid guid;
@@ -423,13 +420,13 @@ namespace VBAi
         }
 
         /// <summary>Rejects existing linked components, including a linked request file, before reads or publication.</summary>
-        /// <param name="path">Path used for the path being processed.</param>
+        /// <param name="path">File or directory path whose existing components must contain no reparse points.</param>
         internal static void RequireNoReparse(string path)
         { RequireNoReparse(path, File.GetAttributes); }
 
         /// <summary>Pure path-component observation seam; production reads actual Windows attributes.</summary>
-        /// <param name="path">Path used for the path being processed.</param>
-        /// <param name="readAttributes">func&lt;string, file attributes&gt; that supplies the read attributes for this operation.</param>
+        /// <param name="path">Path whose existing components are inspected up to the filesystem root.</param>
+        /// <param name="readAttributes">Attribute reader; missing components are tolerated, but any observed reparse point is refused.</param>
         internal static void RequireNoReparse(string path, Func<string, FileAttributes> readAttributes)
         {
             if (readAttributes == null) throw new ArgumentNullException(nameof(readAttributes));
@@ -444,10 +441,10 @@ namespace VBAi
         }
 
         /// <summary>Writes closed CreateNew files, moves once, then publishes terminal readiness; never overwrites or retries.</summary>
-        /// <param name="root">Text that supplies the root value. Use the format required by the calling operation.</param>
-        /// <param name="sequence">int that supplies the sequence for this operation.</param>
-        /// <param name="value">object that supplies the value for this operation.</param>
-        /// <param name="terminal">Indicates whether terminal is enabled.</param>
+        /// <param name="root">Validated per-request output directory.</param>
+        /// <param name="sequence">One-based event sequence, bounded by <see cref="MaximumEvents"/>.</param>
+        /// <param name="value">Serializable event payload; UTF-8 output must fit <see cref="MaximumBytes"/>.</param>
+        /// <param name="terminal"><see langword="true"/> to create the one-shot ready marker after publishing the event file.</param>
         internal static void Publish(string root, int sequence, object value, bool terminal)
         {
             if (sequence < 1 || sequence > MaximumEvents) throw new ArgumentOutOfRangeException(nameof(sequence));
@@ -462,8 +459,9 @@ namespace VBAi
             if (terminal) using (var ready = new FileStream(path + ".ready", FileMode.CreateNew, FileAccess.Write, FileShare.None)) { }
         }
 
-        /// <summary>Captures identity for add in shutdown diagnostic.</summary>
-        /// <returns>identity produced by the operation for capture identity on add in shutdown diagnostic.</returns>
+        /// <summary>Captures the current Excel process generation, loaded VBAi image identity, hash, and native thread.</summary>
+        /// <returns>Exact identity used to bind the request to this process and loaded assembly.</returns>
+        /// <exception cref="InvalidOperationException">The current process is not Excel.</exception>
         private static Identity CaptureIdentity()
         {
             using (var process = Process.GetCurrentProcess())
@@ -479,13 +477,13 @@ namespace VBAi
             }
         }
 
-        /// <summary>Captures thread for add in shutdown diagnostic.</summary>
-        /// <returns>thread identity produced by the operation for capture thread on add in shutdown diagnostic.</returns>
+        /// <summary>Captures managed and native thread IDs and the apartment state at the observation point.</summary>
+        /// <returns>Thread identity used to verify that every receipt is emitted from the expected STA.</returns>
         private static ThreadIdentity CaptureThread()
         { return new ThreadIdentity { ManagedThreadId = Thread.CurrentThread.ManagedThreadId, NativeThreadId = GetCurrentThreadId(), Apartment = Thread.CurrentThread.GetApartmentState().ToString() }; }
 
-        /// <summary>Returns current thread id for add in shutdown diagnostic.</summary>
-        /// <returns>uint produced by the operation for get current thread id on add in shutdown diagnostic.</returns>
+        /// <summary>Returns the native Windows identifier of the calling thread.</summary>
+        /// <returns>Native thread ID from kernel32.</returns>
         [DllImport("kernel32.dll")] private static extern uint GetCurrentThreadId();
     }
 }

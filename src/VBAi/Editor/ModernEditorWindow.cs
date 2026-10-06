@@ -31,7 +31,7 @@ namespace VBAi
         /// <summary>Last failed reconciliation for each open document; inactive failures never describe the selected module.</summary>
         private readonly Dictionary<string, string> documentSynchronizationErrors = new Dictionary<string, string>();
         // Native captions are observed with the bounded document batch, never during layout.
-        /// <summary>Maintains the display names state for modern editor window.</summary>
+        /// <summary>Last native module captions observed during synchronization, keyed by editor document ID.</summary>
         private readonly Dictionary<string, string> displayNames = new Dictionary<string, string>();
 
         /// <summary>Brouillons récupérés au chargement et proposés séparément du code natif.</summary>
@@ -47,31 +47,31 @@ namespace VBAi
         /// <value>Contrôle de navigateur, nul avant son initialisation.</value>
         internal WebView2 Browser { get; private set; }
 
-        /// <summary>Maintains the create browser state for modern editor window.</summary>
+        /// <summary>Factory for the dock-filled WebView2 control; replaceable at the browser boundary.</summary>
         internal Func<WebView2> CreateBrowser = NewBrowser;
 
-        /// <summary>Maintains the create browser environment state for modern editor window.</summary>
+        /// <summary>Factory that creates an environment using the per-window user-data directory.</summary>
         internal Func<string, Task<CoreWebView2Environment>> CreateBrowserEnvironment = NewBrowserEnvironment;
 
-        /// <summary>Maintains the ensure browser environment state for modern editor window.</summary>
+        /// <summary>Initializes the WebView2 control with the environment owned by this editor profile.</summary>
         internal Func<WebView2, CoreWebView2Environment, Task> EnsureBrowserEnvironment = EnsureBrowser;
 
-        /// <summary>Maintains the browser assets directory state for modern editor window.</summary>
+        /// <summary>Optional directory containing the packaged Monaco entry point; defaults to the assembly's EditorAssets folder.</summary>
         internal string BrowserAssetsDirectory;
 
-        /// <summary>Handles new browser for modern editor window.</summary>
-        /// <returns>web view2 produced by the operation for new browser on modern editor window.</returns>
+        /// <summary>Creates a fill-docked WebView2 control using the current editor surface background.</summary>
+        /// <returns>A new browser control not yet initialized with a WebView2 environment.</returns>
         private static WebView2 NewBrowser() => new WebView2 { Dock = DockStyle.Fill, DefaultBackgroundColor = UiTheme.Background };
 
-        /// <summary>Handles new browser environment for modern editor window.</summary>
-        /// <param name="cache">Text that supplies the cache value. Use the format required by the calling operation.</param>
-        /// <returns>task&lt;core web view2 environment&gt; produced by the operation for new browser environment on modern editor window.</returns>
+        /// <summary>Creates a WebView2 environment whose user data is isolated to the supplied profile directory.</summary>
+        /// <param name="cache">Unique editor-profile directory used as WebView2 user data.</param>
+        /// <returns>A task yielding the initialized runtime environment.</returns>
         private static Task<CoreWebView2Environment> NewBrowserEnvironment(string cache) => CoreWebView2Environment.CreateAsync(null, cache);
 
-        /// <summary>Ensures browser for modern editor window.</summary>
-        /// <param name="browser">web view2 that supplies the browser for this operation.</param>
-        /// <param name="environment">core web view2 environment that supplies the environment for this operation.</param>
-        /// <returns>task produced by the operation for ensure browser on modern editor window.</returns>
+        /// <summary>Connects a WebView2 control to its already-created runtime environment.</summary>
+        /// <param name="browser">Control to initialize.</param>
+        /// <param name="environment">Environment created for the current editor profile.</param>
+        /// <returns>A task completed when the control exposes its core WebView2 instance.</returns>
         private static Task EnsureBrowser(WebView2 browser, CoreWebView2Environment environment) => browser.EnsureCoreWebView2Async(environment);
 
         /// <summary>Indique que l’application Monaco a signalé être prête.</summary>
@@ -85,9 +85,9 @@ namespace VBAi
         internal Action<string, double, int> PerformanceSample;
 
         /// <summary>Diagnostics must never interrupt synchronization or native commands.</summary>
-        /// <param name="operation">Text that supplies the operation value. Use the format required by the calling operation.</param>
-        /// <param name="watch">stopwatch that supplies the watch for this operation.</param>
-        /// <param name="characters">int that supplies the characters for this operation.</param>
+        /// <param name="operation">Stable operation label attached to the performance sample.</param>
+        /// <param name="watch">Elapsed-time source; a null value suppresses the sample.</param>
+        /// <param name="characters">Optional payload size in characters, such as serialized script length.</param>
         private void Measure(string operation, System.Diagnostics.Stopwatch watch, int characters = 0)
         { if (watch != null) try { PerformanceSample?.Invoke(operation, watch.Elapsed.TotalMilliseconds, characters); } catch { } }
 
@@ -97,16 +97,16 @@ namespace VBAi
         /// <summary>Nombre de mises à jour d’état qui manipulent actuellement la disposition des contrôles.</summary>
         private int activeStatusLayouts;
 
-        /// <summary>Maintains the status generation state for modern editor window.</summary>
+        /// <summary>Monotonic generation used to discard status callbacks queued before a newer result or state change.</summary>
         private int statusGeneration;
 
-        /// <summary>Maintains the background document cursor state for modern editor window.</summary>
+        /// <summary>Rotating index into inactive documents so each background reconciliation handles at most two per tick.</summary>
         private int backgroundDocumentCursor;
 
-        /// <summary>Maintains the status update pending state for modern editor window.</summary>
+        /// <summary>Whether one deferred WinForms status-layout callback is already queued.</summary>
         private bool statusUpdatePending;
 
-        /// <summary>Maintains the pending status generation state for modern editor window.</summary>
+        /// <summary>Generation captured by the queued status callback; older callbacks are ignored.</summary>
         private int pendingStatusGeneration;
 
                 /// <summary>Notifies subscribers when assistant action occurs.</summary>
@@ -128,12 +128,12 @@ namespace VBAi
         /// <summary>Beginning of the current stream batch and its latest accepted edit sequence.</summary>
         private DateTime firstStreamEdit;
 
-        /// <summary>Maintains the stream sequence and streamed sequence state for modern editor window.</summary>
+        /// <summary>Latest accepted editor-change sequence and the last sequence selected for a synchronization pass.</summary>
         private int streamSequence, streamedSequence;
 
         /// <summary>Accepts only revision-matched deltas; missing batches are recovered from Monaco.</summary>
-        /// <param name="message">editor message that supplies the message for this operation.</param>
-        /// <returns>task produced by the operation for accept editor change on modern editor window.</returns>
+        /// <param name="message">Renderer change carrying a document ID, new revision, and either a delta batch or full text.</param>
+        /// <returns>A completed task after applying a valid change or requesting a full renderer snapshot for a stale delta.</returns>
         private async Task AcceptEditorChange(EditorMessage message)
         {
             if (!documents.TryGetValue(message.id ?? "", out var doc) || message.version <= versions[doc.Id]) return;
@@ -151,8 +151,8 @@ namespace VBAi
         }
 
         /// <summary>Observes execution independently of draft persistence, without overlapping UI operations.</summary>
-        /// <param name="sender">object that supplies the sender for this operation.</param>
-        /// <param name="e">event args that supplies the e for this operation.</param>
+        /// <param name="sender">Debug observation timer.</param>
+        /// <param name="e">Timer event data.</param>
         private async void DebugTimerTick(object sender, EventArgs e)
         {
             if (!Ready || busy || observingDebug || closing || IsDisposed || debugCommands.CurrentCount == 0) return;
@@ -163,12 +163,12 @@ namespace VBAi
         }
 
         /// <summary>Flushes streamed drafts after 120 ms of idle, or 450 ms during sustained typing.</summary>
-        /// <param name="sender">object that supplies the sender for this operation.</param>
-        /// <param name="e">event args that supplies the e for this operation.</param>
+        /// <param name="sender">Debounced stream timer.</param>
+        /// <param name="e">Timer event data.</param>
         private async void StreamTimerTick(object sender, EventArgs e) { await FlushStream(); }
 
         /// <summary>Flushes the latest stream batch without rereading unchanged renderer models.</summary>
-        /// <returns>task produced by the operation for flush stream on modern editor window.</returns>
+        /// <returns>A task completed after the latest settled change batch is reconciled or skipped.</returns>
         private async Task FlushStream()
         {
             if (!Ready || busy || closing || IsDisposed || streamSequence == streamedSequence || debugCommands.CurrentCount == 0) return;
@@ -436,9 +436,9 @@ public int column { get; set; } }
         }
 
         /// <summary>Opens an exact module, optionally preserving native visibility and keyboard focus during passive following.</summary>
-        /// <param name="module">i editor module that supplies the module for this operation.</param>
-        /// <param name="activateWindow">Indicates whether activate window is enabled.</param>
-        /// <returns>task&lt;editor document&gt; produced by the operation for open module core on modern editor window.</returns>
+        /// <param name="module">Adapter for the exact native or detached module to open.</param>
+        /// <param name="activateWindow"><see langword="true"/> to show/activate a native CodePane and the editor form; <see langword="false"/> to retain the pane without stealing visibility or focus.</param>
+        /// <returns>The existing document for the same module identity or the newly created document.</returns>
         private async Task<EditorDocument> OpenModuleCore(IEditorModule module, bool activateWindow)
         {
             var existing = documents.Values.FirstOrDefault(d => ReferenceEquals(d.Module, module) ||
@@ -505,18 +505,18 @@ public int column { get; set; } }
             finally { busy = false; }
         }
 
-        /// <summary>Handles process documents core for modern editor window.</summary>
-        /// <param name="synchronize">Indicates whether synchronize is enabled.</param>
-        /// <returns>task produced by the operation for process documents core on modern editor window.</returns>
+        /// <summary>Captures renderer state, then observes and optionally synchronizes all open documents.</summary>
+        /// <param name="synchronize"><see langword="true"/> to write eligible dirty drafts through their module adapter.</param>
+        /// <returns>A task completed after reconciliation finishes.</returns>
         private Task ProcessDocumentsCore(bool synchronize) => ProcessCapturedDocumentsCore(synchronize, true);
 
         /// <summary>Processes a revision-checked snapshot, optionally capturing it at the entry barrier.</summary>
-        /// <param name="synchronize">Indicates whether synchronize is enabled.</param>
-        /// <param name="capture">Indicates whether capture is enabled.</param>
-        /// <param name="dirtyOnly">Indicates whether dirty only is enabled.</param>
-        /// <param name="onlyDocument">editor document that supplies the only document for this operation.</param>
-        /// <param name="backgroundBatch">editor document[] that supplies the background batch for this operation.</param>
-        /// <returns>task produced by the operation for process captured documents core on modern editor window.</returns>
+        /// <param name="synchronize"><see langword="true"/> to apply eligible edits to native modules.</param>
+        /// <param name="capture"><see langword="true"/> to refresh documents from Monaco before reconciliation.</param>
+        /// <param name="dirtyOnly"><see langword="true"/> to skip documents with no local edits.</param>
+        /// <param name="onlyDocument">Optional document restriction, used for commands such as one module's breakpoint toggle.</param>
+        /// <param name="backgroundBatch">Optional bounded snapshot of documents to process; each entry is revalidated before use.</param>
+        /// <returns>A task completed after selected documents have been observed and eligible edits applied.</returns>
         private async Task ProcessCapturedDocumentsCore(bool synchronize, bool capture, bool dirtyOnly = false, EditorDocument onlyDocument = null,
             EditorDocument[] backgroundBatch = null)
         {
@@ -576,7 +576,7 @@ public int column { get; set; } }
         }
 
         /// <summary>Reconciles the active document and at most two background documents per tick.</summary>
-        /// <returns>task produced by the operation for process background documents on modern editor window.</returns>
+        /// <returns>A task completed after the active document and at most two rotating background documents are reconciled.</returns>
         private async Task ProcessBackgroundDocuments()
         {
             if (busy || !Ready || closing || IsDisposed || debugCommands.CurrentCount == 0) return;
@@ -615,7 +615,7 @@ public int column { get; set; } }
         }
 
         /// <summary>Publishes a result and invalidates older queued synchronization status updates.</summary>
-        /// <param name="text">Text that supplies the text value. Use the format required by the calling operation.</param>
+        /// <param name="text">Immediate result message to display, superseding older queued synchronization status updates.</param>
         private void SetResultStatus(string text) { statusGeneration++; status.Text = text; }
 
         /// <summary>Met à jour les boutons de conflit, les titres d’onglets et le statut du document actif.</summary>
@@ -660,8 +660,8 @@ public int column { get; set; } }
         /// <param name="error">Erreur à présenter et à journaliser.</param>
         private void Report(Exception error) { if (!IsDisposed && !Disposing && !closing) SetResultStatus(UiText.Get(error.Message)); LoadLog.Write("Monaco: " + error.GetType().Name); }
 
-        /// <summary>Closes tab requested for modern editor window.</summary>
-        /// <param name="sender">object that supplies the sender for this operation.</param>
+        /// <summary>Routes a tab-close request through the same capture-and-save flow as the close button.</summary>
+        /// <param name="sender">Tab control raising the close request.</param>
         /// <param name="e">Native event data.</param>
         private void CloseTabRequested(object sender, TabControlEventArgs e)
         {
@@ -671,9 +671,9 @@ public int column { get; set; } }
         }
 
         /// <summary>Reports synchronous STA-dispatch preparation failures on the caller; clears only busy state owned by this action.</summary>
-        /// <param name="operation">func&lt;task&lt;bool&gt;&gt; that supplies the operation for this operation.</param>
-        /// <param name="ownsBusy">Indicates whether owns busy is enabled.</param>
-        /// <returns>task&lt;bool&gt; produced by the operation for start ui action on modern editor window.</returns>
+        /// <param name="operation">Async action to start on the VBE-owning STA.</param>
+        /// <param name="ownsBusy"><see langword="true"/> when this action acquired the shared busy state and dispatch failure must release it.</param>
+        /// <returns>A task yielding the operation result, or <see langword="false"/> when dispatch setup fails.</returns>
         private Task<bool> StartUiAction(Func<Task<bool>> operation, bool ownsBusy)
         {
             try { return VbeUiTask.Run(operation); }
@@ -851,8 +851,8 @@ public int column { get; set; } }
         }
 
         /// <summary>Monaco requires hexadecimal colors, including named and system colors.</summary>
-        /// <param name="color">color that supplies the color for this operation.</param>
-        /// <returns>Text produced by the operation for theme color on modern editor window.</returns>
+        /// <param name="color">System or named color resolved for the current host theme.</param>
+        /// <returns>Six-digit RGB hexadecimal color in the format required by Monaco.</returns>
         private static string ThemeColor(System.Drawing.Color color) => "#" + color.R.ToString("X2") + color.G.ToString("X2") + color.B.ToString("X2");
 
         /// <summary>Enregistre chaque brouillon modifié avant un arrêt ou une fermeture de la fenêtre.</summary>

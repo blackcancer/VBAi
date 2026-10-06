@@ -11,19 +11,19 @@ namespace VBAi
     internal sealed class EditorWorkspaceHost : IDisposable
     {
 
-        /// <summary>Maintains the editor state for editor workspace host.</summary>
+        /// <summary>Modeless editor surface reparented into the VBE's MDI client.</summary>
         private readonly ModernEditorWindow editor;
 
-        /// <summary>Maintains the vbe state for editor workspace host.</summary>
+        /// <summary>VBE automation object used to identify the active native document without activating it.</summary>
         private readonly object vbe;
 
-        /// <summary>Maintains the native document state for editor workspace host.</summary>
+        /// <summary>Whether the active MDI document is a native designer or Object Browser that must remain visible.</summary>
         private bool nativeDocument;
 
-        /// <summary>Maintains the workspace state for editor workspace host.</summary>
+        /// <summary>Native MDI client handle that owns document surfaces for this VBE instance.</summary>
         private readonly IntPtr workspace;
 
-        /// <summary>Maintains the timer state for editor workspace host.</summary>
+        /// <summary>UI-thread timer that refreshes visibility and bounds while the VBE workspace changes.</summary>
         private readonly Timer timer = new Timer { Interval = 200 };
 
         /// <summary>Caches the type of the native document while a docked tool owns focus.</summary>
@@ -41,9 +41,9 @@ namespace VBAi
         /// <summary>Changes the native parent; defaults to the Windows API.</summary>
         internal static Func<IntPtr, IntPtr, IntPtr> ChangeParent = SetParent;
 
-        /// <summary>Initializes a EditorWorkspaceHost instance with the supplied state.</summary>
-        /// <param name="vbe">object that supplies the vbe for this operation.</param>
-        /// <param name="editor">modern editor window that supplies the editor for this operation.</param>
+        /// <summary>Finds the VBE MDI client, reparents the editor into it, and starts workspace tracking.</summary>
+        /// <param name="vbe">VBE automation object whose main window owns the document workspace.</param>
+        /// <param name="editor">Editor form to host as a child surface of that workspace.</param>
         internal EditorWorkspaceHost(object vbe, ModernEditorWindow editor)
         {
             this.editor = editor; this.vbe = vbe;
@@ -142,59 +142,59 @@ namespace VBAi
         /// <summary>Describes the edges of the native editor workspace rectangle.</summary>
         [StructLayout(LayoutKind.Sequential)] private struct Rect {
 
-/// <summary>Maintains the left and top and right and bottom state for rect.</summary>
+/// <summary>Native client-coordinate edges returned by GetClientRect.</summary>
 public int Left, Top, Right, Bottom; }
 
-        /// <summary>Defines the enum window callback.</summary>
-        /// <param name="handle">Native handle that supplies the handle for this operation.</param>
-        /// <param name="parameter">Native handle that supplies the parameter for this operation.</param>
-        /// <returns>Boolean indicating the result of the check for operation on editor workspace host.</returns>
+        /// <summary>Callback signature used while enumerating child HWNDs.</summary>
+        /// <param name="handle">Child window currently visited.</param>
+        /// <param name="parameter">Caller context forwarded by EnumChildWindows.</param>
+        /// <returns><see langword="true"/> to continue enumeration; <see langword="false"/> to stop.</returns>
         private delegate bool EnumWindow(IntPtr handle, IntPtr parameter);
 
-        /// <summary>Sets last error for editor workspace host.</summary>
-        /// <param name="error">uint that supplies the error for this operation.</param>
+        /// <summary>Sets the calling thread's last-error value before a Win32 call whose failure is checked.</summary>
+        /// <param name="error">Unsigned Win32 error value to store.</param>
         [DllImport("kernel32.dll")] private static extern void SetLastError(uint error);
 
-        /// <summary>Sets parent for editor workspace host.</summary>
-        /// <param name="child">Native handle that supplies the child for this operation.</param>
-        /// <param name="parent">Native handle that supplies the parent for this operation.</param>
-        /// <returns>int ptr produced by the operation for set parent on editor workspace host.</returns>
+        /// <summary>Changes a child window's native parent and preserves its previous parent handle.</summary>
+        /// <param name="child">Window to reparent.</param>
+        /// <param name="parent">New workspace parent.</param>
+        /// <returns>Previous parent handle, or zero when no previous parent exists or the call fails.</returns>
         [DllImport("user32.dll", SetLastError = true)] private static extern IntPtr SetParent(IntPtr child, IntPtr parent);
 
-        /// <summary>Handles enum child windows for editor workspace host.</summary>
-        /// <param name="parent">Native handle that supplies the parent for this operation.</param>
-        /// <param name="callback">enum window that supplies the callback for this operation.</param>
-        /// <param name="parameter">Native handle that supplies the parameter for this operation.</param>
-        /// <returns>Boolean indicating the result of the check for enum child windows on editor workspace host.</returns>
+        /// <summary>Enumerates descendant HWNDs of a native parent until the callback stops the walk.</summary>
+        /// <param name="parent">Window whose descendants are visited.</param>
+        /// <param name="callback">Managed callback invoked for each child.</param>
+        /// <param name="parameter">Opaque callback context passed through to <paramref name="callback"/>.</param>
+        /// <returns><see langword="true"/> when enumeration succeeds.</returns>
         [DllImport("user32.dll")] private static extern bool EnumChildWindows(IntPtr parent, EnumWindow callback, IntPtr parameter);
 
-        /// <summary>Returns class name for editor workspace host.</summary>
-        /// <param name="window">Native handle that supplies the window for this operation.</param>
-        /// <param name="name">string builder that supplies the name for this operation.</param>
-        /// <param name="count">int that supplies the count for this operation.</param>
-        /// <returns>int produced by the operation for get class name on editor workspace host.</returns>
+        /// <summary>Copies a window's Unicode class name into a caller-provided buffer.</summary>
+        /// <param name="window">Window whose class is queried.</param>
+        /// <param name="name">Buffer receiving the class name.</param>
+        /// <param name="count">Buffer capacity in characters, including space for the terminator.</param>
+        /// <returns>Number of copied characters, excluding the terminator.</returns>
         [DllImport("user32.dll", CharSet = CharSet.Unicode)] private static extern int GetClassName(IntPtr window, StringBuilder name, int count);
 
-        /// <summary>Returns client rect for editor workspace host.</summary>
-        /// <param name="window">Native handle that supplies the window for this operation.</param>
-        /// <param name="rectangle">rect that supplies the rectangle for this operation.</param>
-        /// <returns>Boolean indicating the result of the check for get client rect on editor workspace host.</returns>
+        /// <summary>Reads the client-area rectangle in the target window's client coordinates.</summary>
+        /// <param name="window">Window whose client area is queried.</param>
+        /// <param name="rectangle">Receives the left, top, right, and bottom coordinates.</param>
+        /// <returns><see langword="true"/> when the rectangle was retrieved.</returns>
         [DllImport("user32.dll")] private static extern bool GetClientRect(IntPtr window, out Rect rectangle);
 
-        /// <summary>Determines whether window for editor workspace host.</summary>
-        /// <param name="window">Native handle that supplies the window for this operation.</param>
-        /// <returns>Boolean indicating the result of the check for is window on editor workspace host.</returns>
+        /// <summary>Tests whether an HWND still identifies an existing window.</summary>
+        /// <param name="window">Handle to test.</param>
+        /// <returns><see langword="true"/> while the handle identifies a window.</returns>
         [DllImport("user32.dll")] private static extern bool IsWindow(IntPtr window);
 
-        /// <summary>Sets window pos for editor workspace host.</summary>
-        /// <param name="window">Native handle that supplies the window for this operation.</param>
-        /// <param name="after">Native handle that supplies the after for this operation.</param>
-        /// <param name="x">int that supplies the x for this operation.</param>
-        /// <param name="y">int that supplies the y for this operation.</param>
-        /// <param name="width">int that supplies the width for this operation.</param>
-        /// <param name="height">int that supplies the height for this operation.</param>
-        /// <param name="flags">uint that supplies the flags for this operation.</param>
-        /// <returns>Boolean indicating the result of the check for set window pos on editor workspace host.</returns>
+        /// <summary>Positions a child surface and applies the requested resize, z-order, and activation flags.</summary>
+        /// <param name="window">Window to position.</param>
+        /// <param name="after">Sibling HWND controlling z-order, or zero when z-order is unchanged.</param>
+        /// <param name="x">New horizontal client-coordinate position when not suppressed by flags.</param>
+        /// <param name="y">New vertical client-coordinate position when not suppressed by flags.</param>
+        /// <param name="width">New width in pixels when not suppressed by flags.</param>
+        /// <param name="height">New height in pixels when not suppressed by flags.</param>
+        /// <param name="flags">SetWindowPos flags controlling which values are applied.</param>
+        /// <returns><see langword="true"/> when the native positioning request succeeds.</returns>
         [DllImport("user32.dll")] private static extern bool SetWindowPos(IntPtr window, IntPtr after, int x, int y, int width, int height, uint flags);
 
         /// <summary>Reads a related native workspace window.</summary>

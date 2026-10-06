@@ -10,13 +10,13 @@ namespace VBAi
     internal sealed class EditorBrowserProfile
     {
 
-        /// <summary>Maintains the gate state for editor browser profile.</summary>
+        /// <summary>Serializes browser lifecycle observations and cleanup scheduling.</summary>
         private readonly object gate = new object();
 
-        /// <summary>Maintains the requested and retired and exited and scheduled state for editor browser profile.</summary>
+        /// <summary>Tracks whether the environment was requested, its controller retired, its browser exited, and cleanup was queued.</summary>
         private bool requested, retired, exited, scheduled;
 
-        /// <summary>Identifies the browser process id associated with editor browser profile.</summary>
+        /// <summary>Process identifier reported by this profile's browser environment; zero means no process has been observed.</summary>
         private uint browserProcessId;
 
         /// <summary>The unique user data folder supplied only to this environment.</summary>
@@ -28,7 +28,7 @@ namespace VBAi
         internal Task Cleanup { get; private set; } = Task.CompletedTask;
 
         /// <summary>Creates an operation-owned profile below the supplied editor cache root.</summary>
-        /// <param name="root">Text that supplies the root value. Use the format required by the calling operation.</param>
+        /// <param name="root">Existing or new cache directory that will contain this operation's uniquely named profile. Reparse-point roots are rejected.</param>
         internal EditorBrowserProfile(string root)
         {
             root = System.IO.Path.GetFullPath(root);
@@ -43,7 +43,7 @@ namespace VBAi
         internal void BrowserRequested() { lock (gate) requested = true; }
 
         /// <summary>Records the actual browser owning this environment, invalidating an older exit observation.</summary>
-        /// <param name="processId">uint that supplies the process id for this operation.</param>
+        /// <param name="processId">Nonzero process identifier reported by the browser controller.</param>
         internal void ObserveBrowser(uint processId)
         {
             if (processId == 0) throw new ArgumentOutOfRangeException(nameof(processId));
@@ -55,7 +55,7 @@ namespace VBAi
         }
 
         /// <summary>Accepts only this environment's exit notification; a live editor retains its profile.</summary>
-        /// <param name="processId">uint that supplies the process id for this operation.</param>
+        /// <param name="processId">Process identifier from the browser-exited notification; a mismatched or zero identifier is ignored.</param>
         internal void BrowserExited(uint processId)
         {
             lock (gate)
@@ -97,9 +97,9 @@ namespace VBAi
         }
 
         /// <summary>Checks every entry before deletion; links are refused before traversing them.</summary>
-        /// <param name="directory">Text that supplies the directory value. Use the format required by the calling operation.</param>
-        /// <param name="files">list&lt;string&gt; that supplies the files for this operation.</param>
-        /// <param name="directories">list&lt;string&gt; that supplies the directories for this operation.</param>
+        /// <param name="directory">Profile directory to inspect. Any reparse point aborts traversal before its target is followed.</param>
+        /// <param name="files">Receives regular file paths found beneath <paramref name="directory"/>.</param>
+        /// <param name="directories">Receives directories in child-before-parent order for safe removal after files are deleted.</param>
         private static void CollectOwnedTree(string directory, List<string> files, List<string> directories)
         {
             if ((File.GetAttributes(directory) & FileAttributes.ReparsePoint) != 0)

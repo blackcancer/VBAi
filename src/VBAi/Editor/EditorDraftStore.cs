@@ -41,15 +41,15 @@ namespace VBAi
         /// <summary>Heure du dernier nettoyage périodique effectué par cette instance.</summary>
         private DateTime lastCleanup;
 
-        /// <summary>Maintains the read process state for editor draft store.</summary>
+        /// <summary>Process lookup used to confirm that an old draft's owning process has exited before cleanup.</summary>
         internal Func<int, System.Diagnostics.Process> ReadProcess = System.Diagnostics.Process.GetProcessById;
 
-        /// <summary>Maintains the read attributes state for editor draft store.</summary>
+        /// <summary>File-attribute reader used to reject reparse points during cleanup.</summary>
         internal Func<FileSystemInfo, FileAttributes> ReadAttributes = NativeAttributes;
 
-        /// <summary>Handles native attributes for editor draft store.</summary>
-        /// <param name="item">file system info that supplies the item for this operation.</param>
-        /// <returns>file attributes produced by the operation for native attributes on editor draft store.</returns>
+        /// <summary>Reads the filesystem attributes for a cleanup candidate.</summary>
+        /// <param name="item">File or directory whose attributes are being inspected.</param>
+        /// <returns>The attributes returned by the operating system.</returns>
         private static FileAttributes NativeAttributes(FileSystemInfo item) => item.Attributes;
 
         /// <summary>Sérialiseur JSON des instantanés de brouillon.</summary>

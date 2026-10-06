@@ -138,9 +138,9 @@ namespace VBAi
         { Validate(); nativeWindow = ((dynamic)component).CodeModule.CodePane.Window; }
 
         /// <summary>Reuses exact COM identity for coherent native window/project activation guards.</summary>
-        /// <param name="first">object that supplies the first for this operation.</param>
-        /// <param name="second">object that supplies the second for this operation.</param>
-        /// <returns>Boolean indicating the result of the check for same identity on editor vbe module.</returns>
+        /// <param name="first">First COM reference to compare; null references are handled by reference equality.</param>
+        /// <param name="second">Second COM reference to compare.</param>
+        /// <returns><see langword="true"/> when both references identify the same underlying COM object.</returns>
         internal static bool SameIdentity(object first, object second) => Same(first, second);
 
         /// <summary>Ferme la fenêtre CodePane détenue lorsque l’hôte l’a encore ouverte.</summary>

@@ -12,34 +12,34 @@ namespace VBAi
         /// <summary>Language work never queues behind draft persistence and synchronization.</summary>
         private EditorSyncWorker languageWorker;
 
-        /// <summary>Maintains the language cache state for modern editor window.</summary>
+        /// <summary>Worker-owned bounded cache of parsed module and referenced-library declarations.</summary>
         private readonly EditorLanguageCache languageCache = new EditorLanguageCache();
 
-        /// <summary>Maintains the language requests state for modern editor window.</summary>
+        /// <summary>Latest cancellable completion or hover request per renderer document ID.</summary>
         private readonly System.Collections.Generic.Dictionary<string, System.Threading.CancellationTokenSource> languageRequests = new System.Collections.Generic.Dictionary<string, System.Threading.CancellationTokenSource>();
 
-        /// <summary>Maintains the language gate state for modern editor window.</summary>
+        /// <summary>Serializes language requests so newer requests can cancel older queued work.</summary>
         private readonly System.Threading.SemaphoreSlim languageGate = new System.Threading.SemaphoreSlim(1, 1);
 
-        /// <summary>Maintains the language source project state for modern editor window.</summary>
+        /// <summary>Project identity whose native source snapshot is currently cached.</summary>
         private object languageSourceProject;
 
-        /// <summary>Maintains the language sources state for modern editor window.</summary>
+        /// <summary>Last captured native source set, reused for less than one second between requests.</summary>
         private EditorSource[] languageSources;
 
-        /// <summary>Maintains the language reference paths state for modern editor window.</summary>
+        /// <summary>Non-broken referenced library paths captured with <see cref="languageSources"/>.</summary>
         private string[] languageReferencePaths;
 
-        /// <summary>Maintains the language sources at state for modern editor window.</summary>
+        /// <summary>Monotonic timestamp in milliseconds when the cached native source set was captured.</summary>
         private long languageSourcesAt;
 
-        /// <summary>Maintains the language clock state for modern editor window.</summary>
+        /// <summary>Replaceable monotonic millisecond clock used to bound native catalog snapshot reuse.</summary>
         internal Func<long> LanguageClock = () => System.Diagnostics.Stopwatch.GetTimestamp() / (System.Diagnostics.Stopwatch.Frequency / 1000);
 
         /// <summary>Bounds native catalog reads during a burst of completion/hover requests.</summary>
-        /// <param name="native">editor vbe module that supplies the native for this operation.</param>
-        /// <param name="cancellation">Token that cancels the operation when cancellation is requested.</param>
-        /// <returns>task&lt;editor source[]&gt; produced by the operation for read language sources on modern editor window.</returns>
+        /// <param name="native">Native module providing the project whose source and references are indexed.</param>
+        /// <param name="cancellation">Cancellation requested when the renderer request is superseded or native commands become unavailable.</param>
+        /// <returns>Captured module sources, reusing the same project's snapshot for up to one second.</returns>
         private async Task<EditorSource[]> ReadLanguageSources(EditorVbeModule native, System.Threading.CancellationToken cancellation)
         {
             long now = LanguageClock();
@@ -61,8 +61,8 @@ namespace VBAi
         }
 
         /// <summary>Reads fresh project state but only parses and transfers changed language data.</summary>
-        /// <param name="message">editor message that supplies the message for this operation.</param>
-        /// <returns>task produced by the operation for language request on modern editor window.</returns>
+        /// <param name="message">Completion/hover request with document revision, request key, and optional compact-stream state.</param>
+        /// <returns>A task completed after a response is sent when the window remains ready, or after cancellation/staleness is discarded.</returns>
         private async Task LanguageRequest(EditorMessage message)
         {
             object response = null;
