@@ -65,12 +65,16 @@ namespace VBAi.Tests.Unit
                 var ambient = SynchronizationContext.Current;
                 using (trace.Enter())
                 {
-                    Task<object> first = AccessStaTestMethodAttribute.StartSave(() => VbeUiTask.Run(async () => {
-                        int value = await gate.Task;
-                        Assert.AreEqual(ownerThread, Thread.CurrentThread.ManagedThreadId);
-                        Assert.AreEqual(ApartmentState.STA, Thread.CurrentThread.GetApartmentState());
-                        return (object)value;
-                    }));
+                    Task<object> first = AccessStaTestMethodAttribute.StartSave(() => {
+                        // StartSave enters its own diagnostic scope; select this test's writer
+                        // at admission, when VbeUiTask captures the continuation trace.
+                        using (trace.Enter()) return VbeUiTask.Run(async () => {
+                            int value = await gate.Task;
+                            Assert.AreEqual(ownerThread, Thread.CurrentThread.ManagedThreadId);
+                            Assert.AreEqual(ApartmentState.STA, Thread.CurrentThread.GetApartmentState());
+                            return (object)value;
+                        });
+                    });
                     Assert.IsFalse(first.IsCompleted);
                     for (int index = 0; index < 2; index++)
                     {
@@ -89,7 +93,7 @@ namespace VBAi.Tests.Unit
                 }
                 return ownerThread;
             });
-            Assert.IsNull(run.Error, run.Error?.ToString());
+            Assert.IsNull(run.Error, run.Error + Environment.NewLine + string.Join(Environment.NewLine, events));
             Assert.IsFalse(run.Retained, run.Diagnostic);
             Assert.IsTrue(run.ThreadExitObserved);
             int owner = run.Value;
