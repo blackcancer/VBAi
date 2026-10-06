@@ -12,14 +12,14 @@ namespace VBAi
     internal static class UiText
     {
 
-        /// <summary>Gestionnaire du catalogue de ressources anglais embarqué.</summary>
+        /// <summary>Fallback resource manager for invariant English strings embedded in the assembly.</summary>
         private static readonly ResourceManager English = new ResourceManager("VBAi.Localization.UiStrings", typeof(UiText).Assembly);
 
-        /// <summary>Gestionnaires de ressources créés pour chaque culture du catalogue.</summary>
+        /// <summary>Resource managers indexed by the supported culture names.</summary>
         private static readonly Dictionary<string, ResourceManager> Catalogues = CreateCatalogues();
 
-        /// <summary>Associe chaque culture prise en charge à son gestionnaire de ressources.</summary>
-        /// <returns>Gestionnaire de ressources associé à chaque culture prise en charge.</returns>
+        /// <summary>Creates one localized resource manager for each culture in the supported language catalog.</summary>
+        /// <returns>Culture-name to resource-manager mapping used by <see cref="Get"/>.</returns>
         private static Dictionary<string, ResourceManager> CreateCatalogues()
         {
             var result = new Dictionary<string, ResourceManager>();
@@ -28,20 +28,20 @@ namespace VBAi
             return result;
         }
 
-        /// <summary>Culture active des libellés de l’interface.</summary>
-        /// <value>Culture prise en charge choisie lors de l’initialisation.</value>
+        /// <summary>Culture selected for interface strings after VBE language detection.</summary>
+        /// <value>A supported culture; initialization falls back to the current UI culture when VBE menus are unavailable.</value>
         internal static CultureInfo Culture { get; private set; } = Supported(CultureInfo.CurrentUICulture);
 
-        /// <summary>Convertit la culture demandée vers une des cultures prises en charge.</summary>
-        /// <param name="culture">Culture demandée.</param>
-        /// <returns>Culture du catalogue correspondant, ou anglais.</returns>
+        /// <summary>Maps an arbitrary culture to the closest culture supported by the UI catalogs.</summary>
+        /// <param name="culture">Requested UI culture.</param>
+        /// <returns>The supported culture selected by <see cref="UiLanguages.For(CultureInfo)"/>.</returns>
         internal static CultureInfo Supported(CultureInfo culture)
         {
             return CultureInfo.GetCultureInfo(UiLanguages.For(culture).CultureName);
         }
 
         /// <summary>Détecte la langue des menus VBE, met à jour la culture active et inscrit le résultat au journal.</summary>
-        /// <param name="vbe">Instance Automation du VBE.</param>
+        /// <param name="vbe">VBE Automation object whose menu captions are used when readable.</param>
         internal static void Initialize(object vbe)
         {
             Culture = Detect(vbe, CultureInfo.CurrentUICulture);
@@ -49,9 +49,9 @@ namespace VBAi
         }
 
         /// <summary>Privilégie les légendes des menus VBE et utilise la culture système si elles sont indisponibles.</summary>
-        /// <param name="vbe">Instance Automation du VBE à inspecter.</param>
-        /// <param name="fallback">Culture de repli lorsque le VBE ne fournit pas de menus.</param>
-        /// <returns>Culture prise en charge déterminée.</returns>
+        /// <param name="vbe">VBE Automation object; inaccessible or absent menus cause the fallback to be used.</param>
+        /// <param name="fallback">Culture used when no menu bar can be read or no VBE menu is available.</param>
+        /// <returns>Supported culture inferred from VBE captions, or mapped from <paramref name="fallback"/>.</returns>
         internal static CultureInfo Detect(object vbe, CultureInfo fallback)
         {
             bool hasMenu = false;
@@ -73,9 +73,9 @@ namespace VBAi
             return hasMenu ? UiLanguages.FromMenus(captions, fallback) : Supported(fallback);
         }
 
-        /// <summary>Traduit une clé anglaise dans la culture active avec repli sur le texte anglais.</summary>
-        /// <param name="english">Clé anglaise ou texte à rechercher dans les catalogues.</param>
-        /// <returns>Chaîne traduite, valeur anglaise, ou null si la clé est null.</returns>
+        /// <summary>Looks up an English resource key in the active catalog and falls back to embedded English.</summary>
+        /// <param name="english">English resource key or literal text to localize.</param>
+        /// <returns>Localized text, the English value when no resource exists, or null when the input is null.</returns>
         internal static string Get(string english)
         {
             if (english == null) return null;
@@ -87,10 +87,10 @@ namespace VBAi
 
         // Only called immediately after InitializeComponent, before document/user data is populated.
         // Designer captions stay editable in English; all translated strings live in resource files.
-        /// <summary>Traduit récursivement les libellés et info-bulles d’un contrôle après son initialisation.</summary>
-        /// <param name="control">Contrôle racine à localiser.</param>
-        /// <param name="components">Conteneur de composants, éventuellement null.</param>
-        /// <param name="additionalTips">Info-bulles qui ne figurent pas dans le conteneur des composants.</param>
+        /// <summary>Localizes initialized controls and applies registered help hints recursively, while preserving technical text direction.</summary>
+        /// <param name="control">Initialized root control; Designer mode is left untouched.</param>
+        /// <param name="components">Optional component container used to find ToolTip instances.</param>
+        /// <param name="additionalTips">Tooltips not stored in <paramref name="components"/> whose text should also be translated.</param>
         internal static void Apply(Control control, IContainer components, params ToolTip[] additionalTips)
         {
             if (LicenseManager.UsageMode == LicenseUsageMode.Designtime) return;
@@ -128,8 +128,8 @@ namespace VBAi
             if (form != null) UiTheme.Attach(form);
         }
 
-        /// <summary>Traduit les éléments d’un menu et parcourt récursivement les sous-menus.</summary>
-        /// <param name="items">Éléments de menu à traduire.</param>
+        /// <summary>Translates menu captions, tooltips, accessibility names, and nested drop-down items.</summary>
+        /// <param name="items">Menu items to localize in place.</param>
         private static void ApplyItems(ToolStripItemCollection items)
         {
             foreach (ToolStripItem item in items)
