@@ -47,7 +47,11 @@ compiler logs go to
 the compiled `VBAi.<culture>.chm` archives are published to `dist/help/`.
 `--output` selects an alternative staging root for `--all`, or one staging directory
 for a single edition. `--package-dir` selects the clean compiled distribution folder.
-The builder never downloads or installs a compiler. Inspect
+After reviewing a compiled batch and retaining its validation receipt, the
+corresponding `artifacts/help-staging/` and temporary archive extraction folders
+can be deleted. They are reproducible development output, not installation inputs.
+Do not delete a frozen native qualification candidate merely because a later build
+exists. The builder never downloads or installs a compiler. Inspect
 compiler logs and the actual archives before distribution; an old archive is removed
 before compiling its replacement.
 

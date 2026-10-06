@@ -41,8 +41,8 @@ qualification. It supersedes the synthetic screenshot bank rejected in review.
 | Actual compiled pages loaded by Windows Trident | 23 chapters; titles, text and images checked; foreground preserved |
 
 CHM SHA-256: `4abce63873da2db503a474290822bdc0b2e20ba9f2f786ae511496b41e835a74`. Interactive search in the standalone HTML Help
-viewer was not exercised. French is the review edition; other languages remain
-pending. Earlier tooltip and XML documentation checks belong to source `7f3263d4`
+viewer was not exercised. French remains the reviewed source edition; the localized editions are
+validated separately below. Earlier tooltip and XML documentation checks belong to source `7f3263d4`
 and remain in this page's Git history, without implying a fresh full audit.
 
 ### Real worked example and retained failures
@@ -73,11 +73,48 @@ The workbook binary was not published. Git UI then showed no incoming/outgoing
 commits. The owned Excel process exited normally with code zero and no forced
 termination; the temporary HKCU COM registration was restored and verified.
 
-Local receipts are under `artifacts/help-real-workflow/` in the documentation
-worktree; archive and viewer checks are `artifacts/help-archive-validation.json`
-and `artifacts/help-viewer-validation.json`. Their absence must not be treated as
-a reproduced result. The screenshots document this real example, not arbitrary
+The original local receipts were under `artifacts/help-real-workflow/`,
+`artifacts/help-archive-validation.json` and
+`artifacts/help-viewer-validation.json` in the documentation worktree. That
+worktree was removed concurrently during localization; those original receipts
+are no longer available locally. The committed screenshots retain their provenance
+manifest. The historical results above were not reproduced on the new candidate. The screenshots document this real example, not arbitrary
 host compatibility or full embedded-UI acceptance.
+
+## Localized help and clean distribution (2026-10-06)
+
+Frozen source `43e24549bc7ef4563987fad0afc2b1ce1e8be894`, isolated Windows Debug
+solution build. Add-in assembly MVID `7ea0091f-8d0e-455a-8fe4-698d3b7939e9`,
+SHA-256 `54f85b601802abf56ba932bc0691c5e51fef3bef827b98e2c9e7eeddedc49afb`.
+The French source hash is
+`881ae439ae43a2ccec76d8e5346a908939449c2cb2b423cb300bc33ce9d9bca7`.
+All twelve translated catalogs were authored manually, cover every source string
+and reuse the authentic French captures with an explicit language notice.
+
+| Check | Observed result |
+| --- | --- |
+| Help routing, culture selection, localized resources, hints and native menu lifecycle | 32 passed, 0 failed, 0 skipped; `localized-help-final.trx` |
+| Help-builder contracts, complete catalogs, stale-source refusal and clean compiler staging | 19 passed |
+| Markdown checker self-tests | 21 passed |
+| Compiled editions | 13 valid CHM archives, one per supported interface language |
+| Compiled page readback through Windows Trident | 299 chapters; translated titles, introductory text and all referenced images checked; foreground preserved |
+| Independent archive extraction | 533 HTML, CSS and PNG files byte-identical to the compiled inputs |
+| Full-text indexes | 13 nonempty `/$FIftiMain` entries verified in the CHM directory |
+| Add-in and updater Help payloads | Exactly the 13 distribution CHMs, matching SHA-256; no staging files or subdirectories |
+
+Arabic right-to-left layout and Hindi and Traditional Chinese text were also
+visually reviewed using actual compiled pages. Standalone viewer search, new
+native Office menu loading and updater installation were not exercised. These
+checks do not measure whole-product coverage or inherit earlier host acceptance.
+
+Reproducible source checks live in the mirrored C# tests and
+`tools/docs/test_build_help.py`. Current local receipts are in
+`artifacts/localized-help-tests/`, `artifacts/localized-help-archive-validation.json`
+and `artifacts/localized-help-viewer-validation.json` in the localization worktree.
+Generated guides are distributed exclusively from `dist/help/`; development
+HTML, captures and compiler logs remain outside the application package.
+The cleanup removed obsolete help renders, extraction copies and replaced managed
+builds. Frozen native candidates and qualification receipts were retained.
 
 ## Q028 Ollama and embedded Office assistant qualification (2026-10-06)
 
