@@ -19,113 +19,114 @@ namespace VBAi
         internal interface IProbe
         {
 
-            /// <summary>Requires owner for i probe.</summary>
-            /// <param name="vbe">object that supplies the vbe for this operation.</param>
+            /// <summary>Rejects access when the supplied VBE object is not being used on its owning thread.</summary>
+            /// <param name="vbe">VBE automation object whose thread ownership is checked.</param>
             void RequireOwner(object vbe);
 
-            /// <summary>Handles prepare for i probe.</summary>
-            /// <param name="vbe">object that supplies the vbe for this operation.</param>
-            /// <param name="project">object that supplies the project for this operation.</param>
-            /// <param name="source">Text that supplies the source value. Use the format required by the calling operation.</param>
-            /// <returns>object produced by the operation for prepare on i probe.</returns>
+            /// <summary>Finds and prepares the native editor pane used to execute the approved procedure source.</summary>
+            /// <param name="vbe">Owning VBE automation object.</param>
+            /// <param name="project">Resolved project whose active code pane is prepared.</param>
+            /// <param name="source">Expected module source used to validate the selected procedure.</param>
+            /// <returns>Opaque preparation record required by subsequent revalidation and execution.</returns>
             object Prepare(object vbe, object project, string source);
 
-            /// <summary>Handles revalidate for i probe.</summary>
-            /// <param name="vbe">object that supplies the vbe for this operation.</param>
-            /// <param name="project">object that supplies the project for this operation.</param>
-            /// <param name="prepared">object that supplies the prepared for this operation.</param>
+            /// <summary>Rechecks selection, project, source, and pane identity immediately before native dispatch.</summary>
+            /// <param name="vbe">Owning VBE automation object.</param>
+            /// <param name="project">Project resolved for this attempt.</param>
+            /// <param name="prepared">Preparation evidence returned by <see cref="Prepare"/>.</param>
             void Revalidate(object vbe, object project, object prepared);
 
-            /// <summary>Executes  for i probe.</summary>
-            /// <param name="prepared">object that supplies the prepared for this operation.</param>
+            /// <summary>Performs the single native execution action after revalidation.</summary>
+            /// <param name="prepared">Validated editor preparation record.</param>
             void Execute(object prepared);
 
-            /// <summary>Reads mode for i probe.</summary>
-            /// <param name="project">object that supplies the project for this operation.</param>
-            /// <returns>int produced by the operation for read mode on i probe.</returns>
+            /// <summary>Reads the host's current execution mode to detect completion of the VBA call.</summary>
+            /// <param name="project">Project whose host execution state is observed.</param>
+            /// <returns>Host-reported mode value.</returns>
             int ReadMode(object project);
         }
 
-        /// <summary>Maintains the vbe state for vba native test execution host.</summary>
+        /// <summary>VBE automation object used only from the captured owning thread.</summary>
         private readonly object vbe;
 
-        /// <summary>Maintains the sink state for vba native test execution host.</summary>
+        /// <summary>Correlates native result callbacks with this run's single outstanding call.</summary>
         private readonly VbaTestResultSink sink;
 
-        /// <summary>Maintains the resolve project state for vba native test execution host.</summary>
+        /// <summary>Resolves the catalog's project selector to the live VBIDE project immediately before use.</summary>
         private readonly Func<VbaTestCatalog, object> resolveProject;
 
-        /// <summary>Maintains the validate catalog state for vba native test execution host.</summary>
+        /// <summary>Rechecks source revision, project identity, and authorization for a catalog.</summary>
         private readonly Action<VbaTestCatalog> validateCatalog;
 
-        /// <summary>Maintains the execution guard state for vba native test execution host.</summary>
+        /// <summary>Checks current execution policy before each native attempt.</summary>
         private readonly Action executionGuard;
 
-        /// <summary>Maintains the signature state for vba native test execution host.</summary>
+        /// <summary>Provides the expected support-module signature used to reject stale result messages.</summary>
         private readonly Func<VbaTestCatalog, string> signature;
 
-        /// <summary>Identifies the run id associated with vba native test execution host.</summary>
+        /// <summary>Provides the active runner correlation identifier for native result receipt matching.</summary>
         private readonly Func<string> runId;
 
-        /// <summary>Maintains the owner state for vba native test execution host.</summary>
+        /// <summary>Managed thread identifier captured at construction and required for all COM operations.</summary>
         private readonly int owner = Thread.CurrentThread.ManagedThreadId;
 
-        /// <summary>Maintains the active state for vba native test execution host.</summary>
+        /// <summary>The only native procedure call currently awaiting a completion receipt.</summary>
         private Call active;
 
-        /// <summary>Maintains the disposed and uncertain state for vba native test execution host.</summary>
+        /// <summary>Tracks shutdown and whether an unverified attempt permanently disabled this transport instance.</summary>
         private bool disposed, uncertain;
 
-        /// <summary>Maintains the probe state for vba native test execution host.</summary>
+        /// <summary>Native editor adapter; replaceable internally for isolated execution-boundary verification.</summary>
         internal IProbe Probe = new NativeProbe();
 
-        /// <summary>Maintains the post state for vba native test execution host.</summary>
+        /// <summary>Posts the dispatch action to the owning WinForms thread.</summary>
         internal Action<Action> Post;
 
-        /// <summary>Maintains the start polling state for vba native test execution host.</summary>
+        /// <summary>Starts bounded completion polling and returns its disposable timer.</summary>
         internal Func<Action, IDisposable> StartPolling;
 
-        /// <summary>Maintains the verification timeout state for vba native test execution host.</summary>
+        /// <summary>Maximum time allowed to obtain positive native completion evidence.</summary>
         internal TimeSpan VerificationTimeout = TimeSpan.FromSeconds(30);
 
-        /// <summary>Owns the call state and operations.</summary>
+        /// <summary>Captures all identities and resources for one one-shot native invocation attempt.</summary>
         private sealed class Call
         {
 
-            /// <summary>Maintains the catalog state for call.</summary>
+            /// <summary>Catalog whose project and revision were validated before dispatch.</summary>
             internal VbaTestCatalog Catalog;
 
-            /// <summary>Maintains the test state for call.</summary>
+            /// <summary>Discovered descriptor expected in the result receipt.</summary>
             internal VbaTestDescriptor Test;
 
-            /// <summary>Maintains the phase state for call.</summary>
+            /// <summary>Lifecycle phase recorded in the completion result.</summary>
             internal string Phase;
 
-            /// <summary>Maintains the project state for call.</summary>
+            /// <summary>Live project object resolved for this attempt.</summary>
             internal object Project;
 
-            /// <summary>Maintains the armed and invoked state for call.</summary>
+            /// <summary>Tracks whether result correlation was armed and the irreversible native call was dispatched.</summary>
             internal bool Armed, Invoked;
 
-            /// <summary>Maintains the clock state for call.</summary>
+            /// <summary>Elapsed-time source started when the attempt record is created.</summary>
             internal Stopwatch Clock = Stopwatch.StartNew();
 
-            /// <summary>Maintains the exposure and polling state for call.</summary>
+            /// <summary>Temporary result exposure and completion timer, both released when the call settles.</summary>
             internal IDisposable Exposure, Polling;
 
-            /// <summary>Maintains the completion state for call.</summary>
+            /// <summary>Asynchronous receipt completed once with verified success/failure or transport uncertainty.</summary>
             internal TaskCompletionSource<VbaTestResult> Completion = new TaskCompletionSource<VbaTestResult>(TaskCreationOptions.RunContinuationsAsynchronously);
         }
 
         /// <summary>Initializes a VbaNativeTestExecutionHost instance with the supplied state.</summary>
-        /// <param name="vbe">object that supplies the vbe for this operation.</param>
-        /// <param name="dispatcher">control that supplies the dispatcher for this operation.</param>
-        /// <param name="sink">vba test result sink that supplies the sink for this operation.</param>
-        /// <param name="resolveProject">func&lt;vba test catalog, object&gt; that supplies the resolve project for this operation.</param>
-        /// <param name="validateCatalog">action&lt;vba test catalog&gt; that supplies the validate catalog for this operation.</param>
-        /// <param name="executionGuard">action that supplies the execution guard for this operation.</param>
-        /// <param name="supportSignature">func&lt;vba test catalog, string&gt; that supplies the support signature for this operation.</param>
-        /// <param name="runId">func&lt;string&gt; that supplies the run id for this operation.</param>
+        /// <param name="vbe">Live VBE automation object captured on the owning thread.</param>
+        /// <param name="dispatcher">Control with a created handle for posting native work back to that thread.</param>
+        /// <param name="sink">Result sink that validates callback correlation.</param>
+        /// <param name="resolveProject">Resolver for the project represented by the catalog.</param>
+        /// <param name="validateCatalog">Revision and identity check repeated before dispatch.</param>
+        /// <param name="executionGuard">Policy check that must permit each native call.</param>
+        /// <param name="supportSignature">Expected signature of the injected result support module.</param>
+        /// <param name="runId">Current run identifier used to reject stale callbacks.</param>
+        /// <exception cref="ArgumentNullException">A required dependency is null.</exception>
         internal VbaNativeTestExecutionHost(object vbe, Control dispatcher, VbaTestResultSink sink,
             Func<VbaTestCatalog, object> resolveProject, Action<VbaTestCatalog> validateCatalog,
             Action executionGuard, Func<VbaTestCatalog, string> supportSignature, Func<string> runId)
@@ -142,8 +143,8 @@ namespace VBAi
             StartPolling = tick => { var timer = new System.Windows.Forms.Timer { Interval = 50 }; timer.Tick += (_, __) => tick(); timer.Start(); return timer; };
         }
 
-        /// <summary>Validates  for vba native test execution host.</summary>
-        /// <param name="catalog">vba test catalog that supplies the catalog for this operation.</param>
+        /// <summary>Checks thread affinity, live transport state, policy, VBE ownership, and project revision.</summary>
+        /// <param name="catalog">Catalog whose captured identity and source revision must still be current.</param>
         public void Validate(VbaTestCatalog catalog)
         {
             RequireOwner();
@@ -153,11 +154,11 @@ namespace VBAi
             validateCatalog(catalog);
         }
 
-        /// <summary>Invokes async for vba native test execution host.</summary>
-        /// <param name="catalog">vba test catalog that supplies the catalog for this operation.</param>
-        /// <param name="procedure">vba test descriptor that supplies the procedure for this operation.</param>
-        /// <param name="phase">Text that supplies the phase value. Use the format required by the calling operation.</param>
-        /// <returns>task&lt;vba test result&gt; produced by the operation for invoke async on vba native test execution host.</returns>
+        /// <summary>Queues one serialized call and returns its completion receipt; a dispatched call is never retried.</summary>
+        /// <param name="catalog">Validated catalog defining project and revision identity.</param>
+        /// <param name="procedure">Discovered test or fixture to execute.</param>
+        /// <param name="phase">Lifecycle phase attached to the result.</param>
+        /// <returns>Task completed by the correlated native result sink or with a safe/uncertain failure.</returns>
         public Task<VbaTestResult> InvokeAsync(VbaTestCatalog catalog, VbaTestDescriptor procedure, string phase)
         {
             RequireOwner();
@@ -171,8 +172,8 @@ namespace VBAi
             return call.Completion.Task;
         }
 
-        /// <summary>Dispatches  for vba native test execution host.</summary>
-        /// <param name="call">call that supplies the call for this operation.</param>
+        /// <summary>Prepares and revalidates the editor, arms result correlation, then dispatches exactly one native call.</summary>
+        /// <param name="call">Outstanding attempt reserved by <see cref="InvokeAsync"/>.</param>
         private void Dispatch(Call call)
         {
             if (!ReferenceEquals(active, call) || call.Completion.Task.IsCompleted) return;
@@ -214,8 +215,8 @@ namespace VBAi
             catch (Exception error) { Finish(call, error); }
         }
 
-        /// <summary>Observes  for vba native test execution host.</summary>
-        /// <param name="call">call that supplies the call for this operation.</param>
+        /// <summary>Polls host mode and correlated callback state until both prove completion or a limit is reached.</summary>
+        /// <param name="call">Attempt whose native state and result receipt are being observed.</param>
         private void Observe(Call call)
         {
             if (!ReferenceEquals(active, call) || call.Completion.Task.IsCompleted) return;
@@ -244,9 +245,9 @@ namespace VBAi
             catch (Exception error) { Finish(call, error); }
         }
 
-        /// <summary>Handles finish for vba native test execution host.</summary>
-        /// <param name="call">call that supplies the call for this operation.</param>
-        /// <param name="error">Exception describing the error failure.</param>
+        /// <summary>Settles an attempt once, releases temporary exposure, and marks dispatched failures uncertain.</summary>
+        /// <param name="call">Attempt to settle.</param>
+        /// <param name="error">Preflight or completion failure.</param>
         private void Finish(Call call, Exception error)
         {
             if (call.Completion.Task.IsCompleted) return;
@@ -262,16 +263,16 @@ namespace VBAi
             call.Completion.TrySetException(new VbaTestInvocationException(error.Message, call.Invoked, error));
         }
 
-        /// <summary>Handles revoke for vba native test execution host.</summary>
-        /// <param name="call">call that supplies the call for this operation.</param>
+        /// <summary>Stops polling and removes the temporary result exposure associated with an attempt.</summary>
+        /// <param name="call">Attempt whose temporary resources are released.</param>
         private static void Revoke(Call call)
         { call.Polling?.Dispose(); call.Polling = null; call.Exposure?.Dispose(); call.Exposure = null; }
 
-        /// <summary>Requires owner for vba native test execution host.</summary>
+        /// <summary>Throws unless the caller is on the thread that captured this VBE automation object.</summary>
         private void RequireOwner()
         { if (owner != Thread.CurrentThread.ManagedThreadId) throw new InvalidOperationException("Native test transport requires its owning thread."); }
 
-        /// <summary>Disposes  for vba native test execution host.</summary>
+        /// <summary>Disconnects the transport and settles an outstanding attempt as uncertain if it was dispatched.</summary>
         public void Dispose()
         {
             RequireOwner(); disposed = true;
@@ -279,8 +280,9 @@ namespace VBAi
         }
 
         /// <summary>Validates native run control for vba native test execution host.</summary>
-        /// <param name="controlObject">object that supplies the control object for this operation.</param>
-        /// <param name="expectedCaption">Text that supplies the expected caption value. Use the format required by the calling operation.</param>
+        /// <param name="controlObject">Native command control inspected before dispatch.</param>
+        /// <param name="expectedCaption">Optional caption captured earlier; a change causes refusal.</param>
+        /// <exception cref="InvalidOperationException">The control is not the enabled built-in Run Sub command or its identity changed.</exception>
         internal static void ValidateNativeRunControl(object controlObject, string expectedCaption = null)
         {
             dynamic control = controlObject;
@@ -291,13 +293,13 @@ namespace VBAi
                 throw new InvalidOperationException("The verified built-in native Run Sub command (186) is unavailable or changed.");
         }
 
-        /// <summary>Handles prepare native pane for vba native test execution host.</summary>
-        /// <param name="editorObject">object that supplies the editor object for this operation.</param>
-        /// <param name="moduleObject">object that supplies the module object for this operation.</param>
-        /// <param name="line">int that supplies the line for this operation.</param>
-        /// <param name="observeAfterShow">action&lt;object&gt; that supplies the observe after show for this operation.</param>
-        /// <param name="identity">func&lt;object, object, bool&gt; that supplies the identity for this operation.</param>
-        /// <returns>object produced by the operation for prepare native pane on vba native test execution host.</returns>
+        /// <summary>Selects and displays the requested module line, then captures pane and window identity for revalidation.</summary>
+        /// <param name="editorObject">VBE editor window manager.</param>
+        /// <param name="moduleObject">Module containing the intended procedure.</param>
+        /// <param name="line">One-based declaration line to select.</param>
+        /// <param name="observeAfterShow">Optional callback to verify the editor after showing its pane.</param>
+        /// <param name="identity">COM identity comparer; defaults to the shared VBE identity check.</param>
+        /// <returns>Opaque pane preparation record used to detect a changed selection before dispatch.</returns>
         internal static object PrepareNativePane(object editorObject, object moduleObject, int line, Action<object> observeAfterShow = null,
             Func<object, object, bool> identity = null)
         {
