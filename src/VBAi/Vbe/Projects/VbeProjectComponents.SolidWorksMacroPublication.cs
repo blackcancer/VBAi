@@ -9,70 +9,70 @@ using System.Threading.Tasks;
 namespace VBAi
 {
 
-    /// <summary>Owns the vbe project components state and operations.</summary>
+    /// <summary>Coordinates explicit publication of a VBA project to a fresh SOLIDWORKS macro project.</summary>
     internal sealed partial class VbeProjectComponents
     {
 
-        /// <summary>Owns the solid works macro publication result state and operations.</summary>
+        /// <summary>Reports source preservation, destination verification, mutation certainty, and publication diagnostics.</summary>
         internal sealed class SolidWorksMacroPublicationResult
         {
 
-            /// <summary>Maintains the terminal and uncertain and mutation invoked and verified and original preserved and identity changed and destination created state for solid works macro publication result.</summary>
+            /// <summary>Terminality, uncertainty, mutation entry, verification, source preservation, identity change, and destination creation outcomes.</summary>
             public bool Terminal, Uncertain, MutationInvoked, Verified, OriginalPreserved, IdentityChanged, DestinationCreated;
 
-            /// <summary>Keeps the original project and original host path and original project version and destination project and host path and project version and collection version and staging path and error path available to solid works macro publication result.</summary>
+            /// <summary>Original and destination project identities/paths/versions, staging directory, and failure detail.</summary>
             public string OriginalProject, OriginalHostPath, OriginalProjectVersion, DestinationProject, HostPath,
                 ProjectVersion, CollectionVersion, StagingPath, Error;
 
-            /// <summary>Maintains the creation and save and components and references and added native host references and native generated defaults state for solid works macro publication result.</summary>
+            /// <summary>Nested creation/save reports and component, reference, host-reference, and generated-default comparisons.</summary>
             public object Creation, Save, Components, References, AddedNativeHostReferences, NativeGeneratedDefaults;
 
-            /// <summary>Maintains the import mismatch and final mismatch state for solid works macro publication result.</summary>
+            /// <summary>First component mismatch during import and any mismatch in the final live destination.</summary>
             public PublicationImportMismatch ImportMismatch, FinalMismatch;
 
-            /// <summary>Maintains the claims state for solid works macro publication result.</summary>
+            /// <summary>Ordered durable claims for each publication mutation phase.</summary>
             private readonly List<MacroMutationClaim> claims = new List<MacroMutationClaim>();
 
             /// <summary>Gets the claims.</summary>
             /// <value>Current claims exposed by solid works macro publication result.</value>
             public MacroMutationClaim[] Claims => claims.ToArray();
 
-            /// <summary>Adds claim for solid works macro publication result.</summary>
-            /// <param name="claim">macro mutation claim that supplies the claim for this operation.</param>
+            /// <summary>Appends a mutation-phase claim to the publication result.</summary>
+            /// <param name="claim">Timestamped phase and destination claim to retain in order.</param>
             internal void AddClaim(MacroMutationClaim claim) { claims.Add(claim); }
 
-            /// <summary>Gets the retry allowed.</summary>
-            /// <value>Current retry allowed exposed by solid works macro publication result.</value>
+            /// <summary>Gets whether uncertain publication may be replayed automatically.</summary>
+            /// <value>Always false; a native import/save with uncertain outcome requires inspection.</value>
             public bool RetryAllowed => false;
 
-            /// <summary>Gets the rollback performed.</summary>
-            /// <value>Current rollback performed exposed by solid works macro publication result.</value>
+            /// <summary>Gets whether this flow automatically removed a partial destination.</summary>
+            /// <value>Always false; partial projects and staging data are preserved for explicit review.</value>
             public bool RollbackPerformed => false;
 
-            /// <summary>Gets the persistence reload verified.</summary>
-            /// <value>Current persistence reload verified exposed by solid works macro publication result.</value>
+            /// <summary>Gets whether persisted destination contents were verified after a fresh reopen.</summary>
+            /// <value>Always false; the operation checks the current live project only.</value>
             public bool PersistenceReloadVerified => false;
 
-            /// <summary>Gets the limit.</summary>
-            /// <value>Current limit exposed by solid works macro publication result.</value>
+            /// <summary>Gets the limitations of publication verification and metadata transport.</summary>
+            /// <value>Describes unsupported help/conditional-compilation/reference metadata, signature handling, and the need for fresh reopen.</value>
             public string Limit => "Explicit publication to a new native SOLIDWORKS project; source identity is retained. Nondefault help and conditional-compilation metadata and project references are unsupported. Digital signatures are not transported or qualified; the new identity requires a separate signing decision. Reopen is required to qualify persisted contents.";
         }
 
-        /// <summary>Owns the publication component state and operations.</summary>
+        /// <summary>Staged source component data and canonical COM identity used for destination comparison.</summary>
         internal sealed class PublicationComponent
         {
 
-            /// <summary>Keeps the name and code and form version and version and attributes and export path and export sha256 and frx sha256 and designer json and component snapshot json path available to publication component.</summary>
+            /// <summary>Component name/code/version/attributes and hashes or staged files for exported source artifacts.</summary>
             internal string Name, Code, FormVersion, Version, Attributes, ExportPath, ExportSha256, FrxSha256, DesignerJson, ComponentSnapshotJson;
 
-            /// <summary>Maintains the type state for publication component.</summary>
+            /// <summary>VBComponent type code used to require a matching destination component kind.</summary>
             internal int Type;
 
-            /// <summary>Tracks the canonical state of publication component.</summary>
+            /// <summary>Canonical COM object retained to verify the component was not replaced.</summary>
             internal object Canonical;
         }
         // Only scalars cross the result boundary; full code/designer observations stay in owned staging.
-        /// <summary>Owns the publication import mismatch state and operations.</summary>
+        /// <summary>Scalar diagnostics describing the first source/destination component mismatch.</summary>
         internal sealed class PublicationImportMismatch
         {
 
@@ -188,17 +188,17 @@ namespace VBAi
             /// <value>Current diagnostic error exposed by publication import mismatch.</value>
             public string DiagnosticError { get; }
 
-            /// <summary>Initializes a PublicationImportMismatch instance with the supplied state.</summary>
-            /// <param name="expected">publication component that supplies the expected for this operation.</param>
-            /// <param name="actual">publication component that supplies the actual for this operation.</param>
-            /// <param name="expectedFile">Text that supplies the expected file value. Use the format required by the calling operation.</param>
-            /// <param name="actualFile">Text that supplies the actual file value. Use the format required by the calling operation.</param>
-            /// <param name="expectedHash">Text that supplies the expected hash value. Use the format required by the calling operation.</param>
-            /// <param name="actualHash">Text that supplies the actual hash value. Use the format required by the calling operation.</param>
-            /// <param name="error">Text that supplies the error value. Use the format required by the calling operation.</param>
-            /// <param name="phase">Text that supplies the phase value. Use the format required by the calling operation.</param>
-            /// <param name="ordinal">int that supplies the ordinal for this operation.</param>
-            /// <param name="canonicalEqual">Indicates whether canonical equal is enabled.</param>
+            /// <summary>Captures scalar expected-versus-actual component and file diagnostics without exposing source code.</summary>
+            /// <param name="expected">Staged source component snapshot.</param>
+            /// <param name="actual">Destination component snapshot read from the host.</param>
+            /// <param name="expectedFile">Expected relative export filename, when diagnosing a file mismatch.</param>
+            /// <param name="actualFile">Observed relative export filename.</param>
+            /// <param name="expectedHash">Expected SHA-256 of the staged export.</param>
+            /// <param name="actualHash">Observed SHA-256 of the destination export.</param>
+            /// <param name="error">Error encountered while reading or comparing the artifact, if any.</param>
+            /// <param name="phase">Publication phase in which the mismatch was detected.</param>
+            /// <param name="ordinal">One-based component order within the comparison.</param>
+            /// <param name="canonicalEqual">Whether expected and actual COM identities were preserved.</param>
             internal PublicationImportMismatch(PublicationComponent expected, PublicationComponent actual,
                 string expectedFile, string actualFile, string expectedHash, string actualHash, string error,
                 string phase = null, int ordinal = 0, bool canonicalEqual = true)
@@ -228,14 +228,14 @@ namespace VBAi
             }
         }
 
-        /// <summary>Captures publication import mismatch for vbe project components.</summary>
-        /// <param name="expected">publication component that supplies the expected for this operation.</param>
-        /// <param name="actual">publication component that supplies the actual for this operation.</param>
-        /// <param name="staging">Text that supplies the staging value. Use the format required by the calling operation.</param>
-        /// <param name="ordinal">int that supplies the ordinal for this operation.</param>
-        /// <param name="phase">Text that supplies the phase value. Use the format required by the calling operation.</param>
-        /// <param name="canonicalEqual">Indicates whether canonical equal is enabled.</param>
-        /// <returns>publication import mismatch produced by the operation for capture publication import mismatch on vbe project components.</returns>
+        /// <summary>Writes bounded source and destination component diagnostics into the owned staging directory.</summary>
+        /// <param name="expected">Staged source component whose comparison values are expected.</param>
+        /// <param name="actual">Live destination component observed by the host.</param>
+        /// <param name="staging">Existing canonical staging directory, which must not be a reparse point.</param>
+        /// <param name="ordinal">One-based component position, limited to 4096.</param>
+        /// <param name="phase">Optional supported diagnostic phase: BeforeSave or AfterSave.</param>
+        /// <param name="canonicalEqual">Whether source and destination COM identities still match.</param>
+        /// <returns>Scalar diagnostic with filenames/hashes only; content remains in private staging and is never returned.</returns>
         internal static PublicationImportMismatch CapturePublicationImportMismatch(
             PublicationComponent expected, PublicationComponent actual, string staging, int ordinal,
             string phase = null, bool canonicalEqual = true)
@@ -268,11 +268,11 @@ namespace VBAi
             return new PublicationImportMismatch(expected, actual, expectedFile, actualFile, expectedHash, actualHash, error, phase, ordinal, canonicalEqual);
         }
 
-        /// <summary>Writes publication mismatch file for vbe project components.</summary>
-        /// <param name="staging">Text that supplies the staging value. Use the format required by the calling operation.</param>
-        /// <param name="relative">Text that supplies the relative value. Use the format required by the calling operation.</param>
-        /// <param name="text">Text that supplies the text value. Use the format required by the calling operation.</param>
-        /// <returns>Text produced by the operation for write publication mismatch file on vbe project components.</returns>
+        /// <summary>Creates a new UTF-8 diagnostic file, flushes it to disk, and returns its SHA-256.</summary>
+        /// <param name="staging">Owned staging directory for the diagnostic artifact.</param>
+        /// <param name="relative">Relative filename created with CreateNew semantics.</param>
+        /// <param name="text">Serialized diagnostic text, limited to 16 MiB in characters and encoded bytes.</param>
+        /// <returns>Lowercase hexadecimal SHA-256 of the bytes written.</returns>
         private static string WritePublicationMismatchFile(string staging, string relative, string text)
         {
             const int maximum = 16 * 1024 * 1024;
@@ -285,17 +285,17 @@ namespace VBAi
                 return BitConverter.ToString(sha.ComputeHash(bytes)).Replace("-", "").ToLowerInvariant();
         }
 
-        /// <summary>Owns the publication reference state and operations.</summary>
+        /// <summary>Identity tuple for one supported type-library reference.</summary>
         internal sealed class PublicationReference
         {
 
-            /// <summary>Identifies the guid associated with publication reference.</summary>
+            /// <summary>Canonical brace-form type-library GUID.</summary>
             public string Guid;
 
-            /// <summary>Maintains the major and minor state for publication reference.</summary>
+            /// <summary>Type-library major and minor version numbers.</summary>
             public int Major, Minor;
 
-            /// <summary>Maintains the built in state for publication reference.</summary>
+            /// <summary>Whether the host marks this reference as built in.</summary>
             public bool BuiltIn;
 
             /// <summary>Gets the key.</summary>
@@ -303,46 +303,46 @@ namespace VBAi
             internal string Key => Guid.ToUpperInvariant() + "|" + Major + "|" + Minor + "|" + BuiltIn;
         }
 
-        /// <summary>Owns the publication source state and operations.</summary>
+        /// <summary>Frozen source project metadata, disk identity, component snapshots, and references for one publication.</summary>
         private sealed class PublicationSource
         {
 
-            /// <summary>Tracks the canonical state of publication source.</summary>
+            /// <summary>Canonical source project COM object retained for identity revalidation.</summary>
             internal object Canonical;
 
-            /// <summary>Keeps the name and path and disk sha256 and version and fingerprint and description path available to publication source.</summary>
+            /// <summary>Source project name/path, file hash, project version, aggregate fingerprint, and description.</summary>
             internal string Name, Path, DiskSha256, Version, Fingerprint, Description;
 
-            /// <summary>Maintains the saved state for publication source.</summary>
+            /// <summary>Saved flag captured in the source fingerprint.</summary>
             internal bool Saved;
 
-            /// <summary>Maintains the components state for publication source.</summary>
+            /// <summary>Ordered component snapshots, including export and designer data staged for the destination.</summary>
             internal List<PublicationComponent> Components;
 
-            /// <summary>Maintains the references state for publication source.</summary>
+            /// <summary>Supported, unbroken type-library reference identities captured from the source.</summary>
             internal List<PublicationReference> References;
         }
 
         // Injection points preserve actual asynchronous creation/save contracts in focused fault tests.
-        /// <summary>Maintains the publication create state for vbe project components.</summary>
+        /// <summary>Optional injected asynchronous native project-creation operation used by fault tests.</summary>
         internal Func<Request, Action<bool>, Action<MacroMutationClaim>, Action, Task<SolidWorksMacroCreationResult>>
             PublicationCreate;
 
-        /// <summary>Maintains the publication save state for vbe project components.</summary>
+        /// <summary>Optional injected asynchronous native Save operation used by fault tests.</summary>
         internal Func<Request, Task<object>> PublicationSave;
 
-        /// <summary>Maintains the publication read general state for vbe project components.</summary>
+        /// <summary>Optional injected asynchronous read-only General metadata inspection used by fault tests.</summary>
         internal Func<Request, Task<object>> PublicationReadGeneral;
 
-        /// <summary>Maintains the publication form tree state for vbe project components.</summary>
+        /// <summary>Optional injected UserForm designer-tree reader used by fault tests.</summary>
         internal Func<string, string, object> PublicationFormTree;
 
-        /// <summary>Handles publish solid works macro async for vbe project components.</summary>
-        /// <param name="request">request that supplies the request for this operation.</param>
-        /// <param name="authorization">action&lt;bool&gt; that supplies the authorization for this operation.</param>
-        /// <param name="recordClaim">action&lt;macro mutation claim&gt; that supplies the record claim for this operation.</param>
-        /// <param name="requireNativeContext">action that supplies the require native context for this operation.</param>
-        /// <returns>task&lt;object&gt; produced by the operation for publish solid works macro async on vbe project components.</returns>
+        /// <summary>Publishes a frozen standalone source project into a new SOLIDWORKS macro and verifies its live contents.</summary>
+        /// <param name="request">Design-mode request selecting the exact source project revision and a fresh .swp destination.</param>
+        /// <param name="authorization">Current authorization callback, rechecked before observation and native mutation.</param>
+        /// <param name="recordClaim">Durable recorder for each publication-side native mutation phase.</param>
+        /// <param name="requireNativeContext">Assertion that the source remains in the authorized native context.</param>
+        /// <returns>Publication report with source preservation, destination state, component diagnostics, and explicit unsupported metadata limits.</returns>
         internal async Task<object> PublishSolidWorksMacroAsync(Request request, Action<bool> authorization = null,
             Action<MacroMutationClaim> recordClaim = null, Action requireNativeContext = null)
         {
@@ -734,25 +734,25 @@ namespace VBAi
             }
         }
 
-        /// <summary>Handles publication general boolean for vbe project components.</summary>
-        /// <param name="fields">dictionary&lt;string, object&gt; that supplies the fields for this operation.</param>
-        /// <param name="key">Text that supplies the key value. Use the format required by the calling operation.</param>
-        /// <param name="expected">Indicates whether expected is enabled.</param>
-        /// <returns>Boolean indicating the result of the check for publication general boolean on vbe project components.</returns>
+        /// <summary>Checks that an asynchronous General report contains an exact Boolean value.</summary>
+        /// <param name="fields">Deserialized report fields.</param>
+        /// <param name="key">Field name to inspect.</param>
+        /// <param name="expected">Required Boolean value.</param>
+        /// <returns>True only when the field exists, is Boolean, and equals the expected value.</returns>
         private static bool PublicationGeneralBoolean(Dictionary<string, object> fields, string key, bool expected)
         { object value; return fields.TryGetValue(key, out value) && value is bool && (bool)value == expected; }
 
-        /// <summary>Handles publication general count for vbe project components.</summary>
-        /// <param name="fields">dictionary&lt;string, object&gt; that supplies the fields for this operation.</param>
-        /// <param name="key">Text that supplies the key value. Use the format required by the calling operation.</param>
-        /// <param name="expected">int that supplies the expected for this operation.</param>
-        /// <returns>Boolean indicating the result of the check for publication general count on vbe project components.</returns>
+        /// <summary>Checks that an asynchronous General report contains an exact integer attempt count.</summary>
+        /// <param name="fields">Deserialized report fields.</param>
+        /// <param name="key">Attempt-count field name to inspect.</param>
+        /// <param name="expected">Required count, including zero when confirming no mutation.</param>
+        /// <returns>True only when the field exists, is an integer, and equals the expected count.</returns>
         private static bool PublicationGeneralCount(Dictionary<string, object> fields, string key, int expected)
         { object value; return fields.TryGetValue(key, out value) && value is int && (int)value == expected; }
 
-        /// <summary>Reads publication source for vbe project components.</summary>
-        /// <param name="canonical">object that supplies the canonical for this operation.</param>
-        /// <returns>publication source produced by the operation for read publication source on vbe project components.</returns>
+        /// <summary>Captures an eligible standalone Type101 design project, its disk hash, components, and references.</summary>
+        /// <param name="canonical">Canonical source project COM object.</param>
+        /// <returns>Frozen source snapshot; protected projects, unsupported metadata, duplicate/reserved names, or broken references throw.</returns>
         private PublicationSource ReadPublicationSource(object canonical)
         {
             dynamic project = canonical;
@@ -784,10 +784,10 @@ namespace VBAi
                 References = references, Fingerprint = fingerprint };
         }
 
-        /// <summary>Reads publication component for vbe project components.</summary>
-        /// <param name="projectName">Text that supplies the project name value. Use the format required by the calling operation.</param>
-        /// <param name="canonical">object that supplies the canonical for this operation.</param>
-        /// <returns>publication component produced by the operation for read publication component on vbe project components.</returns>
+        /// <summary>Reads one exportable component's code and canonical metadata, including a complete UserForm designer tree.</summary>
+        /// <param name="projectName">Exact source project name used by form-tree and component snapshot readers.</param>
+        /// <param name="canonical">Canonical VBComponent COM object captured from the source collection.</param>
+        /// <returns>Component snapshot for standard modules, class modules, or UserForms; unsupported types and unsafe names throw.</returns>
         private PublicationComponent ReadPublicationComponent(string projectName, object canonical)
         {
             dynamic component = canonical;
@@ -831,8 +831,8 @@ namespace VBAi
                 Version = version, ComponentSnapshotJson = json.Serialize(snapshot) };
         }
 
-        /// <summary>Requires publication designer readable for vbe project components.</summary>
-        /// <param name="value">object that supplies the value for this operation.</param>
+        /// <summary>Rejects any recursively nested designer or resource observation containing a read error.</summary>
+        /// <param name="value">Deserialized tree/object graph to inspect; strings are treated as scalar values.</param>
         internal static void RequirePublicationDesignerReadable(object value)
         {
             var dictionary = value as IDictionary<string, object>;
@@ -849,9 +849,9 @@ namespace VBAi
                 foreach (object item in sequence) RequirePublicationDesignerReadable(item);
         }
 
-        /// <summary>Reads publication references for vbe project components.</summary>
-        /// <param name="canonical">object that supplies the canonical for this operation.</param>
-        /// <returns>list&lt;publication reference&gt; produced by the operation for read publication references on vbe project components.</returns>
+        /// <summary>Captures distinct, unbroken type-library references supported by the publication route.</summary>
+        /// <param name="canonical">Canonical source project whose References collection is read.</param>
+        /// <returns>Reference tuples; project references, broken entries, invalid GUIDs, and duplicate identities throw.</returns>
         private static List<PublicationReference> ReadPublicationReferences(object canonical)
         {
             var result = new List<PublicationReference>(); var identities = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
@@ -869,15 +869,15 @@ namespace VBAi
             return result;
         }
 
-        /// <summary>Handles reference set for vbe project components.</summary>
-        /// <param name="references">i enumerable&lt;publication reference&gt; that supplies the references for this operation.</param>
-        /// <returns>string[] produced by the operation for reference set on vbe project components.</returns>
+        /// <summary>Builds a sorted stable set of reference identity keys.</summary>
+        /// <param name="references">Captured reference tuples.</param>
+        /// <returns>Ordinal-sorted GUID/version/built-in keys for source and destination comparison.</returns>
         private static string[] ReferenceSet(IEnumerable<PublicationReference> references) =>
             references.Select(r => r.Key).OrderBy(s => s, StringComparer.Ordinal).ToArray();
 
-        /// <summary>Reads publication destination components for vbe project components.</summary>
-        /// <param name="canonical">object that supplies the canonical for this operation.</param>
-        /// <returns>list&lt;publication component&gt; produced by the operation for read publication destination components on vbe project components.</returns>
+        /// <summary>Reads destination component contents and canonical identities for comparison with staged source snapshots.</summary>
+        /// <param name="canonical">Canonical destination project COM object.</param>
+        /// <returns>Ordered destination component records used to detect additions, replacements, or content mismatches.</returns>
         private static List<PublicationComponent> ReadPublicationDestinationComponents(object canonical)
         {
             var result = new List<PublicationComponent>();
@@ -886,21 +886,21 @@ namespace VBAi
             return result;
         }
 
-        /// <summary>Handles publication extension for vbe project components.</summary>
-        /// <param name="type">int that supplies the type for this operation.</param>
-        /// <returns>Text produced by the operation for publication extension on vbe project components.</returns>
+        /// <summary>Maps supported VBComponent types to their native export extensions.</summary>
+        /// <param name="type">VBComponent type code: 1 for standard module, 2 for class, otherwise UserForm.</param>
+        /// <returns><c>.bas</c>, <c>.cls</c>, or <c>.frm</c> respectively.</returns>
         private static string PublicationExtension(int type) => type == 1 ? ".bas" : type == 2 ? ".cls" : ".frm";
 
-        /// <summary>Handles publication attributes for vbe project components.</summary>
-        /// <param name="text">Text that supplies the text value. Use the format required by the calling operation.</param>
-        /// <returns>Text produced by the operation for publication attributes on vbe project components.</returns>
+        /// <summary>Extracts and ordinal-sorts exported VBA Attribute lines for component comparison.</summary>
+        /// <param name="text">Exported source text; null is treated as empty.</param>
+        /// <returns>Newline-separated attribute records without surrounding whitespace.</returns>
         internal static string PublicationAttributes(string text) =>
             string.Join("\n", Regex.Matches(text ?? "", @"(?m)^Attribute\s+[^\r\n]+").Cast<Match>()
                 .Select(m => m.Value.Trim()).OrderBy(s => s, StringComparer.Ordinal));
 
-        /// <summary>Handles publication file hash for vbe project components.</summary>
-        /// <param name="path">Path used for the path being processed.</param>
-        /// <returns>Text produced by the operation for publication file hash on vbe project components.</returns>
+        /// <summary>Hashes a frozen publication artifact using SHA-256.</summary>
+        /// <param name="path">Existing export or resource file opened read-only with shared-read access.</param>
+        /// <returns>Uppercase hexadecimal SHA-256; absence or read failure throws.</returns>
         private static string PublicationFileHash(string path)
         {
             if (!File.Exists(path)) throw new IOException("Frozen publication file is absent.");
@@ -909,8 +909,8 @@ namespace VBAi
                 return BitConverter.ToString(sha.ComputeHash(stream)).Replace("-", "");
         }
 
-        /// <summary>Handles verify publication export for vbe project components.</summary>
-        /// <param name="component">publication component that supplies the component for this operation.</param>
+        /// <summary>Requires staged export bytes and, for UserForms, the companion FRX bytes to retain their frozen hashes.</summary>
+        /// <param name="component">Staged component with export path and recorded source hashes.</param>
         private static void VerifyPublicationExport(PublicationComponent component)
         {
             if (PublicationFileHash(component.ExportPath) != component.ExportSha256 ||
@@ -918,19 +918,19 @@ namespace VBAi
                 throw new IOException("Frozen publication exports/resources changed before import.");
         }
 
-        /// <summary>Owns the publication save context state and operations.</summary>
+        /// <summary>Wraps a native Save probe and rechecks publication authority before every delegated operation.</summary>
         private sealed class PublicationSaveContext : ISolidWorksSaveProbe
         {
 
-            /// <summary>Maintains the inner state for publication save context.</summary>
+            /// <summary>Underlying SOLIDWORKS Save probe that performs the native observations and actions.</summary>
             private readonly ISolidWorksSaveProbe inner;
 
-            /// <summary>Maintains the guard state for publication save context.</summary>
+            /// <summary>Publication source/context revalidation run before each property read or delegated call.</summary>
             private readonly Action guard;
 
-            /// <summary>Initializes a PublicationSaveContext instance with the supplied state.</summary>
-            /// <param name="inner">i solid works save probe that supplies the inner for this operation.</param>
-            /// <param name="guard">action that supplies the guard for this operation.</param>
+            /// <summary>Creates a guarded view over the native save probe.</summary>
+            /// <param name="inner">Probe that owns the host-specific Save behavior.</param>
+            /// <param name="guard">Callback that revalidates authorization and the frozen source before use.</param>
             internal PublicationSaveContext(ISolidWorksSaveProbe inner, Action guard) { this.inner = inner; this.guard = guard; }
 
             /// <summary>Gets the is solid works.</summary>
@@ -945,57 +945,57 @@ namespace VBAi
             /// <value>Current selection exposed by publication save context.</value>
             public SolidWorksSaveSelection Selection { get { guard(); return inner.Selection; } }
 
-            /// <summary>Requires owner for publication save context.</summary>
-            /// <param name="editor">object that supplies the editor for this operation.</param>
+            /// <summary>Runs the publication guard, then requires the underlying probe's native owner identity.</summary>
+            /// <param name="editor">Current VBE editor whose host ownership is checked.</param>
             public void RequireOwner(object editor) { guard(); inner.RequireOwner(editor); }
 
-            /// <summary>Compares project for publication save context.</summary>
-            /// <param name="first">object that supplies the first for this operation.</param>
-            /// <param name="second">object that supplies the second for this operation.</param>
-            /// <returns>Boolean indicating the result of the check for same project on publication save context.</returns>
+            /// <summary>Runs the guard before comparing canonical project identities.</summary>
+            /// <param name="first">Frozen source project COM object.</param>
+            /// <param name="second">Current project COM object.</param>
+            /// <returns>Whether both references identify the same canonical project.</returns>
             public bool SameProject(object first, object second) { guard(); return inner.SameProject(first, second); }
 
-            /// <summary>Handles select component for publication save context.</summary>
-            /// <param name="editor">object that supplies the editor for this operation.</param>
-            /// <param name="project">object that supplies the project for this operation.</param>
-            /// <returns>object produced by the operation for select component on publication save context.</returns>
+            /// <summary>Runs the guard and selects the source component through the underlying native probe.</summary>
+            /// <param name="editor">Current VBE editor.</param>
+            /// <param name="project">Canonical source project.</param>
+            /// <returns>Selected component object returned by the host probe.</returns>
             public object SelectComponent(object editor, object project) { guard(); return inner.SelectComponent(editor, project); }
 
-            /// <summary>Handles restore selection for publication save context.</summary>
-            /// <param name="editor">object that supplies the editor for this operation.</param>
-            /// <param name="project">object that supplies the project for this operation.</param>
-            /// <param name="component">object that supplies the component for this operation.</param>
+            /// <summary>Runs the guard before restoring the source component selection.</summary>
+            /// <param name="editor">Current VBE editor.</param>
+            /// <param name="project">Canonical source project.</param>
+            /// <param name="component">Component whose prior selection is restored.</param>
             public void RestoreSelection(object editor, object project, object component) { guard(); inner.RestoreSelection(editor, project, component); }
 
-            /// <summary>Handles selection matches for publication save context.</summary>
-            /// <param name="editor">object that supplies the editor for this operation.</param>
-            /// <param name="project">object that supplies the project for this operation.</param>
-            /// <param name="component">object that supplies the component for this operation.</param>
-            /// <returns>Boolean indicating the result of the check for selection matches on publication save context.</returns>
+            /// <summary>Runs the guard and verifies the expected source component remains selected.</summary>
+            /// <param name="editor">Current VBE editor.</param>
+            /// <param name="project">Canonical source project.</param>
+            /// <param name="component">Expected selected component.</param>
+            /// <returns>Whether the native selection still matches the expected component.</returns>
             public bool SelectionMatches(object editor, object project, object component) { guard(); return inner.SelectionMatches(editor, project, component); }
 
-            /// <summary>Saves control for publication save context.</summary>
-            /// <param name="editor">object that supplies the editor for this operation.</param>
-            /// <returns>object produced by the operation for save control on publication save context.</returns>
+            /// <summary>Runs the guard and resolves the current host Save control.</summary>
+            /// <param name="editor">Current VBE editor whose Save command control is queried.</param>
+            /// <returns>Native Save control returned by the underlying probe.</returns>
             public object SaveControl(object editor) { guard(); return inner.SaveControl(editor); }
 
-            /// <summary>Saves  for publication save context.</summary>
-            /// <param name="control">object that supplies the control for this operation.</param>
+            /// <summary>Runs the guard and delegates the one native Save action.</summary>
+            /// <param name="control">Current host Save control returned by this context.</param>
             public void Save(object control) { guard(); inner.Save(control); }
 
-            /// <summary>Handles file exists for publication save context.</summary>
-            /// <param name="path">Path used for the path being processed.</param>
-            /// <returns>Boolean indicating the result of the check for file exists on publication save context.</returns>
+            /// <summary>Runs the guard before checking whether a publication path exists.</summary>
+            /// <param name="path">Host path whose filesystem existence is queried.</param>
+            /// <returns>Underlying probe's existence observation.</returns>
             public bool FileExists(string path) { guard(); return inner.FileExists(path); }
 
-            /// <summary>Handles file read only for publication save context.</summary>
-            /// <param name="path">Path used for the path being processed.</param>
-            /// <returns>Boolean indicating the result of the check for file read only on publication save context.</returns>
+            /// <summary>Runs the guard before checking whether a publication path is read-only.</summary>
+            /// <param name="path">Host path whose file attributes are queried.</param>
+            /// <returns>Underlying probe's read-only observation.</returns>
             public bool FileReadOnly(string path) { guard(); return inner.FileReadOnly(path); }
 
-            /// <summary>Handles file length for publication save context.</summary>
-            /// <param name="path">Path used for the path being processed.</param>
-            /// <returns>long produced by the operation for file length on publication save context.</returns>
+            /// <summary>Runs the guard before reading the publication file length.</summary>
+            /// <param name="path">Host path whose current byte length is queried.</param>
+            /// <returns>Underlying probe's byte count.</returns>
             public long FileLength(string path) { guard(); return inner.FileLength(path); }
         }
     }

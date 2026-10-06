@@ -10,20 +10,20 @@ using Microsoft.Vbe.Interop;
 namespace VBAi
 {
 
-    /// <summary>Owns the vbe project components state and operations.</summary>
+    /// <summary>Provides the bounded Access/Publisher VBProject HelpContextID setter path.</summary>
     internal sealed partial class VbeProjectComponents
     {
 
-        /// <summary>Maintains the access help context host state for vbe project components.</summary>
+        /// <summary>Host-process predicate for the Access and Publisher HelpContextID compatibility path.</summary>
         internal Func<bool> AccessHelpContextHost = () => IsAccessHelpContextHost(Process.GetCurrentProcess().ProcessName);
 
-        /// <summary>Maintains the access help context native project state for vbe project components.</summary>
+        /// <summary>Predicate requiring the project argument to be an existing COM object.</summary>
         internal Func<object, bool> AccessHelpContextNativeProject = Marshal.IsComObject;
 
-        /// <summary>Maintains the access help context identity state for vbe project components.</summary>
+        /// <summary>Canonical COM identity comparison used before and after authorization-sensitive reads.</summary>
         internal Func<object, object, bool> AccessHelpContextIdentity = SameAccessHelpContextIdentity;
 
-        /// <summary>Maintains the access help context factory state for vbe project components.</summary>
+        /// <summary>Factory for the early-bound VBProject setter adapter, injectable for focused tests.</summary>
         internal Func<object, IntPtr, AccessHelpContextDispatch> AccessHelpContextFactory = (project, window) =>
             new AccessHelpContextDispatch(new NativeAccessHelpContextCalls(project, window));
 
@@ -31,17 +31,17 @@ namespace VBAi
         /// <value>Current access help context interface type exposed by vbe project components.</value>
         internal static Type AccessHelpContextInterfaceType => typeof(_VBProject);
 
-        /// <summary>Determines whether access help context host for vbe project components.</summary>
-        /// <param name="processName">Text that supplies the process name value. Use the format required by the calling operation.</param>
-        /// <returns>Boolean indicating the result of the check for is access help context host on vbe project components.</returns>
+        /// <summary>Checks whether the current host process is Access or Publisher.</summary>
+        /// <param name="processName">Process name, compared case-insensitively without a file extension.</param>
+        /// <returns>True only for <c>MSACCESS</c> or <c>MSPUB</c>.</returns>
         internal static bool IsAccessHelpContextHost(string processName) =>
             string.Equals(processName, "MSACCESS", StringComparison.OrdinalIgnoreCase) ||
             string.Equals(processName, "MSPUB", StringComparison.OrdinalIgnoreCase);
 
-        /// <summary>Attempts to set access help context for vbe project components.</summary>
-        /// <param name="request">request that supplies the request for this operation.</param>
-        /// <param name="project">object that supplies the project for this operation.</param>
-        /// <returns>Boolean indicating the result of the check for try set access help context on vbe project components.</returns>
+        /// <summary>Sets and reads back an Access/Publisher project's HelpContextID through one early-bound PIA call.</summary>
+        /// <param name="request">Authorized scalar property-write request with exact project revision and Int32 value.</param>
+        /// <param name="project">Held canonical VBProject COM object that must retain identity and remain unprotected.</param>
+        /// <returns>True when this compatibility setter handled the property; false when the property, host, or object is outside its scope.</returns>
         private bool TrySetAccessHelpContext(Request request, object project)
         {
             if (!string.Equals(request.Property, "HelpContextID", StringComparison.OrdinalIgnoreCase) ||
@@ -95,10 +95,10 @@ namespace VBAi
             return true;
         }
 
-        /// <summary>Compares access help context identity for vbe project components.</summary>
-        /// <param name="first">object that supplies the first for this operation.</param>
-        /// <param name="second">object that supplies the second for this operation.</param>
-        /// <returns>Boolean indicating the result of the check for same access help context identity on vbe project components.</returns>
+        /// <summary>Compares the canonical IUnknown identity of two project RCWs.</summary>
+        /// <param name="first">First COM project object.</param>
+        /// <param name="second">Second COM project object.</param>
+        /// <returns>True when both objects resolve to the same IUnknown pointer.</returns>
         private static bool SameAccessHelpContextIdentity(object first, object second)
         {
             IntPtr a = Marshal.GetIUnknownForObject(first), b = IntPtr.Zero;
@@ -106,18 +106,18 @@ namespace VBAi
             finally { if (b != IntPtr.Zero) Marshal.Release(b); Marshal.Release(a); }
         }
 
-        /// <summary>Defines the i access help context calls contract.</summary>
+        /// <summary>Owner-thread calls required to prepare and invoke the one Access HelpContextID setter.</summary>
         internal interface IAccessHelpContextCalls : IDisposable
         {
 
-            /// <summary>Handles prepare for i access help context calls.</summary>
+            /// <summary>Performs interface preparation and captures canonical COM identity before final authorization.</summary>
             void Prepare();
 
-            /// <summary>Requires owner for i access help context calls.</summary>
+            /// <summary>Requires the original current-process x64 VBE UI STA and, after preparation, unchanged COM identity.</summary>
             void RequireOwner();
 
-            /// <summary>Sets  for i access help context calls.</summary>
-            /// <param name="value">int that supplies the value for this operation.</param>
+            /// <summary>Invokes the declared VBProject HelpContextID Int32 property setter.</summary>
+            /// <param name="value">Scalar HelpContextID value to write.</param>
             void Set(int value);
         }
 
@@ -125,23 +125,23 @@ namespace VBAi
         internal sealed class AccessHelpContextDispatch
         {
 
-            /// <summary>Maintains the calls state for access help context dispatch.</summary>
+            /// <summary>Native owner-bound calls used for preparation, setter invocation, and cleanup.</summary>
             private readonly IAccessHelpContextCalls calls;
 
-            /// <summary>Maintains the consumed state for access help context dispatch.</summary>
+            /// <summary>One-use guard set before validation or native invocation so the write cannot be retried.</summary>
             private bool consumed;
 
             /// <summary>Gets or sets the invoke entries.</summary>
             /// <value>Current invoke entries exposed by access help context dispatch.</value>
             internal int InvokeEntries { get; private set; }
 
-            /// <summary>Initializes a AccessHelpContextDispatch instance with the supplied state.</summary>
-            /// <param name="calls">i access help context calls that supplies the calls for this operation.</param>
+            /// <summary>Creates a dispatcher around the native call boundary.</summary>
+            /// <param name="calls">Non-null owner-thread call implementation.</param>
             internal AccessHelpContextDispatch(IAccessHelpContextCalls calls) { this.calls = calls ?? throw new ArgumentNullException(nameof(calls)); }
 
-            /// <summary>Handles put for access help context dispatch.</summary>
-            /// <param name="value">int that supplies the value for this operation.</param>
-            /// <param name="revalidate">action that supplies the revalidate for this operation.</param>
+            /// <summary>Claims the setter once, revalidates authority immediately before it, then always releases identity pointers.</summary>
+            /// <param name="value">Int32 HelpContextID value to send through the declared setter.</param>
+            /// <param name="revalidate">Final live target/revision check performed after COM interface preparation.</param>
             internal void Put(int value, Action revalidate)
             {
                 if (consumed) throw new InvalidOperationException("The original HelpContextID write was already consumed; no retry is allowed.");
@@ -167,7 +167,7 @@ namespace VBAi
             }
         }
 
-        /// <summary>Handles preserve access help context failure for vbe project components.</summary>
+        /// <summary>Attaches cleanup failure details to an earlier primary failure without replacing it.</summary>
         /// <param name="original">Exception describing the original failure.</param>
         /// <param name="cleanup">Exception describing the cleanup failure.</param>
         private static void PreserveAccessHelpContextFailure(ref Exception original, Exception cleanup)
@@ -177,46 +177,46 @@ namespace VBAi
             catch (Exception) { }
         }
 
-        /// <summary>Owns the native access help context calls state and operations.</summary>
+        /// <summary>Holds a borrowed VBProject RCW and invokes its official PIA setter on the captured VBE STA.</summary>
         private sealed class NativeAccessHelpContextCalls : IAccessHelpContextCalls
         {
 
-            /// <summary>Returns current thread id for native access help context calls.</summary>
-            /// <returns>uint produced by the operation for get current thread id on native access help context calls.</returns>
+            /// <summary>Reads the current Win32 thread ID for native owner validation.</summary>
+            /// <returns>Current native thread ID.</returns>
             [DllImport("kernel32.dll")] private static extern uint GetCurrentThreadId();
 
-            /// <summary>Returns current process id for native access help context calls.</summary>
-            /// <returns>uint produced by the operation for get current process id on native access help context calls.</returns>
+            /// <summary>Reads the current Win32 process ID for native owner validation.</summary>
+            /// <returns>Current process ID.</returns>
             [DllImport("kernel32.dll")] private static extern uint GetCurrentProcessId();
 
-            /// <summary>Maintains the project state for native access help context calls.</summary>
+            /// <summary>Borrowed canonical VBProject RCW; never activated or explicitly released.</summary>
             private readonly object project;
 
-            /// <summary>Maintains the window state for native access help context calls.</summary>
+            /// <summary>VBE main-window HWND captured when the adapter is created.</summary>
             private readonly IntPtr window;
 
-            /// <summary>Identifies the pid and thread associated with native access help context calls.</summary>
+            /// <summary>Current process and native UI-thread IDs captured at construction.</summary>
             private readonly uint pid, thread;
 
-            /// <summary>Maintains the original identity and typed identity state for native access help context calls.</summary>
+            /// <summary>Temporary IUnknown pointers used to verify the queried PIA interface belongs to the original RCW.</summary>
             private IntPtr originalIdentity, typedIdentity;
 
-            /// <summary>Maintains the typed project state for native access help context calls.</summary>
+            /// <summary>Borrowed early-bound PIA interface used for the declared Int32 property setter.</summary>
             private _VBProject typedProject; // Borrowed shared RCW; never activate or ReleaseComObject/FinalReleaseComObject it.
 
-            /// <summary>Maintains the prepared and disposed state for native access help context calls.</summary>
+            /// <summary>Tracks whether interface identity was captured and whether temporary pointers were released.</summary>
             private bool prepared, disposed;
 
-            /// <summary>Initializes a NativeAccessHelpContextCalls instance with the supplied state.</summary>
-            /// <param name="project">object that supplies the project for this operation.</param>
-            /// <param name="window">Native handle that supplies the window for this operation.</param>
+            /// <summary>Captures the current process and native thread for a held project and VBE window.</summary>
+            /// <param name="project">Borrowed project RCW whose HelpContextID property may be set once.</param>
+            /// <param name="window">Nonzero VBE main-window HWND that defines native ownership.</param>
             internal NativeAccessHelpContextCalls(object project, IntPtr window)
             {
                 this.project = project; this.window = window;
                 pid = GetCurrentProcessId(); thread = GetCurrentThreadId();
             }
 
-            /// <summary>Requires owner for native access help context calls.</summary>
+            /// <summary>Requires the captured x64 process and VBE UI STA; after preparation the PIA interface must retain COM identity.</summary>
             public void RequireOwner()
             {
                 uint owner;
@@ -227,7 +227,7 @@ namespace VBAi
                     throw new InvalidOperationException("The original held VBProject and its typed canonical identity differ.");
             }
 
-            /// <summary>Handles prepare for native access help context calls.</summary>
+            /// <summary>Captures original and PIA IUnknown identities without taking ownership of the shared RCW.</summary>
             public void Prepare()
             {
                 RequireOwner();
@@ -238,15 +238,15 @@ namespace VBAi
                 RequireOwner();
             }
 
-            /// <summary>Sets  for native access help context calls.</summary>
-            /// <param name="value">int that supplies the value for this operation.</param>
+            /// <summary>Invokes the declared early-bound Int32 HelpContextID setter; failed HRESULTs become exceptions.</summary>
+            /// <param name="value">HelpContextID value passed to the VBProject property setter.</param>
             public void Set(int value)
             {
                 // PIA Void setter has no PreserveSig: CLR translates failed native HRESULTs into exceptions.
                 typedProject.HelpContextID = value;
             }
 
-            /// <summary>Disposes  for native access help context calls.</summary>
+            /// <summary>Releases temporary IUnknown references and drops the borrowed managed RCW reference.</summary>
             public void Dispose()
             {
                 if (disposed) return; disposed = true;
