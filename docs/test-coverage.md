@@ -71,6 +71,11 @@ native C++; its percentages are not current release statistics.
 
 ## Recent interface and documentation checks
 
+Licensing changes from source `f64c1a12` passed 115 focused runtime, support-module
+and coverage-planning tests with no failures or skips. Both application outputs
+carried the exact declared license texts; upstream notices remained unchanged.
+This was a host-free gate, not a new native qualification or coverage measurement.
+
 The localized-help candidate from source
 `43e24549bc7ef4563987fad0afc2b1ce1e8be894` passed 32 focused managed tests, 19
 help-builder tests and 21 documentation-checker self-tests. All 13 manually
