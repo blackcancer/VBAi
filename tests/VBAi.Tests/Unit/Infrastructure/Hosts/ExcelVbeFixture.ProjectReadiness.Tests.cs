@@ -5,7 +5,7 @@ using VBAi.Tests.Integration;
 namespace VBAi.Tests.Unit
 {
     /// <summary>Readiness keeps the original generation, STA and explicit Main/private ownership distinct.</summary>
-    [TestClass]
+    [TestClass, TestCategory("Unit")]
     public sealed class ExcelVbeFixtureProjectReadinessTests
     {
         [DataTestMethod]

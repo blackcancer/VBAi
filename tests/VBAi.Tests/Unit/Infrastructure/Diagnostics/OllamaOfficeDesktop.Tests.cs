@@ -5,7 +5,7 @@ using VBAi.Tests.Integration;
 namespace VBAi.Tests.Unit
 {
     /// <summary>Real-desktop mode cannot inherit a private scope or run without its explicit scenario.</summary>
-    [TestClass]
+    [TestClass, TestCategory("Unit")]
     public sealed class OllamaOfficeDesktopTests
     {
         [DataTestMethod]

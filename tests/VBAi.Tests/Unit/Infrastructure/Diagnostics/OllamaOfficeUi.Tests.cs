@@ -4,7 +4,7 @@ using VBAi.Tests.Integration;
 namespace VBAi.Tests.Unit
 {
     /// <summary>Native guards reject foreign, hidden and replaced assistant ancestry without re-reading stale UIA providers.</summary>
-    [TestClass]
+    [TestClass, TestCategory("Unit")]
     public sealed class OllamaOfficeUiTests
     {
         [DataTestMethod]

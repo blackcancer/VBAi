@@ -46,7 +46,7 @@ if ($Prepare) {
         'CatalogBoundaryTests','ToolCatalogTests','PrivateDesktopUiActionTests','QualificationDesktopGuardTests',
         'OfficeVbeFixtureDesktopTests','OfficeVbeFixtureDesktopStartupRecoveryTests','OfficeVbeFixtureDesktopAddInConnectionTests','OutlookPrivateDesktopTests',
         'OfficeOwnedShutdownEvidenceTests','OutlookVbaTestFixtureShutdownTests','OllamaOfficeUiTests','OllamaOfficeDesktopTests','ChatStreamReaderTests',
-        'ExcelVbeFixtureProjectReadinessTests')
+        'ExcelVbeFixtureProjectReadinessTests','OfficeVbeFixtureMainWordDesktopTests','IsolatedTestDesktopMainTests')
     $managedFilter = '(TestCategory=Unit|TestCategory=Scenario)&TestCategory!=OllamaUi&(' +
         (($managedClasses | ForEach-Object {'FullyQualifiedName~VBAi.Tests.Unit.'+$_+'.'}) -join '|') +
         '|FullyQualifiedName~VBAi.Tests.NativeExportTraceTests.)'
@@ -221,6 +221,8 @@ try {
         $env:VBAi_RUN_USERFORM_EXPLICIT_BOOTSTRAP='1'
     }
     $env:VBAi_RUN_OLLAMA_OFFICE_TESTS='1';$env:VBAi_RUN_EXCEL_TESTS='1';$env:VBAi_RUN_OFFICE_TESTS='1';$env:VBAi_RUN_OUTLOOK_TESTS='1'
+    $env:VBAi_TEST_EMBEDDED_GIT_MVID=$plan.ProductMvid
+    $env:VBAi_TEST_EMBEDDED_GIT_SHA256=$plan.ProductSha256
     $env:VBAi_Q028_CONNECT_OWNED_ADDIN='1'
     $env:VBAi_Q028_RESULTS=Join-Path $root 'host-results';$env:VBAi_EXCEL_RESULTS=Join-Path $root 'hosts/Excel';$env:VBAi_OFFICE_RESULTS=Join-Path $root 'hosts/Office';$env:VBAi_OUTLOOK_RESULTS=Join-Path $root 'hosts/Outlook'
     foreach ($hostRow in $plan.Hosts) {
