@@ -76,15 +76,21 @@ literal. Review [icon provenance](../assets/icons/README.md) before replacing ar
 ## XML documentation
 
 Maintain XML documentation for new or changed declarations, including relevant
-private implementation contracts. The audit tool can inspect the add-in sources:
+private implementation contracts. Audit all managed production sources, including
+the updater:
 
 ```powershell
-dotnet run --project tools/XmlDocumentationAudit -- src/VBAi
+dotnet run --project tools/XmlDocumentationAudit -- src
 ```
 
 Its `--compare <reference-source-directory>` mode checks syntax equivalence for
 comment-only work. A documentation counter does not measure test coverage or the
-quality of explanations. Avoid meaningless summaries that merely repeat a name.
+quality of explanations. Review parameters, null/error outcomes, ownership, units
+and thread requirements against the implementation; do not treat generated text
+as an approved contract. Avoid summaries that merely repeat a name.
+
+The XML audit covers C# declarations only. Maintain the native renderer's XML-style
+IntelliSense comments separately; the managed count does not include C++ or JavaScript.
 
 ## Documentation
 
