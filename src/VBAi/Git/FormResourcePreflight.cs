@@ -16,17 +16,18 @@ namespace VBAi
         /// and its MS-CFB allocation graph. Does not activate OLE objects, rewrite
         /// resources, or interpret the embedded MS-OFORMS control properties.
         /// </summary>
-        /// <param name="resources">byte[] that supplies the resources for this operation.</param>
-        /// <param name="offset">int that supplies the offset for this operation.</param>
+        /// <param name="resources">Complete exported FRX byte array.</param>
+        /// <param name="offset">Byte offset of an LB/08 OLE-object envelope.</param>
+        /// <exception cref="InvalidOperationException">The envelope or its bounded CFB allocation graph is malformed or unsupported.</exception>
         internal static void ValidateOleObjectBlob(byte[] resources, int offset)
         {
             Read(resources, offset).Validate();
         }
 
         /// <summary>Reads font restoration bindings without activating or changing the exported resources.</summary>
-        /// <param name="resources">byte[] that supplies the resources for this operation.</param>
-        /// <param name="offset">int that supplies the offset for this operation.</param>
-        /// <returns>form font binding[] produced by the operation for read font bindings on form resource preflight.</returns>
+        /// <param name="resources">Complete exported FRX byte array.</param>
+        /// <param name="offset">Byte offset of the target UserForm OLE-object envelope.</param>
+        /// <returns>Root and nested StdFont descriptor bindings found without activating OLE objects.</returns>
         internal static FormStreamPadding.FormFontBinding[] ReadFontBindings(byte[] resources, int offset)
         {
             var compound = Read(resources, offset); compound.Validate();
@@ -34,10 +35,10 @@ namespace VBAi
         }
 
         // Comparison only. Transport, checkpoints and imported files keep their original bytes.
-        /// <summary>Handles comparison bytes for form resource preflight.</summary>
-        /// <param name="resources">byte[] that supplies the resources for this operation.</param>
-        /// <param name="offsets">i enumerable&lt;int&gt; that supplies the offsets for this operation.</param>
-        /// <returns>byte[] produced by the operation for comparison bytes on form resource preflight.</returns>
+        /// <summary>Builds a comparison-only form of FRX bytes, canonicalizing recognized CFB allocation while preserving envelope data.</summary>
+        /// <param name="resources">Original resource stream; returned bytes are never written back as import data.</param>
+        /// <param name="offsets">Declared OLE envelope offsets, processed in sorted distinct order.</param>
+        /// <returns>Comparison representation; overlapping or malformed ranges throw instead of being normalized.</returns>
         internal static byte[] ComparisonBytes(byte[] resources, IEnumerable<int> offsets)
         {
             using (var buffer = new MemoryStream())
@@ -65,10 +66,10 @@ namespace VBAi
             }
         }
 
-        /// <summary>Reads  for form resource preflight.</summary>
-        /// <param name="resources">byte[] that supplies the resources for this operation.</param>
-        /// <param name="offset">int that supplies the offset for this operation.</param>
-        /// <returns>compound file produced by the operation for read on form resource preflight.</returns>
+        /// <summary>Validates an LB/08 envelope header and returns its bounded compound-file payload.</summary>
+        /// <param name="resources">Complete resource stream.</param>
+        /// <param name="offset">Envelope start offset.</param>
+        /// <returns>Compound-file reader spanning only the declared payload.</returns>
         private static CompoundFile Read(byte[] resources, int offset)
         {
             if (resources == null || resources.Length > VbaGitSnapshot.MaxBytes || offset < 0 ||
@@ -81,8 +82,8 @@ namespace VBAi
             return new CompoundFile(resources, offset + 24, (int)length);
         }
 
-        /// <summary>Handles invalid for form resource preflight.</summary>
-        /// <returns>invalid operation exception produced by the operation for invalid on form resource preflight.</returns>
+        /// <summary>Creates the common rejection for malformed or unsupported UserForm OLE resource data.</summary>
+        /// <returns>An exception describing invalid or truncated resource content.</returns>
         private static InvalidOperationException Invalid()
         {
             return new InvalidOperationException("Invalid or truncated UserForm OLE resource container.");
@@ -92,46 +93,46 @@ namespace VBAi
         private sealed class CompoundFile
         {
 
-            /// <summary>Identifies the form class id associated with compound file.</summary>
+            /// <summary>Expected MSForms UserForm class identifier embedded in the compound file directory.</summary>
             private static readonly byte[] FormClassId = new Guid("C62A69F0-16DC-11CE-9E98-00AA00574A4F").ToByteArray();
 
-            /// <summary>Maintains the directory name encoding state for compound file.</summary>
+            /// <summary>Strict UTF-16LE decoder for MS-CFB directory entry names.</summary>
             private static readonly Encoding DirectoryNameEncoding = new UnicodeEncoding(false, false, true);
 
-            /// <summary>Maintains the end and free and fat sector and difat sector state for compound file.</summary>
+            /// <summary>Reserved MS-CFB markers for chain end, free sectors, FAT sectors, and DIFAT sectors.</summary>
             private const uint End = 0xfffffffe, Free = 0xffffffff, FatSector = 0xfffffffd, DifatSector = 0xfffffffc;
 
-            /// <summary>Maintains the bytes state for compound file.</summary>
+            /// <summary>Original resource bytes containing the bounded compound-file payload.</summary>
             private readonly byte[] bytes;
 
-            /// <summary>Maintains the origin state for compound file.</summary>
+            /// <summary>Absolute byte offset at which this payload begins.</summary>
             private readonly int origin;
 
-            /// <summary>Maintains the length state for compound file.</summary>
+            /// <summary>Declared CFB payload extent in bytes.</summary>
             internal readonly int length;
 
-            /// <summary>Counts the sector size and sector count and major maintained by compound file.</summary>
+            /// <summary>Validated major CFB version, sector byte width, and sector count.</summary>
             private int sectorSize, sectorCount, major;
 
-            /// <summary>Maintains the fat state for compound file.</summary>
+            /// <summary>Expanded FAT entries mapping each regular sector to its next chain sector.</summary>
             private uint[] fat;
 
-            /// <summary>Maintains the claimed state for compound file.</summary>
+            /// <summary>Tracks sectors already assigned to a metadata or stream chain to reject overlap.</summary>
             private bool[] claimed;
 
-            /// <summary>Maintains the entries state for compound file.</summary>
+            /// <summary>Parsed directory entries whose stream chains can be traversed within the validated FAT.</summary>
             private List<Entry> entries;
 
             /// <summary>Initializes a CompoundFile instance with the supplied state.</summary>
-            /// <param name="bytes">byte[] that supplies the bytes for this operation.</param>
-            /// <param name="origin">int that supplies the origin for this operation.</param>
-            /// <param name="length">int that supplies the length for this operation.</param>
+            /// <param name="bytes">FRX backing bytes.</param>
+            /// <param name="origin">Absolute start of the CFB payload.</param>
+            /// <param name="length">Payload length declared by its LB/08 envelope.</param>
             internal CompoundFile(byte[] bytes, int origin, int length)
             {
                 this.bytes = bytes; this.origin = origin; this.length = length;
             }
 
-            /// <summary>Validates  for compound file.</summary>
+            /// <summary>Validates CFB header, FAT/DIFAT, directory, allocation chains, and the expected UserForm root storage.</summary>
             internal void Validate()
             {
                 byte[] signature = { 0xd0, 0xcf, 0x11, 0xe0, 0xa1, 0xb1, 0x1a, 0xe1 };
@@ -242,8 +243,8 @@ namespace VBAi
                 }
             }
 
-            /// <summary>Handles comparison bytes for compound file.</summary>
-            /// <returns>byte[] produced by the operation for comparison bytes on compound file.</returns>
+            /// <summary>Serializes logical CFB entries for comparison while omitting sector allocation and timestamps.</summary>
+            /// <returns>Canonical comparison bytes; original resource transport bytes remain untouched.</returns>
             internal byte[] ComparisonBytes()
             {
                 // MS-CFB sector allocation, slack bytes, directory tree ordering and
@@ -272,8 +273,8 @@ namespace VBAi
                 }
             }
 
-            /// <summary>Reads font bindings for compound file.</summary>
-            /// <returns>form font binding[] produced by the operation for read font bindings on compound file.</returns>
+            /// <summary>Extracts supported root and nested StdFont descriptors from a validated UserForm storage graph.</summary>
+            /// <returns>Font bindings, or null when the root storage is not the expected UserForm class.</returns>
             internal FormStreamPadding.FormFontBinding[] ReadFontBindings()
             {
                 if (!entries[0].Metadata.Take(16).SequenceEqual(FormClassId)) return null;
@@ -282,10 +283,10 @@ namespace VBAi
                 return FormStreamPadding.ReadFontBindings(streams, metadata);
             }
 
-            /// <summary>Reads chain for compound file.</summary>
-            /// <param name="chain">list&lt;uint&gt; that supplies the chain for this operation.</param>
-            /// <param name="size">long that supplies the size for this operation.</param>
-            /// <returns>byte[] produced by the operation for read chain on compound file.</returns>
+            /// <summary>Copies the requested logical stream bytes from a previously validated sector chain.</summary>
+            /// <param name="chain">Ordered CFB sector identifiers.</param>
+            /// <param name="size">Declared logical stream length in bytes.</param>
+            /// <returns>Stream content without sector slack bytes.</returns>
             private byte[] ReadChain(List<uint> chain, long size)
             {
                 var result = new byte[(int)size];
@@ -299,9 +300,9 @@ namespace VBAi
                 return result;
             }
 
-            /// <summary>Reads entry for compound file.</summary>
-            /// <param name="position">int that supplies the position for this operation.</param>
-            /// <returns>entry produced by the operation for read entry on compound file.</returns>
+            /// <summary>Decodes one fixed-size CFB directory record, validating its name, type, and stream size.</summary>
+            /// <param name="position">Byte offset of the directory record within the payload.</param>
+            /// <returns>Parsed storage, stream, root, or empty entry.</returns>
             private Entry ReadEntry(int position)
             {
                 byte kind = bytes[origin + position + 66];
@@ -320,10 +321,10 @@ namespace VBAi
                     Child = U32(position + 76), Start = U32(position + 116), Size = (long)size };
             }
 
-            /// <summary>Handles chain for compound file.</summary>
-            /// <param name="start">uint that supplies the start for this operation.</param>
-            /// <param name="size">long that supplies the size for this operation.</param>
-            /// <returns>list&lt;uint&gt; produced by the operation for chain on compound file.</returns>
+            /// <summary>Follows a FAT chain, claiming each sector and enforcing its expected length when known.</summary>
+            /// <param name="start">First sector identifier.</param>
+            /// <param name="size">Expected stream byte length, or null for a chain with no declared exact length.</param>
+            /// <returns>Ordered sector identifiers through the end marker.</returns>
             private List<uint> Chain(uint start, long? size)
             {
                 if (size > length || size < 0) throw Invalid();
@@ -339,63 +340,63 @@ namespace VBAi
                 return result;
             }
 
-            /// <summary>Handles claim for compound file.</summary>
-            /// <param name="sector">uint that supplies the sector for this operation.</param>
+            /// <summary>Marks one sector as owned by a single metadata or stream chain.</summary>
+            /// <param name="sector">Sector index to claim.</param>
             private void Claim(uint sector)
             {
                 if (sector >= sectorCount || claimed[sector]) throw Invalid();
                 claimed[sector] = true;
             }
 
-            /// <summary>Handles sector for compound file.</summary>
-            /// <param name="sector">uint that supplies the sector for this operation.</param>
-            /// <returns>int produced by the operation for sector on compound file.</returns>
+            /// <summary>Converts a zero-based sector index to an absolute payload-relative byte offset.</summary>
+            /// <param name="sector">Sector index.</param>
+            /// <returns>Byte offset following the CFB header sector.</returns>
             private int Sector(uint sector)
             {
                 if (sector >= sectorCount) throw Invalid();
                 return ((int)sector + 1) * sectorSize;
             }
 
-            /// <summary>Handles u16 for compound file.</summary>
-            /// <param name="position">int that supplies the position for this operation.</param>
-            /// <returns>ushort produced by the operation for u16 on compound file.</returns>
+            /// <summary>Reads a bounded little-endian 16-bit value from the payload.</summary>
+            /// <param name="position">Payload-relative byte offset.</param>
+            /// <returns>Decoded unsigned value.</returns>
             private ushort U16(int position) { Bounds(position, 2); return BitConverter.ToUInt16(bytes, origin + position); }
 
-            /// <summary>Handles u32 for compound file.</summary>
-            /// <param name="position">int that supplies the position for this operation.</param>
-            /// <returns>uint produced by the operation for u32 on compound file.</returns>
+            /// <summary>Reads a bounded little-endian 32-bit value from the payload.</summary>
+            /// <param name="position">Payload-relative byte offset.</param>
+            /// <returns>Decoded unsigned value.</returns>
             private uint U32(int position) { Bounds(position, 4); return BitConverter.ToUInt32(bytes, origin + position); }
 
-            /// <summary>Handles u64 for compound file.</summary>
-            /// <param name="position">int that supplies the position for this operation.</param>
-            /// <returns>ulong produced by the operation for u64 on compound file.</returns>
+            /// <summary>Reads a bounded little-endian 64-bit value from the payload.</summary>
+            /// <param name="position">Payload-relative byte offset.</param>
+            /// <returns>Decoded unsigned value.</returns>
             private ulong U64(int position) { Bounds(position, 8); return BitConverter.ToUInt64(bytes, origin + position); }
 
-            /// <summary>Handles bounds for compound file.</summary>
-            /// <param name="position">int that supplies the position for this operation.</param>
-            /// <param name="count">int that supplies the count for this operation.</param>
+            /// <summary>Rejects a requested byte range outside the declared CFB payload.</summary>
+            /// <param name="position">Payload-relative range start.</param>
+            /// <param name="count">Number of bytes to read.</param>
             private void Bounds(int position, int count) { if (position < 0 || position > length - count) throw Invalid(); }
 
-            /// <summary>Owns the entry state and operations.</summary>
+            /// <summary>Parsed directory entry and its logical path, metadata, allocation chain, and content.</summary>
             private sealed class Entry
             {
 
-                /// <summary>Maintains the kind state for entry.</summary>
+                /// <summary>CFB directory kind: empty, storage, stream, or root storage.</summary>
                 internal byte Kind;
 
-                /// <summary>Maintains the name state for entry.</summary>
+                /// <summary>Decoded directory name.</summary>
                 internal string Name;
 
-                /// <summary>Keeps the path path available to entry.</summary>
+                /// <summary>Full logical path constructed from the parent storage hierarchy.</summary>
                 internal string Path;
 
-                /// <summary>Maintains the data and metadata state for entry.</summary>
+                /// <summary>Logical stream bytes and the 20-byte persisted storage metadata compared by the canonicalizer.</summary>
                 internal byte[] Data, Metadata;
 
-                /// <summary>Maintains the left and right and child and start state for entry.</summary>
+                /// <summary>Directory tree links plus the first sector of this entry's allocation chain.</summary>
                 internal uint Left, Right, Child, Start;
 
-                /// <summary>Maintains the size state for entry.</summary>
+                /// <summary>Declared logical stream size in bytes.</summary>
                 internal long Size;
             }
         }
