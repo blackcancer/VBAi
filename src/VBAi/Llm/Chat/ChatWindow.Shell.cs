@@ -87,9 +87,9 @@ namespace VBAi
         /// <param name="e">Données de l’événement.</param>
         private void Archive_Click(object sender, EventArgs e) { ToggleArchiveCurrentChat(); }
 
-        /// <summary>Handles delete session click for chat window.</summary>
-        /// <param name="sender">object that supplies the sender for this operation.</param>
-        /// <param name="e">event args that supplies the e for this operation.</param>
+        /// <summary>Deletes the selected chat session after the asynchronous user confirmation flow completes.</summary>
+        /// <param name="sender">Delete-session control raising the click event.</param>
+        /// <param name="e">Click event arguments.</param>
         private async void DeleteSession_Click(object sender, EventArgs e) { await DeleteSelectedSessionAsync(); }
 
         /// <summary>Enregistre la mémoire de projet affichée.</summary>
@@ -131,8 +131,8 @@ namespace VBAi
             await VbeUiTask.Run(async () => { await GitHubOnOwnerAsync(); return true; });
         }
 
-        /// <summary>Handles git hub on owner async for chat window.</summary>
-        /// <returns>task produced by the operation for git hub on owner async on chat window.</returns>
+        /// <summary>Runs the GitHub modal on the exact host-owned window and optionally records invocation diagnostics.</summary>
+        /// <returns>Task completing after modal disposal and final deferred diagnostic publication attempt.</returns>
         private async System.Threading.Tasks.Task GitHubOnOwnerAsync()
         {
             ChatGitModalDiagnostic diagnostic = null;
@@ -183,7 +183,7 @@ namespace VBAi
             return root == Handle ? (System.Windows.Forms.IWin32Window)this : new ChatGitWindowOwner(root);
         }
 
-        /// <summary>Owns the chat git window owner state and operations.</summary>
+        /// <summary>Implements WinForms modal ownership using a verified native root HWND.</summary>
         private sealed class ChatGitWindowOwner : System.Windows.Forms.IWin32Window
         {
 
@@ -191,22 +191,22 @@ namespace VBAi
             /// <value>Current handle exposed by chat git window owner.</value>
             public IntPtr Handle { get; }
 
-            /// <summary>Initializes a ChatGitWindowOwner instance with the supplied state.</summary>
-            /// <param name="handle">Native handle that supplies the handle for this operation.</param>
+            /// <summary>Wraps the native root HWND for use as a modal owner.</summary>
+            /// <param name="handle">Verified root window handle on the chat's owning process and thread.</param>
             internal ChatGitWindowOwner(IntPtr handle) { Handle = handle; }
         }
 
-        /// <summary>Handles git owner ancestor for chat window.</summary>
-        /// <param name="window">Native handle that supplies the window for this operation.</param>
-        /// <param name="flags">uint that supplies the flags for this operation.</param>
-        /// <returns>int ptr produced by the operation for git owner ancestor on chat window.</returns>
+        /// <summary>Reads the native ancestor HWND used to choose the chat's modal owner.</summary>
+        /// <param name="window">Existing chat HWND.</param>
+        /// <param name="flags">Ancestor relationship selector, normally GA_ROOT (2).</param>
+        /// <returns>Root HWND, or zero when no ancestor is available.</returns>
         [DllImport("user32.dll", EntryPoint = "GetAncestor")]
         private static extern IntPtr GitOwnerAncestor(IntPtr window, uint flags);
 
-        /// <summary>Handles git owner thread for chat window.</summary>
-        /// <param name="window">Native handle that supplies the window for this operation.</param>
-        /// <param name="processId">uint that supplies the process id for this operation.</param>
-        /// <returns>uint produced by the operation for git owner thread on chat window.</returns>
+        /// <summary>Reads the owning process and native thread for an HWND.</summary>
+        /// <param name="window">Window whose owner identity is queried.</param>
+        /// <param name="processId">Receives the owning process ID.</param>
+        /// <returns>Owning native thread ID, or zero for an invalid HWND.</returns>
         [DllImport("user32.dll", EntryPoint = "GetWindowThreadProcessId")]
         private static extern uint GitOwnerThread(IntPtr window, out uint processId);
 

@@ -6,24 +6,24 @@ using System.Threading.Tasks;
 namespace VBAi
 {
 
-    /// <summary>Owns the vbe debug state and operations.</summary>
+    /// <summary>Reads the existing Immediate pane through native Copy without executing an expression.</summary>
     internal sealed partial class VbeDebug
     {
 
-        /// <summary>Maintains the immediate clipboard state for vbe debug.</summary>
+        /// <summary>Clipboard transaction used to capture Immediate text and restore prior clipboard formats.</summary>
         internal VbeDebugClipboard ImmediateClipboard = new VbeDebugClipboard();
 
         /// <summary>Explicit legacy-host fallback; never used by passive debugger polling.</summary>
-        /// <param name="request">request that supplies the request for this operation.</param>
-        /// <returns>task&lt;object&gt; produced by the operation for read immediate async on vbe debug.</returns>
+        /// <param name="request">Active project and expected design/break mode for the current VBE instance.</param>
+        /// <returns>Task with copied Immediate text and explicit clipboard/focus limitations.</returns>
         public Task<object> ReadImmediateAsync(Request request)
         {
             return VbeUiTask.Run(() => ReadImmediateCoreAsync(request));
         }
 
         /// <summary>Reads immediate core async for vbe debug.</summary>
-        /// <param name="request">request that supplies the request for this operation.</param>
-        /// <returns>task&lt;object&gt; produced by the operation for read immediate core async on vbe debug.</returns>
+        /// <param name="request">Project selector and expected mode used to validate active VBE ownership.</param>
+        /// <returns>Native Copy result from the one visible Immediate pane; prior pane selection is not restored.</returns>
         private async Task<object> ReadImmediateCoreAsync(Request request)
         {
             int ownerThread = Thread.CurrentThread.ManagedThreadId;
@@ -102,10 +102,10 @@ namespace VBAi
                 Limit = "The text remains selected in Immediate; its previous selection cannot be restored through VBIDE. No expression was executed." };
         }
 
-        /// <summary>Determines whether immediate copy caption for vbe debug.</summary>
-        /// <param name="caption">Text that supplies the caption value. Use the format required by the calling operation.</param>
-        /// <param name="selectAll">Indicates whether select all is enabled.</param>
-        /// <returns>Boolean indicating the result of the check for is immediate copy caption on vbe debug.</returns>
+        /// <summary>Matches the localized native Select All or Copy caption after removing mnemonic ampersands.</summary>
+        /// <param name="caption">Command-bar caption returned by the native VBE.</param>
+        /// <param name="selectAll">Selects the Select All captions when true, otherwise the Copy captions.</param>
+        /// <returns>True for the supported English or French command caption.</returns>
         internal static bool IsImmediateCopyCaption(string caption, bool selectAll)
         {
             string text = (caption ?? "").Replace("&", "").Trim();

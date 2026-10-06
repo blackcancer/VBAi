@@ -36,16 +36,16 @@ namespace VBAi
         /// <summary>Indique si le défilement doit rester attaché au dernier message.</summary>
         private bool followConversation = true;
 
-        /// <summary>Maintains the pending follow state for chat window.</summary>
+        /// <summary>Deferred dispatcher operation that keeps the latest transcript item in view.</summary>
         private DispatcherOperation pendingFollow;
 
-        /// <summary>Maintains the stream render timer state for chat window.</summary>
+        /// <summary>50 ms UI timer that batches streaming text updates before repaint.</summary>
         private DispatcherTimer streamRenderTimer;
 
-        /// <summary>Maintains the pending stream text state for chat window.</summary>
+        /// <summary>Accumulated provider fragments waiting for the next batched transcript render.</summary>
         private readonly Dictionary<ChatEntry, StringBuilder> pendingStreamText = new Dictionary<ChatEntry, StringBuilder>();
 
-        /// <summary>Maintains the pending activity text state for chat window.</summary>
+        /// <summary>Activity entries with text-only updates awaiting in-place UI publication.</summary>
         private readonly HashSet<ChatEntry> pendingActivityText = new HashSet<ChatEntry>();
 
         /// <summary>Historique complet des entrées de la session courante.</summary>
@@ -420,7 +420,7 @@ namespace VBAi
             ScheduleSessionSave();
         }
 
-        /// <summary>Handles schedule stream render for chat window.</summary>
+        /// <summary>Starts the background-priority UI timer if a batched stream render is not already scheduled.</summary>
         private void ScheduleStreamRender()
         {
             if (streamRenderTimer == null)
@@ -431,18 +431,18 @@ namespace VBAi
             if (!streamRenderTimer.IsEnabled) streamRenderTimer.Start();
         }
 
-        /// <summary>Handles publish stream text for chat window.</summary>
-        /// <param name="entry">chat entry that supplies the entry for this operation.</param>
-        /// <param name="text">Text that supplies the text value. Use the format required by the calling operation.</param>
+        /// <summary>Publishes a complete accumulated entry string to its currently realized live text control.</summary>
+        /// <param name="entry">Transcript entry whose stream ID maps to a live realized text control.</param>
+        /// <param name="text">Current full transcript text, not only the latest fragment.</param>
         private void PublishStreamText(ChatEntry entry, string text)
         {
             if (entry.StreamId == null || !liveTexts.TryGetValue(entry.StreamId, out var live)) return;
             SetTranscriptText(live, text);
         }
 
-        /// <summary>Sets transcript text for chat window.</summary>
-        /// <param name="live">rich text box that supplies the live for this operation.</param>
-        /// <param name="text">Text that supplies the text value. Use the format required by the calling operation.</param>
+        /// <summary>Replaces a realized RichTextBox value while preserving its current selection range.</summary>
+        /// <param name="live">Live transcript control to update; disposed controls are ignored.</param>
+        /// <param name="text">Complete replacement text; null becomes an empty string.</param>
         private static void SetTranscriptText(System.Windows.Forms.RichTextBox live, string text)
         {
             text = text ?? "";

@@ -5,39 +5,39 @@ namespace VBAi
     partial class ProjectAccessWindow
     {
 
-        /// <summary>Maintains the components state for project access window.</summary>
+        /// <summary>Container that owns tooltip and control components created by this window.</summary>
         private System.ComponentModel.IContainer components;
 
-        /// <summary>Maintains the explanation state for project access window.</summary>
+        /// <summary>Static explanation of bound-project read access and additional-project consent.</summary>
         private System.Windows.Forms.Label explanation;
 
-        /// <summary>Maintains the project list state for project access window.</summary>
+        /// <summary>Checklist of additional projects that may be granted read access to the new chat.</summary>
         private VBAi.UiCheckedListBox projectList;
 
-        /// <summary>Maintains the shared context state for project access window.</summary>
+        /// <summary>Consent toggle for shared VBE, debugger-window, and clipboard context in this chat.</summary>
         private System.Windows.Forms.CheckBox sharedContext;
 
-        /// <summary>Maintains the shared explanation state for project access window.</summary>
+        /// <summary>Explains data transmitted by shared context and that consent grants no edit authority.</summary>
         private System.Windows.Forms.Label sharedExplanation;
 
-        /// <summary>Maintains the apply button state for project access window.</summary>
+        /// <summary>Accept button that applies selected access settings to a new conversation.</summary>
         private VBAi.UiActionButton applyButton;
 
         /// <summary>Tracks the cancel button state of project access window.</summary>
         private VBAi.UiActionButton cancelButton;
 
-        /// <summary>Maintains the tool tip state for project access window.</summary>
+        /// <summary>ToolTip component containing project and shared-context consent explanations.</summary>
         private System.Windows.Forms.ToolTip toolTip;
 
-        /// <summary>Disposes  for project access window.</summary>
-        /// <param name="disposing">Indicates whether disposing is enabled.</param>
+        /// <summary>Unsubscribes from theme changes and disposes Designer-owned components.</summary>
+        /// <param name="disposing">True when managed components should be disposed.</param>
         protected override void Dispose(bool disposing)
         {
             if (disposing) { UiTheme.Changed -= ApplyAppearance; components?.Dispose(); }
             base.Dispose(disposing);
         }
 
-        /// <summary>Handles initialize component for project access window.</summary>
+        /// <summary>Creates and lays out the fixed access-consent controls and their tooltip text.</summary>
         private void InitializeComponent()
         {
             this.components = new System.ComponentModel.Container();
