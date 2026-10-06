@@ -19,6 +19,115 @@ Link an existing GitHub HTTPS repository and branch. Linking inspects the remote
 branch; it does not publish or import VBA. GitHub Enterprise and SSH URLs are not
 part of the documented connection path.
 
+## A first project, step by step
+
+Think of the integration as three copies with different jobs:
+
+1. **Open VBA project:** the live project in the host application and VBE. This is
+   the source VBAi reads for Compare and Commit, and the destination for Pull.
+2. **Local Git history:** a private bare repository in the current Windows user's
+   `%LOCALAPPDATA%\VBAi\Git` cache. It stores commits, branch state, checkpoints,
+   and import recovery data. It has no checkout folder to edit in Explorer.
+3. **GitHub branch:** the remote copy addressed by the selected HTTPS repository
+   and branch. Push sends commits here; Fetch reads its latest commit.
+
+For example, suppose `Budget.xlsm` contains a standard module `ModuleCalcul`, a
+class `ClassBudget`, a UserForm `FrmBudget`, and the workbook document module
+`ThisWorkbook`. A committed VBA source tree can look like this:
+
+```text
+Budget-tools/                 # Other repository files are preserved
+  README.md
+  vba/
+    manifest.json             # Component names/types, resource flags, references
+    ModuleCalcul.bas          # Standard module
+    ClassBudget.cls           # Class module
+    FrmBudget.frm             # UserForm definition and visible code
+    FrmBudget.frx             # Exact companion form-resource bytes, when present
+    ThisWorkbook.vba          # Visible code for the existing host-owned module
+```
+
+The `.vba` entry records code only; it does not create or replace `ThisWorkbook`,
+worksheets, or other objects owned by Excel. VBAi imports document-module code
+into the already existing component with the same name. It also requires the
+project's reference identities to match the manifest. Resolve missing or different
+references through the host's References dialog before importing. A Git commit
+does not contain workbook cells, sheets, formulas, other host document data, or
+the VBA project's digital signature.
+
+### Publish the current project for the first time
+
+1. Save `Budget.xlsm` in Excel, open the intended project in the VBE, and make
+   sure the project is unlocked and in design mode. Confirm the selected document
+   label in VBAi before linking.
+2. In the GitHub view, enter the HTTPS URL and branch, for example `main`, and
+   connect. This creates or opens the local bare cache and fetches that branch.
+   It does not import source or publish anything. Compare shows the live project
+   against the last synchronized baseline. On a new link with no local baseline,
+   the live files appear as additions. If the selected remote branch already has
+   a VBA source package, import it first when that version should be the starting
+   point; an initial commit refuses to overwrite a different remote VBA snapshot.
+3. Review the changed-file list. Check the `.bas`, `.cls`, `.frm`, matching `.frx`,
+   and document-module `.vba` files you intend to publish. Inspect the source for
+   credentials, personal data, or other content that should not be public.
+4. Enter a descriptive commit message and choose **Commit**. VBAi captures the
+   live project and records its VBA snapshot as a local Git commit. This changes
+   local history and its baseline only; it does not save the workbook or contact
+   GitHub.
+5. Choose **Push** to publish the selected local branch. Push fetches the branch
+   again and proceeds only if the remote can fast-forward to the local commit.
+   A rejected push leaves local history intact. Fetch and review the remote change
+   before deciding how to reconcile it; VBAi does not force-push or silently
+   merge divergent histories.
+
+Immediately after the first commit, the live project matches the new local
+baseline. Once the remote state is known, the local branch is one commit ahead;
+after a successful push, the selected remote branch points to the same commit and
+the outgoing count returns to zero. If the remote already had a commit but no
+`vba/` package, the new commit preserves the other repository files and adds the
+managed `vba/` subtree.
+
+If the connected GitHub branch already contains a valid `vba/manifest.json` and
+VBA source, use **Pull** when the open project should receive that version. Pull
+requires the live project to match its synchronized baseline when one exists. On
+a first link without a baseline, compare and review the incoming change summary
+carefully before confirming the import. VBAi then verifies that the remote commit
+is still the one selected for import and that the update is a fast-forward. A
+branch with no VBA source package cannot be imported as a VBA project.
+
+Before changing the live project, Pull creates a checkpoint and a separate private
+backup of the current VBA snapshot, then records a recovery marker. It validates
+the complete target, applies source to existing components, and captures the live
+project again. Only after that readback succeeds does it advance the local branch
+and baseline to the incoming commit. Review and compile the result in the host,
+then save the host document there. VBAi does not automatically run macros or save
+the workbook.
+
+If an import reports an error, do not repeat Pull immediately. Check the Git view
+for a pending recovery state and use **Restore VBA** only after reviewing the
+current project. Automatic restore proceeds only when the live source still
+matches the recorded post-import state; otherwise it refuses to overwrite newer
+edits and keeps the backup for manual recovery. If the after-state could not be
+recorded, VBAi cannot prove that automatic restore is safe. Inspect the live
+project and retained backup before deciding what to recover.
+
+### Save, Commit, Push, and Pull
+
+These actions affect different copies:
+
+| Action | Changes | Does not do |
+| --- | --- | --- |
+| Save in Excel or the host | Persists the host document on disk. | Create a Git commit or publish it. |
+| Commit in VBAi | Captures current VBA into local Git history and advances the local baseline. | Save the host document or contact GitHub. |
+| Push in VBAi | Sends the selected local branch commit to GitHub. | Read unsaved editor changes or mutate the live VBA project. |
+| Fetch in VBAi | Updates the local record of the remote branch. | Change local commits or import into the host. |
+| Pull in VBAi | Imports a reviewed fast-forward source commit into the open VBA project, with a prior backup. | Save the host document to disk. |
+
+After editing code in the VBE, save the host document as appropriate, compare,
+commit, and then push. After Pull, review and validate in the host and save again
+to persist that imported VBA in the document file. A local commit and a saved
+workbook are separate records; either can be newer than the other.
+
 ## Keep the operations separate
 
 | Operation | Effect |
@@ -77,6 +186,9 @@ sources before publication.
 Document modules must already exist with matching names and are updated in place.
 VBAi does not create application objects such as sheets to satisfy a source manifest.
 References must match; importing does not install missing COM libraries automatically.
+Import does not preserve or recreate the VBA project's digital signature. If the
+host invalidates or requires a signature after source changes, follow the host's
+signing policy and sign the project again before distribution.
 
 For a UserForm's `OleObjectBlob`, preflight checks the native LB/08 resource
 envelope and the bounded compound-storage allocation graph before import. It
