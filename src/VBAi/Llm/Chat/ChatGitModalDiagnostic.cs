@@ -17,13 +17,13 @@ namespace VBAi
     internal sealed class ChatGitModalDiagnostic
     {
 
-        /// <summary>Maintains the environment name state for chat git modal diagnostic.</summary>
+        /// <summary>Environment variable naming the one explicitly owned diagnostic manifest.</summary>
         internal const string EnvironmentName = "VBAi_TEST_CHAT_GIT_DIAGNOSTIC_MANIFEST";
 
-        /// <summary>Maintains the directory name state for chat git modal diagnostic.</summary>
+        /// <summary>Private temporary directory name used for invocation receipts and diagnostic artifacts.</summary>
         internal const string DirectoryName = "VBAi.ChatGitDiagnostic";
 
-        /// <summary>Maintains the phases state for chat git modal diagnostic.</summary>
+        /// <summary>Fixed phase vocabulary accepted for this invocation-bound diagnostic protocol.</summary>
         internal static readonly string[] Phases = { "Started", "ShowModalReturned", "DisposeReturned", "PostHandlerIntent", "PostHandlerCallbackObserved" };
 
         /// <summary>Observed process/product/windows and the captured invocation scope; current selection is verified separately.</summary>
@@ -63,22 +63,22 @@ namespace VBAi
             public string ProductSha256 { get; set; }
         }
 
-        /// <summary>Maintains the nonce state for chat git modal diagnostic.</summary>
+        /// <summary>Invocation GUID that binds every receipt and callback to one test request.</summary>
         private readonly string nonce;
 
-        /// <summary>Maintains the identity state for chat git modal diagnostic.</summary>
+        /// <summary>Deep-copied initial Word/document/thread/window/product identity for later equality checks.</summary>
         private readonly Identity identity;
 
-        /// <summary>Maintains the observe state for chat git modal diagnostic.</summary>
+        /// <summary>Callback that rereads the live invocation identity before publishing evidence.</summary>
         private readonly Func<Identity> observe;
 
-        /// <summary>Maintains the write state for chat git modal diagnostic.</summary>
+        /// <summary>Receipt writer supplied by the owned manifest workflow.</summary>
         private readonly Action<string, object> write;
 
-        /// <summary>Maintains the errors state for chat git modal diagnostic.</summary>
+        /// <summary>Primary and subsequent operational/publication failures retained in occurrence order.</summary>
         private readonly List<Exception> errors = new List<Exception>();
 
-        /// <summary>Maintains the modal started and modal returned and dispose returned and post attempted and queue returned and callback entered and failure attempted state for chat git modal diagnostic.</summary>
+        /// <summary>One-use lifecycle flags for modal display, disposal, deferred callback, and failure receipt.</summary>
         private bool modalStarted, modalReturned, disposeReturned, postAttempted, queueReturned, callbackEntered, failureAttempted;
 
         /// <summary>Whether the later dispatcher observation was successfully published for this invocation.</summary>
@@ -94,17 +94,17 @@ namespace VBAi
         internal Exception Error { get { return errors.Count == 0 ? null : errors.Count == 1 ? errors[0] : new AggregateException(errors); } }
 
         /// <summary>Copies the initial identity so later capture-object mutation cannot alter the original evidence.</summary>
-        /// <param name="invocationNonce">Text that supplies the invocation nonce value. Use the format required by the calling operation.</param>
-        /// <param name="actual">identity that supplies the actual for this operation.</param>
-        /// <param name="readIdentity">func&lt;identity&gt; that supplies the read identity for this operation.</param>
-        /// <param name="writer">action&lt;string, object&gt; that supplies the writer for this operation.</param>
+        /// <param name="invocationNonce">Exact N-format GUID from the owned manifest request.</param>
+        /// <param name="actual">Identity observed at invocation start and verified against the request.</param>
+        /// <param name="readIdentity">Live identity reader used again before later receipts.</param>
+        /// <param name="writer">Owned phase/value receipt writer.</param>
         private ChatGitModalDiagnostic(string invocationNonce, Identity actual, Func<Identity> readIdentity, Action<string, object> writer)
         { nonce = invocationNonce; identity = new JavaScriptSerializer().Deserialize<Identity>(new JavaScriptSerializer().Serialize(actual)); observe = readIdentity; write = writer; }
 
         /// <summary>Reads only an explicitly supplied owned temporary manifest on the live Word chat STA.</summary>
-        /// <param name="chat">control that supplies the chat for this operation.</param>
-        /// <param name="scope">Text that supplies the scope value. Use the format required by the calling operation.</param>
-        /// <returns>chat git modal diagnostic produced by the operation for begin from environment on chat git modal diagnostic.</returns>
+        /// <param name="chat">Existing Word chat control whose HWND and owner STA are captured.</param>
+        /// <param name="scope">Captured invocation scope used to identify the document and owning host.</param>
+        /// <returns>Invocation-bound diagnostic when the opt-in manifest is valid; null when tracing is not enabled.</returns>
         internal static ChatGitModalDiagnostic BeginFromEnvironment(Control chat, string scope)
         {
             string manifest = Environment.GetEnvironmentVariable(EnvironmentName);
@@ -121,11 +121,11 @@ namespace VBAi
         }
 
         /// <summary>Validates a versioned per-invocation request before publishing any Started receipt.</summary>
-        /// <param name="json">Text that supplies the json value. Use the format required by the calling operation.</param>
-        /// <param name="rootNonce">Text that supplies the root nonce value. Use the format required by the calling operation.</param>
-        /// <param name="readIdentity">func&lt;identity&gt; that supplies the read identity for this operation.</param>
-        /// <param name="writer">action&lt;string, object&gt; that supplies the writer for this operation.</param>
-        /// <returns>chat git modal diagnostic produced by the operation for begin on chat git modal diagnostic.</returns>
+        /// <param name="json">Versioned manifest request containing nonce and expected Word/process/window/product identity.</param>
+        /// <param name="rootNonce">Owned invocation GUID in exact N format; must equal the manifest nonce.</param>
+        /// <param name="readIdentity">Reader for current process, thread, document, HWND, and loaded product identity.</param>
+        /// <param name="writer">Writer that creates immutable phase receipts for this invocation.</param>
+        /// <returns>Diagnostic after initial identity equality and a CreateNew Started receipt succeed.</returns>
         internal static ChatGitModalDiagnostic Begin(string json, string rootNonce, Func<Identity> readIdentity, Action<string, object> writer)
         {
             if (readIdentity == null || writer == null) throw new ArgumentNullException("Diagnostic dependencies");
@@ -144,8 +144,8 @@ namespace VBAi
         }
 
         /// <summary>Preserves show, disposal and diagnostic errors while disposing exactly once.</summary>
-        /// <param name="show">action that supplies the show for this operation.</param>
-        /// <param name="dispose">action that supplies the dispose for this operation.</param>
+        /// <param name="show">One synchronous modal display call.</param>
+        /// <param name="dispose">One disposal call, attempted even when display throws.</param>
         internal void RunModal(Action show, Action dispose)
         {
             if (show == null || dispose == null) throw new ArgumentNullException("Modal dependencies");
@@ -159,9 +159,9 @@ namespace VBAi
         }
 
         /// <summary>Observes the complete Git session, including any intermediate modal handoff, before disposal.</summary>
-        /// <param name="show">task&gt; that supplies the show for this operation.</param>
-        /// <param name="dispose">action that supplies the dispose for this operation.</param>
-        /// <returns>task produced by the operation for run modal async on chat git modal diagnostic.</returns>
+        /// <param name="show">One asynchronous modal/session display operation.</param>
+        /// <param name="dispose">One disposal call, attempted even when display faults.</param>
+        /// <returns>Task that preserves display/disposal failures and rejects a second invocation.</returns>
         internal async System.Threading.Tasks.Task RunModalAsync(Func<System.Threading.Tasks.Task> show, Action dispose)
         {
             if (show == null || dispose == null) throw new ArgumentNullException("Modal dependencies");
@@ -186,7 +186,7 @@ namespace VBAi
         }
 
         /// <summary>Posts the diagnostic's final action; performs no message pumping or native mutation.</summary>
-        /// <param name="post">action&lt;action&gt; that supplies the post for this operation.</param>
+        /// <param name="post">Owning-STA dispatcher that queues the provided later-turn callback.</param>
         internal void SchedulePostHandler(Action<Action> post)
         {
             if (postAttempted) { Fail(new InvalidOperationException("One post-handler publication only.")); return; }
@@ -224,15 +224,15 @@ namespace VBAi
         { if (error != null && !errors.Any(existing => ReferenceEquals(existing, error))) errors.Add(error); Completed = false; }
 
         /// <summary>Publishes the invocation-bound observed stage and all retained failures.</summary>
-        /// <param name="phase">Text that supplies the phase value. Use the format required by the calling operation.</param>
-        /// <param name="success">Indicates whether success is enabled.</param>
+        /// <param name="phase">Fixed stage name written into the invocation receipt.</param>
+        /// <param name="success">Whether this stage can report success; any retained failure forces the serialized value false.</param>
         private void Record(string phase, bool success)
         { write(phase, new { Version = 1, Nonce = nonce, Phase = phase, Identity = identity, ModalReturned = modalReturned, DisposeReturned = disposeReturned,
             Success = success && !Failed, Errors = errors.Select(error => error.ToString()).ToArray(), Utc = DateTime.UtcNow.ToString("o") }); }
 
         /// <summary>Decodes exactly the identity fields and rejects implicit string-to-number coercion.</summary>
-        /// <param name="value">object that supplies the value for this operation.</param>
-        /// <returns>identity produced by the operation for decode identity on chat git modal diagnostic.</returns>
+        /// <param name="value">JSON-decoded identity object with exactly the supported field names and integer native IDs.</param>
+        /// <returns>Typed identity decoded without accepting string-to-number coercion.</returns>
         internal static Identity DecodeIdentity(object value)
         {
             var fields = value as IDictionary<string, object>;
@@ -245,8 +245,8 @@ namespace VBAi
         }
 
         /// <summary>Rejects a changed process generation, loaded product, canonical scope or native owning windows.</summary>
-        /// <param name="expected">identity that supplies the expected for this operation.</param>
-        /// <param name="actual">identity that supplies the actual for this operation.</param>
+        /// <param name="expected">Invocation identity recorded by the owned manifest.</param>
+        /// <param name="actual">Identity captured from the current live Word/chat process and windows.</param>
         internal static void RequireSameIdentity(Identity expected, Identity actual)
         {
             DateTime birth; Guid mvid;
@@ -263,9 +263,9 @@ namespace VBAi
         }
 
         /// <summary>Allows only request.json in a fixed, owned GUID child of the caller's local temporary directory.</summary>
-        /// <param name="path">Path used for the path being processed.</param>
-        /// <param name="temporaryRoot">Text that supplies the temporary root value. Use the format required by the calling operation.</param>
-        /// <returns>Text produced by the operation for require manifest path on chat git modal diagnostic.</returns>
+        /// <param name="path">Canonical local path whose final filename must be <c>request.json</c>.</param>
+        /// <param name="temporaryRoot">Caller-local temporary directory containing the fixed diagnostic directory.</param>
+        /// <returns>Owned GUID-named request directory; UNC, noncanonical, misplaced, or non-GUID paths throw.</returns>
         internal static string RequireManifestPath(string path, string temporaryRoot)
         {
             if (string.IsNullOrWhiteSpace(path) || !Path.IsPathRooted(path) || path.StartsWith(@"\\", StringComparison.Ordinal) ||
@@ -279,9 +279,9 @@ namespace VBAi
         }
 
         /// <summary>Publishes one closed atomic receipt and then a separate readiness marker, without overwriting.</summary>
-        /// <param name="root">Text that supplies the root value. Use the format required by the calling operation.</param>
-        /// <param name="phase">Text that supplies the phase value. Use the format required by the calling operation.</param>
-        /// <param name="value">object that supplies the value for this operation.</param>
+        /// <param name="root">Owned invocation directory where this receipt is created.</param>
+        /// <param name="phase">One fixed receipt phase or the explicit <c>Failed</c> phase.</param>
+        /// <param name="value">Receipt payload, serialized to at most 32 KiB of UTF-8.</param>
         internal static void Publish(string root, string phase, object value)
         {
             if (phase != "Failed" && !Phases.Contains(phase)) throw new ArgumentException("Unknown diagnostic phase.");
@@ -295,9 +295,9 @@ namespace VBAi
         }
 
         /// <summary>Reads the actual process/product and existing owning native windows without invoking COM or creating controls.</summary>
-        /// <param name="chat">control that supplies the chat for this operation.</param>
-        /// <param name="scope">Text that supplies the scope value. Use the format required by the calling operation.</param>
-        /// <returns>identity produced by the operation for capture on chat git modal diagnostic.</returns>
+        /// <param name="chat">Existing live chat control whose already-created HWND and root are inspected.</param>
+        /// <param name="scope">Canonical document scope captured for this invocation.</param>
+        /// <returns>Process generation, owning STA, existing HWNDs, loaded module MVID, and assembly SHA-256.</returns>
         private static Identity Capture(Control chat, string scope)
         {
             if (chat == null || chat.IsDisposed || !chat.IsHandleCreated || Thread.CurrentThread.GetApartmentState() != ApartmentState.STA)
@@ -316,20 +316,20 @@ namespace VBAi
             }
         }
 
-        /// <summary>Returns ancestor for chat git modal diagnostic.</summary>
-        /// <param name="handle">Native handle that supplies the handle for this operation.</param>
-        /// <param name="flag">uint that supplies the flag for this operation.</param>
-        /// <returns>int ptr produced by the operation for get ancestor on chat git modal diagnostic.</returns>
+        /// <summary>Reads a native window ancestor, used to capture the existing root HWND.</summary>
+        /// <param name="handle">Existing chat HWND.</param>
+        /// <param name="flag">GetAncestor relation selector, normally GA_ROOT (2).</param>
+        /// <returns>Root ancestor HWND, or zero when no ancestor is available.</returns>
         [DllImport("user32.dll")] private static extern IntPtr GetAncestor(IntPtr handle, uint flag);
 
-        /// <summary>Returns window thread process id for chat git modal diagnostic.</summary>
-        /// <param name="handle">Native handle that supplies the handle for this operation.</param>
-        /// <param name="pid">uint that supplies the pid for this operation.</param>
-        /// <returns>uint produced by the operation for get window thread process id on chat git modal diagnostic.</returns>
+        /// <summary>Reads the process and native UI-thread owner of an existing HWND.</summary>
+        /// <param name="handle">Window whose native owner is queried.</param>
+        /// <param name="pid">Receives the owning process ID.</param>
+        /// <returns>Owning native thread ID, or zero for an invalid HWND.</returns>
         [DllImport("user32.dll")] private static extern uint GetWindowThreadProcessId(IntPtr handle, out uint pid);
 
-        /// <summary>Returns current thread id for chat git modal diagnostic.</summary>
-        /// <returns>uint produced by the operation for get current thread id on chat git modal diagnostic.</returns>
+        /// <summary>Reads the current native thread ID for verifying the chat's owning STA.</summary>
+        /// <returns>Current Win32 thread ID.</returns>
         [DllImport("kernel32.dll")] private static extern uint GetCurrentThreadId();
     }
 }

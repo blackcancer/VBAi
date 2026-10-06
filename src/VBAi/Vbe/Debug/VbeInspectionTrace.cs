@@ -12,28 +12,28 @@ namespace VBAi
     internal sealed class VbeInspectionTrace
     {
 
-        /// <summary>Maintains the environment name state for vbe inspection trace.</summary>
+        /// <summary>Environment variable that opts into writing bounded VBE inspection diagnostics.</summary>
         internal const string EnvironmentName = "VBAi_VBE_INSPECTION_TRACE";
 
-        /// <summary>Maintains the maximum events state for vbe inspection trace.</summary>
+        /// <summary>Maximum trace rows emitted by one trace instance.</summary>
         internal const int MaximumEvents = 128;
 
-        /// <summary>Maintains the maximum file bytes state for vbe inspection trace.</summary>
+        /// <summary>Maximum bytes appended to one trace destination.</summary>
         internal const long MaximumFileBytes = 1024 * 1024;
 
-        /// <summary>Maintains the ambient state for vbe inspection trace.</summary>
+        /// <summary>Async-local trace scope used to attach phase events to the current inspection flow.</summary>
         private static readonly AsyncLocal<VbeInspectionTrace> ambient = new AsyncLocal<VbeInspectionTrace>();
 
-        /// <summary>Maintains the file gate state for vbe inspection trace.</summary>
+        /// <summary>Serializes appends from concurrent trace scopes targeting the same file.</summary>
         private static readonly object fileGate = new object();
 
-        /// <summary>Maintains the write state for vbe inspection trace.</summary>
+        /// <summary>Optional line writer; invalid opt-in paths disable tracing by leaving it absent.</summary>
         private readonly Action<string> write;
 
-        /// <summary>Maintains the clock state for vbe inspection trace.</summary>
+        /// <summary>Monotonic clock used to timestamp relative phase latency.</summary>
         private readonly Stopwatch clock = Stopwatch.StartNew();
 
-        /// <summary>Maintains the correlation state for vbe inspection trace.</summary>
+        /// <summary>Opaque per-instance correlation identifier containing no request or inspected values.</summary>
         private readonly string correlation = Guid.NewGuid().ToString("N");
 
         /// <summary>Counts the count maintained by vbe inspection trace.</summary>
@@ -134,63 +134,63 @@ Palette }
         internal sealed class OptionsComboEvidence
         {
 
-            /// <summary>Maintains the reader state for options combo evidence.</summary>
+            /// <summary>Reader implementation used for the bounded combo inspection.</summary>
             public OptionsReader Reader;
 
-            /// <summary>Maintains the role state for options combo evidence.</summary>
+            /// <summary>Semantic role assigned to the observed options combo.</summary>
             public OptionsRole Role;
 
-            /// <summary>Maintains the window state for options combo evidence.</summary>
+            /// <summary>Native HWND represented as a signed pointer-sized integer.</summary>
             public long Window;
 
-            /// <summary>Maintains the parent state for options combo evidence.</summary>
+            /// <summary>Parent HWND, when the reader could retrieve it.</summary>
             public long? Parent;
 
-            /// <summary>Identifies the owner process id associated with options combo evidence.</summary>
+            /// <summary>Native owner process ID, when available.</summary>
             public uint? OwnerProcessId;
 
-            /// <summary>Identifies the owner thread id associated with options combo evidence.</summary>
+            /// <summary>Native owner UI-thread ID, when available.</summary>
             public uint? OwnerThreadId;
 
-            /// <summary>Identifies the control id associated with options combo evidence.</summary>
+            /// <summary>Native dialog control ID, when available.</summary>
             public int? ControlId;
 
-            /// <summary>Maintains the style state for options combo evidence.</summary>
+            /// <summary>Numeric Win32 style bits observed on the combo.</summary>
             public int? Style;
 
-            /// <summary>Maintains the count before state for options combo evidence.</summary>
+            /// <summary>Item count read before focus or expansion attempts.</summary>
             public int? CountBefore;
 
-            /// <summary>Maintains the count after focus state for options combo evidence.</summary>
+            /// <summary>Item count after the focus attempt.</summary>
             public int? CountAfterFocus;
 
-            /// <summary>Maintains the count after expansion state for options combo evidence.</summary>
+            /// <summary>Item count after the dropdown expansion attempt.</summary>
             public int? CountAfterExpansion;
 
-            /// <summary>Maintains the selected index state for options combo evidence.</summary>
+            /// <summary>Selected item index when the native reader could obtain it.</summary>
             public int? SelectedIndex;
 
-            /// <summary>Maintains the drop down before state for options combo evidence.</summary>
+            /// <summary>Dropdown visibility observed before expansion.</summary>
             public bool? DropDownBefore;
 
-            /// <summary>Maintains the drop down after expansion state for options combo evidence.</summary>
+            /// <summary>Dropdown visibility observed after expansion.</summary>
             public bool? DropDownAfterExpansion;
 
-            /// <summary>Maintains the drop down after cleanup state for options combo evidence.</summary>
+            /// <summary>Dropdown visibility observed after cleanup attempts.</summary>
             public bool? DropDownAfterCleanup;
 
-            /// <summary>Maintains the expansion attempted state for options combo evidence.</summary>
+            /// <summary>Whether the reader attempted to expand the native dropdown.</summary>
             public bool ExpansionAttempted;
 
-            /// <summary>Maintains the focus attempted state for options combo evidence.</summary>
+            /// <summary>Whether the reader attempted to focus the native combo.</summary>
             public bool FocusAttempted;
 
-            /// <summary>Maintains the read completed state for options combo evidence.</summary>
+            /// <summary>Whether all planned numeric observations completed successfully.</summary>
             public bool ReadCompleted;
         }
 
-        /// <summary>Initializes a VbeInspectionTrace instance with the supplied state.</summary>
-        /// <param name="writer">action&lt;string&gt; that supplies the writer for this operation.</param>
+        /// <summary>Creates a trace instance with a line writer and fresh correlation/timing state.</summary>
+        /// <param name="writer">Optional callback that appends one serialized JSON event line.</param>
         internal VbeInspectionTrace(Action<string> writer) { write = writer; }
 
         /// <summary>Captures the opt-in destination once; invalid or unavailable logging never changes execution.</summary>
@@ -201,9 +201,9 @@ Palette }
             catch { return null; }
         }
 
-        /// <summary>Handles for path for vbe inspection trace.</summary>
-        /// <param name="path">Path used for the path being processed.</param>
-        /// <returns>vbe inspection trace produced by the operation for for path on vbe inspection trace.</returns>
+        /// <summary>Creates an opt-in writer only for a local fixed/removable/RAM drive path without reparse ancestors.</summary>
+        /// <param name="path">Absolute drive-letter destination; UNC paths, invalid paths, and reparse paths disable tracing.</param>
+        /// <returns>Bounded append trace, or null when the destination is outside the accepted local path rules.</returns>
         internal static VbeInspectionTrace ForPath(string path)
         {
             if (string.IsNullOrWhiteSpace(path) || path.Length < 3 || !char.IsLetter(path[0]) || path[1] != ':' ||
@@ -229,8 +229,8 @@ Palette }
             });
         }
 
-        /// <summary>Handles enter for vbe inspection trace.</summary>
-        /// <returns>i disposable produced by the operation for enter on vbe inspection trace.</returns>
+        /// <summary>Sets this instance as the ambient trace until the returned scope is disposed.</summary>
+        /// <returns>Scope that restores the previous ambient trace, supporting nested inspections.</returns>
         internal IDisposable Enter()
         {
             var previous = ambient.Value;
@@ -238,8 +238,8 @@ Palette }
             return new Scope(() => ambient.Value = previous);
         }
 
-        /// <summary>Handles record for vbe inspection trace.</summary>
-        /// <param name="phase">phase that supplies the phase for this operation.</param>
+        /// <summary>Appends a fixed-vocabulary phase event without request or inspected values.</summary>
+        /// <param name="phase">Known lifecycle phase to record; unknown enum values and events beyond the cap are ignored.</param>
         /// <param name="error">Exception describing the error failure.</param>
         internal void Record(Phase phase, Exception error = null)
         {
@@ -256,8 +256,8 @@ Palette }
             catch { /* Evidence is optional and must not affect a native operation or its original failure. */ }
         }
 
-        /// <summary>Handles record options combo for vbe inspection trace.</summary>
-        /// <param name="observed">options combo evidence that supplies the observed for this operation.</param>
+        /// <summary>Appends numeric combo evidence after validating its reader and role enums.</summary>
+        /// <param name="observed">Numeric HWND/style/count/selection observations; text labels and option values are not represented.</param>
         /// <param name="error">Exception describing the error failure.</param>
         internal void RecordOptionsCombo(OptionsComboEvidence observed, Exception error = null)
         {
@@ -277,15 +277,15 @@ Palette }
             catch { /* Diagnostics cannot alter a native read, closure or original exception. */ }
         }
 
-        /// <summary>Owns the scope state and operations.</summary>
+        /// <summary>Restores the prior AsyncLocal trace when an inspection scope ends.</summary>
         private sealed class Scope : IDisposable
         {
 
-            /// <summary>Maintains the restore state for scope.</summary>
+            /// <summary>One-use restoration callback, cleared atomically during disposal.</summary>
             private Action restore;
 
-            /// <summary>Initializes a Scope instance with the supplied state.</summary>
-            /// <param name="action">action that supplies the action for this operation.</param>
+            /// <summary>Creates a trace scope with a prior-context restoration callback.</summary>
+            /// <param name="action">Callback restoring the ambient trace that was active before entry.</param>
             internal Scope(Action action) { restore = action; }
 
             /// <summary>Disposes  for scope.</summary>
