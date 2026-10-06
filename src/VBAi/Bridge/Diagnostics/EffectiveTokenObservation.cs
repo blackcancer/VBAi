@@ -10,38 +10,38 @@ namespace VBAi
     internal static class EffectiveTokenObservation
     {
 
-        /// <summary>Maintains the error no token state for effective token observation.</summary>
+        /// <summary>Win32 ERROR_NO_TOKEN code that permits a fallback to the process primary token.</summary>
         internal const int ErrorNoToken = 1008;
 
-        /// <summary>Defines the i token reader contract.</summary>
+        /// <summary>Defines read-only token acquisition and metadata operations; implementations never impersonate or alter a token.</summary>
         internal interface ITokenReader
         {
 
-            /// <summary>Opens thread for i token reader.</summary>
-            /// <param name="token">Native handle that supplies the token for this operation.</param>
-            /// <param name="error">int that supplies the error for this operation.</param>
-            /// <returns>Boolean indicating the result of the check for open thread on i token reader.</returns>
+            /// <summary>Attempts to open the calling thread's effective token for query-only access.</summary>
+            /// <param name="token">Receives the token handle on success.</param>
+            /// <param name="error">Receives the last Win32 error from the open attempt.</param>
+            /// <returns><see langword="true"/> when the thread token was opened.</returns>
             bool OpenThread(out IntPtr token, out int error);
 
-            /// <summary>Opens primary for i token reader.</summary>
-            /// <param name="token">Native handle that supplies the token for this operation.</param>
-            /// <param name="error">int that supplies the error for this operation.</param>
-            /// <returns>Boolean indicating the result of the check for open primary on i token reader.</returns>
+            /// <summary>Attempts to open the current process primary token for query-only access.</summary>
+            /// <param name="token">Receives the token handle on success.</param>
+            /// <param name="error">Receives the last Win32 error from the open attempt.</param>
+            /// <returns><see langword="true"/> when the primary token was opened.</returns>
             bool OpenPrimary(out IntPtr token, out int error);
 
-            /// <summary>Handles metadata for i token reader.</summary>
-            /// <param name="token">Native handle that supplies the token for this operation.</param>
-            /// <returns>i dictionary&lt;string, object&gt; produced by the operation for metadata on i token reader.</returns>
+            /// <summary>Reads public identity, restriction, container, type, and authentication metadata from an already-open token.</summary>
+            /// <param name="token">Query-only token handle that the caller must close.</param>
+            /// <returns>Named metadata values; individual query failures may be reported in <c>MetadataErrors</c>.</returns>
             IDictionary<string, object> Metadata(IntPtr token);
 
-            /// <summary>Closes  for i token reader.</summary>
-            /// <param name="token">Native handle that supplies the token for this operation.</param>
+            /// <summary>Closes a token handle obtained by one of the open methods.</summary>
+            /// <param name="token">Token handle to release.</param>
             void Close(IntPtr token);
         }
 
         /// <summary>Falls back to the primary token only for ERROR_NO_TOKEN; never impersonates or changes a token.</summary>
-        /// <param name="reader">i token reader that supplies the reader for this operation.</param>
-        /// <returns>i dictionary&lt;string, object&gt; produced by the operation for read on effective token observation.</returns>
+        /// <param name="reader">Optional token-reader implementation; null uses the query-only Win32 reader.</param>
+        /// <returns>Observation dictionary with READ, PARTIAL, or UNVERIFIED state and only successfully read metadata.</returns>
         internal static IDictionary<string, object> Read(ITokenReader reader = null)
         {
             reader = reader ?? new NativeTokenReader();
@@ -74,40 +74,40 @@ namespace VBAi
             return result;
         }
 
-        /// <summary>Owns the native token reader state and operations.</summary>
+        /// <summary>Implements query-only access to the current thread token and current process primary token.</summary>
         private sealed class NativeTokenReader : ITokenReader
         {
 
-            /// <summary>Opens thread for native token reader.</summary>
-            /// <param name="token">Native handle that supplies the token for this operation.</param>
-            /// <param name="error">int that supplies the error for this operation.</param>
-            /// <returns>Boolean indicating the result of the check for open thread on native token reader.</returns>
+            /// <summary>Opens the current thread token with TOKEN_QUERY and OPENAS_SELF enabled.</summary>
+            /// <param name="token">Receives the opened token handle.</param>
+            /// <param name="error">Receives the last Win32 error, including ERROR_NO_TOKEN when not impersonating.</param>
+            /// <returns><see langword="true"/> when OpenThreadToken succeeds.</returns>
             public bool OpenThread(out IntPtr token, out int error)
             {
                 bool ok = OpenThreadToken(GetCurrentThread(), 0x8 /* TOKEN_QUERY */, true, out token);
                 error = Marshal.GetLastWin32Error(); return ok;
             }
 
-            /// <summary>Opens primary for native token reader.</summary>
-            /// <param name="token">Native handle that supplies the token for this operation.</param>
-            /// <param name="error">int that supplies the error for this operation.</param>
-            /// <returns>Boolean indicating the result of the check for open primary on native token reader.</returns>
+            /// <summary>Opens the current process primary token with TOKEN_QUERY access.</summary>
+            /// <param name="token">Receives the opened token handle.</param>
+            /// <param name="error">Receives the last Win32 error.</param>
+            /// <returns><see langword="true"/> when OpenProcessToken succeeds.</returns>
             public bool OpenPrimary(out IntPtr token, out int error)
             {
                 bool ok = OpenProcessToken(GetCurrentProcess(), 0x8 /* TOKEN_QUERY */, out token);
                 error = Marshal.GetLastWin32Error(); return ok;
             }
 
-            /// <summary>Closes  for native token reader.</summary>
-            /// <param name="token">Native handle that supplies the token for this operation.</param>
+            /// <summary>Releases a token handle and throws a Win32Exception if CloseHandle fails.</summary>
+            /// <param name="token">Token handle to close.</param>
             public void Close(IntPtr token)
             {
                 if (!CloseHandle(token)) throw new System.ComponentModel.Win32Exception(Marshal.GetLastWin32Error());
             }
 
-            /// <summary>Handles metadata for native token reader.</summary>
-            /// <param name="token">Native handle that supplies the token for this operation.</param>
-            /// <returns>i dictionary&lt;string, object&gt; produced by the operation for metadata on native token reader.</returns>
+            /// <summary>Reads selected token information classes and records per-class failures without elevating access.</summary>
+            /// <param name="token">Token handle opened with TOKEN_QUERY.</param>
+            /// <returns>Metadata for restriction, user/integrity SID, app-container state, token type, impersonation level, and IDs.</returns>
             public IDictionary<string, object> Metadata(IntPtr token)
             {
                 var result = new Dictionary<string, object>();
@@ -130,14 +130,14 @@ namespace VBAi
                 return result;
             }
 
-            /// <summary>Handles information for native token reader.</summary>
-            /// <param name="token">Native handle that supplies the token for this operation.</param>
-            /// <param name="kind">int that supplies the kind for this operation.</param>
-            /// <param name="name">Text that supplies the name value. Use the format required by the calling operation.</param>
-            /// <param name="errors">i dictionary&lt;string, int&gt; that supplies the errors for this operation.</param>
-            /// <param name="minimum">int that supplies the minimum for this operation.</param>
-            /// <param name="read">func&lt;int ptr, object&gt; that supplies the read for this operation.</param>
-            /// <returns>object produced by the operation for information on native token reader.</returns>
+            /// <summary>Queries one token information class with a bounded native buffer and stores any Win32 failure under its metadata key.</summary>
+            /// <param name="token">Query-only token handle.</param>
+            /// <param name="kind">TOKEN_INFORMATION_CLASS numeric value requested from Win32.</param>
+            /// <param name="name">Stable key used in the result and error dictionaries.</param>
+            /// <param name="errors">Receives the Win32 error when sizing, retrieval, or returned length is invalid.</param>
+            /// <param name="minimum">Minimum structure size accepted for this information class.</param>
+            /// <param name="read">Decoder that converts the validated native buffer into a managed value.</param>
+            /// <returns>Decoded value, or null when the query fails validation.</returns>
             private static object Information(IntPtr token, int kind, string name, IDictionary<string, int> errors, int minimum, Func<IntPtr, object> read)
             {
                 int size;
@@ -157,81 +157,81 @@ namespace VBAi
             }
         }
 
-        /// <summary>Carries the luid values passed between operations.</summary>
+        /// <summary>Native LUID layout used for token and authentication identifiers returned by TOKEN_STATISTICS.</summary>
         [StructLayout(LayoutKind.Sequential)] private struct Luid
         {
 
-            /// <summary>Maintains the low state for luid.</summary>
+            /// <summary>Unsigned low-order 32 bits of the LUID.</summary>
             internal uint Low;
 
-/// <summary>Maintains the high state for luid.</summary>
-internal int High;
+            /// <summary>Signed high-order 32 bits of the LUID, reinterpreted as unsigned when formatted.</summary>
+            internal int High;
 
-            /// <summary>Handles to string for luid.</summary>
-            /// <returns>Text produced by the operation for to string on luid.</returns>
+            /// <summary>Formats the LUID as fixed-width hexadecimal high and low words.</summary>
+            /// <returns>Eight uppercase hex digits, a colon, then eight uppercase hex digits.</returns>
             public override string ToString() => unchecked((uint)High).ToString("X8") + ":" + Low.ToString("X8");
         }
 
-        /// <summary>Carries the token statistics values passed between operations.</summary>
+        /// <summary>Native TOKEN_STATISTICS layout; only token ID and authentication ID are surfaced in the observation.</summary>
         [StructLayout(LayoutKind.Sequential)] private struct TokenStatistics
         {
 
-            /// <summary>Identifies the token id and authentication id associated with token statistics.</summary>
+            /// <summary>Unique identifier assigned to this token.</summary>
             internal Luid TokenId, AuthenticationId;
 
-            /// <summary>Maintains the expiration time state for token statistics.</summary>
+            /// <summary>Native expiration timestamp field required to preserve TOKEN_STATISTICS layout.</summary>
             internal long ExpirationTime;
 
-            /// <summary>Maintains the token type and impersonation level state for token statistics.</summary>
+            /// <summary>Native token type and impersonation-level fields required to preserve TOKEN_STATISTICS layout.</summary>
             internal int TokenType, ImpersonationLevel;
 
-            /// <summary>Counts the dynamic charged and dynamic available and group count and privilege count maintained by token statistics.</summary>
+            /// <summary>Native dynamic allocation and collection counts required to preserve TOKEN_STATISTICS layout.</summary>
             internal uint DynamicCharged, DynamicAvailable, GroupCount, PrivilegeCount;
 
-            /// <summary>Identifies the modified id associated with token statistics.</summary>
+            /// <summary>Identifier changed when the token's assigned privileges are modified.</summary>
             internal Luid ModifiedId;
         }
 
-        /// <summary>Returns current thread for effective token observation.</summary>
-        /// <returns>int ptr produced by the operation for get current thread on effective token observation.</returns>
+        /// <summary>Gets a pseudo-handle for the calling thread, used only to query its effective token.</summary>
+        /// <returns>Current-thread pseudo-handle; it is not closed.</returns>
         [DllImport("kernel32.dll")] private static extern IntPtr GetCurrentThread();
 
-        /// <summary>Returns current process for effective token observation.</summary>
-        /// <returns>int ptr produced by the operation for get current process on effective token observation.</returns>
+        /// <summary>Gets a pseudo-handle for the current process, used only to query its primary token.</summary>
+        /// <returns>Current-process pseudo-handle; it is not closed.</returns>
         [DllImport("kernel32.dll")] private static extern IntPtr GetCurrentProcess();
 
-        /// <summary>Closes handle for effective token observation.</summary>
-        /// <param name="handle">Native handle that supplies the handle for this operation.</param>
-        /// <returns>Boolean indicating the result of the check for close handle on effective token observation.</returns>
+        /// <summary>Releases an opened token handle.</summary>
+        /// <param name="handle">Token handle returned by OpenThreadToken or OpenProcessToken.</param>
+        /// <returns><see langword="true"/> when Windows closes the handle.</returns>
         [DllImport("kernel32.dll", SetLastError = true)] [return: MarshalAs(UnmanagedType.Bool)] private static extern bool CloseHandle(IntPtr handle);
 
-        /// <summary>Opens thread token for effective token observation.</summary>
-        /// <param name="thread">Native handle that supplies the thread for this operation.</param>
-        /// <param name="access">uint that supplies the access for this operation.</param>
-        /// <param name="openAsSelf">Indicates whether open as self is enabled.</param>
-        /// <param name="token">Native handle that supplies the token for this operation.</param>
-        /// <returns>Boolean indicating the result of the check for open thread token on effective token observation.</returns>
+        /// <summary>Opens a thread's effective token with the requested access and caller security context.</summary>
+        /// <param name="thread">Thread whose effective token is queried; callers pass the current-thread pseudo-handle.</param>
+        /// <param name="access">Requested token rights; this observer passes TOKEN_QUERY only.</param>
+        /// <param name="openAsSelf">When true, performs the access check using the process security context.</param>
+        /// <param name="token">Receives the opened token handle.</param>
+        /// <returns><see langword="true"/> on success; otherwise false and GetLastError identifies the failure.</returns>
         [DllImport("advapi32.dll", SetLastError = true)] [return: MarshalAs(UnmanagedType.Bool)] private static extern bool OpenThreadToken(IntPtr thread, uint access, [MarshalAs(UnmanagedType.Bool)] bool openAsSelf, out IntPtr token);
 
-        /// <summary>Opens process token for effective token observation.</summary>
-        /// <param name="process">Native handle that supplies the process for this operation.</param>
-        /// <param name="access">uint that supplies the access for this operation.</param>
-        /// <param name="token">Native handle that supplies the token for this operation.</param>
-        /// <returns>Boolean indicating the result of the check for open process token on effective token observation.</returns>
+        /// <summary>Opens the process primary token with the requested access.</summary>
+        /// <param name="process">Process whose primary token is queried; callers pass the current-process pseudo-handle.</param>
+        /// <param name="access">Requested token rights; this observer passes TOKEN_QUERY only.</param>
+        /// <param name="token">Receives the opened token handle.</param>
+        /// <returns><see langword="true"/> on success; otherwise false and GetLastError identifies the failure.</returns>
         [DllImport("advapi32.dll", SetLastError = true)] [return: MarshalAs(UnmanagedType.Bool)] private static extern bool OpenProcessToken(IntPtr process, uint access, out IntPtr token);
 
-        /// <summary>Returns token information for effective token observation.</summary>
-        /// <param name="token">Native handle that supplies the token for this operation.</param>
-        /// <param name="kind">int that supplies the kind for this operation.</param>
-        /// <param name="information">Native handle that supplies the information for this operation.</param>
-        /// <param name="size">int that supplies the size for this operation.</param>
-        /// <param name="returned">int that supplies the returned for this operation.</param>
-        /// <returns>Boolean indicating the result of the check for get token information on effective token observation.</returns>
+        /// <summary>Queries a selected TOKEN_INFORMATION_CLASS into a caller-owned buffer.</summary>
+        /// <param name="token">Token handle opened with TOKEN_QUERY.</param>
+        /// <param name="kind">TOKEN_INFORMATION_CLASS numeric selector.</param>
+        /// <param name="information">Output buffer, or null for the required-size query.</param>
+        /// <param name="size">Buffer size in bytes.</param>
+        /// <param name="returned">Receives required or actual bytes, depending on the query phase.</param>
+        /// <returns><see langword="true"/> when the information is returned; otherwise false and GetLastError supplies the reason.</returns>
         [DllImport("advapi32.dll", SetLastError = true)] [return: MarshalAs(UnmanagedType.Bool)] private static extern bool GetTokenInformation(IntPtr token, int kind, IntPtr information, int size, out int returned);
 
-        /// <summary>Determines whether token restricted for effective token observation.</summary>
-        /// <param name="token">Native handle that supplies the token for this operation.</param>
-        /// <returns>Boolean indicating the result of the check for is token restricted on effective token observation.</returns>
+        /// <summary>Checks whether Windows marks the token as restricted.</summary>
+        /// <param name="token">Token handle to inspect.</param>
+        /// <returns><see langword="true"/> when the token is restricted.</returns>
         [DllImport("advapi32.dll")] [return: MarshalAs(UnmanagedType.Bool)] private static extern bool IsTokenRestricted(IntPtr token);
     }
 }

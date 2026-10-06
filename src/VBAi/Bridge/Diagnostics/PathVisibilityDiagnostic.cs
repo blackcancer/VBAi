@@ -11,29 +11,29 @@ namespace VBAi
     internal sealed class PathVisibilityDiagnostic
     {
 
-        /// <summary>Maintains the environment name state for path visibility diagnostic.</summary>
+        /// <summary>Opt-in environment variable containing the bounded synthetic-path manifest file path.</summary>
         internal const string EnvironmentName = "VBAi_TEST_PATH_VISIBILITY_MANIFEST";
 
-        /// <summary>Maintains the command name state for path visibility diagnostic.</summary>
+        /// <summary>Exact bridge command that opts into the synthetic path observation.</summary>
         internal const string CommandName = "diagnostic_path_visibility";
 
-        /// <summary>Maintains the synthetic name state for path visibility diagnostic.</summary>
+        /// <summary>Fixed filename stem used below each GUID-owned synthetic directory.</summary>
         internal const string SyntheticName = "VBAi.PathVisibility.synthetic";
 
-        /// <summary>Identifies the owner pid associated with path visibility diagnostic.</summary>
+        /// <summary>Connected host process ID captured when the diagnostic object is created.</summary>
         private readonly int ownerPid;
 
-        /// <summary>Identifies the owner tid associated with path visibility diagnostic.</summary>
+        /// <summary>Native VBE UI thread ID captured at diagnostic construction.</summary>
         private readonly uint ownerTid;
 
-        /// <summary>Maintains the paths state for path visibility diagnostic.</summary>
+        /// <summary>Validated two-directory/two-file synthetic allowlist, or null when the diagnostic was not enabled.</summary>
         private readonly string[] paths;
 
-        /// <summary>Maintains the preparation error state for path visibility diagnostic.</summary>
+        /// <summary>Safe type-and-message summary retained when the opt-in manifest fails validation.</summary>
         private readonly string preparationError;
 
-        /// <summary>Initializes a PathVisibilityDiagnostic instance with the supplied state.</summary>
-        /// <param name="processId">int that supplies the process id for this operation.</param>
+        /// <summary>Captures the owner IDs and validates the opt-in manifest without reading any listed path contents.</summary>
+        /// <param name="processId">Connected host process ID expected for later owner checks.</param>
         internal PathVisibilityDiagnostic(int processId)
         {
             ownerPid = processId; ownerTid = PathVisibilityObservation.ThreadId;
@@ -62,8 +62,8 @@ namespace VBAi
             catch (Exception error) { preparationError = error.GetType().Name + ": " + error.Message; }
         }
 
-        /// <summary>Reads  for path visibility diagnostic.</summary>
-        /// <returns>i dictionary&lt;string, object&gt; produced by the operation for read on path visibility diagnostic.</returns>
+        /// <summary>Runs only on the captured process's native STA and returns attribute/token observations after manifest validation.</summary>
+        /// <returns>Diagnostic evidence tagged with the production assembly MVID; disabled or invalid manifests throw.</returns>
         internal IDictionary<string, object> Read()
         {
             RequireOwner(ownerPid, ownerTid, PathVisibilityObservation.ProcessId, PathVisibilityObservation.ThreadId, Thread.CurrentThread.GetApartmentState());
@@ -74,11 +74,11 @@ namespace VBAi
             return result;
         }
 
-        /// <summary>Validates manifest for path visibility diagnostic.</summary>
-        /// <param name="json">Text that supplies the json value. Use the format required by the calling operation.</param>
-        /// <param name="localParent">Text that supplies the local parent value. Use the format required by the calling operation.</param>
-        /// <param name="tempParent">Text that supplies the temp parent value. Use the format required by the calling operation.</param>
-        /// <returns>string[] produced by the operation for validate manifest on path visibility diagnostic.</returns>
+        /// <summary>Accepts only version 1 with LocalAppData and Temp as direct GUID-child directories under their expected parents.</summary>
+        /// <param name="json">Manifest JSON containing exactly version 1 and LocalAppData/Temp GUID-child directory names.</param>
+        /// <param name="localParent">Expected LocalApplicationData parent directory.</param>
+        /// <param name="tempParent">Expected system temporary directory.</param>
+        /// <returns>Two validated directories and their fixed synthetic-file paths, in observation order.</returns>
         internal static string[] ValidateManifest(string json, string localParent, string tempParent)
         {
             if (json == null || json.Length > 4096) throw new ArgumentException("A bounded synthetic manifest is required.");
@@ -94,7 +94,7 @@ namespace VBAi
         }
 
         /// <summary>Rejects free path fields before any observation is performed.</summary>
-        /// <param name="request">Text that supplies the request value. Use the format required by the calling operation.</param>
+        /// <param name="request">Original request JSON, required to contain only the exact diagnostic Command field.</param>
         internal static void RequireParameterFree(string request)
         {
             var value = new JavaScriptSerializer().DeserializeObject(request) as IDictionary<string, object>;
@@ -104,21 +104,21 @@ namespace VBAi
         }
 
         /// <summary>An actual native owner observation must match its captured process and native STA thread.</summary>
-        /// <param name="expectedPid">int that supplies the expected pid for this operation.</param>
-        /// <param name="expectedTid">uint that supplies the expected tid for this operation.</param>
-        /// <param name="actualPid">uint that supplies the actual pid for this operation.</param>
-        /// <param name="actualTid">uint that supplies the actual tid for this operation.</param>
-        /// <param name="apartment">apartment state that supplies the apartment for this operation.</param>
+        /// <param name="expectedPid">Host process ID captured when this diagnostic was created.</param>
+        /// <param name="expectedTid">Native UI-thread ID captured at construction.</param>
+        /// <param name="actualPid">Current Win32 process ID.</param>
+        /// <param name="actualTid">Current Win32 thread ID.</param>
+        /// <param name="apartment">Current managed apartment; only STA is accepted.</param>
         internal static void RequireOwner(int expectedPid, uint expectedTid, uint actualPid, uint actualTid, ApartmentState apartment)
         {
             if (expectedPid <= 0 || expectedTid == 0 || expectedPid != actualPid || expectedTid != actualTid || apartment != ApartmentState.STA)
                 throw new InvalidOperationException("The exact owning process/native STA thread is required.");
         }
 
-        /// <summary>Requires guid child for path visibility diagnostic.</summary>
-        /// <param name="directory">Text that supplies the directory value. Use the format required by the calling operation.</param>
-        /// <param name="parent">Text that supplies the parent value. Use the format required by the calling operation.</param>
-        /// <returns>Text produced by the operation for require guid child on path visibility diagnostic.</returns>
+        /// <summary>Requires a canonical direct child directory whose final component is a GUID and whose ancestors contain no reparse points.</summary>
+        /// <param name="directory">Candidate owned synthetic directory.</param>
+        /// <param name="parent">Required local parent under which the GUID directory must be placed.</param>
+        /// <returns>Canonical full path after all parent, GUID, and reparse checks pass.</returns>
         private static string RequireGuidChild(string directory, string parent)
         {
             ExcelLocalPath(directory); ExcelLocalPath(parent);
@@ -132,8 +132,8 @@ namespace VBAi
             return exact;
         }
 
-        /// <summary>Handles excel local path for path visibility diagnostic.</summary>
-        /// <param name="path">Path used for the path being processed.</param>
+        /// <summary>Rejects non-local, relative, device-prefixed, and alternate-stream paths before filesystem inspection.</summary>
+        /// <param name="path">Candidate drive-rooted local filesystem path.</param>
         private static void ExcelLocalPath(string path)
         {
             if (string.IsNullOrWhiteSpace(path) || path.Length < 3 || !char.IsLetter(path[0]) || path[1] != ':' ||
@@ -141,8 +141,8 @@ namespace VBAi
                 throw new ArgumentException("An absolute local path without a device prefix or alternate stream is required.");
         }
 
-        /// <summary>Handles reject reparse ancestors for path visibility diagnostic.</summary>
-        /// <param name="path">Path used for the path being processed.</param>
+        /// <summary>Walks the path and its ancestors, refusing existing reparse points that could redirect the diagnostic.</summary>
+        /// <param name="path">Validated local path to inspect.</param>
         private static void RejectReparseAncestors(string path)
         {
             for (string current = path; !string.IsNullOrEmpty(current); current = Path.GetDirectoryName(current))

@@ -12,10 +12,10 @@ namespace VBAi
     {
 
         /// <summary>Ferme la connexion si sa réception reste incomplète au terme du délai.</summary>
-        /// <param name="stream">stream that supplies the stream for this operation.</param>
-        /// <param name="maxBytes">int that supplies the max bytes for this operation.</param>
-        /// <param name="timeout">Duration that supplies the timeout for this operation.</param>
-        /// <returns>task&lt;string&gt; produced by the operation for read async on bridge request reader.</returns>
+        /// <param name="stream">Connected pipe stream; it is disposed if the full frame is not received before the deadline.</param>
+        /// <param name="maxBytes">Maximum UTF-8 payload bytes before LF, excluding the optional CR in CRLF.</param>
+        /// <param name="timeout">Total receive budget; must be positive.</param>
+        /// <returns>The decoded frame without its LF terminator and optional preceding CR.</returns>
         internal static async Task<string> ReadAsync(Stream stream, int maxBytes, TimeSpan timeout)
         {
             if (maxBytes < 1) throw new ArgumentOutOfRangeException(nameof(maxBytes));
@@ -38,9 +38,9 @@ namespace VBAi
         }
 
         /// <summary>Reads and decodes one bounded UTF-8 frame terminated by a newline.</summary>
-        /// <param name="stream">stream that supplies the stream for this operation.</param>
-        /// <param name="maxBytes">int that supplies the max bytes for this operation.</param>
-        /// <returns>task&lt;string&gt; produced by the operation for read frame async on bridge request reader.</returns>
+        /// <param name="stream">Pipe stream from which to read until LF or end-of-stream.</param>
+        /// <param name="maxBytes">Maximum payload size in bytes, enforced before UTF-8 decoding.</param>
+        /// <returns>Strictly decoded UTF-8 request frame without the line ending.</returns>
         private static async Task<string> ReadFrameAsync(Stream stream, int maxBytes)
         {
             var buffer = new byte[Math.Min(4096, maxBytes)];

@@ -132,7 +132,7 @@ namespace VBAi
         /// <summary>Saves and observes completion while yielding to the owning VBE STA.</summary>
         internal Func<Request, Task<object>> SaveHostDocumentNative;
 
-        /// <summary>Maintains the solid works macro native state for bridge server.</summary>
+        /// <summary>Optional asynchronous adapter for creating the approved SOLIDWORKS macro from the VBE UI thread.</summary>
         internal Func<Request, Task<object>> SolidWorksMacroNative;
 
         /// <summary>Runs the guarded native General operation on the VBE UI thread.</summary>
@@ -505,9 +505,9 @@ namespace VBAi
         // Native worker routes bypass Execute. Hold their session admission until
         // dispatch settles, so General cannot enter between the STA check and a
         // worker native call. General claims its own in-flight state on the STA.
-        /// <summary>Handles admit session request for bridge server.</summary>
-        /// <param name="request">request that supplies the request for this operation.</param>
-        /// <returns>action produced by the operation for admit session request on bridge server.</returns>
+        /// <summary>Reserves session admission for worker native routes after checking the VBE STA and that General-page work has settled.</summary>
+        /// <param name="request">Request whose command determines whether it needs a session admission reservation.</param>
+        /// <returns>Release action for a reserved bridge operation, or null for status and routes that claim their own state.</returns>
         private Action AdmitSessionRequest(Request request)
         {
             if (request?.Command == "status" || session == null) return null;
