@@ -14,13 +14,13 @@ namespace VBAi
 
         /// <summary>Acquires the device context for the entire native window.</summary>
         /// <param name="window">Target native window handle.</param>
-        /// <returns>int ptr produced by the operation for get window dc on ui input frame.</returns>
+        /// <returns>Device context for drawing non-client window chrome, or zero on failure.</returns>
         [DllImport("user32.dll")] private static extern IntPtr GetWindowDC(IntPtr window);
 
         /// <summary>Releases a device context obtained for the native window.</summary>
         /// <param name="window">Target native window handle.</param>
         /// <param name="dc">Native device context.</param>
-        /// <returns>int produced by the operation for release dc on ui input frame.</returns>
+        /// <returns>Nonzero when the device context was released.</returns>
         [DllImport("user32.dll")] private static extern int ReleaseDC(IntPtr window, IntPtr dc);
 
         /// <summary>The chat selector seven-DIP corner radius, shared by fields and lists.</summary>
@@ -29,7 +29,7 @@ namespace VBAi
         /// <summary>Builds a closed rounded path at the requested DPI.</summary>
         /// <param name="bounds">Available drawing rectangle.</param>
         /// <param name="dpi">Display density used to scale logical dimensions.</param>
-        /// <returns>graphics path produced by the operation for outline on ui input frame.</returns>
+        /// <returns>A closed disposable path with DPI-scaled rounded corners.</returns>
         internal static GraphicsPath Outline(Rectangle bounds, int dpi)
         {
             var path = new GraphicsPath();
@@ -67,13 +67,13 @@ namespace VBAi
 
         /// <summary>Selects the input boundary color from its focus state.</summary>
         /// <param name="control">Control whose native palette and geometry are used.</param>
-        /// <returns>color produced by the operation for border on ui input frame.</returns>
+        /// <returns>Focus outline color when the control contains focus; otherwise the theme border color.</returns>
         internal static Color Border(Control control) => control.ContainsFocus ? UiTheme.FocusBorderFor(control) : UiTheme.BorderFor(control);
 
         /// <summary>Draws an input outline for native paint, focus and print messages.</summary>
         /// <param name="control">Control whose native palette and geometry are used.</param>
-        /// <param name="style">border style that supplies the style for this operation.</param>
-        /// <param name="message">message that supplies the message for this operation.</param>
+        /// <param name="style">Current control border style; <see cref="BorderStyle.None"/> suppresses drawing.</param>
+        /// <param name="message">Native message after the base control has processed it.</param>
         internal static void Paint(Control control, BorderStyle style, Message message)
         {
             if (style == BorderStyle.None || !control.IsHandleCreated || control.Width < 2 || control.Height < 2) return;
@@ -97,16 +97,16 @@ namespace VBAi
         /// <summary>Creates a text field.</summary>
         public UiTextBox() { BorderStyle = BorderStyle.FixedSingle; }
 
-        /// <summary>Handles send message for ui text box.</summary>
-        /// <param name="window">Target native window handle.</param>
-        /// <param name="message">int that supplies the message for this operation.</param>
-        /// <param name="wParam">Native handle that supplies the w param for this operation.</param>
-        /// <param name="lParam">Native handle that supplies the l param for this operation.</param>
-        /// <returns>int ptr produced by the operation for send message on ui text box.</returns>
+        /// <summary>Sends EM_SETMARGINS or another message synchronously to the native edit window.</summary>
+        /// <param name="window">Native edit-control handle.</param>
+        /// <param name="message">Win32 edit-control message identifier.</param>
+        /// <param name="wParam">Message-specific first value.</param>
+        /// <param name="lParam">Message-specific second value.</param>
+        /// <returns>Result returned by the edit window procedure.</returns>
         [DllImport("user32.dll")] private static extern IntPtr SendMessage(IntPtr window, int message, IntPtr wParam, IntPtr lParam);
 
         /// <inheritdoc/>
-        /// <summary>Handles on handle created for ui text box.</summary>
+        /// <summary>Sets DPI-scaled left and right edit margins after creating the native handle.</summary>
         /// <param name="e">Native event data.</param>
         protected override void OnHandleCreated(EventArgs e)
         {
@@ -117,7 +117,7 @@ namespace VBAi
 
         /// <inheritdoc/>
         /// <summary>Preserves native message handling and repaints the input surface and outline.</summary>
-        /// <param name="m">message that supplies the m for this operation.</param>
+        /// <param name="m">Native message processed by the TextBox base class before its outline is painted.</param>
         protected override void WndProc(ref Message m) { base.WndProc(ref m); UiInputFrame.Paint(this, BorderStyle, m); }
     }
 
@@ -131,7 +131,7 @@ namespace VBAi
 
         /// <inheritdoc/>
         /// <summary>Preserves native message handling and repaints the input surface and outline.</summary>
-        /// <param name="m">message that supplies the m for this operation.</param>
+        /// <param name="m">Native message processed by the RichTextBox base class before its outline is painted.</param>
         protected override void WndProc(ref Message m) { base.WndProc(ref m); UiInputFrame.Paint(this, BorderStyle, m); }
     }
 
@@ -140,21 +140,21 @@ namespace VBAi
     public class UiListBox : ListBox
     {
 
-        /// <summary>Maintains the synchronizing external selection state for ui list box.</summary>
+        /// <summary>Guards internal selection-cache synchronization against re-entering the same native update path.</summary>
         private bool synchronizingExternalSelection;
 
-        /// <summary>Handles in send message ex for ui list box.</summary>
-        /// <param name="reserved">Native handle that supplies the reserved for this operation.</param>
-        /// <returns>uint produced by the operation for in send message ex on ui list box.</returns>
+        /// <summary>Reads flags describing whether the current window message was sent by another thread.</summary>
+        /// <param name="reserved">Reserved by Windows; pass zero.</param>
+        /// <returns>ISMEX flags, with nonzero indicating a sent-message call is active.</returns>
         [DllImport("user32.dll")]
         private static extern uint InSendMessageEx(IntPtr reserved);
 
-        /// <summary>Handles send message for ui list box.</summary>
-        /// <param name="window">Native handle that supplies the window for this operation.</param>
-        /// <param name="message">int that supplies the message for this operation.</param>
-        /// <param name="wParam">Native handle that supplies the w param for this operation.</param>
-        /// <param name="lParam">Native handle that supplies the l param for this operation.</param>
-        /// <returns>int ptr produced by the operation for send message on ui list box.</returns>
+        /// <summary>Sends a list-box message to read the native selection bit after UI Automation updates it.</summary>
+        /// <param name="window">Native list-box handle.</param>
+        /// <param name="message">List-box message identifier.</param>
+        /// <param name="wParam">Message-specific first value.</param>
+        /// <param name="lParam">Message-specific second value.</param>
+        /// <returns>Value returned by the list-box window procedure.</returns>
         [DllImport("user32.dll")]
         private static extern IntPtr SendMessage(IntPtr window, int message, IntPtr wParam, IntPtr lParam);
 
@@ -163,7 +163,7 @@ namespace VBAi
 
         /// <inheritdoc/>
         /// <summary>Preserves native message handling and repaints the input surface and outline.</summary>
-        /// <param name="m">message that supplies the m for this operation.</param>
+        /// <param name="m">Native list-box message; external selection changes are synchronized after base processing.</param>
         protected override void WndProc(ref Message m)
         {
             // UIA's native list provider sends LB_SETCURSEL from another
@@ -219,7 +219,7 @@ namespace VBAi
 
         /// <inheritdoc/>
         /// <summary>Preserves native message handling and repaints the input surface and outline.</summary>
-        /// <param name="m">message that supplies the m for this operation.</param>
+        /// <param name="m">Native message processed by the CheckedListBox base class before outline painting.</param>
         protected override void WndProc(ref Message m) { base.WndProc(ref m); UiInputFrame.Paint(this, BorderStyle, m); }
     }
 
@@ -233,7 +233,7 @@ namespace VBAi
 
         /// <inheritdoc/>
         /// <summary>Preserves native message handling and repaints the input surface and outline.</summary>
-        /// <param name="m">message that supplies the m for this operation.</param>
+        /// <param name="m">Native message processed by the DataGridView base class before outline painting.</param>
         protected override void WndProc(ref Message m) { base.WndProc(ref m); UiInputFrame.Paint(this, BorderStyle, m); }
     }
 
@@ -245,55 +245,55 @@ namespace VBAi
         /// <summary>Carries the native rect values passed between operations.</summary>
         [StructLayout(LayoutKind.Sequential)] private struct NativeRect {
 
-/// <summary>Maintains the left and top and right and bottom state for native rect.</summary>
+/// <summary>Native left, top, right, and bottom edges returned by COMBOBOXINFO.</summary>
 public int Left, Top, Right, Bottom; }
 
         /// <summary>Carries the combo info values passed between operations.</summary>
         [StructLayout(LayoutKind.Sequential)] private struct ComboInfo
         {
 
-            /// <summary>Maintains the size state for combo info.</summary>
+            /// <summary>Size of this COMBOBOXINFO-compatible structure in bytes before the native call.</summary>
             public int Size;
 
-/// <summary>Maintains the item and button state for combo info.</summary>
+/// <summary>Screen-coordinate rectangles for the displayed item and drop-down button.</summary>
 public NativeRect Item, Button;
 
-/// <summary>Maintains the button state state for combo info.</summary>
+/// <summary>Native state flags for the drop-down button.</summary>
 public int ButtonState;
 
-            /// <summary>Maintains the combo and edit and list state for combo info.</summary>
+            /// <summary>Handles of the combo, edit child, and list child windows.</summary>
             public IntPtr Combo, Edit, List;
         }
 
         /// <summary>Reads the native selector and editable child bounds.</summary>
-        /// <param name="combo">Native handle that supplies the combo for this operation.</param>
-        /// <param name="info">combo info that supplies the info for this operation.</param>
-        /// <returns>Boolean indicating the result of the check for get combo box info on ui combo box.</returns>
+        /// <param name="combo">Native ComboBox handle to inspect.</param>
+        /// <param name="info">Structure filled with item/button bounds and child HWNDs.</param>
+        /// <returns><see langword="true"/> when Windows returns combo geometry and child handles.</returns>
         [DllImport("user32.dll")] private static extern bool GetComboBoxInfo(IntPtr combo, ref ComboInfo info);
 
-        /// <summary>Maintains the input brush state for ui combo box.</summary>
+        /// <summary>Cached GDI brush used to paint the editable child with the control's current background color.</summary>
         private IntPtr inputBrush;
 
         /// <summary>Creates a GDI brush for the native input background.</summary>
-        /// <param name="color">int that supplies the color for this operation.</param>
-        /// <returns>int ptr produced by the operation for create solid brush on ui combo box.</returns>
+        /// <param name="color">COLORREF value used for the brush fill.</param>
+        /// <returns>Owned GDI brush handle, or zero if allocation fails.</returns>
         [DllImport("gdi32.dll")] private static extern IntPtr CreateSolidBrush(int color);
 
         /// <summary>Releases a previously allocated GDI object.</summary>
-        /// <param name="value">Native handle that supplies the value for this operation.</param>
-        /// <returns>Boolean indicating the result of the check for delete object on ui combo box.</returns>
+        /// <param name="value">GDI object handle to delete after it is no longer selected or used.</param>
+        /// <returns><see langword="true"/> when the object was deleted.</returns>
         [DllImport("gdi32.dll")] private static extern bool DeleteObject(IntPtr value);
 
         /// <summary>Sets the native device context background color.</summary>
         /// <param name="dc">Native device context.</param>
-        /// <param name="color">int that supplies the color for this operation.</param>
-        /// <returns>int produced by the operation for set bk color on ui combo box.</returns>
+        /// <param name="color">COLORREF background color for subsequent native text drawing.</param>
+        /// <returns>Previous background COLORREF.</returns>
         [DllImport("gdi32.dll")] private static extern int SetBkColor(IntPtr dc, int color);
 
         /// <summary>Sets the native device context text color.</summary>
         /// <param name="dc">Native device context.</param>
-        /// <param name="color">int that supplies the color for this operation.</param>
-        /// <returns>int produced by the operation for set text color on ui combo box.</returns>
+        /// <param name="color">COLORREF foreground color for subsequent native text drawing.</param>
+        /// <returns>Previous foreground COLORREF.</returns>
         [DllImport("gdi32.dll")] private static extern int SetTextColor(IntPtr dc, int color);
 
         /// <inheritdoc/>
@@ -338,8 +338,8 @@ public int ButtonState;
         protected override void OnSelectedIndexChanged(EventArgs e) { base.OnSelectedIndexChanged(e); Invalidate(); }
 
         /// <inheritdoc/>
-        /// <summary>Handles on draw item for ui combo box.</summary>
-        /// <param name="e">Native event data.</param>
+        /// <summary>Draws the selected or unselected item text with the control palette and DPI-scaled padding.</summary>
+        /// <param name="e">Owner-draw event; negative indices are ignored because no list item is being painted.</param>
         protected override void OnDrawItem(DrawItemEventArgs e)
         {
             if (e.Index < 0) return;
@@ -353,7 +353,7 @@ public int ButtonState;
 
         /// <inheritdoc/>
         /// <summary>Preserves native message handling and repaints the input surface and outline.</summary>
-        /// <param name="m">message that supplies the m for this operation.</param>
+        /// <param name="m">Native combo message; after base processing, edit-child colors and the shared outline are applied.</param>
         protected override void WndProc(ref Message m)
         {
             base.WndProc(ref m);

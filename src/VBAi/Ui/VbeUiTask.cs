@@ -10,10 +10,11 @@ namespace VBAi
     internal static class VbeUiTask
     {
 
-        /// <summary>Runs  for vbe ui task.</summary>
-        /// <typeparam name="T">The type used for t.</typeparam>
-        /// <param name="operation">func&lt;task&lt;t&gt;&gt; that supplies the operation for this operation.</param>
-        /// <returns>task&lt;t&gt; produced by the operation for run on vbe ui task.</returns>
+        /// <summary>Runs an asynchronous native operation with continuations marshaled to the calling STA.</summary>
+        /// <typeparam name="T">Result type produced by the operation.</typeparam>
+        /// <param name="operation">Asynchronous work that must start and resume on the owning VBE STA.</param>
+        /// <returns>A task that completes with the operation result and disposes its message dispatcher.</returns>
+        /// <exception cref="InvalidOperationException">The caller is not on an STA thread.</exception>
         internal static Task<T> Run<T>(Func<Task<T>> operation)
         {
             if (Thread.CurrentThread.GetApartmentState() != ApartmentState.STA)
@@ -37,38 +38,38 @@ namespace VBAi
             finally { SynchronizationContext.SetSynchronizationContext(previous); }
         }
 
-        /// <summary>Handles complete for vbe ui task.</summary>
-        /// <typeparam name="T">The type used for t.</typeparam>
-        /// <param name="operation">func&lt;task&lt;t&gt;&gt; that supplies the operation for this operation.</param>
-        /// <param name="dispatcher">control that supplies the dispatcher for this operation.</param>
-        /// <returns>task&lt;t&gt; produced by the operation for complete on vbe ui task.</returns>
+        /// <summary>Awaits the operation and disposes the dispatcher whether it succeeds or faults.</summary>
+        /// <typeparam name="T">Result type produced by the operation.</typeparam>
+        /// <param name="operation">Asynchronous work started with the VBE synchronization context installed.</param>
+        /// <param name="dispatcher">Hidden WinForms control whose handle accepts STA continuations.</param>
+        /// <returns>The operation result or its original exception.</returns>
         private static async Task<T> Complete<T>(Func<Task<T>> operation, Control dispatcher)
         {
             try { return await operation(); }
             finally { dispatcher.Dispose(); }
         }
 
-        /// <summary>Owns the context state and operations.</summary>
+        /// <summary>Synchronization context that posts callbacks to the hidden control on its creating STA.</summary>
         private sealed class Context : SynchronizationContext
         {
 
-            /// <summary>Maintains the dispatcher state for context.</summary>
+            /// <summary>WinForms control whose handle is bound to the owning VBE STA.</summary>
             private readonly Control dispatcher;
 
-            /// <summary>Maintains the trace state for context.</summary>
+            /// <summary>Optional trace captured at context creation for continuation lifecycle events.</summary>
             private readonly VbeInspectionTrace trace;
 
-            /// <summary>Initializes a Context instance with the supplied state.</summary>
-            /// <param name="dispatcher">control that supplies the dispatcher for this operation.</param>
+            /// <summary>Creates a synchronization context backed by the STA dispatcher and current inspection trace.</summary>
+            /// <param name="dispatcher">Control whose handle receives posted callbacks.</param>
             internal Context(Control dispatcher) { this.dispatcher = dispatcher; trace = VbeInspectionTrace.Current; }
 
-            /// <summary>Creates copy for context.</summary>
-            /// <returns>synchronization context produced by the operation for create copy on context.</returns>
+            /// <summary>Returns this context because its dispatcher and STA affinity are shared.</summary>
+            /// <returns>This synchronization context instance.</returns>
             public override SynchronizationContext CreateCopy() { return this; }
 
-            /// <summary>Handles post for context.</summary>
-            /// <param name="callback">send or post callback that supplies the callback for this operation.</param>
-            /// <param name="state">object that supplies the state for this operation.</param>
+            /// <summary>Queues a callback on the dispatcher handle and records whether posting entered or failed.</summary>
+            /// <param name="callback">Callback to invoke on the owning STA.</param>
+            /// <param name="state">State object passed unchanged to <paramref name="callback"/>.</param>
             public override void Post(SendOrPostCallback callback, object state)
             {
                 trace?.Record(VbeInspectionTrace.Phase.ContinuationEnqueued);
@@ -84,18 +85,18 @@ namespace VBAi
                 }
             }
 
-            /// <summary>Handles send for context.</summary>
-            /// <param name="callback">send or post callback that supplies the callback for this operation.</param>
-            /// <param name="state">object that supplies the state for this operation.</param>
+            /// <summary>Invokes synchronously on the owning STA, marshaling through the dispatcher when needed.</summary>
+            /// <param name="callback">Callback to invoke on the owning STA.</param>
+            /// <param name="state">State object passed unchanged to <paramref name="callback"/>.</param>
             public override void Send(SendOrPostCallback callback, object state)
             {
                 if (dispatcher.InvokeRequired) dispatcher.Invoke(new Action(() => Invoke(callback, state)));
                 else Invoke(callback, state);
             }
 
-            /// <summary>Invokes  for context.</summary>
-            /// <param name="callback">send or post callback that supplies the callback for this operation.</param>
-            /// <param name="state">object that supplies the state for this operation.</param>
+            /// <summary>Installs this context during callback execution and restores the previous context afterward.</summary>
+            /// <param name="callback">Callback to execute.</param>
+            /// <param name="state">State object passed unchanged to the callback.</param>
             private void Invoke(SendOrPostCallback callback, object state)
             {
                 var previous = Current;

@@ -10,10 +10,10 @@ namespace VBAi
     public sealed class ThemedTabControl : TabControl
     {
 
-        /// <summary>Maintains the hovered tab state for themed tab control.</summary>
+        /// <summary>Index of the tab under the pointer, or -1 when no tab is hovered.</summary>
         private int hoveredTab = -1;
 
-        /// <summary>Maintains the close hovered state for themed tab control.</summary>
+        /// <summary>Indicates whether the pointer is over the close glyph of the hovered tab.</summary>
         private bool closeHovered;
 
         /// <summary>Displays a close command on each document tab.</summary>
@@ -33,8 +33,8 @@ namespace VBAi
         }
 
         /// <summary>Computes the close command rectangle for a document tab.</summary>
-        /// <param name="index">int that supplies the index for this operation.</param>
-        /// <returns>rectangle produced by the operation for close bounds on themed tab control.</returns>
+        /// <param name="index">Zero-based tab index whose close-button position is requested.</param>
+        /// <returns>DPI-scaled close glyph bounds within the tab rectangle.</returns>
         private Rectangle CloseBounds(int index)
         {
             var bounds = GetTabRect(index); int size = 22 * DeviceDpi / 96;

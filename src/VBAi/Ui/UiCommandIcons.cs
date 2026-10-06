@@ -14,16 +14,16 @@ namespace VBAi
     internal static class UiCommandIcons
     {
 
-        /// <summary>Maintains the paths state for ui command icons.</summary>
+        /// <summary>Caches parsed SVG path geometry by symbol; access is protected by the dictionary lock.</summary>
         private static readonly Dictionary<UiSymbol, GraphicsPath> Paths = new Dictionary<UiSymbol, GraphicsPath>();
 
         /// <summary>Renders an icon without bitmap scaling or theme-specific asset copies.</summary>
         /// <param name="graphics">Drawing context; ownership remains with the caller.</param>
-        /// <param name="symbol">ui symbol that supplies the symbol for this operation.</param>
+        /// <param name="symbol">Bundled icon resource to draw.</param>
         /// <param name="bounds">Available drawing rectangle.</param>
-        /// <param name="color">color that supplies the color for this operation.</param>
+        /// <param name="color">Foreground stroke color.</param>
         /// <param name="dpi">Display density used to scale logical dimensions.</param>
-        /// <returns>Boolean indicating the result of the check for draw on ui command icons.</returns>
+        /// <returns><see langword="true"/> when an icon path was cached or drawn; false when the resource has no path.</returns>
         internal static bool Draw(Graphics graphics, UiSymbol symbol, Rectangle bounds, Color color, int dpi)
         {
             lock (Paths)
@@ -63,8 +63,9 @@ namespace VBAi
         }
         // The bundled SVGs intentionally use absolute M/L/C/Z commands only.
         /// <summary>Parses the absolute M, L, C and Z commands used by bundled SVG paths.</summary>
-        /// <param name="data">Text that supplies the data value. Use the format required by the calling operation.</param>
-        /// <returns>graphics path produced by the operation for parse on ui command icons.</returns>
+        /// <param name="data">SVG path data containing only absolute M, L, C, and Z commands.</param>
+        /// <returns>A disposable path containing the parsed figures.</returns>
+        /// <exception cref="FormatException">The path contains an unsupported command or malformed numeric data.</exception>
         private static GraphicsPath Parse(string data)
         {
             var tokens = Regex.Matches(data, @"[A-Za-z]|-?\d+(?:\.\d+)?");

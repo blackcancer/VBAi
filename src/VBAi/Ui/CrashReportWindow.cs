@@ -26,7 +26,7 @@ namespace VBAi
         /// <summary>Action used to copy report text or its saved path.</summary>
         internal Action<string> CopyText = Clipboard.SetText;
 
-        /// <summary>Maintains the open link state for crash report window.</summary>
+        /// <summary>Opens a validated support or issue URL using the shared safe-link policy.</summary>
         internal Action<string> OpenLink = SafeLinks.Open;
 
         /// <summary>Delegate that saves a report body and returns its local path.</summary>

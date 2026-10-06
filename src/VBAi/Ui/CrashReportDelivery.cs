@@ -28,35 +28,35 @@ Uncertain }
     internal sealed class CrashReportDelivery
     {
 
-        /// <summary>Maintains the load settings state for crash report delivery.</summary>
+        /// <summary>Loads the saved account settings used to choose the configured GitHub publication path.</summary>
         internal static Func<LlmSettings> LoadSettings = LlmSettings.Load;
 
-        /// <summary>Maintains the read credential state for crash report delivery.</summary>
+        /// <summary>Reads a GitHub credential asynchronously for the selected account and cancellation token.</summary>
         internal static Func<string, CancellationToken, Task<string>> ReadCredential = GitHubApi.ReadCredential;
 
-        /// <summary>Maintains the create api state for crash report delivery.</summary>
+        /// <summary>Creates the GitHub API client with the supplied account and credential callback.</summary>
         internal static Func<string, Func<CancellationToken, Task<string>>, GitHubApi> CreateApi =
             (account, credential) => new GitHubApi(account, credential: credential);
 
-        /// <summary>Maintains the active outlook state for crash report delivery.</summary>
+        /// <summary>Looks up an already running Outlook COM application by ProgID; it does not start Outlook.</summary>
         internal static Func<string, object> ActiveOutlook = Marshal.GetActiveObject;
 
-        /// <summary>Maintains the outlook type state for crash report delivery.</summary>
+        /// <summary>Resolves the Outlook COM type for creating an instance only when no active instance is available.</summary>
         internal static Func<string, Type> OutlookType = Type.GetTypeFromProgID;
 
-        /// <summary>Maintains the create outlook state for crash report delivery.</summary>
+        /// <summary>Creates the Outlook COM object selected by its registered type.</summary>
         internal static Func<Type, object> CreateOutlook = Activator.CreateInstance;
 
-        /// <summary>Tracks the is com reference state of crash report delivery.</summary>
+        /// <summary>Tests whether a returned mail object requires COM reference release.</summary>
         internal static Func<object, bool> IsComReference = Marshal.IsComObject;
 
-        /// <summary>Maintains the release reference state for crash report delivery.</summary>
+        /// <summary>Releases one owned COM reference after Outlook handoff.</summary>
         internal static Func<object, int> ReleaseReference = Marshal.ReleaseComObject;
 
-        /// <summary>Maintains the open profiles state for crash report delivery.</summary>
+        /// <summary>Opens the current user's Outlook profile registry key, if present.</summary>
         internal static Func<string, IDisposable> OpenProfiles = path => Registry.CurrentUser.OpenSubKey(path);
 
-        /// <summary>Maintains the read profile sub keys state for crash report delivery.</summary>
+        /// <summary>Reads the count of profile subkeys from an opened Outlook registry key.</summary>
         internal static Func<IDisposable, int> ReadProfileSubKeys = profiles => ((RegistryKey)profiles).SubKeyCount;
 
         /// <summary>Counts the profile count maintained by crash report delivery.</summary>
