@@ -8,6 +8,18 @@ namespace VBAi.Tests.Unit
     public sealed class OllamaOfficeUiTests
     {
         [DataTestMethod]
+        [DataRow(0, 11, false)]
+        [DataRow(11, 12, false)]
+        [DataRow(11, 11, true)]
+        public void PendingOrForeignObserverRetainsItsReferences(int original, int current, bool pending)
+            => Assert.ThrowsException<InvalidOperationException>(() =>
+                OllamaOfficeUi.RequireReferenceRelease(original, current, pending));
+
+        [TestMethod]
+        public void OriginalSettledObserverCanDropItsManagedReferences()
+            => OllamaOfficeUi.RequireReferenceRelease(11, 11, false);
+
+        [DataTestMethod]
         [DataRow("pid")]
         [DataRow("thread")]
         [DataRow("sitePid")]

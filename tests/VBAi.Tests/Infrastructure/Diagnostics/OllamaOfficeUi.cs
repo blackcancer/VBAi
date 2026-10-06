@@ -37,6 +37,7 @@ namespace VBAi.Tests.Integration
         [DllImport("user32.dll", CharSet = CharSet.Unicode)] private static extern int GetWindowText(IntPtr hwnd, StringBuilder text, int size);
         private readonly int pid;
         private readonly Action<object> record;
+        private readonly int observerThread = Thread.CurrentThread.ManagedThreadId;
         private IntPtr vbe, chat;
         private IntPtr toolContainer, nativeSite;
         private uint ownerThread;
@@ -406,6 +407,23 @@ namespace VBAi.Tests.Integration
             Wait(() => !IsBusy && Leaf("send").Current.IsEnabled && Leaf("providerPicker").Current.IsEnabled &&
                 Leaf("modePicker").Current.IsEnabled, seconds, "observe terminal assistant UI");
             SentUnsettled = false;
+        }
+
+        /// <summary>Drops the observer's managed UIA references after terminal UI proof, before host shutdown.</summary>
+        internal void ReleaseSettledReferences()
+        {
+            RequireReferenceRelease(observerThread, Thread.CurrentThread.ManagedThreadId, SentUnsettled);
+            fixedControls.Clear();
+            root = null;
+            record(new { Phase = "ObserverReferencesDropped", ObserverThread = observerThread,
+                NativeMutationEntries = 0, NativeRcwReleaseProven = false });
+        }
+
+        /// <summary>Never abandons pending observation or releases another observer's references.</summary>
+        internal static void RequireReferenceRelease(int expectedThread, int currentThread, bool unsettled)
+        {
+            if (expectedThread <= 0 || expectedThread != currentThread || unsettled)
+                throw new InvalidOperationException("The original observer and terminal assistant state are required before reference release.");
         }
 
         internal string[] VisibleTranscript()

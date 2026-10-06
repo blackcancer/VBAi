@@ -135,5 +135,13 @@ namespace VBAi.Tests.Integration
             if (retained) throw new InvalidOperationException("Unsettled assistant retains its exact host; no teardown.");
             fixture.Dispose();
         }
+
+        /// <summary>Collects only settled Word testhost temporaries using the existing owned-host diagnostic.</summary>
+        internal void CollectSettledWordReferences()
+        {
+            if (retained || NativeDispatchUnsettled)
+                throw new InvalidOperationException("Pending native work must retain its references.");
+            (fixture as OfficeVbeFixture)?.CollectSettledWordScopeDiagnostic();
+        }
     }
 }

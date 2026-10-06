@@ -105,6 +105,7 @@ namespace VBAi.Tests.Integration
                         ui.SendOnce(request); ui.WaitIdle(125);
                         ui.Wait(() => ui.VisibleTranscript().Any(text => text.Contains(marker)), 15, "visible unprompted native marker");
                         report["NativeMarkerVisible"] = true; flush();
+                        ui.ReleaseSettledReferences();
                     }
                     catch (Exception error)
                     {
@@ -124,6 +125,7 @@ namespace VBAi.Tests.Integration
                 Assert.AreEqual(sources.Count, host.Items("list_modules").Length);
                 foreach (var source in sources) Assert.AreEqual(source.Value, host.Data("read_module", "Module", source.Key)["Sha256"]);
                 report["SourceAndReferencesUnchanged"] = true;
+                host.CollectSettledWordReferences();
                 report["State"] = "FUNCTIONAL_PASS_PENDING_SHUTDOWN";
                 flush(); // Preserve functional evidence if the native teardown never returns.
             }

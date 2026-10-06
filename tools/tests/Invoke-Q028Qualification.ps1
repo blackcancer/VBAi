@@ -47,7 +47,7 @@ if ($Prepare) {
         'OfficeVbeFixtureDesktopTests','OfficeVbeFixtureDesktopStartupRecoveryTests','OfficeVbeFixtureDesktopAddInConnectionTests','OutlookPrivateDesktopTests',
         'OfficeOwnedShutdownEvidenceTests','OutlookVbaTestFixtureShutdownTests','OllamaOfficeUiTests','OllamaOfficeDesktopTests','ChatStreamReaderTests',
         'ExcelVbeFixtureProjectReadinessTests','OfficeVbeFixtureMainWordDesktopTests','IsolatedTestDesktopMainTests',
-        'VbeProjectHostPathTests','ProjectResolverTests')
+        'VbeProjectHostPathTests','ProjectResolverTests','OfficeVbeFixtureShutdownTests')
     $managedFilter = '(TestCategory=Unit|TestCategory=Scenario)&TestCategory!=OllamaUi&(' +
         (($managedClasses | ForEach-Object {'FullyQualifiedName~VBAi.Tests.Unit.'+$_+'.'}) -join '|') +
         '|FullyQualifiedName~VBAi.Tests.NativeExportTraceTests.)'
@@ -107,6 +107,7 @@ if ($Prepare) {
         Temperature=0;TopP=0.8;ContextLength=8192;NumParallel=1;Device='CPU';CloudDisabled=$true;
         Hosts=$hosts;Scenarios=$scenarios;NoRetry=$true;NoDesktopSwitch=$true;NoForceTerminationOfOffice=$true;
         ToolExecutables=$toolExecutables;
+        ObserverReferencesDroppedBeforeShutdown=$true;WordSettledScopeGc=$true;WordExitWaitMilliseconds=5000;
         BackendShutdown='Stop only the exact newly created synthetic headless Ollama server after requests settle; never call this a normal Office exit';
         FrozenFiles=@($files | Select-Object -Unique | ForEach-Object {@{Path=$_;Sha256=(Get-FileHash -LiteralPath $_).Hash}});
         PreparedUtc=[DateTime]::UtcNow.ToString('o')}
@@ -232,6 +233,7 @@ try {
     }
     for ($i=4;$i -lt $plan.Scenarios.Count;$i++) {
         $env:VBAi_RUN_WORD_MAIN_DESKTOP_TESTS=if($plan.MainDesktopAuthorized -and $plan.Scenarios[$i].Host -eq 'Word'){'1'}else{$null}
+        $env:VBAi_TEST_WORD_SETTLED_SCOPE_GC=if($plan.Scenarios[$i].Host -eq 'Word'){'1'}else{$null}
         foreach ($hostRow in $plan.Hosts) { if (@(Get-Process $hostRow.ProcessName -ErrorAction SilentlyContinue).Count -ne 0) { throw 'A preceding/foreign Office host is live; no next bank.' } }
         $settingsReadback=$load.Invoke($null,@())
         foreach ($field in $settingsFields) { if ($settingsType.GetProperty($field).GetValue($settingsReadback,$null) -cne $settingsApplied[$field]) { throw ('Settings changed before native bank: '+$field) } }
