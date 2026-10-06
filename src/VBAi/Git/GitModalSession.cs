@@ -11,61 +11,61 @@ namespace VBAi
     internal sealed partial class GitModalSession
     {
 
-        /// <summary>Owns the request state and operations.</summary>
+        /// <summary>Immutable import request plus one-shot admission and completion signals.</summary>
         internal sealed class Request
         {
 
-            /// <summary>Identifies the id associated with request.</summary>
+            /// <summary>Unique correlation ID for this modal handoff.</summary>
             internal readonly string Id = Guid.NewGuid().ToString("N");
 
-            /// <summary>Keeps the action and name and text and choice and path and revision path available to request.</summary>
+            /// <summary>Operation payload captured when the user requests a Git import action, including its exact repository revision.</summary>
             internal readonly string Action, Name, Text, Choice, Path, Revision;
 
-            /// <summary>Maintains the references state for request.</summary>
+            /// <summary>Whether the admitted operation may also update project references.</summary>
             internal readonly bool References;
 
-            /// <summary>Maintains the modules state for request.</summary>
+            /// <summary>Defensive copy of selected module names; callers receive a clone.</summary>
             private readonly string[] modules;
 
-            /// <summary>Maintains the revalidate state for request.</summary>
+            /// <summary>Async repository revalidation that runs after the real modal loop returns and before admission.</summary>
             internal readonly Func<Task> Revalidate;
 
-            /// <summary>Maintains the admission state for request.</summary>
+            /// <summary>Completes once when the original modal stack validates or refuses this import.</summary>
             private readonly TaskCompletionSource<bool> admission = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
 
-            /// <summary>Maintains the completion state for request.</summary>
+            /// <summary>Completes after import execution and its terminal UI publication have both finished.</summary>
             private readonly TaskCompletionSource<bool> completion = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
 
-            /// <summary>Gets or sets the phase.</summary>
-            /// <value>Current phase exposed by request.</value>
+            /// <summary>One-way request phase: Prepared, AwaitingModalReturn, Executing, Refused, Succeeded, or Failed.</summary>
+            /// <value>Current phase; admission and completion methods enforce legal transitions.</value>
             internal string Phase { get; private set; } = "Prepared";
 
-            /// <summary>Gets or sets the error.</summary>
-            /// <value>Current error exposed by request.</value>
+            /// <summary>Admission, execution, or terminal-publication failure, if any.</summary>
+            /// <value>The first failure, or an aggregate when both execution and terminal presentation fail.</value>
             internal Exception Error { get; private set; }
 
-            /// <summary>Gets the admission.</summary>
-            /// <value>Current admission exposed by request.</value>
+            /// <summary>Gets the one-shot task that signals import admission or refusal.</summary>
+            /// <value>Task faults with the refusal reason; it does not signal successful execution.</value>
             internal Task Admission => admission.Task;
 
-            /// <summary>Gets the completion.</summary>
-            /// <value>Current completion exposed by request.</value>
+            /// <summary>Gets the task that signals terminal execution and presentation.</summary>
+            /// <value>Task faults when execution or terminal presentation fails.</value>
             internal Task Completion => completion.Task;
 
-            /// <summary>Gets the modules.</summary>
-            /// <value>Current modules exposed by request.</value>
+            /// <summary>Gets a defensive copy of selected module names.</summary>
+            /// <value>A new array that cannot mutate the request's captured selection.</value>
             internal string[] Modules => (string[])modules.Clone();
 
-            /// <summary>Initializes a Request instance with the supplied state.</summary>
-            /// <param name="action">Text that supplies the action value. Use the format required by the calling operation.</param>
-            /// <param name="name">Text that supplies the name value. Use the format required by the calling operation.</param>
-            /// <param name="text">Text that supplies the text value. Use the format required by the calling operation.</param>
-            /// <param name="choice">Text that supplies the choice value. Use the format required by the calling operation.</param>
-            /// <param name="path">Path used for the path being processed.</param>
-            /// <param name="selected">string[] that supplies the selected for this operation.</param>
-            /// <param name="references">Indicates whether references is enabled.</param>
-            /// <param name="revision">Text that supplies the revision value. Use the format required by the calling operation.</param>
-            /// <param name="revalidate">func&lt;task&gt; that supplies the revalidate for this operation.</param>
+            /// <summary>Captures the payload for a revision-bound native import handoff.</summary>
+            /// <param name="action">Import action accepted by <see cref="RequiresHandoff"/>.</param>
+            /// <param name="name">Optional target branch, module, or checkpoint name used by the action.</param>
+            /// <param name="text">Optional user-provided action text such as a commit message.</param>
+            /// <param name="choice">Action-specific selected choice.</param>
+            /// <param name="path">Repository or target path captured by the Git window.</param>
+            /// <param name="selected">Selected module names; copied to prevent later caller mutation.</param>
+            /// <param name="references"><see langword="true"/> when the import should include reference updates.</param>
+            /// <param name="revision">Exact repository revision against which the operation was prepared; required and non-empty.</param>
+            /// <param name="revalidate">Optional asynchronous check run after modal return, before the final owner validation.</param>
             internal Request(string action, string name, string text, string choice, string path, string[] selected, bool references, string revision, Func<Task> revalidate = null)
             {
                 if (!RequiresHandoff(action) || string.IsNullOrWhiteSpace(revision)) throw new ArgumentException("An import request and exact revision are required.");
@@ -74,15 +74,15 @@ namespace VBAi
                 Revalidate = revalidate ?? (() => Task.CompletedTask);
             }
 
-            /// <summary>Handles queue for request.</summary>
+            /// <summary>Moves a prepared request to the modal-return wait state.</summary>
             internal void Queue()
             {
                 if (Phase != "Prepared") throw new InvalidOperationException("An import request can be queued only once.");
                 Phase = "AwaitingModalReturn";
             }
 
-            /// <summary>Releases  for request.</summary>
-            /// <param name="validate">action that supplies the validate for this operation.</param>
+            /// <summary>Admits the import only after its caller-provided owner/revision validation succeeds.</summary>
+            /// <param name="validate">Synchronous final check executed before the request enters Executing.</param>
             internal void Release(Action validate)
             {
                 if (Phase != "AwaitingModalReturn") throw new InvalidOperationException("An import request can be admitted only once.");
@@ -90,17 +90,17 @@ namespace VBAi
                 catch (Exception error) { Reject(error); }
             }
 
-            /// <summary>Handles reject for request.</summary>
-            /// <param name="error">Exception describing the error failure.</param>
+            /// <summary>Refuses a request that has not yet crossed its admission boundary.</summary>
+            /// <param name="error">Reason the modal return, owner, revision, or revalidation could not be accepted.</param>
             internal void Reject(Exception error)
             {
                 if (Phase != "AwaitingModalReturn") throw new InvalidOperationException("Cannot reject an import already admitted.");
                 Error = error; Phase = "Refused"; admission.SetException(error);
             }
 
-            /// <summary>Handles complete for request.</summary>
-            /// <param name="error">Exception describing the error failure.</param>
-            /// <param name="publish">action that supplies the publish for this operation.</param>
+            /// <summary>Publishes one terminal result and resolves completion; a publication failure is retained with the operation error.</summary>
+            /// <param name="error">Execution error, or null after successful execution.</param>
+            /// <param name="publish">Optional UI terminal-state publisher invoked exactly once.</param>
             internal void Complete(Exception error, Action publish = null)
             {
                 if (Phase != "Executing" && Phase != "Refused") throw new InvalidOperationException("No admitted or refused request can complete twice.");
@@ -114,37 +114,36 @@ namespace VBAi
             }
         }
 
-        /// <summary>Maintains the show and validate owner state for git modal session.</summary>
+        /// <summary>Actual modal display and original-owner validator supplied by the session creator.</summary>
         private readonly Action show, validateOwner;
 
-        /// <summary>Maintains the pending state for git modal session.</summary>
+        /// <summary>Single import request queued while the actual modal call is active.</summary>
         private Request pending;
 
-        /// <summary>Maintains the active state for git modal session.</summary>
+        /// <summary>Request admitted by the modal return stack and currently executing outside that loop.</summary>
         private Request active;
 
-        /// <summary>Maintains the inside modal and started and finished state for git modal session.</summary>
+        /// <summary>Guards against duplicate starts and distinguishes the modal stack from post-return import execution.</summary>
         private bool insideModal, started, finished;
 
-        /// <summary>Identifies the id associated with git modal session.</summary>
+        /// <summary>Unique identity for this exact owner-bound modal session.</summary>
         internal readonly string Id = Guid.NewGuid().ToString("N");
 
-        /// <summary>Initializes a GitModalSession instance with the supplied state.</summary>
-        /// <param name="show">action that supplies the show for this operation.</param>
-        /// <param name="validateOwner">action that supplies the validate owner for this operation.</param>
+        /// <summary>Creates a one-shot modal runner for one Git window and its captured owner.</summary>
+        /// <param name="show">Synchronous modal call; only its returning stack can attest modal completion.</param>
+        /// <param name="validateOwner">Check that the original HWND, process generation, thread, and enabled state remain valid.</param>
         internal GitModalSession(Action show, Action validateOwner)
         { this.show = show ?? throw new ArgumentNullException(nameof(show)); this.validateOwner = validateOwner ?? throw new ArgumentNullException(nameof(validateOwner)); }
 
-        /// <summary>Requires s handoff for git modal session.</summary>
-        /// <param name="action">Text that supplies the action value. Use the format required by the calling operation.</param>
-        /// <returns>Boolean indicating the result of the check for requires handoff on git modal session.</returns>
+        /// <summary>Identifies native-changing Git actions that require the post-modal admission handoff.</summary>
+        /// <param name="action">Git operation identifier.</param>
+        /// <returns><see langword="true"/> for checkpoint restore, branch switch, module restore, pull, merge completion, and rollback.</returns>
         internal static bool RequiresHandoff(string action) => action == "checkpoint_restore" || action == "branch_switch" ||
             action == "module_restore" || action == "pull" || action == "merge_complete" || action == "rollback";
 
-        /// <summary>Handles queue for git modal session.</summary>
-        /// <param name="request">request that supplies the request for this operation.</param>
-        /// <param name="leaveModal">action that supplies the leave modal for this operation.</param>
-        /// <returns>task produced by the operation for queue on git modal session.</returns>
+        /// <summary>Queues exactly one import request from the live modal, then asks its callback to return the dialog.</summary>
+        /// <param name="request">Prepared revision-bound import request.</param><param name="leaveModal">Dialog-close action invoked after the request is queued.</param>
+        /// <returns>The task that completes when the modal-return stack admits or refuses the request.</returns>
         internal Task Queue(Request request, Action leaveModal)
         {
             if (!insideModal || finished || pending != null || request == null) throw new InvalidOperationException("No unique live modal can accept this request.");
@@ -155,7 +154,7 @@ namespace VBAi
         }
 
         /// <summary>Only this stack frame can attest return from show; posted callbacks cannot release admission.</summary>
-        /// <returns>task produced by the operation for run async on git modal session.</returns>
+        /// <returns>A task for the modal loop and any admitted operation; failures are propagated without retrying the import.</returns>
         internal async Task RunAsync()
         {
             if (started) throw new InvalidOperationException("One modal session only.");
@@ -204,7 +203,7 @@ namespace VBAi
         }
 
         /// <summary>Requires import owner for git modal session.</summary>
-        /// <param name="request">request that supplies the request for this operation.</param>
+        /// <param name="request">Exact request currently admitted by this session.</param>
         internal void RequireImportOwner(Request request)
         {
             if (insideModal || finished || !ReferenceEquals(active, request) || request == null || request.Phase != "Executing")
@@ -212,11 +211,10 @@ namespace VBAi
             validateOwner();
         }
 
-        /// <summary>Handles show async for git modal session.</summary>
-        /// <param name="window">git window that supplies the window for this operation.</param>
-        /// <param name="owner">i win32 window that supplies the owner for this operation.</param>
-        /// <param name="show">func&lt;form, i win32 window, dialog result&gt; that supplies the show for this operation.</param>
-        /// <returns>task produced by the operation for show async on git modal session.</returns>
+        /// <summary>Shows a Git window under a unique lease tied to the supplied native owner.</summary>
+        /// <param name="window">Git dialog to show.</param><param name="owner">Original native owner whose HWND and thread are validated.</param>
+        /// <param name="show">Modal display route, normally Form.ShowDialog.</param>
+        /// <returns>A task completed after the modal session and any handoff have finished.</returns>
         internal static async Task ShowAsync(GitWindow window, IWin32Window owner, Func<Form, IWin32Window, DialogResult> show)
         {
             using (var lease = TryAcquire(owner))
@@ -226,9 +224,9 @@ namespace VBAi
             }
         }
 
-        /// <summary>Captures owner for git modal session.</summary>
-        /// <param name="owner">i win32 window that supplies the owner for this operation.</param>
-        /// <returns>action produced by the operation for capture owner on git modal session.</returns>
+        /// <summary>Captures the owner HWND, process generation, and STA thread, returning a closure that rechecks them later.</summary>
+        /// <param name="owner">Native window that owns this Git modal session.</param>
+        /// <returns>Validator for the exact captured HWND and process generation.</returns>
         private static Action CaptureOwner(IWin32Window owner)
         {
             if (Thread.CurrentThread.GetApartmentState() != ApartmentState.STA)
@@ -250,12 +248,10 @@ namespace VBAi
             return validate;
         }
 
-        /// <summary>Handles show owned async for git modal session.</summary>
-        /// <param name="window">git window that supplies the window for this operation.</param>
-        /// <param name="owner">i win32 window that supplies the owner for this operation.</param>
-        /// <param name="show">func&lt;form, i win32 window, dialog result&gt; that supplies the show for this operation.</param>
-        /// <param name="validate">action that supplies the validate for this operation.</param>
-        /// <returns>task produced by the operation for show owned async on git modal session.</returns>
+        /// <summary>Attaches a fresh modal session, runs it on the owner STA, and detaches it on every completion path.</summary>
+        /// <param name="window">Git form participating in the one-shot handoff.</param><param name="owner">Native owner passed to the modal display route.</param>
+        /// <param name="show">Synchronous modal display function.</param><param name="validate">Captured owner validator.</param>
+        /// <returns>A task completed after modal return and request processing.</returns>
         private static Task ShowOwnedAsync(GitWindow window, IWin32Window owner, Func<Form, IWin32Window, DialogResult> show, Action validate)
         {
             if (window == null || show == null) throw new ArgumentNullException("Modal session dependencies");
@@ -270,16 +266,12 @@ namespace VBAi
             }
         }
 
-        /// <summary>Requires owner for git modal session.</summary>
-        /// <param name="pid">uint that supplies the pid for this operation.</param>
-        /// <param name="tid">uint that supplies the tid for this operation.</param>
-        /// <param name="current">uint that supplies the current for this operation.</param>
-        /// <param name="handle">Native handle that supplies the handle for this operation.</param>
-        /// <param name="actualPid">uint that supplies the actual pid for this operation.</param>
-        /// <param name="actualTid">uint that supplies the actual tid for this operation.</param>
-        /// <param name="currentNow">uint that supplies the current now for this operation.</param>
-        /// <param name="exists">Indicates whether exists is enabled.</param>
-        /// <param name="enabled">Indicates whether enabled is enabled.</param>
+        /// <summary>Requires the same live, enabled HWND, process, and STA thread captured before modal display.</summary>
+        /// <param name="pid">Original owner process ID.</param><param name="tid">Original owner thread ID.</param>
+        /// <param name="current">Calling native thread ID captured before display.</param><param name="handle">Original owner HWND.</param>
+        /// <param name="actualPid">Process currently owning the HWND.</param><param name="actualTid">Thread currently owning the HWND.</param>
+        /// <param name="currentNow">Calling native thread ID at revalidation.</param><param name="exists">Whether the HWND is still valid.</param>
+        /// <param name="enabled">Whether the owner window accepts input.</param>
         internal static void RequireOwner(uint pid, uint tid, uint current, IntPtr handle, uint actualPid, uint actualTid,
             uint currentNow, bool exists, bool enabled)
         {
@@ -288,24 +280,20 @@ namespace VBAi
                 throw new InvalidOperationException("The exact original Git owner must be enabled on its owning STA after modal return.");
         }
 
-        /// <summary>Returns window thread process id for git modal session.</summary>
-        /// <param name="hwnd">Native handle that supplies the hwnd for this operation.</param>
-        /// <param name="pid">uint that supplies the pid for this operation.</param>
-        /// <returns>uint produced by the operation for get window thread process id on git modal session.</returns>
+        /// <summary>Reads the process and thread that own a native window handle.</summary>
+        /// <param name="hwnd">Window whose owner is queried.</param><param name="pid">Receives the owning process ID.</param>
+        /// <returns>Owning thread ID.</returns>
         [DllImport("user32.dll")] private static extern uint GetWindowThreadProcessId(IntPtr hwnd, out uint pid);
 
-        /// <summary>Returns current thread id for git modal session.</summary>
-        /// <returns>uint produced by the operation for get current thread id on git modal session.</returns>
+        /// <summary>Reads the native ID of the calling Windows thread.</summary><returns>Current native thread ID.</returns>
         [DllImport("kernel32.dll")] private static extern uint GetCurrentThreadId();
 
-        /// <summary>Determines whether window for git modal session.</summary>
-        /// <param name="hwnd">Native handle that supplies the hwnd for this operation.</param>
-        /// <returns>Boolean indicating the result of the check for is window on git modal session.</returns>
+        /// <summary>Checks whether an HWND still refers to a live native window.</summary>
+        /// <param name="hwnd">Window handle to validate.</param><returns><see langword="true"/> when the handle is valid.</returns>
         [DllImport("user32.dll")] private static extern bool IsWindow(IntPtr hwnd);
 
-        /// <summary>Determines whether window enabled for git modal session.</summary>
-        /// <param name="hwnd">Native handle that supplies the hwnd for this operation.</param>
-        /// <returns>Boolean indicating the result of the check for is window enabled on git modal session.</returns>
+        /// <summary>Checks whether the native owner window currently accepts user input.</summary>
+        /// <param name="hwnd">Window handle to inspect.</param><returns><see langword="true"/> when the window is enabled.</returns>
         [DllImport("user32.dll")] private static extern bool IsWindowEnabled(IntPtr hwnd);
     }
 }

@@ -243,106 +243,97 @@ internal int X, Y; }
         /// <summary>Draws the native focus rectangle for a tab item.</summary><param name="dc">Device context.</param><param name="bounds">Focus bounds.</param><returns>Native drawing result.</returns>
         [DllImport("user32.dll")] private static extern bool DrawFocusRect(IntPtr dc, ref Rect bounds);
 
-        /// <summary>Defines the window thread reader callback.</summary>
-        /// <param name="window">Native handle that supplies the window for this operation.</param>
-        /// <param name="process">uint that supplies the process for this operation.</param>
-        /// <returns>uint produced by the operation for operation on vbe native property tabs.</returns>
+        /// <summary>Reads the owner thread and process of a native tab control.</summary>
+        /// <param name="window">Tab-control HWND.</param><param name="process">Receives the owning process identifier.</param>
+        /// <returns>Owning thread identifier.</returns>
         internal delegate uint WindowThreadReader(IntPtr window, out uint process);
 
-        /// <summary>Defines the rect reader callback.</summary>
-        /// <param name="window">Native handle that supplies the window for this operation.</param>
-        /// <param name="rectangle">rect that supplies the rectangle for this operation.</param>
-        /// <returns>Boolean indicating the result of the check for operation on vbe native property tabs.</returns>
+        /// <summary>Reads native client or outer bounds through an injectable API boundary.</summary>
+        /// <param name="window">HWND whose rectangle is requested.</param><param name="rectangle">Receives coordinates in the selected API space.</param>
+        /// <returns><see langword="true"/> when the rectangle was read.</returns>
         internal delegate bool RectReader(IntPtr window, out Rect rectangle);
 
-        /// <summary>Defines the screen point reader callback.</summary>
-        /// <param name="window">Native handle that supplies the window for this operation.</param>
-        /// <param name="point">point that supplies the point for this operation.</param>
-        /// <returns>Boolean indicating the result of the check for operation on vbe native property tabs.</returns>
+        /// <summary>Converts a client point to screen coordinates for native tab hit testing.</summary>
+        /// <param name="window">HWND defining the client coordinate space.</param><param name="point">Input point replaced by the converted position.</param>
+        /// <returns><see langword="true"/> when conversion succeeds.</returns>
         internal delegate bool ScreenPointReader(IntPtr window, ref Point point);
 
-        /// <summary>Defines the item reader callback.</summary>
-        /// <param name="window">Native handle that supplies the window for this operation.</param>
-        /// <param name="message">uint that supplies the message for this operation.</param>
-        /// <param name="index">Native handle that supplies the index for this operation.</param>
-        /// <param name="item">tab item that supplies the item for this operation.</param>
-        /// <returns>int ptr produced by the operation for operation on vbe native property tabs.</returns>
+        /// <summary>Sends a tab-control item query and receives the requested tab metadata.</summary>
+        /// <param name="window">Native tab-control HWND.</param><param name="message">TCM_* query message.</param>
+        /// <param name="index">Zero-based tab item index encoded as a native value.</param><param name="item">Initialized item structure receiving the result.</param>
+        /// <returns>Native message result.</returns>
         internal delegate IntPtr ItemReader(IntPtr window, uint message, IntPtr index, ref TabItem item);
 
-        /// <summary>Defines the item rect reader callback.</summary>
-        /// <param name="window">Native handle that supplies the window for this operation.</param>
-        /// <param name="message">uint that supplies the message for this operation.</param>
-        /// <param name="index">Native handle that supplies the index for this operation.</param>
-        /// <param name="rectangle">rect that supplies the rectangle for this operation.</param>
-        /// <returns>int ptr produced by the operation for operation on vbe native property tabs.</returns>
+        /// <summary>Queries a tab item's native bounds by sending its rectangle message.</summary>
+        /// <param name="window">Native tab-control HWND.</param><param name="message">Tab rectangle query message.</param>
+        /// <param name="index">Zero-based tab item index.</param><param name="rectangle">Receives the item rectangle.</param>
+        /// <returns>Native message result.</returns>
         internal delegate IntPtr ItemRectReader(IntPtr window, uint message, IntPtr index, out Rect rectangle);
 
-        /// <summary>Defines the paint beginner callback.</summary>
-        /// <param name="window">Native handle that supplies the window for this operation.</param>
-        /// <param name="state">paint state that supplies the state for this operation.</param>
-        /// <returns>int ptr produced by the operation for operation on vbe native property tabs.</returns>
+        /// <summary>Begins painting the native tab control and captures its update region and device context.</summary>
+        /// <param name="window">Tab-control HWND receiving WM_PAINT.</param><param name="state">Receives the native paint state that must later be completed.</param>
+        /// <returns>Paint device context, or zero when no paint context is available.</returns>
         internal delegate IntPtr PaintBeginner(IntPtr window, out PaintState state);
 
-        /// <summary>Defines the paint ender callback.</summary>
-        /// <param name="window">Native handle that supplies the window for this operation.</param>
-        /// <param name="state">paint state that supplies the state for this operation.</param>
-        /// <returns>Boolean indicating the result of the check for operation on vbe native property tabs.</returns>
+        /// <summary>Completes a paint operation started for the same native tab control.</summary>
+        /// <param name="window">Tab-control HWND passed to the corresponding begin call.</param><param name="state">Paint state returned by that call.</param>
+        /// <returns><see langword="true"/> when Windows accepts the completion.</returns>
         internal delegate bool PaintEnder(IntPtr window, ref PaintState state);
 
-        /// <summary>Defines the mouse tracker callback.</summary>
-        /// <param name="state">track mouse that supplies the state for this operation.</param>
-        /// <returns>Boolean indicating the result of the check for operation on vbe native property tabs.</returns>
+        /// <summary>Requests a native mouse-leave notification for hover tracking.</summary>
+        /// <param name="state">Initialized tracking structure naming the target HWND and event.</param>
+        /// <returns><see langword="true"/> when tracking was registered.</returns>
         internal delegate bool MouseTracker(ref TrackMouse state);
 
-        /// <summary>Maintains the class name state for vbe native property tabs.</summary>
+        /// <summary>Injectable native class-name reader used to reject unsupported tab controls.</summary>
         internal static Func<IntPtr, StringBuilder, int, int> ClassName = GetClassName;
 
-        /// <summary>Maintains the style state for vbe native property tabs.</summary>
+        /// <summary>Injectable style-bit reader used to validate owner-draw and orientation constraints.</summary>
         internal static Func<IntPtr, int, int> Style = GetStyle;
 
-        /// <summary>Maintains the window thread state for vbe native property tabs.</summary>
+        /// <summary>Injectable owner-thread query used to keep painting on the tab control's native thread.</summary>
         internal static WindowThreadReader WindowThread = GetWindowThreadProcessId;
 
-        /// <summary>Maintains the current thread state for vbe native property tabs.</summary>
+        /// <summary>Injectable current-thread ID source used for owner-thread checks.</summary>
         internal static Func<uint> CurrentThread = GetCurrentThreadId;
 
-        /// <summary>Maintains the valid window and visible window and enabled window state for vbe native property tabs.</summary>
+        /// <summary>Injectable window-validity, visibility, and enabled-state checks for candidate HWNDs.</summary>
         internal static Func<IntPtr, bool> ValidWindow = IsWindow, VisibleWindow = IsWindowVisible, EnabledWindow = IsWindowEnabled;
 
-        /// <summary>Maintains the focus state for vbe native property tabs.</summary>
+        /// <summary>Injectable native focus query used to draw the correct focused tab state.</summary>
         internal static Func<IntPtr> Focus = GetFocus;
 
-        /// <summary>Maintains the client bounds and window bounds state for vbe native property tabs.</summary>
+        /// <summary>Injectable readers for client coordinates and outer-window coordinates.</summary>
         internal static RectReader ClientBounds = GetClientRect, WindowBounds = GetWindowRect;
 
-        /// <summary>Maintains the screen point state for vbe native property tabs.</summary>
+        /// <summary>Injectable conversion from a tab-control client point to screen coordinates.</summary>
         internal static ScreenPointReader ScreenPoint = ClientToScreen;
 
-        /// <summary>Maintains the related window state for vbe native property tabs.</summary>
+        /// <summary>Injectable owner/sibling window query used to validate native tab relationships.</summary>
         internal static Func<IntPtr, uint, IntPtr> RelatedWindow = GetWindow;
 
-        /// <summary>Maintains the send message state for vbe native property tabs.</summary>
+        /// <summary>Injectable synchronous native message route for tab-control queries.</summary>
         internal static Func<IntPtr, uint, IntPtr, IntPtr, IntPtr> SendMessage = Send;
 
-        /// <summary>Maintains the read item state for vbe native property tabs.</summary>
+        /// <summary>Injectable query for native tab-item text and state.</summary>
         internal static ItemReader ReadItem = SendItem;
 
-        /// <summary>Maintains the read item rect state for vbe native property tabs.</summary>
+        /// <summary>Injectable query for native tab-item bounds.</summary>
         internal static ItemRectReader ReadItemRect = SendRect;
 
-        /// <summary>Maintains the start paint state for vbe native property tabs.</summary>
+        /// <summary>Injectable BeginPaint route that supplies the update region for rendering.</summary>
         internal static PaintBeginner StartPaint = BeginPaint;
 
-        /// <summary>Maintains the finish paint state for vbe native property tabs.</summary>
+        /// <summary>Injectable EndPaint route paired with <see cref="StartPaint"/>.</summary>
         internal static PaintEnder FinishPaint = EndPaint;
 
-        /// <summary>Maintains the invalidate state for vbe native property tabs.</summary>
+        /// <summary>Injectable invalidation route for a native tab control's client rectangle.</summary>
         internal static Func<IntPtr, IntPtr, bool, bool> Invalidate = InvalidateRect;
 
-        /// <summary>Maintains the update state for vbe native property tabs.</summary>
+        /// <summary>Injectable immediate update route that dispatches the pending paint message.</summary>
         internal static Func<IntPtr, bool> Update = UpdateWindow;
 
-        /// <summary>Maintains the track state for vbe native property tabs.</summary>
+        /// <summary>Injectable mouse-leave tracking route for native hover rendering.</summary>
         internal static MouseTracker Track = TrackMouseEvent;
 
         /// <summary>Creates a renderer tied to the thread that owns the native tab control.</summary>

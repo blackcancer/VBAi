@@ -73,25 +73,25 @@ namespace VBAi
         /// <value><see langword="true"/> while the renderer's start/stop state is active.</value>
         internal static bool Active => active;
 
-        /// <summary>Maintains the supports loader host state for vbe native renderer.</summary>
+        /// <summary>Capability predicate for the architecture supported by the embedded native hook payload.</summary>
         internal static Func<bool> SupportsLoaderHost = () => Environment.Is64BitProcess;
 
-        /// <summary>Maintains the open payload state for vbe native renderer.</summary>
+        /// <summary>Opens the renderer DLL bytes embedded in this assembly.</summary>
         internal static Func<Stream> OpenPayload = () => typeof(VbeNativeRenderer).Assembly.GetManifestResourceStream(ResourceName);
 
-        /// <summary>Maintains the cache root state for vbe native renderer.</summary>
+        /// <summary>Per-user directory used to extract the versioned native renderer payload.</summary>
         internal static string CacheRoot = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "VBAi", "native-renderer");
 
-        /// <summary>Maintains the move payload state for vbe native renderer.</summary>
+        /// <summary>File move route used to publish a fully written renderer payload into its cache location.</summary>
         internal static Action<string, string> MovePayload = File.Move;
 
-        /// <summary>Maintains the load module state for vbe native renderer.</summary>
+        /// <summary>Loads the extracted native DLL with the configured search flags.</summary>
         internal static Func<string, IntPtr, uint, IntPtr> LoadModule = LoadLibraryEx;
 
-        /// <summary>Maintains the find export state for vbe native renderer.</summary>
+        /// <summary>Resolves a named entry point from the loaded native DLL.</summary>
         internal static Func<IntPtr, string, IntPtr> FindExport = GetProcAddress;
 
-        /// <summary>Maintains the release module state for vbe native renderer.</summary>
+        /// <summary>Unloads the native module acquired through <see cref="LoadModule"/>.</summary>
         internal static Func<IntPtr, bool> ReleaseModule = FreeLibrary;
 
         /// <summary>Loads the embedded renderer and starts its hooks for the VBE editor window.</summary>

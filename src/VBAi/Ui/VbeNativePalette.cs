@@ -29,10 +29,10 @@ namespace VBAi
         /// <summary>Version-specific file that stores the original palette for recovery.</summary>
         private readonly string path;
 
-        /// <summary>Maintains the change state for vbe native palette.</summary>
+        /// <summary>Palette transaction route; receives the VBE, requested apply/restore state, and recovery file path.</summary>
         private readonly Action<object, bool, string> change;
 
-        /// <summary>Maintains the report failure state for vbe native palette.</summary>
+        /// <summary>Failure handler called after a palette transaction throws.</summary>
         private readonly Action<Exception> reportFailure;
 
         /// <summary>Latest requested apply or restore state.</summary>
@@ -47,12 +47,12 @@ namespace VBAi
         /// <summary>Process-wide guard against overlapping modal palette transactions.</summary>
         private static int updateInProgress;
 
-        /// <summary>Initializes a VbeNativePalette instance with the supplied state.</summary>
-        /// <param name="vbe">object that supplies the vbe for this operation.</param>
-        /// <param name="editor">Native handle that supplies the editor for this operation.</param>
-        /// <param name="recoveryPath">Path used for the recovery path being processed.</param>
-        /// <param name="change">action&lt;object, bool, string&gt; that supplies the change for this operation.</param>
-        /// <param name="reportFailure">Exception describing the report failure failure.</param>
+        /// <summary>Creates a deferred palette updater for one visible VBE instance and its version-specific recovery state.</summary>
+        /// <param name="vbe">VBE automation object whose native Options dialog owns the palette.</param>
+        /// <param name="editor">Main editor HWND used to wait until the host can safely show a modal dialog.</param>
+        /// <param name="recoveryPath">Optional durable palette-state file; defaults to a per-user, VBE-version-specific path.</param>
+        /// <param name="change">Optional transaction implementation, receiving the VBE, desired state, and recovery path.</param>
+        /// <param name="reportFailure">Optional handler for transaction failures.</param>
         internal VbeNativePalette(object vbe, IntPtr editor, string recoveryPath = null,
             Action<object, bool, string> change = null, Action<Exception> reportFailure = null)
         {
@@ -107,8 +107,8 @@ namespace VBAi
             }
         }
 
-        /// <summary>Handles show failure for vbe native palette.</summary>
-        /// <param name="error">Exception describing the error failure.</param>
+        /// <summary>Shows a localized warning that directs the user to the log for native palette failure details.</summary>
+        /// <param name="error">Transaction failure whose base message is displayed.</param>
         private static void ShowFailure(Exception error)
         {
             MessageBox.Show(UiText.Get("Native editor colors could not be updated. See the log for details.") +
@@ -126,11 +126,11 @@ namespace VBAi
             Change(version, enabled, recoveryPath, update => VbeNativePaletteDialog.Visit(vbe, update));
         }
 
-        /// <summary>Handles change for vbe native palette.</summary>
-        /// <param name="version">Text that supplies the version value. Use the format required by the calling operation.</param>
-        /// <param name="enabled">Indicates whether enabled is enabled.</param>
-        /// <param name="recoveryPath">Path used for the recovery path being processed.</param>
-        /// <param name="visit">color row[]&gt; that supplies the visit for this operation.</param>
+        /// <summary>Serializes a VBE palette transaction, rebases saved originals over manual changes, and verifies values after reopening Options.</summary>
+        /// <param name="version">VBE version string used to validate the recovery record.</param>
+        /// <param name="enabled"><see langword="true"/> to apply the dark palette; <see langword="false"/> to restore the captured original.</param>
+        /// <param name="recoveryPath">Durable recovery file path; its sibling lock file excludes concurrent transactions.</param>
+        /// <param name="visit">Reads color rows and optionally returns replacement rows through the owned Options dialog.</param>
         internal static void Change(string version, bool enabled, string recoveryPath,
             Func<Func<VbeNativePaletteState.ColorRow[], VbeNativePaletteState.ColorRow[]>, VbeNativePaletteState.ColorRow[]> visit)
         {
