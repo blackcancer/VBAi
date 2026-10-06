@@ -1,5 +1,83 @@
 # Recorded validation
 
+## Q024 Word and Q027 UserForm scoped qualification (2026-10-06)
+
+**Qualified for the complete prepared Q024/Q027 operation matrix on the real
+`WinSta0\Default` desktop.** The frozen source is
+`c593d6af08582d4facbc9d3bd2532550ea35cef9`, product MVID
+`0f1e0112-39dd-4f8e-b3a3-44d45954bb9a`, SHA-256
+`336F6F7CA0635216D4C2339CE0D8DC12A320B9A286146413760950F8CED41E66`.
+The isolated solution build completed without warnings or errors. Qualification
+belongs to these bytes; a later documentation commit, merge or rebuild does not
+inherit native acceptance automatically.
+
+| Exact-candidate validation | Result |
+| --- | --- |
+| Complete default managed suite | 5,617 passed, 0 failed, 234 skipped; both original workers exited normally and private desktops were released |
+| Synthetic UI matrix | All nine prepared actions passed |
+| Q024 real Word workflows | Three passed: canonical same-name document isolation/stale SaveAs refusal; installed owner capture/checkpoint/compare; actual Chat-Git entry and known modal closure |
+| Q024 host lifecycle | All three original Word processes exited normally |
+| Q027 persisted native baselines | All twelve prepared layouts passed |
+| Q027 installed owner checkpoint import | All twelve prepared layouts passed |
+| Q027 one-save and fresh-process persistence after owner import | All twelve prepared layouts passed |
+| Q027 installed owner local checkpoint/backup/interruption/rollback/reopen | All twelve prepared layouts passed |
+| Q027 invalid-resource preflight | All three Missing, Empty and SignatureCorrupt cases refused before mutation, with unchanged sentinel resources, native state, disk and recovery state |
+| Q027 authenticated exact remote | One private fixture push/fetch/owner-import/save/fresh-read-only-reopen scenario passed; production macros and repository main were untouched |
+| Q027 aggregate | All 52 prepared scenarios passed; each of the six banks invoked once; original coordinator exit code 0 |
+| Q027 independent lifecycle audit | All 78 original Excel normal exits proved within the unchanged 10,000 ms bound; no replay or forced termination |
+| Q027 owner evidence | 24 installed import/persistence raw reports and 40 recovery/remote owner steps: 37 admitted mutations and three proved prewrite refusals |
+| Q027 actual designer pixel review | All 80 indexed captures inspected in ten contact sheets; full originals 43 and 46 also inspected |
+| Temporary registration and campaign release | Exact original HKCU Registry64 COM state restored and verified; owned completed task removed; no Word or Excel process remained |
+| Pure verifier regressions | 13 aggregation cases, eight reflection cases, five owner-role positives and ten negatives passed; both historical singleton failures reproduced |
+| Coverage collection | Not run; no line or branch percentage claimed |
+
+The prepared layouts are LabelButton, TextBox, ComboBox, ListBox, CheckBox,
+OptionButton, ToggleButton, ScrollBar, SpinButton, TabStrip, Image and
+FrameMultiPage. Strict transport/readback checks retain source and raw FRM/FRX
+resources, complete collections and parent relationships, native properties and
+font descriptors, unchanged snapshot stability, meaningful-change detection,
+backup/interruption/rollback, and saved/fresh-process persistence. Frame font
+8.27 is not rounded. All native mutations retain the installed owning process,
+original host generation and native STA checks.
+
+Evidence roots are `artifacts/q27g3/` (managed prerequisite),
+`artifacts/q24p3/` (Word) and `artifacts/q27p4/` (Excel). The final
+`q27p4/qualification.json` binds the original frozen plan, independent strict
+audit, actual `designer-review/visual-review.json`, Word receipt, exact registry
+restoration and owned task removal. The strict audit independently verifies
+physical resources and owner intent/mutation/terminal chains; a cleanup trace
+or an observer response alone is not host-exit proof.
+
+The final `q27p4/completion-audit.json` checks the declared requirements against
+the physical receipts and exact data rows. A separate read-only limited
+interactive observer confirms the original HKCU fingerprint, task absence and
+free Office hosts in `completion-release-state.json`; its completed observation
+task is also removed. The terminal caller's registry view differs, as already
+shown by the pre-native previews. Its mismatched comparison is retained as a
+context-specific failure, not classified as a failed interactive restoration.
+
+The earlier `q27p3` aggregate remains failed: its native banks passed but its
+original coordinator exited with an aggregation error. The fresh `q27p4`
+coordinator completed normally. Its original pre-native strict auditor then
+failed on PowerShell reflection boxing; the first amended auditor failed on
+singleton-array collapse. Both failures are retained. Separate, sealed
+**post-native verifier amendments** unbox reflection arguments and retain role
+arrays; they change neither native oracles nor frozen native inputs and perform
+no native replay. The successful strict auditor is version 7. Its amendment
+manifest explicitly records `PreparedBeforeNative=false`, `NativeReplay=false`
+and `NativeOraclesChanged=false`. The final owner-role proof uses the sealed
+test's complete bytes; the earlier sealed proof had fewer negative cases and
+remains unchanged.
+
+Pixel review establishes the visible prepared controls and containers. Some
+reopened tall forms have unused lower grid clipped by the MDI viewport; tested
+controls remain visible. Installed owner construction captures precede import:
+**owner restoration is proved by raw resources and native readbacks, not by
+post-import visual evidence**. Pixels do not measure exact font sizes or hidden
+collections. Chat panel appearance, native RCW release, Word templates/arbitrary
+SaveAs or cancellation paths, other hosts and release-wide acceptance are not
+inferred. The historical checkpoints below retain their original outcomes.
+
 ## Q027 owner-plan managed prerequisite failure (2026-10-06)
 
 Frozen source `44d83a5570abc8289cb83cc2866ec0125bb5caea`, product MVID
