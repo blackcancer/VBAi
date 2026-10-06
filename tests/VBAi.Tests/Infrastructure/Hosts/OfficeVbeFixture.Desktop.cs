@@ -31,11 +31,12 @@ namespace VBAi.Tests.Integration
         internal static string RequirePrivateOfficeExecutable(string kind, string desktop, string executable)
         {
             IsolatedTestDesktop.RequireName(desktop);
-            if (kind != "Access" && kind != "Publisher")
-                throw new InvalidOperationException("The private Office bootstrap supports only Access and Publisher; no COM activation fallback is permitted.");
+            if (kind != "Access" && kind != "Publisher" && kind != "PowerPoint")
+                throw new InvalidOperationException("The private Office bootstrap supports Access, Publisher and PowerPoint; no COM activation fallback is permitted.");
+            string expectedName = kind == "Access" ? "MSACCESS.EXE" : kind == "PowerPoint" ? "POWERPNT.EXE" : "MSPUB.EXE";
             if (string.IsNullOrWhiteSpace(executable) || executable.Length < 4 || !char.IsLetter(executable[0]) || executable[1] != ':' ||
                 (executable[2] != '\\' && executable[2] != '/') || !Path.IsPathRooted(executable) ||
-                !string.Equals(Path.GetFileName(executable), kind == "Access" ? "MSACCESS.EXE" : "MSPUB.EXE", StringComparison.OrdinalIgnoreCase))
+                !string.Equals(Path.GetFileName(executable), expectedName, StringComparison.OrdinalIgnoreCase))
                 throw new ArgumentException("A reviewed absolute local installed Office executable is required before a private host launch.");
             return Path.GetFullPath(executable);
         }
@@ -48,7 +49,8 @@ namespace VBAi.Tests.Integration
             // Explicit -Embedding did not expose a ROT object in the frozen private-desktop campaign.
             if (kind == "Access") return new string[0];
             if (kind == "Publisher") return new string[0];
-            throw new InvalidOperationException("Private Office arguments require Access or Publisher.");
+            if (kind == "PowerPoint") return new string[0];
+            throw new InvalidOperationException("Private Office arguments require Access, Publisher or PowerPoint.");
         }
 
         /// <summary>Separates the observed registered server command from the selected normal-GUI launch.</summary>
@@ -236,7 +238,7 @@ namespace VBAi.Tests.Integration
             string executable = RequirePrivateOfficeExecutable(Kind, desktop,
                 privateExecutable ?? Environment.GetEnvironmentVariable("VBAi_TEST_" + Kind.ToUpperInvariant() + "_EXE"));
             if (!File.Exists(executable)) throw new FileNotFoundException("The reviewed installed Office executable does not exist.", executable);
-            string expectedProcess = Kind == "Access" ? "MSACCESS" : "MSPUB";
+            string expectedProcess = Kind == "Access" ? "MSACCESS" : Kind == "PowerPoint" ? "POWERPNT" : "MSPUB";
             if (Kind == "Publisher")
             {
                 var publisherBefore = ReadCompletePublisherProcessIds();

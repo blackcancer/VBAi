@@ -1388,6 +1388,45 @@ native-code coverage.
 
 ## Provider qualification
 
+### Q028 Office assistant campaign
+
+`tools/tests/Invoke-Q028Qualification.ps1 -Prepare -EvidenceRoot <fresh-absolute-root>
+-ModelRoot <existing-absolute-model-store> -BuildOutputRoot <isolated-build-root>`
+freezes the complete provider and six-Office-host matrix before any request or
+native launch. The selected profile uses the already installed
+`qwen2.5:7b-instruct` model, CPU inference, context 8192, one parallel request,
+temperature 0 and top-p 0.8. Model manifest/blob and product/test/executable
+hashes are pinned. Preparation never downloads or substitutes a model.
+
+The matrix contains managed prerequisites, the strict synthetic tool roundtrip,
+cancellation/recovery, detached streaming UI, then the embedded assistant in
+Excel, Word, PowerPoint, Access, Publisher and classic Outlook. Every native bank
+requires streaming while busy, one Stop, visible cancellation, a completed next
+send, an unprompted native marker through exactly one `read_module`, unchanged
+source/references and normal owned-host exit. No VBA runs or mail is sent.
+A failed or uncertain bank stops later banks; never retry an unsettled action.
+
+The original private-desktop mode retains its guard. For an explicitly approved
+real-desktop campaign, prepare with `-MainDesktopAuthorized` and dispatch using
+`tools/tests/Invoke-Q028Main.ps1 -EvidenceRoot <prepared-root>
+-ExpectedPlanSha256 <reviewed-hash>`. Its same-user Limited x64 STA worker runs on
+`WinSta0\Default`; both private-desktop descriptor variables must be empty.
+The worker sets `VBAi_RUN_OLLAMA_OFFICE_MAIN_DESKTOP_TESTS=1` only for native banks;
+Word also uses its established main-desktop bootstrap. No desktop switch occurs.
+Pre-existing hosts and personal Outlook VBA projects refuse qualification.
+
+Discovery admits the exact embedded ActiveX site once. During an unsettled send,
+the guard verifies the original HWNDs, PID/thread, native classes, visibility
+and parent/owner chain. It never rediscovers a replacement container or rereads
+an unavailable parent UIA provider. Combo choices and native button delivery
+remain single actions requiring exact control identities and readback.
+
+`tools/tests/Review-Q028Wire.py --self-test` validates refusal oracles offline.
+Its campaign review binds exact wire arguments/results, the original worker/host
+lifecycle and settings/registration restoration. Later passes do not explain
+earlier empty responses. Results remain candidate/profile-specific and belong
+in [recorded validation](../docs/test-coverage.md).
+
 `VBAi_RUN_OLLAMA_TESTS=1` enables `TestCategory=Ollama` against the loopback
 server through the production HTTP client. `VBAi_TEST_OLLAMA_MODEL` selects an
 already-installed model (default `qwen2.5:7b-instruct`). The shared selector applies

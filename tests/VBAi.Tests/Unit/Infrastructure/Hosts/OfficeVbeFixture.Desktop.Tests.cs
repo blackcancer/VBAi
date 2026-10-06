@@ -31,7 +31,8 @@ namespace VBAi.Tests.Unit
             var first = OfficeVbeFixture.PrivateOfficeArguments("Publisher");
             CollectionAssert.AreEqual(new string[0], first);
             Assert.AreNotSame(first, OfficeVbeFixture.PrivateOfficeArguments("Publisher"));
-            foreach (string host in new[] { "Word", "PowerPoint", "Excel", "", null })
+            CollectionAssert.AreEqual(new string[0], OfficeVbeFixture.PrivateOfficeArguments("PowerPoint"));
+            foreach (string host in new[] { "Word", "Excel", "", null })
                 Assert.ThrowsException<InvalidOperationException>(() => OfficeVbeFixture.PrivateOfficeArguments(host));
         }
 
@@ -247,7 +248,9 @@ namespace VBAi.Tests.Unit
             string desktop = "VBAiTests_" + Guid.NewGuid().ToString("N");
             foreach (string invalidDesktop in new[] { null, "Default", "WinSta0\\Default", "VBAiTests_bad" })
                 Assert.ThrowsException<ArgumentException>(() => OfficeVbeFixture.RequirePrivateOfficeExecutable("Access", invalidDesktop, @"C:\MSACCESS.EXE"));
-            foreach (string host in new[] { "Word", "PowerPoint", "Excel", null })
+            Assert.AreEqual(@"C:\POWERPNT.EXE", OfficeVbeFixture.RequirePrivateOfficeExecutable("PowerPoint", desktop, @"C:\POWERPNT.EXE"));
+            Assert.ThrowsException<ArgumentException>(() => OfficeVbeFixture.RequirePrivateOfficeExecutable("PowerPoint", desktop, @"C:\MSACCESS.EXE"));
+            foreach (string host in new[] { "Word", "Excel", null })
                 Assert.ThrowsException<InvalidOperationException>(() => OfficeVbeFixture.RequirePrivateOfficeExecutable(host, desktop, @"C:\MSACCESS.EXE"));
             foreach (string invalidPath in new[] { null, "", "MSACCESS.EXE", @"C:MSACCESS.EXE", @"\MSACCESS.EXE", @"\\server\share\MSACCESS.EXE", @"C:\MSPUB.EXE", @"C:\MSACCESS.EXE.cmd" })
                 Assert.ThrowsException<ArgumentException>(() => OfficeVbeFixture.RequirePrivateOfficeExecutable("Access", desktop, invalidPath));

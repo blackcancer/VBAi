@@ -4,6 +4,7 @@ namespace VBAi.Tests.Unit
     using System.Collections.Generic;
     using System.IO;
     using System.Linq;
+    using System.Security.Cryptography;
     using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
@@ -16,6 +17,43 @@ namespace VBAi.Tests.Unit
     [TestCategory("Unit")]
     public sealed partial class StreamTests
     {
+        /// <summary>Replays the archived synthetic empty response without attributing its backend cause.</summary>
+        [TestMethod]
+        public async Task ArchivedOllamaCompleteEmptyStreamPublishesNoTextOrTools()
+        {
+            // Ollama 0.34.4 / qwen2.5:3b, 2026-10-01; exact synthetic captured SSE bytes.
+            // This exercises the reader boundary, not the model's uncaptured pre-parser generation.
+            const string archivedEvents =
+                "data: {\"id\":\"chatcmpl-833\",\"object\":\"chat.completion.chunk\",\"created\":1790849037,\"model\":\"qwen2.5:3b\",\"system_fingerprint\":\"fp_ollama\",\"choices\":[{\"index\":0,\"delta\":{\"role\":\"assistant\",\"content\":\"\"},\"finish_reason\":null}]}\n\n" +
+                "data: {\"id\":\"chatcmpl-833\",\"object\":\"chat.completion.chunk\",\"created\":1790849037,\"model\":\"qwen2.5:3b\",\"system_fingerprint\":\"fp_ollama\",\"choices\":[{\"index\":0,\"delta\":{},\"finish_reason\":\"stop\"}]}\n\n" +
+                "data: [DONE]\n\n";
+            byte[] bytes = Encoding.UTF8.GetBytes(archivedEvents);
+            Assert.AreEqual(433, bytes.Length);
+            using (var hash = SHA256.Create())
+                Assert.AreEqual("58DA676669B720AFB784C6222425F6375FC6A5A6DD14C6808C792E222DDDA82D",
+                    BitConverter.ToString(hash.ComputeHash(bytes)).Replace("-", ""));
+
+            var diagnostic = new StreamDiagnostics();
+            using (var stream = new MemoryStream(bytes))
+            {
+                var result = await ChatStreamReader.ReadAsync(stream, false,
+                    _ => Assert.Fail("The archived response contains no text fragment."),
+                    CancellationToken.None, diagnostic);
+                Assert.AreEqual("assistant", result["role"]);
+                Assert.AreEqual("", result["content"]);
+                Assert.IsFalse(result.ContainsKey("tool_calls"));
+                Assert.AreEqual("complete-empty", diagnostic.Outcome);
+                Assert.AreEqual(2, diagnostic.JsonChunks);
+                Assert.AreEqual(0, diagnostic.TextChunks);
+                Assert.AreEqual(0, diagnostic.ToolCallChunks);
+                Assert.AreEqual(0, diagnostic.EmptyChoiceChunks);
+                Assert.AreEqual(0, diagnostic.MissingDeltaChunks);
+                Assert.AreEqual(0, diagnostic.UsageChunks);
+                Assert.AreEqual("stop", diagnostic.TerminalReason);
+                Assert.IsTrue(diagnostic.EndMarker);
+            }
+        }
+
         /// <summary>Recompose les arguments d’outils par index et émet les fragments de texte reçus.</summary>
         /// <returns>Tâche terminée après lecture du flux.</returns>
         [TestMethod]

@@ -13,10 +13,11 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 namespace VBAi.Tests.Integration
 {
     /// <summary>Owns a fresh Outlook process and a previously absent OTM; never sends or saves an Outlook item.</summary>
-    internal sealed class OutlookVbaTestFixture : IDisposable
+    internal sealed partial class OutlookVbaTestFixture : IDisposable
     {
         private object application, item, inspector, commandBars;
         private Process process;
+        private IsolatedTestDesktop.NativeChild privateDesktopChild;
         private bool baselineAbsent, baselineVerified, disposed, runPending, hostTeardownRefused;
         private Exception startupFailure;
         private string referencesVersion;
@@ -70,7 +71,9 @@ namespace VBAi.Tests.Integration
             {
                 RequireNoOutlook();
                 Assert.IsFalse(File.Exists(otm), "An OTM appeared before activation; no host was activated.");
-                fixture.application = Activator.CreateInstance(type);
+                string desktop = Environment.GetEnvironmentVariable("VBAi_QUALIFICATION_DESKTOP");
+                if (string.IsNullOrEmpty(desktop)) fixture.application = Activator.CreateInstance(type);
+                else fixture.StartOnPrivateDesktop(desktop);
                 var launched = Process.GetProcessesByName("OUTLOOK");
                 try
                 {
@@ -80,6 +83,8 @@ namespace VBAi.Tests.Integration
                     _ = fixture.process.Handle;
                 }
                 finally { foreach (var current in launched) current.Dispose(); }
+                if (fixture.privateDesktopChild != null)
+                    Assert.AreEqual(fixture.privateDesktopChild.ProcessId, fixture.ProcessId, "Outlook must retain its original launched PID.");
                 fixture.item = ((dynamic)fixture.application).CreateItem(0);
                 ((dynamic)fixture.item).Display(false);
                 fixture.inspector = ((dynamic)fixture.item).GetInspector;
@@ -276,11 +281,19 @@ namespace VBAi.Tests.Integration
                 try
                 {
                     exitedNormally = process.WaitForExit(15000) && process.ExitCode == 0;
+                    if (exitedNormally && privateDesktopChild != null)
+                    {
+                        Assert.IsTrue(privateDesktopChild.Wait(0), "The original launched Outlook handle must independently observe exit.");
+                        uint originalExit = privateDesktopChild.ExitCode();
+                        Save("private-original-exit.json", new { ProcessId, ExitCode = originalExit, ForcedTermination = false });
+                        Assert.AreEqual(0u, originalExit);
+                        privateDesktopChild.Dispose();
+                    }
                     if (!exitedNormally) failures.Add("Owned Outlook did not exit normally; no process was killed and OTM was retained.");
                     if (exitedNormally && restored && baselineAbsent && failures.Count == 0) DeleteCreatedOtm();
                 }
-                catch (Exception error) { failures.Add("OTM recovery: " + error.Message); }
-                finally { process.Dispose(); }
+                catch (Exception error) { exitedNormally = false; failures.Add("Original exit/OTM recovery: " + error.Message); }
+                finally { if (exitedNormally) process.Dispose(); else RetainUncertainOutlook(); }
             }
             SaveLifecycle(failures, restored, exitedNormally);
             if (failures.Count != 0) Assert.Fail(string.Join("\n", failures));

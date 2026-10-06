@@ -186,6 +186,7 @@ namespace VBAi.Tests.Integration
                 object bars = null;
                 try { bars = excel.CommandBars; ((dynamic)bars).ExecuteMso("VisualBasic"); }
                 finally { Release(bars); }
+                fixture.ConnectQ028OwnedAddIn(desktop);
                 var status = fixture.Command("status");
                 Assert.IsNotNull(status, "The owned VBE bridge is unavailable; retain process without retry.");
                 Assert.AreEqual(true, status["Ok"]);
