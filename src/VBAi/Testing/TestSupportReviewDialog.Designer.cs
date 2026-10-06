@@ -9,31 +9,31 @@ namespace VBAi
     internal sealed partial class TestSupportReviewDialog
     {
 
-        /// <summary>Maintains the components state for test support review dialog.</summary>
+        /// <summary>Owns child components disposed when the review dialog closes.</summary>
         private IContainer components;
 
-        /// <summary>Maintains the layout state for test support review dialog.</summary>
+        /// <summary>Arranges the project label, safety explanation, source diff, and actions.</summary>
         private TableLayoutPanel layout;
 
-        /// <summary>Maintains the project label state for test support review dialog.</summary>
+        /// <summary>Names the project whose support module source is being reviewed.</summary>
         private Label projectLabel;
 
-        /// <summary>Maintains the explanation state for test support review dialog.</summary>
+        /// <summary>Explains that a source backup is preserved and the project is revalidated before applying.</summary>
         private Label explanation;
 
-        /// <summary>Maintains the diff state for test support review dialog.</summary>
+        /// <summary>Displays the proposed VBA support-module source change for explicit review.</summary>
         private CodeDiffView diff;
 
-        /// <summary>Maintains the actions state for test support review dialog.</summary>
+        /// <summary>Hosts explicit Apply and Cancel decisions.</summary>
         private FlowLayoutPanel actions;
 
-        /// <summary>Maintains the apply state for test support review dialog.</summary>
+        /// <summary>Accepts the reviewed support-module change.</summary>
         private UiActionButton apply;
 
-        /// <summary>Tracks the cancel state of test support review dialog.</summary>
+        /// <summary>Closes without applying the proposed source change.</summary>
         private UiActionButton cancel;
 
-        /// <summary>Handles initialize component for test support review dialog.</summary>
+        /// <summary>Builds review-only controls without resolving or mutating a live VBA project.</summary>
         private void InitializeComponent()
         {
             components = new Container();
