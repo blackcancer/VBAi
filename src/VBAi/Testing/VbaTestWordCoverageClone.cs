@@ -11,31 +11,32 @@ namespace VBAi
     internal sealed class VbaTestWordCoverageClone
     {
 
-        /// <summary>Maintains the host state for vba test word coverage clone.</summary>
+        /// <summary>Resolves and validates the owning Word process, application, document, and project identities.</summary>
         internal VbaTestWordValuesHost Host = new VbaTestWordValuesHost();
 
-        /// <summary>Maintains the copy saved file state for vba test word coverage clone.</summary>
+        /// <summary>Copies the already-saved source document bytes to a new coverage path with integrity checks.</summary>
         internal Action<string, string> CopySavedFile = CopyFile;
 
-        /// <summary>Maintains the open copy state for vba test word coverage clone.</summary>
+        /// <summary>Opens only the copied document without conversion, repair, recent-file updates, or visibility.</summary>
         internal Func<object, string, object> OpenCopy = OpenDocument;
 
-        /// <summary>Maintains the close copy state for vba test word coverage clone.</summary>
+        /// <summary>Closes the owned copy without saving any instrumented edits back to that file.</summary>
         internal Action<object> CloseCopy = document => ((dynamic)document).Close(SaveChanges: 0);
 
-        /// <summary>Creates word for vba test word coverage clone.</summary>
-        /// <param name="project">object that supplies the project for this operation.</param>
-        /// <param name="sourcePath">Path used for the source path being processed.</param>
-        /// <param name="folder">Text that supplies the folder value. Use the format required by the calling operation.</param>
-        /// <returns>vba test coverage clone produced by the operation for create word on vba test word coverage clone.</returns>
+        /// <summary>Creates a separate Word document copy whose VBA project may be instrumented for coverage.</summary>
+        /// <param name="project">Source VBProject to resolve against an owning Word document.</param>
+        /// <param name="sourcePath">Expected saved document path.</param>
+        /// <param name="folder">Fresh directory reserved for the coverage copy.</param>
+        /// <returns>Owned cloned project, retained copy path, and one-shot close action.</returns>
         internal static VbaTestCoverageClone CreateWord(object project, string sourcePath, string folder)
         { return new VbaTestWordCoverageClone().Create(project, sourcePath, folder); }
 
-        /// <summary>Creates  for vba test word coverage clone.</summary>
-        /// <param name="project">object that supplies the project for this operation.</param>
-        /// <param name="sourcePath">Path used for the source path being processed.</param>
-        /// <param name="folder">Text that supplies the folder value. Use the format required by the calling operation.</param>
-        /// <returns>vba test coverage clone produced by the operation for create on vba test word coverage clone.</returns>
+        /// <summary>Copies and opens one exact saved Word document while preserving the original and owning all COM references.</summary>
+        /// <param name="project">Source VBProject whose document must match the current Word process and path.</param>
+        /// <param name="sourcePath">Saved source path with a supported Word extension.</param>
+        /// <param name="folder">New output directory for the copied file.</param>
+        /// <returns>Distinct owned project copy or an uncertainty exception containing its retained path.</returns>
+        /// <exception cref="VbaTestInvocationException">A file copy, document open, identity verification, or cleanup may have partially completed.</exception>
         internal VbaTestCoverageClone Create(object project, string sourcePath, string folder)
         {
             var references = new CloneReferences();
@@ -94,9 +95,9 @@ namespace VBAi
             finally { if (!transferred) references.Dispose(); }
         }
 
-        /// <summary>Closes owned copy for vba test word coverage clone.</summary>
-        /// <param name="references">clone references that supplies the references for this operation.</param>
-        /// <param name="copyPath">Path used for the copy path being processed.</param>
+        /// <summary>Closes the verified owned document once and releases references only after absence from Documents is confirmed.</summary>
+        /// <param name="references">Leased source, application, and copy COM identities.</param>
+        /// <param name="copyPath">Retained copy path included if close cannot be verified.</param>
         private void CloseOwnedCopy(CloneReferences references, string copyPath)
         {
             try
@@ -128,10 +129,10 @@ namespace VBAi
             catch { references.Retain(); throw; }
         }
 
-        /// <summary>Inspects documents for vba test word coverage clone.</summary>
-        /// <param name="application">object that supplies the application for this operation.</param>
-        /// <param name="retainOnFailure">Indicates whether retain on failure is enabled.</param>
-        /// <param name="inspect">action&lt;object&gt; that supplies the inspect for this operation.</param>
+        /// <summary>Enumerates a bounded Word Documents collection and releases acquired RCWs unless uncertainty requires retention.</summary>
+        /// <param name="application">Owning Word application.</param>
+        /// <param name="retainOnFailure">Whether acquired COM references stay retained if inspection fails.</param>
+        /// <param name="inspect">Identity/path check applied to each one-based document item.</param>
         private void InspectDocuments(object application, bool retainOnFailure, Action<object> inspect)
         {
             var acquired = new List<object>();
@@ -162,10 +163,10 @@ namespace VBAi
             }
         }
 
-        /// <summary>Opens document for vba test word coverage clone.</summary>
-        /// <param name="application">object that supplies the application for this operation.</param>
-        /// <param name="path">Path used for the path being processed.</param>
-        /// <returns>object produced by the operation for open document on vba test word coverage clone.</returns>
+        /// <summary>Opens a copy without conversion prompts, repair, visibility, or recent-file updates; retains references if open is uncertain.</summary>
+        /// <param name="application">Owning Word application.</param>
+        /// <param name="path">Absolute path of the disposable copy.</param>
+        /// <returns>Opened Word Document COM object.</returns>
         private static object OpenDocument(object application, string path)
         {
             object documents = ((dynamic)application).Documents;
@@ -189,20 +190,20 @@ namespace VBAi
             }
         }
 
-        /// <summary>Owns the clone references state and operations.</summary>
+        /// <summary>Owns source and copy targets plus every acquired Word RCW until verified close or deliberate retention.</summary>
         private sealed class CloneReferences : IDisposable
         {
 
-            /// <summary>Maintains the source and copy state for clone references.</summary>
+            /// <summary>Resolved source document and optional owned copy identity leases.</summary>
             internal VbaTestWordValuesHost.OwnedTarget Source, Copy;
 
-            /// <summary>Maintains the opened document and copy project state for clone references.</summary>
+            /// <summary>Opened copy document and its separately acquired VBProject interface.</summary>
             internal object OpenedDocument, CopyProject;
 
-            /// <summary>Maintains the retained and disposed state for clone references.</summary>
+            /// <summary>Prevents releasing references after uncertain native outcomes or disposing them twice.</summary>
             private bool retained, disposed;
 
-            /// <summary>Handles retain for clone references.</summary>
+            /// <summary>Retains all source/copy RCWs when native open or close state cannot be proven.</summary>
             internal void Retain()
             {
                 if (retained) return;
@@ -212,8 +213,8 @@ namespace VBAi
                 VbaTestWordValuesHost.RetainAcquired(this);
             }
 
-            /// <summary>Releases once for clone references.</summary>
-            /// <param name="reference">object that supplies the reference for this operation.</param>
+            /// <summary>Nulls and releases one owned RCW once, retaining it if release fails.</summary>
+            /// <param name="reference">Field holding the acquired interface reference.</param>
             private static void ReleaseOnce(ref object reference)
             {
                 object acquired = reference;
@@ -222,7 +223,7 @@ namespace VBAi
                 catch { VbaTestWordValuesHost.RetainAcquired(acquired); throw; }
             }
 
-            /// <summary>Disposes  for clone references.</summary>
+            /// <summary>Releases the verified copy project, document, and source leases once unless they were retained.</summary>
             public void Dispose()
             {
                 if (retained || disposed) return;
@@ -241,16 +242,16 @@ namespace VBAi
             }
         }
 
-        /// <summary>Handles copy file for vba test word coverage clone.</summary>
-        /// <param name="source">Text that supplies the source value. Use the format required by the calling operation.</param>
-        /// <param name="destination">Text that supplies the destination value. Use the format required by the calling operation.</param>
+        /// <summary>Copies a saved Word document with exclusive destination creation and source stability checks.</summary>
+        /// <param name="source">Saved source document path.</param>
+        /// <param name="destination">New copy path, which must not already exist.</param>
         private static void CopyFile(string source, string destination)
         { CopyFile(source, destination, null); }
 
-        /// <summary>Handles copy file for vba test word coverage clone.</summary>
-        /// <param name="source">Text that supplies the source value. Use the format required by the calling operation.</param>
-        /// <param name="destination">Text that supplies the destination value. Use the format required by the calling operation.</param>
-        /// <param name="afterCopy">action&lt;file stream, file stream&gt; that supplies the after copy for this operation.</param>
+        /// <summary>Copies source bytes while checking file identity metadata and SHA-256 across both read passes.</summary>
+        /// <param name="source">Saved Word document opened with sharing that allows the host's writer handle.</param>
+        /// <param name="destination">Fresh destination created with exclusive sharing.</param>
+        /// <param name="afterCopy">Optional verification hook over source and destination streams before final hash checks.</param>
         internal static void CopyFile(string source, string destination, Action<FileStream, FileStream> afterCopy)
         {
             // Share existing Word writers without allowing deletion or replacement of this source path.
@@ -287,8 +288,9 @@ namespace VBAi
             }
         }
 
-        /// <summary>Requires saved for vba test word coverage clone.</summary>
-        /// <param name="document">object that supplies the document for this operation.</param>
+        /// <summary>Requires Word's Saved property to prove the source document matches its reproducible disk copy.</summary>
+        /// <param name="document">Original Word document.</param>
+        /// <exception cref="InvalidOperationException">The source document has unsaved edits or its save state cannot be confirmed.</exception>
         private static void RequireSaved(object document)
         {
             object saved = ((dynamic)document).Saved;
@@ -296,11 +298,11 @@ namespace VBAi
                 throw new InvalidOperationException("Save the original Word document before collecting coverage; unsaved document content cannot be reproduced by a file copy.");
         }
 
-        /// <summary>Handles uncertain for vba test word coverage clone.</summary>
-        /// <param name="phase">Text that supplies the phase value. Use the format required by the calling operation.</param>
-        /// <param name="retainedPath">Path used for the retained path being processed.</param>
-        /// <param name="error">Exception describing the error failure.</param>
-        /// <returns>vba test invocation exception produced by the operation for uncertain on vba test word coverage clone.</returns>
+        /// <summary>Wraps an unverified Word copy/open/close outcome as uncertain and preserves the copy path.</summary>
+        /// <param name="phase">Host operation whose completion was not verified.</param>
+        /// <param name="retainedPath">Disposable file retained for inspection and recovery.</param>
+        /// <param name="error">Underlying failure.</param>
+        /// <returns>Invocation exception that forbids automatic retry.</returns>
         private static VbaTestInvocationException Uncertain(string phase, string retainedPath, Exception error)
         { return new VbaTestInvocationException(phase + " did not return verified completion; no retry was attempted. Retained copy: " + retainedPath + ". " + error.Message, true, error); }
     }

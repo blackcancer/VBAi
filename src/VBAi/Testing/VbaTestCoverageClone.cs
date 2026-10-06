@@ -11,61 +11,61 @@ namespace VBAi
     internal sealed class VbaTestCoverageClone : IDisposable
     {
 
-        /// <summary>Gets or sets the project.</summary>
-        /// <value>Current project exposed by vba test coverage clone.</value>
+        /// <summary>Gets or sets the VBProject belonging to the owned disposable coverage copy.</summary>
+        /// <value>Cloned project instrumented instead of the user's original.</value>
         internal object Project { get; set; }
 
-        /// <summary>Gets or sets the path.</summary>
-        /// <value>Current path exposed by vba test coverage clone.</value>
+        /// <summary>Gets or sets the retained filesystem path of the disposable copy.</summary>
+        /// <value>Path reported if preparation or close has an uncertain outcome.</value>
         internal string Path { get; set; }
 
-        /// <summary>Gets or sets the close.</summary>
-        /// <value>Current close exposed by vba test coverage clone.</value>
+        /// <summary>Gets or sets the one-shot close action for the owned host document copy.</summary>
+        /// <value>Cleanup action, cleared before invocation so disposal cannot retry it.</value>
         internal Action Close { get; set; }
 
-        /// <summary>Disposes  for vba test coverage clone.</summary>
+        /// <summary>Invokes the owned copy's close action at most once.</summary>
         public void Dispose() { var close = Close; Close = null; close?.Invoke(); }
 
-        /// <summary>Owns the host boundary state and operations.</summary>
+        /// <summary>Supplies exact-process/COM identity checks and host-specific disposable-copy factories.</summary>
         internal sealed class HostBoundary
         {
 
-            /// <summary>Maintains the read process name state for host boundary.</summary>
+            /// <summary>Reads the current executable name to select the supported host adapter.</summary>
             internal Func<string> ReadProcessName = () => { using (var process = Process.GetCurrentProcess()) return process.ProcessName; };
 
-            /// <summary>Identifies the read process id associated with host boundary.</summary>
+            /// <summary>Reads the current host process identifier for in-process Excel ownership checks.</summary>
             internal Func<int> ReadProcessId = () => { using (var process = Process.GetCurrentProcess()) return process.Id; };
 
-            /// <summary>Maintains the resolve excel state for host boundary.</summary>
+            /// <summary>Resolves the Excel.Application object belonging to the current process ID.</summary>
             internal Func<int, object> ResolveExcel = pid => ExcelOwnedApplication.Resolve(pid, () => Marshal.GetActiveObject("Excel.Application"));
 
-            /// <summary>Maintains the read window owner state for host boundary.</summary>
+            /// <summary>Reads the owning process ID of a native application window.</summary>
             internal Func<IntPtr, uint> ReadWindowOwner = hwnd => { uint owner; VbeDebugWindows.GetWindowThreadProcessId(hwnd, out owner); return owner; };
 
-            /// <summary>Maintains the same identity state for host boundary.</summary>
+            /// <summary>Compares COM object identity rather than display names or paths.</summary>
             internal Func<object, object, bool> SameIdentity = VbeDebug.NativeProcedureValuesHost.SameComIdentity;
 
-            /// <summary>Maintains the create word state for host boundary.</summary>
+            /// <summary>Creates and owns a separate Word coverage document copy.</summary>
             internal Func<object, string, string, VbaTestCoverageClone> CreateWord = VbaTestWordCoverageClone.CreateWord;
 
-            /// <summary>Maintains the create power point state for host boundary.</summary>
+            /// <summary>Creates and owns a separate PowerPoint coverage presentation copy.</summary>
             internal Func<object, string, string, VbaTestCoverageClone> CreatePowerPoint = VbaTestPowerPointCoverageClone.CreatePowerPoint;
         }
 
-        /// <summary>Creates owned for vba test coverage clone.</summary>
-        /// <param name="project">object that supplies the project for this operation.</param>
-        /// <param name="sourcePath">Path used for the source path being processed.</param>
-        /// <param name="folder">Text that supplies the folder value. Use the format required by the calling operation.</param>
-        /// <returns>vba test coverage clone produced by the operation for create owned on vba test coverage clone.</returns>
+        /// <summary>Creates a host-specific disposable project copy for coverage instrumentation.</summary>
+        /// <param name="project">Live source VBProject whose identity is verified against its owning document.</param>
+        /// <param name="sourcePath">Expected saved host-document path.</param>
+        /// <param name="folder">Fresh directory that will contain the owned copy.</param>
+        /// <returns>Owned copy and one-shot close action.</returns>
         internal static VbaTestCoverageClone CreateOwned(object project, string sourcePath, string folder)
         { return CreateOwned(project, sourcePath, folder, new HostBoundary()); }
 
-        /// <summary>Creates owned for vba test coverage clone.</summary>
-        /// <param name="project">object that supplies the project for this operation.</param>
-        /// <param name="sourcePath">Path used for the source path being processed.</param>
-        /// <param name="folder">Text that supplies the folder value. Use the format required by the calling operation.</param>
-        /// <param name="boundary">host boundary that supplies the boundary for this operation.</param>
-        /// <returns>vba test coverage clone produced by the operation for create owned on vba test coverage clone.</returns>
+        /// <summary>Selects the Word, PowerPoint, or in-process Excel cloning path by host executable.</summary>
+        /// <param name="project">Source VBProject to match to the host document.</param>
+        /// <param name="sourcePath">Expected source document path.</param>
+        /// <param name="folder">Directory for the disposable copy.</param>
+        /// <param name="boundary">Process, COM identity, and host-copy operations; defaults to production host services.</param>
+        /// <returns>Host-specific owned copy.</returns>
         internal static VbaTestCoverageClone CreateOwned(object project, string sourcePath, string folder, HostBoundary boundary)
         {
             boundary = boundary ?? new HostBoundary();
@@ -75,12 +75,14 @@ namespace VBAi
             return CreateExcel(project, sourcePath, folder, boundary);
         }
 
-        /// <summary>Creates excel for vba test coverage clone.</summary>
-        /// <param name="project">object that supplies the project for this operation.</param>
-        /// <param name="sourcePath">Path used for the source path being processed.</param>
-        /// <param name="folder">Text that supplies the folder value. Use the format required by the calling operation.</param>
-        /// <param name="boundary">host boundary that supplies the boundary for this operation.</param>
-        /// <returns>vba test coverage clone produced by the operation for create excel on vba test coverage clone.</returns>
+        /// <summary>Creates a SaveCopyAs workbook in the current Excel process with events suppressed during preparation.</summary>
+        /// <param name="project">Source VBProject whose owning workbook must be uniquely identified.</param>
+        /// <param name="sourcePath">Expected saved workbook path.</param>
+        /// <param name="folder">Directory for the fresh coverage workbook.</param>
+        /// <param name="boundary">Optional injected host operations for isolated contract checks.</param>
+        /// <returns>Distinct project object and close action for the cloned workbook.</returns>
+        /// <exception cref="InvalidOperationException">The host, process ownership, source identity, path, or supported workbook extension does not match.</exception>
+        /// <exception cref="VbaTestInvocationException">Copy preparation or close/event restoration is uncertain; retained paths are included.</exception>
         internal static VbaTestCoverageClone CreateExcel(object project, string sourcePath, string folder, HostBoundary boundary = null)
         {
             boundary = boundary ?? new HostBoundary();
@@ -142,10 +144,10 @@ namespace VBAi
             }
         }
 
-        /// <summary>Handles restore events for vba test coverage clone.</summary>
-        /// <param name="application">dynamic that supplies the application for this operation.</param>
-        /// <param name="expected">Indicates whether expected is enabled.</param>
-        /// <param name="retainedPath">Path used for the retained path being processed.</param>
+        /// <summary>Restores and reads back Excel's previous event state, reporting uncertainty if verification fails.</summary>
+        /// <param name="application">Owning Excel Application object.</param>
+        /// <param name="expected">Event-enabled value captured before copy preparation or close.</param>
+        /// <param name="retainedPath">Copy path to include in any recovery diagnostic.</param>
         private static void RestoreEvents(dynamic application, bool expected, string retainedPath)
         {
             try {
