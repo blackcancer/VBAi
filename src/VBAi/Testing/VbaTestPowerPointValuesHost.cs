@@ -12,51 +12,51 @@ namespace VBAi
     internal sealed class VbaTestPowerPointValuesHost : VbeDebug.IProcedureValuesHost
     {
 
-        /// <summary>Maintains the read process name state for vba test power point values host.</summary>
+        /// <summary>Process-name reader used to require in-process POWERPNT execution.</summary>
         internal Func<string> ReadProcessName = () => { using (var process = Process.GetCurrentProcess()) return process.ProcessName; };
 
-        /// <summary>Identifies the read process id associated with vba test power point values host.</summary>
+        /// <summary>Process-ID reader used to verify ownership of the registered application window.</summary>
         internal Func<int> ReadProcessId = () => { using (var process = Process.GetCurrentProcess()) return process.Id; };
 
-        /// <summary>Maintains the read active application state for vba test power point values host.</summary>
+        /// <summary>Resolver for the registered PowerPoint.Application COM object.</summary>
         internal Func<string, object> ReadActiveApplication = Marshal.GetActiveObject;
 
-        /// <summary>Maintains the read application window state for vba test power point values host.</summary>
+        /// <summary>Reads PowerPoint's application-window HWND without starting another host instance.</summary>
         internal Func<object, IntPtr> ReadApplicationWindow = PowerPointWindow.Read;
 
-        /// <summary>Maintains the read window owner state for vba test power point values host.</summary>
+        /// <summary>Reads the owning PID for an HWND.</summary>
         internal Func<IntPtr, uint> ReadWindowOwner = hwnd => { uint owner; VbeDebugWindows.GetWindowThreadProcessId(hwnd, out owner); return owner; };
 
-        /// <summary>Maintains the same identity state for vba test power point values host.</summary>
+        /// <summary>Compares managed identity first, then native COM identity.</summary>
         internal Func<object, object, bool> SameIdentity = (first, second) => ReferenceEquals(first, second) || VbeDebug.NativeProcedureValuesHost.SameComIdentity(first, second);
 
-        /// <summary>Maintains the run procedure state for vba test power point values host.</summary>
+        /// <summary>Single Application.Run route using PowerPoint's SAFEARRAY argument convention.</summary>
         internal Func<object, string, object[], object> RunProcedure = NativeRun;
 
-        /// <summary>Maintains the owner thread state for vba test power point values host.</summary>
+        /// <summary>Managed thread ID required for all PowerPoint COM operations.</summary>
         private readonly int ownerThread = Thread.CurrentThread.ManagedThreadId;
 
-        /// <summary>Maintains the identifier state for vba test power point values host.</summary>
+        /// <summary>Culture-invariant VBA identifier grammar used before constructing a qualified macro name.</summary>
         private static readonly Regex Identifier = new Regex(@"\A\p{L}[\p{L}\p{N}_]{0,254}\z", RegexOptions.CultureInvariant);
 
-        /// <summary>Owns the owned target state and operations.</summary>
+        /// <summary>Resolved PowerPoint application, presentation, VBProject, and saved path for one run target.</summary>
         internal sealed class OwnedTarget
         {
 
-            /// <summary>Maintains the owner state for owned target.</summary>
+            /// <summary>Adapter that created and revalidates this target.</summary>
             internal VbaTestPowerPointValuesHost Owner;
 
-            /// <summary>Maintains the application and presentation and project state for owned target.</summary>
+            /// <summary>Exact application, presentation, and VBProject COM identities.</summary>
             internal object Application, Presentation, Project;
 
-            /// <summary>Keeps the path path available to owned target.</summary>
+            /// <summary>Normalized saved presentation path used for identity revalidation.</summary>
             internal string Path;
         }
 
-        /// <summary>Resolves target for vba test power point values host.</summary>
-        /// <param name="project">object that supplies the project for this operation.</param>
-        /// <param name="expectedHostPath">Path used for the expected host path being processed.</param>
-        /// <returns>object produced by the operation for resolve target on vba test power point values host.</returns>
+        /// <summary>Resolves the exact saved presentation that owns the supplied VBProject.</summary>
+        /// <param name="project">Live PowerPoint VBProject identity being tested.</param>
+        /// <param name="expectedHostPath">Absolute saved presentation path that must match the owning presentation.</param>
+        /// <returns>Owned target containing the application, presentation, project, and normalized path.</returns>
         public object ResolveTarget(object project, string expectedHostPath)
         {
             RequireOwner();
@@ -67,12 +67,13 @@ namespace VBAi
             return new OwnedTarget { Owner = this, Application = application, Presentation = match, Project = project, Path = Path.GetFullPath(expectedHostPath) };
         }
 
-        /// <summary>Invokes  for vba test power point values host.</summary>
-        /// <param name="target">object that supplies the target for this operation.</param>
-        /// <param name="module">Text that supplies the module value. Use the format required by the calling operation.</param>
-        /// <param name="procedure">Text that supplies the procedure value. Use the format required by the calling operation.</param>
-        /// <param name="arguments">object[] that supplies the arguments for this operation.</param>
-        /// <returns>object produced by the operation for invoke on vba test power point values host.</returns>
+        /// <summary>Invokes one presentation-qualified macro after checking target identity and filename uniqueness.</summary>
+        /// <param name="target">Owned target returned by <see cref="ResolveTarget"/>.</param>
+        /// <param name="module">Resolved VBA module identifier.</param>
+        /// <param name="procedure">Resolved procedure identifier.</param>
+        /// <param name="arguments">Optional positional arguments; the array is cloned before dispatch.</param>
+        /// <returns>Value returned by PowerPoint Application.Run.</returns>
+        /// <remarks>Uses one invocation shape; it does not retry or fall back to the active presentation.</remarks>
         public object Invoke(object target, string module, string procedure, object[] arguments)
         {
             var owned = ValidateTarget(target);
@@ -90,9 +91,9 @@ namespace VBAi
             return RunProcedure(owned.Application, name + "!" + module + "." + procedure, arguments == null ? new object[0] : (object[])arguments.Clone());
         }
 
-        /// <summary>Validates target for vba test power point values host.</summary>
-        /// <param name="target">object that supplies the target for this operation.</param>
-        /// <returns>owned target produced by the operation for validate target on vba test power point values host.</returns>
+        /// <summary>Requires the target belong to this adapter and reacquires the same application and presentation.</summary>
+        /// <param name="target">Object returned by <see cref="ResolveTarget"/>.</param>
+        /// <returns>Validated owned target.</returns>
         internal OwnedTarget ValidateTarget(object target)
         {
             RequireOwner();
@@ -105,8 +106,9 @@ namespace VBAi
             return owned;
         }
 
-        /// <summary>Resolves application for vba test power point values host.</summary>
-        /// <returns>object produced by the operation for resolve application on vba test power point values host.</returns>
+        /// <summary>Resolves the registered PowerPoint instance in this process without changing host security policy.</summary>
+        /// <returns>Application object whose window belongs to this PID.</returns>
+        /// <exception cref="InvalidOperationException">The process, window ownership, registration, or AutomationSecurity state is unsafe.</exception>
         internal object ResolveApplication()
         {
             RequireOwner();
