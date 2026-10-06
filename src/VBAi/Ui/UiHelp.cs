@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Globalization;
 using System.Runtime.CompilerServices;
 using System.Windows.Forms;
 #if VBAI_UPDATER
@@ -9,7 +10,7 @@ using UiText = VBAi.UpdateText;
 
 namespace VBAi
 {
-    /// <summary>Opens the local French manual and routes ordinary form help requests to the relevant chapter.</summary>
+    /// <summary>Opens the localized local manual and routes ordinary form help requests to the relevant chapter.</summary>
     internal static class UiHelp
     {
         /// <summary>Marks forms already subscribed; keys do not retain disposed forms.</summary>
@@ -29,17 +30,48 @@ namespace VBAi
         internal static Action<IWin32Window, string, string> Launch = (owner, file, topic) =>
             Help.ShowHelp(owner as Control, file, HelpNavigator.Topic, topic + ".html");
 
-        /// <summary>Checks the fixed packaged path only when help is explicitly requested.</summary>
+        /// <summary>Checks packaged paths only when help is explicitly requested.</summary>
         internal static Func<string, bool> Exists = File.Exists;
 
         /// <summary>Explains an absent local manual without navigating to an external site automatically.</summary>
         internal static Action<IWin32Window> ShowUnavailable = owner => MessageBox.Show(owner,
-            UiText.Get("Local help is not included in this build. Build or obtain VBAi.fr-FR.chm and place it in the Help folder beside VBAi.dll."),
+            UiText.Get("Local help is not included in this build. Place the VBAi help files in the Help folder beside the application."),
             "VBAi", MessageBoxButtons.OK, MessageBoxIcon.Information);
 
         /// <summary>Resolves the packaged manual beside the add-in assembly, independent of the host working directory.</summary>
-        /// <value>Absolute path of Help/VBAi.fr-FR.chm. Its existence is checked only on an explicit help request.</value>
-        internal static string FilePath => Path.Combine(Path.GetDirectoryName(typeof(UiHelp).Assembly.Location), "Help", "VBAi.fr-FR.chm");
+        /// <value>Absolute path to the current supported interface language in the application's Help folder.</value>
+        internal static string FilePath => PathFor(InterfaceCulture);
+
+        /// <summary>Uses the language selected by the VBE, or the independent updater's culture.</summary>
+        private static CultureInfo InterfaceCulture
+        {
+            get
+            {
+#if VBAI_UPDATER
+                return CultureInfo.GetCultureInfo(UpdateText.Culture);
+#else
+                return UiText.Culture;
+#endif
+            }
+        }
+
+        /// <summary>Maps a culture to a supported, fixed local filename; it cannot supply arbitrary paths.</summary>
+        /// <param name="culture">Requested UI culture, including regional variants.</param>
+        /// <returns>Absolute packaged path for its supported language.</returns>
+        internal static string PathFor(CultureInfo culture) => Path.Combine(
+            Path.GetDirectoryName(typeof(UiHelp).Assembly.Location), "Help",
+            "VBAi." + UiLanguages.For(culture).CultureName + ".chm");
+
+        /// <summary>Selects installed localized help with English, then French, as explicit offline fallbacks.</summary>
+        /// <param name="culture">Current interface culture.</param>
+        /// <returns>The available local archive path, or null if none exists.</returns>
+        internal static string Resolve(CultureInfo culture)
+        {
+            var paths = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            foreach (var candidate in new[] { PathFor(culture), PathFor(CultureInfo.GetCultureInfo("en-US")), PathFor(CultureInfo.GetCultureInfo("fr-FR")) })
+                if (paths.Add(candidate) && Exists(candidate)) return candidate;
+            return null;
+        }
 
         /// <summary>Selects a chapter without inspecting project data or invoking a live service.</summary>
         /// <param name="formType">Form type whose help should open; null selects the entry page.</param>
@@ -61,12 +93,13 @@ namespace VBAi
         internal static void Open(IWin32Window owner, string topic = "start")
         {
             if (topic != "start" && !Topics.ContainsValue(topic)) topic = "start";
-            if (!Exists(FilePath))
+            var file = Resolve(InterfaceCulture);
+            if (file == null)
             {
                 ShowUnavailable(owner);
                 return;
             }
-            Launch(owner, FilePath, topic);
+            Launch(owner, file, topic);
         }
     }
 }

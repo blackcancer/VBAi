@@ -2,38 +2,80 @@
 
 [Documentation](../README.md)
 
-The offline user manual is authored in French first. It explains the product's
-workflows for users who already know VBA, AI assistants and GitHub. The worked
-example uses a disposable Excel project, real Codex/Luna requests and a separate
-request to add and run tests before the Git workflow. Other help languages follow review
-of this first edition; the language of maintained repository Markdown stays English.
+The offline manual explains VBAi workflows to users who already know VBA, AI
+assistants and GitHub. Its worked example uses a disposable Excel project, real
+Codex/Luna requests and a separate request to create and run tests before publishing
+sources. French is the reviewed source edition. Translations are manually authored
+prose; no translation service is used. Maintained repository Markdown remains English.
 
-## Read and build
+## Languages and source layout
 
-The source is [the French manual](fr-FR/manual.json). It produces ordinary HTML
-for review and an optional Windows HTML Help archive with contents, keyword index
-and full-text search. Python 3.10 or later is sufficient to produce HTML:
+The [French manual](fr-FR/manual.json) owns chapter IDs, interface assignments,
+example code and illustration geometry. Each other language has a complete
+`translations.json` in its culture directory. These catalogs translate all prose,
+index terms, tables, captions, annotations and navigation labels in source order.
+They carry the exact French source SHA-256; changing the reviewed source requires
+reviewing the affected translations before building again. Missing or empty text,
+missing topics and stale catalogs are build errors, with no silent French fallback
+inside a translated chapter.
+
+The guides cover the application's UI languages: English (`en-US`), French (`fr-FR`),
+Spanish (`es-ES`), German (`de-DE`), Brazilian Portuguese (`pt-BR`), Italian (`it-IT`),
+Japanese (`ja-JP`), Korean (`ko-KR`), Simplified Chinese (`zh-CN`), Traditional Chinese
+(`zh-TW`), Russian (`ru-RU`), Arabic (`ar-SA`) and Hindi (`hi-IN`). Arabic pages use
+right-to-left text while retaining original image coordinates and code direction.
+The translations reuse authentic French screenshots and explicitly identify their
+language; the application pixels are not translated or reconstructed.
+
+## Build and package
+
+Python 3.10 or later can generate ordinary HTML for review:
 
 ```powershell
-python tools/docs/build_help.py
+python tools/docs/build_help.py --all
 ```
 
-For CHM, supply the path to a local Microsoft HTML Help compiler:
+For compiled help, supply a local Microsoft HTML Help compiler:
 
 ```powershell
-python tools/docs/build_help.py --compiler 'C:/path/to/HTML Help Workshop/hhc.exe'
+python tools/docs/build_help.py --all --compiler 'C:/path/to/HTML Help Workshop/hhc.exe'
 ```
 
-The builder does not download or install a compiler. Generated output goes to
-`artifacts/help/fr-FR/`, including `VBAi.fr-FR.chm` when compilation is requested.
-Inspect compiler logs and the actual archive before distributing it. An old
-archive is removed before a new compilation so it cannot mask a failed build.
+A single edition can be built with `--source docs/help/en-US`. Review HTML and
+compiler logs go to
+`artifacts/help-staging/<culture>/`. After all requested compilations succeed, only
+the compiled `VBAi.<culture>.chm` archives are published to `dist/help/`.
+`--output` selects an alternative staging root for `--all`, or one staging directory
+for a single edition. `--package-dir` selects the clean compiled distribution folder.
+The builder never downloads or installs a compiler. Inspect
+compiler logs and the actual archives before distribution; an old archive is removed
+before compiling its replacement.
 
-When the archive exists before building VBAi, the project copies it to
-`Help/VBAi.fr-FR.chm` beside `VBAi.dll`. **About VBAi → User guide** opens the
-local entry page. Ordinary form help requests route to the relevant chapter.
-An absent manual produces an explanation, without an automatic web redirect.
-This source-build packaging does not establish an installer or published release.
+Build the guides before building the solution. Both the add-in and updater copy all
+compiled editions from `dist/help/` into their own `Help/` folder.
+The resulting installation layout is:
+
+```text
+VBAi.dll
+Help/
+  VBAi.en-US.chm
+  VBAi.fr-FR.chm
+  ...
+```
+
+The updater carries the same folder beside its executable. `HelpOutputRoot` can
+point MSBuild to a shared generated root when building from an isolated worktree:
+
+```powershell
+dotnet build VBAi.sln -c Debug -p:BuildOutputRoot="$PWD/artifacts/build" -p:HelpOutputRoot="C:/distribution/help/"
+```
+
+**VBE Help / ? → VBAi · User guide** and **About VBAi → User guide** open the local
+entry page. Form help requests route to their task chapter. The add-in selects the
+VBE interface language; the updater uses its own UI culture. Regional variants use
+the corresponding supported language. If its archive is absent, VBAi tries English,
+then French. If no archive exists, it explains where to place the local files.
+This packaging does not establish an installer or published release.
 
 ## Screenshot provenance
 

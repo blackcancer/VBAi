@@ -1,6 +1,7 @@
 <Project>
   <PropertyGroup>
     <RepositoryRoot>$(MSBuildThisFileDirectory)</RepositoryRoot>
+    <HelpOutputRoot Condition="'$(HelpOutputRoot)' == ''">$(RepositoryRoot)dist/help/</HelpOutputRoot>
     <TargetFramework>net48</TargetFramework>
     <PlatformTarget>x64</PlatformTarget>
     <Platforms>x64</Platforms>

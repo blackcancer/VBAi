@@ -76,8 +76,9 @@ namespace VBAi
         /// <param name="showAbout">Action facultative ouvrant À propos sans dépendre du chat.</param>
         /// <param name="showCrashReport">Action facultative ouvrant le rapport de problème.</param>
         /// <param name="showUpdates">Action facultative ouvrant les mises à jour.</param>
-        public VbeMenu(object vbe, Action showAssistant, Action showSettings, Action showGitHub, Action<string> editorAction = null, Action showAbout = null, Action showCrashReport = null, Action showUpdates = null)
-            : this(vbe, showAssistant, showSettings, showGitHub, editorAction, null, null, null, showAbout, showCrashReport, showUpdates)
+        /// <param name="showHelp">Opens local help; null uses the packaged guide.</param>
+        public VbeMenu(object vbe, Action showAssistant, Action showSettings, Action showGitHub, Action<string> editorAction = null, Action showAbout = null, Action showCrashReport = null, Action showUpdates = null, Action showHelp = null)
+            : this(vbe, showAssistant, showSettings, showGitHub, editorAction, null, null, null, showAbout, showCrashReport, showUpdates, showHelp)
         {
         }
 
@@ -93,9 +94,10 @@ namespace VBAi
         /// <param name="showAbout">Action facultative ouvrant À propos sans dépendre du chat.</param>
         /// <param name="showCrashReport">Action facultative ouvrant le rapport de problème.</param>
         /// <param name="showUpdates">Action facultative ouvrant les mises à jour.</param>
+        /// <param name="showHelp">Opens local help; null uses the packaged guide.</param>
         internal VbeMenu(object vbe, Action showAssistant, Action showSettings, Action showGitHub,
             Action<string> editorAction, Action<object, Guid, int, Delegate> subscribe,
-            Action<object, Guid, int, Delegate> unsubscribe, Action<object, Type> applyIcon, Action showAbout = null, Action showCrashReport = null, Action showUpdates = null)
+            Action<object, Guid, int, Delegate> unsubscribe, Action<object, Type> applyIcon, Action showAbout = null, Action showCrashReport = null, Action showUpdates = null, Action showHelp = null)
         {
             this.subscribe = subscribe ?? SubscribeDefault;
             this.unsubscribe = unsubscribe ?? ((button, iid, dispid, handler) =>
@@ -166,6 +168,18 @@ namespace VBAi
                     editorButtons.Add(Tuple.Create(reportButton, reportHandler));
                     this.subscribe(reportButton, ClickInterface, 1, reportHandler);
                     this.applyIcon(reportButton, typeof(CrashReportWindow));
+                }
+                dynamic help = FindHelpMenu(vbe);
+                if (help != null)
+                {
+                    object helpButton = help.Controls.Add(1, Missing.Value, Missing.Value, Missing.Value, true);
+                    ((dynamic)helpButton).Caption = "VBAi · " + UiText.Get("User guide");
+                    ((dynamic)helpButton).Tag = "VBAi.Help";
+                    ((dynamic)helpButton).TooltipText = UiText.Get("Open the local VBAi user guide in the interface language");
+                    ClickHandler helpHandler = (object control, ref bool cancel) => { cancel = true; (showHelp ?? (() => UiHelp.Open(null)))(); };
+                    editorButtons.Add(Tuple.Create(helpButton, helpHandler));
+                    this.subscribe(helpButton, ClickInterface, 1, helpHandler);
+                    this.applyIcon(helpButton, typeof(AboutWindow));
                 }
                 if (showAbout != null)
                 {
@@ -276,6 +290,27 @@ namespace VBAi
                 }
             }
             throw new InvalidOperationException("VBE menu not found: " + (view ? "View" : "Tools"));
+        }
+
+        /// <summary>Finds the native Help or question-mark menu without creating a replacement menu.</summary>
+        /// <param name="application">VBE owning the menu bar.</param>
+        /// <returns>The existing Help popup, or null if a host does not expose it.</returns>
+        private static object FindHelpMenu(object application)
+        {
+            var names = new HashSet<string>(StringComparer.OrdinalIgnoreCase) {
+                "?", "help", "aide", "ayuda", "hilfe", "ajuda", "guida", "ヘルプ", "도움말",
+                "帮助", "說明", "说明", "справка", "تعليمات", "مساعدة", "सहायता"
+            };
+            foreach (dynamic bar in ((dynamic)application).CommandBars)
+            {
+                try { if ((int)bar.Type != 1) continue; } catch { continue; }
+                foreach (dynamic item in bar.Controls)
+                {
+                    try { if (names.Contains(UiLanguages.NormalizeMenu((string)item.Caption))) return item; }
+                    catch { }
+                }
+            }
+            return null;
         }
 
         /// <summary>Normalise une légende de menu pour comparaison sans casse ni esperluette.</summary>

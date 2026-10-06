@@ -2181,4 +2181,7 @@ Git Credential Manager로 로그인하며 커밋 작성자 정보는 Git에서 �
   <data name="This conversation changed in another host. Reopen it before deleting." xml:space="preserve"><value>이 대화가 다른 호스트 앱에서 변경되었습니다. 삭제하기 전에 다시 여세요.</value></data>
   <data name="Temporary document: VBAi history and project notes stay in memory until the document is saved." xml:space="preserve"><value>저장되지 않은 문서: 문서를 저장할 때까지 VBAi 기록과 프로젝트 메모는 메모리에만 유지됩니다.</value></data>
   <data name="Local history is kept in memory because storage is unavailable." xml:space="preserve"><value>저장소를 사용할 수 없어 로컬 기록이 메모리에 유지됩니다.</value></data>
+  <data name="User guide" xml:space="preserve"><value>사용자 안내서</value></data>
+  <data name="Open the local VBAi user guide in the interface language" xml:space="preserve"><value>인터페이스 언어로 로컬 VBAi 안내서 열기</value></data>
+  <data name="Local help is not included in this build. Place the VBAi help files in the Help folder beside the application." xml:space="preserve"><value>이 빌드에는 로컬 도움말이 포함되어 있지 않습니다. VBAi 도움말 파일을 응용 프로그램 옆의 Help 폴더에 넣으세요.</value></data>
 </root>

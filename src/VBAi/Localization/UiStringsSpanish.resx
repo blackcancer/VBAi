@@ -2181,4 +2181,7 @@ Inicio de sesión mediante Git Credential Manager; la identidad de los commits s
   <data name="This conversation changed in another host. Reopen it before deleting." xml:space="preserve"><value>Esta conversación cambió en otra aplicación anfitriona. Vuelva a abrirla antes de eliminarla.</value></data>
   <data name="Temporary document: VBAi history and project notes stay in memory until the document is saved." xml:space="preserve"><value>Documento sin guardar: el historial de VBAi y las notas del proyecto permanecen en memoria hasta que se guarde el documento.</value></data>
   <data name="Local history is kept in memory because storage is unavailable." xml:space="preserve"><value>El historial local se conserva en memoria porque el almacenamiento no está disponible.</value></data>
+  <data name="User guide" xml:space="preserve"><value>Guía de usuario</value></data>
+  <data name="Open the local VBAi user guide in the interface language" xml:space="preserve"><value>Abrir la guía local de VBAi en el idioma de la interfaz</value></data>
+  <data name="Local help is not included in this build. Place the VBAi help files in the Help folder beside the application." xml:space="preserve"><value>Esta versión no incluye la ayuda local. Coloque los archivos de ayuda de VBAi en la carpeta Help junto a la aplicación.</value></data>
 </root>

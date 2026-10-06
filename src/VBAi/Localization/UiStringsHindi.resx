@@ -2181,4 +2181,7 @@ Git Credential Manager से साइन-इन करें; कमिट ल
   <data name="This conversation changed in another host. Reopen it before deleting." xml:space="preserve"><value>यह बातचीत किसी अन्य होस्ट अनुप्रयोग में बदल गई है। हटाने से पहले इसे फिर से खोलें।</value></data>
   <data name="Temporary document: VBAi history and project notes stay in memory until the document is saved." xml:space="preserve"><value>असहेजा दस्तावेज़: दस्तावेज़ सहेजे जाने तक VBAi इतिहास और परियोजना नोट्स केवल स्मृति में रहते हैं।</value></data>
   <data name="Local history is kept in memory because storage is unavailable." xml:space="preserve"><value>भंडारण उपलब्ध न होने के कारण स्थानीय इतिहास स्मृति में रखा गया है।</value></data>
+  <data name="User guide" xml:space="preserve"><value>उपयोगकर्ता मार्गदर्शिका</value></data>
+  <data name="Open the local VBAi user guide in the interface language" xml:space="preserve"><value>इंटरफ़ेस की भाषा में स्थानीय VBAi मार्गदर्शिका खोलें</value></data>
+  <data name="Local help is not included in this build. Place the VBAi help files in the Help folder beside the application." xml:space="preserve"><value>इस बिल्ड में स्थानीय सहायता शामिल नहीं है। VBAi की सहायता फ़ाइलें अनुप्रयोग के साथ स्थित Help फ़ोल्डर में रखें।</value></data>
 </root>

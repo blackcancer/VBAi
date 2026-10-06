@@ -2,6 +2,8 @@ using System;
 using System.ComponentModel;
 using System.ComponentModel.Design;
 using System.IO;
+using System.Globalization;
+using System.Collections.Generic;
 using System.Windows.Forms;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using VBAi.Tests.Infrastructure;
@@ -20,8 +22,71 @@ namespace VBAi.Tests.Unit
             Assert.AreEqual("privacy", UiHelp.TopicFor(typeof(ProjectAccessWindow)));
             Assert.AreEqual("start", UiHelp.TopicFor(typeof(Form)));
             Assert.AreEqual("start", UiHelp.TopicFor(null));
-            Assert.AreEqual("VBAi.fr-FR.chm", Path.GetFileName(UiHelp.FilePath));
+            Assert.AreEqual("VBAi." + UiLanguages.For(UiText.Culture).CultureName + ".chm", Path.GetFileName(UiHelp.FilePath));
             Assert.IsTrue(Path.IsPathRooted(UiHelp.FilePath));
+        }
+
+        /// <summary>Every UI language and regional variant resolves only inside the packaged Help folder.</summary>
+        [TestMethod]
+        public void SupportedCulturesResolveToTheirOwnPackagedArchives()
+        {
+            foreach (var language in UiLanguages.All)
+            {
+                string path = UiHelp.PathFor(CultureInfo.GetCultureInfo(language.CultureName));
+                Assert.AreEqual("VBAi." + language.CultureName + ".chm", Path.GetFileName(path));
+                Assert.AreEqual("Help", Path.GetFileName(Path.GetDirectoryName(path)));
+            }
+            Assert.AreEqual("VBAi.zh-TW.chm", Path.GetFileName(UiHelp.PathFor(CultureInfo.GetCultureInfo("zh-HK"))));
+            Assert.AreEqual("VBAi.pt-BR.chm", Path.GetFileName(UiHelp.PathFor(CultureInfo.GetCultureInfo("pt-PT"))));
+            Assert.AreEqual("VBAi.en-US.chm", Path.GetFileName(UiHelp.PathFor(CultureInfo.GetCultureInfo("nl-NL"))));
+        }
+
+        /// <summary>Missing localized files fall back offline, with no duplicate filesystem probes.</summary>
+        [TestMethod]
+        public void ResolutionChecksLocalizedEnglishFrenchAndReportsNoAvailableGuide()
+        {
+            var exists = UiHelp.Exists;
+            try
+            {
+                var checkedPaths = new List<string>();
+                var japanese = CultureInfo.GetCultureInfo("ja-JP");
+                UiHelp.Exists = path => { checkedPaths.Add(Path.GetFileName(path)); return path.EndsWith("en-US.chm"); };
+                Assert.AreEqual("VBAi.en-US.chm", Path.GetFileName(UiHelp.Resolve(japanese)));
+                CollectionAssert.AreEqual(new[] { "VBAi.ja-JP.chm", "VBAi.en-US.chm" }, checkedPaths);
+                checkedPaths.Clear();
+                UiHelp.Exists = path => { checkedPaths.Add(Path.GetFileName(path)); return path.EndsWith("fr-FR.chm"); };
+                Assert.AreEqual("VBAi.fr-FR.chm", Path.GetFileName(UiHelp.Resolve(japanese)));
+                CollectionAssert.AreEqual(new[] { "VBAi.ja-JP.chm", "VBAi.en-US.chm", "VBAi.fr-FR.chm" }, checkedPaths);
+                checkedPaths.Clear();
+                UiHelp.Exists = path => { checkedPaths.Add(Path.GetFileName(path)); return false; };
+                Assert.IsNull(UiHelp.Resolve(CultureInfo.GetCultureInfo("en-US")));
+                CollectionAssert.AreEqual(new[] { "VBAi.en-US.chm", "VBAi.fr-FR.chm" }, checkedPaths);
+                UiHelp.Exists = path => true;
+                Assert.AreEqual("VBAi.ja-JP.chm", Path.GetFileName(UiHelp.Resolve(japanese)));
+            }
+            finally { UiHelp.Exists = exists; }
+        }
+
+        /// <summary>Language changes are evaluated for each explicit request rather than cached.</summary>
+        [STATestMethod]
+        public void GuideFollowsInterfaceLanguageAfterItChanges()
+        {
+            var exists = UiHelp.Exists; var launch = UiHelp.Launch;
+            try
+            {
+                UiHelp.Exists = path => true;
+                string opened = null;
+                UiHelp.Launch = (owner, path, topic) => opened = Path.GetFileName(path);
+                using (var language = new LocalizationScope("de-DE"))
+                {
+                    UiHelp.Open(null);
+                    Assert.AreEqual("VBAi.de-DE.chm", opened);
+                    LocalizationScope.Set("ar-SA");
+                    UiHelp.Open(null);
+                    Assert.AreEqual("VBAi.ar-SA.chm", opened);
+                }
+            }
+            finally { UiHelp.Exists = exists; UiHelp.Launch = launch; }
         }
 
         [STATestMethod]

@@ -41,9 +41,8 @@
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="Ui/UiHelpHints.json" LogicalName="VBAi.UiHelpHints.json" />
-    <Content Include="$(RepositoryRoot)artifacts/help/fr-FR/VBAi.fr-FR.chm"
-             Condition="Exists('$(RepositoryRoot)artifacts/help/fr-FR/VBAi.fr-FR.chm')"
-             Link="Help/VBAi.fr-FR.chm" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="$(HelpOutputRoot)VBAi.*.chm"
+             Link="Help/%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
     <EmbeddedResource Include="../../assets/icons/commands/*.svg" LogicalName="VBAi.CommandIcons.%(Filename).svg" />
   </ItemGroup>
   <ItemGroup>

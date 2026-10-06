@@ -31,6 +31,66 @@ class HelpBuilderTests(unittest.TestCase):
         (self.source / "manual.json").write_text(json.dumps(self.manual), encoding="utf-8")
         (shots / "manifest.json").write_text(json.dumps({"captures": [self.capture]}), encoding="utf-8")
 
+    def make_translation(self, language="ar-SA"):
+        base = self.source
+        french = base.parent / "fr-FR"
+        base.rename(french)
+        localized = french.parent / language
+        localized.mkdir()
+        self.source = localized
+        data = {
+            "language": language,
+            "sourceSha256": hashlib.sha256((french / "manual.json").read_bytes()).hexdigest(),
+            "labels": {key: "Localized " + key for key in help_builder.FRENCH_LABELS},
+            "topics": {topic["id"]: ["Translated " + str(index) for index, _ in enumerate(help_builder.text_slots(topic))]
+                       for topic in self.manual["topics"]}
+        }
+        (localized / "translations.json").write_text(json.dumps(data), encoding="utf-8")
+        return french, data
+
+    def test_localized_catalog_preserves_interfaces_captures_and_layout(self):
+        french, _ = self.make_translation()
+        page = help_builder.build(self.source, self.output, None)
+        text = page.read_text(encoding="utf-8")
+        self.assertIn("lang='ar' dir='rtl'", text)
+        self.assertIn("Translated 0", text)
+        self.assertIn("Localized captureLanguage", text)
+        self.assertIn("Localized originalCapture", text)
+        self.assertIn("Language=0x401", (self.output / "manual.hhp").read_text(encoding="cp1252"))
+        self.assertIn("Compiled file=VBAi.ar-SA.chm", (self.output / "manual.hhp").read_text(encoding="cp1252"))
+        self.assertEqual((french / "screenshots/view.png").read_bytes(), (self.output / "screenshots/view.png").read_bytes())
+        manual, _ = help_builder.load_manual(self.source)
+        self.assertEqual(["View"], manual["interfaces"])
+        self.assertEqual("View", manual["topics"][0]["sections"][0]["figure"]["capture"])
+
+    def test_translation_is_rejected_when_reviewed_source_changes(self):
+        french, _ = self.make_translation()
+        (french / "manual.json").write_text(json.dumps(self.manual) + " ", encoding="utf-8")
+        with self.assertRaisesRegex(ValueError, "source changed"):
+            help_builder.build(self.source, self.output, None)
+
+    def test_partial_empty_and_wrong_language_catalogs_cannot_ship(self):
+        _, catalog = self.make_translation()
+        import copy
+        mutations = [lambda x: x["topics"]["start"].pop(),
+                     lambda x: x["topics"].clear(),
+                     lambda x: x["labels"].pop("footer"),
+                     lambda x: x["topics"]["start"].__setitem__(0, " "),
+                     lambda x: x.__setitem__("language", "../../ar-SA")]
+        for mutate in mutations:
+            changed = copy.deepcopy(catalog)
+            mutate(changed)
+            (self.source / "translations.json").write_text(json.dumps(changed), encoding="utf-8")
+            with self.assertRaises(ValueError):
+                help_builder.build(self.source, self.output, None)
+
+    def test_non_latin_contents_use_entities_in_legacy_sitemap_without_mojibake(self):
+        text = help_builder.sitemap([("入门指南", "start.html"), ("सहायता", "support.html")])
+        legacy = text.encode("cp1252", errors="xmlcharrefreplace").decode("cp1252")
+        import html
+        self.assertIn("入门指南", html.unescape(legacy))
+        self.assertIn("सहायता", html.unescape(legacy))
+
     def test_html_toc_index_and_search_configuration_are_generated_together(self):
         page = help_builder.build(self.source, self.output, None)
         self.assertIn("Accueil français", page.read_text(encoding="utf-8"))
@@ -120,6 +180,22 @@ class HelpBuilderTests(unittest.TestCase):
         help_builder.build(self.source, self.output, None)
         self.assertNotIn("obsolete.html", (self.output / "manual.hhp").read_text(encoding="cp1252"))
 
+    def test_compiler_uses_clean_staging_and_copies_only_a_verified_archive(self):
+        with_dot = self.output / ".worktrees" / "candidate"
+        visited = []
+        def compile_complete(*args, **kwargs):
+            staging = Path(kwargs["cwd"])
+            self.assertNotIn(".worktrees", staging.parts)
+            self.assertTrue((staging / "start.html").is_file())
+            self.assertTrue((staging / "screenshots/view.png").is_file())
+            (staging / "VBAi.fr-FR.chm").write_bytes(b"ITSFtest archive")
+            visited.append(staging)
+            return help_builder.subprocess.CompletedProcess([], 1, b"Compiled")
+        with patch.object(help_builder.subprocess, "run", side_effect=compile_complete):
+            archive = help_builder.build(self.source, with_dot, Path("compiler.exe"))
+        self.assertEqual(b"ITSFtest archive", archive.read_bytes())
+        self.assertFalse(visited[0].exists(), "Temporary compiler files must be cleaned.")
+
     def test_old_archive_cannot_hide_a_failed_new_compilation(self):
         self.output.mkdir()
         old = self.output / "VBAi.fr-FR.chm"
@@ -130,7 +206,7 @@ class HelpBuilderTests(unittest.TestCase):
 
     def test_compiler_error_rejects_a_partial_archive_even_with_success_exit_code(self):
         def compile_partial(*args, **kwargs):
-            (self.output / "VBAi.fr-FR.chm").write_bytes(b"ITSFpartial archive")
+            (Path(kwargs["cwd"]) / "VBAi.fr-FR.chm").write_bytes(b"ITSFpartial archive")
             return help_builder.subprocess.CompletedProcess([], 1,
                 b"HHC6003: Error: The file Itircl.dll has not been registered correctly.")
         with patch.object(help_builder.subprocess, "run", side_effect=compile_partial):

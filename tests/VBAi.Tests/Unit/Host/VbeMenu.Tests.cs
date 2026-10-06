@@ -191,6 +191,37 @@ namespace VBAi.Tests.Unit
                 Assert.AreSame(original, field.GetValue(menu));
             }
         }
+        /// <summary>The question-mark menu owns the guide command and removes it at disconnect.</summary>
+        [DataTestMethod]
+        [DataRow("?")]
+        [DataRow("&Help")]
+        [DataRow("ヘルプ(&H)")]
+        [DataRow("تعليمات")]
+        public void HelpMenuCommandInvokesGuideAndCleansItsSubscription(string caption)
+        {
+            var host = Host();
+            var help = new FakeButton { Caption = caption };
+            host.CommandBars[0].Controls.Items.Add(help);
+            var handlers = new Dictionary<object, Delegate>();
+            var removed = new List<object>();
+            int opened = 0;
+            var menu = new VbeMenu(host, () => { }, () => { }, () => { }, null,
+                (button, iid, dispid, handler) => handlers.Add(button, handler),
+                (button, iid, dispid, handler) => removed.Add(button), (button, type) => { },
+                showHelp: () => opened++);
+            var guide = help.Controls.Items.Single();
+            Assert.AreEqual("VBAi.Help", guide.Tag);
+            Assert.IsFalse(string.IsNullOrWhiteSpace(guide.TooltipText));
+            Assert.AreEqual(0, opened);
+            var arguments = new object[] { guide, false };
+            handlers[guide].DynamicInvoke(arguments);
+            Assert.AreEqual(1, opened);
+            Assert.AreEqual(true, arguments[1]);
+            menu.Dispose(); menu.Dispose();
+            Assert.AreEqual(1, guide.DeleteCount);
+            Assert.AreEqual(1, removed.Count(item => item == guide));
+        }
+
         /// <summary>Associe chaque bouton à sa propre action et retire toutes les commandes au Dispose.</summary>
         [TestMethod]
         public void MenuActionsUseTheirOwnCallbacksAndDisposeRemovesEveryCreatedButton()

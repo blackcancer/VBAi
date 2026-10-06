@@ -62,6 +62,14 @@ re-executed. Pending jobs, host registrations and downloaded payloads live under
 powershell.exe -NoProfile -File tools/Prepare-Release.ps1 -Version 0.1.1-beta.1
 ```
 
+Build all [localized help archives](help/README.md) first. The helper requires
+one CHM for each maintained UI language under `dist/help/`; `-HelpOutputRoot` can
+select a different generated folder. Its build staging stays under
+`artifacts/release-build/<version>/`, while the package and any supplied release
+assets go under `dist/releases/<version>/`. Only compiled CHM files are copied
+into the payload's `Help/` folder; screenshots, HTML previews and compiler logs
+are excluded.
+
 The version above is an example, not an announced release. The script builds the
 Release payload, exports the TLB and prepares packaging metadata. It does not
 publish a release or build the future global installer. A supplied `-InstallerPath`

@@ -38,6 +38,17 @@ This produces an isolated output under `artifacts/build/`. It does not register
 the add-in or replace the assembly currently loaded by an application. See
 [development](development.md) for output conventions.
 
+## Include offline help
+
+Build the [localized user guides](help/README.md) before building the solution.
+Compiled archives under `dist/help/` are copied to `Help/` beside
+both the add-in and updater. A development deployment must preserve that folder. Release payload preparation
+also copies only these CHM files; compilation staging and screenshots remain
+outside the package.
+The VBE's **Help / ? → VBAi · User guide** command selects the local interface
+language, with English and French fallbacks. HTML sources alone do not supply
+this offline command; a local HTML Help compiler is required for CHM output.
+
 ## Register a development build
 
 Save your work and close every host that has loaded the add-in. The current
