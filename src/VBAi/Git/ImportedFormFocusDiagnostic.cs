@@ -10,35 +10,35 @@ namespace VBAi
     internal static class ImportedFormFocusDiagnostic
     {
 
-        /// <summary>Maintains the field limit state for imported form focus diagnostic.</summary>
+        /// <summary>Maximum UTF-16 characters emitted for any single diagnostic field.</summary>
         internal const int FieldLimit = 128;
 
-        /// <summary>Owns the snapshot state and operations.</summary>
+        /// <summary>Stores bounded scalar observations captured after an imported-form focus refusal.</summary>
         internal sealed class Snapshot
         {
 
-            /// <summary>Maintains the state and active identity and active type and active handle and active caption and expected caption and root enabled and active matches previous state for snapshot.</summary>
+            /// <summary>State label, active identity/type/HWND/caption, expected caption, root enabled flag, and previous-window match.</summary>
             internal string State, ActiveIdentity, ActiveType, ActiveHandle, ActiveCaption, ExpectedCaption,
                 RootEnabled, ActiveMatchesPrevious;
 
-            /// <summary>Maintains the previous present state for snapshot.</summary>
+            /// <summary>Whether a previous active window existed when the observation was taken.</summary>
             internal bool PreviousPresent;
         }
 
         /// <summary>Reads each additional operand once on the owning STA; an unavailable operand does not hide its peers.</summary>
-        /// <param name="activePresent">Indicates whether active present is enabled.</param>
-        /// <param name="activeMatchesExpected">Indicates whether active matches expected is enabled.</param>
-        /// <param name="previousPresent">Indicates whether previous present is enabled.</param>
-        /// <param name="rootPresent">Indicates whether root present is enabled.</param>
-        /// <param name="expectedType">int that supplies the expected type for this operation.</param>
-        /// <param name="expectedHandle">long that supplies the expected handle for this operation.</param>
-        /// <param name="activeType">func&lt;int&gt; that supplies the active type for this operation.</param>
-        /// <param name="activeHandle">func&lt;long&gt; that supplies the active handle for this operation.</param>
-        /// <param name="activeCaption">func&lt;string&gt; that supplies the active caption for this operation.</param>
-        /// <param name="expectedCaption">func&lt;string&gt; that supplies the expected caption for this operation.</param>
-        /// <param name="rootEnabled">func&lt;bool&gt; that supplies the root enabled for this operation.</param>
-        /// <param name="activeMatchesPrevious">func&lt;bool&gt; that supplies the active matches previous for this operation.</param>
-        /// <returns>snapshot produced by the operation for observe on imported form focus diagnostic.</returns>
+        /// <param name="activePresent">Whether the active VBE window object was available.</param>
+        /// <param name="activeMatchesExpected">Whether it is the exact imported designer window already inspected by the guard.</param>
+        /// <param name="previousPresent">Whether a prior active window was captured.</param>
+        /// <param name="rootPresent">Whether the VBE root window handle is available.</param>
+        /// <param name="expectedType">Known type of the expected designer window.</param>
+        /// <param name="expectedHandle">Known HWND of the expected designer window.</param>
+        /// <param name="activeType">Optional getter for a different active window's type.</param>
+        /// <param name="activeHandle">Optional getter for a different active window's HWND.</param>
+        /// <param name="activeCaption">Optional getter for a different active window's caption.</param>
+        /// <param name="expectedCaption">Getter for the expected caption.</param>
+        /// <param name="rootEnabled">Getter for whether the VBE root window is enabled.</param>
+        /// <param name="activeMatchesPrevious">Getter comparing active and previously captured windows.</param>
+        /// <returns>Scalar-only observation; failed getters become bounded unavailable markers.</returns>
         internal static Snapshot Observe(bool activePresent, bool activeMatchesExpected, bool previousPresent,
             bool rootPresent, int expectedType, long expectedHandle, Func<int> activeType, Func<long> activeHandle,
             Func<string> activeCaption, Func<string> expectedCaption, Func<bool> rootEnabled, Func<bool> activeMatchesPrevious)
@@ -74,10 +74,10 @@ namespace VBAi
             return value;
         }
 
-        /// <summary>Reads  for imported form focus diagnostic.</summary>
-        /// <typeparam name="T">The type used for t.</typeparam>
-        /// <param name="read">func&lt;t&gt; that supplies the read for this operation.</param>
-        /// <returns>Text produced by the operation for read on imported form focus diagnostic.</returns>
+        /// <summary>Reads one optional diagnostic getter without propagating its native failure or exception message.</summary>
+        /// <typeparam name="T">Getter result type.</typeparam>
+        /// <param name="read">One getter to invoke.</param>
+        /// <returns>Bounded invariant-culture value or a bounded unavailable marker with exception type/HRESULT.</returns>
         private static string Read<T>(Func<T> read)
         {
             if (read == null) return "unavailable-missing-getter";
@@ -91,8 +91,8 @@ namespace VBAi
         }
 
         /// <summary>Formats already captured scalars only, independently of native objects and getters.</summary>
-        /// <param name="value">snapshot that supplies the value for this operation.</param>
-        /// <returns>Text produced by the operation for format on imported form focus diagnostic.</returns>
+        /// <param name="value">Previously captured scalar snapshot.</param>
+        /// <returns>One-line diagnostic; it performs no COM access or native getter calls.</returns>
         internal static string Format(Snapshot value)
         {
             if (value == null) throw new ArgumentNullException(nameof(value));
@@ -104,8 +104,8 @@ namespace VBAi
         }
 
         /// <summary>One line with bounded fields; captions cannot inject apparent diagnostic operands.</summary>
-        /// <param name="text">Text that supplies the text value. Use the format required by the calling operation.</param>
-        /// <returns>Text produced by the operation for bounded on imported form focus diagnostic.</returns>
+        /// <param name="text">Untrusted caption, exception type, or other diagnostic field.</param>
+        /// <returns>At most 128 characters with control and delimiter characters replaced by spaces.</returns>
         internal static string Bounded(string text)
         {
             if (text == null) return "<null>";

@@ -3,17 +3,17 @@ using System;
 namespace VBAi
 {
 
-    /// <summary>Owns the form stream padding state and operations.</summary>
+    /// <summary>Parses optional picture, tab, spin, and scroll control payloads without decoding or rewriting content.</summary>
     internal static partial class FormStreamPadding
     {
 
-        /// <summary>Identifies the picture guid associated with form stream padding.</summary>
+        /// <summary>MS-OFORMS StdPicture envelope GUID in persisted byte order.</summary>
         private static readonly byte[] PictureGuid = new Guid("0BE35204-8F91-11CE-9DE3-00AA004BB851").ToByteArray();
 
         /// <summary>Parses cached flat controls; callers retain the complete original pair on unsupported grammar.</summary>
-        /// <param name="control">reader that supplies the control for this operation.</param>
-        /// <param name="type">uint that supplies the type for this operation.</param>
-        /// <returns>Boolean indicating the result of the check for parse additional control on form stream padding.</returns>
+        /// <param name="control">Reader bounded to the declared control object.</param>
+        /// <param name="type">Persisted control type.</param>
+        /// <returns>True when this parser supports the type; false leaves the caller to reject the layout.</returns>
         private static bool ParseAdditionalControl(Reader control, uint type)
         {
             switch (type)
@@ -27,8 +27,8 @@ namespace VBAi
         }
 
         /// <summary>Preserves all numeric properties and bounds the mandatory size and optional mouse-picture envelope.</summary>
-        /// <param name="control">reader that supplies the control for this operation.</param>
-        /// <param name="scroll">Indicates whether scroll is enabled.</param>
+        /// <param name="control">Reader bounded to the declared control object.</param>
+        /// <param name="scroll">True selects the ScrollBar property layout; false selects SpinButton.</param>
         private static void ParseSpinOrScroll(Reader control, bool scroll)
         {
             // MS-OFORMS 2.2.7 / 2.2.8: these controls have no trailing TextProps.
@@ -64,7 +64,7 @@ namespace VBAi
         }
 
         /// <summary>Reads image properties and preserves exact picture payloads without OLE decoding.</summary>
-        /// <param name="control">reader that supplies the control for this operation.</param>
+        /// <param name="control">Reader bounded to the declared Image control object.</param>
         private static void ParseImage(Reader control)
         {
             // MS-OFORMS 2.2.3. Bits2/12 are value flags without stored scalar fields.
@@ -83,7 +83,7 @@ namespace VBAi
         }
 
         /// <summary>Bounds a known StdPicture envelope; every payload byte remains significant.</summary>
-        /// <param name="control">reader that supplies the control for this operation.</param>
+        /// <param name="control">Reader positioned at a supported picture envelope.</param>
         private static void ParsePictureEnvelope(Reader control)
         {
             // MS-OFORMS 2.4.8 / 2.4.13. No decoder is invoked and no payload byte is cleared.
@@ -97,8 +97,8 @@ namespace VBAi
         }
 
         /// <summary>Validates all persisted tab arrays, text properties and per-tab flags within their declared extents.</summary>
-        /// <param name="control">reader that supplies the control for this operation.</param>
-        /// <param name="links">tab links that supplies the links for this operation.</param>
+        /// <param name="control">Reader bounded to the TabStrip object data.</param>
+        /// <param name="links">Optional storage-node tab/name mapping validated against this payload.</param>
         private static void ParseTabStrip(Reader control, TabLinks links = null)
         {
             // MS-OFORMS 2.2.9: main cb excludes picture, TextProps and TabStripTabFlagData.
@@ -137,12 +137,12 @@ namespace VBAi
         }
 
         /// <summary>Checks that each optional persisted array has the same number of tabs.</summary>
-        /// <param name="block">reader that supplies the block for this operation.</param>
-        /// <param name="mask">uint that supplies the mask for this operation.</param>
-        /// <param name="bit">int that supplies the bit for this operation.</param>
-        /// <param name="length">uint that supplies the length for this operation.</param>
-        /// <param name="count">int that supplies the count for this operation.</param>
-        /// <param name="values">list&lt;string&gt; that supplies the values for this operation.</param>
+        /// <param name="block">Reader over the bounded TabStrip property block.</param>
+        /// <param name="mask">Property-presence mask.</param>
+        /// <param name="bit">Bit indicating whether the array property exists.</param>
+        /// <param name="length">Array payload size in bytes.</param>
+        /// <param name="count">Shared tab count established by earlier arrays, or -1 when not yet known.</param>
+        /// <param name="values">Optional names list to receive decoded entries.</param>
         private static void CheckTabArray(Reader block, uint mask, int bit, uint length, ref int count, System.Collections.Generic.List<string> values = null)
         {
             if (!Has(mask, bit)) return;
@@ -152,10 +152,10 @@ namespace VBAi
         }
 
         /// <summary>Parses character-count ArrayString entries and clears only their documented string padding.</summary>
-        /// <param name="block">reader that supplies the block for this operation.</param>
-        /// <param name="size">uint that supplies the size for this operation.</param>
-        /// <param name="values">list&lt;string&gt; that supplies the values for this operation.</param>
-        /// <returns>int produced by the operation for parse tab array on form stream padding.</returns>
+        /// <param name="block">Reader over the enclosing property block.</param>
+        /// <param name="size">Declared byte extent of the ArrayString sequence.</param>
+        /// <param name="values">Optional collection receiving decoded strings for graph validation.</param>
+        /// <returns>Number of array entries parsed within the declared extent.</returns>
         private static int ParseTabArray(Reader block, uint size, System.Collections.Generic.List<string> values = null)
         {
             // Ordinary fmString descriptors count BYTES; ArrayString descriptors count CHARACTERS.
