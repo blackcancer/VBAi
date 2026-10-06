@@ -35,7 +35,7 @@ if ($LASTEXITCODE -ne 0) { throw 'Type library export failed.' }
 $package = Join-Path $output 'package'
 New-Item -ItemType Directory -Path $package | Out-Null
 Get-ChildItem -LiteralPath $binary -File | Where-Object { $_.Extension -in '.dll', '.exe', '.config', '.tlb' } | ForEach-Object { Copy-Item -LiteralPath $_.FullName -Destination $package }
-foreach ($payloadDirectory in @('EditorAssets', 'runtimes')) {
+foreach ($payloadDirectory in @('EditorAssets', 'runtimes', 'ThirdPartyNotices')) {
     $sourceDirectory = Join-Path $binary $payloadDirectory
     if (Test-Path -LiteralPath $sourceDirectory) { Copy-Item -LiteralPath $sourceDirectory -Destination $package -Recurse }
 }
