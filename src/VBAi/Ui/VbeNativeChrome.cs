@@ -76,57 +76,53 @@ internal int X, Y; }
         /// <summary>Copies a rectangular pixel area between device contexts.</summary><param name="destination">Destination context.</param><param name="x">Destination x coordinate.</param><param name="y">Destination y coordinate.</param><param name="width">Copy width.</param><param name="height">Copy height.</param><param name="source">Source context.</param><param name="sourceX">Source x coordinate.</param><param name="sourceY">Source y coordinate.</param><param name="operation">Raster operation code.</param><returns>Whether the copy succeeded.</returns>
         [DllImport("gdi32.dll")] private static extern bool BitBlt(IntPtr destination, int x, int y, int width, int height, IntPtr source, int sourceX, int sourceY, uint operation);
 
-        /// <summary>Defines the read rectangle callback.</summary>
-        /// <param name="window">Native handle that supplies the window for this operation.</param>
-        /// <param name="rectangle">rect that supplies the rectangle for this operation.</param>
-        /// <returns>Boolean indicating the result of the check for operation on vbe native chrome.</returns>
+        /// <summary>Reads a native window or client rectangle through an injectable Win32 boundary.</summary>
+        /// <param name="window">HWND whose rectangle is requested.</param><param name="rectangle">Receives the rectangle in the API's coordinate space.</param>
+        /// <returns><see langword="true"/> when Windows returns the bounds.</returns>
         internal delegate bool ReadRectangle(IntPtr window, out Rect rectangle);
 
-        /// <summary>Defines the convert point callback.</summary>
-        /// <param name="window">Native handle that supplies the window for this operation.</param>
-        /// <param name="point">point that supplies the point for this operation.</param>
-        /// <returns>Boolean indicating the result of the check for operation on vbe native chrome.</returns>
+        /// <summary>Converts a point between a native window's client coordinates and screen coordinates.</summary>
+        /// <param name="window">HWND defining the client coordinate space.</param><param name="point">Input point, replaced with its converted position on success.</param>
+        /// <returns><see langword="true"/> when the conversion succeeds.</returns>
         internal delegate bool ConvertPoint(IntPtr window, ref Point point);
 
-        /// <summary>Defines the read pointer callback.</summary>
-        /// <param name="point">point that supplies the point for this operation.</param>
-        /// <returns>Boolean indicating the result of the check for operation on vbe native chrome.</returns>
+        /// <summary>Reads the current cursor position in screen coordinates.</summary>
+        /// <param name="point">Receives the cursor position.</param><returns><see langword="true"/> when the position was read.</returns>
         internal delegate bool ReadPointer(out Point point);
 
-        /// <summary>Defines the read combo callback.</summary>
-        /// <param name="window">Native handle that supplies the window for this operation.</param>
-        /// <param name="information">combo info that supplies the information for this operation.</param>
-        /// <returns>Boolean indicating the result of the check for operation on vbe native chrome.</returns>
+        /// <summary>Reads native combo-box child handles and item/button bounds.</summary>
+        /// <param name="window">Combo-box HWND.</param><param name="information">Initialized native structure receiving child handles and bounds.</param>
+        /// <returns><see langword="true"/> when the native query succeeds.</returns>
         internal delegate bool ReadCombo(IntPtr window, ref ComboInfo information);
 
-        /// <summary>Maintains the window bounds and client bounds state for vbe native chrome.</summary>
+        /// <summary>Injectable readers for outer-window and client-area bounds.</summary>
         internal static ReadRectangle WindowBounds = GetWindowRect, ClientBounds = GetClientRect;
 
-        /// <summary>Maintains the to screen and to client state for vbe native chrome.</summary>
+        /// <summary>Injectable conversions between client and screen coordinates.</summary>
         internal static ConvertPoint ToScreen = ClientToScreen, ToClient = ScreenToClient;
 
-        /// <summary>Maintains the pointer position state for vbe native chrome.</summary>
+        /// <summary>Injectable screen-coordinate cursor reader used by native hit testing.</summary>
         internal static ReadPointer PointerPosition = GetCursorPos;
 
-        /// <summary>Maintains the combo information state for vbe native chrome.</summary>
+        /// <summary>Injectable native combo-box information query.</summary>
         internal static ReadCombo ComboInformation = GetComboBoxInfo;
 
-        /// <summary>Maintains the window enabled state for vbe native chrome.</summary>
+        /// <summary>Injectable check that the candidate native window accepts input.</summary>
         internal static Func<IntPtr, bool> WindowEnabled = IsWindowEnabled;
 
-        /// <summary>Maintains the acquire window dc and acquire client dc state for vbe native chrome.</summary>
+        /// <summary>Injectable acquisition functions for non-client and client device contexts.</summary>
         internal static Func<IntPtr, IntPtr> AcquireWindowDc = GetWindowDC, AcquireClientDc = GetDC;
 
-        /// <summary>Maintains the related window state for vbe native chrome.</summary>
+        /// <summary>Injectable native relationship query, such as retrieving an owner or sibling.</summary>
         internal static Func<IntPtr, uint, IntPtr> RelatedWindow = GetWindow;
 
-        /// <summary>Maintains the release window dc state for vbe native chrome.</summary>
+        /// <summary>Releases a device context acquired from the specified window.</summary>
         internal static Func<IntPtr, IntPtr, int> ReleaseWindowDc = ReleaseDC;
 
-        /// <summary>Maintains the create graphics from dc state for vbe native chrome.</summary>
+        /// <summary>Creates a managed drawing context over an acquired native device context.</summary>
         internal static Func<IntPtr, Graphics> CreateGraphicsFromDc = Graphics.FromHdc;
 
-        /// <summary>Maintains the create chrome bitmap state for vbe native chrome.</summary>
+        /// <summary>Creates a 32-bit RGB scratch bitmap for captured native chrome remapping.</summary>
         internal static Func<int, int, Bitmap> CreateChromeBitmap = (width, height) => new Bitmap(width, height, PixelFormat.Format32bppRgb);
 
         /// <summary>RGB color used as the remapped native code-editor background.</summary>
@@ -420,7 +416,7 @@ internal int X, Y; }
             finally { painting = false; if (suppliedDc == IntPtr.Zero) ReleaseWindowDc(window, dc); }
         }
 
-        /// <summary>Maintains the create property row bitmap state for vbe native chrome.</summary>
+        /// <summary>Creates a 32-bit RGB scratch bitmap for one captured property-list row.</summary>
         internal static Func<int, int, Bitmap> CreatePropertyRowBitmap = (width, height) => new Bitmap(width, height, PixelFormat.Format32bppRgb);
 
         /// <summary>Remaps the captured pixels of one native property-list row in place.</summary>

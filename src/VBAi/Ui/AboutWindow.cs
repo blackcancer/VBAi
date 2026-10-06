@@ -18,31 +18,31 @@ namespace VBAi
         /// <summary>Safe link-opening action used by the resource links.</summary>
         internal Action<string> OpenLink = SafeLinks.Open;
 
-        /// <summary>Maintains the metadata assembly state for about window.</summary>
+        /// <summary>Assembly source for displayed product version metadata.</summary>
         internal static Func<Assembly> MetadataAssembly = ReadMetadataAssembly;
 
-        /// <summary>Maintains the process is64 bit state for about window.</summary>
+        /// <summary>Process architecture source used to describe the loaded add-in host.</summary>
         internal static Func<bool> ProcessIs64Bit = ReadProcessIs64Bit;
 
-        /// <summary>Maintains the runtime version state for about window.</summary>
+        /// <summary>CLR version source used in the copyable technical details.</summary>
         internal static Func<Version> RuntimeVersion = ReadRuntimeVersion;
 
-        /// <summary>Reads runtime version for about window.</summary>
-        /// <returns>version produced by the operation for read runtime version on about window.</returns>
+        /// <summary>Reads the CLR version running the VBE host process.</summary>
+        /// <returns>The active .NET runtime version.</returns>
         private static Version ReadRuntimeVersion() => Environment.Version;
 
-        /// <summary>Reads metadata assembly for about window.</summary>
-        /// <returns>assembly produced by the operation for read metadata assembly on about window.</returns>
+        /// <summary>Returns the assembly whose informational version identifies the installed VBAi build.</summary>
+        /// <returns>The assembly containing the About dialog.</returns>
         private static Assembly ReadMetadataAssembly() => typeof(AboutWindow).Assembly;
 
-        /// <summary>Reads process is64 bit for about window.</summary>
-        /// <returns>Boolean indicating the result of the check for read process is64 bit on about window.</returns>
+        /// <summary>Reads the bitness of the current host process.</summary>
+        /// <returns><see langword="true"/> when VBAi is loaded into a 64-bit process.</returns>
         private static bool ReadProcessIs64Bit() => Environment.Is64BitProcess;
 
-        /// <summary>Resolves image reader for about window.</summary>
-        /// <param name="sender">object that supplies the sender for this operation.</param>
-        /// <param name="request">resolve event args that supplies the request for this operation.</param>
-        /// <returns>assembly produced by the operation for resolve image reader on about window.</returns>
+        /// <summary>Resolves only the SDK image-resource reader assembly required while this form loads its embedded resources.</summary>
+        /// <param name="sender">AppDomain raising the assembly resolution event.</param>
+        /// <param name="request">Requested assembly identity.</param>
+        /// <returns>The already-loaded reader assembly for the exact known identity, or <see langword="null"/> to leave other resolution to the runtime.</returns>
         internal static Assembly ResolveImageReader(object sender, ResolveEventArgs request) =>
             request.Name == "System.Resources.Extensions, Version=4.0.0.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51"
                 ? typeof(System.Resources.Extensions.DeserializingResourceReader).Assembly : null;

@@ -72,17 +72,17 @@ namespace VBAi
         /// <param name="lParam">Message-specific second value.</param><returns>Window procedure result.</returns>
         [DllImport("user32.dll")] private static extern IntPtr SendMessage(IntPtr window, uint message, IntPtr wParam, IntPtr lParam);
 
-        /// <summary>Maintains the open timeout milliseconds and worker timeout milliseconds and close timeout milliseconds and page timeout milliseconds state for vbe native palette dialog.</summary>
+        /// <summary>Bounded UIA/open, worker-join, native-close, and color-page wait limits, in milliseconds.</summary>
         internal static int OpenTimeoutMilliseconds = 10000, WorkerTimeoutMilliseconds = 30000,
             CloseTimeoutMilliseconds = 2000, PageTimeoutMilliseconds = 1000;
 
-        /// <summary>Maintains the post dialog message state for vbe native palette dialog.</summary>
+        /// <summary>Message-posting route used to close or control only the dialog owned by this transaction.</summary>
         internal static Func<IntPtr, uint, IntPtr, IntPtr, bool> PostDialogMessage = PostMessage;
 
-        /// <summary>Maintains the wait worker state for vbe native palette dialog.</summary>
+        /// <summary>Worker-join route used with the explicit bounded shutdown timeout.</summary>
         internal static Func<Thread, int, bool> WaitWorker = (worker, timeout) => worker.Join(timeout);
 
-        /// <summary>Maintains the owned windows state for vbe native palette dialog.</summary>
+        /// <summary>Snapshot of native descendants owned by the VBE before opening Options, used to distinguish the new dialog.</summary>
         internal static Func<IntPtr, HashSet<IntPtr>> OwnedWindows = Windows;
 
         /// <summary>Opens the VBE Options dialog, reads its ten color rows, optionally updates them, then closes it.</summary>

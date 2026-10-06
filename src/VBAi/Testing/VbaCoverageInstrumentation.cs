@@ -9,238 +9,238 @@ using System.Text.RegularExpressions;
 namespace VBAi
 {
 
-    /// <summary>Owns the vba coverage probe state and operations.</summary>
+    /// <summary>Identifies a procedure-entry probe and its original source location.</summary>
     internal sealed class VbaCoverageProbe
     {
 
-        /// <summary>Gets or sets the index1 based.</summary>
-        /// <value>Current index1 based exposed by vba coverage probe.</value>
+        /// <summary>Gets or sets the one-based slot assigned to this probe in the runtime hit array.</summary>
+        /// <value>Positive one-based index used by the generated VBA support code.</value>
         public int Index1Based { get; set; }
 
-        /// <summary>Gets or sets the id.</summary>
-        /// <value>Current id exposed by vba coverage probe.</value>
+        /// <summary>Gets or sets the stable identifier written into the hit record.</summary>
+        /// <value>Probe identifier.</value>
         public string Id { get; set; }
 
-        /// <summary>Gets or sets the module.</summary>
-        /// <value>Current module exposed by vba coverage probe.</value>
+        /// <summary>Gets or sets the source component containing the instrumented procedure.</summary>
+        /// <value>Component name.</value>
         public string Module { get; set; }
 
-        /// <summary>Gets or sets the procedure.</summary>
-        /// <value>Current procedure exposed by vba coverage probe.</value>
+        /// <summary>Gets or sets the procedure whose entry increments this probe.</summary>
+        /// <value>Procedure name.</value>
         public string Procedure { get; set; }
 
-        /// <summary>Gets or sets the kind.</summary>
-        /// <value>Current kind exposed by vba coverage probe.</value>
+        /// <summary>Gets or sets the declaration kind, such as Sub or Function.</summary>
+        /// <value>Kind parsed from the original declaration.</value>
         public string Kind { get; set; }
 
-        /// <summary>Gets or sets the original line.</summary>
-        /// <value>Current original line exposed by vba coverage probe.</value>
+        /// <summary>Gets or sets the one-based line of the original procedure declaration.</summary>
+        /// <value>Original source line number.</value>
         public int OriginalLine { get; set; }
 
-        /// <summary>Gets or sets the original column.</summary>
-        /// <value>Current original column exposed by vba coverage probe.</value>
+        /// <summary>Gets or sets the one-based column of the original procedure declaration.</summary>
+        /// <value>Original source column number.</value>
         public int OriginalColumn { get; set; }
 
-        /// <summary>Gets or sets the metric.</summary>
-        /// <value>Current metric exposed by vba coverage probe.</value>
+        /// <summary>Gets or sets the coverage metric represented by this probe.</summary>
+        /// <value>Defaults to <c>Procedure</c>; no statement-level metric is currently emitted.</value>
         public string Metric { get; set; } = "Procedure";
     }
 
-    /// <summary>Owns the vba coverage module state and operations.</summary>
+    /// <summary>Holds original and instrumented text plus the edits applied to one cloned component.</summary>
     internal sealed class VbaCoverageModule
     {
 
-        /// <summary>Gets or sets the name.</summary>
-        /// <value>Current name exposed by vba coverage module.</value>
+        /// <summary>Gets or sets the component name that must match the source snapshot.</summary>
+        /// <value>VBIDE component name.</value>
         public string Name { get; set; }
 
-        /// <summary>Gets or sets the component type.</summary>
-        /// <value>Current component type exposed by vba coverage module.</value>
+        /// <summary>Gets or sets the VBIDE component type used when replacing source in the disposable clone.</summary>
+        /// <value>Numeric VBIDE component type.</value>
         public int ComponentType { get; set; }
 
-        /// <summary>Gets or sets the original hash.</summary>
-        /// <value>Current original hash exposed by vba coverage module.</value>
+        /// <summary>Gets or sets the fingerprint of the source before instrumentation.</summary>
+        /// <value>Original-source fingerprint used for stale-source checks.</value>
         public string OriginalHash { get; set; }
 
-        /// <summary>Gets or sets the original source.</summary>
-        /// <value>Current original source exposed by vba coverage module.</value>
+        /// <summary>Gets or sets the exact source captured before generated probes were inserted.</summary>
+        /// <value>Original component source.</value>
         public string OriginalSource { get; set; }
 
-        /// <summary>Gets or sets the instrumented source.</summary>
-        /// <value>Current instrumented source exposed by vba coverage module.</value>
+        /// <summary>Gets or sets the source text with procedure-entry hit increments inserted.</summary>
+        /// <value>Generated source intended for the disposable project clone.</value>
         public string InstrumentedSource { get; set; }
 
-        /// <summary>Gets or sets the edits.</summary>
-        /// <value>Current edits exposed by vba coverage module.</value>
+        /// <summary>Gets or sets the ordered source edits that produced <see cref="InstrumentedSource"/>.</summary>
+        /// <value>Applied edits in original-source coordinates.</value>
         public List<VbaCoverageEdit> Edits { get; set; } = new List<VbaCoverageEdit>();
     }
 
-    /// <summary>Owns the vba coverage edit state and operations.</summary>
+    /// <summary>Describes one insertion against the unmodified component source.</summary>
     internal sealed class VbaCoverageEdit
     {
 
-        /// <summary>Gets or sets the original line.</summary>
-        /// <value>Current original line exposed by vba coverage edit.</value>
+        /// <summary>Gets or sets the one-based source line where the insertion is anchored.</summary>
+        /// <value>Original line number.</value>
         public int OriginalLine { get; set; }
 
-        /// <summary>Gets or sets the original column.</summary>
-        /// <value>Current original column exposed by vba coverage edit.</value>
+        /// <summary>Gets or sets the one-based source column where the insertion is anchored.</summary>
+        /// <value>Original column number.</value>
         public int OriginalColumn { get; set; }
 
-        /// <summary>Gets or sets the text.</summary>
-        /// <value>Current text exposed by vba coverage edit.</value>
+        /// <summary>Gets or sets the text inserted at the recorded source location.</summary>
+        /// <value>Generated VBA text.</value>
         public string Text { get; set; }
 
-        /// <summary>Gets or sets the is whole line.</summary>
-        /// <value>Current is whole line exposed by vba coverage edit.</value>
+        /// <summary>Gets or sets whether the edit occupies a complete inserted source line.</summary>
+        /// <value><see langword="true"/> when line boundaries are part of the edit.</value>
         public bool IsWholeLine { get; set; }
     }
 
-    /// <summary>Owns the vba coverage exclusion state and operations.</summary>
+    /// <summary>Explains why a procedure could not safely contribute a coverage probe.</summary>
     internal sealed class VbaCoverageExclusion
     {
 
-        /// <summary>Gets or sets the module.</summary>
-        /// <value>Current module exposed by vba coverage exclusion.</value>
+        /// <summary>Gets or sets the component in which the excluded declaration was found.</summary>
+        /// <value>Component name.</value>
         public string Module { get; set; }
 
-        /// <summary>Gets or sets the procedure.</summary>
-        /// <value>Current procedure exposed by vba coverage exclusion.</value>
+        /// <summary>Gets or sets the procedure name, when a declaration could be identified.</summary>
+        /// <value>Procedure name or null for a module-level exclusion.</value>
         public string Procedure { get; set; }
 
-        /// <summary>Gets or sets the kind.</summary>
-        /// <value>Current kind exposed by vba coverage exclusion.</value>
+        /// <summary>Gets or sets the declaration kind associated with the exclusion.</summary>
+        /// <value>Parsed declaration kind, or null when unavailable.</value>
         public string Kind { get; set; }
 
-        /// <summary>Gets or sets the original line.</summary>
-        /// <value>Current original line exposed by vba coverage exclusion.</value>
+        /// <summary>Gets or sets the one-based line of the excluded declaration, or zero when module-wide.</summary>
+        /// <value>Original line number or zero.</value>
         public int OriginalLine { get; set; }
 
-        /// <summary>Gets or sets the reason.</summary>
-        /// <value>Current reason exposed by vba coverage exclusion.</value>
+        /// <summary>Gets or sets the reason the procedure was omitted from instrumentation.</summary>
+        /// <value>Diagnostic reason.</value>
         public string Reason { get; set; }
 
-        /// <summary>Gets or sets the intentional.</summary>
-        /// <value>Current intentional exposed by vba coverage exclusion.</value>
+        /// <summary>Gets or sets whether the exclusion is a deliberate policy choice rather than an analysis fault.</summary>
+        /// <value>True for intentional exclusions.</value>
         public bool Intentional { get; set; }
     }
 
-    /// <summary>Owns the vba coverage plan state and operations.</summary>
+    /// <summary>Contains the complete source-bound instrumentation plan and any conditions that prevent applying it.</summary>
     internal sealed class VbaCoveragePlan
     {
 
-        /// <summary>Gets or sets the original.</summary>
-        /// <value>Current original exposed by vba coverage plan.</value>
+        /// <summary>Gets or sets the project identity for the source from which this plan was built.</summary>
+        /// <value>Project selector or name captured by the snapshot.</value>
         public string Original { get; set; }
 
-        /// <summary>Gets or sets the revision.</summary>
-        /// <value>Current revision exposed by vba coverage plan.</value>
+        /// <summary>Gets or sets the source revision that must still match before using this plan.</summary>
+        /// <value>Revision token from the source snapshot.</value>
         public string Revision { get; set; }
 
-        /// <summary>Gets or sets the modules.</summary>
-        /// <value>Current modules exposed by vba coverage plan.</value>
+        /// <summary>Gets or sets per-component original and transformed source.</summary>
+        /// <value>Component plans, initialized empty.</value>
         public List<VbaCoverageModule> Modules { get; set; } = new List<VbaCoverageModule>();
 
-        /// <summary>Gets or sets the probes.</summary>
-        /// <value>Current probes exposed by vba coverage plan.</value>
+        /// <summary>Gets or sets procedure-entry probes included in the runtime support array.</summary>
+        /// <value>Planned probes, initialized empty.</value>
         public List<VbaCoverageProbe> Probes { get; set; } = new List<VbaCoverageProbe>();
 
-        /// <summary>Gets or sets the exclusions.</summary>
-        /// <value>Current exclusions exposed by vba coverage plan.</value>
+        /// <summary>Gets or sets declarations excluded from probe generation with their reasons.</summary>
+        /// <value>Exclusions, initialized empty.</value>
         public List<VbaCoverageExclusion> Exclusions { get; set; } = new List<VbaCoverageExclusion>();
 
-        /// <summary>Gets or sets the diagnostics.</summary>
-        /// <value>Current diagnostics exposed by vba coverage plan.</value>
+        /// <summary>Gets or sets blocking analysis diagnostics for this plan.</summary>
+        /// <value>Diagnostics, initialized empty.</value>
         public List<string> Diagnostics { get; set; } = new List<string>();
 
-        /// <summary>Gets or sets the denominator known.</summary>
-        /// <value>Current denominator known exposed by vba coverage plan.</value>
+        /// <summary>Gets or sets whether discovery proved the complete set of eligible procedures.</summary>
+        /// <value>False prevents the plan from being treated as complete coverage.</value>
         public bool DenominatorKnown { get; set; } = true;
 
-        /// <summary>Gets or sets the eligible procedure count.</summary>
-        /// <value>Current eligible procedure count exposed by vba coverage plan.</value>
+        /// <summary>Gets or sets the number of procedures in the known coverage denominator.</summary>
+        /// <value>Nonnegative procedure count.</value>
         public int EligibleProcedureCount { get; set; }
 
-        /// <summary>Gets the can instrument.</summary>
-        /// <value>Current can instrument exposed by vba coverage plan.</value>
+        /// <summary>Gets whether the plan has a known denominator and no blocking diagnostics.</summary>
+        /// <value>False means the source must not be instrumented using this plan.</value>
         public bool CanInstrument => DenominatorKnown && Diagnostics.Count == 0;
 
-        /// <summary>Gets the statement coverage available.</summary>
-        /// <value>Current statement coverage available exposed by vba coverage plan.</value>
+        /// <summary>Gets whether statement-level instrumentation is supported.</summary>
+        /// <value>Always false; this implementation records procedure entry only.</value>
         public bool StatementCoverageAvailable => false;
 
-        /// <summary>Gets or sets the runtime source.</summary>
-        /// <value>Current runtime source exposed by vba coverage plan.</value>
+        /// <summary>Gets or sets the support-module source that records and returns procedure-entry hits.</summary>
+        /// <value>Generated VBA runtime module source.</value>
         public string RuntimeSource { get; set; }
     }
 
-    /// <summary>Owns the vba coverage hit state and operations.</summary>
+    /// <summary>Pairs a planned probe with the runtime's observed entry flag.</summary>
     internal sealed class VbaCoverageHit
     {
 
-        /// <summary>Gets or sets the probe.</summary>
-        /// <value>Current probe exposed by vba coverage hit.</value>
+        /// <summary>Gets or sets the planned procedure probe associated with this runtime slot.</summary>
+        /// <value>Probe metadata.</value>
         public VbaCoverageProbe Probe { get; set; }
 
-        /// <summary>Gets or sets the entered.</summary>
-        /// <value>Current entered exposed by vba coverage hit.</value>
+        /// <summary>Gets or sets whether execution reached the instrumented procedure entry.</summary>
+        /// <value>Runtime-reported entry flag.</value>
         public bool Entered { get; set; }
     }
 
-    /// <summary>Owns the vba coverage report state and operations.</summary>
+    /// <summary>Reports procedure-entry coverage and diagnostics for a particular source revision.</summary>
     internal sealed class VbaCoverageReport
     {
 
-        /// <summary>Gets or sets the original.</summary>
-        /// <value>Current original exposed by vba coverage report.</value>
+        /// <summary>Gets or sets the project identity measured by the report.</summary>
+        /// <value>Project selector or captured name.</value>
         public string Original { get; set; }
 
-        /// <summary>Gets or sets the revision.</summary>
-        /// <value>Current revision exposed by vba coverage report.</value>
+        /// <summary>Gets or sets the revision of the source that was instrumented and measured.</summary>
+        /// <value>Measured revision token.</value>
         public string Revision { get; set; }
 
-        /// <summary>Gets or sets the metric.</summary>
-        /// <value>Current metric exposed by vba coverage report.</value>
+        /// <summary>Gets or sets the reported metric name.</summary>
+        /// <value>Defaults to <c>Procedure</c>.</value>
         public string Metric { get; set; } = "Procedure";
 
-        /// <summary>Gets or sets the available.</summary>
-        /// <value>Current available exposed by vba coverage report.</value>
+        /// <summary>Gets or sets whether a usable coverage measurement was produced.</summary>
+        /// <value>False when measurement was not requested or could not be completed.</value>
         public bool Available { get; set; }
 
-        /// <summary>Gets or sets the complete.</summary>
-        /// <value>Current complete exposed by vba coverage report.</value>
+        /// <summary>Gets or sets whether all required procedures were accounted for in the denominator.</summary>
+        /// <value>False when coverage is partial or discovery is incomplete.</value>
         public bool Complete { get; set; }
 
-        /// <summary>Gets or sets the denominator known.</summary>
-        /// <value>Current denominator known exposed by vba coverage report.</value>
+        /// <summary>Gets or sets whether the eligible-procedure denominator is known.</summary>
+        /// <value>False means a percentage cannot be interpreted as complete-project coverage.</value>
         public bool DenominatorKnown { get; set; }
 
-        /// <summary>Gets or sets the eligible.</summary>
-        /// <value>Current eligible exposed by vba coverage report.</value>
+        /// <summary>Gets or sets the number of eligible procedures in the measured denominator.</summary>
+        /// <value>Count, or null when discovery could not determine it.</value>
         public int? Eligible { get; set; }
 
-        /// <summary>Gets or sets the hit.</summary>
-        /// <value>Current hit exposed by vba coverage report.</value>
+        /// <summary>Gets or sets the number of eligible procedures whose entry was observed.</summary>
+        /// <value>Hit count, or null when the measurement did not produce one.</value>
         public int? Hit { get; set; }
 
-        /// <summary>Gets or sets the percent.</summary>
-        /// <value>Current percent exposed by vba coverage report.</value>
+        /// <summary>Gets or sets the hit percentage from zero through one hundred.</summary>
+        /// <value>Percentage, or null when the denominator or measurement is unavailable.</value>
         public double? Percent { get; set; }
 
-        /// <summary>Gets the statement coverage available.</summary>
-        /// <value>Current statement coverage available exposed by vba coverage report.</value>
+        /// <summary>Gets whether the report includes statement-level coverage.</summary>
+        /// <value>Always false; only procedure-entry coverage is currently measured.</value>
         public bool StatementCoverageAvailable => false;
 
-        /// <summary>Gets or sets the hits.</summary>
-        /// <value>Current hits exposed by vba coverage report.</value>
+        /// <summary>Gets or sets per-procedure entry observations.</summary>
+        /// <value>Hit records, initialized empty.</value>
         public List<VbaCoverageHit> Hits { get; set; } = new List<VbaCoverageHit>();
 
-        /// <summary>Gets or sets the exclusions.</summary>
-        /// <value>Current exclusions exposed by vba coverage report.</value>
+        /// <summary>Gets or sets procedures omitted from instrumentation and the reasons for omission.</summary>
+        /// <value>Exclusion records, initialized empty.</value>
         public List<VbaCoverageExclusion> Exclusions { get; set; } = new List<VbaCoverageExclusion>();
 
-        /// <summary>Gets or sets the diagnostics.</summary>
-        /// <value>Current diagnostics exposed by vba coverage report.</value>
+        /// <summary>Gets or sets measurement and source-analysis diagnostics.</summary>
+        /// <value>Diagnostic messages, initialized empty.</value>
         public List<string> Diagnostics { get; set; } = new List<string>();
     }
 

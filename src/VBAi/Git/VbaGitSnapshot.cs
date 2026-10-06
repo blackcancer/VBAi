@@ -109,7 +109,7 @@ namespace VBAi
         }
 
         /// <summary>Returns comparison data without altering serialized/exported resources.</summary>
-        /// <returns>sorted dictionary&lt;string, byte[]&gt; produced by the operation for comparison files on vba git snapshot.</returns>
+        /// <returns>Serialized files with a form's .frx data logically normalized only when every resource range is recognized, unambiguous, and non-overlapping.</returns>
         internal SortedDictionary<string, byte[]> ComparisonFiles()
         {
             var result = Serialize();
@@ -135,18 +135,18 @@ namespace VBAi
         }
 
         /// <summary>Compares one component file under the same rules used by revision guards.</summary>
-        /// <param name="other">vba git snapshot that supplies the other for this operation.</param>
-        /// <param name="file">Text that supplies the file value. Use the format required by the calling operation.</param>
-        /// <returns>Boolean indicating the result of the check for same file on vba git snapshot.</returns>
+        /// <param name="other">Snapshot captured from the target repository revision.</param>
+        /// <param name="file">Exact component or manifest file name to compare.</param>
+        /// <returns><see langword="true"/> when both snapshots contain the file and its comparison bytes are identical.</returns>
         internal bool SameFile(VbaGitSnapshot other, string file)
         {
             return other != null && ComparisonFiles().TryGetValue(file, out var left) &&
                 other.ComparisonFiles().TryGetValue(file, out var right) && left.SequenceEqual(right);
         }
 
-        /// <summary>Handles ole blobs for vba git snapshot.</summary>
-        /// <param name="metadata">Text that supplies the metadata value. Use the format required by the calling operation.</param>
-        /// <returns>match collection produced by the operation for ole blobs on vba git snapshot.</returns>
+        /// <summary>Finds single-line OleObjectBlob declarations with hexadecimal resource offsets.</summary>
+        /// <param name="metadata">Designer metadata preceding the component's code section.</param>
+        /// <returns>Regex matches containing each declared .frx offset.</returns>
         private static MatchCollection OleBlobs(string metadata)
         {
             return Regex.Matches(metadata, "^[ \\t]*OleObjectBlob[ \\t]*=[ \\t]*\"[^\"\\r\\n]+\"[ \\t]*:[ \\t]*([0-9a-f]+)[ \\t]*$",
@@ -154,8 +154,8 @@ namespace VBAi
         }
 
         /// <summary>Prepares a bounded form-font plan only for one unambiguous supported native container.</summary>
-        /// <param name="component">vba git component that supplies the component for this operation.</param>
-        /// <returns>form font binding[] produced by the operation for form fonts on vba git snapshot.</returns>
+        /// <param name="component">UserForm component whose designer and companion resource file are in this snapshot.</param>
+        /// <returns>Font bindings only for one supported, unambiguous OleObjectBlob resource; otherwise <see langword="null"/>.</returns>
         internal FormStreamPadding.FormFontBinding[] FormFonts(VbaGitComponent component)
         {
             if (component.Type != 3 || !component.HasResources) return null;
@@ -169,8 +169,8 @@ namespace VBAi
         }
 
         /// <summary>Finds resource references with the same grammar for validation and comparison.</summary>
-        /// <param name="metadata">Text that supplies the metadata value. Use the format required by the calling operation.</param>
-        /// <returns>match collection produced by the operation for resource references on vba git snapshot.</returns>
+        /// <param name="metadata">Designer metadata containing quoted resource references and their offsets.</param>
+        /// <returns>All reference matches, including formats whose resource extents are not understood.</returns>
         private static MatchCollection ResourceReferences(string metadata)
         {
             return Regex.Matches(metadata, "=\\s*\"([^\"\\r\\n]+)\"[ \\t]*:[ \\t]*([^\\r\\n]*)");

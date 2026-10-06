@@ -14,16 +14,16 @@ namespace VBAi
     internal static class UiCommandIcons
     {
 
-        /// <summary>Maintains the paths state for ui command icons.</summary>
+        /// <summary>Lock-protected cache of parsed SVG vector paths keyed by command symbol.</summary>
         private static readonly Dictionary<UiSymbol, GraphicsPath> Paths = new Dictionary<UiSymbol, GraphicsPath>();
 
         /// <summary>Renders an icon without bitmap scaling or theme-specific asset copies.</summary>
-        /// <param name="graphics">Drawing context; ownership remains with the caller.</param>
-        /// <param name="symbol">ui symbol that supplies the symbol for this operation.</param>
+        /// <param name="graphics">Drawing context; this method saves and restores its transform and does not dispose it.</param>
+        /// <param name="symbol">Bundled command symbol whose SVG path is loaded on first use.</param>
         /// <param name="bounds">Available drawing rectangle.</param>
-        /// <param name="color">color that supplies the color for this operation.</param>
+        /// <param name="color">Stroke color applied to the vector path.</param>
         /// <param name="dpi">Display density used to scale logical dimensions.</param>
-        /// <returns>Boolean indicating the result of the check for draw on ui command icons.</returns>
+        /// <returns><see langword="true"/> when a path was drawn or the symbol has no bundled path; <see langword="false"/> when its resource is absent or unsupported.</returns>
         internal static bool Draw(Graphics graphics, UiSymbol symbol, Rectangle bounds, Color color, int dpi)
         {
             lock (Paths)
@@ -63,8 +63,9 @@ namespace VBAi
         }
         // The bundled SVGs intentionally use absolute M/L/C/Z commands only.
         /// <summary>Parses the absolute M, L, C and Z commands used by bundled SVG paths.</summary>
-        /// <param name="data">Text that supplies the data value. Use the format required by the calling operation.</param>
-        /// <returns>graphics path produced by the operation for parse on ui command icons.</returns>
+        /// <param name="data">SVG path data using only absolute M, L, C, and Z commands with invariant-culture coordinates.</param>
+        /// <returns>A disposable vector path containing the parsed figures.</returns>
+        /// <exception cref="FormatException">The data contains an unsupported command or malformed number.</exception>
         private static GraphicsPath Parse(string data)
         {
             var tokens = Regex.Matches(data, @"[A-Za-z]|-?\d+(?:\.\d+)?");

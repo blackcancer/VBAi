@@ -12,7 +12,7 @@ namespace VBAi
 
         /// <summary>Retains error kinds and HRESULTs without copying exception messages or source paths.</summary>
         /// <param name="error">Exception describing the error failure.</param>
-        /// <returns>Text produced by the operation for describe on git failure diagnostic.</returns>
+        /// <returns>At most four exception type/HRESULT entries with one bounded VBAi frame each; messages and paths are omitted.</returns>
         internal static string Describe(Exception error)
         {
             if (error == null) throw new ArgumentNullException(nameof(error));
@@ -45,9 +45,9 @@ namespace VBAi
         }
 
         /// <summary>Bounds metadata independently of messages and runtime object contents.</summary>
-        /// <param name="value">Text that supplies the value value. Use the format required by the calling operation.</param>
-        /// <param name="limit">int that supplies the limit for this operation.</param>
-        /// <returns>Text produced by the operation for bounded on git failure diagnostic.</returns>
+        /// <param name="value">Exception type or product method metadata to retain.</param>
+        /// <param name="limit">Maximum character count for the emitted metadata field.</param>
+        /// <returns>The original string when it fits, otherwise its first <paramref name="limit"/> characters.</returns>
         private static string Bounded(string value, int limit)
         {
             return value.Length <= limit ? value : value.Substring(0, limit);

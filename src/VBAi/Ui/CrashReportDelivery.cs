@@ -28,35 +28,35 @@ Uncertain }
     internal sealed class CrashReportDelivery
     {
 
-        /// <summary>Maintains the load settings state for crash report delivery.</summary>
+        /// <summary>Settings source used to select the configured GitHub account.</summary>
         internal static Func<LlmSettings> LoadSettings = LlmSettings.Load;
 
-        /// <summary>Maintains the read credential state for crash report delivery.</summary>
+        /// <summary>Credential provider used for the selected account and supplied cancellation token.</summary>
         internal static Func<string, CancellationToken, Task<string>> ReadCredential = GitHubApi.ReadCredential;
 
-        /// <summary>Maintains the create api state for crash report delivery.</summary>
+        /// <summary>GitHub API factory bound to the selected account and credential callback.</summary>
         internal static Func<string, Func<CancellationToken, Task<string>>, GitHubApi> CreateApi =
             (account, credential) => new GitHubApi(account, credential: credential);
 
-        /// <summary>Maintains the active outlook state for crash report delivery.</summary>
+        /// <summary>Looks up an already-running Outlook COM instance without launching another instance.</summary>
         internal static Func<string, object> ActiveOutlook = Marshal.GetActiveObject;
 
-        /// <summary>Maintains the outlook type state for crash report delivery.</summary>
+        /// <summary>Resolves Outlook's COM class identifier when no active instance is available.</summary>
         internal static Func<string, Type> OutlookType = Type.GetTypeFromProgID;
 
-        /// <summary>Maintains the create outlook state for crash report delivery.</summary>
+        /// <summary>Creates Outlook COM automation only after profile checks permit its use.</summary>
         internal static Func<Type, object> CreateOutlook = Activator.CreateInstance;
 
-        /// <summary>Tracks the is com reference state of crash report delivery.</summary>
+        /// <summary>Checks whether a returned automation object is a COM proxy before explicit release.</summary>
         internal static Func<object, bool> IsComReference = Marshal.IsComObject;
 
-        /// <summary>Maintains the release reference state for crash report delivery.</summary>
+        /// <summary>Releases one COM reference acquired by this delivery operation.</summary>
         internal static Func<object, int> ReleaseReference = Marshal.ReleaseComObject;
 
-        /// <summary>Maintains the open profiles state for crash report delivery.</summary>
+        /// <summary>Opens the current user's Outlook profile registry key read-only.</summary>
         internal static Func<string, IDisposable> OpenProfiles = path => Registry.CurrentUser.OpenSubKey(path);
 
-        /// <summary>Maintains the read profile sub keys state for crash report delivery.</summary>
+        /// <summary>Counts subkeys beneath the opened Outlook profiles registry key.</summary>
         internal static Func<IDisposable, int> ReadProfileSubKeys = profiles => ((RegistryKey)profiles).SubKeyCount;
 
         /// <summary>Counts the profile count maintained by crash report delivery.</summary>

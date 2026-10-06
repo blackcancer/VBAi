@@ -95,16 +95,16 @@ namespace VBAi
     public class UiActionButton : Button
     {
 
-        /// <summary>Maintains the symbol state for ui action button.</summary>
+        /// <summary>Symbol rendered for this command, from the bundled SVG set or the Windows symbol font.</summary>
         private UiSymbol symbol;
 
-        /// <summary>Maintains the icon only and primary and hovered and pressed state for ui action button.</summary>
+        /// <summary>Rendering flags for icon-only layout, emphasized action styling, pointer hover, and active mouse press.</summary>
         private bool iconOnly, primary, hovered, pressed;
 
-        /// <summary>Maintains the caption tip state for ui action button.</summary>
+        /// <summary>Tooltip retaining the button caption when the visible label is hidden.</summary>
         private readonly ToolTip captionTip = new ToolTip { ShowAlways = true };
 
-        /// <summary>Maintains the symbol font state for ui action button.</summary>
+        /// <summary>Installed Windows icon font selected after the font subsystem resolves the preferred family.</summary>
         private static readonly string SymbolFont = FindSymbolFont();
 
         /// <summary>Creates a native keyboard-accessible command.</summary>
@@ -116,22 +116,22 @@ namespace VBAi
         }
 
         /// <summary>Symbol displayed beside the caption or on its own.</summary>
-        /// <value>Current symbol exposed by ui action button.</value>
+        /// <value>Current symbol enum value used by the SVG or font renderer.</value>
         [Category("Appearance"), DefaultValue(UiSymbol.None)]
         public UiSymbol Symbol { get => symbol; set { symbol = value; Invalidate(); } }
 
         /// <summary>Hides the painted caption while retaining its tooltip and accessible name.</summary>
-        /// <value>Current icon only exposed by ui action button.</value>
+        /// <value><see langword="true"/> when only the symbol is painted and the caption remains available through tooltip/accessibility.</value>
         [Category("Appearance"), DefaultValue(false)]
         public bool IconOnly { get => iconOnly; set { iconOnly = value; UpdateCaption(); Invalidate(); } }
 
         /// <summary>Emphasizes the main action in its group.</summary>
-        /// <value>Current primary exposed by ui action button.</value>
+        /// <value><see langword="true"/> when the button uses the emphasized primary-action palette.</value>
         [Category("Appearance"), DefaultValue(false)]
         public bool Primary { get => primary; set { primary = value; Invalidate(); } }
 
         /// <summary>Chooses the available Windows icon font for symbols without a bundled SVG.</summary>
-        /// <returns>Text produced by the operation for find symbol font on ui action button.</returns>
+        /// <returns>The preferred installed Fluent symbol font, falling back to the legacy Windows icon font.</returns>
         private static string FindSymbolFont()
         {
             using (var font = new Font("Segoe Fluent Icons", 12))
@@ -156,8 +156,8 @@ namespace VBAi
 
         /// <inheritdoc/>
         /// <summary>Measures the caption and icon without accumulating width across layout passes.</summary>
-        /// <param name="proposedSize">size that supplies the proposed size for this operation.</param>
-        /// <returns>size produced by the operation for get preferred size on ui action button.</returns>
+        /// <param name="proposedSize">Layout engine's suggested size; caption sizing is measured independently to avoid width accumulation.</param>
+        /// <returns>Preferred device-pixel size including padding and symbol space, or a fixed DPI-scaled icon-only size.</returns>
         public override Size GetPreferredSize(Size proposedSize)
         {
             if (IconOnly && Symbol != UiSymbol.None) return new Size(32 * DeviceDpi / 96, 30 * DeviceDpi / 96);
