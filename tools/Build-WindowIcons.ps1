@@ -1,4 +1,4 @@
-param([string]$ProjectRoot = (Split-Path $PSScriptRoot -Parent))
+﻿param([string]$ProjectRoot = (Split-Path $PSScriptRoot -Parent))
 $ErrorActionPreference = 'Stop'
 Add-Type -AssemblyName System.Drawing
 $sizes = @(16, 20, 24, 32, 48, 64, 128, 256)
@@ -18,7 +18,35 @@ foreach ($name in @('assistant', 'settings', 'github')) {
                 $width = [int][Math]::Round($source.Width * $scale)
                 $height = [int][Math]::Round($source.Height * $scale)
                 $graphics.DrawImage($source, [int](($size-$width)/2), [int](($size-$height)/2), $width, $height)
-                $bitmap.Save($stream, [Drawing.Imaging.ImageFormat]::Png)
+                # Icon.ToBitmap in .NET Framework misreads small PNG-compressed
+                # ICO frames. Use the native 32-bit DIB layout, including the AND
+                # transparency mask, for every size used by Forms and CommandBars.
+                $frameWriter = [IO.BinaryWriter]::new($stream)
+                $maskStride = [int]([Math]::Ceiling($size / 32.0) * 4)
+                $frameWriter.Write([uint32]40)
+                $frameWriter.Write([int32]$size); $frameWriter.Write([int32]($size * 2))
+                $frameWriter.Write([uint16]1); $frameWriter.Write([uint16]32)
+                $frameWriter.Write([uint32]0)
+                $frameWriter.Write([uint32]($size * $size * 4 + $maskStride * $size))
+                foreach ($unused in 1..4) { $frameWriter.Write([uint32]0) }
+                for ($y = $size - 1; $y -ge 0; $y--) {
+                    for ($x = 0; $x -lt $size; $x++) {
+                        $pixel = $bitmap.GetPixel($x, $y)
+                        $frameWriter.Write([byte]$pixel.B); $frameWriter.Write([byte]$pixel.G)
+                        $frameWriter.Write([byte]$pixel.R); $frameWriter.Write([byte]$pixel.A)
+                    }
+                }
+                for ($y = $size - 1; $y -ge 0; $y--) {
+                    $maskRow = [byte[]]::new($maskStride)
+                    for ($x = 0; $x -lt $size; $x++) {
+                        if ($bitmap.GetPixel($x, $y).A -eq 0) {
+                            $offsetInRow = [int][Math]::Floor($x / 8.0)
+                            $maskRow[$offsetInRow] = $maskRow[$offsetInRow] -bor (128 -shr ($x % 8))
+                        }
+                    }
+                    $frameWriter.Write($maskRow)
+                }
+                $frameWriter.Flush()
                 $frames += ,$stream.ToArray()
             } finally { $stream.Dispose(); $graphics.Dispose(); $bitmap.Dispose() }
         }

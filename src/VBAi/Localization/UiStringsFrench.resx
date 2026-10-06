@@ -2369,4 +2369,7 @@ Connexion via Git Credential Manager ; identité de commit configurée dans Git.
   <data name="Choose whether to compile the project automatically after agent code edits." xml:space="preserve"><value>Choisir si le projet doit être compilé automatiquement après les modifications de code de l’agent.</value></data>
   <data name="Copy the selected response text to the clipboard." xml:space="preserve"><value>Copier le texte sélectionné de la réponse dans le presse-papiers.</value></data>
   <data name="Copy the complete code block under the pointer without its surrounding explanation." xml:space="preserve"><value>Copier le bloc de code complet sous le pointeur sans l’explication qui l’entoure.</value></data>
+  <data name="Back to conversation" xml:space="preserve">
+    <value>Revenir à la conversation</value>
+  </data>
 </root>

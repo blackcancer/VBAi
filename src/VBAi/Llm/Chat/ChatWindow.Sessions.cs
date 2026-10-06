@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -449,7 +449,7 @@ namespace VBAi
                 providerPicker.SelectedIndex = provider < 0 ? 0 : provider;
                 sessionTitle.Text = session.DisplayTitle;
                 chatTitleEditor.Text = session.DisplayTitle;
-                historyPanel.Visible = false;
+                SetHistoryVisible(false);
                 RefreshHistory();
                 ShowWelcome();
                 sessionViewUnavailable = false;
@@ -536,8 +536,7 @@ namespace VBAi
                     SaveCurrentSession();
                 }
                 else RefreshHistory();
-                historyPanel.Visible = true;
-                historyPanel.BringToFront();
+                SetHistoryVisible(true);
                 SetStatus(UiText.Get("Conversation deleted from local history") + (recoveryWarning == null ? "" :
                     " · " + UiText.Get("Local history recovery copies are available. See the troubleshooting guide.")));
             }

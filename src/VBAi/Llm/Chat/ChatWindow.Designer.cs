@@ -1,4 +1,4 @@
-namespace VBAi
+﻿namespace VBAi
 {
 
     /// <summary>Fenêtre de conversation et commandes de son concepteur WinForms.</summary>
@@ -758,8 +758,7 @@ namespace VBAi
             //
             // historyPanel
             //
-            this.historyPanel.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom)
-            | System.Windows.Forms.AnchorStyles.Left)));
+            this.historyPanel.Dock = System.Windows.Forms.DockStyle.Fill;
             this.historyPanel.AutoScroll = true;
             this.historyPanel.BackColor = System.Drawing.Color.White;
             this.historyPanel.Controls.Add(this.historyLayout);
@@ -772,7 +771,8 @@ namespace VBAi
             //
             // historyLayout
             //
-            this.historyLayout.AutoSize = true;
+            this.historyLayout.AutoSize = false;
+            this.historyLayout.MinimumSize = new System.Drawing.Size(0, 310);
             this.historyLayout.ColumnCount = 1;
             this.historyLayout.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 100F));
             this.historyLayout.Controls.Add(this.historyLabel, 0, 0);
@@ -783,14 +783,14 @@ namespace VBAi
             this.historyLayout.Controls.Add(this.historyActions, 0, 5);
             this.historyLayout.Controls.Add(this.memoryToggle, 0, 6);
             this.historyLayout.Controls.Add(this.memoryPanel, 0, 7);
-            this.historyLayout.Dock = System.Windows.Forms.DockStyle.Top;
+            this.historyLayout.Dock = System.Windows.Forms.DockStyle.Fill;
             this.historyLayout.Location = new System.Drawing.Point(6, 6);
             this.historyLayout.Margin = new System.Windows.Forms.Padding(0);
             this.historyLayout.Name = "historyLayout";
             this.historyLayout.RowCount = 8;
             this.historyLayout.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 24F));
             this.historyLayout.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 32F));
-            this.historyLayout.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 128F));
+            this.historyLayout.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 100F));
             this.historyLayout.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 26F));
             this.historyLayout.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 32F));
             this.historyLayout.RowStyles.Add(new System.Windows.Forms.RowStyle());

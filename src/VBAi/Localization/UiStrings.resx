@@ -2369,4 +2369,7 @@ Sign in through Git Credential Manager; commit identity is configured in Git.</v
   <data name="Choose whether to compile the project automatically after agent code edits." xml:space="preserve"><value>Choose whether to compile the project automatically after agent code edits.</value></data>
   <data name="Copy the selected response text to the clipboard." xml:space="preserve"><value>Copy the selected response text to the clipboard.</value></data>
   <data name="Copy the complete code block under the pointer without its surrounding explanation." xml:space="preserve"><value>Copy the complete code block under the pointer without its surrounding explanation.</value></data>
+  <data name="Back to conversation" xml:space="preserve">
+    <value>Back to conversation</value>
+  </data>
 </root>

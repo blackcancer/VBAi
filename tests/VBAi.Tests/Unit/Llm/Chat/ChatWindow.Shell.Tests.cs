@@ -1,4 +1,4 @@
-namespace VBAi.Tests.Unit
+﻿namespace VBAi.Tests.Unit
 {
     using System;
     using System.Collections;
@@ -17,6 +17,61 @@ namespace VBAi.Tests.Unit
     /// <summary>Vérifie les actions d’édition et le changement de mode dans la fenêtre de discussion.</summary>
     public sealed partial class ChatWindowStateTests
     {
+        /// <summary>Checks full-width history, exclusive transcript visibility, resizing and draft preservation without activating a desktop window.</summary>
+        [STATestMethod, TestCategory("Unit")]
+        public void HistoryReplacesTranscriptAndRestoresTheSameDraft()
+        {
+            using (var host = new HistoryTestHost())
+            using (var chat = Surfaces())
+            {
+                chat.TopLevel = false; chat.Dock = DockStyle.Fill;
+                host.Controls.Add(chat); chat.Show(); host.Show(); Application.DoEvents();
+                var prompt = Get<System.Windows.Controls.TextBox>(chat, "prompt");
+                prompt.Text = "Keep this unsent draft";
+                Call(chat, "AddTranscriptMessage", "Vous", "Existing message");
+                var history = Get<Panel>(chat, "historyPanel");
+                var transcript = Get<Panel>(chat, "transcriptPanel");
+                var surface = Get<Panel>(chat, "conversationPanel");
+                Assert.IsFalse(history.Visible); Assert.IsTrue(transcript.Visible);
+                foreach (int width in new[] { 450, 840 })
+                {
+                    host.ClientSize = new System.Drawing.Size(width, 900);
+                    Call(chat, "History_Click", null, EventArgs.Empty); host.PerformLayout();
+                    Assert.IsTrue(history.Visible); Assert.IsFalse(transcript.Visible);
+                    Assert.AreEqual(surface.ClientRectangle, history.Bounds);
+                    Assert.AreEqual(UiSymbol.Previous, Get<ChatActionButton>(chat, "history").Symbol);
+                    Assert.IsTrue(Get<ListBox>(chat, "sessionList").Width > width - 100);
+                    Call(chat, "History_Click", null, EventArgs.Empty);
+                    Assert.IsFalse(history.Visible); Assert.IsTrue(transcript.Visible);
+                    Assert.AreEqual(UiSymbol.History, Get<ChatActionButton>(chat, "history").Symbol);
+                    Assert.AreEqual("Keep this unsent draft", prompt.Text);
+                    Assert.AreEqual(1, Get<List<ChatEntry>>(chat, "transcriptEntries").Count);
+                }
+            }
+        }
+
+        /// <summary>Ensures every chat option has real artwork and palette refresh keeps the commands intact.</summary>
+        [STATestMethod, TestCategory("Unit")]
+        public void EveryChatMenuCommandHasAnOwnedImage()
+        {
+            using (var chat = new ChatWindow())
+            {
+                Call(chat, "RefreshOptionsIcons");
+                Call(chat, "RefreshOptionsIcons");
+                foreach (ToolStripItem item in Get<ContextMenuStrip>(chat, "optionsMenu").Items)
+                    if (!(item is ToolStripSeparator)) Assert.IsNotNull(item.Image, item.Name);
+            }
+        }
+
+        /// <summary>Hosts rendering assertions outside the desktop without taking keyboard focus.</summary>
+        private sealed class HistoryTestHost : Form
+        {
+            /// <summary>Creates an offscreen test host.</summary>
+            internal HistoryTestHost() { StartPosition = FormStartPosition.Manual; Location = new System.Drawing.Point(-30000, -30000); ShowInTaskbar = false; ClientSize = new System.Drawing.Size(600, 900); }
+            /// <inheritdoc />
+            protected override bool ShowWithoutActivation => true;
+        }
+
         [STATestMethod, TestCategory("Unit")]
         public void GitModalOwnerPreservesStandaloneAndUncreatedChatIdentity()
         {

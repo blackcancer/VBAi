@@ -96,6 +96,11 @@ is still a message to send; compilation does not run all macros or tests.
 
 ## Sessions and local history
 
+The history button replaces the transcript with the document history across the
+full width of the central panel. The same button returns to the conversation;
+selecting a saved session also returns there. Opening history preserves the
+unsent draft and the current transcript.
+
 Search, rename, pin, archive, restore, delete or export conversations from the chat history.
 Deletion requires confirmation and waits for pending local writes. It removes the
 local entry; it does not request deletion from the provider.

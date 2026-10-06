@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.Drawing.Drawing2D;
@@ -49,6 +49,21 @@ namespace VBAi
                 finally { graphics.Restore(state); }
                 return true;
             }
+        }
+
+        /// <summary>Creates an owned transparent command image for a native menu item.</summary>
+        /// <param name="symbol">Bundled command artwork.</param>
+        /// <param name="color">Menu foreground color.</param>
+        /// <returns>A 16 pixel image to dispose with its owning menu.</returns>
+        internal static Bitmap CreateImage(UiSymbol symbol, Color color)
+        {
+            var bitmap = new Bitmap(16, 16);
+            using (var graphics = Graphics.FromImage(bitmap))
+            {
+                graphics.SmoothingMode = SmoothingMode.AntiAlias;
+                Draw(graphics, symbol, new Rectangle(0, 0, 16, 16), color, 96);
+            }
+            return bitmap;
         }
 
         /// <summary>Reads the first supported path without resolving external XML resources.</summary>

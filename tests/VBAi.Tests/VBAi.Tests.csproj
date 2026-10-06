@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <IsTestProject>true</IsTestProject>
     <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
@@ -68,4 +68,7 @@
     <Copy SourceFiles="@(ProviderFixture)" DestinationFolder="$(TargetDir)" SkipUnchangedFiles="true" />
     <Copy SourceFiles="@(ProviderFixture->'%(FullPath).config')" DestinationFolder="$(TargetDir)" SkipUnchangedFiles="true" Condition="Exists('%(ProviderFixture.FullPath).config')" />
   </Target>
+  <ItemGroup>
+    <Content Include="../../assets/icons/*.png" Link="IconSources/%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
 </Project>

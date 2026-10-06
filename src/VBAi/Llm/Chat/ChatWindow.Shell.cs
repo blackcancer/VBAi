@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Automation;
@@ -24,7 +24,7 @@ namespace VBAi
         /// <summary>Masque les surfaces initialement inactives et remplit les options du sélecteur de mode.</summary>
         private void InitializeShell()
         {
-            historyPanel.Visible = false;
+            SetHistoryVisible(false);
             memoryPanel.Visible = false;
             historyLayout.RowStyles[7].Height = 0;
             contextPanel.Visible = false;
@@ -47,7 +47,20 @@ namespace VBAi
         /// <summary>Ouvre le menu des options de conversation.</summary>
         /// <param name="sender">Bouton déclencheur.</param>
         /// <param name="e">Données de l’événement.</param>
-        private void Options_Click(object sender, EventArgs e) { optionsMenu.Show(options, 0, options.Height); }
+        private void Options_Click(object sender, EventArgs e) { RefreshOptionsIcons(); optionsMenu.Show(options, 0, options.Height); }
+
+        /// <summary>Refreshes menu command artwork in the active palette, releasing the previous images.</summary>
+        private void RefreshOptionsIcons()
+        {
+            var items = new[] { projectAccess, resumeTurn, refreshModels, verifyChanges, docking };
+            var symbols = new[] { UiSymbol.Folder, UiSymbol.Play, UiSymbol.Refresh, UiSymbol.Check, UiSymbol.Inspect };
+            for (int i = 0; i < items.Length; i++)
+            {
+                var previous = items[i].Image;
+                items[i].Image = UiCommandIcons.CreateImage(symbols[i], UiTheme.Foreground);
+                previous?.Dispose();
+            }
+        }
 
         /// <summary>Affiche la boîte d’informations depuis la commande de menu.</summary>
         /// <param name="sender">Élément de menu qui a déclenché l’événement.</param>
@@ -65,7 +78,26 @@ namespace VBAi
         /// <summary>Affiche ou masque le panneau d’historique.</summary>
         /// <param name="sender">Bouton déclencheur.</param>
         /// <param name="e">Données de l’événement.</param>
-        private void History_Click(object sender, EventArgs e) { historyPanel.Visible = !historyPanel.Visible; if (historyPanel.Visible) historyPanel.BringToFront(); }
+        private void History_Click(object sender, EventArgs e) { SetHistoryVisible(!historyPanel.Visible); }
+
+        /// <summary>Switches the central surface between history and conversation without discarding the draft or transcript.</summary>
+        /// <param name="visible">Whether document history replaces the conversation surface.</param>
+        private void SetHistoryVisible(bool visible)
+        {
+            conversationPanel.SuspendLayout();
+            try
+            {
+                transcriptPanel.Visible = !visible;
+                historyPanel.Visible = visible;
+                history.Symbol = visible ? UiSymbol.Previous : UiSymbol.History;
+                history.Text = UiText.Get(visible ? "Back to conversation" : "☰ Chats");
+                history.AccessibleName = history.Text;
+                toolTips.SetToolTip(history, history.Text);
+                if (visible) historyPanel.BringToFront();
+                else transcriptPanel.BringToFront();
+            }
+            finally { conversationPanel.ResumeLayout(true); }
+        }
 
         /// <summary>Réactive le défilement automatique et revient au dernier message.</summary>
         /// <param name="sender">Bouton déclencheur.</param>
@@ -226,6 +258,7 @@ namespace VBAi
         {
             memoryPanel.Visible = !memoryPanel.Visible;
             historyLayout.RowStyles[7].Height = memoryPanel.Visible ? 226 : 0;
+            historyLayout.MinimumSize = new System.Drawing.Size(0, memoryPanel.Visible ? 536 : 310);
         }
 
         /// <summary>Affiche ou masque l’aperçu du contexte et le recalcule à l’ouverture.</summary>

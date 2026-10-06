@@ -20,7 +20,10 @@ Run from the repository root:
 powershell.exe -NoProfile -File tools/Build-WindowIcons.ps1
 ```
 
-ICO files contain 16, 20, 24, 32, 48, 64, 128 and 256 pixel frames. The script also
+ICO files contain 16, 20, 24, 32, 48, 64, 128 and 256 pixel frames. Frames use
+32-bit Windows DIB data with an AND mask: PNG-compressed small ICO frames render
+as corrupted pixels through .NET Framework `Icon.ToBitmap`, which is used by
+Office CommandBars and the chat menu. The script also
 updates embedded form icon resources. Keep each form's `Icon` assignment in its
 Designer so the property remains editable in Visual Studio. Runtime forms must
 not depend on paths to the source PNG files.

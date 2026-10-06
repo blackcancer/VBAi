@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Linq;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -70,7 +70,9 @@ namespace VBAi
             Icon = VbeWindowIcons.Icon("assistant");
             github.Image = VbeWindowIcons.Image("github");
             configure.Image = VbeWindowIcons.Image("settings");
-            using (var identity = VbeWindowIcons.Icon("assistant")) about.Image = identity.ToBitmap();
+            using (var identity = VbeWindowIcons.Icon("assistant"))
+            using (var small = new Icon(identity, 16, 16)) about.Image = small.ToBitmap();
+            RefreshOptionsIcons();
             UiText.Apply(this, components);
         }
 
@@ -548,7 +550,15 @@ namespace VBAi
             CleanupRuntime(() => activeHttpClient?.Dispose()); activeHttpClient = null;
             CleanupRuntime(() => codex?.Dispose()); codex = null;
             CleanupRuntime(() => changes?.ContextMenuStrip?.Dispose());
-            CleanupRuntime(() => { if (about?.Image != null) { about.Image.Dispose(); about.Image = null; } });
+            CleanupRuntime(() =>
+            {
+                foreach (ToolStripItem item in optionsMenu.Items)
+                {
+                    var image = item.Image;
+                    item.Image = null;
+                    image?.Dispose();
+                }
+            });
             CleanupRuntime(DisposeEntryViews);
             CleanupRuntime(DisposeComposer);
         }
