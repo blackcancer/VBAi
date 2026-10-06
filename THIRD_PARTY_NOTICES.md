@@ -2,7 +2,8 @@
 
 VBAi uses third-party software and identifies integrations with vendor trademarks.
 Those components retain their own licenses and notices. This inventory is not a
-license for VBAi or a determination that a release satisfies all distribution terms.
+replacement for their upstream terms. Original VBAi code and reusable VBA support
+have separate grants described in [licensing scope](LICENSING.md).
 
 ## Bundled runtime components
 

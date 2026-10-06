@@ -17,9 +17,10 @@ VBAi targets the shared VBE ecosystem. Prefer host-neutral behavior at the VBIDE
 boundary; isolate application-specific behavior in the compatibility layer. Do
 not advertise an entire host as supported because one operation succeeds.
 
-The repository does not yet declare a project license. Discuss external code
-contributions with the maintainer before submitting them; do not assume a license
-or add third-party material with unclear redistribution terms.
+Original VBAi code uses MPL-2.0; VBA templates and support runtimes copied into
+user projects use MIT. Contributions follow the license of the material being
+changed, as defined in [licensing scope](LICENSING.md). Preserve upstream licenses
+and notices when adding third-party code.
 
 ## Set up a development environment
 

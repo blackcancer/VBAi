@@ -55,9 +55,9 @@ Develop and qualify the standalone installer after the current add-in work. Reus
 the [existing update contract](updates.md) for signed payloads, occupied-host handling,
 upgrade, uninstall and rollback. This is not part of the documentation refactor.
 
-Before a public release, choose the project license explicitly, complete the
-payload's third-party notice review and publish only genuine compatibility and
-validation information.
+Before a public release, include the declared [project licenses](../LICENSING.md),
+complete the payload's third-party notice review and publish only genuine
+compatibility and validation information.
 
 ## Community
 

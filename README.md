@@ -72,7 +72,9 @@ Use the issue templates for reproducible bugs, feature requests and host reports
 Read [contributing](CONTRIBUTING.md), [support](SUPPORT.md),
 [security reporting](SECURITY.md) and [the code of conduct](CODE_OF_CONDUCT.md).
 
-A project license has not yet been selected. Bundled components retain their
-own terms in [third-party notices](THIRD_PARTY_NOTICES.md).
+Original VBAi code is licensed under [MPL-2.0](LICENSE). VBA templates and support
+runtimes intended for user projects use [MIT](LICENSES/MIT.txt). Third-party
+components retain their original licenses. See [licensing scope](LICENSING.md)
+and [third-party notices](THIRD_PARTY_NOTICES.md).
 VBAi is an independent project; Microsoft, OpenAI, GitHub and host application
 vendors do not publish or endorse it.

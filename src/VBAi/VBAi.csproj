@@ -41,6 +41,7 @@
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="Ui/UiHelpHints.json" LogicalName="VBAi.UiHelpHints.json" />
+    <EmbeddedResource Include="../../LICENSES/MIT.txt" LogicalName="VBAi.Licenses.MIT.txt" />
     <Content Include="$(HelpOutputRoot)VBAi.*.chm"
              Link="Help/%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
     <EmbeddedResource Include="../../assets/icons/commands/*.svg" LogicalName="VBAi.CommandIcons.%(Filename).svg" />

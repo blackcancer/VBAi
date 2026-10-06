@@ -8,6 +8,18 @@ namespace VBAi.Tests.Unit
     [TestClass, TestCategory("Unit")]
     public sealed class VbaCoverageInstrumentationTests
     {
+        /// <summary>Checks that copied coverage support is MIT licensed without modifying the user's original module.</summary>
+        [TestMethod]
+        public void CoverageRuntimeCarriesMitNoticeAndPreservesUserCode()
+        {
+            const string source = "Public Sub Work()\nEnd Sub";
+            var plan = VbaCoverageInstrumentation.Create(Project(Module("Production", 1, source)));
+            Assert.IsTrue(plan.CanInstrument);
+            StringAssert.Contains(plan.RuntimeSource, VbaRuntimeLicense.Comments);
+            Assert.AreEqual(source, plan.Modules.Single().OriginalSource);
+            Assert.IsFalse(plan.Modules.Single().InstrumentedSource.Contains("SPDX-License-Identifier"));
+        }
+
         [TestMethod]
         public void InstrumentsAllProductionComponentKindsAndPropertyAccessorsButExcludesTestFramework()
         {

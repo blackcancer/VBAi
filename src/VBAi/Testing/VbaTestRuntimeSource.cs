@@ -90,6 +90,7 @@ namespace VBAi
             string root = AppendRoutes(helpers, leaves);
             var source = new StringBuilder();
             source.Append(Header.Replace("\n", "\r\n"));
+            source.Append(VbaRuntimeLicense.Comments);
             source.AppendLine(RuntimePrefix.Replace("\r\n", "\n").Replace("\n", "\r\n"));
             source.Append("    If " + root + "(LCase$(moduleName & \".\" & procedureName)) Then GoTo Executed\r\n"
                 + "    mRunning = False\r\n"

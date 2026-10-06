@@ -15,4 +15,9 @@
     <BaseOutputPath Condition="'$(BuildOutputRoot)' == '' and '$(MSBuildProjectName)' == 'XmlDocumentationAudit'">$(RepositoryRoot)artifacts\build\XmlDocumentationAudit\</BaseOutputPath>
     <BaseIntermediateOutputPath Condition="'$(MSBuildProjectName)' == 'XmlDocumentationAudit'">$(RepositoryRoot)artifacts\obj\XmlDocumentationAudit\</BaseIntermediateOutputPath>
   </PropertyGroup>
+  <ItemGroup Condition="'$(MSBuildProjectName)' == 'VBAi' or '$(MSBuildProjectName)' == 'VBAi.Updater'">
+    <Content Include="$(RepositoryRoot)LICENSE" Link="Licenses/MPL-2.0.txt" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+    <Content Include="$(RepositoryRoot)LICENSES/MIT.txt" Link="Licenses/MIT.txt" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+    <Content Include="$(RepositoryRoot)LICENSING.md" Link="Licenses/Scope.md" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+  </ItemGroup>
 </Project>

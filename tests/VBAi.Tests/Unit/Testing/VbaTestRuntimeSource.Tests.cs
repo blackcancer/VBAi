@@ -9,6 +9,18 @@ namespace VBAi.Tests.Unit
     [TestClass, TestCategory("Unit")]
     public sealed class VbaTestRuntimeSourceTests
     {
+        /// <summary>Checks the MIT grant travels with dispatch source while legacy ownership headers remain recognized.</summary>
+        [TestMethod]
+        public void GeneratedUserProjectRuntimeCarriesMitNoticeWithoutChangingOwnershipProtocol()
+        {
+            string source = VbaTestRuntimeSource.Generate(Catalog(Descriptor("TestsMath", "Good")));
+            StringAssert.Contains(source, VbaRuntimeLicense.Comments);
+            Assert.IsTrue(VbaTestRuntimeSource.IsOwned(source));
+            string beforeLicensing = source.Replace(VbaRuntimeLicense.Comments, "");
+            Assert.IsTrue(VbaTestRuntimeSource.IsOwned(beforeLicensing));
+            Assert.AreEqual("3", VbaTestRuntimeSource.Version);
+        }
+
         [TestMethod]
         public void GenerateCreatesStableQualifiedDispatchAndBooleanFailure()
         {

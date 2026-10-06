@@ -179,4 +179,4 @@ embedded assistants distinct. Record model/server/profile, exact synthetic tool
 arguments/results, cancellation, subsequent response and resource cleanup.
 Production prompts, credentials and personal histories are excluded from
 publication. The selected Q028 result is in
-[recorded validation](../docs/test-coverage.md#q028-ollama-and-embedded-office-assistant-qualification-2026-10-06).
+[recorded validation](../docs/test-coverage.md#qualification-register).

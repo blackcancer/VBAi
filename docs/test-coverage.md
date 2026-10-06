@@ -1,411 +1,99 @@
-# Recorded validation
+# Test coverage and qualifications
 
 [Documentation](README.md)
 
-This is the evidence index for VBAi. Results identify the tested candidate and
-operation; rebuilding or merging a candidate requires new applicable checks.
-Use [compatibility](compatibility.md) to choose a host and
-[testing](../tests/README.md) to reproduce the relevant test family.
+VBAi is tested through managed regressions, editor/UI checks, provider checks and
+operation-specific qualifications in real host applications. This page summarizes
+all Q001–Q030 findings, including earlier qualifications, rather than only the
+latest campaigns.
 
-## How to read results
+## Qualification register
 
-| Result | Meaning |
-| --- | --- |
-| PASS / qualified scope | The declared oracle passed for the identified candidate and environment. |
-| FAIL | An assertion or required lifecycle check failed. A later pass preserves this verdict. |
-| BLOCKED | A prerequisite prevented acceptance. |
-| NOT_RUN / skipped | The operation has no execution proof in that campaign. |
+**Passed** refers to the recorded test scope. **Accepted** refers to the declared
+native workflow and tested candidate. **Partial** means wider behavior remains
+unqualified. These results are historical, candidate-specific evidence; combining
+passing rows does not qualify the current integrated build or an entire host.
 
-Managed coverage measures the instrumented managed assembly. JavaScript,
-native renderer code, provider services and host processes have separate checks.
-The qualification sections below are the retained current decisions; detailed
-failed attempts and superseded counters are available in Git history.
+| ID | Area | Recorded result and main limit |
+| --- | --- | --- |
+| Q001 | Execution project identity | Verified in selected native scenarios; selection races remain a limitation. |
+| Q002 | Duplicate Git component names | Passed duplicate-name rejection regressions. |
+| Q003 | Atomic editor batches | Passed atomic-edit regressions and the recorded benchmark. |
+| Q004 | Bounded provider reception | Passed bounded-input and local-provider checks. |
+| Q005 | Post-step observation | Passed deterministic post-command observation regressions. |
+| Q006 | Debugger/persistence harness | Partial: selected Excel debugging and save/reopen paths accepted; broader debugger scope remains open. |
+| Q007 | COM temporary shutdown | Passed normal-exit checks for owned temporary COM sessions. |
+| Q008 | Current Markdown UI tests | Passed detached rendering checks; native hosting is qualified separately. |
+| Q009 | Third-party runtime notices | Bundled upstream license and notice payload hashes verified. |
+| Q010 | WebView profile lifecycle | Selected WebView shutdown/profile-retirement lifecycle accepted. |
+| Q011 | Word/PowerPoint Save adapters | Selected Word and PowerPoint save/reopen workflows accepted. |
+| Q012 | Access/Publisher Save adapters | Existing Access/Publisher documents accepted; new-document and unsupported Unicode paths excluded. |
+| Q013 | Classic Outlook startup | Read-only classic Outlook startup/metadata scope accepted. |
+| Q014 | SOLIDWORKS versions | Selected SOLIDWORKS 2019/2025 editor and assistant workflows accepted. |
+| Q015 | Complete managed gate | Complete managed gate accepted for the recorded historical candidate. |
+| Q016 | Composer backward navigation | Passed backward keyboard-navigation regression. |
+| Q017 | Narrow welcome layout | Passed narrow-layout checks and native recapture. |
+| Q018 | Monaco native assumptions | Selected reference-refresh, synchronization and shutdown contracts corrected. |
+| Q019 | Git long cache paths | Passed real-Git long-cache-path regression. |
+| Q020 | SOLIDWORKS unsaved macro identity | Selected native SOLIDWORKS creation/publication accepted; cold designers must be opened explicitly. |
+| Q021 | SOLIDWORKS asynchronous Save | Selected existing SOLIDWORKS Type100 save path accepted. |
+| Q022 | Word temporary VBProject path | Reproduced Word temporary-project identity defect corrected. |
+| Q023 | Outlook fixture project selection | Passed read-only native Outlook fixture selection. |
+| Q024 | Word Git/document identity | Prepared Word Git/document-identity matrix accepted on the real desktop; arbitrary templates/SaveAs excluded. |
+| Q025 | Native UserForm scalar setter | Selected Excel UserForm scalar-property and content-fitting paths corrected. |
+| Q026 | Native options metadata drift | Selected Excel options/restoration matrix accepted; original drift trigger remains unexplained. |
+| Q027 | UserForm import/recovery/resources | Prepared Excel form import/recovery/resource matrix accepted; not a claim for every third-party control. |
+| Q028 | Ollama streaming/tools/UI | Selected Ollama model/profile and six Office hosts accepted; historical empty-response cause remains unresolved. |
+| Q029 | Send after scope loss | Passed scope-loss Send/Stop regression on actual detached controls. |
+| Q030 | Unsafe SOLIDWORKS Open | Unsafe generic SOLIDWORKS Open refused; selected native reopen workflows accepted. |
 
-## French user manual and chat UI (2026-10-06)
+SOLIDWORKS evidence covers the selected 2019/2025 versions. Office evidence covers
+recorded Microsoft 365 x64 hosts, including classic Outlook; it does not extend
+to every Office version, Visio, Project or x86. The frozen candidates for the
+principal native campaigns are identified in the
+[release acceptance summary](release-qualification.md#current-acceptance-summary).
+The [native macro evidence index](qualification/q020-q030.json) retains the
+machine-readable Q020/Q030 candidate references.
 
-UI source `aae04569`, isolated Windows Debug solution build; assembly MVID
-`71f23df8-b13b-468b-bc5f-458235cee22b`, SHA-256
-`ACFD4EA4364F359DDAE9F1C29EF59E2EA713F4051BB86288F7957E1767B0060E`.
-The revised help sources are identified by the commit containing this section.
-This focused validation is not a whole-product coverage measurement or release
-qualification. It supersedes the synthetic screenshot bank rejected in review.
+## Managed line and branch coverage
 
-| Check | Observed result |
-| --- | --- |
-| History layout, native icon decoding and chat menu icon tests | 7 passed, 0 failed, 0 skipped; `ui-fixes-final.trx` |
-| Help-builder contracts, figure bounds, annotations and compiler failure handling | 14 passed |
-| Markdown checker self-tests | 21 passed |
-| Maintained Markdown links and structure | 42 files, 265 local links, 0 errors |
-| Real Excel screenshot bank | 17 reviewed captures; candidate and PNG hashes in the [manifest](help/fr-FR/screenshots/manifest.json) |
-| Compiled French CHM readback | 41 source/asset files byte-identical after extraction; full-text index present |
-| Actual compiled pages loaded by Windows Trident | 23 chapters; titles, text and images checked; foreground preserved |
+The target remains **100% lines and 100% branches**, with meaningful mirrored tests.
+There is no current complete measurement for the integrated `main` build.
+Native qualifications and focused passing tests are not coverage measurements.
 
-CHM SHA-256: `4abce63873da2db503a474290822bdc0b2e20ba9f2f786ae511496b41e835a74`. Interactive search in the standalone HTML Help
-viewer was not exercised. French remains the reviewed source edition; the localized editions are
-validated separately below. Earlier tooltip and XML documentation checks belong to source `7f3263d4`
-and remain in this page's Git history, without implying a fresh full audit.
+| Recorded measurement | Source | Lines | Branch outcomes |
+| --- | --- | --- | --- |
+| Historical complete managed run, 2026-10-01 | `8f2315d04162f55b0956618f96b59d294a3fb681` | 33,562 / 33,755 (99.43%) | 33,975 / 34,487 (98.52%) |
 
-### Real worked example and retained failures
+That run recorded 2,324 passed tests, 0 failures and 90 conditional skips. It
+measured instrumented managed code, excluding external hosts, JavaScript and
+native C++; its percentages are not current release statistics.
 
-The disposable `CalculTVA.xlsm` example uses Codex with Luna/medium and separate
-implementation, test creation, correction and publication requests. The generated
-UserForm was actually run with 100 HT and 20% TVA and displayed 120.00 TTC.
-The real assistant reports and window captures are distinct from test verdicts.
+## Recent interface and documentation checks
 
-| Native test run | Observed verdict |
-| --- | --- |
-| `214e3b02578b4d25ae01060e71f0840c` | 5 passed, 1 failed: exact floating-point comparison; subsequently corrected. |
-| `223c2d7437ca4a789fd800ca0c7bd14a` | 1 outcome unknown, 5 blocked; native Macros selector and missing callback verdict. |
-| `1617a9d62dba4526a4bd346ef16fe408` | 6 passed in a fresh Excel instance; independent report readback, not stale. |
-| `cb78397988394ffc820fda1d7ac3b854` | Explorer UI rerun: 1 outcome unknown, 5 blocked on the same source revision. Defect remains open. |
+The localized-help candidate from source
+`43e24549bc7ef4563987fad0afc2b1ce1e8be894` passed 32 focused managed tests, 19
+help-builder tests and 21 documentation-checker self-tests. All 13 manually
+translated/reviewed CHM editions were compiled: 299 chapters loaded through the
+Windows renderer, 533 extracted source/assets matched their inputs, and every
+archive contained a full-text index. Native menu loading and standalone viewer
+search were not exercised.
 
-The successful run and later uncertain rerun share project revision
-`ABE7FA6CE41DEC1AD27EDAA19A1F4D1881E780DA216B4366EEA422B427F76F00`.
-No coverage run was requested. The passing run does not qualify repeat execution
-or erase either uncertain result. Explorer did not automatically display the
-assistant-initiated run when opened; this is another observed presentation limit.
+The French worked example uses a real disposable Excel macro and separate
+implementation/test requests. A fresh-host run passed six tests; a later rerun
+returned one unknown outcome and five blocked tests. Repeat-execution acceptance
+remains open; a successful earlier run does not erase that result. The committed
+[screenshot manifest](help/fr-FR/screenshots/manifest.json) records the real captures.
 
-Sources were published only to branch `documentation/calcul-tva-20261006` of the
-existing private disposable repository `blackcancer/vbai-qualification-20260929203712-7267b1e6`,
-commit `89b80050c5e10a3090b97e02474c3608a46d579e`. Independent remote tree readback
-confirmed the manifest, modules, test support and paired form/resource files.
-The workbook binary was not published. Git UI then showed no incoming/outgoing
-commits. The owned Excel process exited normally with code zero and no forced
-termination; the temporary HKCU COM registration was restored and verified.
+## Reproduction and evidence
 
-The original local receipts were under `artifacts/help-real-workflow/`,
-`artifacts/help-archive-validation.json` and
-`artifacts/help-viewer-validation.json` in the documentation worktree. That
-worktree was removed concurrently during localization; those original receipts
-are no longer available locally. The committed screenshots retain their provenance
-manifest. The historical results above were not reproduced on the new candidate. The screenshots document this real example, not arbitrary
-host compatibility or full embedded-UI acceptance.
+Use the [testing guide](../tests/README.md) to select a test family and
+[release qualification](release-qualification.md) for acceptance rules. Local
+proof sets retain candidate identities, original test reports and process/recovery
+receipts. Full campaign histories are kept in Git history and the corresponding
+issues/pull requests, rather than repeated here.
 
-## Localized help and clean distribution (2026-10-06)
-
-Frozen source `43e24549bc7ef4563987fad0afc2b1ce1e8be894`, isolated Windows Debug
-solution build. Add-in assembly MVID `7ea0091f-8d0e-455a-8fe4-698d3b7939e9`,
-SHA-256 `54f85b601802abf56ba932bc0691c5e51fef3bef827b98e2c9e7eeddedc49afb`.
-The French source hash is
-`881ae439ae43a2ccec76d8e5346a908939449c2cb2b423cb300bc33ce9d9bca7`.
-All twelve translated catalogs were authored manually, cover every source string
-and reuse the authentic French captures with an explicit language notice.
-
-| Check | Observed result |
-| --- | --- |
-| Help routing, culture selection, localized resources, hints and native menu lifecycle | 32 passed, 0 failed, 0 skipped; `localized-help-final.trx` |
-| Help-builder contracts, complete catalogs, stale-source refusal and clean compiler staging | 19 passed |
-| Markdown checker self-tests | 21 passed |
-| Compiled editions | 13 valid CHM archives, one per supported interface language |
-| Compiled page readback through Windows Trident | 299 chapters; translated titles, introductory text and all referenced images checked; foreground preserved |
-| Independent archive extraction | 533 HTML, CSS and PNG files byte-identical to the compiled inputs |
-| Full-text indexes | 13 nonempty `/$FIftiMain` entries verified in the CHM directory |
-| Add-in and updater Help payloads | Exactly the 13 distribution CHMs, matching SHA-256; no staging files or subdirectories |
-
-Arabic right-to-left layout and Hindi and Traditional Chinese text were also
-visually reviewed using actual compiled pages. Standalone viewer search, new
-native Office menu loading and updater installation were not exercised. These
-checks do not measure whole-product coverage or inherit earlier host acceptance.
-
-Reproducible source checks live in the mirrored C# tests and
-`tests/tools/test_build_help.py`. Current local receipts are in
-`artifacts/localized-help-tests/`, `artifacts/localized-help-archive-validation.json`
-and `artifacts/localized-help-viewer-validation.json` in the localization worktree.
-Generated guides are distributed exclusively from `dist/help/`; development
-HTML, captures and compiler logs remain outside the application package.
-The cleanup removed obsolete help renders, extraction copies and replaced managed
-builds. Frozen native candidates and qualification receipts were retained.
-
-## Q028 Ollama and embedded Office assistant qualification (2026-10-06)
-
-**Qualified for the complete prepared Q028 matrix on the real
-`WinSta0\Default` desktop.** Frozen source
-`85486c00eb28ac148f00d7e8a4b73e4bcc9c5173`, product MVID
-`7f766edc-1a6a-40a2-bf55-fbfc187fcf93`, SHA-256
-`DC8094BC06F25784045FC85E1CE8968C38D48161260574F8C8AAB7C69AB0FCB8`.
-The isolated solution build passed. Native acceptance belongs to those bytes;
-a later merge or rebuild does not inherit it automatically.
-
-The selected backend is Ollama **0.34.4**, `qwen2.5:7b-instruct`, manifest
-SHA-256 `845DBDA0EA48ED749CAAFD9E6037047AA19ACFCFD82E704D7CA97D631A0B697E`,
-CPU, context 8192, one parallel request, temperature 0 and top-p 0.8.
-The existing model blobs were freshly size/hash checked without download or
-substitution. Each selected Office executable is x64 **16.0.20430.20092**.
-
-| Exact-candidate validation | Result |
-| --- | --- |
-| Focused managed transport, chat, privacy, host path, ownership and lifecycle gate | 714 passed, 0 failed, 0 skipped |
-| Real provider prerequisites | 3 passed: exact synthetic tool roundtrip, cancellation/recovery, shown detached streaming chat |
-| Real embedded assistant | 6 passed: Excel, Word, PowerPoint, Access, Publisher and classic Outlook |
-| Ordered VSTest matrix | 723 passed, 0 failed, 0 skipped; every bank invoked once |
-| Independent wire auditor self-tests | 16 passed; synthetic refusal checks, separate from VSTest totals |
-| Frozen independent campaign review | `OFFLINE_NATIVE_WIRE_PASS` for every embedded host |
-| Original native lifecycle | All six owned hosts closed normally; no forced Office termination or uncertain native replay |
-| Coordinator and resource release | Original main worker exit code 0; temporary settings and HKCU Registry64 COM registration restored and verified; launcher task removed |
-| Owned Ollama backend lifecycle | Private kernel job has zero remaining members after stopping its synthetic backend and calculation workers |
-| Documentation validation | 40 maintained Markdown files, 329 local links, 0 errors |
-
-Every embedded bank proves actual installed-candidate/owner identity, assistant
-text while Stop is active, one Stop and visible cancellation, a complete next
-reply, and an unprompted native marker returned by exactly one `read_module`.
-The independent wire review binds the exact conversation selector, tool
-arguments, native result/source hash and final answer. All project source and
-references remain unchanged. The temporary Outlook fixture restores its original
-empty project and leaves its initially absent OTM absent; no mail or VBA runs.
-
-The campaign corrected Outlook's fake absolute `VBProject.FileName`: when no
-verified existing `.otm` path is available, the resolver publishes an explicit
-null host path and uses the temporary project identity rather than a path derived
-from a process-dependent current directory. During unsettled turns the observer
-retains original native window ownership instead of rediscovering an unavailable
-UIA parent. It drops settled managed UIA references before shutdown. Word also
-uses its scoped testhost collection diagnostic; the unchanged five-second
-original-handle exit bound passes. This does not prove native RCW release or
-identify the cause of every earlier exit delay.
-
-Stopping only the isolated `ollama.exe` leaked multi-gigabyte `llama-server.exe`
-workers in earlier batches. The corrected runner attaches the fresh backend to
-an unnamed Windows job before model requests and verifies empty membership at
-settled shutdown. Recovery closed only the exact descendants proven by this
-session's backend receipts; older unknown workers and personal backends were
-preserved. Automatic kill-on-close is disabled so native uncertainty retains
-diagnostic state.
-
-Retained proof root: `artifacts/q28p1/native8/`, including `q028-plan.json`,
-all original TRX files, actual embedded HTTP/SSE wire, host/native shutdown
-receipts, `independent-review.json`, `backend-job-exit.json`, original coordinator
-handle exit and `qualification-acceptance.json`. Earlier `native2` through
-`native7` outcomes remain failed or incomplete, including the first failed
-independent Outlook selector audit and the pre-Office allocation failure. Their
-source/MVID differs and their actions were not replayed to change their verdict.
-
-This closes the selected Q028 provider/Office operation matrix. It does not
-qualify other models/devices, all Office operations, SOLIDWORKS, Visio, Project,
-production Outlook projects or full release acceptance. The historical
-`No text response.` / complete-empty backend cause remains unresolved; the
-passing selected profile is not a universal reliability correction. No coverage
-percentage was measured by this campaign and no failed broad aggregate is
-relabelled green.
-
-## Q024 Word and Q027 UserForm scoped qualification (2026-10-06)
-
-**Qualified for the complete prepared Q024/Q027 operation matrix on the real
-`WinSta0\Default` desktop.** The frozen source is
-`c593d6af08582d4facbc9d3bd2532550ea35cef9`, product MVID
-`0f1e0112-39dd-4f8e-b3a3-44d45954bb9a`, SHA-256
-`336F6F7CA0635216D4C2339CE0D8DC12A320B9A286146413760950F8CED41E66`.
-The isolated solution build completed without warnings or errors. Qualification
-belongs to these bytes; a later documentation commit, merge or rebuild does not
-inherit native acceptance automatically.
-
-| Exact-candidate validation | Result |
-| --- | --- |
-| Complete default managed suite | 5,617 passed, 0 failed, 234 skipped; both original workers exited normally and private desktops were released |
-| Synthetic UI matrix | All nine prepared actions passed |
-| Q024 real Word workflows | Three passed: canonical same-name document isolation/stale SaveAs refusal; installed owner capture/checkpoint/compare; actual Chat-Git entry and known modal closure |
-| Q024 host lifecycle | All three original Word processes exited normally |
-| Q027 persisted native baselines | All twelve prepared layouts passed |
-| Q027 installed owner checkpoint import | All twelve prepared layouts passed |
-| Q027 one-save and fresh-process persistence after owner import | All twelve prepared layouts passed |
-| Q027 installed owner local checkpoint/backup/interruption/rollback/reopen | All twelve prepared layouts passed |
-| Q027 invalid-resource preflight | All three Missing, Empty and SignatureCorrupt cases refused before mutation, with unchanged sentinel resources, native state, disk and recovery state |
-| Q027 authenticated exact remote | One private fixture push/fetch/owner-import/save/fresh-read-only-reopen scenario passed; production macros and repository main were untouched |
-| Q027 aggregate | All 52 prepared scenarios passed; each of the six banks invoked once; original coordinator exit code 0 |
-| Q027 independent lifecycle audit | All 78 original Excel normal exits proved within the unchanged 10,000 ms bound; no replay or forced termination |
-| Q027 owner evidence | 24 installed import/persistence raw reports and 40 recovery/remote owner steps: 37 admitted mutations and three proved prewrite refusals |
-| Q027 actual designer pixel review | All 80 indexed captures inspected in ten contact sheets; full originals 43 and 46 also inspected |
-| Temporary registration and campaign release | Exact original HKCU Registry64 COM state restored and verified; owned completed task removed; no Word or Excel process remained |
-| Pure verifier regressions | 13 aggregation cases, eight reflection cases, five owner-role positives and ten negatives passed; both historical singleton failures reproduced |
-| Coverage collection | Not run; no line or branch percentage claimed |
-
-The prepared layouts are LabelButton, TextBox, ComboBox, ListBox, CheckBox,
-OptionButton, ToggleButton, ScrollBar, SpinButton, TabStrip, Image and
-FrameMultiPage. Strict transport/readback checks retain source and raw FRM/FRX
-resources, complete collections and parent relationships, native properties and
-font descriptors, unchanged snapshot stability, meaningful-change detection,
-backup/interruption/rollback, and saved/fresh-process persistence. Frame font
-8.27 is not rounded. All native mutations retain the installed owning process,
-original host generation and native STA checks.
-
-Evidence roots are `artifacts/q27g3/` (managed prerequisite),
-`artifacts/q24p3/` (Word) and `artifacts/q27p4/` (Excel). The final
-`q27p4/qualification.json` binds the original frozen plan, independent strict
-audit, actual `designer-review/visual-review.json`, Word receipt, exact registry
-restoration and owned task removal. The strict audit independently verifies
-physical resources and owner intent/mutation/terminal chains; a cleanup trace
-or an observer response alone is not host-exit proof.
-
-The final `q27p4/completion-audit.json` checks the declared requirements against
-the physical receipts and exact data rows. A separate read-only limited
-interactive observer confirms the original HKCU fingerprint, task absence and
-free Office hosts in `completion-release-state.json`; its completed observation
-task is also removed. The terminal caller's registry view differs, as already
-shown by the pre-native previews. Its mismatched comparison is retained as a
-context-specific failure, not classified as a failed interactive restoration.
-
-The earlier `q27p3` aggregate remains failed: its native banks passed but its
-original coordinator exited with an aggregation error. The fresh `q27p4`
-coordinator completed normally. Its original pre-native strict auditor then
-failed on PowerShell reflection boxing; the first amended auditor failed on
-singleton-array collapse. Both failures are retained. Separate, sealed
-**post-native verifier amendments** unbox reflection arguments and retain role
-arrays; they change neither native oracles nor frozen native inputs and perform
-no native replay. The successful strict auditor is version 7. Its amendment
-manifest explicitly records `PreparedBeforeNative=false`, `NativeReplay=false`
-and `NativeOraclesChanged=false`. The final owner-role proof uses the sealed
-test's complete bytes; the earlier sealed proof had fewer negative cases and
-remains unchanged.
-
-Pixel review establishes the visible prepared controls and containers. Some
-reopened tall forms have unused lower grid clipped by the MDI viewport; tested
-controls remain visible. Installed owner construction captures precede import:
-**owner restoration is proved by raw resources and native readbacks, not by
-post-import visual evidence**. Pixels do not measure exact font sizes or hidden
-collections. Chat panel appearance, native RCW release, Word templates/arbitrary
-SaveAs or cancellation paths, other hosts and release-wide acceptance are not
-inferred. The historical checkpoints below retain their original outcomes.
-
-## Office adapter persistence (Q012, 2026-10-04)
-
-Access and Publisher's existing-document adapter contract is accepted on frozen
-product MVID `2106fd95-fb1d-4b3e-b971-0ba39e78494b`, SHA-256
-`852DC8414D0E667ACAF9A3424978683F14E4EA8DED2ABF2780DBAE9851AF1CA8`.
-Plans identify base `60b8b7f2d81bcc3ca04900481f31a2ea956c1f5a` and the frozen
-pending-source manifest; base commit alone does not identify these DLL bytes.
-
-| Validation | Result |
-| --- | --- |
-| Final focused managed gate | 766 passed, 0 failed, 0 skipped |
-| Required native adapter cases | 20 accepted original individual cases |
-| Owned host lifecycle | 35 original/fresh generations exited normally, exit code 0 |
-| Complete managed suite and coverage on this product | NOT_RUN |
-
-Accepted operations cover active-module and module/class source Save, retained
-UserForm state, reference addition/removal, Description and explicit native
-General HelpContextID/ANSI-representable HelpFile persistence. A Save is followed
-by independent fresh-process readback. Publisher uses an audited serialized seed.
-NewDocument/first SaveAs, positive unsupported-Unicode persistence, form rendering
-and event execution remain outside this result. Unicode is accepted only as a
-verified pre-write refusal. Legacy HelpFile/HelpContextID COM writes are refused;
-the explicit General workflow has its own guards.
-
-Original case receipts and fixture identities are retained under
-`artifacts/q012-final-access/`, `q012-access-remaining/`,
-`q012-publisher-remaining/` and `q012-publisher-pending-detached/`.
-Acceptance combines individual original outcomes, not a relabelled failed
-aggregate. Settings, registration and owned desktop release are verified.
-
-## SOLIDWORKS native core and assistant (Q014, 2026-10-04)
-
-The corrected frozen product MVID
-`ddf638b2-30d2-40a5-8ad3-9d49f303ff7c`, SHA-256
-`69BDE5B2D1CB55CA23597540F1CA108231F342FAF79A79B3F160E31FAC11AFD5`
-is accepted for selected SOLIDWORKS 2019 SP5 (27.5.0) and 2025 SP1.1 (33.1.1).
-
-The native banks verify connected load, modules/classes, a synthetic UserForm and
-Label, stale refusals, BAS/CLS/FRM/FRX transport, compilation, breakpoint/run/step/
-continue, product Save and native Edit Macro reopening of identical saved copies.
-Scoped actual captures verify Monaco/designer transitions and pane closure with
-source preservation. Separate local assistant evidence verifies native reading,
-permission/stale refusals, streaming, cancellation and recovery; this does not
-qualify an authenticated external provider in SOLIDWORKS.
-
-The original host, owned IDE and coordinator exit normally, and temporary
-COM/settings state is restored. The final decision is retained in
-`artifacts/q014-final-decision-20261004/qualification.json`; original banks are
-`q014-final-native-2019-20261004`, `q014-recovery-barrier-2019-20261004` and
-`q014-recovery-barrier-2025-20261004`. Private-desktop acceptance is specific to
-those operations and layouts; no full release or new coverage result is inferred.
-
-## Q-020 and Q-030 native macro candidate, 2026-10-05
-
-The isolated DLL was built from base commit
-`4a5b05e0f9efc20fda3ee61f93c45d45cd32cef1` plus frozen creation, publication,
-General-reader, picture-persistence and post-save verification changes. Its
-MVID is `08689325-53fe-4d8d-86a5-3c02aa5c4a81`, SHA-256
-`3A1B0A92803C737156EE381CE66070C22CA5A932715528E3B622C2DA8101F1B7`.
-Build completed without warnings or errors. The scoped managed bank passes
-**579 tests**, with zero failures or skips, in
-`native-macros-managed-11/native-macros-managed-11.trx`, SHA-256
-`3C057E3C67C840672E9D1B5848EDD15299687FC4252CCEAC7CFFDD1F0F160737`.
-It covers the changed routes and admission, identity, revision, mode, owning
-thread, metadata, transport, privacy and uncertainty guards, including real
-Windows OLE picture persistence. It is not the full managed suite or a coverage
-measurement. The earlier post-save false-to-true Saved transition has a retained
-failing regression on the previous candidate and a passing focused correction.
-
-| Native scope | Actual evidence and result |
-| --- | --- |
-| SOLIDWORKS 2019 SP5, revision 27.5.0 | Scoped phase acceptance: first-generation bank13, full original A readback and designer review in continuation18, full original B readback after explicit designer opening and designer review in continuation22. Both workflows preserve code/attributes/form/picture/references/General. First host exits normally; fresh host's settled typed ExitApp is correlated with exit zero on its original retained creation handle. Prior failed aggregate banks and the raw failed exit receipt remain unchanged. |
-| SOLIDWORKS 2025 SP1.1, revision 33.1.1 | Full bank18: all 16 ordered stages PASS, including first-save creation/publication, source preservation, refusal of unsafe generic Open, fresh-host original A/B readback, and normal exit of both original host handles. Three actual native designer PNGs reviewed. |
-| Cleanup | Actual per-user COM baselines restored exactly after each campaign; original worker exits observed and exact owned scheduled tasks removed. No production macro or user project is executed. |
-
-The frozen candidate is identical across both hosts. Record source-file hashes
-and acceptance receipt hashes in [the machine-readable evidence index](qualification/q020-q030.json).
-Native acceptance requires explicit designer initialization before cold inspection.
-The observed closed-designer E_FAIL remains a limit. Default form metadata,
-resource content and recognized MSForms enum descriptors are compared with strict
-negative checks; raw snapshots and revisions are not rewritten. The installed
-.NET Framework WinForms implementation generates enum names from an ITypeInfo
-pointer, also shown in the [official WinForms source](https://github.com/dotnet/winforms/blob/v3.1.0/src/System.Windows.Forms/src/System/Windows/Forms/ComponentModel/COM2Interop/COM2TypeInfoProcessor.cs#L868-L890).
-The portable canaries cover complete snapshot guards, original-handle startup
-identity, cross-generation enum descriptors, one-time designer materialization,
-and transient/persistent startup readiness. They make no native acceptance claim.
-
-Failed evidence remains recorded: first-generation bank13's second launch,
-cold14's pre-open helper lookup, cold15's enum comparator, continuation18's closed
-designer inspection, diagnostic19's result collection, and 2025-17's transient
-startup dialog. None is relabeled green by later scoped evidence. See the
-[authoritative acceptance limits](release-qualification.md#current-acceptance-summary).
-No result qualifies arbitrary UserForms, signatures, macro runtime execution,
-the complete embedded assistant UI, generic standalone Open, Type101 promotion,
-or v1.0.0 release acceptance.
-
-## Native options and debugger boundaries
-
-Q026 is accepted for the selected Excel Size/options matrix on source
-`08d7420`, MVID `7156af5b-941c-4452-9e78-1381cb69af0d`, Office x64
-16.0.20430.20092. Exact Tabs/revision restoration, native mutation, original-handle
-exit and the controlled metadata-only drift comparison pass under the maintainer's
-approved acceptance criterion. The original September trigger remains unexplained.
-The machine-readable decision is
-[q026-qualified-candidate.json](../tools/tests/q026-qualified-candidate.json).
-
-The Q006 Excel campaign on frozen MVID
-`d2c3601b-893d-4e84-b9e3-c172da7e2437`, SHA-256
-`C4D095D9427379AC8F2A82D047C8780637A0E815173241976F2C86664E777644`
-accepts its declared supported scalar pages, ParamArray/Variant arrays, protection
-and product Save followed by independent reopen of module/class/form/Label state.
-The extended single-page terminal-trace oracle failed at the diagnostic event
-cap; other scalar/runtime/host scopes and historical break-mode crashes remain
-unqualified. Original campaigns are under `artifacts/q006-20261002-*`.
-
-## Coverage status
-
-There is **no current complete line/branch measurement** for the Q028 candidate.
-Its focused managed gate is functional evidence and does not satisfy the full
-coverage target. Native qualification also does not measure managed coverage.
-
-For historical comparison only, source
-`8f2315d04162f55b0956618f96b59d294a3fb681`, MVID
-`d8f31d57-8612-465e-871c-93a62f2b3eae`, SHA-256
-`C900BA09D92DA7CF50CC09033C63F5226DD04C18426CC386B30AF86EB0BA0941`
-passed its instrumented managed run on 2026-10-01: 2,324 passed, 0 failed,
-90 conditional skips. That collector measured 33,562/33,755 lines (99.43%) and
-33,975/34,487 branch outcomes (98.52%). It excludes external hosts, JavaScript and
-native C++; these values are not the current branch's coverage.
-
-Its original collector is
-`artifacts/qualification-v1/followup-20260930/managed-v6-path-diagnostic/d25f9f82-6146-4466-8c24-de444ccf25de/coverage.cobertura.xml`.
-The target remains complete line and branch coverage, with meaningful mirrored
-tests and no exclusions added to improve a percentage.
-
-## Evidence retention
-
-Local `artifacts/` proof sets are not distributed as source or automatically
-uploaded. Preserve their candidate manifests, individual TRX outcomes, original
-process receipts and recovery state when reviewing a qualification. A missing
-local proof set must be reported as missing rather than reconstructed as a pass.
-Historical investigation text remains in the documentation's Git history.
-The repository does not infer a single globally qualified release by combining
-results from different frozen binaries.
+Some original worked-example receipts disappeared when its documentation worktree
+was removed concurrently. The retained screenshots do not reconstruct those
+receipts. Missing evidence must be reported as missing, and unknown native
+mutations must not be replayed as though they had failed safely.
