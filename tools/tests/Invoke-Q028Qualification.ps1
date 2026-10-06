@@ -46,7 +46,8 @@ if ($Prepare) {
         'CatalogBoundaryTests','ToolCatalogTests','PrivateDesktopUiActionTests','QualificationDesktopGuardTests',
         'OfficeVbeFixtureDesktopTests','OfficeVbeFixtureDesktopStartupRecoveryTests','OfficeVbeFixtureDesktopAddInConnectionTests','OutlookPrivateDesktopTests',
         'OfficeOwnedShutdownEvidenceTests','OutlookVbaTestFixtureShutdownTests','OllamaOfficeUiTests','OllamaOfficeDesktopTests','ChatStreamReaderTests',
-        'ExcelVbeFixtureProjectReadinessTests','OfficeVbeFixtureMainWordDesktopTests','IsolatedTestDesktopMainTests')
+        'ExcelVbeFixtureProjectReadinessTests','OfficeVbeFixtureMainWordDesktopTests','IsolatedTestDesktopMainTests',
+        'VbeProjectHostPathTests','ProjectResolverTests')
     $managedFilter = '(TestCategory=Unit|TestCategory=Scenario)&TestCategory!=OllamaUi&(' +
         (($managedClasses | ForEach-Object {'FullyQualifiedName~VBAi.Tests.Unit.'+$_+'.'}) -join '|') +
         '|FullyQualifiedName~VBAi.Tests.NativeExportTraceTests.)'

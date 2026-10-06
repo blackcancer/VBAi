@@ -24,6 +24,11 @@ namespace VBAi
             }
             else path = (string)((dynamic)project).FileName;
             if (string.IsNullOrWhiteSpace(path)) return null;
+            // Outlook may expose its localized project name as a nonexistent absolute
+            // FileName under different caller directories. It is not persisted storage.
+            if (native.HostKind == "Outlook" && (!Path.IsPathRooted(path) ||
+                !string.Equals(Path.GetExtension(path), ".otm", StringComparison.OrdinalIgnoreCase) ||
+                !native.FileExists(path))) return null;
             if (!Path.IsPathRooted(path)) throw new InvalidOperationException("The host document path is not absolute.");
             return Path.GetFullPath(path);
         }

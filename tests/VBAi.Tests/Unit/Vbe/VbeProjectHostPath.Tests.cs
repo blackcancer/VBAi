@@ -13,7 +13,8 @@ namespace VBAi.Tests.Unit
         {
             public string Name => "Project";
             public bool ThrowFileName;
-            public string FileName => ThrowFileName ? throw new DirectoryNotFoundException() : @"C:\Temp\~WRL0001.tmp";
+            public string FileNameValue = @"C:\Temp\~WRL0001.tmp";
+            public string FileName => ThrowFileName ? throw new DirectoryNotFoundException() : FileNameValue;
         }
         public sealed class Vbe { public List<object> VBProjects { get; } = new List<object>(); }
         private sealed class Document { internal object Project; internal string Path; }
@@ -23,6 +24,7 @@ namespace VBAi.Tests.Unit
             internal uint Owner = 42;
             internal string Kind = "Word";
             internal Action OnState;
+            internal bool Exists = true;
             public string HostKind => Kind;
             public int CurrentProcessId => 42;
             public object Application() => this;
@@ -35,7 +37,7 @@ namespace VBAi.Tests.Unit
                 OnState?.Invoke();
                 return new VbeProjectComponents.OtherHostDocumentState { Path = ((Document)document).Path, Saved = false, Format = 13 };
             }
-            public bool FileExists(string path) => true;
+            public bool FileExists(string path) => Exists;
             public bool DirectoryExists(string path) => true;
             public long FileLength(string path) => 1;
             public void Save(object document, bool saveAs, string destination, int format) => throw new AssertFailedException("Read-only path resolution must not save.");
@@ -88,6 +90,34 @@ namespace VBAi.Tests.Unit
             fields["HostPath"] = @"C:\Owned\First.docm";
             Assert.AreEqual(@"C:\Owned\First.docm", VbeProjectHostPath.FromFields(fields));
             fields.Remove("HostPath"); Assert.AreEqual((string)fields["FileName"], VbeProjectHostPath.FromFields(fields));
+        }
+
+        [DataTestMethod]
+        [DataRow("Projet 1", false)]
+        [DataRow(@"C:\Windows\system32\Projet 1", false)]
+        [DataRow(@"H:\Documents\Projet 1", false)]
+        [DataRow(@"C:\Owned\Project1", true)]
+        [DataRow("relative.otm", true)]
+        [DataRow(@"C:\Owned\VbaProject.OTM", false)]
+        public void OutlookOpaqueOrUnpersistedStorageKeepsTemporaryProjectIdentity(string reported, bool exists)
+        {
+            var project = new Project { FileNameValue = reported };
+            var probe = new Probe { Kind = "Outlook", Exists = exists };
+            Assert.IsNull(VbeProjectHostPath.Read(project, probe));
+            var fields = new Dictionary<string, object> { { "FileName", reported },
+                { "HostPath", VbeProjectHostPath.Read(project, probe) } };
+            Assert.IsTrue(string.IsNullOrEmpty(VbeProjectHostPath.FromFields(fields)),
+                "A missing canonical path must not promote the opaque Outlook alias to a saved session.");
+        }
+
+        [DataTestMethod]
+        [DataRow(@"C:\Owned\VbaProject.OTM")]
+        [DataRow(@"C:\Owned\VbaProject.otm")]
+        public void OutlookExistingAbsoluteOtmRetainsItsCanonicalPath(string reported)
+        {
+            var project = new Project { FileNameValue = reported };
+            var probe = new Probe { Kind = "Outlook", Exists = true };
+            Assert.AreEqual(Path.GetFullPath(reported), VbeProjectHostPath.Read(project, probe));
         }
     }
 }
