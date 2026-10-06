@@ -12,33 +12,33 @@ namespace VBAi
     internal sealed class CrashReport
     {
 
-        /// <summary>Assembly source used to read product version metadata for the report.</summary>
+        /// <summary>Supplies the assembly whose product version is recorded in the diagnostic report.</summary>
         internal static Func<Assembly> MetadataAssembly = ReadMetadataAssembly;
 
-        /// <summary>Process architecture source recorded without host file paths.</summary>
+        /// <summary>Reports whether the current host process is 64-bit for the platform field.</summary>
         internal static Func<bool> ProcessIs64Bit = ReadProcessIs64Bit;
 
-        /// <summary>CLR version source included in sanitized technical details.</summary>
+        /// <summary>Supplies the CLR version recorded in the report.</summary>
         internal static Func<Version> RuntimeVersion = ReadRuntimeVersion;
 
-        /// <summary>Returns the CLR version running this host process.</summary>
-        /// <returns>The current runtime version.</returns>
+        /// <summary>Reads the current .NET runtime version.</summary>
+        /// <returns>The value of <see cref="Environment.Version"/>.</returns>
         private static Version ReadRuntimeVersion() => Environment.Version;
 
-        /// <summary>Replaceable stack-frame reader; captured frames contribute method names only, without source or arguments.</summary>
+        /// <summary>Supplies stack frames without file paths for each exception in the report chain.</summary>
         internal static Func<Exception, StackFrame[]> FrameSnapshot = ReadFrames;
 
         /// <summary>Returns the assembly containing the crash-report implementation.</summary>
-        /// <returns>The VBAi assembly used to read informational version metadata.</returns>
+        /// <returns>The VBAi assembly whose version metadata is reported.</returns>
         private static Assembly ReadMetadataAssembly() => typeof(CrashReport).Assembly;
 
-        /// <summary>Reports whether the current host process is 64-bit.</summary>
-        /// <returns><see langword="true"/> when the process uses a 64-bit architecture.</returns>
+        /// <summary>Reports the bitness of the current host process.</summary>
+        /// <returns><see langword="true"/> when the add-in process is 64-bit.</returns>
         private static bool ReadProcessIs64Bit() => Environment.Is64BitProcess;
 
-        /// <summary>Reads frames for crash report.</summary>
-        /// <param name="error">Exception whose stack frames are captured without source file information.</param>
-        /// <returns>Available frames, or <see langword="null"/> when the runtime has no stack frames.</returns>
+        /// <summary>Captures method frames for an exception without collecting source file names.</summary>
+        /// <param name="error">Exception whose stack frames should be reported.</param>
+        /// <returns>Available frames, or null when the exception has no captured stack.</returns>
         private static StackFrame[] ReadFrames(Exception error) => new StackTrace(error, false).GetFrames();
 
         /// <summary>GitHub repository used as the destination for product issue reports.</summary>
@@ -50,11 +50,11 @@ namespace VBAi
         /// <summary>Gets the unique identifier assigned to this report.</summary><value>32-character lowercase GUID without separators.</value>
         internal string Id { get; } = Guid.NewGuid().ToString("N");
 
-        /// <summary>Replaceable source of the per-user directory where explicit local report backups are written.</summary>
+        /// <summary>Supplies the per-user directory used for local crash-report backups.</summary>
         internal static Func<string> ReportDirectory = NativeReportDirectory;
 
-        /// <summary>Builds the current user's local application-data crash-report directory.</summary>
-        /// <returns>The VBAi CrashReports path beneath LocalApplicationData.</returns>
+        /// <summary>Builds the report directory under the current user's LocalApplicationData folder.</summary>
+        /// <returns>The path ending in <c>VBAi\CrashReports</c>.</returns>
         private static string NativeReportDirectory() => Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "VBAi", "CrashReports");
 
         /// <summary>Gets the per-user directory used to save crash reports.</summary><value>Local application-data CrashReports directory.</value>

@@ -13,7 +13,7 @@ namespace VBAi
         /// <summary>Index of the tab under the pointer, or -1 when no tab is hovered.</summary>
         private int hoveredTab = -1;
 
-        /// <summary>Whether the pointer is over the close glyph of <see cref="hoveredTab"/>.</summary>
+        /// <summary>Indicates whether the pointer is over the close glyph of the hovered tab.</summary>
         private bool closeHovered;
 
         /// <summary>Displays a close command on each document tab.</summary>
@@ -33,8 +33,8 @@ namespace VBAi
         }
 
         /// <summary>Computes the close command rectangle for a document tab.</summary>
-        /// <param name="index">Zero-based tab index whose close glyph is being measured.</param>
-        /// <returns>Close-button hit rectangle in control coordinates, scaled for the current DPI.</returns>
+        /// <param name="index">Zero-based tab index whose close-button position is requested.</param>
+        /// <returns>DPI-scaled close glyph bounds within the tab rectangle.</returns>
         private Rectangle CloseBounds(int index)
         {
             var bounds = GetTabRect(index); int size = 22 * DeviceDpi / 96;

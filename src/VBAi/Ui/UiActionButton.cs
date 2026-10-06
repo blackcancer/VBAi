@@ -95,16 +95,16 @@ namespace VBAi
     public class UiActionButton : Button
     {
 
-        /// <summary>Symbol rendered for this command, from the bundled SVG set or the Windows symbol font.</summary>
+        /// <summary>Symbol drawn beside the caption or centered when the button is icon-only.</summary>
         private UiSymbol symbol;
 
-        /// <summary>Rendering flags for icon-only layout, emphasized action styling, pointer hover, and active mouse press.</summary>
+        /// <summary>Stores icon-only rendering, primary emphasis, pointer hover, and left-button press state.</summary>
         private bool iconOnly, primary, hovered, pressed;
 
-        /// <summary>Tooltip retaining the button caption when the visible label is hidden.</summary>
+        /// <summary>Displays the button caption as a tooltip when icon-only mode hides that caption.</summary>
         private readonly ToolTip captionTip = new ToolTip { ShowAlways = true };
 
-        /// <summary>Installed Windows icon font selected after the font subsystem resolves the preferred family.</summary>
+        /// <summary>Windows symbol font selected according to the font actually resolved by GDI.</summary>
         private static readonly string SymbolFont = FindSymbolFont();
 
         /// <summary>Creates a native keyboard-accessible command.</summary>
@@ -116,22 +116,22 @@ namespace VBAi
         }
 
         /// <summary>Symbol displayed beside the caption or on its own.</summary>
-        /// <value>Current symbol enum value used by the SVG or font renderer.</value>
+        /// <value>The icon glyph to draw; changing it invalidates the button.</value>
         [Category("Appearance"), DefaultValue(UiSymbol.None)]
         public UiSymbol Symbol { get => symbol; set { symbol = value; Invalidate(); } }
 
         /// <summary>Hides the painted caption while retaining its tooltip and accessible name.</summary>
-        /// <value><see langword="true"/> when only the symbol is painted and the caption remains available through tooltip/accessibility.</value>
+        /// <value><see langword="true"/> hides the painted caption but keeps its tooltip and accessible name.</value>
         [Category("Appearance"), DefaultValue(false)]
         public bool IconOnly { get => iconOnly; set { iconOnly = value; UpdateCaption(); Invalidate(); } }
 
         /// <summary>Emphasizes the main action in its group.</summary>
-        /// <value><see langword="true"/> when the button uses the emphasized primary-action palette.</value>
+        /// <value><see langword="true"/> requests the emphasized primary-action palette.</value>
         [Category("Appearance"), DefaultValue(false)]
         public bool Primary { get => primary; set { primary = value; Invalidate(); } }
 
         /// <summary>Chooses the available Windows icon font for symbols without a bundled SVG.</summary>
-        /// <returns>The preferred installed Fluent symbol font, falling back to the legacy Windows icon font.</returns>
+        /// <returns>The installed Fluent or MDL2 symbol font chosen by <see cref="ChooseSymbolFont"/>.</returns>
         private static string FindSymbolFont()
         {
             using (var font = new Font("Segoe Fluent Icons", 12))
@@ -156,8 +156,8 @@ namespace VBAi
 
         /// <inheritdoc/>
         /// <summary>Measures the caption and icon without accumulating width across layout passes.</summary>
-        /// <param name="proposedSize">Layout engine's suggested size; caption sizing is measured independently to avoid width accumulation.</param>
-        /// <returns>Preferred device-pixel size including padding and symbol space, or a fixed DPI-scaled icon-only size.</returns>
+        /// <param name="proposedSize">Available layout size; width is measured from the caption rather than accumulated from prior passes.</param>
+        /// <returns>A DPI-scaled size large enough for the symbol, caption, padding, and configured minimum size.</returns>
         public override Size GetPreferredSize(Size proposedSize)
         {
             if (IconOnly && Symbol != UiSymbol.None) return new Size(32 * DeviceDpi / 96, 30 * DeviceDpi / 96);

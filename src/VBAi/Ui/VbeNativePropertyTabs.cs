@@ -50,29 +50,29 @@ namespace VBAi
         /// <summary>Native rectangle bounds in left, top, right, bottom order.</summary>
         [StructLayout(LayoutKind.Sequential)] internal struct Rect {
 
-/// <summary>Left, top, right, and bottom edge coordinates.</summary>
-internal int Left, Top, Right, Bottom; }
+            /// <summary>Left, top, right, and bottom edges in the coordinate space returned by User32.</summary>
+            internal int Left, Top, Right, Bottom; }
 
         /// <summary>Native point in the current coordinate space.</summary>
         [StructLayout(LayoutKind.Sequential)] internal struct Point {
 
-/// <summary>X and Y coordinates.</summary>
-internal int X, Y; }
+            /// <summary>Horizontal and vertical coordinates passed to the native tab-control APIs.</summary>
+            internal int X, Y; }
 
         /// <summary>TCITEM-compatible structure used to read native tab text and state.</summary>
         [StructLayout(LayoutKind.Sequential)] internal struct TabItem
         {
 
-            /// <summary>Fields requested, item state, and state mask.</summary>
+            /// <summary>Requested TCITEM fields, current item state, and which state bits are valid.</summary>
             internal uint Mask, State, StateMask;
 
             /// <summary>Pointer to tab text storage.</summary>
             internal IntPtr Text;
 
-            /// <summary>Text buffer capacity and image-list index.</summary>
+            /// <summary>Tab-label buffer capacity and image-list index, or -1 when no image is requested.</summary>
             internal int TextCapacity, Image;
 
-            /// <summary>Application-defined item data.</summary>
+            /// <summary>Application-defined data returned by the native tab item.</summary>
             internal IntPtr Data;
         }
 
@@ -83,16 +83,16 @@ internal int X, Y; }
             /// <summary>Paint device context.</summary>
             internal IntPtr Dc;
 
-            /// <summary>Whether background erasure is required.</summary>
+            /// <summary>Nonzero when Windows requests background erasure before painting.</summary>
             internal int Erase;
 
-            /// <summary>Invalidated bounds.</summary>
+            /// <summary>Rectangle that Windows invalidated for this paint transaction.</summary>
             internal Rect Bounds;
 
-            /// <summary>Native restore and incremental-update flags.</summary>
+            /// <summary>PAINTSTRUCT restore and incremental-update flags.</summary>
             internal int Restore, IncrementalUpdate;
 
-            /// <summary>Reserved native padding bytes.</summary>
+            /// <summary>Reserved bytes required to preserve the Win32 PAINTSTRUCT layout.</summary>
             [MarshalAs(UnmanagedType.ByValArray, SizeConst = 32)] internal byte[] Reserved;
         }
 
@@ -100,10 +100,10 @@ internal int X, Y; }
         [StructLayout(LayoutKind.Sequential)] internal struct TrackMouse
         {
 
-            /// <summary>Structure size and tracking flags.</summary>
+            /// <summary>TRACKMOUSEEVENT byte size and requested enter/leave tracking flags.</summary>
             internal uint Size, Flags;
 
-            /// <summary>Window being tracked.</summary>
+            /// <summary>Tab-control window for which hover or leave notifications are requested.</summary>
             internal IntPtr Window;
 
             /// <summary>Hover timeout requested from Windows.</summary>
@@ -243,97 +243,106 @@ internal int X, Y; }
         /// <summary>Draws the native focus rectangle for a tab item.</summary><param name="dc">Device context.</param><param name="bounds">Focus bounds.</param><returns>Native drawing result.</returns>
         [DllImport("user32.dll")] private static extern bool DrawFocusRect(IntPtr dc, ref Rect bounds);
 
-        /// <summary>Reads the owner thread and process of a native tab control.</summary>
-        /// <param name="window">Tab-control HWND.</param><param name="process">Receives the owning process identifier.</param>
-        /// <returns>Owning thread identifier.</returns>
+        /// <summary>Reads the process and UI thread that own a native window.</summary>
+        /// <param name="window">Candidate tab-control handle.</param>
+        /// <param name="process">Receives the owning process identifier.</param>
+        /// <returns>The owning thread identifier.</returns>
         internal delegate uint WindowThreadReader(IntPtr window, out uint process);
 
-        /// <summary>Reads native client or outer bounds through an injectable API boundary.</summary>
-        /// <param name="window">HWND whose rectangle is requested.</param><param name="rectangle">Receives coordinates in the selected API space.</param>
-        /// <returns><see langword="true"/> when the rectangle was read.</returns>
+        /// <summary>Reads client-area or screen bounds for a native tab window.</summary>
+        /// <param name="window">Tab-control handle to measure.</param>
+        /// <param name="rectangle">Receives bounds on success.</param>
+        /// <returns><see langword="true"/> when Windows returned the requested bounds.</returns>
         internal delegate bool RectReader(IntPtr window, out Rect rectangle);
 
-        /// <summary>Converts a client point to screen coordinates for native tab hit testing.</summary>
-        /// <param name="window">HWND defining the client coordinate space.</param><param name="point">Input point replaced by the converted position.</param>
-        /// <returns><see langword="true"/> when conversion succeeds.</returns>
+        /// <summary>Converts a point in client coordinates to screen coordinates.</summary>
+        /// <param name="window">Window defining the source client area.</param>
+        /// <param name="point">Point converted in place.</param>
+        /// <returns><see langword="true"/> when the conversion succeeds.</returns>
         internal delegate bool ScreenPointReader(IntPtr window, ref Point point);
 
-        /// <summary>Sends a tab-control item query and receives the requested tab metadata.</summary>
-        /// <param name="window">Native tab-control HWND.</param><param name="message">TCM_* query message.</param>
-        /// <param name="index">Zero-based tab item index encoded as a native value.</param><param name="item">Initialized item structure receiving the result.</param>
-        /// <returns>Native message result.</returns>
+        /// <summary>Sends a native tab-item query for one item.</summary>
+        /// <param name="window">Tab-control handle receiving the query.</param>
+        /// <param name="message">TCM_GETITEMW or another compatible tab-item message.</param>
+        /// <param name="index">Zero-based tab index encoded as the message index.</param>
+        /// <param name="item">Item structure supplied to and filled by the control.</param>
+        /// <returns>Native message result; zero indicates that the item could not be read.</returns>
         internal delegate IntPtr ItemReader(IntPtr window, uint message, IntPtr index, ref TabItem item);
 
-        /// <summary>Queries a tab item's native bounds by sending its rectangle message.</summary>
-        /// <param name="window">Native tab-control HWND.</param><param name="message">Tab rectangle query message.</param>
-        /// <param name="index">Zero-based tab item index.</param><param name="rectangle">Receives the item rectangle.</param>
+        /// <summary>Requests the screen-relative bounds of one native tab item.</summary>
+        /// <param name="window">Tab-control handle receiving the query.</param>
+        /// <param name="message">Native tab-item rectangle message.</param>
+        /// <param name="index">Zero-based tab index encoded as the message index.</param>
+        /// <param name="rectangle">Receives the item bounds on success.</param>
         /// <returns>Native message result.</returns>
         internal delegate IntPtr ItemRectReader(IntPtr window, uint message, IntPtr index, out Rect rectangle);
 
-        /// <summary>Begins painting the native tab control and captures its update region and device context.</summary>
-        /// <param name="window">Tab-control HWND receiving WM_PAINT.</param><param name="state">Receives the native paint state that must later be completed.</param>
-        /// <returns>Paint device context, or zero when no paint context is available.</returns>
+        /// <summary>Begins a native paint transaction and returns its device context and invalidated bounds.</summary>
+        /// <param name="window">Tab-control handle being painted.</param>
+        /// <param name="state">Receives PAINTSTRUCT-compatible transaction data.</param>
+        /// <returns>Paint device context, or zero if painting could not begin.</returns>
         internal delegate IntPtr PaintBeginner(IntPtr window, out PaintState state);
 
-        /// <summary>Completes a paint operation started for the same native tab control.</summary>
-        /// <param name="window">Tab-control HWND passed to the corresponding begin call.</param><param name="state">Paint state returned by that call.</param>
-        /// <returns><see langword="true"/> when Windows accepts the completion.</returns>
+        /// <summary>Completes a paint transaction begun for the same native tab window.</summary>
+        /// <param name="window">Tab-control handle whose paint operation is ending.</param>
+        /// <param name="state">Paint transaction state returned by the begin callback.</param>
+        /// <returns><see langword="true"/> when Windows accepted the paint completion.</returns>
         internal delegate bool PaintEnder(IntPtr window, ref PaintState state);
 
-        /// <summary>Requests a native mouse-leave notification for hover tracking.</summary>
-        /// <param name="state">Initialized tracking structure naming the target HWND and event.</param>
-        /// <returns><see langword="true"/> when tracking was registered.</returns>
+        /// <summary>Requests native mouse-leave notification for a tab-control window.</summary>
+        /// <param name="state">TRACKMOUSEEVENT-compatible request.</param>
+        /// <returns><see langword="true"/> when Windows accepted the tracking request.</returns>
         internal delegate bool MouseTracker(ref TrackMouse state);
 
-        /// <summary>Injectable native class-name reader used to reject unsupported tab controls.</summary>
+        /// <summary>Reads the native class name into a caller-provided buffer.</summary>
         internal static Func<IntPtr, StringBuilder, int, int> ClassName = GetClassName;
 
-        /// <summary>Injectable style-bit reader used to validate owner-draw and orientation constraints.</summary>
+        /// <summary>Reads the requested native style bits from a window handle.</summary>
         internal static Func<IntPtr, int, int> Style = GetStyle;
 
-        /// <summary>Injectable owner-thread query used to keep painting on the tab control's native thread.</summary>
+        /// <summary>Reads process and owner-thread IDs for candidate window validation.</summary>
         internal static WindowThreadReader WindowThread = GetWindowThreadProcessId;
 
-        /// <summary>Injectable current-thread ID source used for owner-thread checks.</summary>
+        /// <summary>Returns the current Win32 UI thread ID used to enforce owner-thread painting.</summary>
         internal static Func<uint> CurrentThread = GetCurrentThreadId;
 
-        /// <summary>Injectable window-validity, visibility, and enabled-state checks for candidate HWNDs.</summary>
+        /// <summary>Validates a handle and checks whether its window is visible and enabled.</summary>
         internal static Func<IntPtr, bool> ValidWindow = IsWindow, VisibleWindow = IsWindowVisible, EnabledWindow = IsWindowEnabled;
 
-        /// <summary>Injectable native focus query used to draw the correct focused tab state.</summary>
+        /// <summary>Reads the current focus window for native hover and keyboard-state checks.</summary>
         internal static Func<IntPtr> Focus = GetFocus;
 
-        /// <summary>Injectable readers for client coordinates and outer-window coordinates.</summary>
+        /// <summary>Reads client-area and screen bounds, respectively, for a native window.</summary>
         internal static RectReader ClientBounds = GetClientRect, WindowBounds = GetWindowRect;
 
-        /// <summary>Injectable conversion from a tab-control client point to screen coordinates.</summary>
+        /// <summary>Converts client coordinates to screen coordinates for tab-hit testing.</summary>
         internal static ScreenPointReader ScreenPoint = ClientToScreen;
 
-        /// <summary>Injectable owner/sibling window query used to validate native tab relationships.</summary>
+        /// <summary>Resolves a related window handle such as a parent or owner.</summary>
         internal static Func<IntPtr, uint, IntPtr> RelatedWindow = GetWindow;
 
-        /// <summary>Injectable synchronous native message route for tab-control queries.</summary>
+        /// <summary>Sends a synchronous native tab message and returns its result.</summary>
         internal static Func<IntPtr, uint, IntPtr, IntPtr, IntPtr> SendMessage = Send;
 
-        /// <summary>Injectable query for native tab-item text and state.</summary>
+        /// <summary>Reads tab text and state from the native control.</summary>
         internal static ItemReader ReadItem = SendItem;
 
-        /// <summary>Injectable query for native tab-item bounds.</summary>
+        /// <summary>Reads the native bounds for one tab item.</summary>
         internal static ItemRectReader ReadItemRect = SendRect;
 
-        /// <summary>Injectable BeginPaint route that supplies the update region for rendering.</summary>
+        /// <summary>Starts a native paint transaction for the tab control.</summary>
         internal static PaintBeginner StartPaint = BeginPaint;
 
-        /// <summary>Injectable EndPaint route paired with <see cref="StartPaint"/>.</summary>
+        /// <summary>Completes a native paint transaction after drawing is finished.</summary>
         internal static PaintEnder FinishPaint = EndPaint;
 
-        /// <summary>Injectable invalidation route for a native tab control's client rectangle.</summary>
+        /// <summary>Invalidates a window or region and optionally requests immediate erase.</summary>
         internal static Func<IntPtr, IntPtr, bool, bool> Invalidate = InvalidateRect;
 
-        /// <summary>Injectable immediate update route that dispatches the pending paint message.</summary>
+        /// <summary>Processes pending paint messages for the specified tab-control window.</summary>
         internal static Func<IntPtr, bool> Update = UpdateWindow;
 
-        /// <summary>Injectable mouse-leave tracking route for native hover rendering.</summary>
+        /// <summary>Starts native mouse tracking so the renderer can clear its hot item on leave.</summary>
         internal static MouseTracker Track = TrackMouseEvent;
 
         /// <summary>Creates a renderer tied to the thread that owns the native tab control.</summary>

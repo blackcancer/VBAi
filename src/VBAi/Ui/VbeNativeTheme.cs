@@ -243,129 +243,138 @@ namespace VBAi
         /// <param name="version">Receives the native OS version structure.</param><returns>NTSTATUS result code.</returns>
         [DllImport("ntdll.dll", ExactSpelling = true)] private static extern int RtlGetVersion(ref NativeOsVersion version);
 
-        /// <summary>Reads client bounds through the injectable Win32 boundary.</summary>
-        /// <param name="window">HWND whose client area is queried.</param><param name="rectangle">Receives the client-coordinate rectangle.</param>
-        /// <returns><see langword="true"/> when Windows returns the bounds.</returns>
+        /// <summary>Reads the client-area rectangle of a native window.</summary>
+        /// <param name="window">Window handle whose client area is measured.</param>
+        /// <param name="rectangle">Receives the client rectangle on success.</param>
+        /// <returns><see langword="true"/> when User32 returns client bounds.</returns>
         internal delegate bool ReadClient(IntPtr window, out NativeRect rectangle);
 
-        /// <summary>Reads the process and thread that own a native window.</summary>
-        /// <param name="window">HWND whose owner is queried.</param><param name="process">Receives the process identifier.</param>
-        /// <returns>Owning thread identifier.</returns>
+        /// <summary>Reads the process and UI thread that own a native window.</summary>
+        /// <param name="window">Window handle being checked.</param>
+        /// <param name="process">Receives the owning process identifier.</param>
+        /// <returns>The owning thread identifier.</returns>
         internal delegate uint ReadWindowThread(IntPtr window, out uint process);
 
-        /// <summary>Sets a DWM window attribute through an injectable native boundary.</summary>
-        /// <param name="window">Target HWND.</param><param name="attribute">DWM attribute identifier.</param>
-        /// <param name="value">Attribute value passed by reference.</param><param name="size">Value size in bytes.</param>
+        /// <summary>Sets a DWM window attribute using its native attribute ID and value size.</summary>
+        /// <param name="window">Top-level window whose DWM attribute changes.</param>
+        /// <param name="attribute">DWM attribute identifier.</param>
+        /// <param name="value">Attribute value passed by reference.</param>
+        /// <param name="size">Size in bytes of <paramref name="value"/>.</param>
         /// <returns>HRESULT returned by DWM.</returns>
         internal delegate int WindowAttribute(IntPtr window, int attribute, ref int value, int size);
 
-        /// <summary>Reads the unvirtualized Windows version through RtlGetVersion.</summary>
-        /// <param name="version">Native structure initialized with its byte size.</param><returns>NTSTATUS result.</returns>
+        /// <summary>Reads the actual operating-system version without application-manifest virtualization.</summary>
+        /// <param name="version">Native OS version structure filled by ntdll.</param>
+        /// <returns>NTSTATUS status code.</returns>
         internal delegate int ReadOsVersion(ref NativeOsVersion version);
 
-        /// <summary>Fills the supplied native rectangle in a device context with a GDI brush.</summary>
-        /// <param name="dc">Target device-context handle.</param><param name="rectangle">Region to fill in client coordinates.</param>
-        /// <param name="brush">Brush handle used for the fill.</param><returns>Native fill result.</returns>
+        /// <summary>Fills a native rectangle with a GDI brush.</summary>
+        /// <param name="dc">Device context receiving the fill.</param>
+        /// <param name="rectangle">Rectangle to paint.</param>
+        /// <param name="brush">Brush handle owned by the caller.</param>
+        /// <returns>Native FillRect result.</returns>
         internal delegate int PaintRegion(IntPtr dc, ref NativeRect rectangle, IntPtr brush);
 
-        /// <summary>Renders a captured native chrome surface through the theme remapper.</summary>
-        /// <param name="window">Window whose visible chrome is captured.</param><param name="client"><see langword="true"/> to use its client region.</param>
-        /// <param name="dc">Optional supplied paint device context; zero requests a context from the window.</param>
-        /// <param name="hosted"><see langword="true"/> when the control belongs to a hosted add-in surface that must keep its own palette.</param>
-        /// <param name="preserve"><see langword="true"/> to leave captured content unchanged.</param><param name="code"><see langword="true"/> to apply code syntax ramps.</param>
+        /// <summary>Remaps the native chrome or client pixels using the requested host-specific rendering mode.</summary>
+        /// <param name="window">Native window whose captured surface is painted.</param>
+        /// <param name="client"><see langword="true"/> paints the client area; otherwise paints non-client chrome.</param>
+        /// <param name="dc">Optional caller-owned device context; zero asks the renderer to acquire and release one.</param>
+        /// <param name="hosted">Preserves the host caption treatment for a hosted pane.</param>
+        /// <param name="preserve">Preserves an already-dark client surface.</param>
+        /// <param name="code">Uses VBA code-surface color mapping for editor text.</param>
         internal delegate void PaintSurface(IntPtr window, bool client, IntPtr dc, bool hosted, bool preserve, bool code);
 
-        /// <summary>Injectable child-window enumeration route used to discover VBE controls.</summary>
+        /// <summary>Enumerates child HWNDs while applying the supplied predicate and callback.</summary>
         internal static Func<IntPtr, EnumWindowCallback, IntPtr, bool> EnumerateChildren = EnumChildWindows;
 
-        /// <summary>Injectable Unicode class-name and caption readers for native HWND inspection.</summary>
+        /// <summary>Reads native class names and window captions into caller-provided buffers.</summary>
         internal static Func<IntPtr, StringBuilder, int, int> ReadClassName = GetClassName, ReadWindowText = GetWindowText;
 
-        /// <summary>Injectable synchronous native message call used for window-specific queries.</summary>
+        /// <summary>Sends a synchronous Win32 message and returns its window-procedure result.</summary>
         internal static Func<IntPtr, uint, IntPtr, IntPtr, int> NativeSend = SendMessage;
 
-        /// <summary>Injectable asynchronous message post used for deferred native repaint requests.</summary>
+        /// <summary>Posts a Win32 message for asynchronous processing by the target window's thread.</summary>
         internal static Func<IntPtr, uint, IntPtr, IntPtr, bool> NativePost = PostMessage;
 
-        /// <summary>Injectable reader for native window style and extended-style bits.</summary>
+        /// <summary>Reads a native window style or extended-style bit field.</summary>
         internal static Func<IntPtr, int, int> ReadStyle = GetWindowStyle;
 
-        /// <summary>Injectable reader for client-coordinate dimensions.</summary>
+        /// <summary>Reads client-area bounds used to size the themed surface.</summary>
         internal static ReadClient ReadClientBounds = GetClientRect;
 
-        /// <summary>Injectable lookup for a direct child by class and optional caption.</summary>
+        /// <summary>Finds a child HWND by class name and caption under a supplied parent.</summary>
         internal static Func<IntPtr, IntPtr, string, string, IntPtr> FindChild = FindWindowEx;
 
-        /// <summary>Injectable GDI fill route for native control backgrounds.</summary>
+        /// <summary>Fills the invalidated rectangle of a native window with a GDI brush.</summary>
         internal static PaintRegion PaintBackground = FillRect;
 
-        /// <summary>Creates a solid brush for temporary native painting.</summary>
+        /// <summary>Creates a GDI solid brush from a COLORREF value.</summary>
         internal static Func<int, IntPtr> NewBrush = CreateSolidBrush;
 
-        /// <summary>Deletes a GDI brush created by this theme.</summary>
+        /// <summary>Deletes a brush created by <see cref="NewBrush"/> after drawing.</summary>
         internal static Func<IntPtr, bool> ReleaseBrush = DeleteObject;
 
-        /// <summary>Saves GDI state before temporary native chrome drawing.</summary>
+        /// <summary>Saves a device-context state before changing its drawing attributes.</summary>
         internal static Func<IntPtr, int> SaveDeviceContext = SaveDC;
 
-        /// <summary>Restores the GDI state saved for the supplied device context.</summary>
+        /// <summary>Restores a device context to the saved state after drawing.</summary>
         internal static Func<IntPtr, int, bool> RestoreDeviceContext = RestoreDC;
 
-        /// <summary>Injectable GDI setters for foreground text color and background color.</summary>
+        /// <summary>Sets the text color and background color in a device context, respectively.</summary>
         internal static Func<IntPtr, int, int> ForegroundColor = SetTextColor, BackgroundColor = SetBkColor;
 
-        /// <summary>Injectable invalidation/redraw request for a native window or region.</summary>
+        /// <summary>Invalidates or redraws a window and its selected descendants.</summary>
         internal static Func<IntPtr, IntPtr, IntPtr, uint, bool> Redraw = RedrawWindow;
 
-        /// <summary>Checks whether a candidate native control is a descendant of the VBE editor window.</summary>
+        /// <summary>Checks whether one HWND is a descendant of another.</summary>
         internal static Func<IntPtr, IntPtr, bool> ChildRelation = IsChild;
 
-        /// <summary>Injectable owner process/thread query used to avoid cross-process native hooks.</summary>
+        /// <summary>Reads the owning process and UI thread for a native window.</summary>
         internal static ReadWindowThread WindowThread = GetWindowThreadProcessId;
 
-        /// <summary>Injectable current-thread identifier for same-thread native control operations.</summary>
+        /// <summary>Returns the current Win32 thread identifier for UI-affinity checks.</summary>
         internal static Func<uint> CurrentThread = GetCurrentThreadId;
 
-        /// <summary>Injectable related-window and ancestor queries used to classify native ownership.</summary>
+        /// <summary>Reads related and ancestor window handles for verified VBE-window traversal.</summary>
         internal static Func<IntPtr, uint, IntPtr> WindowRelation = GetWindow, Ancestor = GetAncestor;
 
-        /// <summary>Installs an out-of-context WinEvent hook scoped to selected VBE process events.</summary>
+        /// <summary>Installs a WinEvent hook for VBE windows created or shown after initialization.</summary>
         internal static Func<uint, uint, IntPtr, WinEventCallback, uint, uint, uint, IntPtr> InstallWindowHook = SetWinEventHook;
 
-        /// <summary>Removes the event hook installed by <see cref="InstallWindowHook"/>.</summary>
+        /// <summary>Removes the WinEvent hook when this theme service shuts down.</summary>
         internal static Func<IntPtr, bool> RemoveWindowHook = UnhookWinEvent;
 
-        /// <summary>Installs a native subclass callback on a VBE-owned window.</summary>
+        /// <summary>Subclasses an eligible native VBE child window with the theme callback.</summary>
         internal static Func<IntPtr, SubclassCallback, UIntPtr, IntPtr, bool> InstallSubclass = SetWindowSubclass;
 
-        /// <summary>Removes the subclass using the callback and identifier used at installation.</summary>
+        /// <summary>Removes the theme callback from a previously subclassed window.</summary>
         internal static Func<IntPtr, SubclassCallback, UIntPtr, bool> RemoveSubclass = RemoveWindowSubclass;
 
-        /// <summary>Forwards an unhandled subclass message to the next window procedure.</summary>
+        /// <summary>Calls the previous window procedure in the subclass chain.</summary>
         internal static Func<IntPtr, uint, IntPtr, IntPtr, IntPtr> NativeProcedure = DefSubclassProc;
 
-        /// <summary>Sets or clears the Windows visual-style class for one native control.</summary>
+        /// <summary>Applies or clears a per-window visual-style theme class.</summary>
         internal static Func<IntPtr, string, string, int> SetNativeTheme = SetWindowTheme;
 
-        /// <summary>Sets a DWM attribute such as immersive dark mode on a native window.</summary>
+        /// <summary>Sets a DWM attribute on one window without changing the host process policy.</summary>
         internal static WindowAttribute SetAttribute = DwmSetWindowAttribute;
 
-        /// <summary>Looks up an already-loaded system theme module without loading it.</summary>
+        /// <summary>Gets an already loaded system theme module without loading a new DLL.</summary>
         internal static Func<string, IntPtr> ThemeModule = GetModuleHandle;
 
-        /// <summary>Resolves a native export by ordinal from an already-loaded module.</summary>
+        /// <summary>Resolves a named private theme API from the already loaded theme module.</summary>
         internal static Func<IntPtr, IntPtr, IntPtr> NativeEntryPoint = GetProcAddress;
 
-        /// <summary>Injectable RtlGetVersion route used to gate private Windows theme ABI use.</summary>
+        /// <summary>Reads the native Windows version used to qualify private theme API calls.</summary>
         internal static ReadOsVersion ReadVersion = RtlGetVersion;
 
-        /// <summary>Injectable captured-pixel renderer for native editor chrome.</summary>
+        /// <summary>Paints remapped native chrome or editor pixels, depending on the supplied mode flags.</summary>
         internal static PaintSurface DrawChrome = VbeNativeChrome.Paint;
 
-        /// <summary>Injectable painters for native VBE borders and combo-box buttons.</summary>
+        /// <summary>Paints a native child border and combo drop-down button using the current palette.</summary>
         internal static Action<IntPtr> DrawBorder = VbeNativeChrome.PaintBorder, DrawCombo = VbeNativeChrome.PaintComboButton;
 
-        /// <summary>Injectable property-list row painter used by the disposable native-renderer probe.</summary>
+        /// <summary>Remaps the pixels of a native Properties-pane row into the active theme palette.</summary>
         internal static Action<IntPtr, NativeRect> DrawPropertyRow = VbeNativeChrome.PaintPropertyRow;
 
         /// <summary>Reads the native Windows major, minor, and build version.</summary>
@@ -490,17 +499,17 @@ internal int Left, Top, Right, Bottom; }
         /// <summary>Caption captured with the Immediate window handle.</summary>
         private static string immediateCaption;
 
-        /// <summary>Returns whether the explicitly gated experiment is enabled for this host process.</summary>
-        /// <returns><see langword="true"/> when the process environment variable equals <c>1</c>.</returns>
+        /// <summary>Checks the explicit native-theme experiment switch before enabling experimental behavior.</summary>
+        /// <returns><see langword="true"/> only when <see cref="ExperimentVariable"/> is exactly <c>1</c>.</returns>
         internal static bool ExperimentEnabled()
         {
             return string.Equals(Environment.GetEnvironmentVariable(ExperimentVariable), "1", StringComparison.Ordinal);
         }
 
-        /// <summary>Native preference transaction used to apply or restore Windows VBE theme settings.</summary>
+        /// <summary>Applies palette state to an eligible VBE window using the native renderer.</summary>
         internal static Func<IntPtr, int> ApplyNativeTheme = Apply;
 
-        /// <summary>Creates the deferred native palette transaction associated with a VBE instance.</summary>
+        /// <summary>Creates the deferred palette recovery service for a live VBE session.</summary>
         internal static Func<object, IntPtr, VbeNativePalette> CreatePalette = (vbe, editor) => new VbeNativePalette(vbe, editor);
 
         /// <summary>Stores the VBE owner and applies the persisted or explicitly gated preference.</summary>
@@ -1140,8 +1149,8 @@ internal int Left, Top, Right, Bottom; }
         }
 
         /// <summary>Leaves hosted WinForms/WPF content and its native child controls to their own renderer.</summary>
-        /// <param name="window">Candidate HWND in the VBE tree.</param>
-        /// <returns><see langword="true"/> when a managed add-in surface owns the content and should retain its own renderer.</returns>
+        /// <param name="window">Candidate HWND inside the VBE shell.</param>
+        /// <returns><see langword="true"/> when the candidate or an ancestor is add-in-owned managed content, stopping before the editor root.</returns>
         private static bool IsManagedContent(IntPtr window)
         {
             IntPtr current = window;
