@@ -25,7 +25,7 @@ namespace VBAi
         /// <summary>Cancellation source for feed checks and downloads owned by this window.</summary>
         private readonly CancellationTokenSource cancellation = new CancellationTokenSource();
 
-        /// <summary>Maintains the runtime disposed state for update window.</summary>
+        /// <summary>Prevents repeated disposal of this window's cancellation source and runtime subscriptions.</summary>
         private bool runtimeDisposed;
 
         /// <summary>Factory for the release feed.</summary>
@@ -43,13 +43,13 @@ namespace VBAi
         /// <summary>Schedules a verified release installer with the separate updater process.</summary>
         internal Action<UpdateRelease, string, bool> Schedule = UpdateCoordinator.Schedule;
 
-        /// <summary>Maintains the check release state for update window.</summary>
+        /// <summary>Compares the feed with the installed version using the selected prerelease policy and cancellation token.</summary>
         internal Func<UpdateFeed, UpdateVersion, bool, CancellationToken, Task<UpdateRelease>> CheckRelease = (feed, version, previews, token) => feed.Check(version, previews, null, token);
 
-        /// <summary>Maintains the download installer state for update window.</summary>
+        /// <summary>Downloads the selected release asset into the update cache with progress and cancellation.</summary>
         internal Func<UpdateFeed, UpdateAsset, string, IProgress<int>, CancellationToken, Task<string>> DownloadInstaller = (feed, asset, root, progress, token) => feed.Download(asset, root, progress, token);
 
-        /// <summary>Maintains the run background state for update window.</summary>
+        /// <summary>Runs an update action away from the UI thread; its task is awaited before the action is presented as settled.</summary>
         internal Func<Action, Task> RunBackground = action => Task.Run(action);
 
         /// <summary>Creates the update settings window without starting a check in Designer mode.</summary>
@@ -264,12 +264,15 @@ namespace VBAi
         }
 
         /// <summary>WinForms owner wrapper around the native VBE main window.</summary>
-        private sealed class VbeOwner : IWin32Window {
+        private sealed class VbeOwner : IWin32Window
+        {
+            /// <summary>Wraps a borrowed VBE main-window handle without taking native window ownership.</summary>
+            /// <param name="handle">Native host HWND used as the modal parent, not created or destroyed by this wrapper.</param>
+            internal VbeOwner(IntPtr handle) { Handle = handle; }
 
-/// <summary>Creates a modal owner wrapper.</summary><param name="handle">VBE main-window handle.</param>
-internal VbeOwner(IntPtr handle) { Handle = handle; }
-
-/// <summary>Gets the native window handle used as the modal owner.</summary><value>VBE main-window handle.</value>
-public IntPtr Handle { get; } }
+            /// <summary>Gets the borrowed HWND used as the WinForms modal owner.</summary>
+            /// <value>The handle supplied at construction; this wrapper does not verify its current validity.</value>
+            public IntPtr Handle { get; }
+        }
     }
 }

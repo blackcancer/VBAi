@@ -29,7 +29,7 @@ namespace VBAi
         /// <summary>Gets or sets the UTC time of the latest release check.</summary><value>Last check timestamp in UTC.</value>
         public DateTime LastCheckUtc { get; set; }
 
-        /// <summary>Gets or sets the UTC time of the latest download or install attempt.</summary><value>Last attempt timestamp in UTC.</value>
+        /// <summary>Gets or sets the UTC time when the most recent release-check attempt began.</summary><value>Last attempt timestamp in UTC.</value>
         public DateTime LastAttemptUtc { get; set; }
     }
 
@@ -72,7 +72,7 @@ namespace VBAi
         /// <summary>Gets the configured override or the directory containing the add-in assembly.</summary><value>Full installation directory.</value>
         internal static string InstallationDirectory => InstallationDirectoryOverride ?? Path.GetDirectoryName(typeof(UpdateState).Assembly.Location);
 
-        /// <summary>Maintains the read product assembly state for update state.</summary>
+        /// <summary>Supplies the assembly whose informational or assembly version is reported as the current product version.</summary>
         internal static Func<Assembly> ReadProductAssembly = () => typeof(UpdateState).Assembly;
 
         /// <summary>Gets the assembly informational version, falling back to its assembly version.</summary><value>Current product version string.</value>

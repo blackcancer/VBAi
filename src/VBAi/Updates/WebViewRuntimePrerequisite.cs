@@ -14,40 +14,40 @@ namespace VBAi
     internal sealed class WebViewRuntimePrerequisite
     {
 
-        /// <summary>Maintains the open registry root state for web view runtime prerequisite.</summary>
+        /// <summary>Opens one requested registry hive/view for detection; the returned handle is disposed by Installed.</summary>
         internal static Func<RegistryHive, RegistryView, IDisposable> OpenRegistryRoot = (hive, view) => RegistryKey.OpenBaseKey(hive, view);
 
-        /// <summary>Maintains the open runtime key state for web view runtime prerequisite.</summary>
+        /// <summary>Opens the WebView2 client subkey read-only below a detection root, returning null when it is absent.</summary>
         internal static Func<IDisposable, string, IDisposable> OpenRuntimeKey = (root, path) => ((RegistryKey)root).OpenSubKey(path);
 
-        /// <summary>Maintains the read runtime version state for web view runtime prerequisite.</summary>
+        /// <summary>Reads the pv registry value from the detected runtime client key; non-string values do not establish installation.</summary>
         internal static Func<IDisposable, object> ReadRuntimeVersion = key => ((RegistryKey)key).GetValue("pv");
 
-        /// <summary>Maintains the create client state for web view runtime prerequisite.</summary>
+        /// <summary>Creates the owned HTTP client for one bootstrapper download; the download disposes it.</summary>
         internal static Func<HttpClient> CreateClient = NewClient;
 
-        /// <summary>Handles new client for web view runtime prerequisite.</summary>
-        /// <returns>http client produced by the operation for new client on web view runtime prerequisite.</returns>
+        /// <summary>Creates a bootstrapper HTTP client with a two-minute request timeout.</summary>
+        /// <returns>A new client that the download routine owns and disposes.</returns>
         private static HttpClient NewClient() => new HttpClient { Timeout = TimeSpan.FromMinutes(2) };
 
-        /// <summary>Maintains the verify trust state for web view runtime prerequisite.</summary>
+        /// <summary>Verifies bootstrapper Authenticode trust before its Microsoft signer name is accepted.</summary>
         internal static Func<string, bool> VerifyTrust = UpdateInstallerRunner.VerifySignatureNative;
 
-        /// <summary>Maintains the load certificate state for web view runtime prerequisite.</summary>
+        /// <summary>Loads the bootstrapper signer certificate; VerifyMicrosoft disposes the returned certificate.</summary>
         internal static Func<string, X509Certificate2> LoadCertificate = NativeCertificate;
 
-        /// <summary>Handles native certificate for web view runtime prerequisite.</summary>
-        /// <param name="path">Path used for the path being processed.</param>
-        /// <returns>x509 certificate2 produced by the operation for native certificate on web view runtime prerequisite.</returns>
+        /// <summary>Loads the signer's certificate from a signed bootstrapper file without independently verifying trust.</summary>
+        /// <param name="path">Path of the downloaded signed bootstrapper whose certificate is requested.</param>
+        /// <returns>A caller-owned signer certificate; malformed or unsigned files raise the certificate API error.</returns>
         private static X509Certificate2 NativeCertificate(string path) => new X509Certificate2(X509Certificate.CreateFromSignedFile(path));
 
-        /// <summary>Maintains the start process state for web view runtime prerequisite.</summary>
+        /// <summary>Starts the verified bootstrapper using its explicit silent arguments; the returned process handle is disposed by InstallNative.</summary>
         internal static Func<ProcessStartInfo, Process> StartProcess = Process.Start;
 
         /// <summary>Bounds the silent installer wait without terminating a process with an uncertain outcome.</summary>
         internal static Func<Process, int, bool> WaitForInstaller = (process, milliseconds) => process.WaitForExit(milliseconds);
 
-        /// <summary>Maintains the installer timeout milliseconds state for web view runtime prerequisite.</summary>
+        /// <summary>Maximum silent-installer wait, fifteen minutes expressed in milliseconds; expiration does not terminate or retry the installer.</summary>
         internal const int InstallerTimeoutMilliseconds = 15 * 60 * 1000;
 
         /// <summary>Microsoft-hosted Evergreen WebView2 bootstrapper URL.</summary>
@@ -86,6 +86,7 @@ namespace VBAi
         /// <returns>Task that completes after installation has been verified.</returns>
         /// <exception cref="InvalidDataException">The downloaded file fails signature or publisher verification.</exception>
         /// <exception cref="InvalidOperationException">Installation exits unsuccessfully or the runtime remains absent.</exception>
+        /// <exception cref="TimeoutException">The started installer did not exit within its wait; its files are retained and it is not terminated or retried.</exception>
         internal async Task Ensure(string folder)
         {
             if (IsInstalled()) return;
@@ -147,6 +148,7 @@ namespace VBAi
         /// <summary>Runs the bootstrapper silently and returns its process exit code.</summary>
         /// <param name="path">Verified bootstrapper path.</param><returns>Process exit code.</returns>
         /// <exception cref="InvalidOperationException">The installer process could not be started.</exception>
+        /// <exception cref="TimeoutException">The original process handle did not signal exit before the deadline; the child is left running.</exception>
         private static int InstallNative(string path)
         {
             using (var process = StartProcess(new ProcessStartInfo(path, "/silent /install") { UseShellExecute = false, CreateNoWindow = true }))

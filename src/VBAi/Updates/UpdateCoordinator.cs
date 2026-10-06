@@ -26,18 +26,18 @@ namespace VBAi
         /// <summary>Launcher used to start the isolated installer worker.</summary>
         internal static Action<bool> LaunchWorker = LaunchWorkerNative;
 
-        /// <summary>Maintains the start process state for update coordinator.</summary>
+        /// <summary>Starts the separate updater executable; the launcher validates the deployment and selects foreground/background mode.</summary>
         internal static Func<ProcessStartInfo, Process> StartProcess = Process.Start;
 
-        /// <summary>Maintains the create timer state for update coordinator.</summary>
+        /// <summary>Creates the host-lifetime automatic-check timer with explicit initial delay and interval.</summary>
         internal static Func<TimerCallback, object, TimeSpan, TimeSpan, Timer> CreateTimer = NewTimer;
 
-        /// <summary>Handles new timer for update coordinator.</summary>
-        /// <param name="callback">timer callback that supplies the callback for this operation.</param>
-        /// <param name="state">object that supplies the state for this operation.</param>
-        /// <param name="due">Duration that supplies the due for this operation.</param>
-        /// <param name="period">Duration that supplies the period for this operation.</param>
-        /// <returns>timer produced by the operation for new timer on update coordinator.</returns>
+        /// <summary>Creates a ThreadPool timer for the host-lifetime update check; Stop disposes the retained timer.</summary>
+        /// <param name="callback">Callback invoked by the timer on a ThreadPool thread.</param>
+        /// <param name="state">State passed to the callback; the normal update timer passes null.</param>
+        /// <param name="due">Initial delay before the callback; the normal update timer uses zero.</param>
+        /// <param name="period">Interval between callbacks; the normal update timer uses one hour.</param>
+        /// <returns>A new timer owned by the coordinator and disposed when the host lifetime stops.</returns>
         private static Timer NewTimer(TimerCallback callback, object state, TimeSpan due, TimeSpan period) => new Timer(callback, state, due, period);
 
         /// <summary>Serializes release checks, optionally downloads the package, and may schedule installation.</summary>

@@ -19,15 +19,15 @@ namespace VBAi
         /// <summary>GitHub API endpoint for the product repository.</summary>
         internal const string ApiRoot = "https://api.github.com/repos/blackcancer/VBAi";
 
-        /// <summary>Maintains the load credential settings state for update feed.</summary>
+        /// <summary>Loads the selected GitHub account settings only when repository credential acquisition is needed.</summary>
         internal static Func<LlmSettings> LoadCredentialSettings = LlmSettings.Load;
 
-        /// <summary>Maintains the read credential state for update feed.</summary>
+        /// <summary>Resolves a token for the selected GitHub account through the credential integration, honoring cancellation.</summary>
         internal static Func<string, CancellationToken, Task<string>> ReadCredential = GitHubApi.ReadCredential;
 
-        /// <summary>Handles default credential for update feed.</summary>
+        /// <summary>Resolves repository credentials for the configured GitHub account after an unauthenticated access failure.</summary>
         /// <param name="ct">Token used to cancel the operation.</param>
-        /// <returns>task&lt;string&gt; produced by the operation for default credential on update feed.</returns>
+        /// <returns>A task yielding the credential token; cancellation or credential-provider errors propagate to the caller.</returns>
         private static Task<string> DefaultCredential(CancellationToken ct) => ReadCredential(LoadCredentialSettings().GitHubAccount, ct);
 
         /// <summary>HTTP client used for release metadata and asset downloads.</summary>

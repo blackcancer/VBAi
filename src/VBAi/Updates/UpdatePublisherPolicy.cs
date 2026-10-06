@@ -10,12 +10,13 @@ namespace VBAi
     {
         // Intentionally empty until the maintainer supplies and approves a signing certificate.
         // Certificate rotation must ship an explicit overlap policy in a trusted product build.
-        /// <summary>Maintains the certificate sha256 state for update publisher policy.</summary>
+        /// <summary>Trusted product signer-certificate SHA-256 pins shipped in this build; currently empty, so product installers are refused.</summary>
         private static readonly string[] CertificateSha256 = new string[0];
 
-        /// <summary>Handles accepts for update publisher policy.</summary>
-        /// <param name="path">Path used for the path being processed.</param>
-        /// <returns>Boolean indicating the result of the check for accepts on update publisher policy.</returns>
+        /// <summary>Checks the signed file's raw certificate digest against the build-owned publisher pins.</summary>
+        /// <param name="path">Candidate installer file from which the signer certificate is extracted.</param>
+        /// <returns>True for a pinned signer; false when no pin is configured, no pin matches, or certificate extraction fails cryptographically.</returns>
+        /// <remarks>This is publisher identity checking, not Windows trust verification; the installer runner requires both.</remarks>
         internal static bool Accepts(string path)
         {
             if (CertificateSha256.Length == 0) return false;

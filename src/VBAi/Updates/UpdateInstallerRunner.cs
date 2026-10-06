@@ -11,10 +11,10 @@ namespace VBAi
     internal sealed class UpdateInstallerRunner
     {
 
-        /// <summary>Maintains the start process state for update installer runner.</summary>
+        /// <summary>Starts the verified MSI/setup command; InstallNative retains the original process handle while awaiting exit.</summary>
         internal static Func<ProcessStartInfo, Process> StartProcess = Process.Start;
 
-        /// <summary>Maintains the read process state for update installer runner.</summary>
+        /// <summary>Opens a process by the leased PID so liveness can be checked together with its UTC start ticks.</summary>
         internal static Func<int, Process> ReadProcess = Process.GetProcessById;
 
         /// <summary>Update root containing the pending job, staged package, and host leases.</summary>
@@ -29,13 +29,13 @@ namespace VBAi
         /// <summary>Product publisher policy is separate from general Windows signature trust.</summary>
         internal Func<string, bool> VerifyPublisher = UpdatePublisherPolicy.Accepts;
 
-        /// <summary>Maintains the wait for installer state for update installer runner.</summary>
+        /// <summary>Waits up to the supplied milliseconds on the original installer handle; false records an uncertain outcome without terminating or retrying it.</summary>
         internal static Func<Process, int, bool> WaitForInstaller = (process, milliseconds) => process.WaitForExit(milliseconds);
 
-        /// <summary>Maintains the installer timeout milliseconds state for update installer runner.</summary>
+        /// <summary>Fifteen-minute installer wait expressed in milliseconds; expiration leaves the started-attempt marker for recovery.</summary>
         internal const int InstallerTimeoutMilliseconds = 15 * 60 * 1000;
 
-        /// <summary>Maintains the uncertain status state for update installer runner.</summary>
+        /// <summary>Terminal message used when an installer attempt may have run but completion cannot be verified; it forbids automatic replay.</summary>
         internal const string UncertainStatus = "Installation outcome is uncertain. Check the installer and its log before attempting another update.";
 
         /// <summary>Delegate that launches an installer and returns its process exit code.</summary>
@@ -44,7 +44,7 @@ namespace VBAi
         /// <summary>Delegate that reads the installed product version from a directory.</summary>
         internal Func<string, string> InstalledVersion = directory => FileVersionInfo.GetVersionInfo(Path.Combine(directory, "VBAi.dll")).ProductVersion;
 
-        /// <summary>Gets whether the installer process is currently running.</summary><value>True while Install is executing.</value>
+        /// <summary>Gets whether this runner is inside an installation attempt.</summary><value>True from pre-launch status publication until the attempt settles; false does not prove a timed-out child has exited.</value>
         internal bool Installing { get; private set; }
 
         /// <summary>Creates a runner bound to one normalized update root.</summary><param name="root">Update cache root path.</param>
@@ -172,42 +172,42 @@ namespace VBAi
 
         /// <summary>WINTRUST_FILE_INFO-compatible data identifying the file to verify.</summary>
         [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
-        private struct TrustFile {
+        private struct TrustFile
+        {
+            /// <summary>Size in bytes of this marshalled WINTRUST_FILE_INFO structure.</summary>
+            internal uint Size;
 
-/// <summary>Structure size, file path, optional file handle, and subject pointer.</summary>
-internal uint Size;
+            /// <summary>Unicode installer path supplied to the Windows trust provider.</summary>
+            [MarshalAs(UnmanagedType.LPWStr)] internal string Path;
 
-/// <summary>Unicode path of the installer file being verified.</summary>
-[MarshalAs(UnmanagedType.LPWStr)] internal string Path;
+            /// <summary>Optional file-handle and known-subject pointers; both remain zero for path-based verification.</summary>
+            internal IntPtr File, Subject;
+        }
 
-/// <summary>Optional open file handle and subject pointer, unused by this caller.</summary>
-internal IntPtr File, Subject; }
-
-        /// <summary>WINTRUST_DATA-compatible policy, file choice, and trust-state data.</summary>
+        /// <summary>WINTRUST_DATA-compatible policy, file choice and provider state.</summary>
         [StructLayout(LayoutKind.Sequential)]
         private struct TrustData
         {
-
-            /// <summary>Structure size in bytes.</summary>
+            /// <summary>Size in bytes of this marshalled WINTRUST_DATA structure.</summary>
             internal uint Size;
 
-/// <summary>Optional policy and SIP provider data pointers.</summary>
-internal IntPtr Policy, Sip;
+            /// <summary>Optional policy/SIP provider pointers, left zero by this caller.</summary>
+            internal IntPtr Policy, Sip;
 
-/// <summary>UI mode, revocation-check setting, and selected union member.</summary>
-internal uint UiChoice, RevocationChecks, UnionChoice;
+            /// <summary>UI mode, revocation mode and union selector; this caller supplies no UI, default revocation and a file choice.</summary>
+            internal uint UiChoice, RevocationChecks, UnionChoice;
 
-            /// <summary>Pointer to the selected trust file description.</summary>
+            /// <summary>Owned allocation containing the marshalled TrustFile, freed after provider-state closure.</summary>
             internal IntPtr File;
 
-/// <summary>Trust state action used to open or close provider state.</summary>
-internal uint StateAction;
+            /// <summary>Provider-state action: 1 opens verification state and 2 closes that state in finally.</summary>
+            internal uint StateAction;
 
-/// <summary>Provider state, optional URL, flags, and caller context.</summary>
-internal IntPtr StateData, Url;
+            /// <summary>Returned provider state and optional URL pointer; the trust provider owns the state until the close action.</summary>
+            internal IntPtr StateData, Url;
 
-/// <summary>Trust-provider behavior flags and caller context pointer.</summary>
-internal uint Flags, Context;
+            /// <summary>Provider flags and UI context codes, both left at their default zero values.</summary>
+            internal uint Flags, Context;
         }
 
         /// <summary>Verifies a file's Authenticode trust state using the Windows trust provider.</summary>

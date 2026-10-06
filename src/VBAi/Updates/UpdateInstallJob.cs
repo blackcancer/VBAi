@@ -45,10 +45,10 @@ namespace VBAi
         public bool Completed { get; set; }
 
         /// <summary>Whether the completed installer result was verified as successful.</summary>
-        /// <value>Current succeeded exposed by update install job.</value>
+        /// <value>True only when the completed installer exit/version or reboot-required outcome was accepted; false for failure, cancellation or an uncertain attempt.</value>
         public bool Succeeded { get; set; }
 
-        /// <summary>Gets or sets whether restarting the host is required after installation.</summary><value>Restart requirement.</value>
+        /// <summary>Gets or sets whether the installer reported a required Windows restart.</summary><value>True for installer exit codes 3010 or 1641; a normal success separately asks the user to restart the VBA host.</value>
         public bool RestartRequired { get; set; }
 
         /// <summary>Validates the target package, version, installation path, and cache containment.</summary>

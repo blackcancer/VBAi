@@ -25,10 +25,10 @@ namespace VBAi
         /// <summary>Whether this window is handling runtime prerequisite installation instead of a product update.</summary>
         private bool prerequisite, closingInternally;
 
-        /// <summary>Maintains the create prerequisite state for update progress window.</summary>
+        /// <summary>Creates the WebView2 prerequisite service only when its configured flow is shown, never in the Designer constructor.</summary>
         internal Func<WebViewRuntimePrerequisite> CreatePrerequisite = () => new WebViewRuntimePrerequisite();
 
-        /// <summary>Maintains the set exit code state for update progress window.</summary>
+        /// <summary>Publishes the updater process exit code: zero for verified success, one for failed or cancelled work.</summary>
         internal Action<int> SetExitCode = code => Environment.ExitCode = code;
 
         /// <summary>Configures this window for the WebView2 runtime prerequisite flow.</summary>
@@ -104,7 +104,7 @@ namespace VBAi
             finally { polling = false; }
         }
 
-        /// <summary>Closes background for update progress window.</summary>
+        /// <summary>Closes a settled background worker window with the internal-close flag so it does not record user cancellation.</summary>
         private void CloseBackground()
         {
             if (!background) return;
