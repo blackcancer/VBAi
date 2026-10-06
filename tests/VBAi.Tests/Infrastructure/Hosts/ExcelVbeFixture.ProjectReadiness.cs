@@ -10,15 +10,15 @@ namespace VBAi.Tests.Integration
         internal IDictionary<string, object> ReadOwnedProjectIdentity()
         {
             string desktop = Environment.GetEnvironmentVariable("VBAi_TEST_DESKTOP_NAME");
-            if (!owned || privateDesktopChild == null || ownedProcess.HasExited ||
-                privateDesktopChild.ProcessId != ProcessId || Thread.CurrentThread.GetApartmentState() != ApartmentState.STA)
-                throw new InvalidOperationException("Original private Excel generation and owning STA required.");
-            IsolatedTestDesktop.RequireCurrent(desktop);
+            RequireProjectReadinessOwner(owned, ProcessId, ownedProcess?.Id ?? 0,
+                privateDesktopChild?.ProcessId ?? 0, ownedProcess == null || ownedProcess.HasExited,
+                Thread.CurrentThread.GetApartmentState() == ApartmentState.STA, OllamaOfficeDesktop.MainEnabled);
+            OllamaOfficeDesktop.Require(desktop);
             uint pid;
             IntPtr hwnd = new IntPtr(Convert.ToInt64(((dynamic)application).Hwnd));
             if (GetWindowThreadProcessId(hwnd, out pid) == 0 || pid != ProcessId)
                 throw new InvalidOperationException("Owned Excel native application changed.");
-            IsolatedTestDesktop.RequireOfficeWindowInventory(desktop, (uint)ProcessId, true, hwnd);
+            OllamaOfficeDesktop.RequireWindow(desktop, (uint)ProcessId, true, hwnd);
             if (Convert.ToInt32(((dynamic)workbooks).Count) != 1 ||
                 !string.IsNullOrEmpty(Convert.ToString(((dynamic)workbook).Path)))
                 throw new InvalidOperationException("Exact sole unsaved workbook required.");
@@ -60,7 +60,8 @@ namespace VBAi.Tests.Integration
                 return new Dictionary<string, object> {
                     ["ProjectName"] = name, ["NativeProjectCount"] = count, ["OwnedIdentityMatches"] = matches,
                     ["WorkbookName"] = Convert.ToString(((dynamic)workbook).Name), ["WorkbookPath"] = "",
-                    ["ProcessId"] = ProcessId, ["Desktop"] = desktop, ["ReadOnly"] = true, ["OwnedWorkbookIdentityMatches"] = true
+                    ["ProcessId"] = ProcessId, ["Desktop"] = OllamaOfficeDesktop.MainEnabled ? "Default" : desktop,
+                    ["ReadOnly"] = true, ["OwnedWorkbookIdentityMatches"] = true
                 };
             }
             finally {
@@ -70,5 +71,14 @@ namespace VBAi.Tests.Integration
         }
 
         internal void WriteQualificationEvidence(string name, object data) => WriteEvidence(name, data);
+
+        /// <summary>Allows explicit Main ownership without replacing the original process or private-child identity.</summary>
+        internal static void RequireProjectReadinessOwner(bool owned, int expectedPid, int originalPid,
+            int privatePid, bool exited, bool owningSta, bool main)
+        {
+            if (!owned || expectedPid <= 0 || originalPid != expectedPid || exited || !owningSta ||
+                (!main && privatePid != expectedPid) || (main && privatePid != 0))
+                throw new InvalidOperationException("Original owned Excel generation and STA in the selected desktop scope required.");
+        }
     }
 }

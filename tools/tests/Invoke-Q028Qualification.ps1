@@ -45,7 +45,8 @@ if ($Prepare) {
         'LlmVbeAsyncValidationTests','LlmVbeToolContractTests','LlmProjectPrivacyTests','ProjectPrivacyBoundaryTests',
         'CatalogBoundaryTests','ToolCatalogTests','PrivateDesktopUiActionTests','QualificationDesktopGuardTests',
         'OfficeVbeFixtureDesktopTests','OfficeVbeFixtureDesktopStartupRecoveryTests','OfficeVbeFixtureDesktopAddInConnectionTests','OutlookPrivateDesktopTests',
-        'OfficeOwnedShutdownEvidenceTests','OutlookVbaTestFixtureShutdownTests','OllamaOfficeUiTests','OllamaOfficeDesktopTests','ChatStreamReaderTests')
+        'OfficeOwnedShutdownEvidenceTests','OutlookVbaTestFixtureShutdownTests','OllamaOfficeUiTests','OllamaOfficeDesktopTests','ChatStreamReaderTests',
+        'ExcelVbeFixtureProjectReadinessTests')
     $managedFilter = '(TestCategory=Unit|TestCategory=Scenario)&TestCategory!=OllamaUi&(' +
         (($managedClasses | ForEach-Object {'FullyQualifiedName~VBAi.Tests.Unit.'+$_+'.'}) -join '|') +
         '|FullyQualifiedName~VBAi.Tests.NativeExportTraceTests.)'
@@ -58,7 +59,7 @@ if ($Prepare) {
     foreach ($hostRow in $hosts) {
         $scenarios += @{Id=($hostRow.Name.ToLowerInvariant()+'-embedded');Host=$hostRow.Name;
             Filter=('FullyQualifiedName=VBAi.Tests.Integration.OllamaOfficeQualificationTests.'+$hostRow.Name+'EmbeddedAssistantStreamsStopsRecoversAndReadsNativeMarker');
-            Oracle='Exact installed candidate and private native owner; actual embedded assistant and own scope; streamed text while Stop is active; one Stop; visible cancellation and next reply; unprompted native marker via read_module; all source/references unchanged; original normal host exit. No VBA execution or mail send.'}
+            Oracle='Exact installed candidate and native owner on the frozen selected desktop; actual embedded assistant and own scope; streamed text while Stop is active; one Stop; visible cancellation and next reply; unprompted native marker via read_module; all source/references unchanged; original normal host exit. No VBA execution or mail send.'}
     }
     $frozen = Join-Path $EvidenceRoot 'Invoke-FrozenQ028.ps1'
     Copy-Item -LiteralPath $PSCommandPath -Destination $frozen
