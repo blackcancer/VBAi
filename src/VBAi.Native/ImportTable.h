@@ -5,18 +5,31 @@
 #include <cstring>
 #include <vector>
 
+/// <summary>Borrowed symbol name and exact original/replacement addresses used to match named x64 imports.</summary>
 struct ImportTarget { const char* name; void* original; void* replacement; };
 
 // Used only from the owning UI thread, outside graphics callbacks. The native
 // module containing replacements must remain pinned after these slots restore.
+/// <summary>Retains x64 PE modules and bounded import slots for guarded replacement and restoration on the owning UI thread.</summary>
 class ImportTable {
+    /// <summary>Retained module handle and PE SizeOfImage used to bound relative addresses.</summary>
     struct Module { HMODULE handle; DWORD size; };
+    /// <summary>Import address with its expected pointer pair and original page protection saved for restoration.</summary>
     struct Slot { void** address; void* original; void* replacement; DWORD protection = 0; bool saved = false; };
+    /// <summary>At most eight owned module references; released only after every import slot restores.</summary>
     std::vector<Module> modules;
+    /// <summary>At most 128 discovered import addresses, including partially installed or unrestored slots.</summary>
     std::vector<Slot> slots;
+    /// <summary>Borrowed target array whose names and addresses must outlive this table.</summary>
     const ImportTarget* targets;
+    /// <summary>Number of entries in the borrowed target array.</summary>
     size_t targetCount;
+    /// <summary>Checks an RVA and byte extent against SizeOfImage without subtraction underflow.</summary>
     static bool Contains(const Module& m, DWORD rva, size_t size) { return rva < m.size && size <= m.size - rva; }
+    /// <summary>Changes a slot only from its expected pointer and verifies original page-protection restoration.</summary>
+    /// <param name="slot">Tracked import address; original protection is saved on first exchange.</param>
+    /// <param name="restore">True restores the original pointer; false installs the replacement.</param>
+    /// <returns>ERROR_SUCCESS after pointer/protection verification, otherwise a Win32 error.</returns>
     DWORD Exchange(Slot& slot, bool restore) {
         DWORD protection;
         if (!VirtualProtect(slot.address, sizeof(void*), PAGE_READWRITE, &protection)) return GetLastError();
@@ -32,6 +45,8 @@ class ImportTable {
             return error ? error : ERROR_INVALID_DATA;
         return (previous == expected || previous == desired) && *slot.address == desired ? ERROR_SUCCESS : ERROR_INVALID_DATA;
     }
+    /// <summary>Scans bounded named x64 imports, skipping ordinal and unresolved delay imports.</summary>
+    /// <returns>ERROR_SUCCESS after the terminator, or an error for invalid extents, conflicting pointers or exhausted capacity.</returns>
     DWORD ReadThunks(const Module& m, DWORD lookupBase, DWORD addressBase, bool delayed) {
         auto base = reinterpret_cast<BYTE*>(m.handle);
         for (DWORD index = 0; index < 65536; ++index) {
@@ -65,6 +80,8 @@ class ImportTable {
         }
         return ERROR_BAD_EXE_FORMAT;
     }
+    /// <summary>Reads ordinary and RVA-form delay import directories from a retained x64 PE module.</summary>
+    /// <returns>ERROR_SUCCESS or a discovery error; earlier discovered state remains on failure.</returns>
     DWORD Discover(const Module& m) {
         auto base = reinterpret_cast<BYTE*>(m.handle);
         auto dos = reinterpret_cast<IMAGE_DOS_HEADER*>(base);
@@ -94,8 +111,12 @@ class ImportTable {
         return ERROR_SUCCESS;
     }
 public:
+    /// <summary>Number of slots successfully verified during the most recent Stop attempt.</summary>
     DWORD restoredCount = 0;
+    /// <summary>Borrows the target array without loading modules or installing hooks.</summary>
     ImportTable(const ImportTarget* list, size_t count) : targets(list), targetCount(count) {}
+    /// <summary>Retains one validated AMD64 PE module; repeated handles need no extra reference.</summary>
+    /// <returns>ERROR_SUCCESS or a loader/format/capacity error. Allocation exceptions propagate after releasing the new reference.</returns>
     DWORD AddModule(HMODULE handle) {
         if (!handle) return ERROR_MOD_NOT_FOUND;
         for (auto& item : modules) if (item.handle == handle) return ERROR_SUCCESS;
@@ -113,11 +134,15 @@ public:
         catch (...) { FreeLibrary(retained); throw; }
         return ERROR_SUCCESS;
     }
+    /// <summary>Discovers retained modules, then installs replacements; stops at the first error without rolling back earlier slots.</summary>
+    /// <returns>ERROR_SUCCESS or the first discovery/exchange error.</returns>
     DWORD Refresh() {
         for (auto& module : modules) { DWORD error = Discover(module); if (error) return error; }
         for (auto& slot : slots) if (*slot.address != slot.replacement) { DWORD error = Exchange(slot, false); if (error) return error; }
         return ERROR_SUCCESS;
     }
+    /// <summary>Attempts all restorations; releases slot/module tracking only when every restoration succeeds.</summary>
+    /// <returns>The first error or ERROR_SUCCESS; failed state is retained for diagnosis.</returns>
     DWORD Stop() {
         DWORD firstError = ERROR_SUCCESS; restoredCount = 0;
         for (auto& slot : slots) {
@@ -132,5 +157,6 @@ public:
         }
         return firstError;
     }
+    /// <summary>Returns the tracked slot count, including discovered but unsuccessfully installed slots.</summary>
     DWORD Count() const { return static_cast<DWORD>(slots.size()); }
 };

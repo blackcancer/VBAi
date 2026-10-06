@@ -9,14 +9,23 @@
 
 // Experimental PATCOPY backend. The caller must verify the exact live toolbar
 // HWND and its owner thread before entry. No source window pixels are captured.
+/// <summary>Owns a fixed top-down DIB for supported command-bar recoloring without reading screen pixels.</summary>
 class ToolbarDrawing {
 public:
+    /// <summary>Reusable buffer dimensions in pixels, independent of destination toolbar size.</summary>
     static constexpr int MaxWidth = 1024, MaxHeight = 128;
+    /// <summary>Counters for handled pattern tiles, rejected pattern operations and renderer failures.</summary>
     DWORD painted = 0, unsupported = 0, failures = 0;
+    /// <summary>Counters for handled and rejected source DIB draws.</summary>
     DWORD dibPainted = 0, dibUnsupported = 0;
+    /// <summary>Number of solid-brush fills dispatched through the mapped palette.</summary>
     DWORD fillsPainted = 0;
+    /// <summary>Dimensions of the last handled pattern tile, used for optional bitmap samples.</summary>
     int lastWidth = 0, lastHeight = 0;
+    /// <summary>Releases the owned DIB and memory DC after restoring the prior bitmap selection.</summary>
     ~ToolbarDrawing() { Dispose(); }
+    /// <summary>Resets counters and creates the reusable DIB/DC; cleans partial GDI allocation on failure.</summary>
+    /// <returns>True when the bitmap is selected into the DC, false after incomplete resources are released.</returns>
     bool Initialize() {
         Dispose(); painted = unsupported = failures = dibPainted = dibUnsupported = fillsPainted = 0; lastWidth = lastHeight = 0;
         dc = CreateCompatibleDC(nullptr);
@@ -29,12 +38,16 @@ public:
         if (!dc || !bitmap || !oldBitmap || oldBitmap == HGDI_ERROR) { Dispose(); return false; }
         return true;
     }
+    /// <summary>Restores the previous bitmap, releases owned GDI objects and clears handles; repeated calls are harmless.</summary>
     void Dispose() {
         if (dc && oldBitmap && oldBitmap != HGDI_ERROR) SelectObject(dc, oldBitmap);
         if (bitmap) DeleteObject(bitmap);
         if (dc) DeleteDC(dc);
         dc = nullptr; bitmap = nullptr; oldBitmap = nullptr; pixels = nullptr;
     }
+    /// <summary>Maps neutral RGB pixels to the dark ramp while preserving chromatic/already mapped pixels and the high byte.</summary>
+    /// <param name="pixel">Packed high-byte/R/G/B value; RGB channels occupy bits 16, 8 and 0.</param>
+    /// <returns>The mapped pixel in the same representation.</returns>
     static DWORD Map(DWORD pixel) {
         // VBE can reuse colors supplied by the themed WM_CTLCOLOR path.
         // Preserve this ramp exactly, like the managed recovery renderer.
@@ -61,6 +74,8 @@ public:
         DWORD bb = static_cast<DWORD>(std::nearbyint(240 - 197 * t));
         return (pixel & 0xff000000) | (rr << 16) | (gg << 8) | bb;
     }
+    /// <summary>Tiles a bounded pattern operation through the fixed buffer, preserving brush phase and destination clipping.</summary>
+    /// <returns>True if every tile was drawn; false on unsupported bounds or a failed tile. Earlier tiles can already be painted.</returns>
     bool TryPaint(HDC destination, int x, int y, int width, int height, DWORD operation) {
         // Reuse the fixed buffer for wide or vertically docked bars. Each tile
         // derives its phase from the destination DC, never from screen pixels.
@@ -74,6 +89,8 @@ public:
                     std::min(MaxWidth, width - col), std::min(MaxHeight, height - row), operation)) return false;
         return true;
     }
+    /// <summary>Reconstructs one PATCOPY tile from the destination brush, recolors it and copies it through native clipping.</summary>
+    /// <returns>True when copied; false for unsupported DC/brush or GDI failure. Original screen pixels are not captured.</returns>
     bool TryPaintTile(HDC destination, int x, int y, int width, int height, DWORD operation) {
         LOGBRUSH brush{};
         HGDIOBJ sourceBrush = GetCurrentObject(destination, OBJ_BRUSH);
@@ -109,11 +126,18 @@ public:
         lastWidth = width; lastHeight = height; ++painted;
         return true;
     }
+    /// <summary>Writes before/after samples of the last pattern tile to fresh bitmap paths without overwriting files.</summary>
+    /// <param name="prefix">Prefix for .pattern-before.bmp and .pattern-after.bmp.</param>
+    /// <returns>True after both writes, or when no tile was painted. A first successful sample remains after a second-write failure.</returns>
     bool WriteSamples(const std::wstring& prefix) const {
         if (!painted) return true;
         return WriteBitmap(prefix + L".pattern-before.bmp", before.data()) &&
             WriteBitmap(prefix + L".pattern-after.bmp", after.data());
     }
+    /// <summary>Maps supported indexed or full-scan 24/32-bit BI_RGB source DIBs and dispatches the image draw.</summary>
+    /// <param name="result">Receives the native SetDIBitsToDevice result only when handled.</param>
+    /// <returns>True when handled, even if the native result is zero; false when the caller must use its original fallback.</returns>
+    /// <remarks>Caller source pixels stay unchanged. The draw's last-error value survives GdiFlush.</remarks>
     bool TryDrawDib(HDC destination, int x, int y, DWORD width, DWORD height, int sourceX, int sourceY,
         UINT startScan, UINT lines, const void* bits, const BITMAPINFO* info, UINT colorUse, int& result) {
         DWORD incomingError = GetLastError();
@@ -154,6 +178,9 @@ public:
         GdiFlush(); ++dibPainted; SetLastError(resultError);
         return true;
     }
+    /// <summary>Maps a solid/system brush through DC_BRUSH and restores the previous destination DC-brush color.</summary>
+    /// <param name="result">Receives the native FillRect result when handled.</param>
+    /// <returns>True when dispatched, not a guarantee of drawing success; false for unsupported brush/color state.</returns>
     bool TryFill(HDC destination, const RECT* rect, HBRUSH sourceBrush, int& result) {
         DWORD incomingError = GetLastError();
         if (!dc || !rect) return false;
@@ -175,12 +202,20 @@ public:
         return true;
     }
 private:
+    /// <summary>Owned memory DC holding the reusable DIB.</summary>
     HDC dc = nullptr;
+    /// <summary>Owned top-down 32-bit DIB selected into dc.</summary>
     HBITMAP bitmap = nullptr;
+    /// <summary>Borrowed prior DC selection restored before deletion of the owned bitmap.</summary>
     HGDIOBJ oldBitmap = nullptr;
+    /// <summary>Borrowed bitmap-storage pointer, valid only while the owned DIB exists.</summary>
     DWORD* pixels = nullptr;
+    /// <summary>CPU copies of the last handled pattern tile before and after palette mapping.</summary>
     std::array<DWORD, MaxWidth * MaxHeight> before{}, after{};
+    /// <summary>Bounded scratch copy for mapped 24/32-bit source DIB bytes.</summary>
     std::array<BYTE, MaxWidth * MaxHeight * 4> dibPixels{};
+    /// <summary>Creates a top-down 32-bit sample using lastWidth/lastHeight and the fixed row stride.</summary>
+    /// <returns>True after all headers/rows are written; partial files remain and are never overwritten.</returns>
     bool WriteBitmap(const std::wstring& path, const DWORD* data) const {
         HANDLE file = CreateFileW(path.c_str(), GENERIC_WRITE, FILE_SHARE_READ, nullptr, CREATE_NEW, FILE_ATTRIBUTE_NORMAL, nullptr);
         if (file == INVALID_HANDLE_VALUE) return false;
@@ -199,8 +234,10 @@ private:
     }
 };
 
+/// <summary>Temporarily maps a borrowed DC's text/background colors and restores their exact captured values.</summary>
 class ToolbarTextPalette {
 public:
+    /// <summary>Captures current DC colors and maps them only when enabled and readable.</summary>
     ToolbarTextPalette(HDC target, bool enabled) : dc(target) {
         if (!enabled) return;
         foreground = GetTextColor(dc); background = GetBkColor(dc);
@@ -209,13 +246,20 @@ public:
         changed = fg != foreground || bg != background;
         if (changed) { SetTextColor(dc, fg); SetBkColor(dc, bg); }
     }
+    /// <summary>Restores captured colors unless they were already restored explicitly.</summary>
     ~ToolbarTextPalette() { Restore(); }
+    /// <summary>Reports whether mapped colors are still applied and awaiting restoration.</summary>
     bool Changed() const { return changed; }
+    /// <summary>Restores captured foreground/background once and clears the pending-change flag.</summary>
     void Restore() { if (changed) { SetTextColor(dc, foreground); SetBkColor(dc, background); changed = false; } }
 private:
+    /// <summary>Borrowed destination DC, never released by this scope.</summary>
     HDC dc;
+    /// <summary>Captured original text and background colors.</summary>
     COLORREF foreground = 0, background = 0;
+    /// <summary>Whether this scope applied colors that still need restoration.</summary>
     bool changed = false;
+    /// <summary>Converts COLORREF to renderer RGB and returns the mapped COLORREF.</summary>
     static COLORREF MapColor(COLORREF color) {
         DWORD rgb = (GetRValue(color) << 16) | (GetGValue(color) << 8) | GetBValue(color);
         DWORD mapped = ToolbarDrawing::Map(rgb);
