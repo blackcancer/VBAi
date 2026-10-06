@@ -8,7 +8,7 @@ using System.Text;
 namespace VBAi
 {
 
-    /// <summary>Owns the vbe project components state and operations.</summary>
+    /// <summary>Implements the Access save-confirmation gate and its exact native-dialog reader.</summary>
     internal sealed partial class VbeProjectComponents
     {
 
@@ -16,32 +16,32 @@ namespace VBAi
         internal interface IAccessSaveConfirmation
         {
 
-            /// <summary>Handles prepare for i access save confirmation.</summary>
+            /// <summary>Rejects preexisting dialogs and arms this save-scoped confirmation gate once.</summary>
             void Prepare();
 
-            /// <summary>Requires before save for i access save confirmation.</summary>
+            /// <summary>Consumes the immediate pre-Save check and verifies no Access dialog predates the save.</summary>
             void RequireBeforeSave();
 
-            /// <summary>Observes  for i access save confirmation.</summary>
-            /// <returns>access save confirmation candidate produced by the operation for observe on i access save confirmation.</returns>
+            /// <summary>Reads and freezes the one qualified dialog produced after the pre-Save check.</summary>
+            /// <returns>The frozen candidate, or <see langword="null"/> when no owned dialog is present.</returns>
             AccessSaveConfirmationCandidate Observe();
 
-            /// <summary>Handles confirm for i access save confirmation.</summary>
-            /// <param name="candidate">access save confirmation candidate that supplies the candidate for this operation.</param>
-            /// <param name="revalidateApprovedContext">action that supplies the revalidate approved context for this operation.</param>
-            /// <param name="requireDeliveryDeadline">action that supplies the require delivery deadline for this operation.</param>
+            /// <summary>Revalidates the approved save context and queues at most one response to the frozen dialog.</summary>
+            /// <param name="candidate">Candidate returned by this gate's observation; candidates from another gate are refused.</param>
+            /// <param name="revalidateApprovedContext">Callback that rechecks the caller's current approval and project identity.</param>
+            /// <param name="requireDeliveryDeadline">Optional final deadline check immediately before native delivery.</param>
             void Confirm(AccessSaveConfirmationCandidate candidate, Action revalidateApprovedContext, Action requireDeliveryDeadline = null);
 
-            /// <summary>Gets the confirmation attempts.</summary>
-            /// <value>Current confirmation attempts exposed by i access save confirmation.</value>
+            /// <summary>Gets the number of native response attempts claimed by this gate.</summary>
+            /// <value>Zero before delivery is claimed; one once the single enqueue is attempted, including uncertain failure.</value>
             int ConfirmationAttempts { get; }
 
-            /// <summary>Gets the confirmation queued.</summary>
-            /// <value>Current confirmation queued exposed by i access save confirmation.</value>
+            /// <summary>Gets whether the native queue accepted the one response request.</summary>
+            /// <value><see langword="true"/> only after enqueue reports acceptance.</value>
             bool ConfirmationQueued { get; }
 
-            /// <summary>Gets the confirmation pending.</summary>
-            /// <value>Current confirmation pending exposed by i access save confirmation.</value>
+            /// <summary>Gets whether a qualified dialog is still being tracked for this save.</summary>
+            /// <value>Set after observation and retained through uncertain or queued delivery.</value>
             bool ConfirmationPending { get; }
         }
 
@@ -49,15 +49,15 @@ namespace VBAi
         internal sealed class AccessSaveApprovedComponent
         {
 
-            /// <summary>Maintains the name state for access save approved component.</summary>
+            /// <summary>Exact Access object-list label approved for inclusion in the save prompt.</summary>
             internal readonly string Name;
 
-            /// <summary>Maintains the type state for access save approved component.</summary>
+            /// <summary>Access VBComponent type; only standard modules (1) and class modules (2) are admissible.</summary>
             internal readonly int Type;
 
-            /// <summary>Initializes a AccessSaveApprovedComponent instance with the supplied state.</summary>
-            /// <param name="name">Text that supplies the name value. Use the format required by the calling operation.</param>
-            /// <param name="type">int that supplies the type for this operation.</param>
+            /// <summary>Captures the approved component's exact Access list label and VBComponent type.</summary>
+            /// <param name="name">Component name used to form the exact <c>Module: name</c> dialog entry.</param>
+            /// <param name="type">VBComponent type, validated by the gate as 1 or 2.</param>
             internal AccessSaveApprovedComponent(string name, int type) { Name = name; Type = type; }
         }
 
@@ -65,22 +65,22 @@ namespace VBAi
         internal sealed class AccessSaveConfirmationCandidate
         {
 
-            /// <summary>Maintains the window and yes button state for access save confirmation candidate.</summary>
+            /// <summary>Native handles of the frozen dialog and its affirmative button.</summary>
             internal readonly IntPtr Window, YesButton;
 
-            /// <summary>Identifies the process id and thread id associated with access save confirmation candidate.</summary>
+            /// <summary>Process and native owner-thread IDs captured with the dialog identity.</summary>
             internal readonly uint ProcessId, ThreadId;
 
-            /// <summary>Maintains the fingerprint state for access save confirmation candidate.</summary>
+            /// <summary>Deterministic digest of the validated dialog and child-control snapshot.</summary>
             internal readonly string Fingerprint;
 
-            /// <summary>Maintains the owner state for access save confirmation candidate.</summary>
+            /// <summary>Gate instance that created this candidate; confirmation requires reference identity.</summary>
             internal readonly object Owner;
 
-            /// <summary>Initializes a AccessSaveConfirmationCandidate instance with the supplied state.</summary>
-            /// <param name="owner">object that supplies the owner for this operation.</param>
-            /// <param name="dialog">access save dialog snapshot that supplies the dialog for this operation.</param>
-            /// <param name="fingerprint">Text that supplies the fingerprint value. Use the format required by the calling operation.</param>
+            /// <summary>Freezes dialog identity, affirmative-button handle, owner gate, and snapshot fingerprint.</summary>
+            /// <param name="owner">Gate instance that owns and later validates this candidate.</param>
+            /// <param name="dialog">Verified native dialog snapshot with exactly one affirmative button.</param>
+            /// <param name="fingerprint">Digest used to detect replacement or mutation before response delivery.</param>
             internal AccessSaveConfirmationCandidate(object owner, AccessSaveDialogSnapshot dialog, string fingerprint)
             {
                 Owner = owner; Window = dialog.Window; ProcessId = dialog.ProcessId; ThreadId = dialog.ThreadId;
@@ -92,75 +92,75 @@ namespace VBAi
         internal sealed class AccessSaveDialogInventory
         {
 
-            /// <summary>Maintains the complete state for access save dialog inventory.</summary>
+            /// <summary>Whether enumeration completed without errors; false never proves that no dialog exists.</summary>
             internal bool Complete;
 
-            /// <summary>Identifies the process id and owner thread id associated with access save dialog inventory.</summary>
+            /// <summary>Process and owner native-thread IDs for the enumeration scope.</summary>
             internal uint ProcessId, OwnerThreadId;
 
-            /// <summary>Maintains the dialogs state for access save dialog inventory.</summary>
+            /// <summary>All dialogs observed in the scoped Access process, including dialogs that fail qualification.</summary>
             internal AccessSaveDialogSnapshot[] Dialogs;
         }
 
-        /// <summary>Owns the access save dialog snapshot state and operations.</summary>
+            /// <summary>Read-only native identity and visible state captured for one Access dialog.</summary>
         internal sealed class AccessSaveDialogSnapshot
         {
 
-            /// <summary>Maintains the window state for access save dialog snapshot.</summary>
+            /// <summary>Native HWND of the captured top-level dialog.</summary>
             internal IntPtr Window;
 
-            /// <summary>Identifies the process id and thread id and style associated with access save dialog snapshot.</summary>
+            /// <summary>Owning process, native UI thread, and window style captured from the dialog.</summary>
             internal uint ProcessId, ThreadId, Style;
 
-            /// <summary>Maintains the class and caption state for access save dialog snapshot.</summary>
+            /// <summary>Win32 class name and exact caption observed on the dialog.</summary>
             internal string Class, Caption;
 
-            /// <summary>Maintains the visible and enabled and children complete state for access save dialog snapshot.</summary>
+            /// <summary>Visibility, enabled state, and completeness of the child-control enumeration.</summary>
             internal bool Visible, Enabled, ChildrenComplete;
 
-            /// <summary>Maintains the controls state for access save dialog snapshot.</summary>
+            /// <summary>Captured child controls used to compare the prompt with the qualified Access dialog.</summary>
             internal AccessSaveDialogControl[] Controls;
         }
 
-        /// <summary>Owns the access save dialog control state and operations.</summary>
+            /// <summary>Native identity, style, text, and item state captured for one dialog child control.</summary>
         internal sealed class AccessSaveDialogControl
         {
 
-            /// <summary>Maintains the window state for access save dialog control.</summary>
+            /// <summary>Native HWND of this child control.</summary>
             internal IntPtr Window;
 
-            /// <summary>Identifies the process id and thread id and style associated with access save dialog control.</summary>
+            /// <summary>Owning process, native UI thread, and Win32 style of this child control.</summary>
             internal uint ProcessId, ThreadId, Style;
 
-            /// <summary>Identifies the id associated with access save dialog control.</summary>
+            /// <summary>Dialog control identifier, such as 1 for the affirmative button or 5142 for the object list.</summary>
             internal int Id;
 
-            /// <summary>Maintains the class and text state for access save dialog control.</summary>
+            /// <summary>Win32 class name and captured control text.</summary>
             internal string Class, Text;
 
-            /// <summary>Maintains the visible and enabled and items complete state for access save dialog control.</summary>
+            /// <summary>Visibility, enabled state, and completeness of any list-item enumeration.</summary>
             internal bool Visible, Enabled, ItemsComplete;
 
-            /// <summary>Maintains the items state for access save dialog control.</summary>
+            /// <summary>Captured list entries when this control exposes selectable items.</summary>
             internal AccessSaveDialogItem[] Items;
         }
 
-        /// <summary>Owns the access save dialog item state and operations.</summary>
+            /// <summary>Text and selection state of one item in the Access save prompt's object list.</summary>
         internal sealed class AccessSaveDialogItem
         {
 
-            /// <summary>Maintains the text state for access save dialog item.</summary>
+            /// <summary>Exact object label displayed for this list entry.</summary>
             internal string Text;
 
-            /// <summary>Maintains the selected state for access save dialog item.</summary>
+            /// <summary>Whether Access marked this object for the pending save confirmation.</summary>
             internal bool Selected;
         }
 
-        /// <summary>Creates a save-scoped reader on the current native VBE owner thread.</summary>
-        /// <param name="vbeWindow">Native handle that supplies the vbe window for this operation.</param>
-        /// <param name="processId">int that supplies the process id for this operation.</param>
-        /// <param name="approvedComponents">i enumerable&lt;access save approved component&gt; that supplies the approved components for this operation.</param>
-        /// <returns>i access save confirmation produced by the operation for create native access save confirmation on vbe project components.</returns>
+        /// <summary>Creates the production gate bound to the supplied VBE window, process, owner thread, and approved modules.</summary>
+        /// <param name="vbeWindow">VBE top-level HWND used to establish the native owner thread.</param>
+        /// <param name="processId">Process that must own every observed dialog and child.</param>
+        /// <param name="approvedComponents">Exact standard-module and class-module names permitted in the save list.</param>
+        /// <returns>A gate whose reads and one response enqueue execute through the native owner-thread reader.</returns>
         internal static IAccessSaveConfirmation CreateNativeAccessSaveConfirmation(
             IntPtr vbeWindow, int processId, IEnumerable<AccessSaveApprovedComponent> approvedComponents)
         {
@@ -173,25 +173,25 @@ namespace VBAi
         internal sealed class AccessSaveConfirmation : IAccessSaveConfirmation
         {
 
-            /// <summary>Maintains the read state for access save confirmation.</summary>
+            /// <summary>Reads a bounded inventory from the exact Access owner thread.</summary>
             private readonly Func<AccessSaveDialogInventory> read;
 
-            /// <summary>Maintains the enqueue state for access save confirmation.</summary>
+            /// <summary>Queues the affirmative response for a candidate after all identity checks pass.</summary>
             private readonly Func<AccessSaveConfirmationCandidate, bool> enqueue;
 
-            /// <summary>Maintains the require owner state for access save confirmation.</summary>
+            /// <summary>Throws unless the caller is executing on the captured native owner thread.</summary>
             private readonly Action requireOwner;
 
-            /// <summary>Identifies the process id and owner thread id associated with access save confirmation.</summary>
+            /// <summary>Immutable process and UI-thread identity required for every inventory read.</summary>
             private readonly uint processId, ownerThreadId;
 
-            /// <summary>Maintains the approved state for access save confirmation.</summary>
+            /// <summary>Ordinal set of exact <c>Module: name</c> labels allowed in the Access prompt.</summary>
             private readonly HashSet<string> approved;
 
-            /// <summary>Maintains the preparation claimed and prepared and before save claimed and confirmation claimed and faulted state for access save confirmation.</summary>
+            /// <summary>One-use gate flags; any identity, inventory, or delivery failure faults the gate permanently.</summary>
             private bool preparationClaimed, prepared, beforeSaveClaimed, confirmationClaimed, faulted;
 
-            /// <summary>Maintains the observed state for access save confirmation.</summary>
+            /// <summary>First qualified candidate, retained so later reads must describe the same native dialog.</summary>
             private AccessSaveConfirmationCandidate observed;
 
             /// <summary>Gets or sets the confirmation attempts.</summary>
@@ -206,13 +206,13 @@ namespace VBAi
             /// <value>Current confirmation pending exposed by access save confirmation.</value>
             public bool ConfirmationPending { get; private set; }
 
-            /// <summary>Initializes a AccessSaveConfirmation instance with the supplied state.</summary>
-            /// <param name="read">func&lt;access save dialog inventory&gt; that supplies the read for this operation.</param>
-            /// <param name="enqueue">func&lt;access save confirmation candidate, bool&gt; that supplies the enqueue for this operation.</param>
-            /// <param name="requireOwner">action that supplies the require owner for this operation.</param>
-            /// <param name="processId">uint that supplies the process id for this operation.</param>
-            /// <param name="ownerThreadId">uint that supplies the owner thread id for this operation.</param>
-            /// <param name="approvedComponents">i enumerable&lt;access save approved component&gt; that supplies the approved components for this operation.</param>
+            /// <summary>Creates a save gate with injected native I/O and a fixed approved-component allowlist.</summary>
+            /// <param name="read">Bounded dialog inventory reader for the captured owner thread.</param>
+            /// <param name="enqueue">Single-response queue operation; a false result is treated as uncertain and never retried.</param>
+            /// <param name="requireOwner">Owner-thread assertion run before native reads and delivery.</param>
+            /// <param name="processId">Nonzero process ID that must own every observed native window.</param>
+            /// <param name="ownerThreadId">Nonzero native UI-thread ID that must own every observed window.</param>
+            /// <param name="approvedComponents">Distinct Type 1/2 component names admitted to the exact prompt list.</param>
             internal AccessSaveConfirmation(Func<AccessSaveDialogInventory> read,
                 Func<AccessSaveConfirmationCandidate, bool> enqueue, Action requireOwner,
                 uint processId, uint ownerThreadId, IEnumerable<AccessSaveApprovedComponent> approvedComponents)
@@ -235,7 +235,7 @@ namespace VBAi
                 }
             }
 
-            /// <summary>Handles prepare for access save confirmation.</summary>
+            /// <summary>Consumes preparation and refuses to arm while any dialog already exists.</summary>
             public void Prepare()
             {
                 if (preparationClaimed) throw new InvalidOperationException("Access confirmation preparation was already claimed.");
@@ -244,7 +244,7 @@ namespace VBAi
                 prepared = true;
             }
 
-            /// <summary>Requires before save for access save confirmation.</summary>
+            /// <summary>Consumes the immediate pre-Save check and rejects a dialog that predates that Save.</summary>
             public void RequireBeforeSave()
             {
                 RequirePrepared();
@@ -278,10 +278,10 @@ namespace VBAi
                 catch { faulted = true; throw; }
             }
 
-            /// <summary>Handles confirm for access save confirmation.</summary>
-            /// <param name="candidate">access save confirmation candidate that supplies the candidate for this operation.</param>
-            /// <param name="revalidateApprovedContext">action that supplies the revalidate approved context for this operation.</param>
-            /// <param name="requireDeliveryDeadline">action that supplies the require delivery deadline for this operation.</param>
+            /// <summary>Claims the only response attempt, rechecks authority and dialog identity, then queues once.</summary>
+            /// <param name="candidate">Exact candidate most recently observed by this instance.</param>
+            /// <param name="revalidateApprovedContext">Revalidation callback for project identity and the approved save scope.</param>
+            /// <param name="requireDeliveryDeadline">Optional final deadline assertion before the native enqueue call.</param>
             public void Confirm(AccessSaveConfirmationCandidate candidate, Action revalidateApprovedContext, Action requireDeliveryDeadline = null)
             {
                 RequirePrepared();
@@ -306,14 +306,14 @@ namespace VBAi
                 catch { faulted = true; throw; }
             }
 
-            /// <summary>Requires prepared for access save confirmation.</summary>
+            /// <summary>Rejects use before preparation or after any earlier check has faulted the gate.</summary>
             private void RequirePrepared()
             {
                 if (!prepared || faulted) throw new InvalidOperationException("The Access confirmation gate is unprepared or refused.");
             }
 
-            /// <summary>Reads verified inventory for access save confirmation.</summary>
-            /// <returns>access save dialog inventory produced by the operation for read verified inventory on access save confirmation.</returns>
+            /// <summary>Reads inventory on the owner thread and verifies it is complete and bound to the captured process/thread.</summary>
+            /// <returns>Verified dialog inventory; incomplete enumeration or any foreign/hidden dialog throws.</returns>
             private AccessSaveDialogInventory ReadVerifiedInventory()
             {
                 requireOwner();
@@ -328,7 +328,7 @@ namespace VBAi
                 return inventory;
             }
 
-            /// <summary>Requires no dialog for access save confirmation.</summary>
+            /// <summary>Requires a complete owner-scoped inventory containing no preexisting dialogs.</summary>
             private void RequireNoDialog()
             {
                 try
@@ -339,8 +339,8 @@ namespace VBAi
                 catch { faulted = true; throw; }
             }
 
-            /// <summary>Requires same candidate for access save confirmation.</summary>
-            /// <param name="candidate">access save confirmation candidate that supplies the candidate for this operation.</param>
+            /// <summary>Re-reads the only dialog and compares its validated fingerprint with the frozen candidate.</summary>
+            /// <param name="candidate">Candidate whose native dialog identity must remain unchanged.</param>
             private void RequireSameCandidate(AccessSaveConfirmationCandidate candidate)
             {
                 var inventory = ReadVerifiedInventory();
@@ -349,9 +349,9 @@ namespace VBAi
                     throw new InvalidOperationException("The frozen Access save confirmation candidate changed before delivery.");
             }
 
-            /// <summary>Requires known dialog for access save confirmation.</summary>
-            /// <param name="inventory">access save dialog inventory that supplies the inventory for this operation.</param>
-            /// <returns>access save dialog snapshot produced by the operation for require known dialog on access save confirmation.</returns>
+            /// <summary>Validates the exact Access save prompt, required controls, and fully selected approved object list.</summary>
+            /// <param name="inventory">Complete inventory containing exactly one dialog from the approved Access process/thread.</param>
+            /// <returns>The sole snapshot after caption, controls, list style, item labels, and selections pass validation.</returns>
             private AccessSaveDialogSnapshot RequireKnownDialog(AccessSaveDialogInventory inventory)
             {
                 if (inventory.Dialogs.Length != 1) throw new InvalidOperationException("Multiple owned Access dialogs prevent confirmation.");
@@ -386,12 +386,12 @@ namespace VBAi
                 return dialog;
             }
 
-            /// <summary>Requires control for access save confirmation.</summary>
-            /// <param name="dialog">access save dialog snapshot that supplies the dialog for this operation.</param>
-            /// <param name="id">int that supplies the id for this operation.</param>
-            /// <param name="type">Text that supplies the type value. Use the format required by the calling operation.</param>
-            /// <param name="text">Text that supplies the text value. Use the format required by the calling operation.</param>
-            /// <returns>access save dialog control produced by the operation for require control on access save confirmation.</returns>
+            /// <summary>Requires one visible, enabled child with the requested control ID and exact expected class/text.</summary>
+            /// <param name="dialog">Validated prompt whose child-control snapshot is searched.</param>
+            /// <param name="id">Win32 dialog control ID expected for the child.</param>
+            /// <param name="type">Exact Win32 class name required, such as <c>Button</c> or <c>Static</c>.</param>
+            /// <param name="text">Exact expected caption, or <see langword="null"/> when the caption is not constrained.</param>
+            /// <returns>The unique matching control; zero, duplicate, hidden, disabled, or changed controls throw.</returns>
             private static AccessSaveDialogControl RequireControl(AccessSaveDialogSnapshot dialog, int id, string type, string text)
             {
                 var matches = dialog.Controls.Where(control => control.Id == id).ToArray();
@@ -401,9 +401,9 @@ namespace VBAi
                 return matches[0];
             }
 
-            /// <summary>Handles fingerprint for access save confirmation.</summary>
-            /// <param name="dialog">access save dialog snapshot that supplies the dialog for this operation.</param>
-            /// <returns>Text produced by the operation for fingerprint on access save confirmation.</returns>
+            /// <summary>Builds a stable fingerprint from dialog identity, controls, text, visibility, and list items.</summary>
+            /// <param name="dialog">Captured dialog snapshot to encode, with child controls ordered by HWND.</param>
+            /// <returns>Length-delimited invariant representation used to detect any snapshot change before delivery.</returns>
             private static string Fingerprint(AccessSaveDialogSnapshot dialog)
             {
                 var value = new StringBuilder();
@@ -419,9 +419,9 @@ namespace VBAi
                 return value.ToString();
             }
 
-            /// <summary>Adds fingerprint for access save confirmation.</summary>
-            /// <param name="result">string builder that supplies the result for this operation.</param>
-            /// <param name="values">object[] that supplies the values for this operation.</param>
+            /// <summary>Appends values with invariant formatting and length prefixes to avoid delimiter ambiguity.</summary>
+            /// <param name="result">Fingerprint buffer receiving each encoded value.</param>
+            /// <param name="values">Snapshot values to append; null is represented explicitly.</param>
             private static void AddFingerprint(StringBuilder result, params object[] values)
             {
                 foreach (object value in values)
@@ -436,199 +436,199 @@ namespace VBAi
         private sealed class NativeAccessSaveConfirmationReader
         {
 
-            /// <summary>Maintains the vbe window state for native access save confirmation reader.</summary>
+            /// <summary>VBE HWND used to bind this reader to its owning process and native UI thread.</summary>
             private readonly IntPtr vbeWindow;
 
-            /// <summary>Identifies the process id associated with native access save confirmation reader.</summary>
+            /// <summary>Process ID every enumerated dialog and control must belong to.</summary>
             private readonly uint processId;
 
-            /// <summary>Identifies the owner thread id associated with native access save confirmation reader.</summary>
+            /// <summary>Native UI thread captured at construction and required for all subsequent reads and enqueue.</summary>
             internal readonly uint OwnerThreadId;
 
-            /// <summary>Maintains the window bound and child bound and snapshot read bound milliseconds state for native access save confirmation reader.</summary>
+            /// <summary>Enumeration safety limits: top-level windows, child controls, and completed snapshot time in milliseconds.</summary>
             private const int WindowBound = 8192, ChildBound = 128, SnapshotReadBoundMilliseconds = 5000;
 
-            /// <summary>Maintains the snapshot read watch state for native access save confirmation reader.</summary>
+            /// <summary>Elapsed-time guard for one inventory snapshot; it cannot cancel an in-progress synchronous Win32 call.</summary>
             private Stopwatch snapshotReadWatch;
 
-            /// <summary>Defines the visitor callback.</summary>
-            /// <param name="window">Native handle that supplies the window for this operation.</param>
-            /// <param name="state">Native handle that supplies the state for this operation.</param>
-            /// <returns>Boolean indicating the result of the check for operation on native access save confirmation reader.</returns>
+            /// <summary>Callback shape used by Win32 top-level and child window enumerators.</summary>
+            /// <param name="window">Current HWND provided by the enumerator.</param>
+            /// <param name="state">Caller context pointer forwarded unchanged by Win32.</param>
+            /// <returns><see langword="true"/> to continue enumeration; <see langword="false"/> to stop.</returns>
             private delegate bool Visitor(IntPtr window, IntPtr state);
 
-            /// <summary>Handles native get current thread id for native access save confirmation reader.</summary>
-            /// <returns>uint produced by the operation for native get current thread id on native access save confirmation reader.</returns>
+            /// <summary>Reads the calling native thread ID from Kernel32.</summary>
+            /// <returns>Current Win32 thread ID.</returns>
             [DllImport("kernel32.dll", EntryPoint = "GetCurrentThreadId")] private static extern uint NativeGetCurrentThreadId();
 
-            /// <summary>Handles native get current process id for native access save confirmation reader.</summary>
-            /// <returns>uint produced by the operation for native get current process id on native access save confirmation reader.</returns>
+            /// <summary>Reads the calling process ID from Kernel32.</summary>
+            /// <returns>Current Win32 process ID.</returns>
             [DllImport("kernel32.dll", EntryPoint = "GetCurrentProcessId")] private static extern uint NativeGetCurrentProcessId();
 
-            /// <summary>Handles native get window thread process id for native access save confirmation reader.</summary>
-            /// <param name="window">Native handle that supplies the window for this operation.</param>
-            /// <param name="process">uint that supplies the process for this operation.</param>
-            /// <returns>uint produced by the operation for native get window thread process id on native access save confirmation reader.</returns>
+            /// <summary>Reads the owning thread and process IDs for an HWND.</summary>
+            /// <param name="window">HWND whose owner is queried.</param>
+            /// <param name="process">Receives the owning process ID.</param>
+            /// <returns>Owning native thread ID, or zero if the HWND is invalid.</returns>
             [DllImport("user32.dll", EntryPoint = "GetWindowThreadProcessId")] private static extern uint NativeGetWindowThreadProcessId(IntPtr window, out uint process);
 
-            /// <summary>Handles native get ancestor for native access save confirmation reader.</summary>
-            /// <param name="window">Native handle that supplies the window for this operation.</param>
-            /// <param name="flags">uint that supplies the flags for this operation.</param>
-            /// <returns>int ptr produced by the operation for native get ancestor on native access save confirmation reader.</returns>
+            /// <summary>Reads the requested ancestor HWND, used here with GA_ROOT (2) to verify dialog ownership.</summary>
+            /// <param name="window">Starting HWND.</param>
+            /// <param name="flags">GetAncestor relationship selector, normally GA_ROOT (2).</param>
+            /// <returns>Ancestor HWND, or zero when none exists.</returns>
             [DllImport("user32.dll", EntryPoint = "GetAncestor")] private static extern IntPtr NativeGetAncestor(IntPtr window, uint flags);
 
-            /// <summary>Handles native enum windows for native access save confirmation reader.</summary>
-            /// <param name="visitor">visitor that supplies the visitor for this operation.</param>
-            /// <param name="state">Native handle that supplies the state for this operation.</param>
-            /// <returns>Boolean indicating the result of the check for native enum windows on native access save confirmation reader.</returns>
+            /// <summary>Enumerates top-level windows; callback cancellation or API failure makes the inventory incomplete.</summary>
+            /// <param name="visitor">Callback invoked for each top-level HWND.</param>
+            /// <param name="state">Opaque callback context forwarded by Win32.</param>
+            /// <returns>Win32 completion status; callers also track the bounded callback count and captured errors.</returns>
             [DllImport("user32.dll", SetLastError = true, EntryPoint = "EnumWindows")] private static extern bool NativeEnumWindows(Visitor visitor, IntPtr state);
 
-            /// <summary>Handles native enum child windows for native access save confirmation reader.</summary>
-            /// <param name="parent">Native handle that supplies the parent for this operation.</param>
-            /// <param name="visitor">visitor that supplies the visitor for this operation.</param>
-            /// <param name="state">Native handle that supplies the state for this operation.</param>
-            /// <returns>Boolean indicating the result of the check for native enum child windows on native access save confirmation reader.</returns>
+            /// <summary>Enumerates descendants of a dialog; the API return value is not treated as completeness evidence.</summary>
+            /// <param name="parent">Dialog HWND whose descendants are enumerated.</param>
+            /// <param name="visitor">Callback invoked for each descendant HWND.</param>
+            /// <param name="state">Opaque callback context forwarded by Win32.</param>
+            /// <returns>Win32 API result, which this reader deliberately does not use as its completeness flag.</returns>
             [DllImport("user32.dll", EntryPoint = "EnumChildWindows")] private static extern bool NativeEnumChildWindows(IntPtr parent, Visitor visitor, IntPtr state);
 
-            /// <summary>Handles native get class name w for native access save confirmation reader.</summary>
-            /// <param name="window">Native handle that supplies the window for this operation.</param>
-            /// <param name="text">string builder that supplies the text for this operation.</param>
-            /// <param name="max">int that supplies the max for this operation.</param>
-            /// <returns>int produced by the operation for native get class name w on native access save confirmation reader.</returns>
+            /// <summary>Copies an HWND's Unicode window-class name into the supplied buffer.</summary>
+            /// <param name="window">Window whose class name is requested.</param>
+            /// <param name="text">Destination buffer for the class name.</param>
+            /// <param name="max">Destination capacity in characters.</param>
+            /// <returns>Characters copied, excluding the terminator; zero indicates failure.</returns>
             [DllImport("user32.dll", CharSet = CharSet.Unicode, EntryPoint = "GetClassNameW")] private static extern int NativeGetClassNameW(IntPtr window, StringBuilder text, int max);
 
-            /// <summary>Handles native is window visible for native access save confirmation reader.</summary>
-            /// <param name="window">Native handle that supplies the window for this operation.</param>
-            /// <returns>Boolean indicating the result of the check for native is window visible on native access save confirmation reader.</returns>
+            /// <summary>Tests the WS_VISIBLE state for an HWND.</summary>
+            /// <param name="window">Window whose visibility is checked.</param>
+            /// <returns><see langword="true"/> when the window has the visible style.</returns>
             [DllImport("user32.dll", EntryPoint = "IsWindowVisible")] private static extern bool NativeIsWindowVisible(IntPtr window);
 
-            /// <summary>Handles native is window enabled for native access save confirmation reader.</summary>
-            /// <param name="window">Native handle that supplies the window for this operation.</param>
-            /// <returns>Boolean indicating the result of the check for native is window enabled on native access save confirmation reader.</returns>
+            /// <summary>Tests whether an HWND is enabled for user interaction.</summary>
+            /// <param name="window">Window whose enabled state is checked.</param>
+            /// <returns><see langword="true"/> when the window is enabled.</returns>
             [DllImport("user32.dll", EntryPoint = "IsWindowEnabled")] private static extern bool NativeIsWindowEnabled(IntPtr window);
 
-            /// <summary>Handles native get dlg ctrl id for native access save confirmation reader.</summary>
-            /// <param name="window">Native handle that supplies the window for this operation.</param>
-            /// <returns>int produced by the operation for native get dlg ctrl id on native access save confirmation reader.</returns>
+            /// <summary>Reads a child window's dialog control identifier.</summary>
+            /// <param name="window">Child HWND whose control ID is requested.</param>
+            /// <returns>Control identifier, or zero when the window has no identifier.</returns>
             [DllImport("user32.dll", EntryPoint = "GetDlgCtrlID")] private static extern int NativeGetDlgCtrlID(IntPtr window);
 
-            /// <summary>Handles native get window long ptr w for native access save confirmation reader.</summary>
-            /// <param name="window">Native handle that supplies the window for this operation.</param>
-            /// <param name="index">int that supplies the index for this operation.</param>
-            /// <returns>int ptr produced by the operation for native get window long ptr w on native access save confirmation reader.</returns>
+            /// <summary>Reads a pointer-sized window attribute, used with GWL_STYLE (-16).</summary>
+            /// <param name="window">Window whose attribute is read.</param>
+            /// <param name="index">Negative index selecting the window attribute; this reader requests GWL_STYLE.</param>
+            /// <returns>Attribute value, pointer-sized on x64.</returns>
             [DllImport("user32.dll", EntryPoint = "GetWindowLongPtrW")] private static extern IntPtr NativeGetWindowLongPtrW(IntPtr window, int index);
 
-            /// <summary>Handles native send message w for native access save confirmation reader.</summary>
-            /// <param name="window">Native handle that supplies the window for this operation.</param>
-            /// <param name="message">uint that supplies the message for this operation.</param>
-            /// <param name="wParam">Native handle that supplies the w param for this operation.</param>
-            /// <param name="lParam">Native handle that supplies the l param for this operation.</param>
-            /// <returns>int ptr produced by the operation for native send message w on native access save confirmation reader.</returns>
+            /// <summary>Sends a synchronous Unicode Win32 message to a window on the current owner thread.</summary>
+            /// <param name="window">Target HWND.</param>
+            /// <param name="message">Win32 message ID.</param>
+            /// <param name="wParam">Message-specific first argument.</param>
+            /// <param name="lParam">Message-specific second argument.</param>
+            /// <returns>Message-specific pointer-sized result.</returns>
             [DllImport("user32.dll", CharSet = CharSet.Unicode, EntryPoint = "SendMessageW")] private static extern IntPtr NativeSendMessageW(IntPtr window, uint message, UIntPtr wParam, IntPtr lParam);
 
-            /// <summary>Handles native post message w for native access save confirmation reader.</summary>
-            /// <param name="window">Native handle that supplies the window for this operation.</param>
-            /// <param name="message">uint that supplies the message for this operation.</param>
-            /// <param name="wParam">Native handle that supplies the w param for this operation.</param>
-            /// <param name="lParam">Native handle that supplies the l param for this operation.</param>
-            /// <returns>Boolean indicating the result of the check for native post message w on native access save confirmation reader.</returns>
+            /// <summary>Posts a Unicode Win32 message asynchronously to the window queue.</summary>
+            /// <param name="window">Target HWND.</param>
+            /// <param name="message">Win32 message ID.</param>
+            /// <param name="wParam">Message-specific first argument.</param>
+            /// <param name="lParam">Message-specific second argument.</param>
+            /// <returns><see langword="true"/> when queued; false does not establish whether a side effect occurred.</returns>
             [DllImport("user32.dll", SetLastError = true, EntryPoint = "PostMessageW")] private static extern bool NativePostMessageW(IntPtr window, uint message, UIntPtr wParam, IntPtr lParam);
 
 
             // This bounds completed snapshot work; same-thread SendMessageW is not
             // represented as a cancellable call or a guaranteed wall-clock timeout.
-            /// <summary>Requires read budget for native access save confirmation reader.</summary>
+            /// <summary>Throws when completed snapshot work has reached the five-second budget.</summary>
             private void RequireReadBudget()
             {
                 if (snapshotReadWatch != null && snapshotReadWatch.ElapsedMilliseconds >= SnapshotReadBoundMilliseconds)
                     throw new InvalidOperationException("Access confirmation snapshot exceeded its read budget; no confirmation is queued.");
             }
 
-            /// <summary>Handles checked read for native access save confirmation reader.</summary>
-            /// <typeparam name="T">The type used for t.</typeparam>
-            /// <param name="getter">func&lt;t&gt; that supplies the getter for this operation.</param>
-            /// <returns>t produced by the operation for checked read on native access save confirmation reader.</returns>
+            /// <summary>Checks the snapshot budget immediately before and after one synchronous native getter.</summary>
+            /// <typeparam name="T">Value returned by the native getter.</typeparam>
+            /// <param name="getter">Native read to execute once within the current inventory operation.</param>
+            /// <returns>The getter's value if both budget checks pass.</returns>
             private T CheckedRead<T>(Func<T> getter)
             {
                 RequireReadBudget(); T result = getter(); RequireReadBudget(); return result;
             }
 
-            /// <summary>Returns current thread id for native access save confirmation reader.</summary>
-            /// <returns>uint produced by the operation for get current thread id on native access save confirmation reader.</returns>
+            /// <summary>Reads the current thread ID through the snapshot-budget guard.</summary>
+            /// <returns>Current Win32 thread ID.</returns>
             private uint GetCurrentThreadId() => CheckedRead(() => NativeGetCurrentThreadId());
 
-            /// <summary>Returns current process id for native access save confirmation reader.</summary>
-            /// <returns>uint produced by the operation for get current process id on native access save confirmation reader.</returns>
+            /// <summary>Reads the current process ID through the snapshot-budget guard.</summary>
+            /// <returns>Current Win32 process ID.</returns>
             private uint GetCurrentProcessId() => CheckedRead(() => NativeGetCurrentProcessId());
 
-            /// <summary>Returns window thread process id for native access save confirmation reader.</summary>
-            /// <param name="window">Native handle that supplies the window for this operation.</param>
-            /// <param name="process">uint that supplies the process for this operation.</param>
-            /// <returns>uint produced by the operation for get window thread process id on native access save confirmation reader.</returns>
+            /// <summary>Reads an HWND's owner thread and process IDs with budget checks around the native call.</summary>
+            /// <param name="window">HWND whose owner is checked.</param>
+            /// <param name="process">Receives the HWND's owner process ID.</param>
+            /// <returns>The HWND's owner thread ID.</returns>
             private uint GetWindowThreadProcessId(IntPtr window, out uint process)
             {
                 RequireReadBudget(); uint thread = NativeGetWindowThreadProcessId(window, out process); RequireReadBudget(); return thread;
             }
 
-            /// <summary>Returns ancestor for native access save confirmation reader.</summary>
-            /// <param name="window">Native handle that supplies the window for this operation.</param>
-            /// <param name="flags">uint that supplies the flags for this operation.</param>
-            /// <returns>int ptr produced by the operation for get ancestor on native access save confirmation reader.</returns>
+            /// <summary>Reads an ancestor HWND through the snapshot-budget guard.</summary>
+            /// <param name="window">Starting HWND.</param>
+            /// <param name="flags">Ancestor relationship selector, such as GA_ROOT.</param>
+            /// <returns>The requested ancestor HWND.</returns>
             private IntPtr GetAncestor(IntPtr window, uint flags) => CheckedRead(() => NativeGetAncestor(window, flags));
 
-            /// <summary>Handles enum windows for native access save confirmation reader.</summary>
-            /// <param name="visitor">visitor that supplies the visitor for this operation.</param>
-            /// <param name="state">Native handle that supplies the state for this operation.</param>
-            /// <returns>Boolean indicating the result of the check for enum windows on native access save confirmation reader.</returns>
+            /// <summary>Enumerates top-level windows while enforcing the active snapshot budget.</summary>
+            /// <param name="visitor">Callback that inspects each HWND and may stop enumeration.</param>
+            /// <param name="state">Opaque context passed to the callback.</param>
+            /// <returns>Native completion result; callback errors are captured and rethrown by the reader.</returns>
             private bool EnumWindows(Visitor visitor, IntPtr state) => CheckedRead(() => NativeEnumWindows(visitor, state));
 
-            /// <summary>Handles enum child windows for native access save confirmation reader.</summary>
-            /// <param name="parent">Native handle that supplies the parent for this operation.</param>
-            /// <param name="visitor">visitor that supplies the visitor for this operation.</param>
-            /// <param name="state">Native handle that supplies the state for this operation.</param>
-            /// <returns>Boolean indicating the result of the check for enum child windows on native access save confirmation reader.</returns>
+            /// <summary>Enumerates descendant windows within the active snapshot budget.</summary>
+            /// <param name="parent">Parent dialog HWND.</param>
+            /// <param name="visitor">Callback that inspects each descendant.</param>
+            /// <param name="state">Opaque context passed to the callback.</param>
+            /// <returns>Native result, ignored for completeness because Win32 does not define it as such here.</returns>
             private bool EnumChildWindows(IntPtr parent, Visitor visitor, IntPtr state) => CheckedRead(() => NativeEnumChildWindows(parent, visitor, state));
 
-            /// <summary>Returns class name w for native access save confirmation reader.</summary>
-            /// <param name="window">Native handle that supplies the window for this operation.</param>
-            /// <param name="text">string builder that supplies the text for this operation.</param>
-            /// <param name="max">int that supplies the max for this operation.</param>
-            /// <returns>int produced by the operation for get class name w on native access save confirmation reader.</returns>
+            /// <summary>Reads a window's class name with budget checks around the native call.</summary>
+            /// <param name="window">HWND to inspect.</param>
+            /// <param name="text">Destination buffer.</param>
+            /// <param name="max">Buffer capacity in characters.</param>
+            /// <returns>Number of characters copied, excluding the null terminator.</returns>
             private int GetClassNameW(IntPtr window, StringBuilder text, int max) => CheckedRead(() => NativeGetClassNameW(window, text, max));
 
-            /// <summary>Determines whether window visible for native access save confirmation reader.</summary>
-            /// <param name="window">Native handle that supplies the window for this operation.</param>
-            /// <returns>Boolean indicating the result of the check for is window visible on native access save confirmation reader.</returns>
+            /// <summary>Reads an HWND's visible state through the snapshot-budget guard.</summary>
+            /// <param name="window">Window to inspect.</param>
+            /// <returns>Whether the window has WS_VISIBLE set.</returns>
             private bool IsWindowVisible(IntPtr window) => CheckedRead(() => NativeIsWindowVisible(window));
 
-            /// <summary>Determines whether window enabled for native access save confirmation reader.</summary>
-            /// <param name="window">Native handle that supplies the window for this operation.</param>
-            /// <returns>Boolean indicating the result of the check for is window enabled on native access save confirmation reader.</returns>
+            /// <summary>Reads an HWND's enabled state through the snapshot-budget guard.</summary>
+            /// <param name="window">Window to inspect.</param>
+            /// <returns>Whether the window is enabled for interaction.</returns>
             private bool IsWindowEnabled(IntPtr window) => CheckedRead(() => NativeIsWindowEnabled(window));
 
-            /// <summary>Returns dlg ctrl id for native access save confirmation reader.</summary>
-            /// <param name="window">Native handle that supplies the window for this operation.</param>
-            /// <returns>int produced by the operation for get dlg ctrl id on native access save confirmation reader.</returns>
+            /// <summary>Reads the dialog-control ID through the snapshot-budget guard.</summary>
+            /// <param name="window">Child HWND to inspect.</param>
+            /// <returns>Dialog-control ID.</returns>
             private int GetDlgCtrlID(IntPtr window) => CheckedRead(() => NativeGetDlgCtrlID(window));
 
-            /// <summary>Returns window long ptr w for native access save confirmation reader.</summary>
-            /// <param name="window">Native handle that supplies the window for this operation.</param>
-            /// <param name="index">int that supplies the index for this operation.</param>
-            /// <returns>int ptr produced by the operation for get window long ptr w on native access save confirmation reader.</returns>
+            /// <summary>Reads a pointer-sized window attribute through the snapshot-budget guard.</summary>
+            /// <param name="window">HWND whose attribute is read.</param>
+            /// <param name="index">Attribute index; callers use GWL_STYLE (-16).</param>
+            /// <returns>Pointer-sized attribute value.</returns>
             private IntPtr GetWindowLongPtrW(IntPtr window, int index) => CheckedRead(() => NativeGetWindowLongPtrW(window, index));
 
-            /// <summary>Handles send message w for native access save confirmation reader.</summary>
-            /// <param name="window">Native handle that supplies the window for this operation.</param>
-            /// <param name="message">uint that supplies the message for this operation.</param>
-            /// <param name="wParam">Native handle that supplies the w param for this operation.</param>
-            /// <param name="lParam">Native handle that supplies the l param for this operation.</param>
-            /// <returns>int ptr produced by the operation for send message w on native access save confirmation reader.</returns>
+            /// <summary>Sends one synchronous message through the snapshot-budget guard.</summary>
+            /// <param name="window">Target HWND.</param>
+            /// <param name="message">Win32 message ID.</param>
+            /// <param name="wParam">Message-specific first argument.</param>
+            /// <param name="lParam">Message-specific second argument.</param>
+            /// <returns>Pointer-sized message result.</returns>
             private IntPtr SendMessageW(IntPtr window, uint message, UIntPtr wParam, IntPtr lParam) =>
                 CheckedRead(() => NativeSendMessageW(window, message, wParam, lParam));
 
-            /// <summary>Initializes a NativeAccessSaveConfirmationReader instance with the supplied state.</summary>
-            /// <param name="vbeWindow">Native handle that supplies the vbe window for this operation.</param>
-            /// <param name="processId">int that supplies the process id for this operation.</param>
+            /// <summary>Captures the VBE's process and current native owner-thread identity.</summary>
+            /// <param name="vbeWindow">Nonzero top-level VBE HWND whose native owner thread is captured.</param>
+            /// <param name="processId">Positive host process ID that must match both the current process and VBE window.</param>
             internal NativeAccessSaveConfirmationReader(IntPtr vbeWindow, int processId)
             {
                 if (processId <= 0 || vbeWindow == IntPtr.Zero) throw new ArgumentException("Access confirmation requires the native VBE HWND and host PID.");
@@ -636,7 +636,7 @@ namespace VBAi
                 RequireOwner();
             }
 
-            /// <summary>Requires owner for native access save confirmation reader.</summary>
+            /// <summary>Requires current process/thread and the VBE HWND owner to match the captured identity.</summary>
             internal void RequireOwner()
             {
                 uint actual;
@@ -645,8 +645,8 @@ namespace VBAi
                     throw new InvalidOperationException("Access save confirmation left the exact native VBE process/UI thread.");
             }
 
-            /// <summary>Requires window for native access save confirmation reader.</summary>
-            /// <param name="window">Native handle that supplies the window for this operation.</param>
+            /// <summary>Verifies a window and its root ancestor belong to the captured Access process and UI thread.</summary>
+            /// <param name="window">Nonzero HWND whose process, thread, and root ownership must be checked.</param>
             private void RequireWindow(IntPtr window)
             {
                 RequireOwner();
@@ -656,9 +656,9 @@ namespace VBAi
                     throw new InvalidOperationException("The Access confirmation window or root identity changed.");
             }
 
-            /// <summary>Handles class name for native access save confirmation reader.</summary>
-            /// <param name="window">Native handle that supplies the window for this operation.</param>
-            /// <returns>Text produced by the operation for class name on native access save confirmation reader.</returns>
+            /// <summary>Reads the Unicode Win32 class name and rejects missing class information.</summary>
+            /// <param name="window">Owner-verified HWND to inspect.</param>
+            /// <returns>Class name copied from the native window.</returns>
             private string ClassName(IntPtr window)
             {
                 var text = new StringBuilder(256);
@@ -666,25 +666,25 @@ namespace VBAi
                 return text.ToString();
             }
 
-            /// <summary>Handles style for native access save confirmation reader.</summary>
-            /// <param name="window">Native handle that supplies the window for this operation.</param>
-            /// <returns>uint produced by the operation for style on native access save confirmation reader.</returns>
+            /// <summary>Reads the GWL_STYLE bits after verifying the HWND's process, thread, and root.</summary>
+            /// <param name="window">Owner-verified HWND whose style is captured.</param>
+            /// <returns>Window-style bit field as an unsigned 32-bit value.</returns>
             private uint Style(IntPtr window) { RequireWindow(window); return unchecked((uint)GetWindowLongPtrW(window, -16).ToInt64()); }
 
             /// <summary>Reads message for native access save confirmation reader.</summary>
-            /// <param name="window">Native handle that supplies the window for this operation.</param>
-            /// <param name="message">uint that supplies the message for this operation.</param>
-            /// <param name="wParam">ulong that supplies the w param for this operation.</param>
-            /// <param name="buffer">Native handle that supplies the buffer for this operation.</param>
-            /// <returns>long produced by the operation for read message on native access save confirmation reader.</returns>
+            /// <param name="window">Owner-verified HWND receiving the message.</param>
+            /// <param name="message">Win32 message ID used to read text or list-box state.</param>
+            /// <param name="wParam">Message-specific value, such as a list item index.</param>
+            /// <param name="buffer">Optional native output buffer passed as LPARAM.</param>
+            /// <returns>Pointer-sized native message result converted to a 64-bit integer.</returns>
             private long ReadMessage(IntPtr window, uint message, ulong wParam, IntPtr buffer)
             {
                 RequireWindow(window);
                 return SendMessageW(window, message, new UIntPtr(wParam), buffer).ToInt64();
             }
 
-            /// <summary>Handles text for native access save confirmation reader.</summary>
-            /// <param name="window">Native handle that supplies the window for this operation.</param>
+            /// <summary>Reads at most 1023 UTF-16 characters from a verified control using WM_GETTEXT.</summary>
+            /// <param name="window">Owner-verified control HWND.</param>
             /// <returns>Text produced by the operation for text on native access save confirmation reader.</returns>
             private string Text(IntPtr window)
             {
@@ -748,10 +748,10 @@ namespace VBAi
                 }
             }
 
-            /// <summary>Reads children for native access save confirmation reader.</summary>
-            /// <param name="parent">Native handle that supplies the parent for this operation.</param>
-            /// <param name="complete">Indicates whether complete is enabled.</param>
-            /// <returns>access save dialog control[] produced by the operation for read children on native access save confirmation reader.</returns>
+            /// <summary>Enumerates at most the configured child bound and captures each child's verified native state.</summary>
+            /// <param name="parent">Qualified top-level dialog HWND whose direct descendants are read.</param>
+            /// <param name="complete">Receives false if the child limit is exceeded; Win32's enum return is not used as completeness evidence.</param>
+            /// <returns>Captured controls; an identity/read error throws and incomplete bounded enumeration is reported separately.</returns>
             private AccessSaveDialogControl[] ReadChildren(IntPtr parent, out bool complete)
             {
                 var controls = new List<AccessSaveDialogControl>(); int visited = 0;
@@ -776,8 +776,8 @@ namespace VBAi
                 complete = bounded; return controls.ToArray();
             }
 
-            /// <summary>Reads items for native access save confirmation reader.</summary>
-            /// <param name="list">access save dialog control that supplies the list for this operation.</param>
+            /// <summary>Reads bounded strings and selection state only for a standard string-backed multiselect list.</summary>
+            /// <param name="list">Verified object-list control whose HWND and style were captured in the current snapshot.</param>
             private void ReadItems(AccessSaveDialogControl list)
             {
                 uint style = list.Style;
@@ -808,9 +808,9 @@ namespace VBAi
                 list.Items = items.ToArray(); list.ItemsComplete = true;
             }
 
-            /// <summary>Handles enqueue for native access save confirmation reader.</summary>
-            /// <param name="candidate">access save confirmation candidate that supplies the candidate for this operation.</param>
-            /// <returns>Boolean indicating the result of the check for enqueue on native access save confirmation reader.</returns>
+            /// <summary>Posts one WM_COMMAND for the frozen affirmative button after rechecking its native identity.</summary>
+            /// <param name="candidate">Candidate previously validated by the gate, including exact dialog and button HWNDs.</param>
+            /// <returns>Whether PostMessage accepted the request; false is uncertain delivery and must not be retried.</returns>
             internal bool Enqueue(AccessSaveConfirmationCandidate candidate)
             {
                 RequireWindow(candidate.Window); RequireWindow(candidate.YesButton);

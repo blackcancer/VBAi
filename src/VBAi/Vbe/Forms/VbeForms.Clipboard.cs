@@ -34,7 +34,7 @@ public FormLayoutBox[] Boxes;
 /// <summary>Maintains the tab order state for clipboard recovery.</summary>
 public string[] TabOrder;
 
-            /// <summary>Maintains the recovery attempted state for clipboard recovery.</summary>
+            /// <summary>Prevents retrying recovery after a native clipboard write with an uncertain outcome.</summary>
             public bool RecoveryAttempted;
         }
 

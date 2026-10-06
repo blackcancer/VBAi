@@ -16,10 +16,10 @@ namespace VBAi
         private sealed class FormRunOperation
         {
 
-            /// <summary>Identifies the id and project and form and state and error associated with form run operation.</summary>
+            /// <summary>Session-local operation ID, target project and form, current state, and failure message.</summary>
             public string Id, Project, Form, State, Error;
 
-            /// <summary>Maintains the command completed state for form run operation.</summary>
+            /// <summary>True only after the native Run command returned; this does not verify form display or initialization.</summary>
             public bool CommandCompleted;
         }
 
