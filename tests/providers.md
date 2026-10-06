@@ -39,8 +39,9 @@ remain single actions requiring exact control identities and readback.
 After terminal UI proof, the original observer drops its managed UIA references
 before native shutdown. The selected Word bank also uses the owned, settled
 testhost collection diagnostic. This does not prove native RCW release; the
-original host handles must still observe normal exit within the unchanged
-five-second bound. An exit after that deadline remains a failed bank.
+original Word process handle must still observe normal exit within its unchanged
+five-second bound. Each other host retains its own frozen shutdown deadline.
+An exit after the applicable deadline remains a failed bank.
 
 Before any model request, the original isolated Ollama backend enters a private
 Windows job. Its future calculation workers inherit that job. Once requests
@@ -55,6 +56,8 @@ Its campaign review binds exact wire arguments/results, the original worker/host
 lifecycle and settings/registration restoration. Later passes do not explain
 earlier empty responses. Results remain candidate/profile-specific and belong
 in [recorded validation](../docs/test-coverage.md).
+
+## Synthetic Ollama scenarios
 
 `VBAi_RUN_OLLAMA_TESTS=1` enables `TestCategory=Ollama` against the loopback
 server through the production HTTP client. `VBAi_TEST_OLLAMA_MODEL` selects an
@@ -144,6 +147,8 @@ This covers production provider/tools/session code dispatching through native
 Excel COM from the test process, not the installed bridge or embedded assistant UI.
 Run it separately from other native host tests
 and remove the opt-in afterwards.
+
+## Existing-account and exported-source scenarios
 
 Existing-account checks require both `VBAi_CONNECTED_PROVIDER_TESTS=1` and
 `VBAi_CONNECTED_SOURCE_TESTS=1`. The Git read check additionally requires
