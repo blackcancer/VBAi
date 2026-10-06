@@ -10,7 +10,7 @@ using System.Text.RegularExpressions;
 namespace VBAi
 {
 
-    /// <summary>Route les commandes du protocole vers les services VBE et Excel.</summary>
+    /// <summary>Route les commandes vers les services VBE partagés et les adaptateurs propres à chaque application hôte.</summary>
     internal sealed partial class VbeSession
     {
 
