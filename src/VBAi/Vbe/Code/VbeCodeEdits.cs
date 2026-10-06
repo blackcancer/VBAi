@@ -26,8 +26,8 @@ namespace VBAi
         /// <summary>Transition de source conservée dans l’historique local à la session.</summary>
         private sealed class Entry {
 
-/// <summary>Maintains the project and module and before and after state for entry.</summary>
-internal string Project, Module, Before, After; }
+            /// <summary>Stores the project and module identity with complete source snapshots before and after the edit.</summary>
+            internal string Project, Module, Before, After; }
 
         /// <summary>Crée l’éditeur transactionnel avec un exécuteur de commandes VBE.</summary>
         /// <param name="execute">Transport des commandes VBE.</param>

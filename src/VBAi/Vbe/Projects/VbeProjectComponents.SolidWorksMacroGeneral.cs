@@ -3,23 +3,24 @@ using System;
 namespace VBAi
 {
 
-    /// <summary>Owns the vbe project components state and operations.</summary>
+    /// <summary>Implements project component operations, including guarded publication workflows.</summary>
     internal sealed partial class VbeProjectComponents
     {
 
-        /// <summary>Owns the publication general selection state and operations.</summary>
+        /// <summary>Snapshot of the active VBE project identity and version needed for safe selection restoration.</summary>
         internal sealed class PublicationGeneralSelection
         {
 
-            /// <summary>Tracks the canonical state of publication general selection.</summary>
+            /// <summary>Retains the original active VBProject COM identity for selection restoration.</summary>
             internal object Canonical;
 
-            /// <summary>Maintains the name and version state for publication general selection.</summary>
+            /// <summary>Stores the original project's name and captured version for restoration checks.</summary>
             internal string Name, Version;
         }
 
-        /// <summary>Captures publication general selection for vbe project components.</summary>
-        /// <returns>publication general selection produced by the operation for capture publication general selection on vbe project components.</returns>
+        /// <summary>Captures the active project identity, name, and version before publication changes selection.</summary>
+        /// <returns>State used to verify and restore the exact original active project.</returns>
+        /// <exception cref="InvalidOperationException">No unambiguous active project is available.</exception>
         internal PublicationGeneralSelection CapturePublicationGeneralSelection()
         {
             object canonical = (object)vbe.ActiveVBProject;
@@ -31,8 +32,9 @@ namespace VBAi
                 Version = (string)((dynamic)ProjectProperties(name)).Version };
         }
 
-        /// <summary>Handles restore publication general selection for vbe project components.</summary>
-        /// <param name="selection">publication general selection that supplies the selection for this operation.</param>
+        /// <summary>Restores the captured active project after confirming its identity and version are unchanged.</summary>
+        /// <param name="selection">Original active project identity, name, and version returned by capture.</param>
+        /// <exception cref="InvalidOperationException">The project changed or VBE did not restore the original selection.</exception>
         internal void RestorePublicationGeneralSelection(PublicationGeneralSelection selection)
         {
             if (selection == null || !GeneralProjectIdentity(selection.Canonical, (object)GetDesignProject(selection.Name)))
@@ -46,8 +48,10 @@ namespace VBAi
             AssertProjectVersion(guard, selection.Canonical);
         }
 
-        /// <summary>Handles select publication general project for vbe project components.</summary>
-        /// <param name="request">request that supplies the request for this operation.</param>
+        /// <summary>Selects the exact unprotected standalone publication source in VBE design mode.</summary>
+        /// <param name="request">Read-project-general request containing the expected project name and version.</param>
+        /// <exception cref="ArgumentException">The command, mode, project name, or expected version is missing or incorrect.</exception>
+        /// <exception cref="InvalidOperationException">The source is not the exact unprotected standalone project or changes during selection.</exception>
         internal void SelectPublicationGeneralProject(Request request)
         {
             if (request == null || request.Command != "read_project_general" || request.ExpectedMode != 2 ||

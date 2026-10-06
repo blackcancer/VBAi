@@ -9,16 +9,18 @@ using System.Web.Script.Serialization;
 namespace VBAi
 {
 
-    /// <summary>Owns the vbe project components state and operations.</summary>
+    /// <summary>Implements project component operations, including persisted publication verification.</summary>
     internal sealed partial class VbeProjectComponents
     {
         // A transport oracle, separate from source-local revision/TreeVersion guards.
-        /// <summary>Handles publication designer content equals for vbe project components.</summary>
-        /// <param name="expected">publication component that supplies the expected for this operation.</param>
-        /// <param name="actual">publication component that supplies the actual for this operation.</param>
-        /// <param name="expectedExport">Text that supplies the expected export value. Use the format required by the calling operation.</param>
-        /// <param name="actualExport">Text that supplies the actual export value. Use the format required by the calling operation.</param>
-        /// <returns>Boolean indicating the result of the check for publication designer content equals on vbe project components.</returns>
+        /// <summary>Compares exported UserForm headers, persisted root properties, and the complete control inventories.</summary>
+        /// <param name="expected">Component metadata and Designer JSON from the approved source snapshot.</param>
+        /// <param name="actual">Component metadata and Designer JSON read back from the published project.</param>
+        /// <param name="expectedExport">Path to the source UserForm text export and its FRX companion.</param>
+        /// <param name="actualExport">Path to the published UserForm text export and its FRX companion.</param>
+        /// <returns><see langword="true"/> only when normalized headers, root settings, and all controls match.</returns>
+        /// <exception cref="IOException">An export is oversized or cannot be decoded losslessly.</exception>
+        /// <exception cref="InvalidOperationException">A required form header, FRX binding, or complete Designer inventory is invalid.</exception>
         internal static bool PublicationDesignerContentEquals(PublicationComponent expected,
             PublicationComponent actual, string expectedExport, string actualExport)
         {
@@ -39,10 +41,12 @@ namespace VBAi
             return serializer.Serialize(ac) == serializer.Serialize(bc);
         }
 
-        /// <summary>Handles publication designer header for vbe project components.</summary>
-        /// <param name="path">Path used for the path being processed.</param>
-        /// <param name="name">Text that supplies the name value. Use the format required by the calling operation.</param>
-        /// <returns>Text produced by the operation for publication designer header on vbe project components.</returns>
+        /// <summary>Reads a bounded UserForm export and normalizes only its exact FRX filename binding.</summary>
+        /// <param name="path">Absolute or relative path to the exported .frm file; its sibling .frx must exist.</param>
+        /// <param name="name">Expected VB_Name used in the canonical MSForms export header.</param>
+        /// <returns>Header text with the owned FRX filename replaced by a stable comparison token.</returns>
+        /// <exception cref="IOException">The export exceeds 16 MiB or its system-code-page encoding is not lossless.</exception>
+        /// <exception cref="InvalidOperationException">The canonical header or unique sibling FRX binding is missing or differs.</exception>
         private static string PublicationDesignerHeader(string path, string name)
         {
             byte[] bytes = File.ReadAllBytes(path);
@@ -65,10 +69,11 @@ namespace VBAi
                 header.Substring(blobs[0].Groups[2].Index + blobs[0].Groups[2].Length);
         }
 
-        /// <summary>Handles publication designer root properties for vbe project components.</summary>
-        /// <param name="tree">dictionary&lt;string, object&gt; that supplies the tree for this operation.</param>
-        /// <param name="header">Text that supplies the header value. Use the format required by the calling operation.</param>
-        /// <returns>sorted dictionary&lt;string, string&gt; produced by the operation for publication designer root properties on vbe project components.</returns>
+        /// <summary>Compares persisted root Designer settings, using the export header only for documented defaults.</summary>
+        /// <param name="tree">Deserialized Designer JSON whose root property getters may be incomplete.</param>
+        /// <param name="header">Export header used to verify stored values when root getters are absent or normalized.</param>
+        /// <returns>Sorted property names mapped to serialized, verified values for deterministic comparison.</returns>
+        /// <exception cref="InvalidOperationException">A required property is unreadable or disagrees with its persisted setting.</exception>
         private static SortedDictionary<string, string> PublicationDesignerRootProperties(
             Dictionary<string, object> tree, string header)
         {
@@ -112,11 +117,12 @@ namespace VBAi
             return result;
         }
 
-        /// <summary>Handles publication root header value for vbe project components.</summary>
-        /// <param name="header">Text that supplies the header value. Use the format required by the calling operation.</param>
-        /// <param name="name">Text that supplies the name value. Use the format required by the calling operation.</param>
-        /// <param name="fallback">object that supplies the fallback for this operation.</param>
-        /// <returns>object produced by the operation for publication root header value on vbe project components.</returns>
+        /// <summary>Parses one persisted root setting, or returns its documented default when the export omits it.</summary>
+        /// <param name="header">UserForm export header containing persisted root settings.</param>
+        /// <param name="name">Exact setting name to find once in the header.</param>
+        /// <param name="fallback">Documented default type and value; booleans and nonnegative integers are supported.</param>
+        /// <returns>The parsed Boolean or integer value, or <paramref name="fallback"/> if no setting is present.</returns>
+        /// <exception cref="InvalidOperationException">The setting is duplicated or has an unsupported persisted representation.</exception>
         private static object PublicationRootHeaderValue(string header, string name, object fallback)
         {
             var matches = Regex.Matches(header, @"(?m)^\s*" + Regex.Escape(name) + @"\s*=\s*([^\r\n]*)\r?$");
@@ -136,10 +142,10 @@ namespace VBAi
             throw new InvalidOperationException("A persisted root setting has an unsupported encoding.");
         }
 
-        /// <summary>Handles publication surplus imported cr lf prefix for vbe project components.</summary>
-        /// <param name="expected">Text that supplies the expected value. Use the format required by the calling operation.</param>
-        /// <param name="actual">Text that supplies the actual value. Use the format required by the calling operation.</param>
-        /// <returns>int produced by the operation for publication surplus imported cr lf prefix on vbe project components.</returns>
+        /// <summary>Counts an extra prefix of CRLF pairs inserted before an otherwise identical imported source string.</summary>
+        /// <param name="expected">Expected source text before the importer's added line-ending prefix.</param>
+        /// <param name="actual">Observed text that may contain the expected text after the prefix.</param>
+        /// <returns>Number of leading CRLF pairs, from 0 through 256; returns 0 for any other difference.</returns>
         internal static int PublicationSurplusImportedCrLfPrefix(string expected, string actual)
         {
             if (expected == null || actual == null || actual.Length <= expected.Length ||
