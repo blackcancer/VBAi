@@ -1,5 +1,23 @@
 # Recorded validation
 
+## Q027 owner-plan managed prerequisite failure (2026-10-06)
+
+Frozen source `44d83a5570abc8289cb83cc2866ec0125bb5caea`, product MVID
+`39e1383e-9545-4143-bb93-90656b901290`, SHA-256
+`815B10AF2D1857FD00E0B95A774CF01BBE1825E022DC777A3B4EB477051E3BA1`
+built without warnings or errors. Its complete default managed suite finished
+with 5,610 passed, one failed and 234 skipped; all nine synthetic UI actions
+passed. Both original workers exited normally and both private desktops closed.
+No Office host was launched and no COM registration was changed.
+
+`PathsCannotLeaveFrozenRootsOrContainTraversalOrAlternateStreams` failed because
+net48 `Path.GetFullPath` raised `NotSupportedException` for an NTFS stream path
+before the declared `ArgumentException` guard. The path was refused. The
+corrective candidate rejects this syntax before canonicalization in every
+manifest path field and extends the same regression across workbook, snapshot
+and root paths. That changed candidate requires a fresh complete gate. This
+failed aggregate does not grant native Q024 or Q027 acceptance.
+
 ## Q024 qualified and Q027 owner execution gap (2026-10-06)
 
 The exact isolated candidate is source

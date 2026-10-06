@@ -95,6 +95,22 @@ namespace VBAi.Tests.Unit
             plan.WorkbookPath = Workbook + ":stream";
             plan.Project = plan.WorkbookPath;
             Assert.ThrowsException<ArgumentException>(() => OwnerGitQualificationManifest.Parse(Json(plan)));
+            plan.WorkbookPath = Workbook;
+            plan.Project = Workbook;
+            plan.Steps[0].ExpectedSnapshotDirectory = Before + ":stream";
+            Assert.ThrowsException<ArgumentException>(() => OwnerGitQualificationManifest.Parse(Json(plan)));
+            plan.Steps[0].ExpectedSnapshotDirectory = Before;
+            plan.Steps[0].TargetSnapshotDirectory = Changed + ":stream";
+            Assert.ThrowsException<ArgumentException>(() => OwnerGitQualificationManifest.Parse(Json(plan)));
+            plan.Steps[0].TargetSnapshotDirectory = Changed;
+            plan.FixtureRoot = Fixture + ":stream";
+            Assert.ThrowsException<ArgumentException>(() => OwnerGitQualificationManifest.Parse(Json(plan)));
+            plan.FixtureRoot = Fixture;
+            plan.EvidenceRoot = Evidence + ":stream";
+            Assert.ThrowsException<ArgumentException>(() => OwnerGitQualificationManifest.Parse(Json(plan)));
+            plan.EvidenceRoot = Evidence;
+            Assert.AreEqual(3, OwnerGitQualificationManifest.Parse(Json(plan)).Steps.Length,
+                "Rejecting malformed paths must preserve the valid fixed plan contract.");
         }
 
         [TestMethod]

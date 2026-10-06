@@ -76,9 +76,8 @@ namespace VBAi
                 throw new ArgumentException("Exact project and branch required.");
             RequireGuidRoot(manifest.FixtureRoot);
             RequireChild(manifest.FixtureRoot, manifest.WorkbookPath, false);
-            if (!Path.IsPathRooted(manifest.EvidenceRoot) || manifest.EvidenceRoot.StartsWith(@"\\", StringComparison.Ordinal) ||
-                Path.GetFullPath(manifest.EvidenceRoot) != manifest.EvidenceRoot ||
-                !Guid.TryParseExact(Path.GetFileName(manifest.EvidenceRoot).Split('-').Last(), "N", out _))
+            RequireCanonicalLocalPath(manifest.EvidenceRoot);
+            if (!Guid.TryParseExact(Path.GetFileName(manifest.EvidenceRoot).Split('-').Last(), "N", out _))
                 throw new ArgumentException("GUID-suffixed evidence root required.");
             RequireNoReparse(manifest.EvidenceRoot);
             if (string.IsNullOrWhiteSpace(manifest.RepoRelativePath) || Path.IsPathRooted(manifest.RepoRelativePath) ||
@@ -173,22 +172,31 @@ namespace VBAi
 
         internal static void RequireGuidRoot(string root)
         {
-            if (string.IsNullOrWhiteSpace(root) || !Path.IsPathRooted(root) || root.StartsWith(@"\\", StringComparison.Ordinal) ||
-                root.StartsWith(@"\\?\", StringComparison.Ordinal) || Path.GetFullPath(root) != root ||
-                !Guid.TryParseExact(Path.GetFileName(root.TrimEnd(Path.DirectorySeparatorChar)), "N", out _))
+            RequireCanonicalLocalPath(root);
+            if (!Guid.TryParseExact(Path.GetFileName(root.TrimEnd(Path.DirectorySeparatorChar)), "N", out _))
                 throw new ArgumentException("Canonical local GUID fixture root required.");
             RequireNoReparse(root);
         }
 
         internal static void RequireChild(string parent, string child, bool directory)
         {
-            if (string.IsNullOrWhiteSpace(child) || !Path.IsPathRooted(child) || Path.GetFullPath(child) != child ||
-                !child.StartsWith(parent.TrimEnd(Path.DirectorySeparatorChar) + Path.DirectorySeparatorChar,
-                    StringComparison.OrdinalIgnoreCase) || child.IndexOf(':', 2) >= 0)
+            RequireCanonicalLocalPath(child);
+            if (!child.StartsWith(parent.TrimEnd(Path.DirectorySeparatorChar) + Path.DirectorySeparatorChar,
+                    StringComparison.OrdinalIgnoreCase))
                 throw new ArgumentException("Path must be a canonical child of the frozen disposable root.");
             RequireNoReparse(child);
             if (directory && File.Exists(child) || !directory && Directory.Exists(child))
                 throw new ArgumentException("Unexpected filesystem object type.");
+        }
+
+        private static void RequireCanonicalLocalPath(string path)
+        {
+            // Reject NTFS streams before GetFullPath, which throws NotSupportedException
+            // for their syntax on net48. All manifest path fields share this contract.
+            if (string.IsNullOrWhiteSpace(path) || !Path.IsPathRooted(path) ||
+                path.StartsWith(@"\\", StringComparison.Ordinal) || path.IndexOf(':', 2) >= 0 ||
+                Path.GetFullPath(path) != path)
+                throw new ArgumentException("Canonical local path without alternate streams required.");
         }
 
         internal static void RequireNoReparse(string path)
