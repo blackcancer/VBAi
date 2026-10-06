@@ -114,6 +114,58 @@ namespace VBAi.Tests.Unit
         }
 
         [TestMethod]
+        public void ClassicPathPreflightRejectsTheObservedTerminalBoundaryBeforeAnyReceipt()
+        {
+            // The failed native packet had EvidenceRoot=203, intent=258 and
+            // terminal/mutation=260. A shorter root must be chosen before Excel.
+            string longRoot = Path.Combine(@"C:\Evidence",
+                new string('x', 203 - @"C:\Evidence".Length - 1 - ("LabelButton-" + Id).Length - 1),
+                "LabelButton-" + Id);
+            Assert.AreEqual(203, longRoot.Length);
+            string prefix = Path.Combine(longRoot, "owner-git-" + Id);
+            Assert.AreEqual(258, (prefix + ".intent.json").Length);
+            Assert.AreEqual(260, (prefix + ".mutation.json").Length);
+            Assert.AreEqual(260, (prefix + ".terminal.json").Length);
+            Assert.ThrowsException<ArgumentException>(() => OwnerGitQualificationManifest.RequireEvidenceRootBudget(longRoot));
+            Assert.ThrowsException<ArgumentException>(() => OwnerGitQualificationManifest.RequireReceiptPaths(longRoot, Id));
+            var plan = Plan(Step("checkpoint_restore", 1, "invalid/truncated OLE"));
+            plan.EvidenceRoot = longRoot;
+            Assert.ThrowsException<ArgumentException>(() => OwnerGitQualificationManifest.Parse(Json(plan)));
+        }
+
+        [TestMethod]
+        public void EveryReceiptSuffixAndRepositoryRefHasAClassicPathBudget()
+        {
+            string shortRoot = Path.Combine(@"C:\Evidence", "LabelButton-" + Id);
+            OwnerGitQualificationManifest.RequireReceiptPaths(shortRoot, Id);
+            Assert.ThrowsException<ArgumentException>(() => OwnerGitQualificationManifest.RequireReceiptPaths(shortRoot, "bad-id"));
+            string root179 = Path.Combine(@"C:\Evidence",
+                new string('x', OwnerGitQualificationManifest.MaxEvidenceRootLength - @"C:\Evidence".Length - 1 - ("LabelButton-" + Id).Length - 1),
+                "LabelButton-" + Id);
+            Assert.AreEqual(179, root179.Length);
+            OwnerGitQualificationManifest.RequireEvidenceRootBudget(root179);
+            Assert.ThrowsException<ArgumentException>(() => OwnerGitQualificationManifest.RequireEvidenceRootBudget(root179 + "x"));
+            Assert.ThrowsException<ArgumentException>(() => OwnerGitQualificationManifest.RequireEvidenceRootBudget(null));
+            Assert.ThrowsException<ArgumentException>(() => OwnerGitQualificationManifest.RequireEvidenceRootBudget(shortRoot + ":stream"));
+            string nearLimit = Path.Combine(@"C:\", new string('a', 100), new string('b', 100), new string('c', 54));
+            Assert.AreEqual(259, nearLimit.Length);
+            OwnerGitQualificationManifest.RequireClassicFilePath(nearLimit);
+            Assert.ThrowsException<ArgumentException>(() => OwnerGitQualificationManifest.RequireClassicFilePath(nearLimit + "x"));
+            Assert.ThrowsException<ArgumentException>(() => OwnerGitQualificationManifest.RequireClassicFilePath(null));
+            Assert.ThrowsException<ArgumentException>(() => OwnerGitQualificationManifest.RequireClassicFilePath(shortRoot + ":stream"));
+            Assert.ThrowsException<ArgumentException>(() => OwnerGitQualificationManifest.RequireClassicDirectoryPath(nearLimit));
+            var plan = Plan(Step("checkpoint_restore", 1, "invalid/truncated OLE"));
+            plan.EvidenceRoot = root179;
+            Assert.AreEqual(OwnerGitQualificationManifest.MaxEvidenceRootLength, plan.EvidenceRoot.Length);
+            plan.Branch = new string('b', 128);
+            // The branch fits its schema but its on-disk ref does not fit the
+            // same direct net48 API used by the qualification repository.
+            string repoRef = Path.Combine(plan.EvidenceRoot, plan.RepoRelativePath, "refs", "remotes", "origin", plan.Branch);
+            Assert.IsTrue(repoRef.Length > OwnerGitQualificationManifest.MaxClassicFilePathLength);
+            Assert.ThrowsException<ArgumentException>(() => OwnerGitQualificationManifest.Parse(Json(plan)));
+        }
+
+        [TestMethod]
         public void BridgeRequestHasExactlyThreeDataFieldsAndNoCodeOrPaths()
         {
             string valid = "{\"Command\":\"diagnostic_userform_git\",\"Action\":\"" + Id + "\",\"ExpectedSha256\":\"" + Sha + "\"}";

@@ -102,6 +102,20 @@ namespace VBAi.Tests.Unit
         }
 
         [TestMethod]
+        public void LongEvidenceRootFailsBeforeOptInOrOwnedHostLaunch()
+        {
+            string leaf = "LabelButton-" + Guid.NewGuid().ToString("N");
+            int pad = 203 - root.Length - leaf.Length - 2;
+            Assert.IsTrue(pad > 0 && pad < 200, "Synthetic root must fit a single local directory component.");
+            string longEvidence = Path.Combine(root, new string('x', pad), leaf);
+            Assert.AreEqual(203, longEvidence.Length);
+            Directory.CreateDirectory(longEvidence);
+            Assert.ThrowsException<ArgumentException>(() => new OwnerGitQualificationScope(longEvidence));
+            Assert.IsNull(Environment.GetEnvironmentVariable(OwnerGitQualificationManifest.EnvironmentName));
+            Assert.AreEqual(0, Directory.GetFiles(longEvidence).Length, "No manifest or intent was published.");
+        }
+
+        [TestMethod]
         public void ExistingManifestCannotBeOverwritten()
         {
             using (var scope = new OwnerGitQualificationScope(evidence))

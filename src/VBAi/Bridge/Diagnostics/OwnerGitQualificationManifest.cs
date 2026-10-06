@@ -16,6 +16,12 @@ namespace VBAi
     {
         internal const string EnvironmentName = "VBAi_TEST_OWNER_GIT_MANIFEST";
         internal const string CommandName = "diagnostic_userform_git";
+        // net48 FileStream uses the classic unprefixed Windows path contract here.
+        // Reserve 80 characters below MAX_PATH for receipts (57), Git objects/refs
+        // (at least 60), and fixed snapshot directories plus VBA component names.
+        internal const int MaxEvidenceRootLength = 179;
+        internal const int MaxClassicFilePathLength = 259;
+        internal const int MaxClassicDirectoryPathLength = 247;
         public int Version { get; set; }
         public int OwnerPid { get; set; }
         public long OwnerBirthUtcTicks { get; set; }
@@ -76,15 +82,23 @@ namespace VBAi
                 throw new ArgumentException("Exact project and branch required.");
             RequireGuidRoot(manifest.FixtureRoot);
             RequireChild(manifest.FixtureRoot, manifest.WorkbookPath, false);
-            RequireCanonicalLocalPath(manifest.EvidenceRoot);
+            RequireClassicFilePath(manifest.WorkbookPath);
+            RequireEvidenceRootBudget(manifest.EvidenceRoot);
             if (!Guid.TryParseExact(Path.GetFileName(manifest.EvidenceRoot).Split('-').Last(), "N", out _))
                 throw new ArgumentException("GUID-suffixed evidence root required.");
             RequireNoReparse(manifest.EvidenceRoot);
+            RequireEvidenceRootBudget(manifest.EvidenceRoot);
             if (string.IsNullOrWhiteSpace(manifest.RepoRelativePath) || Path.IsPathRooted(manifest.RepoRelativePath) ||
                 manifest.RepoRelativePath.IndexOfAny(new[] { ':', '/', '\\' }) >= 0 ||
                 manifest.RepoRelativePath == "." || manifest.RepoRelativePath == "..")
                 throw new ArgumentException("Repository must be one named child of evidence root.");
             RequireChild(manifest.EvidenceRoot, Path.Combine(manifest.EvidenceRoot, manifest.RepoRelativePath), true);
+            string repoPath = Path.Combine(manifest.EvidenceRoot, manifest.RepoRelativePath);
+            RequireClassicDirectoryPath(repoPath);
+            RequireClassicFilePath(Path.Combine(repoPath, "objects", "aa", new string('a', 38)));
+            RequireClassicFilePath(Path.Combine(repoPath, "refs", "codex", "checkpoints", "20261006000000000-abcdef12"));
+            RequireClassicFilePath(Path.Combine(repoPath, "refs", "heads", manifest.Branch));
+            RequireClassicFilePath(Path.Combine(repoPath, "refs", "remotes", "origin", manifest.Branch));
             if (!string.IsNullOrEmpty(manifest.RemoteUrl))
             {
                 if (manifest.RemoteUrl != "https://github.com/blackcancer/vbai-qualification-20260929203712-7267b1e6.git" ||
@@ -101,6 +115,12 @@ namespace VBAi
                     throw new ArgumentException("Unknown or repeated owner Git step.");
                 RequireChild(manifest.EvidenceRoot, step.ExpectedSnapshotDirectory, true);
                 RequireChild(manifest.EvidenceRoot, step.TargetSnapshotDirectory, true);
+                RequireClassicDirectoryPath(step.ExpectedSnapshotDirectory);
+                RequireClassicDirectoryPath(step.TargetSnapshotDirectory);
+                foreach (string directory in new[] { step.ExpectedSnapshotDirectory, step.TargetSnapshotDirectory })
+                    if (Directory.Exists(directory))
+                        foreach (string file in Directory.GetFiles(directory)) RequireClassicFilePath(file);
+                RequireReceiptPaths(manifest.EvidenceRoot, step.Id);
                 if (!Sha(step.ExpectedSnapshotSha256) || !Sha(step.TargetSnapshotSha256))
                     throw new ArgumentException("Exact source and target snapshot hashes required.");
                 if (step.Verb == "checkpoint_restore" &&
@@ -172,7 +192,7 @@ namespace VBAi
 
         internal static void RequireGuidRoot(string root)
         {
-            RequireCanonicalLocalPath(root);
+            RequireClassicDirectoryPath(root);
             if (!Guid.TryParseExact(Path.GetFileName(root.TrimEnd(Path.DirectorySeparatorChar)), "N", out _))
                 throw new ArgumentException("Canonical local GUID fixture root required.");
             RequireNoReparse(root);
@@ -180,7 +200,8 @@ namespace VBAi
 
         internal static void RequireChild(string parent, string child, bool directory)
         {
-            RequireCanonicalLocalPath(child);
+            if (directory) RequireClassicDirectoryPath(child);
+            else RequireClassicFilePath(child);
             if (!child.StartsWith(parent.TrimEnd(Path.DirectorySeparatorChar) + Path.DirectorySeparatorChar,
                     StringComparison.OrdinalIgnoreCase))
                 throw new ArgumentException("Path must be a canonical child of the frozen disposable root.");
@@ -197,6 +218,38 @@ namespace VBAi
                 path.StartsWith(@"\\", StringComparison.Ordinal) || path.IndexOf(':', 2) >= 0 ||
                 Path.GetFullPath(path) != path)
                 throw new ArgumentException("Canonical local path without alternate streams required.");
+        }
+
+        internal static void RequireEvidenceRootBudget(string root)
+        {
+            if (string.IsNullOrWhiteSpace(root) || root.Length > MaxEvidenceRootLength)
+                throw new ArgumentException("Disposable owner Git evidence root exceeds the net48 path budget.");
+            RequireClassicDirectoryPath(root);
+        }
+
+        internal static void RequireReceiptPaths(string evidenceRoot, string stepId)
+        {
+            RequireEvidenceRootBudget(evidenceRoot);
+            Guid id;
+            if (!Guid.TryParseExact(stepId, "N", out id)) throw new ArgumentException("Exact owner Git receipt id required.");
+            string prefix = Path.Combine(evidenceRoot, "owner-git-" + stepId);
+            foreach (string suffix in new[] { ".intent.json", ".mutation.json", ".terminal.json" })
+                RequireClassicFilePath(prefix + suffix);
+        }
+
+        internal static void RequireClassicFilePath(string path)
+        {
+            if (string.IsNullOrWhiteSpace(path) || path.Length > MaxClassicFilePathLength)
+                throw new ArgumentException("Owner Git file path exceeds the net48 path budget.");
+            RequireCanonicalLocalPath(path);
+            RequireClassicDirectoryPath(Path.GetDirectoryName(path));
+        }
+
+        internal static void RequireClassicDirectoryPath(string path)
+        {
+            if (string.IsNullOrWhiteSpace(path) || path.Length > MaxClassicDirectoryPathLength)
+                throw new ArgumentException("Owner Git directory path exceeds the net48 path budget.");
+            RequireCanonicalLocalPath(path);
         }
 
         internal static void RequireNoReparse(string path)

@@ -22,12 +22,16 @@ namespace VBAi.Tests.Integration
         {
             if (string.IsNullOrWhiteSpace(evidenceRoot) || !Path.IsPathRooted(evidenceRoot))
                 throw new ArgumentException("An absolute disposable evidence root is required.");
+            OwnerGitQualificationManifest.RequireEvidenceRootBudget(evidenceRoot);
             EvidenceRoot = Path.GetFullPath(evidenceRoot);
             if (!Directory.Exists(EvidenceRoot)) throw new DirectoryNotFoundException(EvidenceRoot);
+            // This scope is constructed before Excel starts. Reject a packet whose
+            // later receipt, snapshot, or Git paths cannot fit net48's file APIs.
             previousEnvironment = Environment.GetEnvironmentVariable(OwnerGitQualificationManifest.EnvironmentName);
             if (!string.IsNullOrEmpty(previousEnvironment))
                 throw new InvalidOperationException("An owner Git qualification is already configured; no overlapping scope.");
             ManifestPath = Path.Combine(EvidenceRoot, Guid.NewGuid().ToString("N") + ".owner-git.json");
+            OwnerGitQualificationManifest.RequireClassicFilePath(ManifestPath);
             Environment.SetEnvironmentVariable(OwnerGitQualificationManifest.EnvironmentName, ManifestPath);
         }
 

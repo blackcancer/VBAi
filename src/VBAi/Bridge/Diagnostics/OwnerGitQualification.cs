@@ -171,6 +171,7 @@ namespace VBAi
             if (!name.EndsWith(".owner-git.json", StringComparison.Ordinal) ||
                 !Guid.TryParseExact(name.Substring(0, name.Length - ".owner-git.json".Length), "N", out id))
                 throw new InvalidOperationException("GUID-named owner Git manifest required.");
+            OwnerGitQualificationManifest.RequireClassicFilePath(manifestPath);
             OwnerGitQualificationManifest.RequireNoReparse(manifestPath);
             byte[] bytes = File.ReadAllBytes(manifestPath);
             if (bytes.Length == 0 || bytes.Length > 32768) throw new InvalidOperationException("Bounded manifest required.");
@@ -208,6 +209,7 @@ namespace VBAi
 
         private static void WriteNew(string path, object value)
         {
+            OwnerGitQualificationManifest.RequireClassicFilePath(path);
             byte[] bytes = new System.Text.UTF8Encoding(false).GetBytes(new JavaScriptSerializer().Serialize(value) + "\n");
             using (var file = new FileStream(path, FileMode.CreateNew, FileAccess.Write, FileShare.None))
             { file.Write(bytes, 0, bytes.Length); file.Flush(true); }
