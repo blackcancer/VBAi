@@ -1,6 +1,6 @@
 {
   "language": "zh-TW",
-  "sourceSha256": "f1514bbca64fdba7f402e37dccd9b0afc4eca36a945f136e6ef41d116439de3b",
+  "sourceSha256": "881ae439ae43a2ccec76d8e5346a908939449c2cb2b423cb300bc33ce9d9bca7",
   "labels": {
     "guide": "VBAi - 使用者指南",
     "start": "入門",
@@ -39,7 +39,9 @@
       "在 GitHub 中追蹤模組",
       "將文件關聯到存放庫，然後參閱「原始碼轉換」",
       "找回對話",
-      "繼續對話"
+      "繼續對話",
+      "從 VBE 開啟指南",
+      "在 VBE 的「?」或「說明」功能表中，選擇「VBAi · 使用者指南」。也可從「關於 VBAi」開啟同一份指南。指南以介面語言顯示；若缺少對應的本機檔案，VBAi 會先嘗試英文版，再嘗試法文版。編譯後的檔案必須放在應用程式旁的 Help 資料夾中。"
     ],
     "settings": [
       "設定連線",

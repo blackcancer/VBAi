@@ -1,6 +1,6 @@
 {
   "language": "es-ES",
-  "sourceSha256": "F1514BBCA64FDBA7F402E37DCCD9B0AFC4ECA36A945F136E6EF41D116439DE3B",
+  "sourceSha256": "881ae439ae43a2ccec76d8e5346a908939449c2cb2b423cb300bc33ce9d9bca7",
   "labels": {
     "guide": "VBAi - Guía del usuario",
     "start": "Primeros pasos",
@@ -39,7 +39,9 @@
       "Seguir los módulos en GitHub",
       "Vincular el documento a un repositorio y después Conversión de las fuentes",
       "Encontrar una conversación",
-      "Retomar una conversación"
+      "Retomar una conversación",
+      "Abrir la guía desde el VBE",
+      "En el menú «?» o Ayuda del VBE, elija VBAi · Guía de usuario. La misma guía está disponible en Acerca de VBAi. Se abre en el idioma de la interfaz; si falta el archivo local correspondiente, VBAi intenta abrir la versión inglesa y después la francesa. Los archivos compilados deben estar en la carpeta Help junto a la aplicación."
     ],
     "settings": [
       "Configurar las conexiones",

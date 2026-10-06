@@ -130,6 +130,12 @@
               "Reprendre une conversation"
             ]
           ]
+        },
+        {
+          "title": "Ouvrir le guide depuis le VBE",
+          "paragraphs": [
+            "Dans le menu « ? » ou Aide du VBE, choisissez VBAi · Guide utilisateur. Le même guide est accessible dans À propos de VBAi. Il s’ouvre dans la langue de l’interface ; si le fichier local correspondant manque, VBAi essaie l’anglais puis le français. Les fichiers compilés doivent se trouver dans le dossier Help à côté de l’application."
+          ]
         }
       ],
       "related": [
