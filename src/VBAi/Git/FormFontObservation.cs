@@ -184,10 +184,10 @@ namespace VBAi
         }
 
         /// <summary>Requires every initial source, identity and reference byte except the selected FRX to match.</summary>
-        /// <param name="observed">vba git snapshot that supplies the observed for this operation.</param>
-        /// <param name="target">vba git snapshot that supplies the target for this operation.</param>
-        /// <param name="formName">Text that supplies the form name value. Use the format required by the calling operation.</param>
-        /// <returns>Boolean indicating the result of the check for same except selected frx on form font observation.</returns>
+        /// <param name="observed">Post-import project snapshot.</param>
+        /// <param name="target">Expected source snapshot.</param>
+        /// <param name="formName">Only form whose FRX may differ.</param>
+        /// <returns>True when package identities and every other comparison file match exactly.</returns>
         internal static bool SameExceptSelectedFrx(VbaGitSnapshot observed, VbaGitSnapshot target, string formName)
         {
             if (observed == null || target == null || string.IsNullOrEmpty(formName)) return false;
@@ -198,10 +198,10 @@ namespace VBAi
                     item.Value.SequenceEqual(bytes));
         }
 
-        /// <summary>Runs after initial capture for form font observation.</summary>
-        /// <param name="capture">func&lt;vba git snapshot&gt; that supplies the capture for this operation.</param>
-        /// <param name="target">vba git snapshot that supplies the target for this operation.</param>
-        /// <param name="transfer">action that supplies the transfer for this operation.</param>
+        /// <summary>Captures and records the first post-import state before allowing the one deferred transfer.</summary>
+        /// <param name="capture">Fresh live-project snapshot operation.</param>
+        /// <param name="target">Expected imported source snapshot.</param>
+        /// <param name="transfer">Single deferred font restoration action authorized by the gate.</param>
         internal void RunAfterInitialCapture(Func<VbaGitSnapshot> capture, VbaGitSnapshot target, Action transfer)
         {
             if (!IsAfterInitialCapture) throw new InvalidOperationException("Initial capture belongs only to the deferred mode.");
@@ -211,11 +211,11 @@ namespace VBAi
         }
 
         /// <summary>Records the first post-import capture before any deferred native transfer.</summary>
-        /// <param name="capture">func&lt;vba git snapshot&gt; that supplies the capture for this operation.</param>
-        /// <param name="target">vba git snapshot that supplies the target for this operation.</param>
-        /// <param name="formName">Text that supplies the form name value. Use the format required by the calling operation.</param>
-        /// <param name="record">action&lt;bool, bool&gt; that supplies the record for this operation.</param>
-        /// <param name="transfer">action that supplies the transfer for this operation.</param>
+        /// <param name="capture">Operation that observes the live project immediately before transfer.</param>
+        /// <param name="target">Expected snapshot for the import.</param>
+        /// <param name="formName">Form whose FRX is the only permitted difference at this stage.</param>
+        /// <param name="record">Receipt callback receiving exact-match and only-selected-FRX-differs flags.</param>
+        /// <param name="transfer">Native font delivery invoked only after the capture gate passes.</param>
         internal static void GateAfterInitialCapture(Func<VbaGitSnapshot> capture, VbaGitSnapshot target, string formName,
             Action<bool, bool> record, Action transfer)
         {

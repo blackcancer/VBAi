@@ -6,25 +6,25 @@ using System.Linq;
 namespace VBAi
 {
 
-    /// <summary>Owns the form stream padding state and operations.</summary>
+    /// <summary>Validates and canonicalizes a complete nested MSForms UserForm storage graph.</summary>
     internal static partial class FormStreamPadding
     {
 
-        /// <summary>Maintains the graph form class state for form stream padding.</summary>
+        /// <summary>CFB CLSID identifying a UserForm storage.</summary>
         private static readonly byte[] GraphFormClass = new Guid("C62A69F0-16DC-11CE-9E98-00AA00574A4F").ToByteArray();
 
-        /// <summary>Maintains the graph frame class state for form stream padding.</summary>
+        /// <summary>CFB CLSID identifying a Frame storage.</summary>
         private static readonly byte[] GraphFrameClass = new Guid("6E182020-F460-11CE-9BCD-00AA00608E01").ToByteArray();
 
-        /// <summary>Maintains the graph multi page class state for form stream padding.</summary>
+        /// <summary>CFB CLSID identifying a MultiPage storage.</summary>
         private static readonly byte[] GraphMultiPageClass = new Guid("46E31370-3F7A-11CE-BED6-00AA00611080").ToByteArray();
 
         /// <summary>Normalizes comparison clones only after the complete bounded UserForm storage graph is validated.</summary>
         /// <remarks>Any refusal returns the exact original dictionary and arrays. Transport/import bytes are never modified.</remarks>
-        /// <param name="streams">i read only dictionary&lt;string, byte[]&gt; that supplies the streams for this operation.</param>
-        /// <param name="storageMetadata">i read only dictionary&lt;string, byte[]&gt; that supplies the storage metadata for this operation.</param>
-        /// <param name="rootPath">Path used for the root path being processed.</param>
-        /// <returns>i read only dictionary&lt;string, byte[]&gt; produced by the operation for normalize graph on form stream padding.</returns>
+        /// <param name="streams">Logical CFB streams keyed by nested storage path.</param>
+        /// <param name="storageMetadata">Twenty-byte persisted metadata records keyed by storage path.</param>
+        /// <param name="rootPath">Root storage path, empty for the top-level form.</param>
+        /// <returns>Comparison-only cloned streams after full graph validation, or the original dictionary on unsupported layout.</returns>
         internal static IReadOnlyDictionary<string, byte[]> NormalizeGraph(IReadOnlyDictionary<string, byte[]> streams,
             IReadOnlyDictionary<string, byte[]> storageMetadata, string rootPath = "")
         {
@@ -38,9 +38,9 @@ namespace VBAi
         }
 
         /// <summary>Extracts declared standard fonts only when every storage and control in the graph validates.</summary>
-        /// <param name="streams">i read only dictionary&lt;string, byte[]&gt; that supplies the streams for this operation.</param>
-        /// <param name="storageMetadata">i read only dictionary&lt;string, byte[]&gt; that supplies the storage metadata for this operation.</param>
-        /// <returns>form font binding[] produced by the operation for read font bindings on form stream padding.</returns>
+        /// <param name="streams">Logical streams indexed by CFB storage path.</param>
+        /// <param name="storageMetadata">Validated storage class metadata.</param>
+        /// <returns>Exact StdFont bindings with owner paths, or null when the graph cannot be fully validated.</returns>
         internal static FormFontBinding[] ReadFontBindings(IReadOnlyDictionary<string, byte[]> streams,
             IReadOnlyDictionary<string, byte[]> storageMetadata)
         {
@@ -59,30 +59,30 @@ namespace VBAi
         internal sealed class FormFontBinding
         {
 
-            /// <summary>Keeps the owner path path available to form font binding.</summary>
+            /// <summary>Logical path of the form or control that owns this font property.</summary>
             internal readonly string OwnerPath;
 
-            /// <summary>Maintains the descriptor state for form font binding.</summary>
+            /// <summary>Cloned exact serialized font descriptor bytes.</summary>
             internal readonly byte[] Descriptor;
 
-            /// <summary>Maintains the type state for form font binding.</summary>
+            /// <summary>Persisted control type associated with the font owner.</summary>
             internal readonly uint Type;
 
             /// <summary>Initializes a FormFontBinding instance with the supplied state.</summary>
-            /// <param name="ownerPath">Path used for the owner path being processed.</param>
-            /// <param name="descriptor">byte[] that supplies the descriptor for this operation.</param>
-            /// <param name="type">uint that supplies the type for this operation.</param>
+            /// <param name="ownerPath">Validated logical storage/control path.</param>
+            /// <param name="descriptor">Persisted font descriptor; copied to prevent aliasing.</param>
+            /// <param name="type">VB control type owning the descriptor.</param>
             internal FormFontBinding(string ownerPath, byte[] descriptor, uint type)
             { OwnerPath = ownerPath; Descriptor = (byte[])descriptor.Clone(); Type = type; }
         }
 
-        /// <summary>Reads graph for form stream padding.</summary>
-        /// <param name="streams">i read only dictionary&lt;string, byte[]&gt; that supplies the streams for this operation.</param>
-        /// <param name="storageMetadata">i read only dictionary&lt;string, byte[]&gt; that supplies the storage metadata for this operation.</param>
-        /// <param name="rootPath">Path used for the root path being processed.</param>
-        /// <param name="nodes">list&lt;storage node&gt; that supplies the nodes for this operation.</param>
-        /// <param name="collectOwnerPaths">Indicates whether collect owner paths is enabled.</param>
-        /// <returns>storage graph produced by the operation for read graph on form stream padding.</returns>
+        /// <summary>Walks bounded Form, Frame, and MultiPage storages, validating unique child identities and complete stream ownership.</summary>
+        /// <param name="streams">Logical CFB stream map.</param>
+        /// <param name="storageMetadata">Storage CLSID and metadata map.</param>
+        /// <param name="rootPath">Storage path to parse first.</param>
+        /// <param name="nodes">Receives parsed storage nodes in traversal order.</param>
+        /// <param name="collectOwnerPaths">Whether child names are required to build font-binding owner paths.</param>
+        /// <returns>Graph containing cloned normalized streams and exact claims.</returns>
         private static StorageGraph ReadGraph(IReadOnlyDictionary<string, byte[]> streams,
             IReadOnlyDictionary<string, byte[]> storageMetadata, string rootPath, out List<StorageNode> nodes,
             bool collectOwnerPaths = false)
@@ -125,7 +125,7 @@ namespace VBAi
         }
 
         /// <summary>Reads design-surface metadata while retaining all property bytes and validating its optional extent.</summary>
-        /// <param name="form">reader that supplies the form for this operation.</param>
+        /// <param name="form">Reader positioned at the optional DesignExtender block.</param>
         private static void ParseDesignExtender(Reader form)
         {
             // MS-OFORMS 2.2.10.9, 2.2.10.11.1-.3 and 2.5.5.1.
@@ -140,74 +140,74 @@ namespace VBAi
             block.Align(4); block.Finish();
         }
 
-        /// <summary>Owns the tab links state and operations.</summary>
+        /// <summary>Pairs persisted MultiPage tab labels with page-storage order.</summary>
         private sealed class TabLinks
         {
 
-            /// <summary>Maintains the items and names state for tab links.</summary>
+            /// <summary>Tab item identifiers and display names in matching ordinal positions.</summary>
             internal readonly List<string> Items = new List<string>(), Names = new List<string>();
         }
 
-        /// <summary>Owns the storage site state and operations.</summary>
+        /// <summary>Validated child-control identity, type, stream mode, and optional name.</summary>
         private sealed class StorageSite
         {
 
-            /// <summary>Maintains the identity and type state for storage site.</summary>
+            /// <summary>Persisted site identity and VB control type.</summary>
             internal uint Identity, Type;
 
-            /// <summary>Maintains the streamed state for storage site.</summary>
+            /// <summary>Whether the control payload is in the object stream rather than its own storage.</summary>
             internal bool Streamed;
 
-            /// <summary>Maintains the name state for storage site.</summary>
+            /// <summary>Optional persisted child name used for owner-path mapping.</summary>
             internal string Name;
         }
 
-        /// <summary>Owns the storage node state and operations.</summary>
+        /// <summary>Represents one nested Form/Frame/MultiPage storage and the validated children it owns.</summary>
         private sealed class StorageNode
         {
 
-            /// <summary>Keeps the path path available to storage node.</summary>
+            /// <summary>CFB storage path used to claim this node's streams.</summary>
             internal readonly string Path;
 
-            /// <summary>Keeps the owner path path available to storage node.</summary>
+            /// <summary>Logical form/control owner path used in font restoration bindings.</summary>
             internal readonly string OwnerPath;
 
-            /// <summary>Maintains the font state for storage node.</summary>
+            /// <summary>Exact supported standard-font descriptor found in this storage.</summary>
             internal byte[] Font;
 
-            /// <summary>Maintains the unsupported font state for storage node.</summary>
+            /// <summary>Marks an encountered font representation that cannot be safely transferred.</summary>
             internal bool UnsupportedFont;
 
-            /// <summary>Maintains the type and identity state for storage node.</summary>
+            /// <summary>Persisted control type and parent-site identity for this storage.</summary>
             internal readonly uint Type, Identity;
 
-            /// <summary>Maintains the depth state for storage node.</summary>
+            /// <summary>Depth from the root, bounded to prevent excessive nesting.</summary>
             internal readonly int Depth;
 
-            /// <summary>Maintains the sites state for storage node.</summary>
+            /// <summary>Child sites declared by this storage.</summary>
             internal readonly List<StorageSite> Sites = new List<StorageSite>();
 
-            /// <summary>Maintains the identities state for storage node.</summary>
+            /// <summary>Site identities already seen in this node, used to reject duplicates.</summary>
             private readonly HashSet<uint> identities = new HashSet<uint>();
 
-            /// <summary>Maintains the tabs state for storage node.</summary>
+            /// <summary>Optional tab labels collected for MultiPage child validation.</summary>
             internal TabLinks Tabs;
 
             /// <summary>Initializes a StorageNode instance with the supplied state.</summary>
-            /// <param name="path">Path used for the path being processed.</param>
-            /// <param name="type">uint that supplies the type for this operation.</param>
-            /// <param name="identity">uint that supplies the identity for this operation.</param>
-            /// <param name="depth">int that supplies the depth for this operation.</param>
-            /// <param name="ownerPath">Path used for the owner path being processed.</param>
+            /// <param name="path">Storage path within the CFB tree.</param>
+            /// <param name="type">Control type represented by this storage.</param>
+            /// <param name="identity">Identity assigned by its parent site.</param>
+            /// <param name="depth">Nesting depth from the root storage.</param>
+            /// <param name="ownerPath">Optional logical path used to associate fonts with controls.</param>
             internal StorageNode(string path, uint type, uint identity, int depth, string ownerPath = "")
             { Path = path; Type = type; Identity = identity; Depth = depth; OwnerPath = ownerPath; }
 
-            /// <summary>Adds site for storage node.</summary>
-            /// <param name="identity">uint that supplies the identity for this operation.</param>
-            /// <param name="type">uint that supplies the type for this operation.</param>
-            /// <param name="flags">uint that supplies the flags for this operation.</param>
-            /// <param name="hasObjectSize">Indicates whether has object size is enabled.</param>
-            /// <param name="name">Text that supplies the name value. Use the format required by the calling operation.</param>
+            /// <summary>Validates and records one child site, enforcing unique identity and legal streamed/storage combinations.</summary>
+            /// <param name="identity">Unique site ID within this storage.</param>
+            /// <param name="type">Persisted control type.</param>
+            /// <param name="flags">Site flags that encode stream and parent behavior.</param>
+            /// <param name="hasObjectSize">Whether the site declares an object-stream extent.</param>
+            /// <param name="name">Optional child name used for owner-path reconstruction.</param>
             internal void AddSite(uint identity, uint type, uint flags, bool hasObjectSize, string name)
             {
                 // MS-OFORMS 2.5.4.1: Streamed=false means own ID-named storage; PromoteControls applies only to parents.
@@ -221,36 +221,36 @@ namespace VBAi
             }
         }
 
-        /// <summary>Owns the storage graph state and operations.</summary>
+        /// <summary>Validates stream/storage claims and builds the comparison-only stream clones.</summary>
         private sealed class StorageGraph
         {
 
-            /// <summary>Maintains the streams and metadata state for storage graph.</summary>
+            /// <summary>Input logical stream data and storage metadata maps.</summary>
             private readonly IReadOnlyDictionary<string, byte[]> streams, metadata;
 
-            /// <summary>Maintains the comparison state for storage graph.</summary>
+            /// <summary>Cloned streams with only proven padding changes applied.</summary>
             internal readonly Dictionary<string, byte[]> Comparison;
 
-            /// <summary>Maintains the storage claims state for storage graph.</summary>
+            /// <summary>Storage paths parsed exactly once.</summary>
             internal readonly HashSet<string> StorageClaims = new HashSet<string>(StringComparer.Ordinal);
 
-            /// <summary>Maintains the stream claims state for storage graph.</summary>
+            /// <summary>Stream paths claimed exactly once.</summary>
             internal readonly HashSet<string> StreamClaims = new HashSet<string>(StringComparer.Ordinal);
 
-            /// <summary>Counts the site count maintained by storage graph.</summary>
+            /// <summary>Total sites parsed across the graph, bounded to 16,384.</summary>
             private int siteCount;
 
             /// <summary>Initializes a StorageGraph instance with the supplied state.</summary>
-            /// <param name="streams">i read only dictionary&lt;string, byte[]&gt; that supplies the streams for this operation.</param>
-            /// <param name="metadata">i read only dictionary&lt;string, byte[]&gt; that supplies the metadata for this operation.</param>
+            /// <param name="streams">Input stream map whose arrays are copied for comparison.</param>
+            /// <param name="metadata">Persisted storage metadata map.</param>
             internal StorageGraph(IReadOnlyDictionary<string, byte[]> streams, IReadOnlyDictionary<string, byte[]> metadata)
             {
                 this.streams = streams; this.metadata = metadata;
                 Comparison = streams.ToDictionary(x => x.Key, x => x.Value, StringComparer.Ordinal);
             }
 
-            /// <summary>Parses  for storage graph.</summary>
-            /// <param name="node">storage node that supplies the node for this operation.</param>
+            /// <summary>Validates one storage CLSID, claims its required streams, parses children, and updates comparison clones.</summary>
+            /// <param name="node">Storage node being validated.</param>
             internal void Parse(StorageNode node)
             {
                 // Cached parent identities match Microsoft Forms coclasses, with Page represented by a FormControl storage.
@@ -271,10 +271,10 @@ namespace VBAi
                 if (node.Type == 57) ValidateMultiPage(node, Claim(node.Path + "/x", true));
             }
 
-            /// <summary>Handles claim for storage graph.</summary>
-            /// <param name="path">Path used for the path being processed.</param>
-            /// <param name="required">Indicates whether required is enabled.</param>
-            /// <returns>byte[] produced by the operation for claim on storage graph.</returns>
+            /// <summary>Claims a stream path once, rejecting duplicates and missing required streams.</summary>
+            /// <param name="path">Logical CFB stream path.</param>
+            /// <param name="required">Whether absence invalidates the graph.</param>
+            /// <returns>Stream bytes, or null when an optional stream is absent.</returns>
             private byte[] Claim(string path, bool required)
             {
                 if (!streams.TryGetValue(path, out var bytes)) { Require(!required); return null; }
