@@ -9,103 +9,103 @@ namespace VBAi
     internal sealed partial class TestExplorerWindow
     {
 
-        /// <summary>Maintains the components state for test explorer window.</summary>
+        /// <summary>Owns designer-created child components disposed with the form.</summary>
         private IContainer components;
 
-        /// <summary>Maintains the layout state for test explorer window.</summary>
+        /// <summary>Places filters, test tree, details, and reports in the fixed form layout.</summary>
         private TableLayoutPanel layout;
 
-        /// <summary>Maintains the commands state for test explorer window.</summary>
+        /// <summary>Hosts refresh, run, coverage, source, support, stop, and report commands.</summary>
         private FlowLayoutPanel commands;
 
-        /// <summary>Maintains the filters state for test explorer window.</summary>
+        /// <summary>Contains project, search, outcome, and grouping selectors above the tree.</summary>
         private TableLayoutPanel filters;
 
-        /// <summary>Maintains the project list state for test explorer window.</summary>
+        /// <summary>Selects the project catalog currently shown in the explorer.</summary>
         private UiComboBox projectList;
 
-        /// <summary>Maintains the search state for test explorer window.</summary>
+        /// <summary>Filters visible descriptors by their displayed names and metadata.</summary>
         private UiTextBox search;
 
-        /// <summary>Maintains the outcome filter state for test explorer window.</summary>
+        /// <summary>Limits visible test results to the selected outcome category.</summary>
         private UiComboBox outcomeFilter;
 
-        /// <summary>Maintains the grouping state for test explorer window.</summary>
+        /// <summary>Chooses how test descriptors are grouped in the tree.</summary>
         private UiComboBox grouping;
 
-        /// <summary>Maintains the test tree state for test explorer window.</summary>
+        /// <summary>Displays module groups, test descriptors, and checkable selection state.</summary>
         private TreeView testTree;
 
-        /// <summary>Maintains the split state for test explorer window.</summary>
+        /// <summary>Separates the selectable test tree from the detail and report panes.</summary>
         private SplitContainer split;
 
-        /// <summary>Maintains the details state for test explorer window.</summary>
+        /// <summary>Shows the selected descriptor or result details without executing VBA.</summary>
         private UiTextBox details;
 
-        /// <summary>Maintains the result tabs state for test explorer window.</summary>
+        /// <summary>Switches between descriptor details and human or compact run reports.</summary>
         private ThemedTabControl resultTabs;
 
-        /// <summary>Maintains the details tab state for test explorer window.</summary>
+        /// <summary>Tab containing selected test metadata and diagnostics.</summary>
         private TabPage detailsTab;
 
-        /// <summary>Maintains the human tab state for test explorer window.</summary>
+        /// <summary>Tab containing the human-readable execution report.</summary>
         private TabPage humanTab;
 
-        /// <summary>Maintains the compact tab state for test explorer window.</summary>
+        /// <summary>Tab containing the compact machine-friendly execution report.</summary>
         private TabPage compactTab;
 
-        /// <summary>Maintains the human report state for test explorer window.</summary>
+        /// <summary>Read-only control displaying the human-readable report for copying.</summary>
         private UiTextBox humanReport;
 
-        /// <summary>Maintains the compact report state for test explorer window.</summary>
+        /// <summary>Read-only control displaying the compact report representation.</summary>
         private UiTextBox compactReport;
 
-        /// <summary>Maintains the copy report state for test explorer window.</summary>
+        /// <summary>Copies the currently selected report representation to the clipboard.</summary>
         private UiActionButton copyReport;
 
-        /// <summary>Maintains the export report state for test explorer window.</summary>
+        /// <summary>Exports the selected report representation to a user-chosen file.</summary>
         private UiActionButton exportReport;
 
-        /// <summary>Maintains the summary state for test explorer window.</summary>
+        /// <summary>Displays aggregate counts for the current catalog or run.</summary>
         private Label summary;
 
-        /// <summary>Maintains the status state for test explorer window.</summary>
+        /// <summary>Displays current project freshness and execution status.</summary>
         private Label status;
 
-        /// <summary>Maintains the coverage state for test explorer window.</summary>
+        /// <summary>Displays procedure-entry coverage counts and completeness.</summary>
         private Label coverage;
 
-        /// <summary>Maintains the refresh state for test explorer window.</summary>
+        /// <summary>Reloads the current project snapshot and test discovery catalog.</summary>
         private UiActionButton refresh;
 
-        /// <summary>Maintains the run selected state for test explorer window.</summary>
+        /// <summary>Runs the checked descriptors in the selected project.</summary>
         private UiActionButton runSelected;
 
-        /// <summary>Maintains the run scope state for test explorer window.</summary>
+        /// <summary>Runs all currently runnable tests in the selected project scope.</summary>
         private UiActionButton runScope;
 
-        /// <summary>Maintains the run selected coverage state for test explorer window.</summary>
+        /// <summary>Runs checked descriptors with an explicit procedure-entry coverage review.</summary>
         private UiActionButton runSelectedCoverage;
 
-        /// <summary>Maintains the run scope coverage state for test explorer window.</summary>
+        /// <summary>Runs the project test scope with an explicit procedure-entry coverage review.</summary>
         private UiActionButton runScopeCoverage;
 
-        /// <summary>Maintains the freshness timer state for test explorer window.</summary>
+        /// <summary>Periodically detects whether source changed since the displayed catalog was captured.</summary>
         private Timer freshnessTimer;
 
-        /// <summary>Maintains the rerun failed state for test explorer window.</summary>
+        /// <summary>Selects and runs tests whose prior result was failed or errored.</summary>
         private UiActionButton rerunFailed;
 
-        /// <summary>Maintains the stop state for test explorer window.</summary>
+        /// <summary>Requests cooperative cancellation between native test calls.</summary>
         private UiActionButton stop;
 
-        /// <summary>Maintains the source state for test explorer window.</summary>
+        /// <summary>Navigates to the source declaration for the selected descriptor.</summary>
         private UiActionButton source;
 
-        /// <summary>Maintains the install support state for test explorer window.</summary>
+        /// <summary>Installs or updates the project-local VBA test support module.</summary>
         private UiActionButton installSupport;
 
-        /// <summary>Handles initialize component for test explorer window.</summary>
+        /// <summary>Builds the designer-owned control hierarchy without accessing project services.</summary>
         private void InitializeComponent()
         {
             components = new Container();
