@@ -15,16 +15,16 @@ namespace VBAi
         private sealed class NavigationOperation
         {
 
-            /// <summary>Identifies the id and state and error and action associated with navigation operation.</summary>
+            /// <summary>Session-local operation ID, queued/running/observing/completed state, error text, and requested action.</summary>
             public string Id, State, Error, Action;
 
-            /// <summary>Maintains the before and after state for navigation operation.</summary>
+            /// <summary>Serializable active-window/code-pane observations captured before and after native command execution.</summary>
             public object Before, After;
 
-            /// <summary>Maintains the command completed and navigation observed state for navigation operation.</summary>
+            /// <summary>Whether the command returned and whether a changed destination was observed on a later message-loop turn.</summary>
             public bool CommandCompleted, NavigationObserved;
 
-            /// <summary>Maintains the readback deadline utc state for navigation operation.</summary>
+            /// <summary>UTC deadline after which observation ends without claiming successful navigation.</summary>
             public DateTime ReadbackDeadlineUtc;
         }
 

@@ -22,33 +22,33 @@ namespace VBAi
         /// <summary>Actions dont les détails ont été ouverts par l'utilisateur.</summary>
         private readonly HashSet<ChatEntry> expandedActivitySteps = new HashSet<ChatEntry>();
 
-        /// <summary>Maintains the collapsed activity groups state for chat window.</summary>
+        /// <summary>Groups the user explicitly collapsed, preserved across transcript refreshes.</summary>
         private readonly HashSet<ChatEntry> collapsedActivityGroups = new HashSet<ChatEntry>();
 
-        /// <summary>Maintains the collapsed activity steps state for chat window.</summary>
+        /// <summary>Individual activity details the user explicitly collapsed.</summary>
         private readonly HashSet<ChatEntry> collapsedActivitySteps = new HashSet<ChatEntry>();
 
         // View state belongs to the control tree and is released with its virtualized owner.
-        /// <summary>Owns the activity group view state state and operations.</summary>
+        /// <summary>Realized row controls and update guard for one virtualized activity-group card.</summary>
         private sealed class ActivityGroupViewState
         {
 
-            /// <summary>Maintains the rows state for activity group view state.</summary>
+            /// <summary>Existing child controls keyed by transcript entry so updates preserve selection and text-control identity.</summary>
             internal readonly Dictionary<ChatEntry, System.Windows.Forms.Control> Rows =
                 new Dictionary<ChatEntry, System.Windows.Forms.Control>();
 
-            /// <summary>Maintains the updating state for activity group view state.</summary>
+            /// <summary>Suppresses expansion callbacks while the group's rows and title are refreshed.</summary>
             internal bool Updating;
         }
 
-        /// <summary>Owns the activity step view state state and operations.</summary>
+        /// <summary>Tracks detail-view initialization and reentrant updates for one activity step.</summary>
         private sealed class ActivityStepViewState
         {
 
-            /// <summary>Maintains the kind state for activity step view state.</summary>
+            /// <summary>Activity kind used to detect when a recycled row must be rebuilt.</summary>
             internal string Kind;
 
-            /// <summary>Maintains the initialized and updating state for activity step view state.</summary>
+            /// <summary>Whether detail controls are initialized and whether an update is already in progress.</summary>
             internal bool Initialized, Updating;
         }
 
@@ -150,11 +150,11 @@ namespace VBAi
             return new ChatDesignerHost(card) { Margin = new Thickness(0,4,0,14) };
         }
 
-        /// <summary>Updates realized rows without replacing their native text controls or user selection.</summary>
-        /// <param name="card">chat activity group view that supplies the card for this operation.</param>
-        /// <param name="owner">chat entry that supplies the owner for this operation.</param>
-        /// <param name="entries">list&lt;chat entry&gt; that supplies the entries for this operation.</param>
-        /// <returns>Boolean indicating the result of the check for update activity group on chat window.</returns>
+        /// <summary>Updates a realized group's rows in place when their types and controls remain valid.</summary>
+        /// <param name="card">Visible group card whose realized rows may be refreshed.</param>
+        /// <param name="owner">Stable first entry that owns the group and its expansion state.</param>
+        /// <param name="entries">Current adjacent activity entries in transcript order.</param>
+        /// <returns>True after in-place update; false when the caller must use its full rebuild path.</returns>
         private bool UpdateActivityGroup(ChatActivityGroupView card, ChatEntry owner, List<ChatEntry> entries)
         {
             var state = card.Tag as ActivityGroupViewState;
@@ -214,9 +214,9 @@ namespace VBAi
         /// <returns>Étape de la chronologie.</returns>
         private FrameworkElement RenderActivityStep(ChatEntry entry) => new ChatDesignerHost(CreateActivityStep(entry));
 
-        /// <summary>Creates a transcript row for a tool activity and its displayed state.</summary>
-        /// <param name="entry">chat entry that supplies the entry for this operation.</param>
-        /// <returns>chat activity step view produced by the operation for create activity step on chat window.</returns>
+        /// <summary>Creates a compact tool/reasoning row with its current status and expandable detail.</summary>
+        /// <param name="entry">Transcript entry containing one agent activity.</param>
+        /// <returns>WinForms activity view hosted by the WPF transcript surface.</returns>
         private ChatActivityStepView CreateActivityStep(ChatEntry entry)
         {
             var card = new ChatActivityStepView { Tag = new ActivityStepViewState() };
@@ -229,9 +229,9 @@ namespace VBAi
             return card;
         }
 
-        /// <summary>Updates activity step for chat window.</summary>
-        /// <param name="card">chat activity step view that supplies the card for this operation.</param>
-        /// <param name="entry">chat entry that supplies the entry for this operation.</param>
+        /// <summary>Refreshes status, title, detail, duration, and expansion while preserving text selection.</summary>
+        /// <param name="card">Realized activity card whose controls are updated in place.</param>
+        /// <param name="entry">Current transcript entry supplying the activity state and detail.</param>
         private void UpdateActivityStep(ChatActivityStepView card, ChatEntry entry)
         {
             var activity = entry.Activity;
