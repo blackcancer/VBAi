@@ -7,26 +7,26 @@ using System.Threading.Tasks;
 namespace VBAi
 {
 
-    /// <summary>Owns the vbe project components state and operations.</summary>
+    /// <summary>Runs the asynchronous native General dialog route for VBE project metadata.</summary>
     internal sealed partial class VbeProjectComponents
     {
 
-        /// <summary>Maintains the general native factory state for vbe project components.</summary>
+        /// <summary>Creates the owner-thread native General dialog adapter for a VBE root HWND.</summary>
         internal Func<IntPtr, Action, VbeProjectGeneralOperation.INative> GeneralNativeFactory = (root, context) => new VbeProjectGeneralNative(root, context);
 
-        /// <summary>Maintains the general operation factory state for vbe project components.</summary>
+        /// <summary>Creates the asynchronous General operation state machine around its native adapter.</summary>
         internal Func<VbeProjectGeneralOperation.INative, VbeProjectGeneralOperation> GeneralOperationFactory = native => new VbeProjectGeneralOperation(native);
 
-        /// <summary>Maintains the general project identity state for vbe project components.</summary>
+        /// <summary>Canonical COM identity comparison used for project and active-selection revalidation.</summary>
         internal Func<object, object, bool> GeneralProjectIdentity = SameGeneralProject;
         // Additive route only. Existing set_project_property is never called by this workflow.
-        /// <summary>Handles project general async for vbe project components.</summary>
-        /// <param name="source">request that supplies the source for this operation.</param>
-        /// <param name="write">Indicates whether write is enabled.</param>
-        /// <param name="captureExactCommand">func&lt;request, action, action&lt;action&gt;&gt; that supplies the capture exact command for this operation.</param>
-        /// <param name="durableClaim">result&gt; that supplies the durable claim for this operation.</param>
-        /// <param name="requireNativeContext">action that supplies the require native context for this operation.</param>
-        /// <returns>task&lt;object&gt; produced by the operation for project general async on vbe project components.</returns>
+        /// <summary>Inspects or writes HelpContextID/HelpFile through one native General dialog with repeated identity and authorization checks.</summary>
+        /// <param name="source">Request containing exact project revision, mode, caption, property/value, and async authorization callback.</param>
+        /// <param name="write">True for the supported HelpContextID or existing canonical CHM HelpFile write; false for read-only inspection.</param>
+        /// <param name="captureExactCommand">Captures the exact native command and returns its one-time open callback.</param>
+        /// <param name="durableClaim">Persists command/field/commit attempt milestones before their native side effects.</param>
+        /// <param name="requireNativeContext">Checks that the current host project context remains valid on the VBE owner thread.</param>
+        /// <returns>Terminal report with readback metadata only when safe to publish; uncertain outcomes suppress metadata and are never replayed.</returns>
         internal async Task<object> ProjectGeneralAsync(Request source, bool write,
             Func<Request, Action, Action<Action>> captureExactCommand,
             Action<VbeProjectGeneralOperation.Result> durableClaim, Action requireNativeContext)
@@ -103,9 +103,9 @@ namespace VBAi
             return result;
         }
 
-        /// <summary>Handles record general publication for vbe project components.</summary>
-        /// <param name="result">result that supplies the result for this operation.</param>
-        /// <param name="durableClaim">result&gt; that supplies the durable claim for this operation.</param>
+        /// <summary>Attempts to publish the terminal operation receipt and marks the result unavailable if persistence fails.</summary>
+        /// <param name="result">Completed native General operation state being published.</param>
+        /// <param name="durableClaim">Receipt callback that stores the final attempt counts and outcome.</param>
         private static void RecordGeneralPublication(VbeProjectGeneralOperation.Result result, Action<VbeProjectGeneralOperation.Result> durableClaim)
         {
             try { durableClaim(result); }
@@ -116,10 +116,10 @@ namespace VBAi
             }
         }
 
-        /// <summary>Compares general project for vbe project components.</summary>
-        /// <param name="first">object that supplies the first for this operation.</param>
-        /// <param name="second">object that supplies the second for this operation.</param>
-        /// <returns>Boolean indicating the result of the check for same general project on vbe project components.</returns>
+        /// <summary>Compares two project objects by canonical IUnknown identity.</summary>
+        /// <param name="first">Previously captured project COM object.</param>
+        /// <param name="second">Current project COM object to compare.</param>
+        /// <returns>False for null inputs; otherwise true only when both IUnknown pointers match.</returns>
         private static bool SameGeneralProject(object first, object second)
         {
             if (first == null || second == null) return false;
@@ -128,14 +128,14 @@ namespace VBAi
             finally { if (b != IntPtr.Zero) Marshal.Release(b); Marshal.Release(a); }
         }
 
-        /// <summary>Clears general metadata for vbe project components.</summary>
-        /// <param name="result">result that supplies the result for this operation.</param>
+        /// <summary>Removes all native General values and versions from a result that cannot be safely published.</summary>
+        /// <param name="result">Operation result to mark unavailable and clear of sensitive/stale metadata.</param>
         private static void ClearGeneralMetadata(VbeProjectGeneralOperation.Result result)
         { result.Available = false; result.Name = result.Description = result.HelpFile = result.HelpContextText = result.ConditionalCompilation = result.OptionsVersion = null; }
 
-        /// <summary>Requires general int32 for vbe project components.</summary>
-        /// <param name="value">object that supplies the value for this operation.</param>
-        /// <returns>int produced by the operation for require general int32 on vbe project components.</returns>
+        /// <summary>Converts supported numeric values without truncation or culture-dependent parsing.</summary>
+        /// <param name="value">Nonnegative integral Int32 value or invariant integer string; booleans, enums, chars, fractions, and overflow are rejected.</param>
+        /// <returns>Exact HelpContextID value in the range 0 through Int32.MaxValue.</returns>
         internal static int RequireGeneralInt32(object value)
         {
             if (value == null || value is bool || value is char || value.GetType().IsEnum)
@@ -168,9 +168,9 @@ namespace VBAi
             return (int)number;
         }
 
-        /// <summary>Requires general help file for vbe project components.</summary>
-        /// <param name="value">object that supplies the value for this operation.</param>
-        /// <returns>Text produced by the operation for require general help file on vbe project components.</returns>
+        /// <summary>Requires an existing canonical absolute CHM path and returns it without text conversion.</summary>
+        /// <param name="value">String path with rooted spelling, no NUL, and a .chm extension.</param>
+        /// <returns>The unchanged path when it is already canonical and names an existing file.</returns>
         internal static string RequireGeneralHelpFile(object value)
         {
             if (!(value is string path) || string.IsNullOrWhiteSpace(path) || path.IndexOf('\0') >= 0 || !Path.IsPathRooted(path) ||

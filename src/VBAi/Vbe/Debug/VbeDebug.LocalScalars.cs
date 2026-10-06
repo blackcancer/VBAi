@@ -6,25 +6,25 @@ using System.Threading.Tasks;
 namespace VBAi
 {
 
-    /// <summary>Owns the vbe debug state and operations.</summary>
+    /// <summary>Reads a bounded page of explicitly declared scalar identifiers from one verified paused procedure.</summary>
     internal sealed partial class VbeDebug
     {
 
-        /// <summary>Maintains the local context reader state for vbe debug.</summary>
+        /// <summary>Reads the native Locals context used to verify the paused procedure.</summary>
         internal Func<string> LocalContextReader = VbeDebugWindows.ReadLocalsContext;
 
-        /// <summary>Maintains the ensure scalar dialog absent state for vbe debug.</summary>
+        /// <summary>Rejects an existing Quick Watch dialog before opening another scalar inspection.</summary>
         internal Action EnsureScalarDialogAbsent = VbeDebugWindows.EnsureNoQuickWatchDialog;
 
-        /// <summary>Maintains the read scalar dialog state for vbe debug.</summary>
+        /// <summary>Reads the result of a native Quick Watch dialog for the requested scalar expression.</summary>
         internal Func<Request, object> ReadScalarDialog = VbeDebugWindows.ReadScalarQuickWatch;
 
-        /// <summary>Maintains the local scalar evaluator state for vbe debug.</summary>
+        /// <summary>Optional asynchronous evaluator override used by focused fault tests.</summary>
         internal Func<Request, Task<object>> LocalScalarEvaluator;
 
         /// <summary>Explicit, bounded inspection of declared scalar identifiers in one verified paused context.</summary>
-        /// <param name="request">request that supplies the request for this operation.</param>
-        /// <returns>task&lt;object&gt; produced by the operation for inspect local scalars async on vbe debug.</returns>
+        /// <param name="request">Paused-mode project/module/procedure identity, module hash, and candidate-page offset/limit.</param>
+        /// <returns>Task reporting declared scalar candidates and sequential native reads; it is not an atomic Locals inventory.</returns>
         internal Task<object> InspectLocalScalarsAsync(Request request)
         {
             VbeInspectionTrace.Current?.Record(VbeInspectionTrace.Phase.CoreEntered);
@@ -32,8 +32,8 @@ namespace VBAi
         }
 
         /// <summary>Inspects local scalars core async for vbe debug.</summary>
-        /// <param name="request">request that supplies the request for this operation.</param>
-        /// <returns>task&lt;object&gt; produced by the operation for inspect local scalars core async on vbe debug.</returns>
+        /// <param name="request">Validated pause context and bounded page request for local scalar candidates.</param>
+        /// <returns>One sequential result row per candidate until completion or a context/inspection error.</returns>
         private async Task<object> InspectLocalScalarsCoreAsync(Request request)
         {
             if (request == null || string.IsNullOrWhiteSpace(request.Project) || string.IsNullOrWhiteSpace(request.Module) ||
@@ -152,11 +152,11 @@ namespace VBAi
             }
         }
 
-        /// <summary>Handles evaluate local scalar async for vbe debug.</summary>
-        /// <param name="request">request that supplies the request for this operation.</param>
-        /// <param name="validate">action that supplies the validate for this operation.</param>
-        /// <param name="projectName">Text that supplies the project name value. Use the format required by the calling operation.</param>
-        /// <returns>task&lt;object&gt; produced by the operation for evaluate local scalar async on vbe debug.</returns>
+        /// <summary>Evaluates one approved scalar using Quick Watch and verifies the dialog's expression and procedure context.</summary>
+        /// <param name="request">Exact identifier expression, source range, project/module, and paused-mode revision.</param>
+        /// <param name="validate">Rechecks active paused project, module hash, Locals procedure, and owner thread around native interaction.</param>
+        /// <param name="projectName">Expected project name included in the native Quick Watch context check.</param>
+        /// <returns>Observed scalar value and dialog evidence; mismatch or context change throws.</returns>
         private async Task<object> EvaluateLocalScalarAsync(Request request, Action validate, string projectName)
         {
             EnsureScalarDialogAbsent();

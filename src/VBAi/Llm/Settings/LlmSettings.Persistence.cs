@@ -11,22 +11,22 @@ using System.Web.Script.Serialization;
 namespace VBAi
 {
 
-    /// <summary>Owns the llm settings state and operations.</summary>
+    /// <summary>Persists LLM settings with optimistic field merging and a cross-process write lock.</summary>
     internal sealed partial class LlmSettings
     {
 
-        /// <summary>Maintains the baseline state for llm settings.</summary>
+        /// <summary>Deep JSON snapshot loaded before local edits, used as the merge base.</summary>
         private IDictionary<string, object> baseline;
 
-        /// <summary>Keeps the baseline path path available to llm settings.</summary>
+        /// <summary>Canonical settings path associated with the remembered baseline.</summary>
         private string baselinePath;
 
-        /// <summary>Maintains the baseline existed state for llm settings.</summary>
+        /// <summary>Whether the settings file existed when the current baseline was captured.</summary>
         private bool baselineExisted;
 
         /// <summary>Reads the legacy approval default without altering encrypted values.</summary>
-        /// <param name="content">Text that supplies the content value. Use the format required by the calling operation.</param>
-        /// <returns>llm settings produced by the operation for decode settings on llm settings.</returns>
+        /// <param name="content">Serialized settings JSON to deserialize.</param>
+        /// <returns>Settings object with the legacy VBE approval default supplied when that field is absent.</returns>
         private static LlmSettings DecodeSettings(string content)
         {
             var serializer = new JavaScriptSerializer();
@@ -36,17 +36,17 @@ namespace VBAi
             return result;
         }
 
-        /// <summary>Handles snapshot for llm settings.</summary>
-        /// <returns>i dictionary&lt;string, object&gt; produced by the operation for snapshot on llm settings.</returns>
+        /// <summary>Creates a detached JSON-shaped copy of the current public settings fields.</summary>
+        /// <returns>Dictionary snapshot used for change detection and merging.</returns>
         private IDictionary<string, object> Snapshot()
         {
             var serializer = new JavaScriptSerializer();
             return (IDictionary<string, object>)serializer.DeserializeObject(serializer.Serialize(this));
         }
 
-        /// <summary>Handles remember baseline for llm settings.</summary>
-        /// <param name="path">Path used for the path being processed.</param>
-        /// <param name="exists">Indicates whether exists is enabled.</param>
+        /// <summary>Replaces the merge base after a successful load or atomic save.</summary>
+        /// <param name="path">Canonical file path associated with this baseline.</param>
+        /// <param name="exists">Whether that file existed at the time the baseline was captured.</param>
         private void RememberBaseline(string path, bool exists)
         {
             baseline = Snapshot();
@@ -98,12 +98,12 @@ namespace VBAi
             }
         }
 
-        /// <summary>Handles merge value for llm settings.</summary>
-        /// <param name="before">object that supplies the before for this operation.</param>
-        /// <param name="desired">object that supplies the desired for this operation.</param>
-        /// <param name="stored">object that supplies the stored for this operation.</param>
-        /// <param name="field">Text that supplies the field value. Use the format required by the calling operation.</param>
-        /// <returns>object produced by the operation for merge value on llm settings.</returns>
+        /// <summary>Merges a field when only one side changed from baseline, recursively merging JSON objects.</summary>
+        /// <param name="before">Value in the baseline loaded before local edits.</param>
+        /// <param name="desired">Current in-memory value to save.</param>
+        /// <param name="stored">Value most recently read from disk under the write lock.</param>
+        /// <param name="field">Setting name included in a conflict error; values are never included.</param>
+        /// <returns>Nonconflicting merged value; throws when both local and external changes disagree.</returns>
         private static object MergeValue(object before, object desired, object stored, string field)
         {
             if (ValuesEqual(before, desired)) return stored;
@@ -132,10 +132,10 @@ namespace VBAi
             throw SettingsConflict(field);
         }
 
-        /// <summary>Handles values equal for llm settings.</summary>
-        /// <param name="left">object that supplies the left for this operation.</param>
-        /// <param name="right">object that supplies the right for this operation.</param>
-        /// <returns>Boolean indicating the result of the check for values equal on llm settings.</returns>
+        /// <summary>Compares scalar values or recursively compares JSON object fields.</summary>
+        /// <param name="left">First scalar or dictionary value.</param>
+        /// <param name="right">Second scalar or dictionary value.</param>
+        /// <returns>True when scalar equality or all nested dictionary keys and values match.</returns>
         private static bool ValuesEqual(object left, object right)
         {
             var a = left as IDictionary<string, object>;
@@ -146,7 +146,7 @@ namespace VBAi
         }
 
         /// <summary>Sets tings conflict for llm settings.</summary>
-        /// <param name="field">Text that supplies the field value. Use the format required by the calling operation.</param>
+        /// <param name="field">Conflicting setting key; its value is deliberately omitted to protect credentials and endpoints.</param>
         /// <returns>io exception produced by the operation for settings conflict on llm settings.</returns>
         private static IOException SettingsConflict(string field)
         {
@@ -154,9 +154,9 @@ namespace VBAi
             return new IOException("Settings changed in another host (" + field + "). Reopen settings and retry.");
         }
 
-        /// <summary>Handles acquire write lock for llm settings.</summary>
-        /// <param name="path">Path used for the path being processed.</param>
-        /// <returns>file stream produced by the operation for acquire write lock on llm settings.</returns>
+        /// <summary>Acquires an exclusive lock file, retrying briefly while another process holds it.</summary>
+        /// <param name="path">Canonical settings path; the lock uses the adjacent <c>.lock</c> filename.</param>
+        /// <returns>Open exclusive FileStream whose disposal releases the cross-process lock.</returns>
         private static FileStream AcquireWriteLock(string path)
         {
             var elapsed = Stopwatch.StartNew();
