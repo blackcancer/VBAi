@@ -1,0 +1,1638 @@
+{
+  "language": "fr-FR",
+  "interfaces": [
+    "AboutWindow",
+    "AppearanceSettingsView",
+    "ChatActivityGroupView",
+    "ChatActivityStepView",
+    "ChatAttachmentView",
+    "ChatChangeCardView",
+    "ChatContextChipView",
+    "ChatContextPreviewView",
+    "ChatDesignerView",
+    "ChatDisclosureView",
+    "ChatFormRecoveryView",
+    "ChatInputView",
+    "ChatLinkView",
+    "ChatMessageView",
+    "ChatQueuedMessageView",
+    "ChatSuggestionsView",
+    "ChatTextContentView",
+    "ChatToolWindow",
+    "ChatWelcomeView",
+    "ChatWindow",
+    "CodeDiffView",
+    "CrashReportWindow",
+    "GitBranchesView",
+    "GitChangesView",
+    "GitCheckpointsView",
+    "GitConflictsView",
+    "GitConnectionView",
+    "GitHistoryView",
+    "GitHubAccountSettingsView",
+    "GitHubPane",
+    "GitHubPullChecksView",
+    "GitHubPullCommentsView",
+    "GitHubPullComposeView",
+    "GitHubPullDetailsView",
+    "GitHubPullFilesView",
+    "GitHubPullRequestsView",
+    "GitHubRepositoriesView",
+    "GitImportView",
+    "GitWindow",
+    "LlmSettingsWindow",
+    "ModernEditorWindow",
+    "ProjectAccessWindow",
+    "ProviderSettingsView",
+    "TestExplorerWindow",
+    "TestSupportReviewDialog",
+    "UpdateProgressWindow",
+    "UpdateWindow",
+    "VbeApprovalDialog"
+  ],
+  "topics": [
+    {
+      "id": "start",
+      "title": "Bienvenue dans VBAi",
+      "intro": "Votre agent IA au cœur de l’éditeur VBA : comprendre, modifier et versionner vos projets dans leur environnement habituel.",
+      "keywords": [
+        "Démarrer",
+        "Aide",
+        "VBAi"
+      ],
+      "interfaces": [],
+      "screenshots": [
+        "ChatWelcomeView"
+      ],
+      "sections": [
+        {
+          "title": "Un premier parcours en cinq minutes",
+          "steps": [
+            "Ouvrez le VBE d’un document de travail. Vérifiez que VBAi est chargé dans le Gestionnaire de compléments.",
+            "Ouvrez les paramètres VBAi depuis le menu Outils. Choisissez un provider et configurez uniquement les champs qui lui correspondent.",
+            "Ouvrez le panneau VBAi depuis Affichage. Sélectionnez le projet, le provider, le modèle et le niveau de raisonnement dans la conversation.",
+            "Ajoutez une référence # à un module ou @ à une procédure, puis demandez une explication de ce code.",
+            "Inspectez le contexte sortant avant l’envoi. Pour une modification, consultez ensuite la comparaison et le résultat de compilation."
+          ]
+        },
+        {
+          "title": "Lire ce guide",
+          "paragraphs": [
+            "Le sommaire accompagne les tâches usuelles. L’index permet de retrouver une commande ; l’onglet Recherche explore le texte de l’aide. La page Interfaces recense toutes les fenêtres, vues et cartes documentées.",
+            "Les exemples utilisent un projet fictif SuiviBudget. Les images sont des captures des contrôles de VBAi peuplés de données pédagogiques : elles ne démontrent pas la compatibilité d’un provider ou d’un hôte."
+          ],
+          "note": "VBAi cible le VBE partagé par les applications hôtes. Certaines opérations dépendent de l’application, de sa version et du type de document. Un résultat d’Excel ne vaut pas automatiquement pour SOLIDWORKS ou un autre hôte."
+        },
+        {
+          "title": "Votre premier exercice",
+          "paragraphs": [
+            "Une macro est un programme VBA intégré à un document ou à un fichier de macro. Le VBE est son éditeur : son explorateur de projets présente les modules, les classes et les formulaires. VBAi ajoute une conversation et des outils à cet éditeur. Une réponse en langage naturel et une modification du projet sont deux résultats différents.",
+            "Pour apprendre, utilisez une copie nommée Budget.xlsm, sans données personnelles. Dans le VBE, sélectionnez son projet et ouvrez un module contenant une courte procédure. Gardez l’explorateur de projets visible : vous pourrez vérifier la cible sans vous fier uniquement au texte de l’agent.",
+            "Commencez en mode Chat avec « Explique cette procédure et indique ce qu’elle reçoit et ce qu’elle renvoie ». Ajoutez la procédure au contexte et inspectez ce contexte avant d’envoyer. Le résultat attendu est une explication dans la conversation, sans changement du code. Passez au mode de modification uniquement lorsque vous souhaitez une action sur le projet."
+          ]
+        }
+      ],
+      "related": [
+        "settings",
+        "conversation",
+        "privacy",
+        "troubleshooting",
+        "interfaces",
+        "forms",
+        "debug"
+      ]
+    },
+    {
+      "id": "settings",
+      "title": "Configurer les providers et les comptes",
+      "intro": "Connectez un provider dans les paramètres, puis choisissez le modèle dans le panneau de conversation.",
+      "keywords": [
+        "Provider",
+        "Codex",
+        "Clé API",
+        "Ollama",
+        "GitHub Copilot",
+        "Paramètres"
+      ],
+      "interfaces": [
+        "LlmSettingsWindow",
+        "ProviderSettingsView",
+        "GitHubAccountSettingsView"
+      ],
+      "screenshots": [
+        "LlmSettingsWindow",
+        "ProviderSettingsView",
+        "GitHubAccountSettingsView"
+      ],
+      "sections": [
+        {
+          "title": "Choisir une connexion",
+          "table": [
+            [
+              "Type de connexion",
+              "Réglage utile"
+            ],
+            [
+              "Codex / ChatGPT",
+              "Authentification du compte ; aucune clé API OpenAI n’est nécessaire pour cette connexion."
+            ],
+            [
+              "OpenAI et providers utilisant une API",
+              "Clé ou jeton, adresse si proposée, et options propres au provider sélectionné."
+            ],
+            [
+              "GitHub Copilot",
+              "Authentification Copilot. Le compte de dépôt GitHub est configuré séparément."
+            ],
+            [
+              "Ollama",
+              "Adresse du serveur ; le service et le modèle doivent être disponibles sur cette machine ou à cette adresse."
+            ],
+            [
+              "Provider personnalisé",
+              "Nom, adresse, authentification et liste manuelle selon le protocole pris en charge."
+            ]
+          ]
+        },
+        {
+          "title": "Enregistrer les valeurs",
+          "steps": [
+            "Sélectionnez le provider. Les champs visibles changent selon ce choix.",
+            "Connectez le compte ou renseignez les champs demandés. Une clé vide conserve la clé existante ; l’option de suppression enlève la clé enregistrée.",
+            "Réglez le niveau d’approbation des modifications VBE et, pour Ollama, les paramètres d’échantillonnage si nécessaires.",
+            "Cliquez sur Enregistrer. Annuler ferme les réglages sans enregistrer les valeurs éditées."
+          ],
+          "note": "Une authentification déclenchée dans cette fenêtre peut prendre effet immédiatement, même si vous annulez ensuite les réglages. Les secrets enregistrés sont protégés pour le compte Windows courant."
+        },
+        {
+          "title": "Compte GitHub des dépôts",
+          "paragraphs": [
+            "L’onglet GitHub gère le compte utilisé pour les dépôts et les pull requests. Les identifiants restent dans Git Credential Manager. Actualisez la liste après une connexion, puis choisissez le compte à conserver.",
+            "Les modèles et le raisonnement ne se règlent pas ici. Leur disponibilité dépend du catalogue et des capacités du provider ; la conversation actualise son catalogue lors d’un changement de provider."
+          ]
+        },
+        {
+          "title": "Comprendre provider, modèle et raisonnement",
+          "paragraphs": [
+            "Le provider est le service auquel la conversation se connecte. Le modèle est le moteur proposé par ce service. Le niveau de raisonnement est une option de certains modèles qui règle leur effort de traitement ; ce n’est ni un droit d’écriture ni une garantie de justesse. Sélectionner Codex n’équivaut pas à sélectionner l’API OpenAI : ces connexions utilisent des modes d’authentification différents.",
+            "Dans cet exemple, choisissez Codex et utilisez son bouton d’authentification si le compte n’est pas connecté. Terminez le parcours proposé, puis revenez aux paramètres pour lire l’état du compte. Enregistrez les réglages. Dans la conversation, ouvrez la sélection de modèle : elle doit afficher le catalogue du provider, et les choix de raisonnement applicables au modèle retenu.",
+            "Si le catalogue est vide, n’entrez pas un nom de modèle au hasard. Actualisez les modèles, puis vérifiez l’état de connexion. Pour un serveur Ollama, vérifiez également son adresse et la présence du modèle sur le serveur. Pour une API, vérifiez la clé et les droits du compte. Une connexion au dépôt GitHub ne connecte pas automatiquement GitHub Copilot."
+          ]
+        }
+      ],
+      "related": [
+        "conversation",
+        "appearance",
+        "git-connect",
+        "troubleshooting"
+      ]
+    },
+    {
+      "id": "appearance",
+      "title": "Apparence et disposition des panneaux",
+      "intro": "Adaptez les surfaces VBAi et retrouvez les panneaux fermés depuis les menus du VBE.",
+      "keywords": [
+        "Thème",
+        "Ancrage",
+        "Affichage",
+        "Couleurs",
+        "Mode sombre"
+      ],
+      "interfaces": [
+        "AppearanceSettingsView"
+      ],
+      "screenshots": [
+        "AppearanceSettingsView"
+      ],
+      "sections": [
+        {
+          "title": "Choisir le thème",
+          "paragraphs": [
+            "Dans les paramètres, choisissez Système, Clair ou Sombre. Système suit Windows ; le contraste élevé conserve les couleurs système de lisibilité.",
+            "L’option VBE natif sombre est expérimentale. Elle agit sur certaines surfaces natives et les couleurs du code après fermeture des paramètres. Les couleurs initiales sont conservées pour la restauration à la désactivation."
+          ],
+          "note": "Le thème VBAi et le thème des fenêtres natives ne couvrent pas exactement les mêmes contrôles. Si les couleurs natives ont été modifiées ailleurs, examinez le message de restauration avant de remplacer une personnalisation."
+        },
+        {
+          "title": "Organiser votre espace",
+          "steps": [
+            "Rouvrez le panneau de conversation dans Affichage si vous l’avez fermé.",
+            "Utilisez les commandes natives du VBE pour déplacer ou ancrer le panneau ; une position à droite garde le code et la conversation visibles.",
+            "Ouvrez Monaco depuis la commande VBAi de l’éditeur. Les préférences d’ancrage des autres fenêtres, notamment l’Explorateur d’objets, restent des choix du VBE."
+          ]
+        },
+        {
+          "title": "Choisir une disposition lisible",
+          "paragraphs": [
+            "Le panneau de conversation peut occuper de la place dans le VBE sans remplacer ses autres fenêtres. L’ancrage signifie qu’un volet est attaché à un bord de l’éditeur. Une fenêtre flottante est indépendante de ce bord. Le VBE conserve certains choix de disposition ; VBAi ne propose pas un réglage universel du côté d’ancrage pour tous les hôtes.",
+            "Pour travailler sur Budget.xlsm, gardez le projet à gauche, le code au centre et la conversation à droite si cette disposition vous convient. Déplacez le volet avec sa barre de titre. Réduisez ensuite sa largeur et vérifiez que les commandes restent accessibles. Si vous fermez le panneau, la commande VBAi du menu Affichage permet de le retrouver.",
+            "Appliquez un thème, puis observez séparément la conversation, Monaco et les couleurs du code natif. Ces surfaces utilisent des mécanismes différents. Si un message indique que les couleurs natives ont changé après l’application du thème, relevez le message exact et les réglages utilisés ; évitez d’alterner plusieurs réglages simultanément, car cela rend le diagnostic difficile."
+          ]
+        }
+      ],
+      "related": [
+        "conversation",
+        "editor",
+        "troubleshooting"
+      ]
+    },
+    {
+      "id": "conversation",
+      "title": "Converser avec l’agent",
+      "intro": "Cadrez une tâche, sélectionnez ses capacités et suivez son résultat dans le panneau VBAi.",
+      "keywords": [
+        "Conversation",
+        "Modèle",
+        "Raisonnement",
+        "Mode",
+        "Envoyer",
+        "Nouvelle conversation"
+      ],
+      "interfaces": [
+        "ChatWindow",
+        "ChatToolWindow",
+        "ChatWelcomeView",
+        "ChatInputView",
+        "ChatSuggestionsView"
+      ],
+      "screenshots": [
+        "ChatWindow",
+        "ChatWelcomeView",
+        "ChatInputView",
+        "ChatSuggestionsView"
+      ],
+      "sections": [
+        {
+          "title": "Préparer une demande",
+          "steps": [
+            "Choisissez le projet cible. Le projet lie les opérations de l’agent à une identité réelle du VBE.",
+            "Sélectionnez le provider, puis un modèle de sa liste actualisée. Réglez le raisonnement lorsque le modèle le permet.",
+            "Choisissez le mode de travail et le niveau d’approbation adapté à la tâche.",
+            "Décrivez le résultat attendu et ajoutez les références utiles. Vérifiez le contexte sortant, puis envoyez le message."
+          ],
+          "note": "Un catalogue indisponible ou vide ne prouve pas qu’un modèle est prêt à fonctionner. Consultez l’état de connexion et le message d’erreur plutôt que de réutiliser une sélection périmée."
+        },
+        {
+          "title": "Commandes de travail",
+          "items": [
+            "Nouvelle conversation ouvre un contexte distinct pour le projet sélectionné.",
+            "Attacher la sélection ajoute le code actuellement sélectionné au contexte de la demande.",
+            "Vérifier VBA compile le projet ; Compiler après modifications déclenche cette vérification après une édition lorsque le parcours le permet.",
+            "La barre d’état décrit la disponibilité ou l’opération en cours. Dernier message revient au bas d’un historique défilé.",
+            "Le panneau Modifications regroupe les changements de code et leurs actions de lecture ou d’annulation."
+          ]
+        },
+        {
+          "title": "Écrire une demande utile",
+          "paragraphs": [
+            "Exemple : « Dans #ModuleCalcul, corrige CalculerTotal pour inclure la dernière ligne. Conserve la signature de la fonction, explique le changement et compile le projet. »",
+            "Les valeurs par défaut du provider, du modèle et du raisonnement peuvent être conservées ; une conversation possède aussi son propre choix. Reprendre une conversation ne signifie pas que tous les modèles du provider sont encore disponibles."
+          ]
+        },
+        {
+          "title": "De la demande à un résultat vérifiable",
+          "paragraphs": [
+            "Une bonne demande identifie la cible, le résultat attendu et ce qu’il faut conserver. Par exemple : « Dans ModuleCalcul.CalculerTotal, inclure la dernière ligne. Conserver les paramètres et le type de retour. Expliquer la modification, puis compiler. » L’agent dispose alors d’une action précise et d’un critère de vérification.",
+            "Choisissez d’abord le document dans la conversation. Sélectionnez le mode : Chat sert à discuter, Plan à préparer le travail, et le mode d’action permet les changements selon la politique d’approbation. Le provider, le modèle et le raisonnement se choisissent dans ce panneau. Ils sont conservés comme choix par défaut et comme choix de session ; reprendre une ancienne session peut donc restaurer un modèle différent de votre dernière conversation.",
+            "Après l’envoi, lisez les activités et la réponse finale. Si du code a été modifié, ouvrez sa carte de comparaison et le module correspondant. Vérifiez la borne de boucle, compilez, puis testez avec des données jetables. « J’ai corrigé » dans un message ne remplace pas cette observation. Enregistrez le document pour conserver le changement sur disque."
+          ]
+        }
+      ],
+      "related": [
+        "context",
+        "activity",
+        "history",
+        "changes",
+        "privacy"
+      ]
+    },
+    {
+      "id": "context",
+      "title": "Références, pièces jointes et contexte sortant",
+      "intro": "Donnez à l’agent les éléments précis dont il a besoin et contrôlez ce qui part vers le provider.",
+      "keywords": [
+        "Contexte",
+        "Référence",
+        "#",
+        "@",
+        "Pièce jointe",
+        "Fichier"
+      ],
+      "interfaces": [
+        "ChatContextChipView",
+        "ChatContextPreviewView",
+        "ChatAttachmentView",
+        "ChatLinkView"
+      ],
+      "screenshots": [
+        "ChatContextChipView",
+        "ChatContextPreviewView",
+        "ChatAttachmentView",
+        "ChatLinkView"
+      ],
+      "sections": [
+        {
+          "title": "Ajouter du code ciblé",
+          "items": [
+            "# propose les modules du périmètre courant ; @ propose les procédures ou cibles reconnues.",
+            "Une pastille ouvre sa cible lorsque la navigation est disponible. La croix retire la référence du message en préparation.",
+            "Les suggestions filtrées servent à choisir une cible réelle. Une liste vide peut refléter le projet, le texte saisi ou un inventaire non disponible.",
+            "Une pièce jointe expose son contenu et, selon son type, une commande d’ouverture dans le VBE. Un lien externe ouvre sa destination via le mécanisme de liens sûrs."
+          ]
+        },
+        {
+          "title": "Inspecter avant l’envoi",
+          "steps": [
+            "Développez Contexte sortant.",
+            "Lisez les éléments retenus : projet, références, sélection, notes ou pièces jointes.",
+            "Retirez les éléments inutiles et actualisez le contexte si le code a changé.",
+            "Envoyez après cette vérification."
+          ],
+          "note": "Le contexte fourni à un provider connecté quitte votre application. Retirer un élément après l’envoi ne retire pas les données déjà transmises. Les chemins explicitement fournis peuvent être utilisés par les outils autorisés ; le contexte VBE ne les interdit pas par principe."
+        },
+        {
+          "title": "Construire un contexte utile sans tout transmettre",
+          "paragraphs": [
+            "Le contexte est l’ensemble des informations envoyées avec votre demande : références de code, sélection, notes et pièces jointes selon le parcours utilisé. Il aide le modèle à comprendre votre projet, mais peut contenir du texte sensible. Une référence comme ModuleCalcul.CalculerTotal désigne une cible ; elle n’autorise pas à elle seule toutes les modifications du projet.",
+            "Dans Budget.xlsm, ajoutez d’abord la procédure de calcul et les déclarations qu’elle utilise. Les commandes de référence et les préfixes # ou @ ouvrent les suggestions. Choisissez la cible exacte plutôt qu’un nom similaire dans un autre projet. Ouvrez la vue du contexte sortant, lisez le contenu, puis actualisez-le si le code a changé depuis son ajout.",
+            "Si le problème dépend d’un fichier, fournissez son chemin ou une pièce jointe par le parcours disponible. Expliquez son rôle et la partie pertinente. Ne supposez pas qu’une référence de module inclut aussi le contenu de tous les fichiers externes. Retirer un élément avant l’envoi limite le prochain contexte ; cela ne retire pas une information déjà transmise au provider."
+          ]
+        }
+      ],
+      "related": [
+        "conversation",
+        "privacy",
+        "history"
+      ]
+    },
+    {
+      "id": "activity",
+      "title": "Lire les réponses et les activités de l’agent",
+      "intro": "Distinguez le message final, le résumé de réflexion et les actions réellement exposées par le provider.",
+      "keywords": [
+        "Activités",
+        "Réflexion",
+        "Résumé",
+        "Outil",
+        "Réponse",
+        "Copier"
+      ],
+      "interfaces": [
+        "ChatActivityGroupView",
+        "ChatActivityStepView",
+        "ChatDisclosureView",
+        "ChatMessageView",
+        "ChatTextContentView",
+        "ChatDesignerView"
+      ],
+      "screenshots": [
+        "ChatActivityGroupView",
+        "ChatActivityStepView",
+        "ChatDisclosureView",
+        "ChatMessageView",
+        "ChatTextContentView"
+      ],
+      "sections": [
+        {
+          "title": "Développer les étapes",
+          "paragraphs": [
+            "Les activités entre deux messages sont regroupées dans une section dépliable. Une étape montre son type, son état et les détails que le provider rend disponibles.",
+            "Les résumés de raisonnement et les traces d’outils ne sont pas une transcription de pensées privées. Leur présence, leur précision et leur disponibilité varient selon le provider ; VBAi n’invente pas une étape absente."
+          ],
+          "table": [
+            [
+              "Élément",
+              "Lecture"
+            ],
+            [
+              "En cours",
+              "Une action ou une réponse est encore active."
+            ],
+            [
+              "Terminé",
+              "L’étape a signalé sa fin ; lisez son résultat."
+            ],
+            [
+              "Erreur",
+              "L’étape a échoué ou rapporté une limitation ; un changement natif peut nécessiter une vérification."
+            ],
+            [
+              "Détails repliés",
+              "Développez la section pour lire le résumé ou les paramètres affichés."
+            ]
+          ]
+        },
+        {
+          "title": "Réutiliser une réponse",
+          "items": [
+            "Copier copie le contenu du message dans le presse-papiers.",
+            "Créer une branche de conversation repart depuis le message retenu avec un contexte distinct.",
+            "Les références présentes dans le texte permettent la navigation lorsqu’une cible est encore valide.",
+            "Préparer une correction crée une demande à partir d’un problème présenté ; elle ne prouve pas qu’une correction a été appliquée.",
+            "Les cartes de changement et leurs commandes d’annulation ont leurs propres contrôles de révision."
+          ]
+        },
+        {
+          "title": "Lire une étape sans la confondre avec une preuve",
+          "paragraphs": [
+            "Les activités regroupent les opérations entre les messages : lecture, recherche, préparation ou appel d’un outil. Développez un groupe pour lire ses étapes et ses détails. Le résumé de réflexion présente uniquement les informations effectivement fournies par le provider ; il n’expose pas une réflexion interne complète et n’est pas disponible de la même manière pour tous les providers.",
+            "Pour la correction du total, un parcours compréhensible peut montrer la lecture de la procédure, la comparaison de sa borne, puis une modification et une compilation. Chaque étape doit être interprétée selon son état. Une action commencée peut échouer ou rester incertaine ; le fait qu’une ligne apparaisse dans le groupe ne prouve pas son succès.",
+            "Consultez la réponse et les résultats d’outils pour savoir ce qui a réellement été appliqué. Une comparaison du code est utile pour contrôler la modification ; le résultat de compilation est utile pour vérifier la syntaxe ; un test sur données connues est utile pour vérifier le calcul. Ces vérifications répondent à trois questions différentes."
+          ]
+        }
+      ],
+      "related": [
+        "changes",
+        "queue",
+        "history",
+        "troubleshooting"
+      ]
+    },
+    {
+      "id": "queue",
+      "title": "Gérer les messages en attente",
+      "intro": "Préparez une demande pendant le traitement d’une autre et gardez la maîtrise de son envoi.",
+      "keywords": [
+        "File d’attente",
+        "Message en attente",
+        "Envoyer maintenant"
+      ],
+      "interfaces": [
+        "ChatQueuedMessageView"
+      ],
+      "screenshots": [
+        "ChatQueuedMessageView"
+      ],
+      "sections": [
+        {
+          "title": "Les trois actions",
+          "items": [
+            "Envoyer maintenant demande l’envoi de ce message selon l’état du traitement courant.",
+            "Modifier remet le contenu en édition afin de préciser la demande avant transmission.",
+            "Supprimer retire la demande de la file ; cette action ne supprime pas un message déjà transmis."
+          ]
+        },
+        {
+          "title": "Avant de reprendre",
+          "paragraphs": [
+            "Relisez les références et le projet cible si le code ou le périmètre a changé pendant l’attente. Le message préparé doit correspondre à l’état que vous souhaitez réellement traiter."
+          ]
+        },
+        {
+          "title": "Préparer une seconde demande pendant une réponse",
+          "paragraphs": [
+            "La file d’attente conserve les messages préparés pendant que l’agent travaille. Elle évite de perdre une instruction sans lancer immédiatement plusieurs actions concurrentes. Par exemple, pendant la correction du total, préparez « Ensuite, explique le cas où la feuille ne contient aucune donnée ». Vérifiez qu’il s’agit d’une étape suivante et non d’une correction urgente de la cible actuelle.",
+            "Modifier remet le message dans la zone de saisie pour le corriger. Supprimer enlève ce message de la file. Envoyer maintenant demande l’arrêt de la réponse courante puis traite ce message en priorité selon le parcours. Un arrêt ne remet pas automatiquement le projet dans l’état initial : des changements peuvent avoir été appliqués avant la demande d’arrêt.",
+            "Si vous avez envoyé une instruction incorrecte, inspectez les activités et les cartes de changement avant de continuer. Corrigez la cible et utilisez l’annulation adaptée si nécessaire. Videz les messages devenus inutiles : une demande préparée pour un ancien état du code peut ne plus être pertinente après une correction."
+          ]
+        }
+      ],
+      "related": [
+        "conversation",
+        "context",
+        "activity"
+      ]
+    },
+    {
+      "id": "history",
+      "title": "Historique et mémoire du document",
+      "intro": "Retrouvez les conversations d’un document, organisez-les et choisissez les notes transmises à l’agent.",
+      "keywords": [
+        "Historique",
+        "Archiver",
+        "Supprimer une conversation",
+        "Mémoire",
+        "Document non enregistré"
+      ],
+      "interfaces": [],
+      "screenshots": [
+        "ChatWindowHistory"
+      ],
+      "sections": [
+        {
+          "title": "Organiser les conversations",
+          "items": [
+            "Le champ de recherche filtre les conversations du document.",
+            "Renommer donne un titre reconnaissable ; Épingler maintient une conversation dans les favoris.",
+            "Archiver masque une conversation de la liste courante. Afficher les conversations archivées permet de la retrouver et de la restaurer.",
+            "Supprimer enlève la conversation sélectionnée de l’historique géré par VBAi. Cette action n’est pas l’archivage.",
+            "Exporter Markdown produit une copie lisible de la conversation ; son contenu peut inclure du code ou des informations que vous avez fournies."
+          ]
+        },
+        {
+          "title": "Une macro pas encore enregistrée",
+          "paragraphs": [
+            "Une conversation liée à un projet neuf non enregistré reste en mémoire pour ce projet vivant. Le premier enregistrement permet sa promotion dans l’historique du document.",
+            "Abandonner le projet avant ce premier enregistrement ne doit pas créer un historique durable sans document. Une conversation temporaire n’est pas une sauvegarde de votre macro."
+          ],
+          "note": "Enregistrez le document avant de quitter l’hôte pour conserver à la fois votre code et l’historique associé."
+        },
+        {
+          "title": "Notes locales",
+          "paragraphs": [
+            "La mémoire du document contient vos notes locales. Enregistrer localement conserve les notes ; Attacher ces notes choisit leur présence dans le prochain contexte envoyé.",
+            "Ne confondez pas le stockage local des notes avec leur transmission. Leur contenu reste local jusqu’à son inclusion dans une demande au provider."
+          ]
+        },
+        {
+          "title": "Reprendre, classer et supprimer une conversation",
+          "paragraphs": [
+            "L’historique associe les conversations au document sélectionné. Il contient les échanges et le brouillon de la session ; il ne remplace pas l’historique Git du code. Reprendre « Fiabiliser le calcul du total » permet de retrouver la discussion, mais le projet réel peut avoir été modifié depuis. Vérifiez donc le document et le code avant de demander une nouvelle action.",
+            "Renommez la conversation avec un objectif reconnaissable. Épinglez une session encore utile pour la retrouver rapidement. Archivez une session terminée pour alléger la liste, puis activez l’affichage des archives pour la retrouver. Supprimer efface définitivement la conversation locale sélectionnée ; ce choix est différent de masquer ou d’archiver. Exporter permet de conserver une copie Markdown des échanges.",
+            "Un document neuf non enregistré utilise une portée provisoire : son historique reste gérable dans le panneau, même si vous abandonnez le document. Lors d’une sauvegarde, la portée peut évoluer vers l’identité du fichier. Les notes du document sont un aide-mémoire local : enregistrer ces notes ne les transmet pas au provider. Utilisez leur ajout au contexte si vous souhaitez les joindre à un message."
+          ]
+        }
+      ],
+      "related": [
+        "conversation",
+        "context",
+        "privacy"
+      ]
+    },
+    {
+      "id": "privacy",
+      "title": "Accès aux projets et approbations",
+      "intro": "Définissez le périmètre de lecture de l’agent et le niveau d’approbation des modifications.",
+      "keywords": [
+        "Confidentialité",
+        "Projets",
+        "Autorisation",
+        "Approbation",
+        "Presse-papiers"
+      ],
+      "interfaces": [
+        "ProjectAccessWindow",
+        "VbeApprovalDialog"
+      ],
+      "screenshots": [
+        "ProjectAccessWindow",
+        "VbeApprovalDialog"
+      ],
+      "sections": [
+        {
+          "title": "Projet lié et projets supplémentaires",
+          "paragraphs": [
+            "Le projet lié à la conversation est toujours lisible. La fenêtre d’accès permet d’accorder la lecture de projets supplémentaires ; cette lecture n’autorise pas leur modification.",
+            "Modifier les accès démarre une nouvelle conversation. Les données déjà envoyées ne peuvent pas être rappelées."
+          ],
+          "steps": [
+            "Ouvrez les réglages d’accès de la conversation.",
+            "Cochez uniquement les projets nécessaires à la tâche.",
+            "Évaluez séparément l’accès au contexte VBE partagé et au presse-papiers.",
+            "Appliquez le périmètre à une nouvelle conversation."
+          ]
+        },
+        {
+          "title": "Contexte partagé",
+          "paragraphs": [
+            "Les outils partagés peuvent lire des fenêtres de débogage, des inventaires natifs, le presse-papiers ou des informations appartenant à d’autres projets ouverts. Cette option élargit la lecture ; elle ne donne pas un droit d’écriture sur les autres projets."
+          ],
+          "note": "Les identités, révisions et états du projet restent vérifiés avant une action. Le niveau Automatique ne contourne pas ces vérifications ni les politiques de sécurité de l’hôte."
+        },
+        {
+          "title": "Répondre à une approbation",
+          "paragraphs": [
+            "La fenêtre d’approbation décrit l’action proposée. Autoriser accepte cette action dans son contexte ; Refuser la bloque. Vérifiez le projet et le contenu décrits avant de choisir.",
+            "Une erreur après une mutation peut laisser un résultat incertain. Inspectez le projet et les preuves de sauvegarde plutôt que de demander automatiquement la même action une seconde fois."
+          ]
+        },
+        {
+          "title": "Séparer la lecture et le droit de modifier",
+          "paragraphs": [
+            "La conversation est liée à un projet. Vous pouvez autoriser la lecture d’autres projets pour comprendre une bibliothèque ou un appel, sans leur donner le droit d’écriture de la cible. Dans Budget.xlsm, autoriser BibliothequeUtilitaire à la lecture peut aider à expliquer une fonction ; cela ne transforme pas cette bibliothèque en projet modifiable.",
+            "La politique d’approbation règle les demandes avant les changements VBA. Choisissez un niveau adapté à votre travail, puis vérifiez le projet indiqué dans un éventuel dialogue. Le mode de conversation et les contrôles du projet restent applicables : un niveau permissif ne déverrouille pas un projet protégé et ne transforme pas un état d’exécution en état d’édition.",
+            "Le contexte partagé concerne des informations natives qui peuvent ne pas appartenir exclusivement au projet lié, par exemple certaines fenêtres de débogage ou le presse-papiers. Lisez l’explication avant de l’autoriser. Si une action est refusée, distinguez l’approbation, la protection, le mode et une révision devenue obsolète. N’augmentez pas toutes les permissions pour résoudre un problème de cible."
+          ]
+        }
+      ],
+      "related": [
+        "context",
+        "changes",
+        "settings"
+      ]
+    },
+    {
+      "id": "changes",
+      "title": "Comparaisons, annulation et récupération de formulaires",
+      "intro": "Contrôlez les changements de code et récupérez les contrôles de formulaire lorsque la carte de récupération le propose.",
+      "keywords": [
+        "Diff",
+        "Annuler",
+        "Récupérer",
+        "Formulaire",
+        "Comparer"
+      ],
+      "interfaces": [
+        "CodeDiffView",
+        "ChatChangeCardView",
+        "ChatFormRecoveryView"
+      ],
+      "screenshots": [
+        "CodeDiffView",
+        "ChatChangeCardView",
+        "ChatFormRecoveryView"
+      ],
+      "sections": [
+        {
+          "title": "Lire une comparaison",
+          "items": [
+            "L’affichage côte à côte oppose Avant et Après ; l’affichage Unifié rassemble suppressions et ajouts.",
+            "Replier le contexte concentre la lecture sur les zones changées.",
+            "Les flèches passent au changement précédent ou suivant ; le champ de recherche retrouve un texte dans la comparaison.",
+            "Ouvrir le module mène à la cible du changement quand elle est encore disponible."
+          ]
+        },
+        {
+          "title": "Choisir la portée de l’annulation",
+          "paragraphs": [
+            "La carte permet, selon le changement, d’annuler le changement entier, un bloc ou le tour de l’agent. Les révisions sont vérifiées pour éviter d’écraser une édition survenue depuis.",
+            "Une commande refusée ou une cible disparue ne signifie pas que le code a été restauré. Consultez le résultat, puis le contenu courant du module."
+          ],
+          "note": "L’annulation du code n’est pas une restauration universelle du document, des fichiers ou des opérations externes exécutées pendant la conversation."
+        },
+        {
+          "title": "Contrôles coupés d’un formulaire",
+          "paragraphs": [
+            "La carte de récupération affiche le nombre de contrôles concernés et propose leur restauration lorsque ce parcours dispose encore de l’état nécessaire. Les opérations natives du concepteur sont soumises à l’état du projet et du presse-papiers.",
+            "Vérifiez la conception et les propriétés après récupération ; ne répétez pas une opération native si son résultat reste incertain."
+          ]
+        },
+        {
+          "title": "Vérifier puis annuler la correction du total",
+          "paragraphs": [
+            "Une comparaison affiche une version avant et une version après. Dans notre exemple, repérez la ligne « For i = 1 To derniereLigne - 1 » et son remplacement par « For i = 1 To derniereLigne ». Le reste de la procédure doit conserver ses paramètres et son type de retour. Ouvrir le module permet de contrôler la version réellement présente dans le VBE.",
+            "Annuler le changement revient sur cette modification, annuler un bloc vise une partie de la comparaison et annuler le tour vise les changements associés au tour de l’agent. Choisissez la portée voulue. Ces opérations vérifient que le projet n’a pas été modifié de manière incompatible entre-temps ; un refus protège aussi les modifications que vous auriez faites manuellement.",
+            "Pour un formulaire, une restauration peut impliquer le code, la définition et ses ressources. Lisez le résultat complet : une récupération partielle n’est pas une réussite complète. Conservez la sauvegarde indiquée et inspectez le concepteur. Ne répétez pas automatiquement une opération native incertaine ; il faut d’abord déterminer l’état réellement obtenu."
+          ]
+        }
+      ],
+      "related": [
+        "activity",
+        "editor",
+        "privacy"
+      ]
+    },
+    {
+      "id": "editor",
+      "title": "Éditer le code avec Monaco",
+      "intro": "Travaillez dans l’éditeur moderne tout en conservant la synchronisation avec le module VBA réel.",
+      "keywords": [
+        "Monaco",
+        "Éditeur",
+        "Complétion",
+        "Brouillon",
+        "Conflit de code"
+      ],
+      "interfaces": [
+        "ModernEditorWindow"
+      ],
+      "screenshots": [
+        "ModernEditorWindow"
+      ],
+      "sections": [
+        {
+          "title": "Navigation et écriture",
+          "paragraphs": [
+            "Les onglets représentent les modules ouverts. La complétion et les informations au survol utilisent l’analyse VBA et les références accessibles au projet. La disponibilité dépend du symbole et de la bibliothèque.",
+            "Les aides de bloc et d’indentation accompagnent la saisie. Vérifiez le code produit et compilez le projet : une proposition de complétion n’est pas une validation VBA."
+          ],
+          "steps": [
+            "Ouvrez un module depuis le VBE ou une référence du chat.",
+            "Modifiez le code dans l’onglet Monaco correspondant.",
+            "Lisez la barre d’état de synchronisation, puis compilez le projet."
+          ]
+        },
+        {
+          "title": "Résoudre une divergence",
+          "table": [
+            [
+              "Commande",
+              "Effet"
+            ],
+            [
+              "Comparer avec VBA",
+              "Examine la version éditée et la version native avant de décider."
+            ],
+            [
+              "Utiliser la version éditée",
+              "Demande l’application de la version Monaco selon les contrôles de révision et de mode."
+            ],
+            [
+              "Recharger la version VBA",
+              "Abandonne l’édition locale concernée au profit du contenu natif courant."
+            ],
+            [
+              "Restaurer un brouillon",
+              "Propose un contenu local récupéré ; il reste à comparer et à appliquer au projet."
+            ]
+          ],
+          "note": "Un brouillon local et le code enregistré du document sont deux états distincts. Un conflit ou un échec de synchronisation doit être résolu avant de considérer la modification comme présente dans la macro."
+        },
+        {
+          "title": "Comprendre brouillon, code natif et comparaison",
+          "paragraphs": [
+            "Monaco présente le texte du module dans un éditeur moderne. Le projet VBA natif reste la cible exécutée par l’application. Les opérations de synchronisation doivent donc distinguer le brouillon visible, la version native et une éventuelle modification concurrente dans le VBE.",
+            "Ouvrez ModuleCalcul, modifiez une ligne, puis observez l’état de synchronisation. Si la version native a changé, comparez avant de choisir laquelle garder. Recharger la version VBA et restaurer un brouillon correspondent à deux sources différentes. Lisez les libellés et le message d’état : choisir une source peut remplacer le texte actuellement présenté.",
+            "La complétion et les informations au survol facilitent la lecture des fonctions et bibliothèques disponibles. Elles ne remplacent pas la compilation du projet dans le VBE. Après une correction, ouvrez la procédure native et vérifiez la ligne concernée, compilez, puis enregistrez le document. Si un conflit persiste, conservez le brouillon avant de changer d’onglet ou de fermer l’éditeur."
+          ]
+        }
+      ],
+      "related": [
+        "changes",
+        "conversation",
+        "troubleshooting",
+        "forms",
+        "debug"
+      ]
+    },
+    {
+      "id": "forms",
+      "title": "Créer et modifier un formulaire VBA",
+      "intro": "Un UserForm est une fenêtre de votre macro. Son concepteur natif reste dans le VBE ; VBAi peut aider à préparer et modifier sa structure selon les capacités du contrôle et de l’hôte.",
+      "keywords": [
+        "UserForm",
+        "Label",
+        "Propriétés",
+        "Concepteur",
+        "Police",
+        "Position"
+      ],
+      "interfaces": [],
+      "screenshots": [],
+      "sections": [
+        {
+          "title": "Distinguer le nom, le texte et la disposition",
+          "paragraphs": [
+            "Le nom identifie un élément dans le code. Le texte affiché est une propriété de présentation, souvent Caption pour un Label ou un bouton. La position et les dimensions définissent son placement dans le formulaire. Changer Caption ne change pas son nom ; renommer un contrôle peut aussi concerner le code d’événement qui lui est associé.",
+            "Exemple : FrmBudget contient un Label nommé lblTotal, affichant « Total du budget ». Donnez ces deux valeurs explicitement dans votre demande. Précisez aussi le placement, les dimensions et la police, plutôt que demander simplement « un joli label ». Les coordonnées du concepteur VBA sont des valeurs de mise en page du formulaire, pas des coordonnées de souris utilisées pour piloter le VBE."
+          ]
+        },
+        {
+          "title": "Un exercice progressif",
+          "steps": [
+            "Sur une copie jetable, choisissez le projet lié et le mode qui autorise les modifications.",
+            "Demandez de créer FrmBudget, puis d’y ajouter un Label standard nommé lblTotal, avec Caption égal à « Total du budget ». Demandez une taille et une position explicites, adaptées aux dimensions du formulaire.",
+            "Demandez de lire les propriétés disponibles, puis de définir une police, par exemple Segoe UI 11 points, et de vous restituer les valeurs relues.",
+            "Ouvrez le concepteur natif du formulaire. Vérifiez l’existence du contrôle, son nom, son texte, sa police et l’absence de chevauchement.",
+            "Si vous souhaitez un comportement au clic, demandez séparément la procédure d’événement et son contenu. Compilez ensuite le projet et vérifiez le comportement sur votre copie.",
+            "Enregistrez la macro dans l’application pour conserver le formulaire sur disque."
+          ]
+        },
+        {
+          "title": "Conteneurs, propriétés et limites",
+          "paragraphs": [
+            "Un Frame regroupe des contrôles ; un MultiPage contient des pages qui possèdent leurs propres enfants ; un TabStrip n’est pas équivalent à un MultiPage. Identifiez le conteneur exact avant un déplacement ou une suppression. Supprimer une page peut supprimer les contrôles qu’elle contient.",
+            "La découverte d’une propriété ne garantit pas son écriture. Certaines sont en lecture seule, dépendent de l’état du contrôle ou utilisent des objets comme une police ou une image. Les contrôles ActiveX supplémentaires peuvent varier selon la machine. En cas de refus, lisez la propriété et l’erreur exactes au lieu de remplacer silencieusement le contrôle par un autre.",
+            "Une exportation de formulaire peut contenir un fichier FRM et des ressources FRX. Conservez ces fichiers ensemble pour Git et la récupération. Si une modification ou une restauration native reste incertaine, inspectez le concepteur et préservez la sauvegarde : une comparaison de texte seule ne prouve pas que tous les éléments du formulaire ont été restaurés."
+          ]
+        }
+      ],
+      "related": [
+        "conversation",
+        "changes",
+        "git-conversion",
+        "privacy"
+      ]
+    },
+    {
+      "id": "debug",
+      "title": "Compiler, exécuter et déboguer la macro",
+      "intro": "Compiler vérifie le projet ; exécuter lance son code ; déboguer observe une exécution. Préparez ces actions sur des données jetables et contrôlez toujours la cible.",
+      "keywords": [
+        "Compilation",
+        "Exécution",
+        "Débogage",
+        "Breakpoint",
+        "Point d’arrêt",
+        "Variables"
+      ],
+      "interfaces": [],
+      "screenshots": [],
+      "sections": [
+        {
+          "title": "Les trois modes du VBE",
+          "table": [
+            [
+              "Mode",
+              "Conséquence pratique"
+            ],
+            [
+              "Édition / Design",
+              "La macro n’est pas en cours d’exécution. C’est le mode normal pour les changements de structure."
+            ],
+            [
+              "Exécution / Run",
+              "La macro s’exécute. Une commande de lecture ou d’écriture peut être indisponible ou devoir attendre."
+            ],
+            [
+              "Arrêt / Break",
+              "L’exécution est suspendue sur une ligne. Des variables peuvent être inspectées dans leur contexte courant ; toutes les modifications de code ne sont pas admissibles."
+            ]
+          ],
+          "paragraphs": [
+            "Un point d’arrêt demande au VBE de suspendre l’exécution lorsqu’une ligne est atteinte. Il ne lance pas la macro à lui seul. La ligne arrêtée et les valeurs observées dépendent de l’exécution réelle, des données et de la procédure en cours."
+          ]
+        },
+        {
+          "title": "Vérifier la correction du total",
+          "steps": [
+            "Enregistrez une copie du document et préparez quelques lignes dont vous connaissez la somme attendue.",
+            "Compilez le projet. Corrigez les diagnostics avant d’interpréter un résultat de calcul.",
+            "Placez un point d’arrêt sur une ligne exécutable dans CalculerTotal et vérifiez son état dans l’éditeur natif.",
+            "Lancez explicitement la procédure de test qui appelle CalculerTotal sur votre jeu de données. Précisez son projet et son nom ; ne demandez pas une exécution indéterminée.",
+            "Lors de l’arrêt, inspectez i, derniereLigne et le total dans le contexte accessible. Avancez selon la commande de débogage choisie et observez la dernière itération.",
+            "Terminez ou arrêtez l’exécution par le parcours adapté, puis revenez au mode édition avant de changer la structure du projet."
+          ]
+        },
+        {
+          "title": "Interpréter la preuve et les restrictions",
+          "paragraphs": [
+            "Une compilation réussie ne prouve pas le calcul attendu. Une exécution terminée ne prouve pas que le document a été enregistré. Une valeur lue dans une fenêtre de débogage peut provenir d’un contexte partagé : vérifiez la procédure et le projet, et respectez les autorisations de lecture de ces surfaces.",
+            "Certaines corrections d’une ligne de corps de procédure peuvent être admises pendant l’arrêt, tandis que les déclarations, insertions et suppressions restent bloquées ou conservées comme brouillon. Lisez le résultat de la commande ; n’utilisez pas un changement de politique d’approbation pour contourner les contraintes du runtime.",
+            "Une expression évaluée dans le débogueur peut appeler du code, et une macro peut modifier les données de l’application. Préparez la cible et le résultat attendu avant l’exécution. Si un résultat est incertain, vérifiez l’état réel plutôt que relancer automatiquement l’action."
+          ]
+        }
+      ],
+      "related": [
+        "editor",
+        "tests",
+        "conversation",
+        "privacy",
+        "troubleshooting"
+      ]
+    },
+    {
+      "id": "git-conversion",
+      "title": "Comprendre le passage entre macro et dépôt",
+      "intro": "Le fichier de votre application et le dépôt Git jouent deux rôles différents. VBAi extrait le code de la macro pour le versionner, puis reconstruit ce code dans un projet hôte existant lors d’un import.",
+      "keywords": [
+        "Conversion macro / dépôt",
+        "Sources VBA",
+        "manifest.json",
+        "UserForm",
+        "Encodage",
+        "Première publication"
+      ],
+      "interfaces": [],
+      "screenshots": [
+        "GitImportView",
+        "CodeDiffView"
+      ],
+      "sections": [
+        {
+          "title": "1. Ce que contient une macro, et ce que contient un dépôt",
+          "paragraphs": [
+            "Un classeur Excel avec macros peut contenir des feuilles, des données, des graphiques et un projet VBA. Une macro SOLIDWORKS ou un document Word utilise un autre format, mais expose également un projet dans le VBE. Ce projet contient des modules, des classes, des formulaires et parfois des modules appartenant à l’application.",
+            "Git conserve des versions de fichiers. Pour qu’une modification VBA soit lisible dans une revue, VBAi transforme le projet en un ensemble de fichiers sources. Il ne transforme pas un classeur complet en fichiers texte et ne publie pas automatiquement votre document de travail.",
+            "Exemple : Budget.xlsm contient une feuille Transactions et ModuleCalcul. Le dépôt peut recevoir le code de ModuleCalcul et le code de la feuille, mais pas les cellules de Transactions. Une personne qui récupère le dépôt doit donc disposer du document hôte et de ses objets nécessaires."
+          ]
+        },
+        {
+          "title": "2. Le paquet de sources produit par VBAi",
+          "paragraphs": [
+            "Dans le dépôt, VBAi gère le sous-dossier vba/. Ce dossier contient manifest.json et les fichiers des composants. Les autres fichiers du dépôt, par exemple README.md, restent distincts. Ne placez pas de fichiers personnels ou indépendants dans vba/ : ce sous-dossier appartient au paquet de sources géré.",
+            "Le manifeste est l’inventaire du paquet : version de format, noms et types de composants, présence des ressources de formulaire et identités des références. Ces références indiquent les bibliothèques nécessaires ; le manifeste ne les installe pas."
+          ],
+          "table": [
+            [
+              "Exemple de fichier",
+              "Contenu et conséquence"
+            ],
+            [
+              "vba/manifest.json",
+              "Inventaire qui permet de comprendre et de valider le paquet avant import."
+            ],
+            [
+              "vba/ModuleCalcul.bas",
+              "Module standard exporté par le VBE, avec ses attributs."
+            ],
+            [
+              "vba/ClassBudget.cls",
+              "Classe exportée, avec ses attributs ; ce n’est pas un simple copier-coller de la fenêtre de code."
+            ],
+            [
+              "vba/FrmBudget.frm",
+              "Définition exportée du formulaire et code associé."
+            ],
+            [
+              "vba/FrmBudget.frx",
+              "Ressources binaires du même formulaire, lorsqu’elles existent. Elles accompagnent le .frm."
+            ],
+            [
+              "vba/ThisWorkbook.vba",
+              "Code visible du module lié au classeur existant ; ne crée pas un nouveau classeur."
+            ],
+            [
+              "vba/Feuil1.vba",
+              "Code visible d’un module de feuille existante ; ne crée pas la feuille ni ses cellules."
+            ]
+          ]
+        },
+        {
+          "title": "3. Pourquoi le formulaire utilise parfois deux fichiers",
+          "paragraphs": [
+            "Le .frm décrit le formulaire exporté ; le .frx conserve les ressources binaires auxquelles cette définition fait référence. Versionner uniquement le .frm lorsqu’un .frx est requis peut perdre la conception ou empêcher l’import. Gardez les deux fichiers du même formulaire dans la même modification.",
+            "Une ressource binaire ne se fusionne pas ligne par ligne comme du VBA. En cas de conflit, choisissez un ensemble formulaire/ressources cohérent, puis vérifiez la conception et ses propriétés dans le VBE. La comparaison réduit certains écarts de stockage natif reconnus, sans convertir arbitrairement les ressources ni supprimer un contrôle inconnu."
+          ],
+          "note": "Ne renommez pas séparément un .frm, son .frx et son entrée de manifeste. Les noms et les références de ressources doivent rester cohérents."
+        },
+        {
+          "title": "4. Accents, fins de ligne et attributs",
+          "paragraphs": [
+            "L’export natif du VBE utilise la page de codes Windows. VBAi lit cet export strictement et produit du texte UTF-8 sans BOM, avec des fins de ligne LF dans le dépôt. Un éditeur moderne peut donc lire correctement les accents des commentaires et des chaînes.",
+            "Lors d’un import, les sources UTF-8 sont reconverties vers la page de codes du VBE et les fins de ligne natives. Un caractère non représentable provoque un refus avant les modifications du projet ; il n’est pas remplacé silencieusement par un point d’interrogation.",
+            "Les lignes Attribute et les en-têtes d’export portent des informations que la fenêtre de code ne montre pas toujours. Modifiez le code utile sans supprimer ces métadonnées, et conservez le format du paquet. Un dépôt contenant seulement un texte collé sans manifeste n’est pas automatiquement un paquet VBAi importable."
+          ]
+        },
+        {
+          "title": "5. Trois états à ne pas confondre",
+          "table": [
+            [
+              "État",
+              "Ce que cela signifie"
+            ],
+            [
+              "VBA ouvert dans l’hôte",
+              "Le code que vous modifiez actuellement dans le VBE. Il peut encore ne pas être enregistré dans le fichier du document."
+            ],
+            [
+              "Historique Git local",
+              "Les commits du dépôt local géré par VBAi. Un commit existe ici avant tout envoi sur GitHub."
+            ],
+            [
+              "Branche sur GitHub",
+              "Les commits publiés que les collaborateurs peuvent récupérer. Ils ne changent pas immédiatement le VBA déjà ouvert."
+            ]
+          ],
+          "paragraphs": [
+            "VBAi retient aussi un état de référence de la dernière synchronisation. La comparaison oppose le projet vivant à cette base pour identifier les changements locaux. Cela permet de distinguer votre travail non commité d’une nouvelle version reçue.",
+            "Un commit prend une photographie des sources sélectionnées dans Git local. Push publie les commits. Enregistrer dans Excel, Word ou SOLIDWORKS écrit le document hôte. Ces trois opérations ne se substituent pas l’une à l’autre."
+          ]
+        },
+        {
+          "title": "6. Première publication de votre macro existante",
+          "steps": [
+            "Travaillez d’abord sur une copie de votre document. Enregistrez-le, vérifiez le bon projet, déverrouillez-le si nécessaire et restez en mode édition.",
+            "Connectez le compte GitHub des dépôts dans les paramètres. Configurez également votre nom et votre adresse de commit dans Git pour Windows si ce n’est pas déjà fait.",
+            "Choisissez un dépôt et une branche adaptés. Un dépôt privé limite la visibilité, mais vous devez aussi vérifier qui a accès à ce dépôt.",
+            "Reliez le dépôt au projet. La liaison seule ne publie pas de code et ne remplace pas la macro.",
+            "Comparez les sources exportées. Vérifiez les modules, les classes, les formulaires et les références. Retirez du code les clés ou mots de passe avant publication : VBAi ne les efface pas pour vous.",
+            "Sélectionnez les sources à inclure, saisissez un message comme « Première version des sources SuiviBudget », puis créez le commit local.",
+            "Cliquez sur Push pour publier la branche. Consultez GitHub : le sous-dossier vba/ doit présenter le manifeste et les composants attendus.",
+            "Enregistrez aussi votre document dans l’application. Le commit n’a pas enregistré les feuilles, les données ou le fichier de macro hôte."
+          ],
+          "note": "Si la branche distante contient déjà un paquet VBA différent, le premier commit local peut être refusé et demander un Pull préalable. Ne remplacez pas cette histoire par un push forcé ; choisissez le bon dépôt ou préparez volontairement l’import du contenu distant."
+        },
+        {
+          "title": "7. Importer le code d’un dépôt dans une macro",
+          "steps": [
+            "Préparez un document hôte jetable ou une copie sauvegardée. Pour Excel, créez les feuilles et modules de document nécessaires avec les noms attendus avant l’import.",
+            "Dans Outils > Références, alignez les bibliothèques attendues. Une référence manquante bloque la capture ; des références différentes bloquent l’import.",
+            "Reliez la branche qui contient le paquet vba/. Prévisualisez l’import et lisez les changements de fichiers.",
+            "Si le projet possède des modifications locales depuis sa dernière base, commitez-les ou traitez-les explicitement avant le Pull. VBAi refuse de les écraser silencieusement.",
+            "Lancez Pull et importer. VBAi valide les sources, prépare les fichiers natifs et conserve une sauvegarde avant les modifications.",
+            "Lisez le résultat. Ouvrez les modules et les formulaires concernés, vérifiez les propriétés, puis compilez le projet.",
+            "Exécutez uniquement des tests adaptés à votre copie de travail. Enregistrez ensuite le document dans l’application hôte."
+          ],
+          "paragraphs": [
+            "Importer reconstruit le code dans le projet choisi ; cela n’exécute pas la macro, n’installe pas les bibliothèques, ne crée pas les feuilles du classeur et n’enregistre pas automatiquement le document."
+          ]
+        },
+        {
+          "title": "8. Ce que VBAi vérifie pendant la conversion inverse",
+          "paragraphs": [
+            "Avant la première écriture, VBAi prépare tout le paquet, vérifie l’identité et le mode du projet, compare son état à celui observé au départ et contrôle les références. Les modules de document entrants doivent correspondre aux modules hôtes déjà présents.",
+            "Les modules standards, classes et formulaires changés sont remplacés ou importés selon le paquet. Le code des modules de document est mis à jour dans les objets existants. Les composants inchangés ne sont pas remplacés inutilement.",
+            "Après application, VBAi relit le projet réel et vérifie le résultat. Une opération Git terminée n’est donc pas suffisante : le résultat doit correspondre au projet réellement importé."
+          ],
+          "note": "Le paquet de sources ne contient pas une signature électronique de projet VBA. Ne supposez pas qu’une signature de la macro d’origine est transportée avec les exports ou reste valide après modification du code."
+        },
+        {
+          "title": "9. Si l’import échoue ou reste incertain",
+          "paragraphs": [
+            "Une erreur native peut survenir après une partie des modifications. Répéter immédiatement l’import risquerait d’ajouter une deuxième modification sur un état mal connu. VBAi conserve la sauvegarde et marque la récupération en attente plutôt que d’annoncer un succès.",
+            "La restauration automatique vérifie que le code vivant correspond encore à l’état observé après l’import. Si vous avez modifié le code depuis, ou si cet état n’a pas pu être lu, elle peut refuser pour éviter d’écraser votre travail. Ce refus ne signifie pas que la sauvegarde a disparu.",
+            "Conservez les traces et le stockage Git local, inspectez la macro, puis utilisez le parcours de restauration proposé. Si une récupération manuelle est nécessaire, travaillez sur une copie et gardez les états avant/après."
+          ]
+        },
+        {
+          "title": "10. Où vivent les données locales",
+          "paragraphs": [
+            "Le dépôt local géré se trouve sous %LOCALAPPDATA%\\VBAi\\Git et dépend du chemin du document enregistré, du dépôt distant et de la branche. C’est un dépôt bare : VBAi manipule les objets Git sans créer un dossier de travail ordinaire à côté de la macro.",
+            "Les fichiers natifs temporaires d’export et d’import utilisent %LOCALAPPDATA%\\VBAi\\GitTemporary. Le dépôt Git local est plus qu’un cache téléchargeable : il peut contenir des commits non poussés et des sauvegardes de récupération.",
+            "Déplacer ou renommer le document peut nécessiter une nouvelle liaison. Ne supprimez pas le stockage Git pour « rafraîchir » une liste si vous n’avez pas vérifié vos commits non publiés et vos sauvegardes. Les références privées de récupération ne sont pas publiées par les pushes normaux."
+          ]
+        }
+      ],
+      "related": [
+        "git-connect",
+        "git-changes",
+        "git-branches",
+        "pull-requests",
+        "troubleshooting"
+      ]
+    },
+    {
+      "id": "git-connect",
+      "title": "Lier un dépôt GitHub et synchroniser VBA",
+      "intro": "Versionnez les sources de la macro et examinez les importations avant de remplacer le projet courant.",
+      "keywords": [
+        "Git",
+        "GitHub",
+        "Dépôt",
+        "Pull",
+        "Push",
+        "Importer"
+      ],
+      "interfaces": [
+        "GitWindow",
+        "GitConnectionView",
+        "GitImportView",
+        "GitHubPane",
+        "GitHubRepositoriesView"
+      ],
+      "screenshots": [
+        "GitWindow",
+        "GitConnectionView",
+        "GitImportView",
+        "GitHubPane",
+        "GitHubRepositoriesView"
+      ],
+      "sections": [
+        {
+          "title": "Les mots du parcours",
+          "paragraphs": [
+            "Un dépôt est l’historique des sources. Une branche est une ligne de travail de cet historique. Un commit est une version locale accompagnée d’un message. GitHub héberge la copie distante du dépôt pour le partage et la revue.",
+            "La liaison indique à VBAi quel dépôt et quelle branche correspondent au projet ouvert. Elle ne convertit pas le document en dépôt et ne remplace pas son code. Pour comprendre les fichiers produits et le parcours inverse, lisez d’abord « Comprendre le passage entre macro et dépôt »."
+          ]
+        },
+        {
+          "title": "Relier le projet",
+          "steps": [
+            "Connectez le compte GitHub dans les paramètres.",
+            "Ouvrez la fenêtre GitHub / sources VBA. Renseignez le dépôt et la branche, ou recherchez un dépôt dans l’onglet GitHub.",
+            "Choisissez Utiliser le dépôt pour une entrée existante. La création d’un dépôt demande un propriétaire, un nom et sa visibilité.",
+            "Reliez le projet après avoir vérifié le dépôt et la branche."
+          ],
+          "note": "Relier un dépôt prépare le versionnement du code VBA. La visibilité d’un dépôt et les données poussées sont des décisions explicites ; ne créez pas un dépôt public par défaut."
+        },
+        {
+          "title": "Synchroniser",
+          "table": [
+            [
+              "Action",
+              "Usage"
+            ],
+            [
+              "Fetch",
+              "Récupère les références distantes sans les confondre avec une importation VBA."
+            ],
+            [
+              "Push",
+              "Envoie les commits locaux vers la branche distante choisie."
+            ],
+            [
+              "Pull et importer",
+              "Récupère les sources puis importe dans VBA selon les validations et sauvegardes du parcours."
+            ],
+            [
+              "Prévisualiser l’import",
+              "Présente les fichiers et changements attendus avant une application."
+            ],
+            [
+              "Restaurer VBA",
+              "Utilise le parcours de restauration proposé pour remettre un état sauvegardé."
+            ]
+          ]
+        },
+        {
+          "title": "Avant le premier import",
+          "paragraphs": [
+            "Le premier pull peut remplacer du code VBA et prépare une sauvegarde restaurable. Lisez la prévisualisation et le résultat ; une opération Git réussie ne prouve pas à elle seule la persistance du projet hôte.",
+            "Les sources VBA sont conservées dans l’espace de travail géré ; ce parcours ne suppose pas la création d’un dossier adjacent à la macro. Les opérations de commit utilisent l’identité configurée dans Git."
+          ]
+        }
+      ],
+      "related": [
+        "git-conversion",
+        "git-changes",
+        "git-branches",
+        "pull-requests",
+        "troubleshooting"
+      ]
+    },
+    {
+      "id": "git-changes",
+      "title": "Changements, commits et historique Git",
+      "intro": "Sélectionnez les sources à versionner, relisez leur comparaison et retrouvez une révision.",
+      "keywords": [
+        "Commit",
+        "Historique Git",
+        "Checkpoint",
+        "Restaurer un module"
+      ],
+      "interfaces": [
+        "GitChangesView",
+        "GitHistoryView",
+        "GitCheckpointsView"
+      ],
+      "screenshots": [
+        "GitChangesView",
+        "GitHistoryView",
+        "GitCheckpointsView"
+      ],
+      "sections": [
+        {
+          "title": "Créer un commit",
+          "steps": [
+            "Consultez la liste des fichiers changés et sélectionnez ceux qui appartiennent à votre modification.",
+            "Lisez la comparaison. Ouvrir dans le VBE permet de vérifier la cible ; Restaurer le module est une action de remplacement, à distinguer de la navigation.",
+            "Renseignez un message décrivant le changement et cliquez sur Commit sélectionné.",
+            "Vérifiez le résultat avant de pousser vers le dépôt distant."
+          ]
+        },
+        {
+          "title": "Comparer des révisions",
+          "paragraphs": [
+            "L’historique affiche les commits et leurs détails. Choisissez les révisions proposées par le parcours Comparer pour lire leur différence. La comparaison seule ne modifie pas le projet."
+          ]
+        },
+        {
+          "title": "Points de restauration",
+          "paragraphs": [
+            "Donnez un nom explicite au checkpoint, puis créez-le avant une transformation importante. La liste permet de sélectionner un checkpoint et d’en demander la restauration.",
+            "Après restauration, lisez les résultats et vérifiez le code dans l’hôte. Conservez les informations de récupération si le parcours rapporte une restauration partielle."
+          ]
+        },
+        {
+          "title": "Un commit qui raconte une modification",
+          "paragraphs": [
+            "Un commit réunit des sources sélectionnées et un message. « Inclure la dernière ligne dans CalculerTotal » aide une autre personne à comprendre le motif ; « changements » ne l’aide pas. Dans la liste, sélectionnez ModuleCalcul et lisez sa comparaison. Vérifiez que vous n’incluez pas aussi une modification de formulaire sans rapport avec cette correction.",
+            "Après le commit, la version existe dans le dépôt local. Push la publie ensuite sur la branche distante. Si vous conservez volontairement des modifications hors du commit, la macro ouverte peut contenir davantage de code que la version publiée. C’est pourquoi il faut relire la sélection et le résultat, plutôt que considérer le commit comme une copie complète automatique du document.",
+            "Un checkpoint est un point de restauration nommé, utile avant une transformation. Il ne remplace pas un commit partagé. Restaurer un checkpoint remet un état VBA dans le projet et préserve le travail déplacé selon le parcours. Après restauration, vérifiez le code et enregistrez le document ; consultez les informations de récupération si le résultat reste partiel."
+          ]
+        }
+      ],
+      "related": [
+        "git-conversion",
+        "git-connect",
+        "git-branches",
+        "changes"
+      ]
+    },
+    {
+      "id": "git-branches",
+      "title": "Branches, fusion et conflits",
+      "intro": "Travaillez sur une branche distincte et résolvez les fichiers VBA en conflit avant de terminer une fusion.",
+      "keywords": [
+        "Branche",
+        "Fusion",
+        "Conflit",
+        "Annuler une fusion"
+      ],
+      "interfaces": [
+        "GitBranchesView",
+        "GitConflictsView"
+      ],
+      "screenshots": [
+        "GitBranchesView",
+        "GitConflictsView"
+      ],
+      "sections": [
+        {
+          "title": "Choisir une branche",
+          "items": [
+            "Créer utilise le nom saisi pour une nouvelle branche locale.",
+            "Branches distantes inclut les références distantes dans la liste ; Suivre prépare leur suivi local.",
+            "Changer de branche demande l’activation de la branche sélectionnée.",
+            "Fusionner démarre une fusion de la sélection dans le contexte courant ; vérifiez le sens de l’opération avant validation."
+          ]
+        },
+        {
+          "title": "Résoudre un fichier",
+          "steps": [
+            "Sélectionnez le fichier dans la liste des conflits.",
+            "Comparez le contenu local, entrant et l’ancêtre commun.",
+            "Choisissez Garder local, Garder entrant ou composez le contenu complet dans la zone de résolution.",
+            "Validez le texte de résolution pour ce fichier, puis répétez pour les autres conflits.",
+            "Terminez la fusion lorsque les conflits sont résolus, ou utilisez Annuler la fusion si vous abandonnez ce parcours."
+          ],
+          "note": "Utiliser ce texte prend le contenu complet de la résolution, pas seulement les lignes sélectionnées. Relisez les attributs et déclarations nécessaires au module ou au formulaire."
+        },
+        {
+          "title": "Travailler sur une correction sans déplacer main",
+          "paragraphs": [
+            "Une branche nomme une ligne de l’historique Git. Créez corriger-total à partir de l’état choisi, puis confirmez la branche active avant de commiter. Votre correction peut ainsi être relue avant son intégration dans main. Changer de branche dans VBAi importe aussi le code de la branche sélectionnée : ce n’est pas uniquement un filtre visuel.",
+            "Avant de changer, traitez les modifications locales : elles ne doivent pas être écrasées silencieusement. Pour une fusion, vérifiez le sens : quelle branche est active et quelle branche est entrante ? Si deux personnes ont changé la même ligne, la comparaison peut demander une résolution. L’ancêtre commun est la version dont leurs deux travaux sont issus.",
+            "Composez un contenu complet et compilable pour un conflit de texte. Pour une ressource binaire de formulaire, choisissez une version complète cohérente avec sa définition ; un fichier FRX ne se résout pas ligne par ligne. Terminer la fusion applique le résultat après les validations. Annuler la préparation abandonne ce parcours de fusion, sans constituer une commande générale de suppression du travail."
+          ]
+        }
+      ],
+      "related": [
+        "git-conversion",
+        "git-connect",
+        "git-changes",
+        "pull-requests"
+      ]
+    },
+    {
+      "id": "pull-requests",
+      "title": "Consulter et créer des pull requests",
+      "intro": "Préparez une revue du code versionné et consultez les fichiers, commentaires et checks de GitHub.",
+      "keywords": [
+        "Pull request",
+        "PR",
+        "Brouillon",
+        "Checks",
+        "Commentaires"
+      ],
+      "interfaces": [
+        "GitHubPullRequestsView",
+        "GitHubPullComposeView",
+        "GitHubPullDetailsView",
+        "GitHubPullFilesView",
+        "GitHubPullCommentsView",
+        "GitHubPullChecksView"
+      ],
+      "screenshots": [
+        "GitHubPullRequestsView",
+        "GitHubPullComposeView",
+        "GitHubPullDetailsView",
+        "GitHubPullFilesView",
+        "GitHubPullCommentsView",
+        "GitHubPullChecksView"
+      ],
+      "sections": [
+        {
+          "title": "Lire une revue",
+          "steps": [
+            "Chargez les pull requests du dépôt sélectionné.",
+            "Choisissez une revue et consultez Détails, Fichiers, Commentaires et Checks.",
+            "Ouvrez sur GitHub pour les fonctions qui ne sont pas proposées dans cette fenêtre."
+          ],
+          "note": "Une vue vide peut provenir d’une sélection absente, d’un chargement en cours, des droits du compte ou d’un échec réseau. Consultez la barre d’état."
+        },
+        {
+          "title": "Préparer une pull request",
+          "steps": [
+            "Vérifiez la branche source indiquée et choisissez la branche cible.",
+            "Renseignez un titre précis et une description du changement, de sa validation et de ses limites.",
+            "Chargez le brouillon préparé si le parcours en propose un ; relisez-le avant publication.",
+            "Cochez Brouillon si la revue n’est pas prête, puis créez la pull request."
+          ]
+        },
+        {
+          "title": "Exemple de description",
+          "paragraphs": [
+            "« Inclut la dernière ligne dans CalculerTotal. Signature conservée. Projet compilé dans Excel ; exécution sur données de test vérifiée. Aucun essai SOLIDWORKS effectué pour cette modification. »"
+          ]
+        },
+        {
+          "title": "Partager une correction pour la faire relire",
+          "paragraphs": [
+            "Une pull request propose d’intégrer une branche source dans une branche cible. Elle sert à discuter du changement avant la fusion. Dans l’exemple, corriger-total est la source et main la cible. La création de la revue ne signifie ni que la correction est fusionnée ni qu’elle est déjà importée dans les macros des autres personnes.",
+            "Publiez les commits de la branche source, vérifiez les deux branches dans le formulaire et décrivez le problème, la solution et votre validation. Une description utile précise les données de test et l’hôte réellement utilisé. Une revue marquée Brouillon signale qu’elle n’est pas encore prête. Relisez tout texte préparé automatiquement avant publication.",
+            "Dans Fichiers, vérifiez la borne corrigée et les changements inattendus. Les commentaires servent aux échanges de revue. Les Checks sont les vérifications attachées au dépôt : leur réussite ne prouve pas qu’une macro a été testée dans chaque application Office ou SOLIDWORKS. Utilisez le lien GitHub pour les opérations qui ne sont pas proposées dans la vue."
+          ]
+        }
+      ],
+      "related": [
+        "git-conversion",
+        "git-connect",
+        "git-changes",
+        "git-branches"
+      ]
+    },
+    {
+      "id": "tests",
+      "title": "Explorer et exécuter les tests VBA",
+      "intro": "Découvrez les tests du projet, choisissez une portée et lisez les résultats sans les confondre avec la couverture de l’add-in.",
+      "keywords": [
+        "Tests",
+        "Test Explorer",
+        "Couverture VBA",
+        "Rapport",
+        "Support de test"
+      ],
+      "interfaces": [
+        "TestExplorerWindow",
+        "TestSupportReviewDialog"
+      ],
+      "screenshots": [
+        "TestExplorerWindow",
+        "TestSupportReviewDialog"
+      ],
+      "sections": [
+        {
+          "title": "Préparer la liste",
+          "steps": [
+            "Choisissez les projets et actualisez la découverte des tests.",
+            "Utilisez la recherche, le filtre de résultat et le regroupement pour réduire la liste.",
+            "Sélectionnez un test pour lire ses détails ou ouvrir sa source.",
+            "Si le support de test est requis, examinez sa comparaison avant de l’appliquer au projet."
+          ],
+          "note": "Installer le support de test modifie du code VBA. Le parcours conserve une sauvegarde et revalide le projet avant application ; lisez son résultat."
+        },
+        {
+          "title": "Exécuter un lot",
+          "table": [
+            [
+              "Commande",
+              "Portée"
+            ],
+            [
+              "Exécuter la sélection",
+              "Tests sélectionnés dans l’arbre."
+            ],
+            [
+              "Exécuter la portée visible",
+              "Tests de la portée actuellement présentée."
+            ],
+            [
+              "Avec couverture",
+              "Parcours instrumenté proposé pour la sélection ou la portée."
+            ],
+            [
+              "Réexécuter les échecs",
+              "Tests précédemment en échec selon les résultats courants."
+            ],
+            [
+              "Arrêter après le test courant",
+              "Demande l’arrêt entre tests ; ce n’est pas une interruption native immédiate."
+            ]
+          ]
+        },
+        {
+          "title": "Lire et conserver les preuves",
+          "paragraphs": [
+            "Les détails, le rapport lisible et le rapport compact expliquent les résultats. Copier ou Exporter conserve le rapport courant.",
+            "La couverture affichée ici concerne les procédures VBA exercées. Elle est distincte des métriques de lignes et branches du code C# de VBAi et ne prouve pas la qualification de tous les hôtes."
+          ]
+        },
+        {
+          "title": "Interpréter un résultat de test",
+          "paragraphs": [
+            "Un test compare un comportement à un résultat attendu. Pour CalculerTotal, préparez un jeu de données dont la somme est connue, puis vérifiez aussi le cas sans données. La découverte présente les tests identifiés ; leur simple présence dans l’arbre n’indique pas qu’ils ont été exécutés.",
+            "Choisissez un lot cohérent dans la liste avant d’exécuter. Vérifiez le projet et le support de test à installer si nécessaire. La revue du support montre du code ajouté au projet ; acceptez-la seulement après lecture. Lancez ensuite le lot et attendez son résultat terminal. L’arrêt demandé entre tests ne signifie pas que le test natif courant a immédiatement été interrompu.",
+            "Une réussite indique que les vérifications de ce test sont passées dans ce contexte. Un échec, une erreur et un résultat non concluant demandent des lectures différentes : consultez le détail et le rapport. La couverture de procédures indique quelles procédures ont été exercées ; elle ne mesure pas toutes leurs lignes, toutes leurs branches ni tous les scénarios utilisateur. Exportez le rapport si vous devez conserver la preuve."
+          ]
+        }
+      ],
+      "related": [
+        "changes",
+        "troubleshooting",
+        "privacy"
+      ]
+    },
+    {
+      "id": "updates",
+      "title": "Vérifier les mises à jour",
+      "intro": "Consultez une version proposée et suivez la préparation d’une mise à jour lorsqu’un package de confiance est disponible.",
+      "keywords": [
+        "Mise à jour",
+        "Télécharger",
+        "SHA-256",
+        "Signature",
+        "Hôtes VBA"
+      ],
+      "interfaces": [
+        "UpdateWindow",
+        "UpdateProgressWindow"
+      ],
+      "screenshots": [
+        "UpdateWindow",
+        "UpdateProgressWindow"
+      ],
+      "sections": [
+        {
+          "title": "Lire la proposition",
+          "paragraphs": [
+            "Vérifier les mises à jour interroge la source configurée et présente la version ainsi que ses notes. Inclure les préversions élargit les versions proposées.",
+            "Les options automatiques règlent la vérification quotidienne, le téléchargement et l’installation après fermeture des hôtes VBA. Enregistrer conserve ces préférences ; Ignorer la version et Annuler la mise à jour planifiée agissent sur la proposition concernée."
+          ],
+          "note": "Le programme d’installation autonome est une étape ultérieure du projet. La présence de cette interface ne signifie pas qu’un installateur signé est publié ou accepté. La politique courante doit disposer d’un éditeur approuvé avant l’installation d’un package."
+        },
+        {
+          "title": "Suivre l’avancement",
+          "paragraphs": [
+            "La fenêtre de progression affiche l’état et l’attente éventuelle de fermeture des hôtes. Le téléchargement et la confiance du fichier utilisent des validations séparées, notamment SHA-256 et Authenticode.",
+            "Une échéance dépassée ne prouve pas qu’un processus d’installation a terminé. Ne relancez pas automatiquement une installation à résultat incertain ; vérifiez les traces et l’état proposé."
+          ]
+        },
+        {
+          "title": "Distinguer les étapes d’une mise à jour",
+          "paragraphs": [
+            "La vérification recherche une proposition. Le téléchargement récupère un fichier. La validation examine son intégrité et sa confiance. L’installation remplace le logiciel selon la politique applicable. Ces étapes sont distinctes : une version affichée dans la fenêtre ne signifie pas qu’elle est déjà installée.",
+            "Lisez les notes et votre version actuelle avant de choisir une action. Enregistrer les préférences automatiques ne remplace pas le résultat d’une installation. Si une mise à jour doit attendre la fermeture des applications VBA, enregistrez vos documents et fermez normalement les hôtes concernés. Un complément chargé peut empêcher le remplacement de sa DLL.",
+            "La disponibilité d’un installateur dépend de la publication et de la politique de confiance de cette version de VBAi. Ce guide ne promet pas un installateur autonome publié. En cas de délai dépassé ou de résultat incertain, relevez l’état et les traces ; ne concluez pas qu’une installation est terminée uniquement parce qu’un indicateur a disparu."
+          ]
+        }
+      ],
+      "related": [
+        "support",
+        "troubleshooting"
+      ]
+    },
+    {
+      "id": "support",
+      "title": "À propos et signalement d’un problème",
+      "intro": "Retrouvez la version de VBAi et composez un rapport que vous pouvez relire avant transmission.",
+      "keywords": [
+        "À propos",
+        "Support",
+        "Rapport d’erreur",
+        "Diagnostic",
+        "Confidentialité du rapport"
+      ],
+      "interfaces": [
+        "AboutWindow",
+        "CrashReportWindow"
+      ],
+      "screenshots": [
+        "AboutWindow",
+        "CrashReportWindow"
+      ],
+      "sections": [
+        {
+          "title": "Informations techniques",
+          "paragraphs": [
+            "À propos présente la version, l’hôte, la plateforme et la langue de l’interface. Copier les informations techniques prépare ces métadonnées pour une demande de support sans copier le code, les chemins ou les identifiants du projet.",
+            "Les liens donnent accès au dépôt, à la documentation et au signalement GitHub. La vérification des mises à jour possède son propre parcours."
+          ]
+        },
+        {
+          "title": "Composer le rapport",
+          "steps": [
+            "Donnez un titre décrivant le symptôme et expliquez ce que vous faisiez, le résultat attendu et le résultat observé.",
+            "Relisez la prévisualisation complète. Retirez toute donnée sensible que vous auriez ajoutée manuellement.",
+            "Copiez ou enregistrez le rapport si vous souhaitez le transmettre vous-même.",
+            "Utilisez Envoyer le rapport pour le parcours GitHub ; la voie email ouvre le parcours de messagerie proposé si nécessaire."
+          ],
+          "note": "Le rapport ne collecte pas automatiquement le VBA, les conversations, les identifiants ni les chemins personnels. Les textes que vous saisissez peuvent toutefois contenir ces informations : la prévisualisation reste votre point de contrôle."
+        },
+        {
+          "title": "Rédiger un signalement reproductible",
+          "paragraphs": [
+            "Un bon rapport permet à une autre personne de reproduire le problème. Décrivez une suite d’actions courte : ouvrir les paramètres, choisir Codex, revenir à la conversation, ouvrir le catalogue. Écrivez ensuite l’attendu (« des modèles sont listés ») et l’observé (« la liste reste vide avec ce message »). Ajoutez la version et l’hôte à partir des informations techniques.",
+            "Copiez le message exact au lieu de le résumer par « cela ne fonctionne pas ». Si le problème dépend d’un projet, réduisez-le à un exemple jetable. Une capture doit montrer le contrôle concerné et son état, sans code confidentiel ni compte personnel. Précisez ce que vous avez réellement testé et ce qui n’a pas été testé.",
+            "Relisez la prévisualisation avant l’envoi. Les informations saisies manuellement peuvent contenir des secrets même si le rapport ne collecte pas automatiquement le code. Copier ou enregistrer prépare une transmission par vos soins ; envoyer suit le parcours proposé. Conservez le numéro du signalement pour rattacher les observations suivantes au même problème."
+          ]
+        }
+      ],
+      "related": [
+        "troubleshooting",
+        "updates",
+        "start"
+      ]
+    },
+    {
+      "id": "troubleshooting",
+      "title": "Résoudre les difficultés courantes",
+      "intro": "Identifiez le niveau en cause avant de répéter une action : chargement, compte, modèle, projet ou synchronisation.",
+      "keywords": [
+        "Dépannage",
+        "Chargement",
+        "Erreur",
+        "Liste vide",
+        "Synchronisation"
+      ],
+      "interfaces": [],
+      "screenshots": [
+        "AboutWindow"
+      ],
+      "sections": [
+        {
+          "title": "Symptôme et première vérification",
+          "table": [
+            [
+              "Symptôme",
+              "À vérifier"
+            ],
+            [
+              "VBAi absent ou impossible à charger",
+              "Entrée du Gestionnaire de compléments, identité COM et chemin de la DLL x64 ; un simple menu présent ne prouve pas le chargement."
+            ],
+            [
+              "Panneau fermé",
+              "Commande VBAi du menu Affichage."
+            ],
+            [
+              "Provider ou modèles indisponibles",
+              "Connexion dans les paramètres, actualisation du catalogue, adresse et modèle disponible côté serveur."
+            ],
+            [
+              "Ollama ne répond pas",
+              "Service actif, endpoint configuré, modèle réellement chargé et ressources disponibles ; distinguez le test API d’une action VBA réelle."
+            ],
+            [
+              "Action refusée sur un projet",
+              "Projet lié, accès de lecture, état Run/Break, protection, identité et révision courantes."
+            ],
+            [
+              "Monaco ne synchronise pas",
+              "État de l’onglet, changement natif concurrent, comparaison et choix de résolution."
+            ],
+            [
+              "Résultat natif incertain",
+              "Inspection du projet, sauvegarde et état durable ; aucune répétition aveugle de la mutation."
+            ]
+          ]
+        },
+        {
+          "title": "Un signalement exploitable",
+          "items": [
+            "Notez la version VBAi et l’application hôte, ainsi que les étapes minimales de reproduction.",
+            "Copiez le message exact et précisez si le projet était en édition, en exécution ou en arrêt.",
+            "Utilisez un exemple jetable sans données de production pour illustrer le problème.",
+            "Distinguez ce que vous avez observé de ce que vous supposez être la cause."
+          ]
+        },
+        {
+          "title": "Diagnostiquer sans multiplier les changements",
+          "paragraphs": [
+            "Commencez par définir ce qui échoue : chargement du complément, connexion au service, lecture du projet, modification, compilation ou sauvegarde. Ces opérations utilisent des mécanismes différents. Un chat qui répond prouve une connexion au provider, mais ne prouve pas que le projet est modifiable.",
+            "Reproduisez une fois sur une copie jetable et notez l’état : document sélectionné, mode VBE, action, message et résultat réel. Changez une seule condition utile, puis comparez. Pour un catalogue vide, vérifiez la connexion et actualisez la liste ; pour une écriture refusée, vérifiez le projet et son mode. Une réinstallation générale n’est pas le premier diagnostic de chaque problème.",
+            "Si le message indique un résultat natif incertain, cessez de répéter cette mutation. Inspectez le code ou le concepteur et conservez les sauvegardes et traces. Une erreur après une écriture peut laisser une modification partielle ; le message et l’état observé doivent tous deux figurer dans le rapport."
+          ]
+        }
+      ],
+      "related": [
+        "support",
+        "settings",
+        "editor",
+        "tests"
+      ]
+    },
+    {
+      "id": "interfaces",
+      "title": "Répertoire des interfaces",
+      "intro": "Chaque fenêtre, vue et carte VBAi possède une rubrique de référence dans ce guide.",
+      "keywords": [
+        "Interfaces",
+        "Fenêtres",
+        "Panneaux",
+        "Cartes"
+      ],
+      "interfaces": [],
+      "screenshots": [],
+      "sections": [
+        {
+          "title": "Parcours par zone",
+          "table": [
+            [
+              "Zone",
+              "Interfaces et vues"
+            ],
+            [
+              "Conversation",
+              "Panneau, accueil, saisie, suggestions, références, contexte, messages, activités, file d’attente, comparaisons et récupération de formulaire."
+            ],
+            [
+              "Configuration",
+              "Providers, compte GitHub, apparence, accès aux projets et approbation."
+            ],
+            [
+              "Code",
+              "Monaco et comparaison des versions."
+            ],
+            [
+              "Git et GitHub",
+              "Connexion, dépôts, changements, historique, checkpoints, branches, conflits, import et pull requests."
+            ],
+            [
+              "Tests",
+              "Explorateur, détails et rapports ; revue du support de test."
+            ],
+            [
+              "Maintenance",
+              "À propos, rapport d’erreur, mises à jour et progression."
+            ]
+          ],
+          "note": "Les vues techniques de base ChatToolWindow et ChatDesignerView sont couvertes dans les panneaux et cartes qui les utilisent ; ce ne sont pas des fenêtres indépendantes à ouvrir."
+        }
+      ],
+      "related": [
+        "git-conversion",
+        "conversation",
+        "context",
+        "activity",
+        "queue",
+        "history",
+        "privacy",
+        "changes",
+        "settings",
+        "appearance",
+        "editor",
+        "git-connect",
+        "git-changes",
+        "git-branches",
+        "pull-requests",
+        "tests",
+        "updates",
+        "support",
+        "forms",
+        "debug"
+      ]
+    }
+  ]
+}

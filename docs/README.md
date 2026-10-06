@@ -10,6 +10,7 @@ per operation and tested candidate.
 | --- | --- |
 | Set up the preview | [Source-build setup](installation.md) |
 | Complete a first intervention | [Getting started](getting-started.md) |
+| Read the French offline manual | [User manual](help/README.md) |
 | Check your application | [Compatibility](compatibility.md) |
 | Connect an AI provider | [Providers](providers.md) |
 | Solve a setup/runtime problem | [Troubleshooting](troubleshooting.md) |

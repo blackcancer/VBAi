@@ -92,6 +92,9 @@ namespace VBAi
         {
             if (previewPanel != null) previewPanel.Padding = inputPadding;
             if (editor == null) return;
+            var hint = UiText.Get("Write your request. Enter sends it; Shift+Enter adds a line. Use # or @ to reference VBA code and / to see chat commands.");
+            editor.ToolTip = hint;
+            System.Windows.Automation.AutomationProperties.SetHelpText(editor, hint);
             editor.FontFamily = new System.Windows.Media.FontFamily(Font.FontFamily.Name);
             editor.FontSize = Font.SizeInPoints * 96.0 / 72.0;
             editor.FontWeight = Font.Bold ? System.Windows.FontWeights.Bold : System.Windows.FontWeights.Normal;

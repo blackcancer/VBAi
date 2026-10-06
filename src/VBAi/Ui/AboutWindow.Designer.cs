@@ -80,6 +80,9 @@ namespace VBAi
         /// <summary>Button that closes the dialog.</summary>
         private VBAi.ChatActionButton closeButton;
 
+        /// <summary>Opens the packaged local user manual without contacting a remote service.</summary>
+        private System.Windows.Forms.Button helpButton;
+
         /// <summary>Releases runtime subscriptions and Designer-owned components.</summary>
         /// <param name="disposing">Whether managed components should be disposed.</param>
         protected override void Dispose(bool disposing)
@@ -117,6 +120,7 @@ namespace VBAi
             this.buttonLayout = new System.Windows.Forms.FlowLayoutPanel();
             this.copyDetails = new VBAi.ChatActionButton();
             this.closeButton = new VBAi.ChatActionButton();
+            this.helpButton = new System.Windows.Forms.Button();
             this.toolTips = new System.Windows.Forms.ToolTip(this.components);
             ((System.ComponentModel.ISupportInitialize)(this.brandImage)).BeginInit();
             this.rootLayout.SuspendLayout();
@@ -398,6 +402,14 @@ namespace VBAi
             this.closeButton.Margin = new System.Windows.Forms.Padding(8, 0, 0, 0);
             this.buttonLayout.Controls.Add(this.copyDetails);
             this.buttonLayout.Controls.Add(this.updates);
+            this.helpButton.Name = "helpButton";
+            this.helpButton.Text = "User guide";
+            this.helpButton.AutoSize = true;
+            this.helpButton.MinimumSize = new System.Drawing.Size(105, 30);
+            this.helpButton.Margin = new System.Windows.Forms.Padding(8, 0, 0, 0);
+            this.helpButton.Click += new System.EventHandler(this.Help_Click);
+            this.toolTips.SetToolTip(this.helpButton, "Open the local VBAi user guide.");
+            this.buttonLayout.Controls.Add(this.helpButton);
             this.copyDetails.Text = "Copy technical details";
             this.copyDetails.AutoSize = true;
             this.copyDetails.MinimumSize = new System.Drawing.Size(170, 36);

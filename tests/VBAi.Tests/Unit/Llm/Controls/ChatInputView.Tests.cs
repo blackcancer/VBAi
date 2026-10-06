@@ -53,6 +53,8 @@ namespace VBAi.Tests.Unit
                 view.Font = font; view.ForeColor = Color.Blue; view.SpellCheckEnabled = false;
                 var editor = view.Editor;
                 Assert.AreSame(editor, view.Editor);
+                Assert.AreEqual(editor.ToolTip, System.Windows.Automation.AutomationProperties.GetHelpText(editor));
+                StringAssert.Contains((string)editor.ToolTip, UiText.Get("Write your request. Enter sends it; Shift+Enter adds a line. Use # or @ to reference VBA code and / to see chat commands."));
                 Assert.AreEqual(16.0, editor.FontSize, 0.001);
                 Assert.AreEqual(System.Windows.FontWeights.Bold, editor.FontWeight);
                 Assert.AreEqual(System.Windows.FontStyles.Italic, editor.FontStyle);

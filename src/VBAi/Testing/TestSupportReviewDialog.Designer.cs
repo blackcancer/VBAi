@@ -38,12 +38,19 @@ namespace VBAi
         {
             components = new Container();
             layout = new TableLayoutPanel();
+            layout.Name = "layout";
             projectLabel = new Label();
+            projectLabel.Name = "projectLabel";
             explanation = new Label();
+            explanation.Name = "explanation";
             diff = new CodeDiffView();
+            diff.Name = "diff";
             actions = new FlowLayoutPanel();
+            actions.Name = "actions";
             apply = new UiActionButton();
+            apply.Name = "apply";
             cancel = new UiActionButton();
+            cancel.Name = "cancel";
             SuspendLayout();
             layout.SuspendLayout();
             actions.SuspendLayout();
@@ -105,8 +112,8 @@ namespace VBAi
             ResumeLayout(false);
         }
 
-        /// <summary>Disposes  for test support review dialog.</summary>
-        /// <param name="disposing">Indicates whether disposing is enabled.</param>
+        /// <summary>Releases the component container when the dialog is disposed.</summary>
+        /// <param name="disposing">True when managed components should also be disposed.</param>
         protected override void Dispose(bool disposing)
         {
             if (disposing) components?.Dispose();

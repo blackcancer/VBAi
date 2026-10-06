@@ -5,7 +5,8 @@ Chat fixtures capture their exact HWND. UtilityWindow retains screen-capture
 and clipping evidence. CompactUi retains design-time off-screen tab renders.
 .DESCRIPTION
 Select exactly one scenario. No aggregate scenario is provided. Assembly and
-output defaults remain specific to each scenario; pass an explicit candidate
+output defaults remain specific to each scenario; Help renders its complete ordered
+interface bank without activation. Pass an explicit candidate
 assembly when required. Shared helper import opens no window or host.
 .EXAMPLE
 .\Render-Ui.ps1 -Scenario ChatUx -Mode Reasoning -Theme Dark -AssemblyPath artifacts/candidate/VBAi.dll
@@ -14,7 +15,7 @@ assembly when required. Shared helper import opens no window or host.
 #>
 param(
     [Parameter(Mandatory=$true)]
-    [ValidateSet('ChatDesignerViews','ChatUx','CompactUi','UtilityWindow')][string]$Scenario,
+    [ValidateSet('ChatDesignerViews','ChatUx','CompactUi','UtilityWindow','Help')][string]$Scenario,
     [string]$AssemblyPath, [string]$OutputDirectory,
     [ValidateSet('System','Light','Dark')][string]$Theme,
     [ValidateSet('Conversation','History','Reference','Command','Welcome','Queue','Reasoning')][string]$Mode,
@@ -23,6 +24,7 @@ param(
 )
 $ErrorActionPreference = 'Stop'
 Import-Module (Join-Path $PSScriptRoot 'UiProbe.psm1') -ErrorAction Stop
+Import-Module (Join-Path $PSScriptRoot 'HelpCapture.psm1') -ErrorAction Stop
 
 function Invoke-ChatDesignerViews {
     param(
@@ -334,6 +336,7 @@ $commands = @{
     'ChatUx' = 'Invoke-ChatUx'
     'CompactUi' = 'Invoke-CompactUi'
     'UtilityWindow' = 'Invoke-UtilityWindow'
+    'Help' = 'Invoke-HelpCapture'
 }
 $command = Get-Command $commands[$Scenario] -CommandType Function
 $arguments = Get-UiScenarioParameters $command $PSBoundParameters

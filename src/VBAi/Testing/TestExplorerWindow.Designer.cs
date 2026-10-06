@@ -110,36 +110,65 @@ namespace VBAi
         {
             components = new Container();
             layout = new TableLayoutPanel();
+            layout.Name = "layout";
             commands = new FlowLayoutPanel();
+            commands.Name = "commands";
             filters = new TableLayoutPanel();
+            filters.Name = "filters";
             projectList = new UiComboBox();
+            projectList.Name = "projectList";
             search = new UiTextBox();
+            search.Name = "search";
             outcomeFilter = new UiComboBox();
+            outcomeFilter.Name = "outcomeFilter";
             grouping = new UiComboBox();
+            grouping.Name = "grouping";
             testTree = new TreeView();
+            testTree.Name = "testTree";
             split = new SplitContainer();
+            split.Name = "split";
             details = new UiTextBox();
             resultTabs = new ThemedTabControl();
+            resultTabs.Name = "resultTabs";
             detailsTab = new TabPage();
+            detailsTab.Name = "detailsTab";
             humanTab = new TabPage();
+            humanTab.Name = "humanTab";
             compactTab = new TabPage();
+            compactTab.Name = "compactTab";
             humanReport = new UiTextBox();
+            humanReport.Name = "humanReport";
             compactReport = new UiTextBox();
+            compactReport.Name = "compactReport";
             copyReport = new UiActionButton();
+            copyReport.Name = "copyReport";
             exportReport = new UiActionButton();
+            exportReport.Name = "exportReport";
             summary = new Label();
+            summary.Name = "summary";
             status = new Label();
+            status.Name = "status";
             coverage = new Label();
+            coverage.Name = "coverage";
             refresh = new UiActionButton();
+            refresh.Name = "refresh";
             runSelected = new UiActionButton();
+            runSelected.Name = "runSelected";
             runScope = new UiActionButton();
+            runScope.Name = "runScope";
             runSelectedCoverage = new UiActionButton();
+            runSelectedCoverage.Name = "runSelectedCoverage";
             runScopeCoverage = new UiActionButton();
+            runScopeCoverage.Name = "runScopeCoverage";
             freshnessTimer = new Timer(components);
             rerunFailed = new UiActionButton();
+            rerunFailed.Name = "rerunFailed";
             stop = new UiActionButton();
+            stop.Name = "stop";
             source = new UiActionButton();
+            source.Name = "source";
             installSupport = new UiActionButton();
+            installSupport.Name = "installSupport";
             ((ISupportInitialize)split).BeginInit();
             split.Panel1.SuspendLayout();
             split.Panel2.SuspendLayout();
@@ -345,8 +374,8 @@ namespace VBAi
             ResumeLayout(false);
         }
 
-        /// <summary>Disposes  for test explorer window.</summary>
-        /// <param name="disposing">Indicates whether disposing is enabled.</param>
+        /// <summary>Releases the component container when the form is disposed.</summary>
+        /// <param name="disposing">True when managed components should also be disposed.</param>
         protected override void Dispose(bool disposing)
         {
             if (disposing) components?.Dispose();

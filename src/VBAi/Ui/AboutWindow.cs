@@ -121,6 +121,10 @@ namespace VBAi
             using (var window = new UpdateWindow()) AddIn.ShowModal(window, this);
         }
 
+        /// <summary>Opens the local manual when the user explicitly selects the guide action.</summary>
+        /// <param name="sender">Guide button.</param><param name="e">Click event data.</param>
+        private void Help_Click(object sender, EventArgs e) => UiHelp.Open(this);
+
         /// <summary>Copies the technical details and reports success or failure in the status label.</summary>
         /// <param name="sender">Copy button.</param><param name="e">Click event arguments.</param>
         private void CopyDetails_Click(object sender, EventArgs e)

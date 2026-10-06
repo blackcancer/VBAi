@@ -3,11 +3,15 @@
   <PropertyGroup>
     <OutputType>WinExe</OutputType><UseWindowsForms>true</UseWindowsForms>
     <AssemblyName>VBAi.Updater</AssemblyName><RootNamespace>VBAi</RootNamespace>
+    <DefineConstants>$(DefineConstants);VBAI_UPDATER</DefineConstants>
     <ApplicationIcon>../../assets/icons/assistant.ico</ApplicationIcon>
     <OutputPath Condition="'$(BuildOutputRoot)' == ''">$(RepositoryRoot)bin/$(Configuration)/updater/</OutputPath>
   </PropertyGroup>
   <ItemGroup>
     <EmbeddedResource Include="../../assets/icons/commands/*.svg" LogicalName="VBAi.CommandIcons.%(Filename).svg" />
+    <Content Include="$(RepositoryRoot)artifacts/help/fr-FR/VBAi.fr-FR.chm"
+             Condition="Exists('$(RepositoryRoot)artifacts/help/fr-FR/VBAi.fr-FR.chm')"
+             Link="Help/VBAi.fr-FR.chm" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="../VBAi/Updates/WebViewRuntimePrerequisite.cs" Link="WebViewRuntimePrerequisite.cs" />
@@ -25,6 +29,9 @@
     <Compile Include="../VBAi/Ui/UiActionButton.cs" Link="UiActionButton.cs" />
     <Compile Include="../VBAi/Ui/UiInputControls.cs" Link="UiInputControls.cs" />
     <Compile Include="../VBAi/Ui/UiTheme.cs" Link="UiTheme.cs" />
+    <Compile Include="../VBAi/Ui/UiHelp.cs" Link="UiHelp.cs" />
+    <Compile Include="../VBAi/Ui/UiHelpHints.cs" Link="UiHelpHints.cs" />
+    <EmbeddedResource Include="../VBAi/Ui/UiHelpHints.json" LogicalName="VBAi.UiHelpHints.json" />
     <EmbeddedResource Include="../VBAi/Localization/UiStrings*.resx" Link="Localization\%(Filename)%(Extension)"><LogicalName>VBAi.Localization.%(Filename).resources</LogicalName></EmbeddedResource>
     <Reference Include="System.Web.Extensions" /><Reference Include="System.Windows.Forms" /><Reference Include="System.Drawing" />
   </ItemGroup>
