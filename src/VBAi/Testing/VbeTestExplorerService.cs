@@ -389,7 +389,7 @@ namespace VBAi
         /// <param name="onResult">Optional callback invoked for each completed test result.</param>
         /// <param name="cancellation">Token used to cancel the operation.</param>
         /// <param name="executionGuard">Authorization and revision check rerun at guarded execution phases.</param>
-        /// <param name="measureCoverage">Indicates whether measure coverage is enabled.</param>
+        /// <param name="measureCoverage">When true, execute through the disposable instrumented-copy path.</param>
         /// <returns>Canonical task stored in the run entry, including results and terminal state.</returns>
         private Task<VbaTestRun> BeginRun(VbaTestCatalog catalog, IReadOnlyList<VbaTestDescriptor> tests,
             Action<VbaTestResult> onResult, CancellationToken cancellation, Action executionGuard, bool measureCoverage = false)
@@ -416,7 +416,7 @@ namespace VBAi
         /// <param name="tests">Explicit test descriptors from the current catalog.</param>
         /// <param name="progress">Callback for publishing each result as it is accepted.</param>
         /// <param name="cancellation">Token used to cancel the operation.</param>
-        /// <param name="measureCoverage">Indicates whether measure coverage is enabled.</param>
+        /// <param name="measureCoverage">When true, use the coverage clone instead of invoking tests in the live project.</param>
         /// <returns>Completed run task; failures are recorded as aborted and rethrown.</returns>
         private async Task<VbaTestRun> CompleteRun(RunEntry entry, VbaTestCatalog catalog, IReadOnlyList<VbaTestDescriptor> tests,
             Action<VbaTestResult> progress, CancellationToken cancellation, bool measureCoverage)

@@ -281,8 +281,8 @@ namespace VBAi
         }
 
         /// <summary>Builds a source-bound procedure-entry plan, rejecting collisions and unknown denominator cases.</summary>
-        /// <param name="snapshot">vba test project snapshot that supplies the snapshot for this operation.</param>
-        /// <returns>vba coverage plan produced by the operation for create on vba coverage instrumentation.</returns>
+        /// <param name="snapshot">Project identity, revision, component types, and captured source used to bind every probe.</param>
+        /// <returns>Instrumentation plan with probes, exclusions, diagnostics, and rewritten module sources.</returns>
         public static VbaCoveragePlan Create(VbaTestProjectSnapshot snapshot)
         {
             if (snapshot == null) throw new ArgumentNullException(nameof(snapshot));
@@ -432,11 +432,11 @@ namespace VBAi
             return plan;
         }
 
-        /// <summary>Reads  for vba coverage instrumentation.</summary>
-        /// <param name="plan">vba coverage plan that supplies the plan for this operation.</param>
-        /// <param name="native">object that supplies the native for this operation.</param>
-        /// <param name="complete">Indicates whether complete is enabled.</param>
-        /// <returns>vba coverage report produced by the operation for read on vba coverage instrumentation.</returns>
+        /// <summary>Validates the generated one-based Boolean hit array and calculates procedure-entry coverage.</summary>
+        /// <param name="plan">Source-bound plan whose probes define expected array length and denominator.</param>
+        /// <param name="native">Variant returned by the generated snapshot function; must contain a one-based Boolean array.</param>
+        /// <param name="complete">Whether the selected run reached a verified complete terminal result.</param>
+        /// <returns>Coverage report; malformed bounds or non-Boolean values throw instead of producing partial data.</returns>
         public static VbaCoverageReport Read(VbaCoveragePlan plan, object native, bool complete = true)
         {
             if (plan == null) throw new ArgumentNullException(nameof(plan));
