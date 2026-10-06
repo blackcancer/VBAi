@@ -81,6 +81,8 @@ namespace VBAi
         private readonly VbeSession session;
         /// <summary>Host-only qualification opt-in, captured at connection and absent from the LLM catalogue.</summary>
         private readonly PathVisibilityDiagnostic pathVisibility;
+        /// <summary>Explicit disposable owner-Git diagnostic, never exposed to the LLM catalogue.</summary>
+        private readonly OwnerGitQualification ownerGitQualification;
         /// <summary>Adaptateurs natifs du débogueur, remplaçables par instance à la frontière UI.</summary>
         internal readonly VbeToolNativeBoundary Native = new VbeToolNativeBoundary();
         /// <summary>Exécute une commande sur la session hôte, sans remplacer l’orchestration de l’outil.</summary>
@@ -122,6 +124,7 @@ namespace VBAi
             this.dispatcher = dispatcher;
             this.session = session;
             pathVisibility = new PathVisibilityDiagnostic(processId);
+            ownerGitQualification = new OwnerGitQualification(session, processId);
             Execute = request => session.Execute(request);
             ReadImmediateNative = request => session.ReadImmediateAsync(request);
             InspectLocalScalarsNative = request => session.InspectLocalScalarsAsync(request);
@@ -168,6 +171,20 @@ namespace VBAi
                                 {
                                     PathVisibilityDiagnostic.RequireParameterFree(line);
                                     response = (Response)dispatcher.Invoke(new Func<Response>(() => Response.Success(pathVisibility.Read())));
+                                }
+                                else if (request != null && request.Command == OwnerGitQualificationManifest.CommandName)
+                                {
+                                    OwnerGitQualificationManifest.RequireExactRequest(line);
+                                    var completion = new TaskCompletionSource<Response>(TaskCreationOptions.RunContinuationsAsynchronously);
+                                    dispatcher.BeginInvoke(new Action(async () => {
+                                        try
+                                        {
+                                            var result = await VbeUiTask.Run(() => ownerGitQualification.ExecuteAsync(request, line));
+                                            completion.TrySetResult(Response.Success(result));
+                                        }
+                                        catch (Exception ex) { completion.TrySetResult(Response.Failure(ex.ToString())); }
+                                    }));
+                                    response = completion.Task.GetAwaiter().GetResult();
                                 }
                                 else if (request != null && request.Command == "debug_windows")
                                     response = Response.Success(Native.Capture(request.IncludeCallStack));

@@ -22,6 +22,8 @@ namespace VBAi
         internal Action<string> ImportPreview;
         /// <summary>Optional read-only modal-owner admission immediately before the existing native mutation boundary.</summary>
         internal Action ImportOwnerPreflight;
+        /// <summary>Optional qualification-only guard on the commit returned by the one production pull fetch.</summary>
+        internal string ExpectedIncomingCommit;
         /// <summary>Résout le répertoire de cache de la portée, notamment pour isoler les tests.</summary>
         internal static Func<string, string> CacheDirectory = MacroGitRepository.ResolveScopeDirectory;
         /// <summary>Crée un coordinateur pour le projet et le dépôt fournis.</summary>
@@ -170,6 +172,8 @@ namespace VBAi
                         var previous = Repository.Read(Repository.Resolve(MacroGitRepository.Baseline));
                         if (previous != null && !live.SameAs(previous)) throw new InvalidOperationException(UiText.Get("VBA contains uncommitted local changes."));
                         string remote = Repository.Fetch() ?? throw new InvalidOperationException("Branche distante absente.");
+                        if (ExpectedIncomingCommit != null && !string.Equals(remote, ExpectedIncomingCommit, StringComparison.OrdinalIgnoreCase))
+                            throw new InvalidOperationException("The frozen incoming Git commit changed before import.");
                         Repository.RequireFastForward(Repository.Resolve(Repository.Head), remote); return remote;
                     });
                     await ImportAsync(await Task.Run(() => Repository.Read(incoming)), live);

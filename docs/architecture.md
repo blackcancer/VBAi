@@ -64,6 +64,20 @@ Managed status remains available. Persistence is qualified
 separately by adapter Save and independent reopen. Native host acceptance is
 recorded in the compatibility and qualification pages, not inferred from this design.
 
+UserForm Git qualification has a separate, disabled-by-default diagnostic. The
+host captures `VBAi_TEST_OWNER_GIT_MANIFEST` at connection; an owned fixture then
+publishes one immutable plan bound to its original process, native VBE STA,
+workbook, candidate assembly and disposable evidence directories. The plan allows
+only the ordered checkpoint/interruption/rollback bank, a corrupt checkpoint
+preflight, or one pull from the retained synthetic qualification repository and
+exact commit. The diagnostic is absent from the LLM tool catalog. It accepts no
+new paths, verbs or executable code in a request. Existing bridge admission,
+project access checks, revision checks and the current Automatic edit policy
+apply throughout owner execution. Durable intent, mutation and terminal receipts
+distinguish a proved refusal before writing from an uncertain mutation; uncertain
+outcomes retain the host and recovery evidence without replay. Managed guards
+and receipts do not themselves qualify native persistence or rendering.
+
 A document save, application-level procedure invocation or standalone project
 persistence can require a host-specific path. These adapters must identify the
 actual document and report an unsupported operation or failed prerequisite rather

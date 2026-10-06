@@ -133,6 +133,30 @@ namespace VBAi.Tests.Unit
             }
         }
 
+        [TestMethod]
+        public async Task FrozenIncomingCommitRefusesChangedRemoteBeforeBackupOrNativeImport()
+        {
+            using (var f = new Fixture())
+            {
+                string initial = f.Seed();
+                var before = f.Project.Capture();
+                string incoming = f.Commit(f.Snapshot("2"), initial);
+                f.Repository.Push(incoming);
+                f.Operations.ExpectedIncomingCommit = initial;
+                var error = await Assert.ThrowsExceptionAsync<InvalidOperationException>(() =>
+                    f.Operations.ExecuteAsync("pull", f.Operations.Revision(before)));
+                StringAssert.Contains(error.Message, "frozen incoming Git commit changed");
+                Assert.IsTrue(f.Project.Capture().SameAs(before));
+                Assert.IsFalse(f.Repository.RecoveryPending);
+                Assert.IsNull(f.Repository.Resolve(MacroGitRepository.Backup));
+                Assert.IsNull(f.Repository.Resolve(MacroGitRepository.AfterImport));
+                Assert.AreEqual(initial, f.Repository.Resolve(f.Repository.Head));
+                f.Operations.ExpectedIncomingCommit = incoming;
+                await f.Operations.ExecuteAsync("pull", f.Operations.Revision(before));
+                Assert.AreEqual(incoming, f.Repository.Resolve(f.Repository.Head));
+            }
+        }
+
         /// <summary>Vérifie les préconditions d’import, les no-op, rollback et erreurs de récupération.</summary>
         [TestMethod]
         public void ImportPreflightNoOpRollbackAndRecoveryFailureMatrix()

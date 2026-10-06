@@ -58,10 +58,11 @@ namespace VBAi.Tests.Integration
                 ["MacroExecutions"] = 0, ["ForcedTermination"] = false,
                 ["AssemblyMvid"] = typeof(VbeSession).Module.ModuleVersionId.ToString("D"),
                 ["StartedUtc"] = DateTime.UtcNow.ToString("o"),
-                ["Scope"] = "Owned Excel; production Git adapter/coordinator on external owning test STA; native readback and normal shutdown. No GitHub or embedded Git UI claim."
+                ["Scope"] = "Owned Excel; production Git mutations on the actual installed VBE owner STA; external readback and normal shutdown. No GitHub or embedded Git UI claim."
             };
             var previousContext = SynchronizationContext.Current;
             using (var dispatcher = new Control())
+            using (var owner = new OwnerGitQualificationScope(output))
             {
                 dispatcher.CreateControl();
                 SynchronizationContext.SetSynchronizationContext(new WindowsFormsSynchronizationContext());
@@ -142,65 +143,90 @@ namespace VBAi.Tests.Integration
                             report["RawGitTransportVerified"] = true;
                             report["LocalCommit"] = commit;
                             string checkpoint = repository.Checkpoint(before, "Initial native " + layout).Id;
+                            var restoreStep = OwnerGitQualificationScope.Step("checkpoint_restore",
+                                Path.Combine(output, "changed"), Path.Combine(output, "before"), checkpoint);
+                            var interruptionStep = OwnerGitQualificationScope.Step("controlled_interruption",
+                                Path.Combine(output, "before"), Path.Combine(output, "changed"));
+                            var rollbackStep = OwnerGitQualificationScope.Step("rollback",
+                                Path.Combine(output, "changed"), Path.Combine(output, "before"));
+                            owner.Publish(host, path, "local.git", "qualification-layout",
+                                new[] { restoreStep, interruptionStep, rollbackStep });
+                            report["OwnerExecutionManifest"] = owner.ManifestPath;
+                            report["OwnerExecutionManifestSha256"] = ExcelVbeFixture.EmbeddedRawHash(owner.ManifestPath);
+                            report["OwnerExecutionReceipts"] = owner.TerminalReceipts;
 
-                            using (var operations = new MacroGitOperations(project, repository))
+                            try
                             {
-                                Phase(output, report, "production-checkpoint-restore");
-                                try { Await(operations.ExecuteAsync("checkpoint_restore", operations.Revision(changed), name: checkpoint)); }
-                                catch (InvalidOperationException error) when (error.Message == UiText.Get("The VBE did not preserve the imported sources exactly. Use Restore or check the project."))
+                                using (var operations = new MacroGitOperations(project, repository))
                                 {
-                                    // This specific terminal production refusal already retains
-                                    // Backup/AfterImport. Observe the actual designer once; do not
-                                    // retry Apply, Save, rollback or recovery to obtain a pass.
-                                    report["TerminalImportRefusal"] = error.ToString();
-                                    report["RecoveryPendingAfterRefusal"] = repository.RecoveryPending;
-                                    WriteReport(output, report);
-                                    try
+                                    Phase(output, report, "production-checkpoint-restore");
+                                    try { owner.Execute(host, restoreStep, operations.Revision(changed)); }
+                                    catch (InvalidOperationException error) when (error.Message.Contains(UiText.Get("The VBE did not preserve the imported sources exactly. Use Restore or check the project.")))
                                     {
-                                        var observed = host.ReadGitLayout(form, layout);
-                                        report["NativeAfterRefusedImport"] = observed;
-                                        report["NativeAfterRefusedImportDifferences"] = nativeBefore.Keys.Union(observed.Keys)
-                                            .Where(key => !nativeBefore.ContainsKey(key) || !observed.ContainsKey(key) || !Equals(nativeBefore[key], observed[key]))
-                                            .Select(key => new { Property = key, Expected = nativeBefore.ContainsKey(key) ? nativeBefore[key] : null,
-                                                Actual = observed.ContainsKey(key) ? observed[key] : null }).ToArray();
+                                        // This specific terminal production refusal already retains
+                                        // Backup/AfterImport. Observe the actual designer once; do not
+                                        // retry Apply, Save, rollback or recovery to obtain a pass.
+                                        report["TerminalImportRefusal"] = error.ToString();
+                                        report["RecoveryPendingAfterRefusal"] = repository.RecoveryPending;
                                         WriteReport(output, report);
+                                        try
+                                        {
+                                            var observed = host.ReadGitLayout(form, layout);
+                                            report["NativeAfterRefusedImport"] = observed;
+                                            report["NativeAfterRefusedImportDifferences"] = nativeBefore.Keys.Union(observed.Keys)
+                                                .Where(key => !nativeBefore.ContainsKey(key) || !observed.ContainsKey(key) || !Equals(nativeBefore[key], observed[key]))
+                                                .Select(key => new { Property = key, Expected = nativeBefore.ContainsKey(key) ? nativeBefore[key] : null,
+                                                    Actual = observed.ContainsKey(key) ? observed[key] : null }).ToArray();
+                                            WriteReport(output, report);
+                                        }
+                                        catch (Exception observationError)
+                                        {
+                                            report["PostRefusalObservationError"] = observationError.ToString();
+                                            WriteReport(output, report);
+                                            throw new AggregateException("Terminal strict import refusal and its read-only observation both failed.", error, observationError);
+                                        }
+                                        throw;
                                     }
-                                    catch (Exception observationError)
-                                    {
-                                        report["PostRefusalObservationError"] = observationError.ToString();
-                                        WriteReport(output, report);
-                                        throw new AggregateException("Terminal strict import refusal and its read-only observation both failed.", error, observationError);
-                                    }
-                                    throw;
+                                    var restored = Capture(project, host, layout, output, "checkpoint-restored");
+                                    Assert.IsTrue(restored.SameAs(before));
+                                    AssertNativeState(nativeBefore, host.ReadGitLayout(form, layout), "checkpoint restore");
+                                    Assert.IsFalse(repository.RecoveryPending);
+                                    Assert.IsTrue(repository.Read(repository.Resolve(MacroGitRepository.Backup)).SameAs(changed));
+                                    report["CheckpointRestoreAndBackupVerified"] = true;
+
+                                    Phase(output, report, "controlled-interruption-for-explicit-rollback");
+                                    // Prepare a real backup, apply once, and record the ACTUAL
+                                    // measured after-state. This deliberately stops before recovery
+                                    // completion; it is not a simulated COM error or fabricated state.
+                                    owner.Execute(host, interruptionStep, operations.Revision(restored));
+                                    var after = Capture(project, host, layout, output, "measured-interrupted-state");
+                                    Assert.IsTrue(after.SameAs(changed));
+                                    AssertNativeState(nativeChanged, host.ReadGitLayout(form, layout), "native apply before rollback");
+                                    Assert.IsTrue(repository.RecoveryPending);
+                                    Assert.IsTrue(repository.Read(repository.Resolve(MacroGitRepository.AfterImport)).SameAs(after));
+                                    Assert.IsTrue(repository.Read(repository.Resolve(MacroGitRepository.Backup)).SameAs(before));
+                                    report["Interruption"] = "Explicitly prepared via production backup/apply/measured-after APIs; no uncertain mutation or failure injection";
+
+                                    Phase(output, report, "production-explicit-rollback");
+                                    owner.Execute(host, rollbackStep, operations.Revision(after));
+                                    Assert.IsTrue(Capture(project, host, layout, output, "rollback-restored").SameAs(before));
+                                    AssertNativeState(nativeBefore, host.ReadGitLayout(form, layout), "explicit rollback");
+                                    Assert.IsFalse(repository.RecoveryPending);
+                                    report["ExplicitRollbackVerified"] = true;
                                 }
-                                var restored = Capture(project, host, layout, output, "checkpoint-restored");
-                                Assert.IsTrue(restored.SameAs(before));
-                                AssertNativeState(nativeBefore, host.ReadGitLayout(form, layout), "checkpoint restore");
-                                Assert.IsFalse(repository.RecoveryPending);
-                                Assert.IsTrue(repository.Read(repository.Resolve(MacroGitRepository.Backup)).SameAs(changed));
-                                report["CheckpointRestoreAndBackupVerified"] = true;
-
-                                Phase(output, report, "controlled-interruption-for-explicit-rollback");
-                                // Prepare a real backup, apply once, and record the ACTUAL
-                                // measured after-state. This deliberately stops before recovery
-                                // completion; it is not a simulated COM error or fabricated state.
-                                repository.PrepareRecovery(restored);
-                                project.Apply(changed, restored);
-                                var after = Capture(project, host, layout, output, "measured-interrupted-state");
-                                Assert.IsTrue(after.SameAs(changed));
-                                AssertNativeState(nativeChanged, host.ReadGitLayout(form, layout), "native apply before rollback");
-                                repository.RecordImportedState(after);
-                                Assert.IsTrue(repository.RecoveryPending);
-                                Assert.IsTrue(repository.Read(repository.Resolve(MacroGitRepository.AfterImport)).SameAs(after));
-                                Assert.IsTrue(repository.Read(repository.Resolve(MacroGitRepository.Backup)).SameAs(before));
-                                report["Interruption"] = "Explicitly prepared via production backup/apply/measured-after APIs; no uncertain mutation or failure injection";
-
-                                Phase(output, report, "production-explicit-rollback");
-                                Await(operations.ExecuteAsync("rollback", operations.Revision(after)));
-                                Assert.IsTrue(Capture(project, host, layout, output, "rollback-restored").SameAs(before));
-                                AssertNativeState(nativeBefore, host.ReadGitLayout(form, layout), "explicit rollback");
-                                Assert.IsFalse(repository.RecoveryPending);
-                                report["ExplicitRollbackVerified"] = true;
+                            }
+                            catch (Exception primary)
+                            {
+                                try
+                                {
+                                    if (repository.RecoveryPending) host.PreserveForDiagnosticRecovery = true;
+                                }
+                                catch (Exception observation)
+                                {
+                                    host.PreserveForDiagnosticRecovery = true;
+                                    throw new AggregateException("Local owner recovery outcome could not be observed; no replay or cleanup mutation.", primary, observation);
+                                }
+                                throw;
                             }
 
                             report["ExpectedReopenedSnapshot"] = Describe(before);

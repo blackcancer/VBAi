@@ -43,6 +43,7 @@ namespace VBAi.Tests.Integration
             };
             var previousContext = SynchronizationContext.Current;
             using (var dispatcher = new Control())
+            using (var owner = new OwnerGitQualificationScope(output))
             using (var deadline = new CancellationTokenSource(TimeSpan.FromMinutes(3)))
             {
                 dispatcher.CreateControl(); SynchronizationContext.SetSynchronizationContext(new WindowsFormsSynchronizationContext());
@@ -129,7 +130,13 @@ namespace VBAi.Tests.Integration
                                 Assert.IsFalse(captured.SameAs(before), "The target must be a distinct native sentinel before remote import.");
                                 using (var operations = new MacroGitOperations(project, fetchedRepository))
                                 {
-                                    ExecuteGuardedImport(() => Await(operations.ExecuteAsync("pull", operations.Revision(before))),
+                                    var step = OwnerGitQualificationScope.Step("pull",
+                                        Path.Combine(output, "target-backup"), Path.Combine(output, "fetched"));
+                                    owner.Publish(target, targetPath, "target.git", branch, new[] { step }, remote, commit);
+                                    report["OwnerExecutionManifest"] = owner.ManifestPath;
+                                    report["OwnerExecutionManifestSha256"] = ExcelVbeFixture.EmbeddedRawHash(owner.ManifestPath);
+                                    report["OwnerExecutionReceipts"] = owner.TerminalReceipts;
+                                    ExecuteGuardedImport(() => owner.Execute(target, step, operations.Revision(before)),
                                         () => ObserveSequentialRecovery(fetchedRepository.RecoveryFile), () => RetainSequentialHost(target));
                                     Assert.AreEqual(ownerThread, Thread.CurrentThread.ManagedThreadId);
                                     Assert.IsFalse(fetchedRepository.RecoveryPending);

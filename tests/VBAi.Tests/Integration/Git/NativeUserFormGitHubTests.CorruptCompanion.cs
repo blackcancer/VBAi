@@ -33,6 +33,7 @@ namespace VBAi.Tests.Integration
             string sentinelPath = null, sentinelHash = null;
             var previousContext = SynchronizationContext.Current;
             using (var dispatcher = new Control())
+            using (var owner = new OwnerGitQualificationScope(output))
             {
                 dispatcher.CreateControl();
                 SynchronizationContext.SetSynchronizationContext(new WindowsFormsSynchronizationContext());
@@ -75,10 +76,22 @@ namespace VBAi.Tests.Integration
                                     UiText.Get("VBA sources are incomplete, unexpected or too large (32 MB maximum).") :
                                     corruption == "Empty" ? "Form resources are missing" :
                                     "Invalid or truncated UserForm OLE resource container";
+                                var step = OwnerGitQualificationScope.Step("checkpoint_restore",
+                                    Path.Combine(output, "sentinel-snapshot"), Path.Combine(output, "sentinel-snapshot"), checkpoint, expectedMessage);
+                                owner.Publish(host, path, "local.git", "qualification-corrupt-local-only", new[] { step });
+                                report["OwnerExecutionManifest"] = owner.ManifestPath;
+                                report["OwnerExecutionManifestSha256"] = ExcelVbeFixture.EmbeddedRawHash(owner.ManifestPath);
+                                report["OwnerExecutionReceipts"] = owner.TerminalReceipts;
                                 var refusal = Assert.ThrowsException<InvalidOperationException>(() =>
-                                    Await(operations.ExecuteAsync("checkpoint_restore", operations.Revision(before), name: checkpoint)));
+                                    owner.Execute(host, step, operations.Revision(before)));
                                 StringAssert.Contains(refusal.Message, expectedMessage,
                                     "The production repository preflight must be the refusal source.");
+                                Assert.AreEqual(1, owner.TerminalReceipts.Count);
+                                var terminal = Json.Deserialize<Dictionary<string, object>>(File.ReadAllText(owner.TerminalReceipts[0]));
+                                Assert.AreEqual("ExpectedPrewriteRefusal", terminal["Outcome"]);
+                                Assert.AreEqual(false, terminal["MutationStarted"]);
+                                Assert.AreEqual(false, terminal["RecoveryPending"]);
+                                Assert.IsFalse(host.PreserveForDiagnosticRecovery, "A proved prewrite refusal permits normal owned exit.");
                                 report["PreflightError"] = refusal.Message;
                             }
                             Assert.AreEqual(committed, repository.Resolve(checkpointRef), "The malformed input must remain available as evidence.");

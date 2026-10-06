@@ -6,24 +6,22 @@ are maintained only in [recorded validation](test-coverage.md).
 
 ## Q024/Q027 resumption checkpoint (2026-10-06)
 
-Exact source `a07c660e`, product MVID `9cc0f56e-2afd-469f-92c4-71ba6cdf008c`,
-has scoped Q024 acceptance on the real Windows desktop: canonical Git document
-isolation/stale SaveAs refusal, installed owner capture/checkpoint/compare and
-actual Chat-Git entry/known modal closure. Complete managed and synthetic UI
-gates, original Word/worker exits and temporary COM restoration are verified.
-This does not qualify all Word features or another built DLL. Exact identities,
-counts and retained receipts are in
-[recorded validation](test-coverage.md#q024-qualified-word-workflows-and-incomplete-q027-matrix-2026-10-06).
+The exact `cb53c086` candidate has scoped Q024 acceptance on the real Windows
+desktop: canonical Git document isolation/stale SaveAs refusal, installed owner
+capture/checkpoint/compare and actual Chat-Git entry/known modal closure.
+Its original Word processes exited normally. Candidate identities and test counts
+are in [recorded validation](test-coverage.md#q024-qualified-and-q027-owner-execution-gap-2026-10-06).
 
-Q027 remains OPEN on this same candidate. Persisted same/fresh-process baselines
-pass, but the installed-owner import bank fails after a correlated import success
-when Compare observation requires an unmaterialized Connect control. The retained
-host prevents later launches; dependent banks remain unexecuted. Separate normal
-recovery preserves disk bytes and does not qualify the original missing shutdown
-or complete post-import state. Historical failures remain unchanged. The harness
-follow-up needs a new full gate before the complete native matrix; original exits,
-persistence/readback and actual designer review remain required. Overall release
-acceptance is unchanged.
+Q027 remains OPEN. Persisted native baselines, installed owner checkpoint import
+and one-save/fresh-process persistence pass for every declared layout. The local
+recovery bank fails because its external test process calls an operation that
+requires the actual VBE owning process and native STA. Dependent resource-refusal
+and remote scenarios did not run. The independent audit proves all original
+Excel exits, and exact temporary COM restoration is verified.
+
+The next harness must preserve that ownership guard and the complete recovery,
+resource, remote, persistence and visual oracles. No narrower passing bank closes
+Q027. Overall release acceptance is unchanged.
 
 ## PR25 integration checkpoint (2026-10-05)
 

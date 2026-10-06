@@ -1,5 +1,50 @@
 # Recorded validation
 
+## Q024 qualified and Q027 owner execution gap (2026-10-06)
+
+The exact isolated candidate is source
+`cb53c0861f4d9eb60714f585fd8549b58411ed2d`, product MVID
+`85510198-6330-4591-b164-e3ae7987fff9`, SHA-256
+`C2E51E7EB5A312D94C83815DE799ABF759E76EC2A6B1D0A1AA56972B46E42330`.
+Its solution build completed without warnings or errors.
+
+| Exact-candidate validation | Result |
+| --- | --- |
+| Complete default managed suite | 5,582 passed, 0 failed, 234 skipped; original worker exits and private desktop release verified |
+| Synthetic UI matrix | All nine declared actions passed with original normal exits |
+| Q024 on the real Default desktop | Three selected Word workflows independently qualified; all three original Word exits normal within the unchanged bound |
+| Q027 persisted native baselines | All twelve layouts passed |
+| Q027 installed owner checkpoint import | All twelve layouts passed |
+| Q027 one-save and fresh-process persistence after owner import | All twelve layouts passed |
+| Q027 external local recovery bank | Twelve failed before import: the owning VBE process and native STA were required |
+| Q027 dependent corruption and remote scenarios | Four not run after the failed bank |
+| Q027 independent lifecycle audit | All 72 original normal Excel exits proved; no missing exit receipt, replay, force termination or remaining Office host |
+| Temporary HKCU COM registration | Exact original state restored and verified; both completed owned tasks removed |
+| Coverage collection | Not run; no line or branch percentage claimed |
+
+Q024 acceptance covers canonical same-name document isolation and stale SaveAs
+refusal, installed owner capture/checkpoint/compare, and actual Chat-Git entry
+and known modal closure. It does not establish general Word acceptance.
+
+Q027 is **not qualified**. The complete frozen matrix was dispatched once.
+The corrected modal observation passed the installed owner import and persistence
+banks. The local recovery fixture still invoked `MacroGitOperations` and
+`VbaGitProject.Apply` from the external test process. The unchanged
+`FormFontRestoration.RequireOwner` correctly refused that route before native
+mutation. This failure does not justify weakening its PID/native-thread/STA guard,
+reclassifying recovery as passed, or omitting any of the declared scenarios.
+The next harness must route these operations through the actual installed VBE
+owner while preserving the full recovery and remote transport oracles.
+
+Physical evidence is retained in
+`artifacts/q027-handoff-terminal-observation-gates-20261006/`,
+`artifacts/q024-handoff-terminal-observation-native-20261006/`, and
+`artifacts/q027-handoff-terminal-observation-main-20261006/`.
+The independent `native-lifecycle-audit-v4.json` records the failed aggregate and
+original exits. Pixel review of the complete matrix remains outstanding.
+Qualification applies only to the exact candidate above, not to a later rebuild,
+the root main DLL, other hosts or release-wide acceptance.
+
 ## Q024 qualified Word workflows and incomplete Q027 matrix (2026-10-06)
 
 Exact source `a07c660eda3b7ddcaab515ea05a9012e79a23634` built in isolation

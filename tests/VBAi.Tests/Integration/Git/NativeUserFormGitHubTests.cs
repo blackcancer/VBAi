@@ -33,8 +33,9 @@ namespace VBAi.Tests.Integration
             const string allowedRepository = "https://github.com/blackcancer/vbai-qualification-20260929203712-7267b1e6.git";
             Assert.AreEqual(allowedRepository, remote, "Only the explicitly retained disposable repository is authorized.");
             Assert.AreEqual("1396566119", Convert.ToString(manifest["repositoryId"]));
-            string output = Environment.GetEnvironmentVariable("VBAi_TEST_USERFORM_GIT_OUTPUT");
-            Assert.IsTrue(!string.IsNullOrWhiteSpace(output) && Path.IsPathRooted(output));
+            string evidenceRoot = Environment.GetEnvironmentVariable("VBAi_TEST_USERFORM_GIT_OUTPUT");
+            Assert.IsTrue(!string.IsNullOrWhiteSpace(evidenceRoot) && Path.IsPathRooted(evidenceRoot));
+            string output = Path.Combine(evidenceRoot, "legacy-remote-" + Guid.NewGuid().ToString("N"));
             Directory.CreateDirectory(output);
             string branch = "qualification-userform-" + DateTime.UtcNow.ToString("yyyyMMddHHmmss") + "-" + Guid.NewGuid().ToString("N").Substring(0, 8);
             var report = new Dictionary<string, object> { ["Stage"] = "preflight", ["Branch"] = branch, ["Remote"] = remote,
@@ -42,6 +43,7 @@ namespace VBAi.Tests.Integration
                 ["ProductionMacroExecuted"] = false, ["StartedUtc"] = DateTime.UtcNow.ToString("o") };
             var previousContext = SynchronizationContext.Current;
             using (var dispatcher = new Control())
+            using (var owner = new OwnerGitQualificationScope(output))
             using (var deadline = new CancellationTokenSource(TimeSpan.FromMinutes(3)))
             {
                 dispatcher.CreateControl();
@@ -102,10 +104,16 @@ namespace VBAi.Tests.Integration
                                 Assert.IsTrue(captured.SameAs(fetched));
                                 CollectionAssert.AreEqual(captured.Files[form + ".frx"], fetched.Files[form + ".frx"]);
                                 report["RemoteFiles"] = Describe(fetched);
+                                SaveSnapshot(output, "fetched", fetched);
                                 report["Stage"] = "production-pull-once"; WriteReport(output, report);
                                 using (var operations = new MacroGitOperations(targetProject, fetchedRepository))
                                 {
-                                    Await(operations.ExecuteAsync("pull", operations.Revision(before)));
+                                    var step = OwnerGitQualificationScope.Step("pull", Path.Combine(output, "target-backup"), Path.Combine(output, "fetched"));
+                                    owner.Publish(target, targetPath, "target.git", branch, new[] { step }, remote, commit);
+                                    report["OwnerExecutionManifest"] = owner.ManifestPath;
+                                    report["OwnerExecutionManifestSha256"] = ExcelVbeFixture.EmbeddedRawHash(owner.ManifestPath);
+                                    report["OwnerExecutionReceipts"] = owner.TerminalReceipts;
+                                    owner.Execute(target, step, operations.Revision(before));
                                     Assert.AreEqual(ownerThread, Thread.CurrentThread.ManagedThreadId);
                                     Assert.IsFalse(fetchedRepository.RecoveryPending);
                                     Assert.IsTrue(fetchedRepository.Read(fetchedRepository.Resolve(MacroGitRepository.Backup)).SameAs(before));
