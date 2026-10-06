@@ -46,7 +46,7 @@ namespace VBAi.Tests.Integration
         }
 
         internal static bool HasStrictPopupOwner(Candidate row, int processId, uint threadId, long expectedRoot,
-            OwnerShape exactScopePicker = null)
+            OwnerShape exactScopePicker = null, OwnerShape exactOptionsButton = null)
         {
             if (row == null || row.OwnerHandle == 0 || row.OwnerShape == null) return false;
             OwnerShape owner = row.OwnerShape;
@@ -58,6 +58,11 @@ namespace VBAi.Tests.Integration
                     owner.Visible && (owner.Style & WsChild) != 0 &&
                     owner.ClassName != null && owner.ClassName.StartsWith("WindowsForms10.COMBOBOX.app.", StringComparison.Ordinal) &&
                     SameOwner(owner, exactScopePicker);
+            if (exactOptionsButton != null && owner.Handle == exactOptionsButton.Handle)
+                return owner.Root == expectedRoot && owner.Parent != 0 && owner.Owner == 0 &&
+                    owner.Visible && (owner.Style & WsChild) != 0 &&
+                    owner.ClassName != null && owner.ClassName.StartsWith("WindowsForms10.BUTTON.app.", StringComparison.Ordinal) &&
+                    SameOwner(owner, exactOptionsButton);
             string popupDomain = AppDomainSuffix(row.NativeClass);
             return row.OwnerHandle != row.PopupHandle && !owner.Visible && owner.Parent == 0 &&
                 owner.Root == owner.Handle && owner.Owner == 0 && (owner.Style & WsChild) == 0 &&
@@ -74,7 +79,7 @@ namespace VBAi.Tests.Integration
 
         internal static void RequireUnchangedPopupOwner(Candidate selected, string currentPopupClass,
             long currentPopupOwner, OwnerShape currentOwner, int processId, uint threadId, long expectedRoot,
-            OwnerShape exactScopePicker = null)
+            OwnerShape exactScopePicker = null, OwnerShape exactOptionsButton = null)
         {
             if (selected == null || selected.OwnerShape == null || currentOwner == null ||
                 selected.NativeClass != currentPopupClass || selected.OwnerHandle != currentPopupOwner)
@@ -82,13 +87,13 @@ namespace VBAi.Tests.Integration
             var now = new Candidate { PopupHandle = selected.PopupHandle, NativeClass = currentPopupClass,
                 OwnerHandle = currentPopupOwner, OwnerShape = currentOwner };
             OwnerShape before = selected.OwnerShape;
-            if (!HasStrictPopupOwner(selected, processId, threadId, expectedRoot, exactScopePicker) ||
-                !HasStrictPopupOwner(now, processId, threadId, expectedRoot, exactScopePicker) || !SameOwner(before, currentOwner))
+            if (!HasStrictPopupOwner(selected, processId, threadId, expectedRoot, exactScopePicker, exactOptionsButton) ||
+                !HasStrictPopupOwner(now, processId, threadId, expectedRoot, exactScopePicker, exactOptionsButton) || !SameOwner(before, currentOwner))
                 throw new InvalidOperationException("The exact Word chat Options popup owner changed before invocation.");
         }
 
         internal static Candidate RequireUnique(IEnumerable<Candidate> inventory, int processId, uint threadId,
-            long expectedOwner, OwnerShape exactScopePicker = null)
+            long expectedOwner, OwnerShape exactScopePicker = null, OwnerShape exactOptionsButton = null)
         {
             if (inventory == null) throw new ArgumentNullException(nameof(inventory));
             var rows = inventory.ToArray();
@@ -96,7 +101,7 @@ namespace VBAi.Tests.Integration
                 throw new InvalidOperationException("Bounded Word chat popup inventory is invalid.");
             var matches = rows.Where(row => row.PopupHandle != 0 && row.Visible && row.NewlyVisible &&
                 row.NativeProcessId == processId && row.UiProcessId == processId &&
-                row.NativeThreadId == threadId && HasStrictPopupOwner(row, processId, threadId, expectedOwner, exactScopePicker) &&
+                row.NativeThreadId == threadId && HasStrictPopupOwner(row, processId, threadId, expectedOwner, exactScopePicker, exactOptionsButton) &&
                 NativeToolStripPopupIdentity.Matches(row.UiType, row.NativeClass) && row.MenuItemCount > 0 && row.MenuItemCount <= 64 &&
                 row.GitLabelMatches == 1 && row.EnabledGitMatches == 1 && row.GitItemProcessId == processId &&
                 row.GitItemNativeAncestor == row.PopupHandle).ToArray();

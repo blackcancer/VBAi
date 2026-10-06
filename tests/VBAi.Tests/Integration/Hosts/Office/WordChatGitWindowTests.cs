@@ -252,6 +252,7 @@ namespace VBAi.Tests.Integration
             private SelectionPattern scopeSelection;
             private WordChatWindowDiscovery.OwnerIdentity modalOwner;
             private WordChatGitMenuDiscovery.OwnerShape exactScopePickerOwner;
+            private WordChatGitMenuDiscovery.OwnerShape exactOptionsButtonOwner;
             internal WordChatGitAutomation(Context context) { this.context = context; }
 
             private IntPtr[] OwnedTopWindows()
@@ -557,6 +558,14 @@ namespace VBAi.Tests.Integration
                     throw new InvalidOperationException("The exact Word chat Options button is unavailable.");
                 long expectedOwner = WordChatWindowDiscovery.RequireModalOwner(modalOwner,
                     context.Fixture.ProcessId, context.Scope.ThreadId);
+                IntPtr optionsHandle = NativeAncestorHandle(buttons[0]);
+                if (optionsHandle == IntPtr.Zero ||
+                    unchecked((long)(uint)buttons[0].Current.NativeWindowHandle) != optionsHandle.ToInt64() ||
+                    !IsChild(context.ChatHandle, optionsHandle))
+                    throw new InvalidOperationException("The exact Word chat Options button has no owned native leaf HWND.");
+                Guard(optionsHandle);
+                exactOptionsButtonOwner = ReadPopupOwner(optionsHandle);
+                context.Record(new { Phase = "ExactOptionsButtonOwnerFrozen", Owner = OwnerEvidence(exactOptionsButtonOwner) });
                 var visibleBefore = new HashSet<IntPtr>(OwnedTopWindows().Where(window => {
                     uint pid; uint tid = GetWindowThreadProcessId(window, out pid);
                     return pid == context.Fixture.ProcessId && tid == context.Scope.ThreadId && IsWindowVisible(window);
@@ -564,10 +573,6 @@ namespace VBAi.Tests.Integration
                 context.Record(new { Phase = "ChatOptionsIntent", ChatHandle = context.ChatHandle.ToInt64() });
                 if (PrivateDesktopUiAction.Enabled)
                 {
-                    IntPtr optionsHandle = NativeAncestorHandle(buttons[0]);
-                    if (optionsHandle == IntPtr.Zero ||
-                        unchecked((long)(uint)buttons[0].Current.NativeWindowHandle) != optionsHandle.ToInt64())
-                        throw new InvalidOperationException("The exact Word chat Options button has no native leaf HWND.");
                     context.Fixture.NativeExecutionUnsettled = true;
                     PrivateDesktopUiAction.ClickButtonOnce(buttons[0], "options", buttons[0].Current.Name,
                         context.ChatHandle, optionsHandle, context.Fixture.ProcessId, context.Scope.ThreadId);
@@ -617,12 +622,12 @@ namespace VBAi.Tests.Integration
                             if (enabled.Length == 1) exactItems.Add(window.ToInt64(), enabled[0]);
                         }
                         var eligible = last.Where(item => WordChatGitMenuDiscovery.HasStrictPopupOwner(item,
-                                context.Fixture.ProcessId, context.Scope.ThreadId, expectedOwner, exactScopePickerOwner) && item.NewlyVisible &&
+                                context.Fixture.ProcessId, context.Scope.ThreadId, expectedOwner, exactScopePickerOwner, exactOptionsButtonOwner) && item.NewlyVisible &&
                             item.GitLabelMatches == 1 && item.EnabledGitMatches == 1).ToArray();
                         if (eligible.Length > 0)
                         {
                             var selected = WordChatGitMenuDiscovery.RequireUnique(last, context.Fixture.ProcessId,
-                                context.Scope.ThreadId, expectedOwner, exactScopePickerOwner);
+                                context.Scope.ThreadId, expectedOwner, exactScopePickerOwner, exactOptionsButtonOwner);
                             gitPopupHandle = new IntPtr(selected.PopupHandle);
                             selectedPopup = selected;
                             gitItem = exactItems[selected.PopupHandle];
@@ -672,9 +677,11 @@ namespace VBAi.Tests.Integration
                     var currentOwner = ReadPopupOwner(new IntPtr(currentPopupOwner));
                     if (exactScopePickerOwner != null && !IsChild(context.ChatHandle, new IntPtr(exactScopePickerOwner.Handle)))
                         throw new InvalidOperationException("The frozen scope picker left its owned chat before Git invocation.");
+                    if (exactOptionsButtonOwner == null || !IsChild(context.ChatHandle, new IntPtr(exactOptionsButtonOwner.Handle)))
+                        throw new InvalidOperationException("The frozen Options button left its owned chat before Git invocation.");
                     WordChatGitMenuDiscovery.RequireUnchangedPopupOwner(selectedPopup, currentPopupClass,
                         currentPopupOwner, currentOwner,
-                        context.Fixture.ProcessId, context.Scope.ThreadId, expectedRoot, exactScopePickerOwner);
+                        context.Fixture.ProcessId, context.Scope.ThreadId, expectedRoot, exactScopePickerOwner, exactOptionsButtonOwner);
                     if (!IsWindowVisible(gitPopupHandle) ||
                         AutomationElement.FromHandle(gitPopupHandle).Current.ControlType.ProgrammaticName != selectedPopup.UiType ||
                         !NativeToolStripPopupIdentity.Matches(selectedPopup.UiType, currentPopupClass) ||

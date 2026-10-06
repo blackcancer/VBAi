@@ -13,6 +13,99 @@ namespace VBAi.Tests.Unit
         private const long Owner = 46473454;
 
         [TestMethod]
+        public void RealDesktopPopupRequiresItsFrozenExactOptionsButtonOwner()
+        {
+            var button = OptionsButtonOwner();
+            var popup = Exact(); popup.OwnerHandle = button.Handle; popup.OwnerShape = Copy(button);
+            Assert.ThrowsException<InvalidOperationException>(() =>
+                WordChatGitMenuDiscovery.RequireUnique(new[] { popup }, ProcessId, ThreadId, Owner));
+            Assert.ThrowsException<InvalidOperationException>(() =>
+                WordChatGitMenuDiscovery.RequireUnique(new[] { popup }, ProcessId, ThreadId, Owner, ScopePickerOwner()));
+            Assert.AreSame(popup, WordChatGitMenuDiscovery.RequireUnique(new[] { popup }, ProcessId, ThreadId, Owner,
+                exactOptionsButton: button));
+            WordChatGitMenuDiscovery.RequireUnchangedPopupOwner(popup, popup.NativeClass, button.Handle,
+                Copy(button), ProcessId, ThreadId, Owner, exactOptionsButton: button);
+            var otherButton = Copy(button); otherButton.Handle++;
+            Assert.ThrowsException<InvalidOperationException>(() =>
+                WordChatGitMenuDiscovery.RequireUnique(new[] { popup }, ProcessId, ThreadId, Owner,
+                    exactOptionsButton: otherButton));
+        }
+
+        [DataTestMethod]
+        [DataRow("Handle"), DataRow("Parent"), DataRow("Root"), DataRow("Owner")]
+        [DataRow("Process"), DataRow("Thread"), DataRow("Live"), DataRow("Visible")]
+        [DataRow("Style"), DataRow("NoChildStyle"), DataRow("ExStyle")]
+        [DataRow("ClassName"), DataRow("WrongClass"), DataRow("NullClass")]
+        public void OptionsPopupRefusesChangedOwnerBeforeSelectionAndInvocation(string field)
+        {
+            var frozen = OptionsButtonOwner(); var now = Copy(frozen);
+            switch (field)
+            {
+                case "Handle": now.Handle++; break;
+                case "Parent": now.Parent++; break;
+                case "Root": now.Root++; break;
+                case "Owner": now.Owner = Owner; break;
+                case "Process": now.ProcessId++; break;
+                case "Thread": now.ThreadId++; break;
+                case "Live": now.Live = false; break;
+                case "Visible": now.Visible = false; break;
+                case "Style": now.Style++; break;
+                case "NoChildStyle": now.Style = 0; break;
+                case "ExStyle": now.ExStyle++; break;
+                case "ClassName": now.ClassName += "changed"; break;
+                case "WrongClass": now.ClassName = "WindowsForms10.COMBOBOX.app.0.23dba96_r133_ad1"; break;
+                case "NullClass": now.ClassName = null; break;
+                default: Assert.Fail("Unknown owner mutation."); break;
+            }
+            var popup = Exact(); popup.OwnerHandle = now.Handle; popup.OwnerShape = now;
+            Assert.ThrowsException<InvalidOperationException>(() =>
+                WordChatGitMenuDiscovery.RequireUnique(new[] { popup }, ProcessId, ThreadId, Owner,
+                    exactOptionsButton: frozen));
+            popup = Exact(); popup.OwnerHandle = frozen.Handle; popup.OwnerShape = Copy(frozen);
+            Assert.ThrowsException<InvalidOperationException>(() =>
+                WordChatGitMenuDiscovery.RequireUnchangedPopupOwner(popup, popup.NativeClass, now.Handle,
+                    now, ProcessId, ThreadId, Owner, exactOptionsButton: frozen));
+        }
+
+        [TestMethod]
+        public void OptionsOwnerKeepsEveryPopupIdentityAndUniqueItemGuard()
+        {
+            var button = OptionsButtonOwner();
+            Action<WordChatGitMenuDiscovery.Candidate>[] changes = {
+                row => row.NativeProcessId++, row => row.UiProcessId++, row => row.NativeThreadId++,
+                row => row.GitItemProcessId++, row => row.GitItemNativeAncestor++,
+                row => row.Visible = false, row => row.NewlyVisible = false,
+                row => row.NativeClass = "OpusApp", row => row.UiType = "ControlType.Window",
+                row => row.MenuItemCount = 0, row => row.MenuItemCount = 65,
+                row => row.GitLabelMatches = 0, row => row.GitLabelMatches = 2,
+                row => row.EnabledGitMatches = 0
+            };
+            foreach (var change in changes)
+            {
+                var popup = Exact(); popup.OwnerHandle = button.Handle; popup.OwnerShape = Copy(button); change(popup);
+                Assert.ThrowsException<InvalidOperationException>(() =>
+                    WordChatGitMenuDiscovery.RequireUnique(new[] { popup }, ProcessId, ThreadId, Owner,
+                        exactOptionsButton: button));
+            }
+            var one = Exact(); one.OwnerHandle = button.Handle; one.OwnerShape = Copy(button);
+            var two = Exact(); two.OwnerHandle = button.Handle; two.OwnerShape = Copy(button);
+            two.PopupHandle++; two.GitItemNativeAncestor++;
+            Assert.ThrowsException<InvalidOperationException>(() =>
+                WordChatGitMenuDiscovery.RequireUnique(new[] { one, two }, ProcessId, ThreadId, Owner,
+                    exactOptionsButton: button));
+            Assert.ThrowsException<InvalidOperationException>(() =>
+                WordChatGitMenuDiscovery.RequireUnique(new[] { one, one }, ProcessId, ThreadId, Owner,
+                    exactOptionsButton: button));
+        }
+
+        private static WordChatGitMenuDiscovery.OwnerShape OptionsButtonOwner()
+            => new WordChatGitMenuDiscovery.OwnerShape {
+                Handle = 21108174, Parent = 106566272, Root = Owner, Owner = 0,
+                ProcessId = ProcessId, ThreadId = ThreadId, Live = true, Visible = true,
+                ClassName = "WindowsForms10.BUTTON.app.0.23dba96_r133_ad1", Style = 1442906123, ExStyle = 0
+            };
+
+        [TestMethod]
         public void PrivatePopupMayUseOnlyItsFrozenExactScopePickerAsChildOwner()
         {
             var picker = ScopePickerOwner();
