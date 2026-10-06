@@ -46,18 +46,15 @@
     <None Include="..\..\tools\probes\OwnedTeardownTrace.Common.ps1" TargetPath="tools\probes\OwnedTeardownTrace.Common.ps1" CopyToOutputDirectory="PreserveNewest" />
     <None Include="..\..\tools\probes\Test-OwnedExcelTeardownPreflight.ps1" TargetPath="tools\probes\Test-OwnedExcelTeardownPreflight.ps1" CopyToOutputDirectory="PreserveNewest" />
     <None Include="..\..\tools\tests\Test-TestLayout.ps1" Link="Architecture\Test-TestLayout.ps1" />
-    <None Include="..\..\tools\tests\Test-SolidWorksDebug.ps1" Link="Manual\Debug\Test-SolidWorksDebug.ps1" />
-    <None Include="..\..\tools\tests\Test-SolidWorksBreakpoint.ps1" Link="Manual\Debug\Test-SolidWorksBreakpoint.ps1" />
+    <None Include="..\..\tools\tests\Test-SolidWorks.ps1" Link="Manual\Debug\Test-SolidWorks.ps1" />
+    <None Include="..\..\tools\tests\Test-ExcelCode.ps1" Link="Manual\Code\Test-ExcelCode.ps1" />
     <None Include="..\..\tools\tests\Test-VbeOptions.ps1" Link="Manual\Debug\Test-VbeOptions.ps1" />
-    <None Include="..\..\tools\probes\Test-CompileProject.ps1" Link="Manual\Debug\Test-CompileProject.ps1" />
-    <None Include="..\..\tools\probes\Test-RuntimeDialog.ps1" Link="Manual\Debug\Test-RuntimeDialog.ps1" />
-    <None Include="..\..\tools\probes\Test-QuickWatch.ps1" Link="Manual\Debug\Test-QuickWatch.ps1" />
-    <None Include="..\..\tools\probes\Test-EditWatchType.ps1" Link="Manual\Debug\Test-EditWatchType.ps1" />
-    <None Include="..\..\tools\probes\Test-NestedCallStack.ps1" Link="Manual\Debug\Test-NestedCallStack.ps1" />
-    <None Include="..\..\tools\probes\Test-StepOver.ps1" Link="Manual\Debug\Test-StepOver.ps1" />
-    <None Include="..\..\tools\probes\Test-ClearAllBreakpoints.ps1" Link="Manual\Debug\Test-ClearAllBreakpoints.ps1" />
-    <None Include="..\..\tools\probes\Test-ShowNextStatementGuard.ps1" Link="Manual\Debug\Test-ShowNextStatementGuard.ps1" />
-    <None Include="..\..\tools\probes\Inspect-DebugTree.ps1" Link="Manual\Debug\Inspect-DebugTree.ps1" />
+    <None Include="..\..\tools\probes\Test-Debugger.ps1" Link="Manual\Debug\Test-Debugger.ps1" />
+    <None Include="..\..\tools\probes\Test-CodeEditor.ps1" Link="Manual\Code\Test-CodeEditor.ps1" />
+    <None Include="..\..\tools\probes\Test-VbeEvents.ps1" Link="Manual\Events\Test-VbeEvents.ps1" />
+    <None Include="..\..\tools\probes\VbeProbe.Common.ps1" Link="Manual\VbeProbe.Common.ps1" />
+    <None Include="..\..\tools\probes\Inspect-VbeAccessibility.ps1" Link="Manual\Debug\Inspect-VbeAccessibility.ps1" />
+    <None Include="..\..\tools\probes\Inspect-VbeNativeWindows.ps1" Link="Manual\Debug\Inspect-VbeNativeWindows.ps1" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\src\VBAi\VBAi.csproj" />

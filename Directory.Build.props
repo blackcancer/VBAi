@@ -10,5 +10,8 @@
     <Deterministic>true</Deterministic>
     <!-- Optional isolated build; keep a distinct output directory per project. -->
     <BaseOutputPath Condition="'$(BuildOutputRoot)' != ''">$(BuildOutputRoot)\$(MSBuildProjectName)\</BaseOutputPath>
+    <!-- Keep the documentation tool's generated files out of the tools source tree. -->
+    <BaseOutputPath Condition="'$(BuildOutputRoot)' == '' and '$(MSBuildProjectName)' == 'XmlDocumentationAudit'">$(RepositoryRoot)artifacts\build\XmlDocumentationAudit\</BaseOutputPath>
+    <BaseIntermediateOutputPath Condition="'$(MSBuildProjectName)' == 'XmlDocumentationAudit'">$(RepositoryRoot)artifacts\obj\XmlDocumentationAudit\</BaseIntermediateOutputPath>
   </PropertyGroup>
 </Project>
