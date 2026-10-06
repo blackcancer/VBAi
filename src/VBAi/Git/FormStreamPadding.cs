@@ -256,7 +256,7 @@ namespace VBAi
             /// <value>Never negative for a valid reader.</value>
             internal int Remaining { get { return end - Position; } }
 
-            /// <summary>Initializes a Reader instance with the supplied state.</summary>
+            /// <summary>Creates a bounded cursor over one byte-array extent; reads cannot pass its end offset.</summary>
             /// <param name="bytes">Backing logical stream.</param>
             /// <param name="start">Absolute starting offset.</param>
             /// <param name="length">Byte extent available to this reader.</param>

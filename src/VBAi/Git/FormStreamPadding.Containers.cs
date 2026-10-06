@@ -68,7 +68,7 @@ namespace VBAi
             /// <summary>Persisted control type associated with the font owner.</summary>
             internal readonly uint Type;
 
-            /// <summary>Initializes a FormFontBinding instance with the supplied state.</summary>
+            /// <summary>Copies the validated descriptor and associates it with one logical control owner.</summary>
             /// <param name="ownerPath">Validated logical storage/control path.</param>
             /// <param name="descriptor">Persisted font descriptor; copied to prevent aliasing.</param>
             /// <param name="type">VB control type owning the descriptor.</param>
@@ -193,7 +193,7 @@ namespace VBAi
             /// <summary>Optional tab labels collected for MultiPage child validation.</summary>
             internal TabLinks Tabs;
 
-            /// <summary>Initializes a StorageNode instance with the supplied state.</summary>
+            /// <summary>Creates a parsed storage record with its CFB path, control identity, type, and nesting depth.</summary>
             /// <param name="path">Storage path within the CFB tree.</param>
             /// <param name="type">Control type represented by this storage.</param>
             /// <param name="identity">Identity assigned by its parent site.</param>
@@ -240,7 +240,7 @@ namespace VBAi
             /// <summary>Total sites parsed across the graph, bounded to 16,384.</summary>
             private int siteCount;
 
-            /// <summary>Initializes a StorageGraph instance with the supplied state.</summary>
+            /// <summary>Builds a graph over supplied stream metadata and creates comparison buffers for every stream.</summary>
             /// <param name="streams">Input stream map whose arrays are copied for comparison.</param>
             /// <param name="metadata">Persisted storage metadata map.</param>
             internal StorageGraph(IReadOnlyDictionary<string, byte[]> streams, IReadOnlyDictionary<string, byte[]> metadata)

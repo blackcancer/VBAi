@@ -169,7 +169,23 @@ static string[] MissingTags(SyntaxNode node)
         result.Add("value");
     if (node is not PropertyDeclarationSyntax and not IndexerDeclarationSyntax && xml.Elements("value").Any())
         result.Add("unexpected value");
+    foreach (var element in xml.Elements())
+        if (IsGenericDescription(element.Value))
+            result.Add("generic " + element.Name.LocalName);
     return [.. result];
+}
+
+static bool IsGenericDescription(string value)
+{
+    var text = System.Net.WebUtility.HtmlDecode(value).Trim();
+    return System.Text.RegularExpressions.Regex.IsMatch(text,
+            @"^(Provides the .+ implementation|Performs the .+ operation for .+|Represents .+ data|Stores the .+ used by .+|Owns the .+ state and operations|Initializes a .+ instance with the supplied state|Attempts to .+ for [a-z][a-z ]+|Handles .+ for [a-z][a-z ]+|Requires .+ for [a-z][a-z ]+|Returns .+ for [a-z][a-z ]+|Determines whether .+ for [a-z][a-z ]+|Maintains the .+ state for .+|Identifies the .+ associated with .+|Keeps the .+ path available to .+)\.$")
+        || text == "The result produced by this operation."
+        || text == "The current value represented by this member."
+        || text.StartsWith("The ", StringComparison.Ordinal) && text.EndsWith(" used by this operation.", StringComparison.Ordinal)
+        || text.StartsWith("Text containing the ", StringComparison.Ordinal)
+        || System.Text.RegularExpressions.Regex.IsMatch(text,
+            @"^(Path used for the .+ being processed|Boolean indicating the result of the check|Indicates whether .+ is enabled|.+ that supplies the .+ for this operation|Text that supplies the .+ value\. Use the format required by the calling operation)\.$");
 }
 
 static bool HasText(XElement xml, string element) =>
@@ -229,7 +245,7 @@ static int TransplantDocumentation(string targetRoot, string sourceRoot)
             if (key is null) continue;
             var leading = declaration.GetLeadingTrivia().Where(trivia => !IsDocumentationTrivia(trivia)).ToArray();
             replacements[declaration] = declaration.WithLeadingTrivia(
-                PlaceDocumentation(leading, AlignParameterNames(docsByKey[key], declaration)));
+                PlaceDocumentation(leading, AlignParameterNames(docsByKey[key], declaration), declaration));
             commentsCopied++;
         }
 
@@ -316,12 +332,22 @@ static List<SyntaxTrivia> DocumentationTrivia(SyntaxNode node) => node.GetLeadin
     .Where(IsDocumentationTrivia).ToList();
 
 static IEnumerable<SyntaxTrivia> PlaceDocumentation(IEnumerable<SyntaxTrivia> originalLeading,
-    IEnumerable<SyntaxTrivia> documentation)
+    IEnumerable<SyntaxTrivia> documentation, SyntaxNode target)
 {
-    var leading = originalLeading.ToArray();
-    var indent = leading.LastOrDefault(trivia => trivia.IsKind(SyntaxKind.WhitespaceTrivia));
-    if (indent.RawKind == 0) return leading.Concat(documentation);
-    return leading.Concat(documentation).Append(indent);
+    var original = originalLeading.ToArray();
+    var declarationLine = target.SyntaxTree.GetText().Lines.GetLineFromPosition(target.SpanStart).ToString();
+    var indentation = declarationLine[..declarationLine.TakeWhile(char.IsWhiteSpace).Count()];
+    var prefixText = string.Concat(original.Where(trivia => !IsDocumentationTrivia(trivia)
+        && !trivia.IsKind(SyntaxKind.WhitespaceTrivia)).Select(trivia => trivia.ToFullString()));
+    var normalizedPrefix = string.Join(Environment.NewLine, prefixText.Replace("\r\n", "\n", StringComparison.Ordinal)
+        .Split('\n').Select(line => line.Trim().Length == 0 ? "" : indentation + line.TrimStart()))
+        .TrimEnd('\r', '\n');
+    var lines = string.Concat(documentation.Select(trivia => trivia.ToFullString()))
+        .Replace("\r\n", "\n", StringComparison.Ordinal)
+        .Split('\n');
+    var normalized = string.Join(Environment.NewLine, lines.Select(line =>
+        line.Trim().Length == 0 ? "" : indentation + line.TrimStart())).TrimEnd('\r', '\n');
+    return SyntaxFactory.ParseLeadingTrivia(normalizedPrefix + Environment.NewLine + normalized + Environment.NewLine + indentation);
 }
 
 static int CompleteDocumentation(string root)
@@ -356,7 +382,7 @@ static int CompleteDocumentation(string root)
             var leading = node.GetLeadingTrivia().Where(trivia => !IsDocumentationTrivia(trivia)).ToArray();
             var documentation = (canPreserve ? existing : [])
                 .Concat(SyntaxFactory.ParseLeadingTrivia(xml.ToString()));
-            replacements[node] = node.WithLeadingTrivia(PlaceDocumentation(leading, documentation));
+            replacements[node] = node.WithLeadingTrivia(PlaceDocumentation(leading, documentation, node));
             declarationsCompleted++;
         }
         if (replacements.Count == 0) continue;
@@ -560,7 +586,7 @@ static int RefineDocumentation(string root)
             if (StringComparer.Ordinal.Equals(oldText, newText)) continue;
             var leading = node.GetLeadingTrivia().Where(trivia => !IsDocumentationTrivia(trivia)).ToArray();
             replacements[node] = node.WithLeadingTrivia(PlaceDocumentation(leading,
-                SyntaxFactory.ParseLeadingTrivia(newText)));
+                SyntaxFactory.ParseLeadingTrivia(newText), node));
             commentsRefined++;
         }
         if (replacements.Count == 0) continue;

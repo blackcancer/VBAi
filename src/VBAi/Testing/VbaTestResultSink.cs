@@ -65,7 +65,7 @@ namespace VBAi
             internal object[] Verdict;
         }
 
-        /// <summary>Initializes a VbaTestResultSink instance with the supplied state.</summary>
+        /// <summary>Creates a sink that validates callback verdicts against the pending test attempt.</summary>
         /// <param name="sameProject">Optional COM identity comparer; defaults to the VBE project's native identity comparison.</param>
         internal VbaTestResultSink(Func<object, object, bool> sameProject = null)
         { this.sameProject = sameProject ?? VbeDebug.NativeProcedureValuesHost.SameComIdentity; }

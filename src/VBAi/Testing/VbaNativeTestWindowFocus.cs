@@ -242,84 +242,84 @@ namespace VBAi
         internal sealed class NativeWindows : IWindows
         {
 
-            /// <summary>Defines the enum window callback.</summary>
-            /// <param name="window">Native handle that supplies the window for this operation.</param>
-            /// <param name="parameter">Native handle that supplies the parameter for this operation.</param>
-            /// <returns>Boolean indicating the result of the check for operation on native windows.</returns>
+            /// <summary>Receives each descendant HWND enumerated by user32.</summary>
+            /// <param name="window">Current descendant handle.</param>
+            /// <param name="parameter">Opaque caller value passed through enumeration.</param>
+            /// <returns>True to continue enumeration; false to stop.</returns>
             private delegate bool EnumWindow(IntPtr window, IntPtr parameter);
 
-            /// <summary>Returns current thread id for native windows.</summary>
-            /// <returns>uint produced by the operation for get current thread id on native windows.</returns>
+            /// <summary>Gets the calling UI thread ID used to verify HWND ownership.</summary>
+            /// <returns>Win32 thread identifier.</returns>
             [DllImport("kernel32.dll")] private static extern uint GetCurrentThreadId();
 
-            /// <summary>Determines whether window for native windows.</summary>
-            /// <param name="window">Native handle that supplies the window for this operation.</param>
-            /// <returns>Boolean indicating the result of the check for is window on native windows.</returns>
+            /// <summary>Tests whether the supplied handle currently identifies a window.</summary>
+            /// <param name="window">HWND to validate.</param>
+            /// <returns>True while the handle identifies a window.</returns>
             [DllImport("user32.dll")] private static extern bool IsWindow(IntPtr window);
 
-            /// <summary>Determines whether window visible for native windows.</summary>
-            /// <param name="window">Native handle that supplies the window for this operation.</param>
-            /// <returns>Boolean indicating the result of the check for is window visible on native windows.</returns>
+            /// <summary>Tests the native visible style of a window.</summary>
+            /// <param name="window">HWND to inspect.</param>
+            /// <returns>True when the window is visible.</returns>
             [DllImport("user32.dll")] private static extern bool IsWindowVisible(IntPtr window);
 
-            /// <summary>Determines whether window enabled for native windows.</summary>
-            /// <param name="window">Native handle that supplies the window for this operation.</param>
-            /// <returns>Boolean indicating the result of the check for is window enabled on native windows.</returns>
+            /// <summary>Tests whether a window can receive user input.</summary>
+            /// <param name="window">HWND to inspect.</param>
+            /// <returns>True when the window is enabled.</returns>
             [DllImport("user32.dll")] private static extern bool IsWindowEnabled(IntPtr window);
 
-            /// <summary>Returns parent for native windows.</summary>
-            /// <param name="window">Native handle that supplies the window for this operation.</param>
-            /// <returns>int ptr produced by the operation for get parent on native windows.</returns>
+            /// <summary>Gets the parent HWND used to verify the VBE window chain.</summary>
+            /// <param name="window">Child HWND whose parent is requested.</param>
+            /// <returns>Parent handle, or zero when there is no parent.</returns>
             [DllImport("user32.dll")] private static extern IntPtr GetParent(IntPtr window);
 
-            /// <summary>Returns window thread process id for native windows.</summary>
-            /// <param name="window">Native handle that supplies the window for this operation.</param>
-            /// <param name="process">uint that supplies the process for this operation.</param>
-            /// <returns>uint produced by the operation for get window thread process id on native windows.</returns>
+            /// <summary>Reads the owning thread and process IDs for an HWND.</summary>
+            /// <param name="window">Window whose ownership is queried.</param>
+            /// <param name="process">Receives the owning process ID.</param>
+            /// <returns>Owning thread ID, or zero if unavailable.</returns>
             [DllImport("user32.dll")] private static extern uint GetWindowThreadProcessId(IntPtr window, out uint process);
 
-            /// <summary>Returns class name for native windows.</summary>
-            /// <param name="window">Native handle that supplies the window for this operation.</param>
-            /// <param name="text">string builder that supplies the text for this operation.</param>
-            /// <param name="capacity">int that supplies the capacity for this operation.</param>
-            /// <returns>int produced by the operation for get class name on native windows.</returns>
+            /// <summary>Copies a window's class name into a bounded Unicode buffer.</summary>
+            /// <param name="window">Window whose class is queried.</param>
+            /// <param name="text">Destination buffer.</param>
+            /// <param name="capacity">Destination capacity in characters.</param>
+            /// <returns>Characters copied, excluding the terminator.</returns>
             [DllImport("user32.dll", CharSet = CharSet.Unicode)] private static extern int GetClassName(IntPtr window, StringBuilder text, int capacity);
 
-            /// <summary>Returns window text for native windows.</summary>
-            /// <param name="window">Native handle that supplies the window for this operation.</param>
-            /// <param name="text">string builder that supplies the text for this operation.</param>
-            /// <param name="capacity">int that supplies the capacity for this operation.</param>
-            /// <returns>int produced by the operation for get window text on native windows.</returns>
+            /// <summary>Copies a window caption into a bounded Unicode buffer.</summary>
+            /// <param name="window">Window whose caption is queried.</param>
+            /// <param name="text">Destination buffer.</param>
+            /// <param name="capacity">Destination capacity in characters.</param>
+            /// <returns>Characters copied, excluding the terminator.</returns>
             [DllImport("user32.dll", CharSet = CharSet.Unicode)] private static extern int GetWindowText(IntPtr window, StringBuilder text, int capacity);
 
-            /// <summary>Returns window text length for native windows.</summary>
-            /// <param name="window">Native handle that supplies the window for this operation.</param>
-            /// <returns>int produced by the operation for get window text length on native windows.</returns>
+            /// <summary>Gets the caption length used to bound subsequent title reads.</summary>
+            /// <param name="window">Window whose caption length is queried.</param>
+            /// <returns>Caption length in characters, excluding the terminator.</returns>
             [DllImport("user32.dll", CharSet = CharSet.Unicode)] private static extern int GetWindowTextLength(IntPtr window);
 
-            /// <summary>Handles enum child windows for native windows.</summary>
-            /// <param name="parent">Native handle that supplies the parent for this operation.</param>
-            /// <param name="callback">enum window that supplies the callback for this operation.</param>
-            /// <param name="parameter">Native handle that supplies the parameter for this operation.</param>
-            /// <returns>Boolean indicating the result of the check for enum child windows on native windows.</returns>
+            /// <summary>Enumerates descendant windows and calls the supplied callback for each HWND.</summary>
+            /// <param name="parent">Root whose descendants are enumerated.</param>
+            /// <param name="callback">Callback invoked for each descendant.</param>
+            /// <param name="parameter">Opaque value passed to each callback.</param>
+            /// <returns>Nonzero when enumeration completes successfully.</returns>
             [DllImport("user32.dll")] private static extern bool EnumChildWindows(IntPtr parent, EnumWindow callback, IntPtr parameter);
 
-            /// <summary>Handles send message for native windows.</summary>
-            /// <param name="window">Native handle that supplies the window for this operation.</param>
-            /// <param name="message">uint that supplies the message for this operation.</param>
-            /// <param name="parameter">Native handle that supplies the parameter for this operation.</param>
-            /// <param name="unused">Native handle that supplies the unused for this operation.</param>
-            /// <returns>int ptr produced by the operation for send message on native windows.</returns>
+            /// <summary>Sends a synchronous Unicode window message, used here for MDI activation.</summary>
+            /// <param name="window">Window receiving the message.</param>
+            /// <param name="message">Message identifier.</param>
+            /// <param name="parameter">Message-specific first value.</param>
+            /// <param name="unused">Message-specific second value.</param>
+            /// <returns>Window-procedure result.</returns>
             [DllImport("user32.dll", CharSet = CharSet.Unicode, EntryPoint = "SendMessageW")]
             private static extern IntPtr SendMessage(IntPtr window, uint message, IntPtr parameter, IntPtr unused);
 
-            /// <summary>Handles native set focus for native windows.</summary>
-            /// <param name="window">Native handle that supplies the window for this operation.</param>
-            /// <returns>int ptr produced by the operation for native set focus on native windows.</returns>
+            /// <summary>Requests keyboard focus for the specified HWND on the calling thread.</summary>
+            /// <param name="window">Window requested to receive focus.</param>
+            /// <returns>Previously focused HWND, or zero when no prior focus existed.</returns>
             [DllImport("user32.dll", EntryPoint = "SetFocus")] private static extern IntPtr NativeSetFocus(IntPtr window);
 
-            /// <summary>Returns focus for native windows.</summary>
-            /// <returns>int ptr produced by the operation for get focus on native windows.</returns>
+            /// <summary>Gets the HWND with keyboard focus on the calling thread.</summary>
+            /// <returns>Focused HWND, or zero when no window has focus.</returns>
             [DllImport("user32.dll")] private static extern IntPtr GetFocus();
 
             /// <summary>Gets the current process ID from <see cref="Process.GetCurrentProcess"/>.</summary>

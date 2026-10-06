@@ -117,7 +117,7 @@ namespace VBAi
             internal TaskCompletionSource<VbaTestResult> Completion = new TaskCompletionSource<VbaTestResult>(TaskCreationOptions.RunContinuationsAsynchronously);
         }
 
-        /// <summary>Initializes a VbaNativeTestExecutionHost instance with the supplied state.</summary>
+        /// <summary>Creates a session-bound native dispatcher whose COM work and callbacks stay on the constructing thread.</summary>
         /// <param name="vbe">Live VBE automation object captured on the owning thread.</param>
         /// <param name="dispatcher">Control with a created handle for posting native work back to that thread.</param>
         /// <param name="sink">Result sink that validates callback correlation.</param>
@@ -325,13 +325,13 @@ namespace VBAi
             return (object)pane;
         }
 
-        /// <summary>Validates native pane context for vba native test execution host.</summary>
-        /// <param name="editorObject">object that supplies the editor object for this operation.</param>
-        /// <param name="projectObject">object that supplies the project object for this operation.</param>
-        /// <param name="moduleObject">object that supplies the module object for this operation.</param>
-        /// <param name="expectedPane">object that supplies the expected pane for this operation.</param>
-        /// <param name="expectedLine">int that supplies the expected line for this operation.</param>
-        /// <param name="identity">func&lt;object, object, bool&gt; that supplies the identity for this operation.</param>
+        /// <summary>Validates the active project, code window, and pending-wrapper selection before native dispatch.</summary>
+        /// <param name="editorObject">Owning VBE automation object.</param>
+        /// <param name="projectObject">Project authorized for the current run.</param>
+        /// <param name="moduleObject">Generated support module containing the pending wrapper.</param>
+        /// <param name="expectedPane">Pane captured during preparation.</param>
+        /// <param name="expectedLine">One-based pending-wrapper body line that must remain selected.</param>
+        /// <param name="identity">COM identity comparer; defaults to the shared native identity helper.</param>
         internal static void ValidateNativePaneContext(object editorObject, object projectObject, object moduleObject,
             object expectedPane, int expectedLine, Func<object, object, bool> identity = null)
         {
@@ -352,11 +352,11 @@ namespace VBAi
         }
 
         /// <summary>Validates native pane selection for vba native test execution host.</summary>
-        /// <param name="editorObject">object that supplies the editor object for this operation.</param>
-        /// <param name="moduleObject">object that supplies the module object for this operation.</param>
-        /// <param name="expectedPane">object that supplies the expected pane for this operation.</param>
-        /// <param name="expectedLine">int that supplies the expected line for this operation.</param>
-        /// <param name="identity">func&lt;object, object, bool&gt; that supplies the identity for this operation.</param>
+        /// <param name="editorObject">Owning VBE automation object.</param>
+        /// <param name="moduleObject">Generated support module containing the pending wrapper.</param>
+        /// <param name="expectedPane">Pane captured during preparation.</param>
+        /// <param name="expectedLine">One-based pending-wrapper body line that must remain selected.</param>
+        /// <param name="identity">COM identity comparer; defaults to the shared native identity helper.</param>
         private static void ValidateNativePaneSelection(object editorObject, object moduleObject,
             object expectedPane, int expectedLine, Func<object, object, bool> identity)
         {
@@ -372,13 +372,13 @@ namespace VBAi
         }
 
         /// <summary>Ensures native pane focus for vba native test execution host.</summary>
-        /// <param name="editorObject">object that supplies the editor object for this operation.</param>
-        /// <param name="projectObject">object that supplies the project object for this operation.</param>
-        /// <param name="moduleObject">object that supplies the module object for this operation.</param>
-        /// <param name="paneObject">object that supplies the pane object for this operation.</param>
-        /// <param name="line">int that supplies the line for this operation.</param>
-        /// <param name="windows">i windows that supplies the windows for this operation.</param>
-        /// <param name="identity">func&lt;object, object, bool&gt; that supplies the identity for this operation.</param>
+        /// <param name="editorObject">Owning VBE automation object.</param>
+        /// <param name="projectObject">Project authorized for the current run.</param>
+        /// <param name="moduleObject">Generated support module containing the pending wrapper.</param>
+        /// <param name="paneObject">Prepared code pane whose window is the required target.</param>
+        /// <param name="line">Expected pending-wrapper body line.</param>
+        /// <param name="windows">Native HWND reader/activator restricted to the current process and UI thread.</param>
+        /// <param name="identity">COM identity comparer; defaults to the shared native identity helper.</param>
         /// <returns>target produced by the operation for ensure native pane focus on vba native test execution host.</returns>
         internal static VbaNativeTestWindowFocus.Target EnsureNativePaneFocus(object editorObject, object projectObject,
             object moduleObject, object paneObject, int line, VbaNativeTestWindowFocus.IWindows windows,
@@ -406,12 +406,12 @@ namespace VBAi
         }
 
         /// <summary>Validates native focus target for vba native test execution host.</summary>
-        /// <param name="editorObject">object that supplies the editor object for this operation.</param>
-        /// <param name="projectObject">object that supplies the project object for this operation.</param>
-        /// <param name="moduleObject">object that supplies the module object for this operation.</param>
-        /// <param name="paneObject">object that supplies the pane object for this operation.</param>
-        /// <param name="line">int that supplies the line for this operation.</param>
-        /// <param name="identity">func&lt;object, object, bool&gt; that supplies the identity for this operation.</param>
+        /// <param name="editorObject">Owning VBE automation object.</param>
+        /// <param name="projectObject">Project authorized for the current run.</param>
+        /// <param name="moduleObject">Generated support module containing the pending wrapper.</param>
+        /// <param name="paneObject">Prepared code pane whose window is the required target.</param>
+        /// <param name="line">Expected pending-wrapper body line.</param>
+        /// <param name="identity">COM identity comparer; defaults to the shared native identity helper.</param>
         private static void ValidateNativeFocusTarget(object editorObject, object projectObject, object moduleObject,
             object paneObject, int line, Func<object, object, bool> identity)
         {
@@ -429,10 +429,10 @@ namespace VBAi
         }
 
         /// <summary>Validates recovered native focus for vba native test execution host.</summary>
-        /// <param name="editorObject">object that supplies the editor object for this operation.</param>
-        /// <param name="paneObject">object that supplies the pane object for this operation.</param>
-        /// <param name="windows">i windows that supplies the windows for this operation.</param>
-        /// <param name="target">target that supplies the target for this operation.</param>
+        /// <param name="editorObject">Owning VBE automation object.</param>
+        /// <param name="paneObject">Prepared code pane whose window is the required target.</param>
+        /// <param name="windows">Native HWND reader/activator restricted to the current process and UI thread.</param>
+        /// <param name="target">Previously verified native VBE main, MDI, and code-window handle chain.</param>
         internal static void ValidateRecoveredNativeFocus(object editorObject, object paneObject,
             VbaNativeTestWindowFocus.IWindows windows, VbaNativeTestWindowFocus.Target target)
         {
@@ -443,13 +443,13 @@ namespace VBAi
             VbaNativeTestWindowFocus.VerifyFocus(windows, target);
         }
 
-        /// <summary>Handles describe native windows for vba native test execution host.</summary>
-        /// <param name="editorObject">object that supplies the editor object for this operation.</param>
-        /// <param name="expectedPane">object that supplies the expected pane for this operation.</param>
-        /// <param name="expectedModule">object that supplies the expected module for this operation.</param>
-        /// <param name="identity">func&lt;object, object, bool&gt; that supplies the identity for this operation.</param>
-        /// <param name="nativeWindows">func&lt;int ptr, string&gt; that supplies the native windows for this operation.</param>
-        /// <returns>Text produced by the operation for describe native windows on vba native test execution host.</returns>
+        /// <summary>Captures bounded COM and native-window diagnostics without focusing or dispatching a command.</summary>
+        /// <param name="editorObject">Owning VBE automation object.</param>
+        /// <param name="expectedPane">Pane captured during preparation.</param>
+        /// <param name="expectedModule">Module expected to own the prepared pane.</param>
+        /// <param name="identity">COM identity comparer; defaults to the shared native identity helper.</param>
+        /// <param name="nativeWindows">Optional native-window formatter; defaults to a bounded owner-thread scan.</param>
+        /// <returns>One bounded diagnostic string; individual failed COM reads are represented as unavailable.</returns>
         internal static string DescribeNativeWindows(object editorObject, object expectedPane, object expectedModule,
             Func<object, object, bool> identity = null, Func<IntPtr, string> nativeWindows = null)
         {
@@ -493,9 +493,9 @@ namespace VBAi
             return details.Append("]").ToString();
         }
 
-        /// <summary>Handles diagnostic window for vba native test execution host.</summary>
-        /// <param name="window">object that supplies the window for this operation.</param>
-        /// <returns>Text produced by the operation for diagnostic window on vba native test execution host.</returns>
+        /// <summary>Reads bounded scalar properties from one observed VBIDE window.</summary>
+        /// <param name="window">Window object, possibly unavailable.</param>
+        /// <returns>Type, visibility, HWND, and state values with failed reads marked unavailable.</returns>
         private static string DiagnosticWindow(object window)
         {
             return "Type=" + DiagnosticRead(() => ((dynamic)window).Type)
@@ -504,40 +504,40 @@ namespace VBAi
                 + ",State=" + DiagnosticRead(() => ((dynamic)window).WindowState);
         }
 
-        /// <summary>Owns the native window observation state and operations.</summary>
+        /// <summary>Produces a bounded, read-only snapshot of native descendants belonging to the VBE process.</summary>
         internal static class NativeWindowObservation
         {
 
-            /// <summary>Defines the enum window callback.</summary>
-            /// <param name="window">Native handle that supplies the window for this operation.</param>
-            /// <param name="unused">Native handle that supplies the unused for this operation.</param>
-            /// <returns>Boolean indicating the result of the check for operation on native window observation.</returns>
+            /// <summary>Callback signature used by user32 to visit one descendant HWND.</summary>
+            /// <param name="window">Current descendant handle.</param>
+            /// <param name="unused">Opaque LPARAM supplied to the enumeration call.</param>
+            /// <returns>True to continue enumeration; false to stop.</returns>
             private delegate bool EnumWindow(IntPtr window, IntPtr unused);
 
-            /// <summary>Handles enum child windows for native window observation.</summary>
-            /// <param name="parent">Native handle that supplies the parent for this operation.</param>
-            /// <param name="callback">enum window that supplies the callback for this operation.</param>
-            /// <param name="unused">Native handle that supplies the unused for this operation.</param>
-            /// <returns>Boolean indicating the result of the check for enum child windows on native window observation.</returns>
+            /// <summary>Imports the user32 descendant-window enumeration function.</summary>
+            /// <param name="parent">Root HWND whose descendants are enumerated.</param>
+            /// <param name="callback">Managed callback invoked for each descendant.</param>
+            /// <param name="unused">Opaque LPARAM supplied to the enumeration call.</param>
+            /// <returns>Win32 enumeration success.</returns>
             [DllImport("user32.dll")] private static extern bool EnumChildWindows(IntPtr parent, EnumWindow callback, IntPtr unused);
 
-            /// <summary>Reads  for native window observation.</summary>
-            /// <param name="main">Native handle that supplies the main for this operation.</param>
-            /// <returns>Text produced by the operation for read on native window observation.</returns>
+            /// <summary>Reads the owned VBE main window and a bounded set of same-process descendants.</summary>
+            /// <param name="main">VBE main-window HWND.</param>
+            /// <returns>Scalar window descriptions, or an owner-mismatch marker when the root is not current-thread owned.</returns>
             internal static string Read(IntPtr main)
             { return Read(main, new VbaNativeTestWindowFocus.NativeWindows(), Enumerate); }
 
-            /// <summary>Handles enumerate for native window observation.</summary>
-            /// <param name="main">Native handle that supplies the main for this operation.</param>
-            /// <param name="visit">func&lt;int ptr, bool&gt; that supplies the visit for this operation.</param>
+            /// <summary>Adapts EnumChildWindows to a callback that can stop after a bound.</summary>
+            /// <param name="main">VBE main-window HWND.</param>
+            /// <param name="visit">Receives each HWND and returns false to stop early.</param>
             private static void Enumerate(IntPtr main, Func<IntPtr, bool> visit)
             { EnumChildWindows(main, (window, unused) => visit(window), IntPtr.Zero); }
 
-            /// <summary>Reads  for native window observation.</summary>
-            /// <param name="main">Native handle that supplies the main for this operation.</param>
-            /// <param name="windows">i windows that supplies the windows for this operation.</param>
-            /// <param name="enumerate">action&lt;int ptr, func&lt;int ptr, bool&gt;&gt; that supplies the enumerate for this operation.</param>
-            /// <returns>Text produced by the operation for read on native window observation.</returns>
+            /// <summary>Reads the owned VBE main window and a bounded set of same-process descendants.</summary>
+            /// <param name="main">VBE main-window HWND.</param>
+            /// <param name="windows">Native HWND reader/activator restricted to the current process and UI thread.</param>
+            /// <param name="enumerate">Descendant enumerator that stops when the callback returns false.</param>
+            /// <returns>Scalar window descriptions, or an owner-mismatch marker when the root is not current-thread owned.</returns>
             internal static string Read(IntPtr main, VbaNativeTestWindowFocus.IWindows windows, Action<IntPtr, Func<IntPtr, bool>> enumerate)
             {
                 var root = windows.Read(main);
@@ -557,10 +557,10 @@ namespace VBAi
                 return result.ToString();
             }
 
-            /// <summary>Handles append for native window observation.</summary>
-            /// <param name="result">string builder that supplies the result for this operation.</param>
-            /// <param name="window">window that supplies the window for this operation.</param>
-            /// <param name="owner">uint that supplies the owner for this operation.</param>
+            /// <summary>Appends one scalar HWND record while limiting the class name to 95 characters.</summary>
+            /// <param name="result">Diagnostic buffer receiving the record.</param>
+            /// <param name="window">Observed native window snapshot.</param>
+            /// <param name="owner">Process ID recorded for this observation.</param>
             private static void Append(StringBuilder result, VbaNativeTestWindowFocus.Window window, uint owner)
             {
                 string kind = window.Class ?? "";
@@ -572,14 +572,14 @@ namespace VBAi
 
         // Read only after a refusal. Failed inspection must preserve the original refusal,
         // and must never reselect a pane, focus a window or dispatch a native command.
-        /// <summary>Handles describe native selection for vba native test execution host.</summary>
-        /// <param name="editorObject">object that supplies the editor object for this operation.</param>
-        /// <param name="expectedProject">object that supplies the expected project for this operation.</param>
-        /// <param name="expectedModule">object that supplies the expected module for this operation.</param>
-        /// <param name="expectedPane">object that supplies the expected pane for this operation.</param>
-        /// <param name="expectedLine">int that supplies the expected line for this operation.</param>
-        /// <param name="identity">func&lt;object, object, bool&gt; that supplies the identity for this operation.</param>
-        /// <returns>Text produced by the operation for describe native selection on vba native test execution host.</returns>
+        /// <summary>Captures bounded selection and project diagnostics after native preparation is refused.</summary>
+        /// <param name="editorObject">Owning VBE automation object.</param>
+        /// <param name="expectedProject">Project expected to own the active editor selection.</param>
+        /// <param name="expectedModule">Module expected to own the prepared pane.</param>
+        /// <param name="expectedPane">Pane captured during preparation.</param>
+        /// <param name="expectedLine">One-based pending-wrapper body line that must remain selected.</param>
+        /// <param name="identity">COM identity comparer; defaults to the shared native identity helper.</param>
+        /// <returns>Scalar expected/observed selection evidence; reads outside the selected project are redacted.</returns>
         internal static string DescribeNativeSelection(object editorObject, object expectedProject, object expectedModule,
             object expectedPane, int expectedLine, Func<object, object, bool> identity = null)
         {
@@ -621,11 +621,11 @@ namespace VBAi
                 + "; reads=" + activeProjectRead + "/" + paneRead + "/" + moduleRead + "/" + projectRead + ".";
         }
 
-        /// <summary>Handles diagnostic matches for vba native test execution host.</summary>
-        /// <param name="identity">func&lt;object, object, bool&gt; that supplies the identity for this operation.</param>
-        /// <param name="expected">object that supplies the expected for this operation.</param>
-        /// <param name="actual">object that supplies the actual for this operation.</param>
-        /// <returns>Boolean indicating the result of the check for diagnostic matches on vba native test execution host.</returns>
+        /// <summary>Compares optional diagnostic objects without allowing identity failures to escape.</summary>
+        /// <param name="identity">COM identity comparer; defaults to the shared native identity helper.</param>
+        /// <param name="expected">Expected COM object; null never matches.</param>
+        /// <param name="actual">Observed COM object; null never matches.</param>
+        /// <returns>True only when the configured identity comparer succeeds.</returns>
         private static bool DiagnosticMatches(Func<object, object, bool> identity, object expected, object actual)
         {
             if (expected == null || actual == null) return false;
@@ -633,10 +633,10 @@ namespace VBAi
             catch { return false; }
         }
 
-        /// <summary>Handles diagnostic procedure for vba native test execution host.</summary>
-        /// <param name="module">object that supplies the module for this operation.</param>
-        /// <param name="line">int that supplies the line for this operation.</param>
-        /// <returns>Text produced by the operation for diagnostic procedure on vba native test execution host.</returns>
+        /// <summary>Reads the VBA procedure name and kind containing a source line.</summary>
+        /// <param name="module">CodeModule whose procedure table is queried.</param>
+        /// <param name="line">Expected pending-wrapper body line.</param>
+        /// <returns>Procedure name and VBIDE procedure-kind value.</returns>
         private static string DiagnosticProcedure(object module, int line)
         {
             int kind = 0;
@@ -644,9 +644,9 @@ namespace VBAi
             return name + " (kind=" + kind + ")";
         }
 
-        /// <summary>Handles diagnostic read for vba native test execution host.</summary>
-        /// <param name="read">func&lt;object&gt; that supplies the read for this operation.</param>
-        /// <returns>Text produced by the operation for diagnostic read on vba native test execution host.</returns>
+        /// <summary>Runs one optional diagnostic getter and converts failures to bounded markers.</summary>
+        /// <param name="read">COM or scalar property getter to invoke once.</param>
+        /// <returns>Null, available, invariant scalar text capped at 256 characters, or an exception-type marker.</returns>
         private static string DiagnosticRead(Func<object> read)
         {
             try
@@ -661,53 +661,53 @@ namespace VBAi
             catch (Exception error) { return "unavailable(" + error.GetType().Name + ")"; }
         }
 
-        /// <summary>Owns the native probe state and operations.</summary>
+        /// <summary>Implements STA-only native pane selection, focus revalidation, and one built-in Run dispatch.</summary>
         internal sealed class NativeProbe : IProbe
         {
 
-            /// <summary>Owns the prepared state and operations.</summary>
+            /// <summary>Captured editor/project/module/pane/control state required to revalidate one native attempt.</summary>
             private sealed class Prepared
             {
 
-                /// <summary>Maintains the editor and project and module and pane and control state for prepared.</summary>
+                /// <summary>COM identities captured before native dispatch.</summary>
                 internal object Editor, Project, Module, Pane, Control;
 
-                /// <summary>Maintains the source and caption and after show and after focus state for prepared.</summary>
+                /// <summary>Expected support source, Run control caption, and bounded observations after Show and Focus.</summary>
                 internal string Source, Caption, AfterShow, AfterFocus;
 
-                /// <summary>Maintains the line state for prepared.</summary>
+                /// <summary>One-based body line of the generated pending wrapper.</summary>
                 internal int Line;
 
-                /// <summary>Maintains the focus recovery attempted state for prepared.</summary>
+                /// <summary>Prevents more than one native focus recovery attempt.</summary>
                 internal bool FocusRecoveryAttempted;
 
-                /// <summary>Maintains the native focus state for prepared.</summary>
+                /// <summary>Verified HWND ownership/focus snapshot, or null when COM focus already matched.</summary>
                 internal VbaNativeTestWindowFocus.Target NativeFocus;
             }
 
-            /// <summary>Maintains the windows state for native probe.</summary>
+            /// <summary>Native HWND inspection and guarded activation implementation.</summary>
             private readonly VbaNativeTestWindowFocus.IWindows windows;
 
-            /// <summary>Maintains the identity state for native probe.</summary>
+            /// <summary>COM identity comparer used to revalidate editor objects.</summary>
             private readonly Func<object, object, bool> identity;
 
-            /// <summary>Initializes a NativeProbe instance with the supplied state.</summary>
-            /// <param name="windows">i windows that supplies the windows for this operation.</param>
-            /// <param name="identity">func&lt;object, object, bool&gt; that supplies the identity for this operation.</param>
+            /// <summary>Creates a native probe with optional HWND and COM-identity adapters.</summary>
+            /// <param name="windows">Native HWND reader/activator restricted to the current process and UI thread.</param>
+            /// <param name="identity">COM identity comparer; defaults to the shared native identity helper.</param>
             internal NativeProbe(VbaNativeTestWindowFocus.IWindows windows = null, Func<object, object, bool> identity = null)
             {
                 this.windows = windows ?? new VbaNativeTestWindowFocus.NativeWindows();
                 this.identity = identity ?? VbeDebug.NativeProcedureValuesHost.SameComIdentity;
             }
 
-            /// <summary>Compares identity for native probe.</summary>
-            /// <param name="first">object that supplies the first for this operation.</param>
-            /// <param name="second">object that supplies the second for this operation.</param>
-            /// <returns>Boolean indicating the result of the check for same identity on native probe.</returns>
+            /// <summary>Compares two objects using the configured COM identity rule.</summary>
+            /// <param name="first">First COM object.</param>
+            /// <param name="second">Second COM object.</param>
+            /// <returns>True when the configured comparer reports the same COM identity.</returns>
             internal bool SameIdentity(object first, object second) => identity(first, second);
 
-            /// <summary>Requires owner for native probe.</summary>
-            /// <param name="editor">object that supplies the editor for this operation.</param>
+            /// <summary>Requires an STA caller and a VBE main window owned by this process and thread.</summary>
+            /// <param name="editor">VBE automation object whose main-window ownership is checked.</param>
             public void RequireOwner(object editor)
             {
                 if (Thread.CurrentThread.GetApartmentState() != ApartmentState.STA) throw new InvalidOperationException("Native VBE execution requires an STA.");
@@ -717,11 +717,11 @@ namespace VBAi
                     throw new InvalidOperationException("The VBE window does not belong to this process and owning UI thread.");
             }
 
-            /// <summary>Handles prepare for native probe.</summary>
-            /// <param name="editorObject">object that supplies the editor object for this operation.</param>
-            /// <param name="projectObject">object that supplies the project object for this operation.</param>
-            /// <param name="source">Text that supplies the source value. Use the format required by the calling operation.</param>
-            /// <returns>object produced by the operation for prepare on native probe.</returns>
+            /// <summary>Validates the generated wrapper, selects its exact code pane, and captures dispatch identities.</summary>
+            /// <param name="editorObject">Owning VBE automation object.</param>
+            /// <param name="projectObject">Project authorized for the current run.</param>
+            /// <param name="source">Expected complete generated support-module source.</param>
+            /// <returns>Prepared identity snapshot used by subsequent revalidation and execution.</returns>
             public object Prepare(object editorObject, object projectObject, string source)
             {
                 RequireOwner(editorObject);
@@ -762,25 +762,25 @@ namespace VBAi
                 return new Prepared { Editor = editorObject, Project = projectObject, Module = module, Pane = pane, Control = control, Source = source, Caption = (string)control.Caption, Line = line, AfterShow = afterShow, AfterFocus = afterFocus, NativeFocus = nativeFocus, FocusRecoveryAttempted = nativeFocus != null };
             }
 
-            /// <summary>Handles revalidate for native probe.</summary>
-            /// <param name="editorObject">object that supplies the editor object for this operation.</param>
-            /// <param name="projectObject">object that supplies the project object for this operation.</param>
-            /// <param name="prepared">object that supplies the prepared for this operation.</param>
+            /// <summary>Rechecks project, design mode, support source, native pane selection, focus, and Run control identity.</summary>
+            /// <param name="editorObject">Owning VBE automation object.</param>
+            /// <param name="projectObject">Project authorized for the current run.</param>
+            /// <param name="prepared">Prepared native dispatch snapshot.</param>
             public void Revalidate(object editorObject, object projectObject, object prepared)
             { Revalidate(editorObject, projectObject, prepared, false); }
 
-            /// <summary>Handles revalidate before arming for native probe.</summary>
-            /// <param name="editorObject">object that supplies the editor object for this operation.</param>
-            /// <param name="projectObject">object that supplies the project object for this operation.</param>
-            /// <param name="prepared">object that supplies the prepared for this operation.</param>
+            /// <summary>Performs the last revalidation that permits one bounded focus recovery before callback correlation is armed.</summary>
+            /// <param name="editorObject">Owning VBE automation object.</param>
+            /// <param name="projectObject">Project authorized for the current run.</param>
+            /// <param name="prepared">Prepared native dispatch snapshot.</param>
             internal void RevalidateBeforeArming(object editorObject, object projectObject, object prepared)
             { Revalidate(editorObject, projectObject, prepared, true); }
 
-            /// <summary>Handles revalidate for native probe.</summary>
-            /// <param name="editorObject">object that supplies the editor object for this operation.</param>
-            /// <param name="projectObject">object that supplies the project object for this operation.</param>
-            /// <param name="prepared">object that supplies the prepared for this operation.</param>
-            /// <param name="allowFocusRecovery">Indicates whether allow focus recovery is enabled.</param>
+            /// <summary>Rechecks project, design mode, support source, native pane selection, focus, and Run control identity.</summary>
+            /// <param name="editorObject">Owning VBE automation object.</param>
+            /// <param name="projectObject">Project authorized for the current run.</param>
+            /// <param name="prepared">Prepared native dispatch snapshot.</param>
+            /// <param name="allowFocusRecovery">Whether this pass may use its one permitted recovery when only HWND focus was lost.</param>
             private void Revalidate(object editorObject, object projectObject, object prepared, bool allowFocusRecovery)
             {
                 RequireOwner(editorObject);
@@ -823,8 +823,8 @@ namespace VBAi
                 ValidateNativeRunControl((object)control, plan.Caption);
             }
 
-            /// <summary>Executes  for native probe.</summary>
-            /// <param name="prepared">object that supplies the prepared for this operation.</param>
+            /// <summary>Executes the verified built-in Run Sub command exactly once after final revalidation.</summary>
+            /// <param name="prepared">Prepared native dispatch snapshot.</param>
             public void Execute(object prepared)
             {
                 var plan = (Prepared)prepared;
@@ -832,14 +832,14 @@ namespace VBAi
                 ((dynamic)plan.Control).Execute();
             }
 
-            /// <summary>Reads mode for native probe.</summary>
-            /// <param name="project">object that supplies the project for this operation.</param>
-            /// <returns>int produced by the operation for read mode on native probe.</returns>
+            /// <summary>Reads the live VBE project mode used to verify native execution completion.</summary>
+            /// <param name="project">Live project whose Mode property is observed.</param>
+            /// <returns>VBE mode value returned by the project.</returns>
             public int ReadMode(object project) => (int)((dynamic)project).Mode;
 
-            /// <summary>Reads source for native probe.</summary>
-            /// <param name="module">dynamic that supplies the module for this operation.</param>
-            /// <returns>Text produced by the operation for read source on native probe.</returns>
+            /// <summary>Reads the complete support module source within the inspection line limit.</summary>
+            /// <param name="module">Support CodeModule whose text is revalidated before execution.</param>
+            /// <returns>Complete source text, or an exception when its line count exceeds 200,000.</returns>
             private static string ReadSource(dynamic module)
             {
                 int count = (int)module.CountOfLines;

@@ -9,25 +9,25 @@ using System.Threading.Tasks;
 namespace VBAi
 {
 
-    /// <summary>Owns the vbe test explorer service state and operations.</summary>
+    /// <summary>Coverage partial that checks prerequisites, runs instrumentation in a disposable copy, and reads hit results.</summary>
     internal sealed partial class VbeTestExplorerService
     {
 
-        /// <summary>Maintains the create coverage clone state for vbe test explorer service.</summary>
+        /// <summary>Factory that creates an owned copy from the live host project and saved document path.</summary>
         internal Func<object, string, string, VbaTestCoverageClone> CreateCoverageClone = VbaTestCoverageClone.CreateOwned;
 
-        /// <summary>Maintains the coverage root state for vbe test explorer service.</summary>
+        /// <summary>Root directory for per-run copies and coverage plan artifacts.</summary>
         internal Func<string> CoverageRoot = () => Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "VBAi", "CoverageRuns");
 
-        /// <summary>Maintains the coverage service state for vbe test explorer service.</summary>
+        /// <summary>Temporary explorer bound to the disposable instrumented project.</summary>
         private VbeTestExplorerService coverageService;
 
-        /// <summary>Maintains the compile coverage project state for vbe test explorer service.</summary>
+        /// <summary>Compilation callback required before generated support code can be dispatched.</summary>
         internal Action<object> CompileCoverageProject;
 
-        /// <summary>Handles coverage unavailable reason for vbe test explorer service.</summary>
-        /// <param name="catalog">vba test catalog that supplies the catalog for this operation.</param>
-        /// <returns>Text produced by the operation for coverage unavailable reason on vbe test explorer service.</returns>
+        /// <summary>Returns the first reason coverage cannot safely run for this project, or null when eligible.</summary>
+        /// <param name="catalog">Current discovery snapshot whose host, revision, and module set are checked.</param>
+        /// <returns>User-readable refusal reason, or null when an owned supported document copy can be instrumented.</returns>
         public string CoverageUnavailableReason(VbaTestCatalog catalog)
         {
             RequireOwner();
@@ -56,11 +56,11 @@ namespace VBAi
             return null;
         }
 
-        /// <summary>Handles preview coverage for vbe test explorer service.</summary>
-        /// <param name="catalog">vba test catalog that supplies the catalog for this operation.</param>
-        /// <param name="offset">int that supplies the offset for this operation.</param>
-        /// <param name="limit">int that supplies the limit for this operation.</param>
-        /// <returns>object produced by the operation for preview coverage on vbe test explorer service.</returns>
+        /// <summary>Builds a paged plan preview without dispatching tests or modifying the live project.</summary>
+        /// <param name="catalog">Current discovery snapshot whose host, revision, and module set are checked.</param>
+        /// <param name="offset">Zero-based start of the requested detail page.</param>
+        /// <param name="limit">Requested page size; zero selects the report default.</param>
+        /// <returns>Preview data including availability, procedure probes, exclusions, and diagnostics.</returns>
         private object PreviewCoverage(VbaTestCatalog catalog, int offset = 0, int limit = 0)
         {
             limit = VbaTestReports.PageLimit(offset, limit);
@@ -69,14 +69,14 @@ namespace VBAi
             return CoveragePreviewPage(catalog.Project.Selector, catalog.Project.Revision, plan, unavailable, offset, limit);
         }
 
-        /// <summary>Handles coverage preview page for vbe test explorer service.</summary>
-        /// <param name="project">Text that supplies the project value. Use the format required by the calling operation.</param>
-        /// <param name="revision">Text that supplies the revision value. Use the format required by the calling operation.</param>
-        /// <param name="plan">vba coverage plan that supplies the plan for this operation.</param>
-        /// <param name="unavailable">Text that supplies the unavailable value. Use the format required by the calling operation.</param>
-        /// <param name="offset">int that supplies the offset for this operation.</param>
-        /// <param name="limit">int that supplies the limit for this operation.</param>
-        /// <returns>object produced by the operation for coverage preview page on vbe test explorer service.</returns>
+        /// <summary>Creates the transport shape for a paged plan and its separate execution availability.</summary>
+        /// <param name="project">Project selector displayed with this preview.</param>
+        /// <param name="revision">Source revision to which this plan is bound.</param>
+        /// <param name="plan">Procedure probes, exclusions, and diagnostics computed from the source revision.</param>
+        /// <param name="unavailable">Execution refusal reason, or null when execution prerequisites pass.</param>
+        /// <param name="offset">Zero-based start of the requested detail page.</param>
+        /// <param name="limit">Requested page size; zero selects the report default.</param>
+        /// <returns>Preview object; coverage remains unavailable until a separate explicit run completes.</returns>
         internal static object CoveragePreviewPage(string project, string revision, VbaCoveragePlan plan, string unavailable, int offset = 0, int limit = 0)
         {
             limit = VbaTestReports.PageLimit(offset, limit);
@@ -94,23 +94,23 @@ namespace VBAi
                 Method = "Explicit coverage run on a separate instrumented host-document copy; original source is never instrumented." };
         }
 
-        /// <summary>Runs coverage async for vbe test explorer service.</summary>
-        /// <param name="catalog">vba test catalog that supplies the catalog for this operation.</param>
-        /// <param name="tests">i read only list&lt;vba test descriptor&gt; that supplies the tests for this operation.</param>
-        /// <param name="onResult">action&lt;vba test result&gt; that supplies the on result for this operation.</param>
+        /// <summary>Runs explicit tests in an owned instrumented copy and reports procedure-entry coverage.</summary>
+        /// <param name="catalog">Current discovery snapshot whose host, revision, and module set are checked.</param>
+        /// <param name="tests">Explicit discovered tests to execute in the disposable clone.</param>
+        /// <param name="onResult">Optional callback for each result translated to the original test descriptor.</param>
         /// <param name="cancellation">Token used to cancel the operation.</param>
-        /// <returns>task&lt;vba test run&gt; produced by the operation for run coverage async on vbe test explorer service.</returns>
+        /// <returns>Run task with translated results and collected procedure-entry hits.</returns>
         public Task<VbaTestRun> RunCoverageAsync(VbaTestCatalog catalog, IReadOnlyList<VbaTestDescriptor> tests,
             Action<VbaTestResult> onResult, CancellationToken cancellation)
         { return BeginRun(catalog, tests, onResult, cancellation, null, true); }
 
-        /// <summary>Executes coverage async for vbe test explorer service.</summary>
-        /// <param name="original">vba test catalog that supplies the original for this operation.</param>
-        /// <param name="selected">i read only list&lt;vba test descriptor&gt; that supplies the selected for this operation.</param>
-        /// <param name="progress">action&lt;vba test result&gt; that supplies the progress for this operation.</param>
+        /// <summary>Verifies a copy, instruments it, compiles generated support, then dispatches selected tests.</summary>
+        /// <param name="original">Live-project catalog whose revision, modules, and references must match the copy.</param>
+        /// <param name="selected">Explicit tests selected from the original discovery catalog.</param>
+        /// <param name="progress">Receives results translated back to the original catalog test descriptors.</param>
         /// <param name="cancellation">Token used to cancel the operation.</param>
-        /// <param name="executionGuard">action that supplies the execution guard for this operation.</param>
-        /// <returns>task&lt;vba test run&gt; produced by the operation for execute coverage async on vbe test explorer service.</returns>
+        /// <param name="executionGuard">Authorization and revision callback rerun before clone mutation and execution phases.</param>
+        /// <returns>Run containing partial results and explicit unavailable or uncertain outcome state on failure.</returns>
         private async Task<VbaTestRun> ExecuteCoverageAsync(VbaTestCatalog original, IReadOnlyList<VbaTestDescriptor> selected,
             Action<VbaTestResult> progress, CancellationToken cancellation, Action executionGuard)
         {
@@ -228,12 +228,12 @@ namespace VBAi
             return run;
         }
 
-        /// <summary>Invokes coverage function for vbe test explorer service.</summary>
-        /// <param name="copy">vbe test explorer service that supplies the copy for this operation.</param>
-        /// <param name="catalog">vba test catalog that supplies the catalog for this operation.</param>
-        /// <param name="procedure">Text that supplies the procedure value. Use the format required by the calling operation.</param>
-        /// <param name="guard">action that supplies the guard for this operation.</param>
-        /// <returns>object produced by the operation for invoke coverage function on vbe test explorer service.</returns>
+        /// <summary>Invokes one generated runtime function after validating the copied project.</summary>
+        /// <param name="copy">Temporary explorer bound to the disposable copy.</param>
+        /// <param name="catalog">Current discovery snapshot whose host, revision, and module set are checked.</param>
+        /// <param name="procedure">Generated reset or snapshot function name in the support module.</param>
+        /// <param name="guard">Rechecks owner, source revision, and copied catalog around native dispatch.</param>
+        /// <returns>Native function return value; invocation errors are marked as uncertain completion.</returns>
         private object InvokeCoverageFunction(VbeTestExplorerService copy, VbaTestCatalog catalog, string procedure, Action guard)
         {
             guard(); copy.Validate(catalog);
@@ -255,16 +255,16 @@ namespace VBAi
             finally { ReleaseReturnedTarget(target, uncertain); }
         }
 
-        /// <summary>Determines whether it can onical path for vbe test explorer service.</summary>
-        /// <param name="path">Path used for the path being processed.</param>
-        /// <returns>Text produced by the operation for canonical path on vbe test explorer service.</returns>
+        /// <summary>Normalizes an absolute path for case-insensitive Windows identity comparison.</summary>
+        /// <param name="path">Absolute host-document or owned-copy path.</param>
+        /// <returns>Full path without trailing separators, normalized to invariant uppercase.</returns>
         private static string CanonicalPath(string path) => Path.GetFullPath(path).TrimEnd(Path.DirectorySeparatorChar).ToUpperInvariant();
 
-        /// <summary>Writes clone module for vbe test explorer service.</summary>
-        /// <param name="project">dynamic that supplies the project for this operation.</param>
-        /// <param name="name">Text that supplies the name value. Use the format required by the calling operation.</param>
-        /// <param name="source">Text that supplies the source value. Use the format required by the calling operation.</param>
-        /// <param name="create">Indicates whether create is enabled.</param>
+        /// <summary>Writes source through the copied project CodeModule, creating the standard module only when requested.</summary>
+        /// <param name="project">VBProject COM object belonging to the owned disposable host copy.</param>
+        /// <param name="name">VBA module name to create or update.</param>
+        /// <param name="source">Complete module source written through CodeModule.</param>
+        /// <param name="create">Whether a standard module may be added when the named module is absent.</param>
         private static void WriteCloneModule(dynamic project, string name, string source, bool create)
         {
             dynamic component = null;
@@ -284,10 +284,10 @@ namespace VBAi
                 throw new InvalidOperationException("The instrumented copy source did not match its plan: " + name);
         }
 
-        /// <summary>Handles instrument clone module for vbe test explorer service.</summary>
-        /// <param name="project">dynamic that supplies the project for this operation.</param>
-        /// <param name="module">vba coverage module that supplies the module for this operation.</param>
-        /// <param name="guard">action that supplies the guard for this operation.</param>
+        /// <summary>Applies planned line insertions to the clone module after rechecking ownership and cancellation.</summary>
+        /// <param name="project">VBProject COM object belonging to the owned disposable host copy.</param>
+        /// <param name="module">Instrumentation plan tied to the original module source hash.</param>
+        /// <param name="guard">Rechecks owner, source revision, and copied catalog around native dispatch.</param>
         private static void InstrumentCloneModule(dynamic project, VbaCoverageModule module, Action guard)
         {
             dynamic component = null;

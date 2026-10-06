@@ -345,8 +345,8 @@ namespace VBAi
             ResumeLayout(false);
         }
 
-        /// <summary>Disposes  for test explorer window.</summary>
-        /// <param name="disposing">Indicates whether disposing is enabled.</param>
+        /// <summary>Releases the component container when the form is disposed.</summary>
+        /// <param name="disposing">True when managed components should also be disposed.</param>
         protected override void Dispose(bool disposing)
         {
             if (disposing) components?.Dispose();

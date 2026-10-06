@@ -46,16 +46,16 @@ namespace VBAi
         /// <summary>Tracks the is com reference state of vba test word values host.</summary>
         internal static Func<object, bool> IsComReference = Marshal.IsComObject;
 
-        /// <summary>Maintains the release com reference state for vba test word values host.</summary>
+        /// <summary>COM release callback used only for references acquired by this transport.</summary>
         internal static Func<object, int> ReleaseComReference = Marshal.ReleaseComObject;
 
         /// <summary>Managed thread ID that owns every Word COM operation performed by this adapter.</summary>
         private readonly int ownerThread = Thread.CurrentThread.ManagedThreadId;
 
-        /// <summary>Maintains the identifier state for vba test word values host.</summary>
+        /// <summary>Unicode VBA identifier rule used before building Word's qualified macro name.</summary>
         private static readonly Regex Identifier = new Regex(@"\A\p{L}[\p{L}\p{N}_]{0,254}\z", RegexOptions.CultureInvariant);
 
-        /// <summary>Initializes a VbaTestWordValuesHost instance with the supplied state.</summary>
+        /// <summary>Creates the Word adapter with the production active-object resolver.</summary>
         internal VbaTestWordValuesHost() : this(Marshal.GetActiveObject) { }
 
         // The stable native resolver identifies acquisitions owned by this transport.
@@ -92,7 +92,7 @@ namespace VBAi
             internal ApplicationLease(VbaTestWordValuesHost owner, object application, bool acquired)
             { this.owner = owner; Application = application; this.acquired = acquired; }
 
-            /// <summary>Handles retain on uncertain for application lease.</summary>
+            /// <summary>Keeps an acquired application reference rooted after uncertain macro completion.</summary>
             internal void RetainOnUncertain()
             {
                 owner.RequireOwner();
@@ -129,21 +129,21 @@ namespace VBAi
             /// <summary>Lease governing release or retention of the application reference.</summary>
             internal ApplicationLease ApplicationOwnership;
 
-            /// <summary>Maintains the disposed state for owned target.</summary>
+            /// <summary>Prevents a released target from being reused or disposed twice.</summary>
             private bool disposed;
 
             /// <summary>Indicates whether this target was rooted after uncertain macro completion.</summary>
             /// <value>True means the target must not be disposed or reused.</value>
             internal bool IsRetained { get; private set; }
 
-            /// <summary>Requires usable for owned target.</summary>
+            /// <summary>Rejects a target already disposed or retained after uncertain completion.</summary>
             internal void RequireUsable()
             {
                 if (disposed || IsRetained)
                     throw new InvalidOperationException("The Word target has been released or retained after an uncertain operation.");
             }
 
-            /// <summary>Handles retain on uncertain for owned target.</summary>
+            /// <summary>Roots the complete target and its COM references after uncertain macro completion.</summary>
             internal void RetainOnUncertain()
             {
                 Owner.RequireOwner();
@@ -152,7 +152,7 @@ namespace VBAi
                 RetainAcquired(this);
             }
 
-            /// <summary>Disposes  for owned target.</summary>
+            /// <summary>Releases the document and its owned application lease unless retained after uncertainty.</summary>
             public void Dispose()
             {
                 Owner.RequireOwner();
@@ -231,9 +231,9 @@ namespace VBAi
             { owned.RetainOnUncertain(); throw new VbaTestInvocationException("Word activation or macro completion is uncertain; no retry was attempted. " + error.Message, true, error); }
         }
 
-        /// <summary>Validates target for vba test word values host.</summary>
-        /// <param name="target">object that supplies the target for this operation.</param>
-        /// <returns>owned target produced by the operation for validate target on vba test word values host.</returns>
+        /// <summary>Reacquires the exact Word application and document and checks their COM identities.</summary>
+        /// <param name="target">Target returned by ResolveTarget for this adapter.</param>
+        /// <returns>Validated owned target whose application and document still match the captured identities.</returns>
         internal OwnedTarget ValidateTarget(object target)
         {
             RequireOwner();
@@ -276,8 +276,8 @@ namespace VBAi
         }
 
         /// <summary>Reads Word's active document Window.Hwnd without activating or creating a window.</summary>
-        /// <param name="application">object that supplies the application for this operation.</param>
-        /// <returns>int ptr produced by the operation for read application window on vba test word values host.</returns>
+        /// <param name="application">Word.Application instance whose active document window is inspected.</param>
+        /// <returns>Active document-window HWND owned by the registered Word process.</returns>
         internal static IntPtr ReadApplicationWindow(object application)
         {
             if (application == null) throw new InvalidOperationException("The registered Word application is unavailable.");
@@ -293,10 +293,10 @@ namespace VBAi
             finally { ReleaseAcquired(window); }
         }
 
-        /// <summary>Handles collection count for vba test word values host.</summary>
-        /// <param name="collection">object that supplies the collection for this operation.</param>
-        /// <param name="kind">Text that supplies the kind value. Use the format required by the calling operation.</param>
-        /// <returns>int produced by the operation for collection count on vba test word values host.</returns>
+        /// <summary>Reads a bounded COM collection count before indexed enumeration.</summary>
+        /// <param name="collection">Word Documents or VBE VBProjects collection being enumerated.</param>
+        /// <param name="kind">Collection label included in the refusal message when its count is outside 0 through 1,000.</param>
+        /// <returns>Validated collection item count.</returns>
         private static int CollectionCount(object collection, string kind)
         {
             int count = Convert.ToInt32(((dynamic)collection).Count);
@@ -304,24 +304,24 @@ namespace VBAi
             return count;
         }
 
-        /// <summary>Handles retain acquired for vba test word values host.</summary>
-        /// <param name="value">object that supplies the value for this operation.</param>
+        /// <summary>Roots an acquired COM reference so it remains alive after uncertain completion.</summary>
+        /// <param name="value">Acquired COM object to keep alive.</param>
         internal static void RetainAcquired(object value)
         {
             if (value != null) retainedReferences.Add(value);
         }
 
         /// <summary>Releases acquired for vba test word values host.</summary>
-        /// <param name="value">object that supplies the value for this operation.</param>
+        /// <param name="value">Acquired COM object to keep alive.</param>
         internal static void ReleaseAcquired(object value)
         {
             // Balance this getter/indexer acquisition once, even when its RCW aliases a borrowed target.
             if (value != null && IsComReference(value)) ReleaseComReference(value);
         }
 
-        /// <summary>Requires unique document name for vba test word values host.</summary>
-        /// <param name="application">object that supplies the application for this operation.</param>
-        /// <param name="name">Text that supplies the name value. Use the format required by the calling operation.</param>
+        /// <summary>Requires exactly one open Word document to match the macro-qualified filename.</summary>
+        /// <param name="application">Word.Application instance whose active document window is inspected.</param>
+        /// <param name="name">Saved document filename used in Word's qualified macro name.</param>
         private void RequireUniqueDocumentName(object application, string name)
         {
             object documents = null;
@@ -344,9 +344,9 @@ namespace VBAi
             finally { ReleaseAcquired(documents); }
         }
 
-        /// <summary>Requires unique module owner for vba test word values host.</summary>
-        /// <param name="owned">owned target that supplies the owned for this operation.</param>
-        /// <param name="module">Text that supplies the module value. Use the format required by the calling operation.</param>
+        /// <summary>Requires exactly one loaded VBE module with this name, owned by the target project.</summary>
+        /// <param name="owned">Validated Word target whose project must be the sole owner of the module.</param>
+        /// <param name="module">Module identifier that Word will resolve in the qualified macro name.</param>
         private void RequireUniqueModuleOwner(OwnedTarget owned, string module)
         {
             object vbe = null, projects = null;
@@ -384,11 +384,11 @@ namespace VBAi
             finally { ReleaseAcquired(projects); ReleaseAcquired(vbe); }
         }
 
-        /// <summary>Finds document for vba test word values host.</summary>
-        /// <param name="application">object that supplies the application for this operation.</param>
-        /// <param name="project">object that supplies the project for this operation.</param>
-        /// <param name="path">Path used for the path being processed.</param>
-        /// <returns>object produced by the operation for find document on vba test word values host.</returns>
+        /// <summary>Finds the single saved open document whose VBProject identity and full path both match.</summary>
+        /// <param name="application">Word.Application instance whose active document window is inspected.</param>
+        /// <param name="project">Exact VBProject identity used to select its owning document.</param>
+        /// <param name="path">Expected normalized absolute path of the saved document.</param>
+        /// <returns>Owned Document COM reference; its caller is responsible for releasing it once.</returns>
         private object FindDocument(object application, object project, string path)
         {
             object documents = null, match = null;
@@ -419,33 +419,33 @@ namespace VBAi
             finally { ReleaseAcquired(documents); }
         }
 
-        /// <summary>Requires owner for vba test word values host.</summary>
+        /// <summary>Requires all Word automation calls to run on the adapter's constructing thread.</summary>
         internal void RequireOwner()
         { if (Thread.CurrentThread.ManagedThreadId != ownerThread) throw new InvalidOperationException("Word COM calls must use their owning thread."); }
 
-        /// <summary>Requires absolute path for vba test word values host.</summary>
-        /// <param name="path">Path used for the path being processed.</param>
+        /// <summary>Rejects unsaved or nonabsolute host-document paths before COM resolution.</summary>
+        /// <param name="path">Expected normalized absolute path of the saved document.</param>
         internal static void RequireAbsolutePath(string path)
         { if (!IsAbsolutePath(path)) throw new InvalidOperationException("A saved absolute Word document path is required."); }
 
         /// <summary>Compares path for vba test word values host.</summary>
-        /// <param name="first">Text that supplies the first value. Use the format required by the calling operation.</param>
-        /// <param name="second">Text that supplies the second value. Use the format required by the calling operation.</param>
-        /// <returns>Boolean indicating the result of the check for same path on vba test word values host.</returns>
+        /// <param name="first">First candidate path.</param>
+        /// <param name="second">Expected path.</param>
+        /// <returns>True when both paths are absolute and normalize to the same path, case-insensitively.</returns>
         internal static bool SamePath(string first, string second)
         { return IsAbsolutePath(first) && IsAbsolutePath(second) && string.Equals(Path.GetFullPath(first), Path.GetFullPath(second), StringComparison.OrdinalIgnoreCase); }
 
-        /// <summary>Determines whether absolute path for vba test word values host.</summary>
-        /// <param name="path">Path used for the path being processed.</param>
-        /// <returns>Boolean indicating the result of the check for is absolute path on vba test word values host.</returns>
+        /// <summary>Checks whether a path is rooted at a drive or network share.</summary>
+        /// <param name="path">Expected normalized absolute path of the saved document.</param>
+        /// <returns>True for a rooted drive or UNC path; false for empty, relative, or drive-relative paths.</returns>
         private static bool IsAbsolutePath(string path)
         { if (string.IsNullOrWhiteSpace(path) || !Path.IsPathRooted(path)) return false; string root = Path.GetPathRoot(path); return root.Length > 1 && !root.EndsWith(":", StringComparison.Ordinal); }
 
-        /// <summary>Handles native run for vba test word values host.</summary>
-        /// <param name="application">object that supplies the application for this operation.</param>
-        /// <param name="macro">Text that supplies the macro value. Use the format required by the calling operation.</param>
-        /// <param name="arguments">object[] that supplies the arguments for this operation.</param>
-        /// <returns>object produced by the operation for native run on vba test word values host.</returns>
+        /// <summary>Calls Word Application.Run using its required 30 optional by-reference argument slots.</summary>
+        /// <param name="application">Word.Application instance whose active document window is inspected.</param>
+        /// <param name="macro">Module-qualified Word macro name.</param>
+        /// <param name="arguments">Zero or two populated positional arguments copied into the first slots; the remainder are Type.Missing.</param>
+        /// <returns>Value returned by Word Application.Run.</returns>
         private static object NativeRun(object application, string macro, object[] arguments)
         {
             // Word requires 30 optional by-reference VARIANT slots, not a shortened dispatch argument list.

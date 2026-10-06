@@ -127,11 +127,11 @@ namespace VBAi
             return application;
         }
 
-        /// <summary>Finds presentation for vba test power point values host.</summary>
-        /// <param name="application">object that supplies the application for this operation.</param>
-        /// <param name="project">object that supplies the project for this operation.</param>
-        /// <param name="expectedPath">Path used for the expected path being processed.</param>
-        /// <returns>object produced by the operation for find presentation on vba test power point values host.</returns>
+        /// <summary>Finds the single saved presentation whose VBProject identity and full path both match.</summary>
+        /// <param name="application">Registered PowerPoint.Application instance to inspect.</param>
+        /// <param name="project">Exact VBProject identity used to select its owning presentation.</param>
+        /// <param name="expectedPath">Expected absolute saved presentation path.</param>
+        /// <returns>Matching Presentation COM object; caller retains responsibility for its lifetime.</returns>
         private object FindPresentation(object application, object project, string expectedPath)
         {
             object match = null; int count = 0;
@@ -148,26 +148,26 @@ namespace VBAi
             return match;
         }
 
-        /// <summary>Requires owner for vba test power point values host.</summary>
+        /// <summary>Requires all PowerPoint automation calls to run on the adapter's constructing thread.</summary>
         internal void RequireOwner()
         { if (Thread.CurrentThread.ManagedThreadId != ownerThread) throw new InvalidOperationException("PowerPoint COM calls must use their owning thread."); }
 
-        /// <summary>Requires absolute path for vba test power point values host.</summary>
-        /// <param name="path">Path used for the path being processed.</param>
+        /// <summary>Rejects an unsaved or nonabsolute presentation path before COM resolution.</summary>
+        /// <param name="path">Path to validate.</param>
         internal static void RequireAbsolutePath(string path)
         { if (!IsAbsolutePath(path)) throw new InvalidOperationException("A saved absolute presentation path is required."); }
 
-        /// <summary>Compares path for vba test power point values host.</summary>
-        /// <param name="first">Text that supplies the first value. Use the format required by the calling operation.</param>
-        /// <param name="second">Text that supplies the second value. Use the format required by the calling operation.</param>
-        /// <returns>Boolean indicating the result of the check for same path on vba test power point values host.</returns>
+        /// <summary>Compares two absolute paths after normalization, using Windows case-insensitive path semantics.</summary>
+        /// <param name="first">First candidate path.</param>
+        /// <param name="second">Expected path.</param>
+        /// <returns>True when both paths are absolute and normalize to the same path, case-insensitively.</returns>
         internal static bool SamePath(string first, string second)
         { return IsAbsolutePath(first) && IsAbsolutePath(second)
             && string.Equals(Path.GetFullPath(first), Path.GetFullPath(second), StringComparison.OrdinalIgnoreCase); }
 
-        /// <summary>Determines whether absolute path for vba test power point values host.</summary>
-        /// <param name="path">Path used for the path being processed.</param>
-        /// <returns>Boolean indicating the result of the check for is absolute path on vba test power point values host.</returns>
+        /// <summary>Checks whether a path is rooted at a drive or network share.</summary>
+        /// <param name="path">Path to validate.</param>
+        /// <returns>True for a rooted drive or UNC path; false for empty, relative, or drive-relative paths.</returns>
         private static bool IsAbsolutePath(string path)
         {
             if (string.IsNullOrWhiteSpace(path) || !Path.IsPathRooted(path)) return false;
@@ -175,11 +175,11 @@ namespace VBAi
             return root.Length > 1 && !root.EndsWith(":", StringComparison.Ordinal);
         }
 
-        /// <summary>Handles native run for vba test power point values host.</summary>
-        /// <param name="application">object that supplies the application for this operation.</param>
-        /// <param name="macro">Text that supplies the macro value. Use the format required by the calling operation.</param>
-        /// <param name="arguments">object[] that supplies the arguments for this operation.</param>
-        /// <returns>object produced by the operation for native run on vba test power point values host.</returns>
+        /// <summary>Calls PowerPoint Application.Run with the presentation-qualified macro and a single SAFEARRAY argument.</summary>
+        /// <param name="application">Registered PowerPoint.Application instance to inspect.</param>
+        /// <param name="macro">Presentation-qualified module and procedure name.</param>
+        /// <param name="arguments">Positional arguments passed by reference as one argument array; null is normalized to an empty array.</param>
+        /// <returns>Value returned by PowerPoint Application.Run.</returns>
         private static object NativeRun(object application, string macro, object[] arguments)
         {
             // The PowerPoint PIA declares Run(string, ref object[]), not Excel's positional argument list.
