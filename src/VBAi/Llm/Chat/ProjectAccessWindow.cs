@@ -6,9 +6,11 @@ using System.Windows.Forms;
 
 namespace VBAi
 {
+
     /// <summary>Collects the projects and shared context that the chat assistant may read.</summary>
     internal sealed partial class ProjectAccessWindow : Form
     {
+
         /// <summary>Initializes a ProjectAccessWindow instance with the supplied state.</summary>
         public ProjectAccessWindow()
         {
@@ -20,9 +22,9 @@ namespace VBAi
             UiTheme.Changed += ApplyAppearance;
         }
 
-        /// <summary>Performs the populate operation for ProjectAccessWindow.</summary>
-        /// <param name="projects">The projects used by this operation.</param>
-        /// <param name="grants">The grants used by this operation.</param>
+        /// <summary>Handles populate for project access window.</summary>
+        /// <param name="projects">i enumerable&lt;key value pair&lt;string, string&gt;&gt; that supplies the projects for this operation.</param>
+        /// <param name="grants">i enumerable&lt;string&gt; that supplies the grants for this operation.</param>
         /// <param name="shared">Indicates whether shared is enabled.</param>
         internal void Populate(IEnumerable<KeyValuePair<string, string>> projects, IEnumerable<string> grants, bool shared)
         {
@@ -33,21 +35,26 @@ namespace VBAi
         }
 
         /// <summary>Gets the selected projects.</summary>
-        /// <value>The current value represented by this member.</value>
+        /// <value>Current selected projects exposed by project access window.</value>
         internal string[] SelectedProjects => projectList.CheckedItems.Cast<ProjectChoice>().Select(item => item.Selector).ToArray();
+
         /// <summary>Gets the shared context.</summary>
-        /// <value>The current value represented by this member.</value>
+        /// <value>Current shared context exposed by project access window.</value>
         internal bool SharedContext => sharedContext.Checked;
-        /// <summary>Provides the project choice implementation.</summary>
+
+        /// <summary>Owns the project choice state and operations.</summary>
         private sealed class ProjectChoice
         {
-            /// <summary>Stores the selector,label used by ProjectChoice.</summary>
+
+            /// <summary>Maintains the selector and label state for project choice.</summary>
             internal string Selector, Label;
-            /// <summary>Performs the to string operation for ProjectChoice.</summary>
-            /// <returns>The result produced by this operation.</returns>
+
+            /// <summary>Handles to string for project choice.</summary>
+            /// <returns>Text produced by the operation for to string on project choice.</returns>
             public override string ToString() => Label;
         }
-        /// <summary>Performs the apply appearance operation for ProjectAccessWindow.</summary>
+
+        /// <summary>Handles apply appearance for project access window.</summary>
         private void ApplyAppearance()
         {
             if (IsDisposed) return;

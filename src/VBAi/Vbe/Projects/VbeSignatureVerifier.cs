@@ -6,13 +6,17 @@ using Microsoft.Win32;
 
 namespace VBAi
 {
+
     /// <summary>Vérifie la signature du projet VBA enregistré via les SIP Office Microsoft et WinVerifyTrust.</summary>
     internal sealed class VbeSignatureVerifier
     {
+
         /// <summary>Identifiant du SIP VBA des fichiers Office binaires.</summary>
         internal static readonly Guid LegacySubject = new Guid("01F45160-3E3E-11D3-B49A-00104B2CF645");
+
         /// <summary>Identifiant du SIP VBA des fichiers Office Open XML.</summary>
         internal static readonly Guid XmlSubject = new Guid("6E64D5BD-CEB0-4B66-B4A0-15AC71775C48");
+
         /// <summary>Politique Authenticode générique Windows.</summary>
         private static readonly Guid Policy = new Guid("00AAC56B-CD44-11D0-8CC2-00C04FC295EE");
 
@@ -20,12 +24,16 @@ namespace VBAi
         [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
         internal struct TrustFile
         {
+
             /// <summary>Taille native de la structure.</summary>
             internal uint Size;
+
             /// <summary>Chemin absolu Unicode du document.</summary>
             [MarshalAs(UnmanagedType.LPWStr)] internal string Path;
+
             /// <summary>Handle conservé ouvert en lecture pendant la vérification.</summary>
             internal IntPtr Handle;
+
             /// <summary>Pointeur vers l'identifiant SIP VBA sélectionné.</summary>
             internal IntPtr Subject;
         }
@@ -34,49 +42,65 @@ namespace VBAi
         [StructLayout(LayoutKind.Sequential)]
         internal struct TrustData
         {
+
             /// <summary>Taille de la structure.</summary>
             internal uint Size;
+
             /// <summary>Données facultatives de politique, nulles.</summary>
             internal IntPtr PolicyData;
+
             /// <summary>Données facultatives du SIP, nulles.</summary>
             internal IntPtr SipData;
+
             /// <summary>Choix d'interface : WTD_UI_NONE.</summary>
             internal uint Ui;
+
             /// <summary>Vérification de révocation supplémentaire.</summary>
             internal uint Revocation;
+
             /// <summary>Type d'entrée : WTD_CHOICE_FILE.</summary>
             internal uint Choice;
+
             /// <summary>Pointeur vers les informations du fichier.</summary>
             internal IntPtr File;
+
             /// <summary>Action de vérification ou de libération de l'état.</summary>
             internal uint Action;
+
             /// <summary>État alloué par la politique Windows.</summary>
             internal IntPtr State;
+
             /// <summary>Référence URL réservée, nulle.</summary>
             internal IntPtr Url;
+
             /// <summary>Révocation en cache et interdiction des téléchargements.</summary>
             internal uint Flags;
+
             /// <summary>Contexte d'interface, zéro.</summary>
             internal uint Context;
+
             /// <summary>Paramètres facultatifs de signature Windows, nuls.</summary>
             internal IntPtr SignatureSettings;
         }
 
-                /// <summary>Frontière injectable de WinVerifyTrust, conservant les structures natives.</summary>
-                /// <param name="owner">Handle propriétaire transmis à WinVerifyTrust.</param>
-                /// <param name="action">Identifiant de la politique d’action, passé par référence.</param>
-                /// <param name="data">Structure native des options et de l’état de vérification.</param>
-                /// <returns>Code HRESULT natif de WinVerifyTrust.</returns>
+        /// <summary>Frontière injectable de WinVerifyTrust, conservant les structures natives.</summary>
+        /// <param name="owner">Handle propriétaire transmis à WinVerifyTrust.</param>
+        /// <param name="action">Identifiant de la politique d’action, passé par référence.</param>
+        /// <param name="data">Structure native des options et de l’état de vérification.</param>
+        /// <returns>Code HRESULT natif de WinVerifyTrust.</returns>
         internal delegate int VerifyCall(IntPtr owner, ref Guid action, ref TrustData data);
-                /// <summary>Appel Windows de vérification et de fermeture.</summary>
-                /// <param name="owner">Handle propriétaire de l’appel.</param>
-                /// <param name="action">Identifiant de la politique d’action, passé par référence.</param>
-                /// <param name="data">Données natives du fichier et options de vérification.</param>
-                /// <returns>Code HRESULT retourné par WinVerifyTrust.</returns>
+
+        /// <summary>Appel Windows de vérification et de fermeture.</summary>
+        /// <param name="owner">Handle propriétaire de l’appel.</param>
+        /// <param name="action">Identifiant de la politique d’action, passé par référence.</param>
+        /// <param name="data">Données natives du fichier et options de vérification.</param>
+        /// <returns>Code HRESULT retourné par WinVerifyTrust.</returns>
         [DllImport("wintrust.dll", ExactSpelling = true, PreserveSig = true)]
         private static extern int WinVerifyTrust(IntPtr owner, ref Guid action, ref TrustData data);
+
         /// <summary>Appel natif par défaut, injectable pour les erreurs de politique.</summary>
         internal VerifyCall Native = WinVerifyTrust;
+
         /// <summary>Lecture du SIP enregistré, sans modification du registre.</summary>
         internal Func<Guid, string> Provider = ReadProvider;
 
@@ -126,11 +150,11 @@ namespace VBAi
             }
         }
 
-                /// <summary>Prépare les structures SIP, vérifie le fichier et libère toujours l’état WinTrust.</summary>
-                /// <param name="path">Chemin du document enregistré.</param>
-                /// <param name="handle">Handle ouvert en lecture du fichier.</param>
-                /// <param name="subject">Identifiant du sujet Office SIP approprié au format.</param>
-                /// <returns>Code HRESULT de la vérification de confiance native.</returns>
+        /// <summary>Prépare les structures SIP, vérifie le fichier et libère toujours l’état WinTrust.</summary>
+        /// <param name="path">Chemin du document enregistré.</param>
+        /// <param name="handle">Handle ouvert en lecture du fichier.</param>
+        /// <param name="subject">Identifiant du sujet Office SIP approprié au format.</param>
+        /// <returns>Code HRESULT de la vérification de confiance native.</returns>
         private int VerifyNative(string path, IntPtr handle, Guid subject)
         {
             IntPtr subjectBuffer = Marshal.AllocHGlobal(Marshal.SizeOf(typeof(Guid)));
@@ -149,9 +173,9 @@ namespace VBAi
             }
         }
 
-                /// <summary>Lit la bibliothèque du SIP Office x64 enregistré pour la vérification du digest.</summary>
-                /// <param name="subject">Identifiant du sujet SIP Office.</param>
-                /// <returns>Chemin configuré de la bibliothèque, ou <see langword="null"/> si la valeur est absente ou illisible.</returns>
+        /// <summary>Lit la bibliothèque du SIP Office x64 enregistré pour la vérification du digest.</summary>
+        /// <param name="subject">Identifiant du sujet SIP Office.</param>
+        /// <returns>Chemin configuré de la bibliothèque, ou <see langword="null"/> si la valeur est absente ou illisible.</returns>
         private static string ReadProvider(Guid subject)
         {
             using (var registry = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry64))
@@ -159,9 +183,9 @@ namespace VBAi
                 return key?.GetValue("Dll") as string;
         }
 
-                /// <summary>Classe les résultats sans confondre absence, altération et confiance incomplète.</summary>
-                /// <param name="result">Code HRESULT produit par WinVerifyTrust.</param>
-                /// <returns>Étiquette stable correspondant aux codes reconnus, ou <c>VerificationFailed</c>.</returns>
+        /// <summary>Classe les résultats sans confondre absence, altération et confiance incomplète.</summary>
+        /// <param name="result">Code HRESULT produit par WinVerifyTrust.</param>
+        /// <returns>Étiquette stable correspondant aux codes reconnus, ou <c>VerificationFailed</c>.</returns>
         private static string Status(int result)
         {
             switch (unchecked((uint)result))

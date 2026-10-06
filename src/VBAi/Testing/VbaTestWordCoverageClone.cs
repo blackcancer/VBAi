@@ -6,17 +6,36 @@ using System.Security.Cryptography;
 
 namespace VBAi
 {
+
     /// <summary>Copies the saved Word file; never saves or converts the original document.</summary>
     internal sealed class VbaTestWordCoverageClone
     {
+
+        /// <summary>Maintains the host state for vba test word coverage clone.</summary>
         internal VbaTestWordValuesHost Host = new VbaTestWordValuesHost();
+
+        /// <summary>Maintains the copy saved file state for vba test word coverage clone.</summary>
         internal Action<string, string> CopySavedFile = CopyFile;
+
+        /// <summary>Maintains the open copy state for vba test word coverage clone.</summary>
         internal Func<object, string, object> OpenCopy = OpenDocument;
+
+        /// <summary>Maintains the close copy state for vba test word coverage clone.</summary>
         internal Action<object> CloseCopy = document => ((dynamic)document).Close(SaveChanges: 0);
 
+        /// <summary>Creates word for vba test word coverage clone.</summary>
+        /// <param name="project">object that supplies the project for this operation.</param>
+        /// <param name="sourcePath">Path used for the source path being processed.</param>
+        /// <param name="folder">Text that supplies the folder value. Use the format required by the calling operation.</param>
+        /// <returns>vba test coverage clone produced by the operation for create word on vba test word coverage clone.</returns>
         internal static VbaTestCoverageClone CreateWord(object project, string sourcePath, string folder)
         { return new VbaTestWordCoverageClone().Create(project, sourcePath, folder); }
 
+        /// <summary>Creates  for vba test word coverage clone.</summary>
+        /// <param name="project">object that supplies the project for this operation.</param>
+        /// <param name="sourcePath">Path used for the source path being processed.</param>
+        /// <param name="folder">Text that supplies the folder value. Use the format required by the calling operation.</param>
+        /// <returns>vba test coverage clone produced by the operation for create on vba test word coverage clone.</returns>
         internal VbaTestCoverageClone Create(object project, string sourcePath, string folder)
         {
             var references = new CloneReferences();
@@ -75,6 +94,9 @@ namespace VBAi
             finally { if (!transferred) references.Dispose(); }
         }
 
+        /// <summary>Closes owned copy for vba test word coverage clone.</summary>
+        /// <param name="references">clone references that supplies the references for this operation.</param>
+        /// <param name="copyPath">Path used for the copy path being processed.</param>
         private void CloseOwnedCopy(CloneReferences references, string copyPath)
         {
             try
@@ -106,6 +128,10 @@ namespace VBAi
             catch { references.Retain(); throw; }
         }
 
+        /// <summary>Inspects documents for vba test word coverage clone.</summary>
+        /// <param name="application">object that supplies the application for this operation.</param>
+        /// <param name="retainOnFailure">Indicates whether retain on failure is enabled.</param>
+        /// <param name="inspect">action&lt;object&gt; that supplies the inspect for this operation.</param>
         private void InspectDocuments(object application, bool retainOnFailure, Action<object> inspect)
         {
             var acquired = new List<object>();
@@ -136,6 +162,10 @@ namespace VBAi
             }
         }
 
+        /// <summary>Opens document for vba test word coverage clone.</summary>
+        /// <param name="application">object that supplies the application for this operation.</param>
+        /// <param name="path">Path used for the path being processed.</param>
+        /// <returns>object produced by the operation for open document on vba test word coverage clone.</returns>
         private static object OpenDocument(object application, string path)
         {
             object documents = ((dynamic)application).Documents;
@@ -159,11 +189,20 @@ namespace VBAi
             }
         }
 
+        /// <summary>Owns the clone references state and operations.</summary>
         private sealed class CloneReferences : IDisposable
         {
+
+            /// <summary>Maintains the source and copy state for clone references.</summary>
             internal VbaTestWordValuesHost.OwnedTarget Source, Copy;
+
+            /// <summary>Maintains the opened document and copy project state for clone references.</summary>
             internal object OpenedDocument, CopyProject;
+
+            /// <summary>Maintains the retained and disposed state for clone references.</summary>
             private bool retained, disposed;
+
+            /// <summary>Handles retain for clone references.</summary>
             internal void Retain()
             {
                 if (retained) return;
@@ -172,6 +211,9 @@ namespace VBAi
                 Copy?.RetainOnUncertain();
                 VbaTestWordValuesHost.RetainAcquired(this);
             }
+
+            /// <summary>Releases once for clone references.</summary>
+            /// <param name="reference">object that supplies the reference for this operation.</param>
             private static void ReleaseOnce(ref object reference)
             {
                 object acquired = reference;
@@ -179,6 +221,8 @@ namespace VBAi
                 try { VbaTestWordValuesHost.ReleaseAcquired(acquired); }
                 catch { VbaTestWordValuesHost.RetainAcquired(acquired); throw; }
             }
+
+            /// <summary>Disposes  for clone references.</summary>
             public void Dispose()
             {
                 if (retained || disposed) return;
@@ -196,9 +240,17 @@ namespace VBAi
                 Copy = null; Source = null; CopyProject = null; OpenedDocument = null;
             }
         }
+
+        /// <summary>Handles copy file for vba test word coverage clone.</summary>
+        /// <param name="source">Text that supplies the source value. Use the format required by the calling operation.</param>
+        /// <param name="destination">Text that supplies the destination value. Use the format required by the calling operation.</param>
         private static void CopyFile(string source, string destination)
         { CopyFile(source, destination, null); }
 
+        /// <summary>Handles copy file for vba test word coverage clone.</summary>
+        /// <param name="source">Text that supplies the source value. Use the format required by the calling operation.</param>
+        /// <param name="destination">Text that supplies the destination value. Use the format required by the calling operation.</param>
+        /// <param name="afterCopy">action&lt;file stream, file stream&gt; that supplies the after copy for this operation.</param>
         internal static void CopyFile(string source, string destination, Action<FileStream, FileStream> afterCopy)
         {
             // Share existing Word writers without allowing deletion or replacement of this source path.
@@ -234,12 +286,21 @@ namespace VBAi
                 finally { input.Unlock(0, long.MaxValue); }
             }
         }
+
+        /// <summary>Requires saved for vba test word coverage clone.</summary>
+        /// <param name="document">object that supplies the document for this operation.</param>
         private static void RequireSaved(object document)
         {
             object saved = ((dynamic)document).Saved;
             if (!(saved is bool value) || !value)
                 throw new InvalidOperationException("Save the original Word document before collecting coverage; unsaved document content cannot be reproduced by a file copy.");
         }
+
+        /// <summary>Handles uncertain for vba test word coverage clone.</summary>
+        /// <param name="phase">Text that supplies the phase value. Use the format required by the calling operation.</param>
+        /// <param name="retainedPath">Path used for the retained path being processed.</param>
+        /// <param name="error">Exception describing the error failure.</param>
+        /// <returns>vba test invocation exception produced by the operation for uncertain on vba test word coverage clone.</returns>
         private static VbaTestInvocationException Uncertain(string phase, string retainedPath, Exception error)
         { return new VbaTestInvocationException(phase + " did not return verified completion; no retry was attempted. Retained copy: " + retainedPath + ". " + error.Message, true, error); }
     }

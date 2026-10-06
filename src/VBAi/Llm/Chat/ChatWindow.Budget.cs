@@ -5,17 +5,21 @@ using System.Threading.Tasks;
 
 namespace VBAi
 {
-    /// <summary>Provides the chat window implementation.</summary>
+
+    /// <summary>Owns the chat window state and operations.</summary>
     internal sealed partial class ChatWindow
     {
-        /// <summary>Stores the provider stream id used by ChatWindow.</summary>
+
+        /// <summary>Identifies the provider stream id associated with chat window.</summary>
         private string providerStreamId;
+
         /// <summary>Retains only the latest HTTP stream protocol metadata for local diagnostics.</summary>
         private StreamDiagnostics lastHttpStreamDiagnostics;
-        /// <summary>Performs the execute budget tool operation for ChatWindow.</summary>
-        /// <param name="name">Text containing the name.</param>
-        /// <param name="arguments">Text containing the arguments.</param>
-        /// <returns>The result produced by this operation.</returns>
+
+        /// <summary>Runs a pending tool call and records its result for the paused provider turn.</summary>
+        /// <param name="name">Text that supplies the name value. Use the format required by the calling operation.</param>
+        /// <param name="arguments">Text that supplies the arguments value. Use the format required by the calling operation.</param>
+        /// <returns>task&lt;string&gt; produced by the operation for execute budget tool on chat window.</returns>
         private async Task<string> ExecuteBudgetTool(string name, string arguments)
         {
             string label = name;
@@ -40,9 +44,10 @@ namespace VBAi
                 throw;
             }
         }
-        /// <summary>Performs the pause budget operation for ChatWindow.</summary>
-        /// <param name="provider">The provider used by this operation.</param>
-        /// <param name="model">Text containing the model.</param>
+
+        /// <summary>Persists the current provider turn so it can resume after its execution budget is extended.</summary>
+        /// <param name="provider">llm provider that supplies the provider for this operation.</param>
+        /// <param name="model">Text that supplies the model value. Use the format required by the calling operation.</param>
         private void PauseBudget(LlmProvider provider, string model)
         {
             currentSession.BudgetPaused = true;
@@ -58,7 +63,8 @@ namespace VBAi
                 Text = UiText.Get("Safety pause: repeated rounds without progress or the intervention ceiling was reached. Resume from saved results; completed actions will not be replayed.") + "\n" + remaining + "\n\n" + actions });
             SetStatus(UiText.Get("Paused — resume when ready"));
         }
-        /// <summary>Performs the update budget controls operation for ChatWindow.</summary>
+
+        /// <summary>Updates the budget controls to reflect whether the current turn is paused or resumable.</summary>
         private void UpdateBudgetControls()
         {
             bool hasScope = !loadingScope && !sessionViewUnavailable && (scopeSession == null || scopePicker?.SelectedItem is MacroScope);
@@ -71,8 +77,9 @@ namespace VBAi
             toolTips.SetToolTip(send, UiText.Get(busy ? (hasText ? "Queue this message after the current response." : "Stop the current response. Changes already applied can still be undone in the chat.") : "Send the message and its context to the agent."));
             send.Enabled = busy ? (hasText ? hasScope : !stopRequested) : hasScope;
         }
-        /// <summary>Performs the resume budget async operation for ChatWindow.</summary>
-        /// <returns>The result produced by this operation.</returns>
+
+        /// <summary>Resumes the saved provider turn after completing any pending tool responses.</summary>
+        /// <returns>task produced by the operation for resume budget async on chat window.</returns>
         private async Task ResumeBudgetAsync()
         {
             if (busy || currentSession?.BudgetPaused != true) return;
@@ -112,7 +119,8 @@ namespace VBAi
                 }
             }
         }
-        /// <summary>Performs the complete pending tool responses operation for ChatWindow.</summary>
+
+        /// <summary>Completes persisted tool actions before a paused provider turn resumes.</summary>
         private void CompletePendingToolResponses()
         {
             var records = messages.Select(m => json.DeserializeObject(json.Serialize(m)) as IDictionary<string, object>).Where(m => m != null).ToArray();
@@ -125,10 +133,11 @@ namespace VBAi
                         messages.Add(new { role = "tool", tool_call_id = Convert.ToString(id), content = json.Serialize(Response.Failure("Interrupted before a result was recorded. Execution is unconfirmed; inspect live state and do not replay automatically.")) });
             }
         }
-        /// <summary>Performs the run http budget async operation for ChatWindow.</summary>
-        /// <param name="provider">The provider used by this operation.</param>
-        /// <param name="model">Text containing the model.</param>
-        /// <returns>The result produced by this operation.</returns>
+
+        /// <summary>Runs the HTTP provider turn while applying its configured token and time budgets.</summary>
+        /// <param name="provider">llm provider that supplies the provider for this operation.</param>
+        /// <param name="model">Text that supplies the model value. Use the format required by the calling operation.</param>
+        /// <returns>task&lt;bool&gt; produced by the operation for run http budget async on chat window.</returns>
         private async Task<bool> RunHttpBudgetAsync(LlmProvider provider, string model)
         {
                 using (var client = new LlmChatClient(provider, settings,

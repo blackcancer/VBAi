@@ -9,21 +9,27 @@ using System.Web.Script.Serialization;
 
 namespace VBAi
 {
+
     /// <summary>Composant VBA inclus dans un snapshot Git.</summary>
     internal sealed class VbaGitComponent
     {
+
         /// <summary>Nom du composant dans le projet VBA.</summary>
         /// <value>Nom du composant dans le projet VBA.</value>
         public string Name { get; set; }
+
         /// <summary>Type de composant selon les constantes VBE.</summary>
         /// <value>Type de composant selon les constantes VBE.</value>
         public int Type { get; set; }
+
         /// <summary>Indique si le UserForm possède un fichier de ressources FRX.</summary>
         /// <value>Indique si le UserForm possède un fichier de ressources FRX.</value>
         public bool HasResources { get; set; }
+
         /// <summary>Nom de fichier produit pour ce type de composant.</summary>
         /// <value>Nom de fichier produit pour ce type de composant.</value>
         public string FileName { get { return Name + Extension(Type); } }
+
         /// <summary>Retourne l’extension correspondant au type de composant VBA.</summary>
         /// <param name="type">Type du composant d’après les constantes VBE.</param>
         /// <returns>Extension de fichier associée au type, précédée d’un point.</returns>
@@ -37,12 +43,15 @@ namespace VBAi
     /// <summary>Manifeste versionné du contenu VBA du dépôt.</summary>
     internal sealed class VbaGitManifest
     {
+
         /// <summary>Version du format de manifeste.</summary>
         /// <value>Version du format de manifeste.</value>
         public int Format { get; set; } = 1;
+
         /// <summary>Empreinte des références requises par le projet.</summary>
         /// <value>Empreinte des références requises par le projet.</value>
         public string References { get; set; }
+
         /// <summary>Composants et ressources décrits dans le snapshot.</summary>
         /// <value>Composants et ressources décrits dans le snapshot.</value>
         public VbaGitComponent[] Components { get; set; }
@@ -52,12 +61,16 @@ namespace VBAi
     /// <summary>Normalise les fins de ligne et valide le manifeste ainsi que les fichiers.</summary>
     internal sealed class VbaGitSnapshot
     {
+
         /// <summary>Encodage UTF-8 strict, sans marqueur BOM.</summary>
         internal static readonly Encoding Utf8 = new UTF8Encoding(false, true);
+
         /// <summary>Manifeste des composants VBA et des références.</summary>
         internal readonly VbaGitManifest Manifest;
+
         /// <summary>Fichiers du snapshot, rangés par nom ordinal.</summary>
         internal readonly SortedDictionary<string, byte[]> Files;
+
         /// <summary>Taille maximale cumulée des fichiers du snapshot, en octets.</summary>
         internal const int MaxBytes = 32 * 1024 * 1024;
 
@@ -96,6 +109,7 @@ namespace VBAi
         }
 
         /// <summary>Returns comparison data without altering serialized/exported resources.</summary>
+        /// <returns>sorted dictionary&lt;string, byte[]&gt; produced by the operation for comparison files on vba git snapshot.</returns>
         internal SortedDictionary<string, byte[]> ComparisonFiles()
         {
             var result = Serialize();
@@ -121,12 +135,18 @@ namespace VBAi
         }
 
         /// <summary>Compares one component file under the same rules used by revision guards.</summary>
+        /// <param name="other">vba git snapshot that supplies the other for this operation.</param>
+        /// <param name="file">Text that supplies the file value. Use the format required by the calling operation.</param>
+        /// <returns>Boolean indicating the result of the check for same file on vba git snapshot.</returns>
         internal bool SameFile(VbaGitSnapshot other, string file)
         {
             return other != null && ComparisonFiles().TryGetValue(file, out var left) &&
                 other.ComparisonFiles().TryGetValue(file, out var right) && left.SequenceEqual(right);
         }
 
+        /// <summary>Handles ole blobs for vba git snapshot.</summary>
+        /// <param name="metadata">Text that supplies the metadata value. Use the format required by the calling operation.</param>
+        /// <returns>match collection produced by the operation for ole blobs on vba git snapshot.</returns>
         private static MatchCollection OleBlobs(string metadata)
         {
             return Regex.Matches(metadata, "^[ \\t]*OleObjectBlob[ \\t]*=[ \\t]*\"[^\"\\r\\n]+\"[ \\t]*:[ \\t]*([0-9a-f]+)[ \\t]*$",
@@ -134,6 +154,8 @@ namespace VBAi
         }
 
         /// <summary>Prepares a bounded form-font plan only for one unambiguous supported native container.</summary>
+        /// <param name="component">vba git component that supplies the component for this operation.</param>
+        /// <returns>form font binding[] produced by the operation for form fonts on vba git snapshot.</returns>
         internal FormStreamPadding.FormFontBinding[] FormFonts(VbaGitComponent component)
         {
             if (component.Type != 3 || !component.HasResources) return null;
@@ -147,6 +169,8 @@ namespace VBAi
         }
 
         /// <summary>Finds resource references with the same grammar for validation and comparison.</summary>
+        /// <param name="metadata">Text that supplies the metadata value. Use the format required by the calling operation.</param>
+        /// <returns>match collection produced by the operation for resource references on vba git snapshot.</returns>
         private static MatchCollection ResourceReferences(string metadata)
         {
             return Regex.Matches(metadata, "=\\s*\"([^\"\\r\\n]+)\"[ \\t]*:[ \\t]*([^\\r\\n]*)");

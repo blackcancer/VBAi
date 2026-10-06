@@ -14,38 +14,55 @@ namespace VBAi
     /// <summary>Client HTTP compatible avec les fournisseurs LLM et leur protocole de conversation.</summary>
     internal sealed class LlmChatClient : IDisposable
     {
+
         /// <summary>Client HTTP utilisé pour appeler le fournisseur courant.</summary>
         private readonly HttpClient http;
+
         /// <summary>Sérialiseur JSON des requêtes et réponses fournisseur.</summary>
         private readonly JavaScriptSerializer json = new JavaScriptSerializer { MaxJsonLength = 10 * 1024 * 1024 };
+
         /// <summary>URL validée du point de terminaison de conversation.</summary>
         private readonly Uri endpoint;
+
         /// <summary>Identifiant du modèle sélectionné.</summary>
         private readonly string model;
+
         /// <summary>Clé fournisseur en mémoire pour cette session.</summary>
         private readonly string key;
+
         /// <summary>Fournisseur et protocole associés au client.</summary>
         private readonly LlmProvider provider;
+
         /// <summary>Client Copilot utilisé lorsque ce fournisseur est sélectionné.</summary>
         private readonly CopilotClient copilot;
+
         /// <summary>Indique si l’authentification Azure Entra est activée.</summary>
         private readonly bool azureEntra;
+
         /// <summary>Validated Ollama-only sampling snapshot for this client's lifetime.</summary>
         private readonly double? ollamaTemperature, ollamaTopP;
+
         /// <summary>Source d’annulation liée à la durée de vie du client.</summary>
         private readonly CancellationTokenSource lifetime = new CancellationTokenSource();
+
         /// <summary>Empêche la libération répétée des clients et jetons.</summary>
         private bool disposed;
+
         /// <summary>Reçoit les fragments de texte émis pendant une réponse en flux.</summary>
         /// <value>Action appelée pour chaque fragment de texte reçu en flux, ou null si le flux est désactivé.</value>
         public Action<string> TextDelta { get; set; }
+
         /// <summary>Last streamed response metadata; contains no request or response content.</summary>
+        /// <value>Current last stream diagnostics exposed by llm chat client.</value>
         internal StreamDiagnostics LastStreamDiagnostics { get; private set; }
+
         /// <summary>Traite un appel d’outil retourné par le fournisseur.</summary>
         /// <value>Délégué qui reçoit le nom et les arguments JSON d’un outil, ou null si aucun outil n’est disponible.</value>
         public Func<string, string, Task<string>> ToolHandler { get; set; }
+
         /// <summary>Crée le gestionnaire HTTP utilisé par défaut, remplaçable dans les tests.</summary>
         internal static Func<HttpMessageHandler> HttpHandlerFactory = CreateHttpHandler;
+
         /// <summary>Crée un transport HTTP qui refuse les redirections automatiques.</summary>
         /// <returns>Gestionnaire configuré pour ne pas suivre les redirections.</returns>
         private static HttpMessageHandler CreateHttpHandler() { return new HttpClientHandler { AllowAutoRedirect = false }; }
@@ -92,6 +109,11 @@ namespace VBAi
         }
 
         /// <summary>Refuses nonfinite or out-of-range optional sampling before constructing an HTTP transport.</summary>
+        /// <param name="configured">double that supplies the configured for this operation.</param>
+        /// <param name="minimum">double that supplies the minimum for this operation.</param>
+        /// <param name="maximum">double that supplies the maximum for this operation.</param>
+        /// <param name="excludeMinimum">Indicates whether exclude minimum is enabled.</param>
+        /// <param name="name">Text that supplies the name value. Use the format required by the calling operation.</param>
         private static void RequireOllamaSampling(double? configured, double minimum, double maximum, bool excludeMinimum, string name)
         {
             if (configured.HasValue && (Double.IsNaN(configured.Value) || Double.IsInfinity(configured.Value) ||

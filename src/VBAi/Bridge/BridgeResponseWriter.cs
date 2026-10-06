@@ -6,9 +6,16 @@ using System.Threading.Tasks;
 
 namespace VBAi
 {
+
     /// <summary>Sends a single UTF-8 response without allowing a stalled client to retain the listener.</summary>
     internal static class BridgeResponseWriter
     {
+
+        /// <summary>Writes async for bridge response writer.</summary>
+        /// <param name="stream">stream that supplies the stream for this operation.</param>
+        /// <param name="payload">Text that supplies the payload value. Use the format required by the calling operation.</param>
+        /// <param name="timeout">Duration that supplies the timeout for this operation.</param>
+        /// <returns>task produced by the operation for write async on bridge response writer.</returns>
         internal static async Task WriteAsync(Stream stream, string payload, TimeSpan timeout)
         {
             if (timeout <= TimeSpan.Zero) throw new ArgumentOutOfRangeException(nameof(timeout));

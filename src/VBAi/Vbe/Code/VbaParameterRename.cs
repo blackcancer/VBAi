@@ -5,9 +5,11 @@ using System.Text;
 
 namespace VBAi
 {
+
     /// <summary>Renomme un paramètre d'une procédure privée standard et les arguments nommés de ses appels locaux.</summary>
     internal static class VbaParameterRename
     {
+
         /// <summary>Prépare une édition atomique du module entier sans modifier les appels de membres homonymes.</summary>
         /// <param name="source">Source vivante complète du module standard.</param>
         /// <param name="request">Déclaration de paramètre, module et procédure identifiés.</param>
@@ -72,14 +74,15 @@ namespace VBAi
             return output.ToString();
         }
 
-                /// <summary>Compare deux noms VBA sans distinction de casse.</summary>
-                /// <param name="left">Premier nom.</param>
-                /// <param name="right">Second nom.</param>
-                /// <returns><see langword="true"/> si les noms sont égaux sans tenir compte de la casse.</returns>
+        /// <summary>Compare deux noms VBA sans distinction de casse.</summary>
+        /// <param name="left">Premier nom.</param>
+        /// <param name="right">Second nom.</param>
+        /// <returns><see langword="true"/> si les noms sont égaux sans tenir compte de la casse.</returns>
         private static bool Same(string left, string right) => string.Equals(left, right, StringComparison.OrdinalIgnoreCase);
-                /// <summary>Retire le suffixe de type d’un identifiant lexical.</summary>
-                /// <param name="text">Jeton VBA.</param>
-                /// <returns>Identifiant sans son suffixe de type.</returns>
+
+        /// <summary>Retire le suffixe de type d’un identifiant lexical.</summary>
+        /// <param name="text">Jeton VBA.</param>
+        /// <returns>Identifiant sans son suffixe de type.</returns>
         private static string Bare(string text) => text.TrimEnd('$', '%', '&', '!', '#', '@', '^');
     }
 }

@@ -1,32 +1,46 @@
 namespace VBAi
 {
+
     /// <summary>Contrôles générés pour l’état et les actions du compte GitHub.</summary>
     public sealed partial class GitHubAccountSettingsView
     {
+
         /// <summary>Libellé de la section GitHub.</summary>
         internal System.Windows.Forms.Label githubLabel;
+
         /// <summary>État de connexion au compte.</summary>
         internal System.Windows.Forms.Label githubStatus;
+
         /// <summary>Libellé du compte actif.</summary>
         internal System.Windows.Forms.Label githubAccountLabel;
+
         /// <summary>Note explicative sur la connexion GitHub.</summary>
         internal System.Windows.Forms.Label githubNote;
+
         /// <summary>Sélecteur du compte GitHub.</summary>
         internal VBAi.ThemedComboBox githubAccount;
+
         /// <summary>Disposition des actions GitHub.</summary>
         internal System.Windows.Forms.FlowLayoutPanel githubActions;
+
         /// <summary>Action de connexion GitHub.</summary>
         internal VBAi.ThemedButton githubLogin;
+
         /// <summary>Action de relecture du compte.</summary>
         internal VBAi.ThemedButton githubRefresh;
+
         /// <summary>Info-bulles associées aux actions du compte.</summary>
         internal System.Windows.Forms.ToolTip githubToolTips;
+
         /// <summary>Grille de disposition du compte GitHub.</summary>
         internal System.Windows.Forms.TableLayoutPanel accountLayout;
+
         /// <summary>Conteneur des composants WinForms non visuels.</summary>
         private System.ComponentModel.IContainer components;
+
         /// <summary>Info-bulles appartenant à la vue.</summary>
         private System.Windows.Forms.ToolTip toolTips;
+
         /// <summary>Libère les composants de la vue avant son contrôle natif.</summary>
         /// <param name="disposing">Indique si les ressources managées doivent être libérées.</param>
         protected override void Dispose(bool disposing)

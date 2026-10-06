@@ -5,9 +5,11 @@ using System.Web.Script.Serialization;
 
 namespace VBAi
 {
+
     /// <summary>Checks the native project selected for a global Immediate execution.</summary>
     internal static class VbeImmediateContext
     {
+
         /// <summary>Reads fresh state on the owning STA immediately before submitting the native Enter message.</summary>
         /// <param name="project">Approved exact project selector.</param>
         /// <param name="expectedMode">Approved project mode.</param>
@@ -20,6 +22,7 @@ namespace VBAi
                 throw new InvalidOperationException("Project mode changed before Immediate execution; Enter was not sent.");
             RequireProject(project, state.Data);
         }
+
         /// <summary>Refuses execution when the active native code pane does not belong to the requested project.</summary>
         /// <param name="project">Exact project selector resolved by debug_state.</param>
         /// <param name="state">Unfiltered native debug_state response, whose selection is checked by COM identity.</param>

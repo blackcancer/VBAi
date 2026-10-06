@@ -8,54 +8,94 @@ using System.Windows.Threading;
 
 namespace VBAi
 {
+
     /// <summary>Fenêtre de conversation avec gestion des sessions persistées.</summary>
     internal sealed partial class ChatWindow
     {
+
         /// <summary>Magasin SQLite partagé par les sessions et la mémoire de projet.</summary>
         private ChatSessionStore sessionStore;
+
+        /// <summary>Maintains the persistence worker state for chat window.</summary>
         private ChatPersistenceWorker persistenceWorker;
+
+        /// <summary>Maintains the persistence json state for chat window.</summary>
         private readonly System.Web.Script.Serialization.JavaScriptSerializer persistenceJson =
             new System.Web.Script.Serialization.JavaScriptSerializer { MaxJsonLength = 32 * 1024 * 1024 };
+
         /// <summary>Session actuellement affichée.</summary>
         private ChatSessionState currentSession;
+
         /// <summary>Indique qu’un chargement de session est en cours et bloque les sauvegardes déclenchées par l’interface.</summary>
         private bool loadingSession;
+
+        /// <summary>Maintains the loading scope state for chat window.</summary>
         private bool loadingScope;
+
+        /// <summary>Maintains the session view unavailable state for chat window.</summary>
         private bool sessionViewUnavailable;
+
+        /// <summary>Maintains the scope load state for chat window.</summary>
         private System.Threading.Tasks.Task scopeLoad = System.Threading.Tasks.Task.CompletedTask;
+
+        /// <summary>Maintains the read scope state for chat window.</summary>
         internal Func<string, string, bool, System.Threading.Tasks.Task<ChatSessionStore.ScopeSnapshot>> ReadScope = ChatSessionStore.ReadScopeAsync;
+
         /// <summary>Indique qu’une erreur de stockage a empêché une sauvegarde.</summary>
         private bool storageFailed;
+
         /// <summary>Session VBE utilisée pour actualiser les portées de projet.</summary>
         private VbeSession scopeSession;
+
         /// <summary>Sessions chargées ou créées pour la portée sélectionnée.</summary>
         private readonly List<ChatSessionState> scopeSessions = new List<ChatSessionState>();
+
         /// <summary>Cache des sessions par portée de projet.</summary>
         private readonly Dictionary<string, List<ChatSessionState>> cachedScopes = new Dictionary<string, List<ChatSessionState>>();
+
+        /// <summary>Maintains the transient memory state for chat window.</summary>
         private readonly Dictionary<string, string> transientMemory = new Dictionary<string, string>();
+
+        /// <summary>Maintains the read scope project state for chat window.</summary>
         internal static Func<VbeSession, string, object> ReadScopeProject = (session, selector) => session.ProjectScopeSource(selector);
+
         /// <summary>Minuterie qui regroupe les sauvegardes rapprochées du brouillon.</summary>
         private DispatcherTimer saveTimer;
+
+        /// <summary>Maintains the history search timer state for chat window.</summary>
         private DispatcherTimer historySearchTimer;
+
         /// <summary>Minuterie de nouvelle tentative de découverte lorsque aucun projet n’est ouvert.</summary>
         private DispatcherTimer projectRetryTimer;
+
         /// <summary>Mémoire locale de la portée de projet courante.</summary>
         private string projectMemory = "";
 
         /// <summary>Décrit une portée de projet sélectionnable dans l’interface.</summary>
         private sealed class MacroScope
         {
+
             /// <summary>Clé stable utilisée pour les sessions et la mémoire.</summary>
             public string Key;
+
             /// <summary>Libellé visible dans le sélecteur de portée.</summary>
             public string Label;
+
             /// <summary>Chemin du projet enregistré ou son nom s’il est temporaire.</summary>
             public string Project;
+
             /// <summary>Nom du projet VBE.</summary>
             public string Name;
+
+            /// <summary>Maintains the identity state for macro scope.</summary>
             public ScopeProjectLease Identity;
+
+            /// <summary>Keeps the first saved path and promotion error path available to macro scope.</summary>
             public string FirstSavedPath, PromotionError;
+
+            /// <summary>Maintains the promotion blocked state for macro scope.</summary>
             public bool PromotionBlocked;
+
             /// <summary>Retourne le libellé du sélecteur.</summary>
             /// <returns>Valeur de <see cref="Label"/>.</returns>
             public override string ToString() { return Label; }
@@ -64,19 +104,32 @@ namespace VBAi
         /// <summary>Owns only its acquired IUnknown reference; shared project RCWs are never released.</summary>
         private sealed class ScopeProjectLease : IDisposable
         {
+
+            /// <summary>Maintains the project state for scope project lease.</summary>
             private object project;
+
+            /// <summary>Maintains the unknown state for scope project lease.</summary>
             private IntPtr unknown;
+
+            /// <summary>Initializes a ScopeProjectLease instance with the supplied state.</summary>
+            /// <param name="project">object that supplies the project for this operation.</param>
             internal ScopeProjectLease(object project)
             {
                 this.project = project;
                 if (System.Runtime.InteropServices.Marshal.IsComObject(project))
                     unknown = System.Runtime.InteropServices.Marshal.GetIUnknownForObject(project);
             }
+
+            /// <summary>Handles matches for scope project lease.</summary>
+            /// <param name="candidate">object that supplies the candidate for this operation.</param>
+            /// <returns>Boolean indicating the result of the check for matches on scope project lease.</returns>
             internal bool Matches(object candidate)
             {
                 try { return project != null && VbeProjectHostPath.SameProject(project, candidate); }
                 catch { return false; }
             }
+
+            /// <summary>Disposes  for scope project lease.</summary>
             public void Dispose()
             {
                 project = null;
@@ -84,12 +137,20 @@ namespace VBAi
             }
         }
 
+        /// <summary>Attempts to read scope project for chat window.</summary>
+        /// <param name="session">vbe session that supplies the session for this operation.</param>
+        /// <param name="selector">Text that supplies the selector value. Use the format required by the calling operation.</param>
+        /// <returns>object produced by the operation for try read scope project on chat window.</returns>
         private static object TryReadScopeProject(VbeSession session, string selector)
         {
             try { return ReadScopeProject(session, selector); }
             catch { return null; }
         }
 
+        /// <summary>Captures scope identity for chat window.</summary>
+        /// <param name="session">vbe session that supplies the session for this operation.</param>
+        /// <param name="selector">Text that supplies the selector value. Use the format required by the calling operation.</param>
+        /// <returns>scope project lease produced by the operation for capture scope identity on chat window.</returns>
         private static ScopeProjectLease CaptureScopeIdentity(VbeSession session, string selector)
         {
             object project = TryReadScopeProject(session, selector);
@@ -98,12 +159,17 @@ namespace VBAi
             catch { return null; }
         }
 
+        /// <summary>Disposes scope identities for chat window.</summary>
         private void DisposeScopeIdentities()
         {
             foreach (var scope in scopePicker.Items.OfType<MacroScope>()) scope.Identity?.Dispose();
         }
 
         /// <summary>Moves only the exact live unsaved project's in-memory state to its first saved path.</summary>
+        /// <param name="scope">macro scope that supplies the scope for this operation.</param>
+        /// <param name="project">Text that supplies the project value. Use the format required by the calling operation.</param>
+        /// <param name="name">Text that supplies the name value. Use the format required by the calling operation.</param>
+        /// <returns>Boolean indicating the result of the check for promote scope on chat window.</returns>
         private bool PromoteScope(MacroScope scope, string project, string name)
         {
             string oldKey = scope.Key, newKey = project.ToUpperInvariant();
@@ -273,6 +339,8 @@ namespace VBAi
             scopeLoad = ChangeScopeAsync();
         }
 
+        /// <summary>Handles change scope async for chat window.</summary>
+        /// <returns>task produced by the operation for change scope async on chat window.</returns>
         private async System.Threading.Tasks.Task ChangeScopeAsync()
         {
             if (busy || loadingSession || runtimeDisposed || IsDisposed) return;
@@ -413,6 +481,7 @@ namespace VBAi
             UpdateDeleteSessionButton();
         }
 
+        /// <summary>Updates delete session button for chat window.</summary>
         private void UpdateDeleteSessionButton()
         {
             deleteSession.Enabled = !busy && !loadingSession && !loadingScope && !runtimeDisposed &&
@@ -420,6 +489,7 @@ namespace VBAi
         }
 
         /// <summary>Deletes a confirmed local history entry after its pending writes have finished.</summary>
+        /// <returns>task produced by the operation for delete selected session async on chat window.</returns>
         private async System.Threading.Tasks.Task DeleteSelectedSessionAsync()
         {
             var selected = sessionList.SelectedItem as ChatSessionState;
@@ -654,6 +724,7 @@ namespace VBAi
 
         /// <summary>Validates cached conversation selection and refreshes tool bindings without host reads.</summary>
         /// <exception cref="InvalidOperationException">History is unavailable/loading or the selected scope is missing.</exception>
+        /// <returns>macro scope produced by the operation for ensure cached scope on chat window.</returns>
         private MacroScope EnsureCachedScope()
         {
             if (sessionViewUnavailable) throw new InvalidOperationException(UiText.Get("History unavailable: ").TrimEnd());

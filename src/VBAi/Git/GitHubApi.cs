@@ -11,147 +11,191 @@ using System.Web.Script.Serialization;
 
 namespace VBAi
 {
+
     /// <summary>Réponse HTTP refusée, sans corps distant ou secret dans le message.</summary>
     internal sealed class GitHubApiFailure : InvalidOperationException
     {
+
         /// <summary>Obtient le code HTTP à l’origine du refus structuré.</summary>
         /// <value>Code numérique renvoyé par GitHub.</value>
         internal int Status { get; }
+
         /// <summary>Crée une erreur API en conservant le statut HTTP pour le traitement de repli.</summary>
         /// <param name="status">Code HTTP renvoyé par GitHub.</param>
         /// <param name="message">Message d’erreur présenté à l’appelant.</param>
         internal GitHubApiFailure(int status, string message) : base(message) { Status = status; }
     }
+
     /// <summary>Issue créée sur GitHub.</summary>
     internal sealed class GitHubIssue
     {
+
         /// <summary>Obtient ou définit le numéro attribué à l’issue.</summary>
         /// <value>Numéro de l’issue dans le dépôt.</value>
         public int number { get; set; }
+
         /// <summary>Obtient ou définit l’URL Web de l’issue.</summary>
         /// <value>Adresse de l’issue sur GitHub.</value>
         public string html_url { get; set; }
     }
+
     /// <summary>Informations de dépôt renvoyées par l’API GitHub.</summary>
     internal sealed class GitHubRepositoryInfo
     {
+
         /// <summary>Obtient ou définit le nom complet propriétaire/dépôt.</summary>
         /// <value>le nom complet propriétaire/dépôt.</value>
         public string full_name { get; set; }
+
         /// <summary>Obtient ou définit l’URL de clonage HTTPS.</summary>
         /// <value>l’URL de clonage HTTPS.</value>
         public string clone_url { get; set; }
+
         /// <summary>Obtient ou définit le nom de la branche par défaut.</summary>
         /// <value>le nom de la branche par défaut.</value>
         public string default_branch { get; set; }
+
         /// <summary>Retourne le nom complet du dépôt.</summary>
         /// <returns>Valeur de <see cref="full_name"/>.</returns>
         public override string ToString() { return full_name; }
     }
+
     /// <summary>Informations sur une pull request GitHub.</summary>
     internal sealed class GitHubPull
     {
+
         /// <summary>Obtient ou définit le numéro de la pull request.</summary>
         /// <value>le numéro de la pull request.</value>
         public int number { get; set; }
+
         /// <summary>Obtient ou définit son titre.</summary>
         /// <value>son titre.</value>
         public string title { get; set; }
+
         /// <summary>Obtient ou définit sa description.</summary>
         /// <value>sa description.</value>
         public string body { get; set; }
+
         /// <summary>Obtient ou définit son état GitHub.</summary>
         /// <value>son état GitHub.</value>
         public string state { get; set; }
+
         /// <summary>Obtient ou définit si la pull request est un brouillon.</summary>
         /// <value>si la pull request est un brouillon.</value>
         public bool draft { get; set; }
+
         /// <summary>Obtient ou définit si elle a été fusionnée.</summary>
         /// <value>si elle a été fusionnée.</value>
         public bool merged { get; set; }
+
         /// <summary>Obtient ou définit son URL Web.</summary>
         /// <value>son URL Web.</value>
         public string html_url { get; set; }
+
         /// <summary>Obtient ou définit les informations de la tête de branche.</summary>
         /// <value>les informations de la tête de branche.</value>
         public GitHubHead head { get; set; }
+
         /// <summary>Retourne un libellé compact avec numéro, état et titre, en signalant les brouillons.</summary>
         /// <returns>Libellé localisé de la pull request.</returns>
         public override string ToString() { return "#" + number + " · " + state + (draft ? " · " + UiText.Get("Draft") : "") + " · " + title; }
     }
+
     /// <summary>Informations sur la révision de tête d’une pull request.</summary>
     internal sealed class GitHubHead
     {
+
         /// <summary>Obtient ou définit le SHA de la révision.</summary>
         /// <value>le SHA de la révision.</value>
         public string sha { get; set; }
     }
+
     /// <summary>Fichier modifié associé à une pull request.</summary>
     internal sealed class GitHubFile
     {
+
         /// <summary>Obtient ou définit le chemin du fichier.</summary>
         /// <value>le chemin du fichier.</value>
         public string filename { get; set; }
+
         /// <summary>Obtient ou définit l’état de modification du fichier.</summary>
         /// <value>l’état de modification du fichier.</value>
         public string status { get; set; }
+
         /// <summary>Retourne l’état suivi du chemin.</summary>
         /// <returns>Libellé compact du fichier.</returns>
         public override string ToString() { return status + " · " + filename; }
     }
+
     /// <summary>Commentaire GitHub avec son contenu et son emplacement facultatif.</summary>
     internal sealed class GitHubComment
     {
+
         /// <summary>Obtient ou définit le contenu du commentaire.</summary>
         /// <value>le contenu du commentaire.</value>
         public string body { get; set; }
+
         /// <summary>Obtient ou définit le chemin du fichier commenté.</summary>
         /// <value>le chemin du fichier commenté.</value>
         public string path { get; set; }
+
         /// <summary>Obtient ou définit le numéro de ligne, s’il est fourni.</summary>
         /// <value>le numéro de ligne, s’il est fourni.</value>
         public int? line { get; set; }
+
         /// <summary>Retourne le contenu précédé de l’emplacement lorsqu’un chemin est fourni.</summary>
         /// <returns>Libellé du commentaire.</returns>
         public override string ToString() { return (path == null ? "" : path + ":" + line + " · ") + body; }
     }
+
     /// <summary>État d’une exécution de vérification GitHub.</summary>
     internal sealed class GitHubCheck
     {
+
         /// <summary>Obtient ou définit le nom de la vérification.</summary>
         /// <value>le nom de la vérification.</value>
         public string name { get; set; }
+
         /// <summary>Obtient ou définit son état courant.</summary>
         /// <value>son état courant.</value>
         public string status { get; set; }
+
         /// <summary>Obtient ou définit sa conclusion éventuelle.</summary>
         /// <value>sa conclusion éventuelle.</value>
         public string conclusion { get; set; }
     }
+
     /// <summary>Enveloppe de la liste d’exécutions de vérification d’une révision.</summary>
     internal sealed class GitHubChecks
     {
+
         /// <summary>Obtient ou définit les vérifications renvoyées par l’API.</summary>
         /// <value>les vérifications renvoyées par l’API.</value>
         public GitHubCheck[] check_runs { get; set; }
     }
+
     /// <summary>État global de statut d’une révision.</summary>
     internal sealed class GitHubStatus
     {
+
         /// <summary>Obtient ou définit l’état agrégé.</summary>
         /// <value>l’état agrégé.</value>
         public string state { get; set; }
     }
+
     /// <summary>Organisation GitHub associée au compte.</summary>
     internal sealed class GitHubOrganization
     {
+
         /// <summary>Obtient ou définit le nom de connexion.</summary>
         /// <value>le nom de connexion.</value>
         public string login { get; set; }
     }
+
     /// <summary>Branche d’un dépôt GitHub.</summary>
     internal sealed class GitHubBranch
     {
+
         /// <summary>Obtient ou définit le nom de branche.</summary>
         /// <value>le nom de branche.</value>
         public string name { get; set; }
@@ -160,20 +204,26 @@ namespace VBAi
     /// <summary>Appelle l’API GitHub avec les identifiants du gestionnaire GCM de l’utilisateur.</summary>
     internal sealed class GitHubApi : IDisposable
     {
+
         /// <summary>Démarre un processus de saisie d’identifiants sans préambule sur son entrée standard.</summary>
         internal static Func<Process, bool> StartCredentialProcess = ProcessInput.StartWithoutPreamble;
+
         /// <summary>Writes and closes credential input; permits deterministic input pipe failure tests.</summary>
         internal static Func<Process, string, Task> WriteCredentialInput = async (process, input) =>
         {
             await process.StandardInput.WriteAsync(input);
             process.StandardInput.Close();
         };
+
         /// <summary>Client HTTP utilisé pour les requêtes API.</summary>
         private readonly HttpClient client;
+
         /// <summary>Fournisseur asynchrone du jeton d’accès.</summary>
         private readonly Func<CancellationToken, Task<string>> credential;
+
         /// <summary>Sérialiseur des charges utiles JSON de l’API.</summary>
         private readonly JavaScriptSerializer json = new JavaScriptSerializer { MaxJsonLength = 16 * 1024 * 1024 };
+
         /// <summary>Crée le client API et configure l’obtention du jeton depuis GCM si aucun fournisseur n’est injecté.</summary>
         /// <param name="account">Compte GitHub facultatif utilisé pour sélectionner les identifiants GCM.</param>
         /// <param name="handler">Gestionnaire HTTP facultatif, utile pour fournir un transport adapté.</param>
@@ -183,8 +233,10 @@ namespace VBAi
             client = new HttpClient(handler ?? new HttpClientHandler { AllowAutoRedirect = false }) { Timeout = TimeSpan.FromSeconds(45) };
             this.credential = credential ?? (ct => ReadCredential(account, ct));
         }
+
         /// <summary>Libère le client HTTP détenu par cette instance.</summary>
         public void Dispose() { client.Dispose(); }
+
         /// <summary>Convertit une URL de dépôt validée en chemin de ressource GitHub.</summary>
         /// <param name="url">URL distante du dépôt.</param>
         /// <returns>Chemin API commençant par <c>/repos/</c>.</returns>
@@ -194,14 +246,15 @@ namespace VBAi
             if (path.EndsWith(".git", StringComparison.OrdinalIgnoreCase)) path = path.Substring(0, path.Length - 4);
             return "/repos/" + path;
         }
-                /// <summary>Crée une issue avec un titre et un rapport explicites, sans étiquette nécessitant des droits supplémentaires.</summary>
-                /// <param name="url">URL distante du dépôt cible.</param>
-                /// <param name="title">Titre non vide de l’issue, limité à 180 caractères.</param>
-                /// <param name="body">Rapport facultatif, limité à 60 000 caractères.</param>
-                /// <param name="ct">Jeton d’annulation de la requête.</param>
-                /// <returns>Issue créée avec son numéro et son URL.</returns>
-                /// <exception cref="ArgumentException">Le titre est invalide ou le rapport dépasse la limite.</exception>
-                /// <exception cref="InvalidOperationException">GitHub refuse la création ou est indisponible.</exception>
+
+        /// <summary>Crée une issue avec un titre et un rapport explicites, sans étiquette nécessitant des droits supplémentaires.</summary>
+        /// <param name="url">URL distante du dépôt cible.</param>
+        /// <param name="title">Titre non vide de l’issue, limité à 180 caractères.</param>
+        /// <param name="body">Rapport facultatif, limité à 60 000 caractères.</param>
+        /// <param name="ct">Jeton d’annulation de la requête.</param>
+        /// <returns>Issue créée avec son numéro et son URL.</returns>
+        /// <exception cref="ArgumentException">Le titre est invalide ou le rapport dépasse la limite.</exception>
+        /// <exception cref="InvalidOperationException">GitHub refuse la création ou est indisponible.</exception>
         internal Task<GitHubIssue> CreateIssue(string url, string title, string body, CancellationToken ct)
         {
             if (string.IsNullOrWhiteSpace(title) || title.Length > 180 || (body?.Length ?? 0) > 60000)
@@ -246,6 +299,7 @@ namespace VBAi
                 }
             }
         }
+
         /// <summary>Récupère toutes les pages d’une ressource de liste GitHub, par lots de cent éléments.</summary>
         /// <typeparam name="T">Type de chaque élément de la liste.</typeparam>
         /// <param name="path">Chemin API de la liste.</param>
@@ -262,19 +316,23 @@ namespace VBAi
                 if (items.Length < 100) return result.ToArray();
             }
         }
+
         /// <summary>Liste les dépôts accessibles au compte, triés par mise à jour.</summary>
         /// <param name="ct">Jeton d’annulation.</param>
         /// <returns>Dépôts dont l’utilisateur est propriétaire, collaborateur ou membre de l’organisation.</returns>
         internal Task<GitHubRepositoryInfo[]> Repositories(CancellationToken ct) { return List<GitHubRepositoryInfo>("/user/repos?sort=updated&affiliation=owner,collaborator,organization_member", ct); }
+
         /// <summary>Liste les organisations visibles pour le compte.</summary>
         /// <param name="ct">Jeton d’annulation.</param>
         /// <returns>Organisations renvoyées par GitHub.</returns>
         internal Task<GitHubOrganization[]> Organizations(CancellationToken ct) { return List<GitHubOrganization>("/user/orgs", ct); }
+
         /// <summary>Liste les branches du dépôt identifié par son URL distante.</summary>
         /// <param name="url">URL distante du dépôt.</param>
         /// <param name="ct">Jeton d’annulation.</param>
         /// <returns>Branches du dépôt.</returns>
         internal Task<GitHubBranch[]> Branches(string url, CancellationToken ct) { return List<GitHubBranch>(RepositoryPath(url) + "/branches", ct); }
+
         /// <summary>Crée un dépôt utilisateur ou organisation sans initialiser de commit.</summary>
         /// <param name="name">Nom du dépôt, composé de 1 à 100 caractères autorisés.</param>
         /// <param name="organization">Compte d’organisation facultatif ; vide pour un dépôt utilisateur.</param>
@@ -288,11 +346,13 @@ namespace VBAi
             if (!string.IsNullOrEmpty(organization) && !GitHubAccountService.ValidAccount(organization)) throw new ArgumentException(UiText.Get("Invalid GitHub account."));
             return Request<GitHubRepositoryInfo>(HttpMethod.Post, string.IsNullOrEmpty(organization) ? "/user/repos" : "/orgs/" + organization + "/repos", new { name, @private = isPrivate, auto_init = false }, ct);
         }
+
         /// <summary>Liste les pull requests ouvertes et fermées du dépôt, triées par mise à jour.</summary>
         /// <param name="url">URL distante du dépôt.</param>
         /// <param name="ct">Jeton d’annulation.</param>
         /// <returns>Pull requests du dépôt.</returns>
         internal Task<GitHubPull[]> Pulls(string url, CancellationToken ct) { return List<GitHubPull>(RepositoryPath(url) + "/pulls?state=all&sort=updated", ct); }
+
         /// <summary>Crée une pull request entre deux branches différentes.</summary>
         /// <param name="url">URL distante du dépôt.</param>
         /// <param name="head">Branche source.</param>
@@ -309,6 +369,7 @@ namespace VBAi
             if (string.IsNullOrWhiteSpace(title) || head == target) throw new ArgumentException(UiText.Get("Enter a title and a different target branch."));
             return Request<GitHubPull>(HttpMethod.Post, RepositoryPath(url) + "/pulls", new { head, @base = target, title, body, draft }, ct);
         }
+
         /// <summary>Récupère les exécutions de vérification et le statut global d’un commit.</summary>
         /// <param name="url">URL distante du dépôt.</param>
         /// <param name="sha">SHA-1 du commit sous forme de quarante caractères hexadécimaux minuscules.</param>
@@ -328,6 +389,7 @@ namespace VBAi
             var status = await Request<GitHubStatus>(HttpMethod.Get, RepositoryPath(url) + "/commits/" + sha + "/status", null, ct);
             return UiText.Get("Commit status") + ": " + status.state + Environment.NewLine + string.Join(Environment.NewLine, lines);
         }
+
         /// <summary>Demande à Git Credential Manager le jeton HTTPS GitHub associé au compte.</summary>
         /// <param name="account">Compte facultatif utilisé pour sélectionner l’identifiant.</param>
         /// <param name="ct">Jeton d’annulation ; une limite interne de trente secondes est également appliquée.</param>

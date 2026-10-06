@@ -11,10 +11,13 @@ namespace VBAi
     /// <summary>Fournit les chaînes localisées sans modifier la culture du fil ou le formatage VBA.</summary>
     internal static class UiText
     {
+
         /// <summary>Gestionnaire du catalogue de ressources anglais embarqué.</summary>
         private static readonly ResourceManager English = new ResourceManager("VBAi.Localization.UiStrings", typeof(UiText).Assembly);
+
         /// <summary>Gestionnaires de ressources créés pour chaque culture du catalogue.</summary>
         private static readonly Dictionary<string, ResourceManager> Catalogues = CreateCatalogues();
+
         /// <summary>Associe chaque culture prise en charge à son gestionnaire de ressources.</summary>
         /// <returns>Gestionnaire de ressources associé à chaque culture prise en charge.</returns>
         private static Dictionary<string, ResourceManager> CreateCatalogues()
@@ -24,6 +27,7 @@ namespace VBAi
                 result[language.CultureName] = new ResourceManager("VBAi.Localization.UiStrings" + language.ResourceSuffix, typeof(UiText).Assembly);
             return result;
         }
+
         /// <summary>Culture active des libellés de l’interface.</summary>
         /// <value>Culture prise en charge choisie lors de l’initialisation.</value>
         internal static CultureInfo Culture { get; private set; } = Supported(CultureInfo.CurrentUICulture);

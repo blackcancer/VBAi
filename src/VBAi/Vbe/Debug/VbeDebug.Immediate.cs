@@ -5,16 +5,25 @@ using System.Threading.Tasks;
 
 namespace VBAi
 {
+
+    /// <summary>Owns the vbe debug state and operations.</summary>
     internal sealed partial class VbeDebug
     {
+
+        /// <summary>Maintains the immediate clipboard state for vbe debug.</summary>
         internal VbeDebugClipboard ImmediateClipboard = new VbeDebugClipboard();
 
         /// <summary>Explicit legacy-host fallback; never used by passive debugger polling.</summary>
+        /// <param name="request">request that supplies the request for this operation.</param>
+        /// <returns>task&lt;object&gt; produced by the operation for read immediate async on vbe debug.</returns>
         public Task<object> ReadImmediateAsync(Request request)
         {
             return VbeUiTask.Run(() => ReadImmediateCoreAsync(request));
         }
 
+        /// <summary>Reads immediate core async for vbe debug.</summary>
+        /// <param name="request">request that supplies the request for this operation.</param>
+        /// <returns>task&lt;object&gt; produced by the operation for read immediate core async on vbe debug.</returns>
         private async Task<object> ReadImmediateCoreAsync(Request request)
         {
             int ownerThread = Thread.CurrentThread.ManagedThreadId;
@@ -93,6 +102,10 @@ namespace VBAi
                 Limit = "The text remains selected in Immediate; its previous selection cannot be restored through VBIDE. No expression was executed." };
         }
 
+        /// <summary>Determines whether immediate copy caption for vbe debug.</summary>
+        /// <param name="caption">Text that supplies the caption value. Use the format required by the calling operation.</param>
+        /// <param name="selectAll">Indicates whether select all is enabled.</param>
+        /// <returns>Boolean indicating the result of the check for is immediate copy caption on vbe debug.</returns>
         internal static bool IsImmediateCopyCaption(string caption, bool selectAll)
         {
             string text = (caption ?? "").Replace("&", "").Trim();

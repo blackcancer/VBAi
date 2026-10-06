@@ -6,13 +6,17 @@ using System.Text.RegularExpressions;
 
 namespace VBAi
 {
+
     /// <summary>Décrit les noms de menus et le suffixe de ressources d’une langue prise en charge.</summary>
     internal sealed class UiLanguage
     {
+
         /// <summary>Nom de culture .NET et suffixe du catalogue de ressources.</summary>
         internal readonly string CultureName, ResourceSuffix;
+
         /// <summary>Variantes reconnues des menus Affichage et Outils.</summary>
         internal readonly string[] View, Tools;
+
         /// <summary>Initialise une langue et découpe ses variantes de menu séparées par une barre verticale.</summary>
         /// <param name="culture">Nom de culture .NET.</param>
         /// <param name="resource">Suffixe de ressources, ou chaîne vide pour la langue anglaise.</param>
@@ -28,6 +32,7 @@ namespace VBAi
     /// <summary>Associe les langues prises en charge aux libellés de menus du VBE.</summary>
     internal static class UiLanguages
     {
+
         /// <summary>Catalogue des cultures et variantes de menus reconnues.</summary>
         internal static readonly UiLanguage[] All = {
             new UiLanguage("en-US", "", "view", "tools"),

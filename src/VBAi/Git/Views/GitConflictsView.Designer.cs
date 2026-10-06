@@ -1,42 +1,61 @@
 namespace VBAi
 {
+
     /// <summary>Designer-generated conflict list, resolution editor, and side-by-side comparison.</summary>
     public sealed partial class GitConflictsView
     {
+
         /// <summary>Conflict resolution actions.</summary>
         internal System.Windows.Forms.FlowLayoutPanel conflictActions;
+
         /// <summary>Files with unresolved conflicts.</summary>
         internal VBAi.UiListBox conflictList;
+
         /// <summary>Manual conflict resolution text.</summary>
         internal VBAi.UiTextBox resolutionText;
+
         /// <summary>Uses the current branch's version.</summary>
         internal VBAi.ThemedButton mergeOurs;
+
         /// <summary>Uses the incoming branch's version.</summary>
         internal VBAi.ThemedButton mergeTheirs;
+
         /// <summary>Applies the manual resolution text.</summary>
         internal VBAi.ThemedButton mergeText;
+
         /// <summary>Completes the merge after all conflicts are resolved.</summary>
         internal VBAi.ThemedButton mergeComplete;
+
         /// <summary>Aborts the current merge.</summary>
         internal VBAi.ThemedButton mergeAbort;
+
         /// <summary>Comparison grid for the conflicting versions.</summary>
         internal VBAi.UiDataGridView conflictDiff;
+
         /// <summary>Current branch's conflict content.</summary>
         internal System.Windows.Forms.DataGridViewTextBoxColumn conflictOurs;
+
         /// <summary>Incoming branch's conflict content.</summary>
         internal System.Windows.Forms.DataGridViewTextBoxColumn conflictTheirs;
+
         /// <summary>Common ancestor version of the conflict.</summary>
         internal VBAi.UiTextBox baseContent;
+
         /// <summary>Layout for ancestor and resolved-result content.</summary>
         internal System.Windows.Forms.TableLayoutPanel conflictLayout;
+
         /// <summary>Caption for the common ancestor content.</summary>
         internal System.Windows.Forms.Label ancestorLabel;
+
         /// <summary>Caption for the resolved content.</summary>
         internal System.Windows.Forms.Label resultLabel;
+
         /// <summary>Container that owns Designer components.</summary>
         private System.ComponentModel.IContainer components;
+
         /// <summary>Tooltips associated with conflict actions.</summary>
         private System.Windows.Forms.ToolTip toolTips;
+
         /// <summary>Libère les composants de la vue avant son contrôle natif.</summary>
         /// <param name="disposing">Indique si les ressources managées doivent être libérées.</param>
         protected override void Dispose(bool disposing)

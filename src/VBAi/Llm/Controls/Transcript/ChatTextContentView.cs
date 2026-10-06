@@ -4,22 +4,38 @@ using System.Drawing;
 using System.Windows.Forms;
 namespace VBAi
 {
-    /// <summary>Designer-backed selectable rich text, with native links and code copying.</summary>
+
+    /// <summary>Displays selectable transcript text and Markdown with clickable references and code copying.</summary>
     public sealed partial class ChatTextContentView : ChatDesignerView
     {
+
         /// <summary>Receives errors raised while activating transcript links or actions.</summary>
         internal Action<string> ErrorHandler = LoadLog.Write;
+
         /// <summary>Tracks fonts created by this view so they can be disposed with it.</summary>
         private readonly List<Font> ownedFonts = new List<Font>();
+
+        /// <summary>Maintains the content update depth state for chat text content view.</summary>
         private int contentUpdateDepth;
+
+        /// <summary>Maintains the resizing text state for chat text content view.</summary>
         private bool resizingText;
+
         /// <summary>Maps rendered character ranges to navigation, link, and code copy actions.</summary>
         internal readonly List<TextAction> actions = new List<TextAction>();
-        /// <summary>Provides the text action implementation.</summary>
-        internal sealed class TextAction { /// <summary>Stores the start,length used by TextAction.</summary>
-internal int Start, Length; /// <summary>Stores the invoke used by TextAction.</summary>
-internal Action Invoke; /// <summary>Stores the code used by TextAction.</summary>
+
+        /// <summary>Owns the text action state and operations.</summary>
+        internal sealed class TextAction {
+
+/// <summary>Maintains the start and length state for text action.</summary>
+internal int Start, Length;
+
+/// <summary>Maintains the invoke state for text action.</summary>
+internal Action Invoke;
+
+/// <summary>Maintains the code state for text action.</summary>
 internal string Code; }
+
         /// <summary>Creates the native read-only text field and context menu.</summary>
         public ChatTextContentView()
         {
@@ -33,6 +49,7 @@ internal string Code; }
             copyCode.Click += (s,e) => { var action = ActionAt(content.SelectionStart); if (action?.Code != null) Copy(action.Code); };
             copyMenu.Opening += (s,e) => copyCode.Visible = ActionAt(content.SelectionStart)?.Code != null;
         }
+
         /// <summary>Replaces the transcript content with plain text and applies code or interface formatting.</summary>
         /// <param name="text">Plain message text to display.</param>
         /// <param name="code">Whether to use code formatting for the text.</param>
@@ -48,6 +65,7 @@ internal string Code; }
             }
             finally { contentUpdateDepth--; ResizeText(); }
         }
+
         /// <summary>Renders Markdown into the transcript and installs the callbacks for references and errors.</summary>
         /// <param name="text">Markdown source to render in the transcript.</param>
         /// <param name="references">VBA references that should become interactive transcript links.</param>
@@ -66,17 +84,20 @@ internal string Code; }
             }
             finally { contentUpdateDepth--; ResizeText(); }
         }
+
         /// <summary>Returns a cached view owned font matching the requested family, size, and style.</summary>
         /// <param name="family">Font family to reuse or create.</param>
         /// <param name="size">Font size in points.</param>
         /// <param name="style">Font style to apply.</param>
         /// <returns>The matching font instance, created and retained by this view when necessary.</returns>
         internal Font OwnFont(string family, float size, FontStyle style) { var existing = ownedFonts.Find(f => f.FontFamily.Name == family && f.Size == size && f.Style == style); if (existing != null) return existing; var font = new Font(family,size,style); ownedFonts.Add(font); return font; }
+
         /// <summary>Appends a styled text run to the native transcript control.</summary>
         /// <param name="text">Text to append to the transcript.</param>
         /// <param name="family">Font family for the appended text.</param>
         /// <param name="size">Font size in points.</param>
         internal void Append(string text, string family = "Segoe UI", float size = 9.5f) => Append(text, family, size, FontStyle.Regular);
+
         /// <summary>Appends a styled text run to the native transcript control.</summary>
         /// <param name="text">Text to append to the transcript.</param>
         /// <param name="family">Font family for the appended text.</param>
@@ -88,19 +109,24 @@ internal string Code; }
             content.Select(content.TextLength,0); content.SelectionFont = OwnFont(family,size,style);
             content.SelectionColor = color ?? UiTheme.Foreground; content.AppendText(text ?? "");
         }
+
         /// <summary>Invokes the transcript action associated with the character at the specified position.</summary>
         /// <param name="index">Character position whose associated action should be invoked.</param>
         internal void ActivateAt(int index) { try { ActionAt(index)?.Invoke?.Invoke(); } catch (Exception ex) { ErrorHandler(ex.Message); } }
+
         /// <summary>Copies the supplied transcript text through the native clipboard helper.</summary>
         /// <param name="text">Text to place on the clipboard.</param>
         private void Copy(string text) { try { ChatMarkdown.CopyText(text); } catch (Exception ex) { ErrorHandler(ex.Message); } }
+
         /// <summary>Finds the action whose rendered character range contains the specified position.</summary>
         /// <param name="index">Character position to test against the rendered action ranges.</param>
         /// <returns>The action covering the character position, or null when no action covers it.</returns>
         private TextAction ActionAt(int index) => actions.Find(a => index >= a.Start && index < a.Start + a.Length);
+
         /// <summary>Reflows the native rich text on width changes.</summary>
         /// <param name="e">Resize event.</param>
         protected override void OnSizeChanged(EventArgs e) { base.OnSizeChanged(e); ResizeText(); }
+
         /// <summary>Measures the rendered text and updates the rich text control height and scroll bars.</summary>
         private void ResizeText()
         {
@@ -122,6 +148,7 @@ internal string Code; }
             }
             finally { resizingText = false; }
         }
+
         /// <summary>Disposes fonts created by this view and clears its font cache.</summary>
         private void DisposeTextResources() { foreach (var font in ownedFonts) font.Dispose(); ownedFonts.Clear(); }
     }

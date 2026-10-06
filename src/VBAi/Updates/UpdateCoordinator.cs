@@ -6,30 +6,40 @@ using System.Threading.Tasks;
 
 namespace VBAi
 {
+
     /// <summary>Coordonne les vérifications entre les hôtes et l’application différée par un programme distinct.</summary>
     internal static class UpdateCoordinator
     {
+
         /// <summary>Synchronization object protecting timer and lifetime state.</summary>
         private static readonly object timerLock = new object();
+
         /// <summary>Periodic timer for automatic checks in managed installations.</summary>
         private static Timer timer;
+
         /// <summary>Cancellation source shared by automatic checks during this host lifetime.</summary>
         private static CancellationTokenSource lifetime;
+
         /// <summary>Factory used to create a disposable release feed.</summary>
         internal static Func<UpdateFeed> CreateFeed = () => new UpdateFeed();
+
         /// <summary>Launcher used to start the isolated installer worker.</summary>
         internal static Action<bool> LaunchWorker = LaunchWorkerNative;
-        /// <summary>Stores the start process used by UpdateCoordinator.</summary>
+
+        /// <summary>Maintains the start process state for update coordinator.</summary>
         internal static Func<ProcessStartInfo, Process> StartProcess = Process.Start;
-        /// <summary>Stores the create timer used by UpdateCoordinator.</summary>
+
+        /// <summary>Maintains the create timer state for update coordinator.</summary>
         internal static Func<TimerCallback, object, TimeSpan, TimeSpan, Timer> CreateTimer = NewTimer;
-        /// <summary>Performs the new timer operation for UpdateCoordinator.</summary>
-        /// <param name="callback">The callback used by this operation.</param>
-        /// <param name="state">The state used by this operation.</param>
-        /// <param name="due">The due used by this operation.</param>
-        /// <param name="period">The period used by this operation.</param>
-        /// <returns>The result produced by this operation.</returns>
+
+        /// <summary>Handles new timer for update coordinator.</summary>
+        /// <param name="callback">timer callback that supplies the callback for this operation.</param>
+        /// <param name="state">object that supplies the state for this operation.</param>
+        /// <param name="due">Duration that supplies the due for this operation.</param>
+        /// <param name="period">Duration that supplies the period for this operation.</param>
+        /// <returns>timer produced by the operation for new timer on update coordinator.</returns>
         private static Timer NewTimer(TimerCallback callback, object state, TimeSpan due, TimeSpan period) => new Timer(callback, state, due, period);
+
         /// <summary>Serializes release checks, optionally downloads the package, and may schedule installation.</summary>
         /// <param name="automatic">Whether automatic-check preferences and skipped-version settings apply.</param>
         /// <param name="progress">Optional download progress reporter.</param><param name="ct">Cancellation token.</param>
@@ -66,6 +76,7 @@ namespace VBAi
                 }
             }
         }
+
         /// <summary>Records the current managed host and starts the hourly automatic-check timer.</summary>
         internal static void Start()
         {
@@ -87,6 +98,7 @@ namespace VBAi
             }
             catch (Exception) { LoadLog.Write("Update startup is unavailable."); }
         }
+
         /// <summary>Runs one automatic check and logs failures unless the host lifetime cancelled it.</summary>
         /// <param name="token">Host-lifetime cancellation token.</param>
         /// <returns>Task that completes when the check attempt is finished.</returns>
@@ -96,6 +108,7 @@ namespace VBAi
             catch (OperationCanceledException) when (token.IsCancellationRequested) { }
             catch (Exception) { LoadLog.Write("Automatic update check is unavailable. Use the Updates window to retry."); }
         }
+
         /// <summary>Stops the periodic check timer and cancels its outstanding work.</summary>
         internal static void Stop()
         {
@@ -105,6 +118,7 @@ namespace VBAi
                 lifetime?.Cancel(); lifetime?.Dispose(); lifetime = null;
             }
         }
+
         /// <summary>Validates a staged installer, persists a worker job, then launches the separate updater process.</summary>
         /// <param name="release">Release that supplied the installer asset.</param><param name="path">Path to the staged installer.</param>
         /// <param name="background">Whether the updater worker should run without a visible window.</param>
@@ -127,6 +141,7 @@ namespace VBAi
             }
             LaunchWorker(background);
         }
+
         /// <summary>Copies the signed updater beside the user cache and starts it with the selected visibility mode.</summary>
         /// <param name="background">Whether the worker should use its background mode.</param>
         /// <exception cref="FileNotFoundException">The deployed updater executable is missing.</exception>

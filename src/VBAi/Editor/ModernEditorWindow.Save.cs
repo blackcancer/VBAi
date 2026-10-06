@@ -5,29 +5,32 @@ using System.Threading.Tasks;
 
 namespace VBAi
 {
-    /// <summary>Provides the modern editor window implementation.</summary>
+
+    /// <summary>Owns the modern editor window state and operations.</summary>
     internal sealed partial class ModernEditorWindow
     {
         // Native boundary permits testing cancellation without replacing synchronization.
-        /// <summary>Stores the native save used by ModernEditorWindow.</summary>
+        /// <summary>Maintains the native save state for modern editor window.</summary>
         internal Action<EditorVbeModule> NativeSave = SaveInVbe;
-        /// <summary>Stores the native host saved used by ModernEditorWindow.</summary>
+
+        /// <summary>Maintains the native host saved state for modern editor window.</summary>
         internal Func<EditorVbeModule, bool?> NativeHostSaved = ReadHostSaved;
-        /// <summary>Stores the last save error used by ModernEditorWindow.</summary>
+
+        /// <summary>Maintains the last save error state for modern editor window.</summary>
         private string lastSaveError;
 
-        /// <summary>Performs the read document host saved operation for ModernEditorWindow.</summary>
-        /// <param name="document">The document used by this operation.</param>
-        /// <returns>The result produced by this operation.</returns>
+        /// <summary>Reads document host saved for modern editor window.</summary>
+        /// <param name="document">editor document that supplies the document for this operation.</param>
+        /// <returns>bool produced by the operation for read document host saved on modern editor window.</returns>
         private bool? ReadDocumentHostSaved(EditorDocument document)
         {
             try { return document.Module is EditorVbeModule native ? NativeHostSaved(native) : null; }
             catch { return null; }
         }
 
-        /// <summary>Performs the save document operation for ModernEditorWindow.</summary>
-        /// <param name="id">Text containing the id.</param>
-        /// <returns>The result produced by this operation.</returns>
+        /// <summary>Saves the active editor document through its registered native save route.</summary>
+        /// <param name="id">Text that supplies the id value. Use the format required by the calling operation.</param>
+        /// <returns>task produced by the operation for save document on modern editor window.</returns>
         internal async Task SaveDocument(string id)
         {
             while (busy && !closing && !IsDisposed) await Task.Delay(15);
@@ -66,17 +69,17 @@ namespace VBAi
             finally { busy = false; }
         }
 
-        /// <summary>Performs the read host saved operation for ModernEditorWindow.</summary>
-        /// <param name="native">The native used by this operation.</param>
-        /// <returns>The result produced by this operation.</returns>
+        /// <summary>Reads host saved for modern editor window.</summary>
+        /// <param name="native">editor vbe module that supplies the native for this operation.</param>
+        /// <returns>bool produced by the operation for read host saved on modern editor window.</returns>
         private static bool? ReadHostSaved(EditorVbeModule native)
         {
             dynamic state = new VbeProjectComponents(native.Vbe, null).PersistenceStatus(native.ProjectName);
             return (bool)state.HostAvailable ? (bool?)state.HostSaved : null;
         }
 
-        /// <summary>Performs the save in vbe operation for ModernEditorWindow.</summary>
-        /// <param name="native">The native used by this operation.</param>
+        /// <summary>Writes the editor buffer back to the corresponding VBE code module.</summary>
+        /// <param name="native">editor vbe module that supplies the native for this operation.</param>
         private static void SaveInVbe(EditorVbeModule native)
         {
             dynamic vbe = native.Vbe;

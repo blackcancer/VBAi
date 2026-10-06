@@ -1,27 +1,38 @@
 namespace VBAi
 {
+
     /// <summary>Displays starter prompts when the chat has no messages.</summary>
     public sealed partial class ChatWelcomeView
     {
+
         /// <summary>Container that owns the disposable components created by the WinForms Designer.</summary>
         private System.ComponentModel.IContainer components;
+
         /// <summary>ToolTip component used to show full text for transcript controls.</summary>
         private System.Windows.Forms.ToolTip toolTips;
+
         /// <summary>Flow layout panel that contains this transcript view&apos;s child controls.</summary>
         private ChatComposerPanel layout;
+
         /// <summary>Displays the heading above the starter prompts.</summary>
         internal System.Windows.Forms.Label title;
+
         /// <summary>Displays guidance for starting a chat request.</summary>
         internal System.Windows.Forms.Label hint;
+
         /// <summary>Starts a prompt that asks the assistant to explain selected code.</summary>
         internal ChatActionButton explain;
+
         /// <summary>Starts a prompt that asks the assistant to find and fix an issue.</summary>
         internal ChatActionButton fix;
+
         /// <summary>Starts a prompt that asks the assistant to improve selected code.</summary>
         internal ChatActionButton improve;
+
         /// <summary>Releases the Designer components.</summary>
         /// <param name="disposing">Whether to release managed resources.</param>
         protected override void Dispose(bool disposing) { if (disposing) components?.Dispose(); base.Dispose(disposing); }
+
         /// <summary>Creates and configures the chat welcome view controls serialized by the WinForms Designer.</summary>
         private void InitializeComponent()
         {

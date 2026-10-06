@@ -11,11 +11,12 @@ using System.Windows.Automation.Text;
 
 namespace VBAi
 {
-    /// <summary>Observe et pilote les fenêtres natives de débogage et de dialogue du VBE via Win32, UI Automation et MSAA.</summary>
     // Run these accessibility calls away from the VBE UI thread. UIA and MSAA
     // query native windows, not the VBIDE object model used by VbeDebug.
+    /// <summary>Observe et pilote les fenêtres natives de débogage et de dialogue du VBE via Win32, UI Automation et MSAA.</summary>
     internal static partial class VbeDebugWindows
     {
+
         /// <summary>Callback de l’énumération Win32 des fenêtres.</summary>
         /// <param name="handle">Handle de la fenêtre énumérée.</param>
         /// <param name="parameter">Paramètre transmis à l’énumération.</param>
@@ -27,42 +28,50 @@ namespace VBAi
         /// <param name="parameter">Paramètre transmis au callback.</param>
         /// <returns><see langword="true"/> si l’énumération a réussi.</returns>
         [DllImport("user32.dll", EntryPoint = "EnumWindows")] private static extern bool NativeEnumWindows(EnumWindowCallback callback, IntPtr parameter);
+
         /// <summary>Énumère les fenêtres enfants d’une fenêtre parente.</summary>
         /// <param name="parent">Fenêtre dont les enfants sont énumérés.</param>
         /// <param name="callback">Callback invoqué pour chaque enfant.</param>
         /// <param name="parameter">Paramètre transmis au callback.</param>
         /// <returns><see langword="true"/> si l’énumération a réussi.</returns>
         [DllImport("user32.dll", EntryPoint = "EnumChildWindows")] private static extern bool NativeEnumChildWindows(IntPtr parent, EnumWindowCallback callback, IntPtr parameter);
+
         /// <summary>Obtient le PID et le thread propriétaires d’une fenêtre.</summary>
         /// <param name="handle">Handle de fenêtre.</param>
         /// <param name="processId">Reçoit le PID propriétaire.</param>
         /// <returns>Identifiant du thread propriétaire, ou zéro si absent.</returns>
         [DllImport("user32.dll", EntryPoint = "GetWindowThreadProcessId")] private static extern uint NativeGetWindowThreadProcessId(IntPtr handle, out uint processId);
+
         /// <summary>Lit la classe Win32 d’une fenêtre.</summary>
         /// <param name="handle">Handle de fenêtre.</param>
         /// <param name="text">Tampon recevant le nom de classe.</param>
         /// <param name="capacity">Capacité du tampon.</param>
         /// <returns>Nombre de caractères copiés.</returns>
         [DllImport("user32.dll", CharSet = CharSet.Unicode, EntryPoint = "GetClassName")] private static extern int NativeGetClassName(IntPtr handle, StringBuilder text, int capacity);
+
         /// <summary>Lit le titre Win32 d’une fenêtre.</summary>
         /// <param name="handle">Handle de fenêtre.</param>
         /// <param name="text">Tampon recevant le titre.</param>
         /// <param name="capacity">Capacité du tampon.</param>
         /// <returns>Nombre de caractères copiés.</returns>
         [DllImport("user32.dll", CharSet = CharSet.Unicode, EntryPoint = "GetWindowText")] private static extern int NativeGetWindowText(IntPtr handle, StringBuilder text, int capacity);
+
         /// <summary>Obtient l’identifiant de contrôle associé à un handle de dialogue.</summary>
         /// <param name="handle">Handle du contrôle.</param>
         /// <returns>Identifiant numérique du contrôle.</returns>
         [DllImport("user32.dll", EntryPoint = "GetDlgCtrlID")] private static extern int NativeGetDlgCtrlID(IntPtr handle);
+
         /// <summary>Recherche un contrôle enfant de dialogue par identifiant.</summary>
         /// <param name="handle">Handle du dialogue.</param>
         /// <param name="controlId">Identifiant du contrôle.</param>
         /// <returns>Handle du contrôle trouvé, ou zéro.</returns>
         [DllImport("user32.dll", EntryPoint = "GetDlgItem")] private static extern IntPtr NativeGetDlgItem(IntPtr handle, int controlId);
+
         /// <summary>Indique si une fenêtre est visible.</summary>
         /// <param name="handle">Handle de fenêtre.</param>
         /// <returns><see langword="true"/> si la fenêtre est visible.</returns>
         [DllImport("user32.dll", EntryPoint = "IsWindowVisible")] private static extern bool NativeIsWindowVisible(IntPtr handle);
+
         /// <summary>Poste un message asynchrone dans la file d’une fenêtre.</summary>
         /// <param name="handle">Fenêtre destinataire.</param>
         /// <param name="message">Identifiant du message.</param>
@@ -70,6 +79,7 @@ namespace VBAi
         /// <param name="lParam">Second paramètre du message.</param>
         /// <returns><see langword="true"/> si le message a été posté.</returns>
         [DllImport("user32.dll", EntryPoint = "PostMessage")] private static extern bool NativePostMessage(IntPtr handle, int message, IntPtr wParam, IntPtr lParam);
+
         /// <summary>Envoie un message Win32 dont le paramètre lParam est du texte Unicode.</summary>
         /// <param name="handle">Fenêtre destinataire.</param>
         /// <param name="message">Identifiant du message.</param>
@@ -78,6 +88,7 @@ namespace VBAi
         /// <returns>Valeur renvoyée par la procédure de fenêtre.</returns>
         [DllImport("user32.dll", CharSet = CharSet.Unicode, EntryPoint = "SendMessageW")]
         private static extern IntPtr NativeSendMessageText(IntPtr handle, int message, IntPtr wParam, string text);
+
         /// <summary>Envoie un message Win32 avec des paramètres entiers.</summary>
         /// <param name="handle">Fenêtre destinataire.</param>
         /// <param name="message">Identifiant du message.</param>
@@ -86,6 +97,7 @@ namespace VBAi
         /// <returns>Valeur renvoyée par la procédure de fenêtre.</returns>
         [DllImport("user32.dll", EntryPoint = "SendMessageW")]
         private static extern IntPtr NativeSendMessageInt(IntPtr handle, int message, IntPtr wParam, IntPtr lParam);
+
         /// <summary>Obtient l’interface MSAA associée à la partie cliente d’une fenêtre.</summary>
         /// <param name="handle">Handle de fenêtre.</param>
         /// <param name="objectId">Identifiant MSAA de l’objet visé.</param>
@@ -100,6 +112,7 @@ namespace VBAi
         /// <param name="processId">Reçoit le PID propriétaire.</param>
         /// <returns>Identifiant du thread propriétaire.</returns>
         internal delegate uint WindowProcessReader(IntPtr handle, out uint processId);
+
         /// <summary>Fonction injectable qui obtient une interface d’accessibilité MSAA.</summary>
         /// <param name="handle">Handle de la fenêtre.</param>
         /// <param name="objectId">Identifiant d’objet MSAA.</param>
@@ -110,55 +123,77 @@ namespace VBAi
 
         /// <summary>Délégué injectable pour l’énumération des fenêtres de premier niveau.</summary>
         internal static Func<EnumWindowCallback, IntPtr, bool> EnumWindows = NativeEnumWindows;
+
         /// <summary>Délégué injectable pour l’énumération des fenêtres enfants.</summary>
         internal static Func<IntPtr, EnumWindowCallback, IntPtr, bool> EnumChildWindows = NativeEnumChildWindows;
+
         /// <summary>Délégué injectable pour lire le processus propriétaire d’une fenêtre.</summary>
         internal static WindowProcessReader GetWindowThreadProcessId = NativeGetWindowThreadProcessId;
+
         /// <summary>Délégué injectable pour lire le nom de classe natif.</summary>
         internal static Func<IntPtr, StringBuilder, int, int> GetClassName = NativeGetClassName;
+
         /// <summary>Délégué injectable pour lire le texte d’une fenêtre.</summary>
         internal static Func<IntPtr, StringBuilder, int, int> GetWindowText = NativeGetWindowText;
+
         /// <summary>Délégué injectable pour lire l’identifiant d’un contrôle.</summary>
         internal static Func<IntPtr, int> GetDlgCtrlID = NativeGetDlgCtrlID;
+
         /// <summary>Délégué injectable pour obtenir un contrôle enfant par identifiant.</summary>
         internal static Func<IntPtr, int, IntPtr> GetDlgItem = NativeGetDlgItem;
+
         /// <summary>Délégué injectable pour tester la visibilité d’une fenêtre.</summary>
         internal static Func<IntPtr, bool> IsWindowVisible = NativeIsWindowVisible;
+
         /// <summary>Délégué injectable pour poster un message natif.</summary>
         internal static Func<IntPtr, int, IntPtr, IntPtr, bool> PostMessage = NativePostMessage;
+
         /// <summary>Délégué injectable pour envoyer un message Unicode.</summary>
         internal static Func<IntPtr, int, IntPtr, string, IntPtr> SendMessageText = NativeSendMessageText;
+
         /// <summary>Délégué injectable pour envoyer un message à paramètres entiers.</summary>
         internal static Func<IntPtr, int, IntPtr, IntPtr, IntPtr> SendMessageInt = NativeSendMessageInt;
+
         /// <summary>Délégué injectable pour acquérir un objet d’accessibilité.</summary>
         internal static AccessibleClientReader AccessibleObjectFromWindow = NativeAccessibleObjectFromWindow;
+
         /// <summary>Action de temporisation injectable entre les interactions native asynchrones.</summary>
         internal static Action<int> PauseNative = Thread.Sleep;
 
         /// <summary>Identifiant du message standard d’activation d’un bouton.</summary>
         private const int BmClick = 0x00F5;
+
         /// <summary>Identifiant du message standard de saisie d’un caractère.</summary>
         private const int WmChar = 0x0102;
+
         /// <summary>Identifiant du message standard d’appui sur une touche.</summary>
         private const int WmKeyDown = 0x0100;
+
         /// <summary>Identifiant du message standard de relâchement d’une touche.</summary>
         private const int WmKeyUp = 0x0101;
+
         /// <summary>Code virtuel de la touche Entrée.</summary>
         private const int VkReturn = 13;
+
         /// <summary>Identifiant MSAA de l’objet client d’une fenêtre.</summary>
         private const uint ObjidClient = 4294967292;
+
         /// <summary>IID de l’interface standard IAccessible.</summary>
         private static readonly Guid IidAccessible = new Guid("618736e0-3c3d-11cf-810c-00aa00389b71");
 
         /// <summary>Instantané des informations natives utiles sur un contrôle de dialogue.</summary>
         internal sealed class NativeControl
         {
+
             /// <summary>Handle Win32 du contrôle.</summary>
             public IntPtr Handle;
+
             /// <summary>Classe Win32 du contrôle.</summary>
             public string Kind;
+
             /// <summary>Texte actuellement affiché par le contrôle.</summary>
             public string Text;
+
             /// <summary>Indique si le contrôle est visible.</summary>
             public bool Visible;
         }
@@ -166,50 +201,62 @@ namespace VBAi
         /// <summary>Abstraction des lectures et interactions avec les fenêtres natives du VBE.</summary>
         internal interface INativeProbe
         {
+
             /// <summary>Retourne la fenêtre racine du VBE.</summary>
             /// <returns>Handle racine, ou zéro si absent.</returns>
             IntPtr VbeRoot();
+
             /// <summary>Énumère les fenêtres enfants d’un handle.</summary>
             /// <param name="root">Handle parent.</param>
             /// <returns>Handles des fenêtres enfants.</returns>
             List<IntPtr> Children(IntPtr root);
+
             /// <summary>Recherche un volet parmi les fenêtres énumérées.</summary>
             /// <param name="panes">Fenêtres candidates.</param>
             /// <param name="names">Noms possibles du volet.</param>
             /// <returns>Handle du volet trouvé ou zéro.</returns>
             IntPtr Pane(IEnumerable<IntPtr> panes, params string[] names);
+
             /// <summary>Lit une liste accessible dans un volet de débogage.</summary>
             /// <param name="handle">Handle du volet.</param>
             /// <returns>Contenu lu.</returns>
             object List(IntPtr handle);
+
             /// <summary>Lit le contenu de la fenêtre Immediate.</summary>
             /// <param name="handle">Handle du volet Immediate.</param>
             /// <returns>Instantané de son contenu.</returns>
             object Immediate(IntPtr handle);
+
             /// <summary>Lit la pile d’appels liée au volet Locals.</summary>
             /// <param name="locals">Handle du volet Locals.</param>
             /// <returns>Trames lues dans la pile d’appels.</returns>
             object CallStack(IntPtr locals);
+
             /// <summary>Recherche un dialogue dont le titre correspond aux valeurs fournies.</summary>
             /// <param name="titles">Titres possibles.</param>
             /// <returns>Handle du dialogue ou zéro.</returns>
             IntPtr Dialog(params string[] titles);
+
             /// <summary>Énumère les contrôles Win32 d’un dialogue.</summary>
             /// <param name="dialog">Handle du dialogue.</param>
             /// <returns>Contrôles trouvés.</returns>
             List<NativeControl> DialogControls(IntPtr dialog);
+
             /// <summary>Lit le message accessible d’un dialogue.</summary>
             /// <param name="dialog">Handle du dialogue.</param>
             /// <returns>Message lu.</returns>
             string DialogMessage(IntPtr dialog);
+
             /// <summary>Envoie un clic au contrôle.</summary>
             /// <param name="handle">Handle du contrôle.</param>
             /// <returns>Indique si le clic a été transmis.</returns>
             bool Click(IntPtr handle);
+
             /// <summary>Vérifie la visibilité du contrôle.</summary>
             /// <param name="handle">Handle du contrôle.</param>
             /// <returns><see langword="true"/> si visible.</returns>
             bool Visible(IntPtr handle);
+
             /// <summary>Attend le nombre de millisecondes indiqué.</summary>
             /// <param name="milliseconds">Durée d’attente.</param>
             void Pause(int milliseconds);
@@ -218,63 +265,78 @@ namespace VBAi
         /// <summary>Abstraction native injectable des boîtes Add Watch, Edit Watch et Quick Watch.</summary>
         internal interface IWatchProbe
         {
+
             /// <summary>Recherche un dialogue selon ses titres possibles.</summary>
             /// <param name="titles">Titres possibles.</param>
             /// <returns>Handle du dialogue ou zéro.</returns>
             IntPtr Dialog(params string[] titles);
+
             /// <summary>Recherche un contrôle de dialogue par son identifiant.</summary>
             /// <param name="dialog">Handle du dialogue.</param>
             /// <param name="id">Identifiant du contrôle.</param>
             /// <returns>Handle du contrôle ou zéro.</returns>
             IntPtr Item(IntPtr dialog, int id);
+
             /// <summary>Lit le texte d’un contrôle.</summary>
             /// <param name="handle">Handle du contrôle.</param>
             /// <returns>Texte du contrôle.</returns>
             string Text(IntPtr handle);
+
             /// <summary>Active un contrôle de dialogue.</summary>
             /// <param name="handle">Handle du contrôle à activer.</param>
             /// <returns><see langword="true"/> si le clic a été posté.</returns>
             bool Click(IntPtr handle);
+
             /// <summary>Lit l’état coché d’un contrôle bouton.</summary>
             /// <param name="handle">Handle du bouton.</param>
             /// <returns><see langword="true"/> si le bouton est coché.</returns>
             bool Checked(IntPtr handle);
+
             /// <summary>Remplace le texte d’un contrôle.</summary>
             /// <param name="handle">Handle du champ texte.</param>
             /// <param name="text">Valeur à saisir.</param>
             void Replace(IntPtr handle, string text);
+
             /// <summary>Attend la durée indiquée.</summary>
             /// <param name="milliseconds">Durée en millisecondes.</param>
             void Pause(int milliseconds);
+
             /// <summary>Lit le message accessible d’une boîte de dialogue.</summary>
             /// <param name="dialog">Handle du dialogue.</param>
             /// <returns>Message accessible.</returns>
             string Message(IntPtr dialog);
+
             /// <summary>Ferme le dialogue.</summary>
             /// <param name="dialog">Handle du dialogue.</param>
             void Close(IntPtr dialog);
+
             /// <summary>Retourne la fenêtre racine du VBE.</summary>
             /// <returns>Handle racine, ou zéro si absent.</returns>
             IntPtr VbeRoot();
+
             /// <summary>Énumère les fenêtres enfants.</summary>
             /// <param name="root">Handle parent.</param>
             /// <returns>Handles enfants.</returns>
             List<IntPtr> Children(IntPtr root);
+
             /// <summary>Recherche un volet nommé.</summary>
             /// <param name="panes">Fenêtres candidates.</param>
             /// <param name="names">Noms possibles.</param>
             /// <returns>Handle du volet ou zéro.</returns>
             IntPtr Pane(IEnumerable<IntPtr> panes, params string[] names);
+
             /// <summary>Lit le contenu d’une liste du volet Watches.</summary>
             /// <param name="handle">Handle de liste.</param>
             /// <returns>Instantané de liste.</returns>
             object List(IntPtr handle);
+
             /// <summary>Compte les lignes de surveillance correspondant à l’expression et au contexte.</summary>
             /// <param name="pane">Volet Watches.</param>
             /// <param name="expression">Expression recherchée.</param>
             /// <param name="context">Contexte facultatif.</param>
             /// <returns>Nombre de lignes correspondantes.</returns>
             int WatchMatches(IntPtr pane, string expression, string context);
+
             /// <summary>Sélectionne une ligne de surveillance correspondante.</summary>
             /// <param name="pane">Volet Watches.</param>
             /// <param name="expression">Expression recherchée.</param>
@@ -286,29 +348,36 @@ namespace VBAi
         /// <summary>Implémente les interactions avec les dialogues de surveillance par Win32 et UI Automation.</summary>
         private sealed class NativeWatchProbe : IWatchProbe
         {
+
             /// <summary>Lignes UI Automation issues de la dernière recherche des surveillances.</summary>
             private List<AutomationElement> lastRows;
+
             /// <summary>Recherche un dialogue de surveillance par titre.</summary>
             /// <param name="titles">Titres possibles du dialogue.</param>
             /// <returns>Handle du dialogue, ou zéro si absent.</returns>
             public IntPtr Dialog(params string[] titles) { return FindDialog(titles); }
+
             /// <summary>Retourne le handle du contrôle de dialogue demandé.</summary>
             /// <param name="dialog">Handle du dialogue.</param>
             /// <param name="id">Identifiant numérique du contrôle.</param>
             /// <returns>Handle du contrôle, ou zéro si absent.</returns>
             public IntPtr Item(IntPtr dialog, int id) { return GetDlgItem(dialog, id); }
+
             /// <summary>Lit le texte visible d’une fenêtre.</summary>
             /// <param name="handle">Handle du contrôle.</param>
             /// <returns>Texte observé.</returns>
             public string Text(IntPtr handle) { return WindowText(handle); }
+
             /// <summary>Poste un clic standard sur le contrôle.</summary>
             /// <param name="handle">Handle du bouton.</param>
             /// <returns>Indique si le message a été posté.</returns>
             public bool Click(IntPtr handle) { return PostMessage(handle, BmClick, IntPtr.Zero, IntPtr.Zero); }
+
             /// <summary>Retourne l’état de sélection d’un bouton à cocher.</summary>
             /// <param name="handle">Handle du contrôle.</param>
             /// <returns><see langword="true"/> si le bouton est coché.</returns>
             public bool Checked(IntPtr handle) { return SendMessageInt(handle, 0x00F0, IntPtr.Zero, IntPtr.Zero).ToInt32() == 1; }
+
             /// <summary>Sélectionne tout le texte du champ et saisit la nouvelle valeur.</summary>
             /// <param name="handle">Handle du champ texte.</param>
             /// <param name="value">Texte à saisir.</param>
@@ -317,32 +386,40 @@ namespace VBAi
                 SendMessageInt(handle, 0x00B1, IntPtr.Zero, new IntPtr(-1));
                 SendMessageText(handle, 0x00C2, new IntPtr(1), value);
             }
+
             /// <summary>Attend la durée en millisecondes demandée.</summary>
             /// <param name="milliseconds">Durée de pause.</param>
             public void Pause(int milliseconds) { PauseNative(milliseconds); }
+
             /// <summary>Lit le message accessible du dialogue.</summary>
             /// <param name="dialog">Handle du dialogue.</param>
             /// <returns>Texte accessible.</returns>
             public string Message(IntPtr dialog) { return AccessibleDialogMessage(dialog); }
+
             /// <summary>Ferme le dialogue après une interaction.</summary>
             /// <param name="dialog">Handle du dialogue.</param>
             public void Close(IntPtr dialog) { CloseDialog(dialog); }
+
             /// <summary>Recherche la fenêtre racine du VBE.</summary>
             /// <returns>Handle de la fenêtre, ou zéro si elle n’est pas trouvée.</returns>
             public IntPtr VbeRoot() { return FindVbeRoot(); }
+
             /// <summary>Retourne les handles enfants d’une fenêtre racine.</summary>
             /// <param name="root">Handle racine.</param>
             /// <returns>Handles des fenêtres enfants visibles.</returns>
             public List<IntPtr> Children(IntPtr root) { return ChildWindows(root); }
+
             /// <summary>Recherche un volet par l’un des noms possibles.</summary>
             /// <param name="panes">Handles de volets candidats.</param>
             /// <param name="names">Noms possibles du volet.</param>
             /// <returns>Handle du volet, ou zéro.</returns>
             public IntPtr Pane(IEnumerable<IntPtr> panes, params string[] names) { return FindPane(panes, names); }
+
             /// <summary>Lit les lignes accessibles du volet.</summary>
             /// <param name="handle">Handle du volet.</param>
             /// <returns>Instantané du contenu.</returns>
             public object List(IntPtr handle) { return ReadList(handle); }
+
             /// <summary>Recherche les lignes de surveillance correspondant à l’expression et au contexte.</summary>
             /// <param name="pane">Handle du volet Watches.</param>
             /// <param name="expression">Expression exacte de surveillance.</param>
@@ -353,6 +430,7 @@ namespace VBAi
                 lastRows = MatchingWatchRows(pane, expression, context);
                 return lastRows.Count;
             }
+
             /// <summary>Sélectionne la ligne de surveillance unique trouvée par la recherche précédente.</summary>
             /// <param name="pane">Volet Watches contenant la ligne.</param>
             /// <param name="expression">Expression demandée.</param>
@@ -371,10 +449,13 @@ namespace VBAi
         /// <summary>Enfant MSAA d’une boîte de signature avec index, rôle et nom accessibles.</summary>
         internal sealed class SignatureChild
         {
+
             /// <summary>Index de l’enfant dans l’arbre accessible MSAA.</summary>
             public int Index;
+
             /// <summary>Rôle MSAA de l’enfant.</summary>
             public int Role;
+
             /// <summary>Nom accessible de l’enfant.</summary>
             public string Name;
         }
@@ -382,20 +463,25 @@ namespace VBAi
         /// <summary>Abstraction injectable de lecture et de fermeture d’une boîte de signature VBE.</summary>
         internal interface ISignatureProbe
         {
+
             /// <summary>Recherche la boîte de signature.</summary>
             /// <returns>Handle du dialogue ou zéro.</returns>
             IntPtr Dialog();
+
             /// <summary>Énumère les enfants accessibles du dialogue.</summary>
             /// <param name="dialog">Handle du dialogue.</param>
             /// <returns>Enfants MSAA lisibles.</returns>
             IList<SignatureChild> Children(IntPtr dialog);
+
             /// <summary>Active l’action MSAA d’annulation de l’enfant indiqué.</summary>
             /// <param name="dialog">Handle du dialogue.</param>
             /// <param name="index">Index de l’enfant.</param>
             void Cancel(IntPtr dialog, int index);
+
             /// <summary>Ferme le dialogue de signature.</summary>
             /// <param name="dialog">Handle du dialogue.</param>
             void Close(IntPtr dialog);
+
             /// <summary>Attend le délai indiqué.</summary>
             /// <param name="milliseconds">Durée en millisecondes.</param>
             void Pause(int milliseconds);
@@ -404,11 +490,14 @@ namespace VBAi
         /// <summary>Lit et ferme le dialogue de signature au moyen de l’interface d’accessibilité native.</summary>
         private sealed class NativeSignatureProbe : ISignatureProbe
         {
+
             /// <summary>Interface MSAA du dialogue ouvert.</summary>
             private Accessibility.IAccessible accessible;
+
             /// <summary>Recherche le dialogue natif de signature.</summary>
             /// <returns>Handle du dialogue ou zéro.</returns>
             public IntPtr Dialog() { return FindSignatureDialog(); }
+
             /// <summary>Lit les enfants MSAA disponibles dans le dialogue.</summary>
             /// <param name="dialog">Handle du dialogue.</param>
             /// <returns>Index, rôle et nom des enfants accessibles.</returns>
@@ -427,13 +516,16 @@ namespace VBAi
                 }
                 return children;
             }
+
             /// <summary>Déclenche l’action accessible de l’enfant, utilisée pour annuler sans clic coordonné.</summary>
             /// <param name="dialog">Handle du dialogue.</param>
             /// <param name="index">Index MSAA de l’action.</param>
             public void Cancel(IntPtr dialog, int index) { accessible.accDoDefaultAction(index); }
+
             /// <summary>Ferme le dialogue de signature par message natif.</summary>
             /// <param name="dialog">Handle du dialogue.</param>
             public void Close(IntPtr dialog) { PostMessage(dialog, 0x0010, IntPtr.Zero, IntPtr.Zero); }
+
             /// <summary>Attend le délai indiqué.</summary>
             /// <param name="milliseconds">Durée en millisecondes.</param>
             public void Pause(int milliseconds) { PauseNative(milliseconds); }
@@ -442,22 +534,31 @@ namespace VBAi
         /// <summary>Valeur observée d’un contrôle dans l’onglet des options VBE.</summary>
         internal sealed class OptionsControl
         {
+
             /// <summary>Nom accessible du contrôle.</summary>
             public string Name;
+
             /// <summary>Type de contrôle UI Automation.</summary>
             public string Type;
+
             /// <summary>Valeur courante lue, si elle est disponible.</summary>
             public object Value;
+
             /// <summary>Choix natifs observés, sans inventer de valeur pour les listes non accessibles.</summary>
             public IList<string> Choices = new string[0];
+
             /// <summary>Catalogue natif indexé; les entrées sans texte restent explicitement opaques.</summary>
             public IList<OptionsNativeChoice> NativeChoices = new OptionsNativeChoice[0];
+
             /// <summary>Index réellement sélectionné, ou -1 lorsque seul le champ éditable possède une valeur.</summary>
             public int SelectedIndex = -1;
+
             /// <summary>Erreur de lecture du contrôle, si présente.</summary>
             public string Error;
+
             /// <summary>Indique si le contrôle est visible.</summary>
             public bool Visible = true;
+
             /// <summary>Indique si le contrôle est activé.</summary>
             public bool Enabled = true;
         }
@@ -465,10 +566,13 @@ namespace VBAi
         /// <summary>Choix radio ou case lu dans les options de débogage.</summary>
         internal sealed class OptionsChoice
         {
+
             /// <summary>Nom accessible du choix.</summary>
             public string Name;
+
             /// <summary>Indique si ce choix est sélectionné.</summary>
             public bool Selected;
+
             /// <summary>Indique si l’état du choix a pu être lu.</summary>
             public bool Readable = true;
         }
@@ -476,25 +580,31 @@ namespace VBAi
         /// <summary>Abstraction injectable de lecture du dialogue natif Tools &gt; Options.</summary>
         internal interface IOptionsProbe
         {
+
             /// <summary>Ouvre ou localise le dialogue Options.</summary>
             /// <returns>Handle du dialogue, ou zéro.</returns>
             IntPtr Dialog();
+
             /// <summary>Énumère les titres d’onglet du dialogue.</summary>
             /// <param name="dialog">Handle du dialogue.</param>
             /// <returns>Noms visibles des onglets.</returns>
             IList<string> Tabs(IntPtr dialog);
+
             /// <summary>Lit les contrôles de l’onglet sélectionné par index.</summary>
             /// <param name="dialog">Handle du dialogue.</param>
             /// <param name="tabIndex">Index d’onglet.</param>
             /// <returns>Valeurs observées des contrôles.</returns>
             IList<OptionsControl> Controls(IntPtr dialog, int tabIndex);
+
             /// <summary>Lit les choix du réglage de capture des erreurs.</summary>
             /// <param name="dialog">Handle du dialogue.</param>
             /// <returns>Choix et état de sélection observés.</returns>
             IList<OptionsChoice> ErrorChoices(IntPtr dialog);
+
             /// <summary>Ferme le dialogue sans appliquer de modification.</summary>
             /// <param name="dialog">Handle du dialogue.</param>
             void Close(IntPtr dialog);
+
             /// <summary>Attend un délai entre les lectures d’interface.</summary>
             /// <param name="milliseconds">Durée en millisecondes.</param>
             void Pause(int milliseconds);
@@ -503,13 +613,17 @@ namespace VBAi
         /// <summary>Implémente la lecture du dialogue Options avec UI Automation.</summary>
         private sealed partial class NativeOptionsProbe : IWritableOptionsProbe, IOptionsDialogLifetimeProbe
         {
+
             /// <summary>Racine UI Automation du dialogue.</summary>
             private AutomationElement root;
+
             /// <summary>Onglets UI Automation du dialogue.</summary>
             private AutomationElementCollection tabItems;
+
             /// <summary>Recherche le dialogue VBE des options.</summary>
             /// <returns>Handle du dialogue ou zéro.</returns>
             public IntPtr Dialog() { return FindDialog("Options"); }
+
             /// <summary>Lit les noms des onglets accessibles du dialogue.</summary>
             /// <param name="dialog">Handle du dialogue.</param>
             /// <returns>Noms des onglets dans leur ordre d’affichage.</returns>
@@ -520,6 +634,7 @@ namespace VBAi
                     new PropertyCondition(AutomationElement.ControlTypeProperty, ControlType.TabItem));
                 return tabItems.Cast<AutomationElement>().Select(tab => tab.Current.Name).ToArray();
             }
+
             /// <summary>Lit les valeurs des contrôles UI Automation de l’onglet demandé.</summary>
             /// <param name="dialog">Handle du dialogue Options.</param>
             /// <param name="tabIndex">Index d’onglet sélectionné.</param>
@@ -605,12 +720,13 @@ namespace VBAi
                 }
                 return controls;
             }
-                        /// <summary>Écrit un contrôle unique de l’onglet par son interface native accessible.</summary>
-                        /// <param name="dialog">Handle du dialogue Options.</param>
-                        /// <param name="tabIndex">Index de l’onglet qui contient le contrôle.</param>
-                        /// <param name="name">Nom exact du contrôle.</param>
-                        /// <param name="type">Type UI Automation du contrôle.</param>
-                        /// <param name="value">Valeur validée à écrire par son pattern natif.</param>
+
+            /// <summary>Écrit un contrôle unique de l’onglet par son interface native accessible.</summary>
+            /// <param name="dialog">Handle du dialogue Options.</param>
+            /// <param name="tabIndex">Index de l’onglet qui contient le contrôle.</param>
+            /// <param name="name">Nom exact du contrôle.</param>
+            /// <param name="type">Type UI Automation du contrôle.</param>
+            /// <param name="value">Valeur validée à écrire par son pattern natif.</param>
             public void Write(IntPtr dialog, int tabIndex, string name, string type, object value)
             {
                 Controls(dialog, tabIndex);
@@ -643,8 +759,9 @@ namespace VBAi
                 else throw new InvalidOperationException("The option has no supported writable pattern.");
                 PauseNative(100);
             }
-                        /// <summary>Demande la validation par le bouton natif IDOK, sans raccourci clavier.</summary>
-                        /// <param name="dialog">Handle du dialogue Options.</param>
+
+            /// <summary>Demande la validation par le bouton natif IDOK, sans raccourci clavier.</summary>
+            /// <param name="dialog">Handle du dialogue Options.</param>
             public void Accept(IntPtr dialog)
             {
                 IntPtr ok = GetDlgItem(dialog, 1);
@@ -680,6 +797,7 @@ namespace VBAi
                 }
                 return result;
             }
+
             /// <summary>Ferme le dialogue sans appliquer de choix.</summary>
             /// <param name="dialog">Handle du dialogue.</param>
             public void Close(IntPtr dialog)
@@ -695,7 +813,10 @@ namespace VBAi
                 if (!PostMessage(cancel, BmClick, IntPtr.Zero, IntPtr.Zero))
                     throw new InvalidOperationException("The single native Options Cancel request could not be posted.");
             }
+
             /// <summary>Observes destruction of the exact captured handle, including hidden dialogs, without acting on another window.</summary>
+            /// <param name="dialog">Native handle that supplies the dialog for this operation.</param>
+            /// <returns>Boolean indicating the result of the check for is open on native options probe.</returns>
             public bool IsOpen(IntPtr dialog)
             {
                 bool present = false;
@@ -714,6 +835,7 @@ namespace VBAi
                 if (!identity) throw new InvalidOperationException("The captured Options handle has a different native owner or class.");
                 return present;
             }
+
             /// <summary>Attend avant la lecture UI Automation suivante.</summary>
             /// <param name="milliseconds">Durée de l’attente.</param>
             public void Pause(int milliseconds) { PauseNative(milliseconds); }
@@ -722,35 +844,43 @@ namespace VBAi
         /// <summary>Abstraction injectable de lecture et d’envoi de texte à la fenêtre Immediate.</summary>
         internal interface IImmediateProbe
         {
+
             /// <summary>Retourne la fenêtre racine VBE.</summary>
             /// <returns>Handle racine, ou zéro.</returns>
             IntPtr VbeRoot();
+
             /// <summary>Énumère les fenêtres enfants.</summary>
             /// <param name="root">Handle racine.</param>
             /// <returns>Handles enfants.</returns>
             List<IntPtr> Children(IntPtr root);
+
             /// <summary>Recherche un volet par ses noms possibles.</summary>
             /// <param name="panes">Fenêtres candidates.</param>
             /// <param name="names">Noms de volet.</param>
             /// <returns>Handle trouvé, ou zéro.</returns>
             IntPtr Pane(IEnumerable<IntPtr> panes, params string[] names);
+
             /// <summary>Prépare le volet Immediate pour l’exécution d’une commande.</summary>
             /// <param name="pane">Handle du volet.</param>
             /// <returns>Texte observé avant exécution.</returns>
             string Prepare(IntPtr pane);
+
             /// <summary>Lit le texte du volet Immediate.</summary>
             /// <param name="pane">Handle du volet.</param>
             /// <returns>Texte accessible observé.</returns>
             string Text(IntPtr pane);
+
             /// <summary>Poste le caractère demandé dans le volet.</summary>
             /// <param name="pane">Handle du volet.</param>
             /// <param name="character">Caractère à saisir.</param>
             /// <returns><see langword="true"/> si le message est posté.</returns>
             bool PostChar(IntPtr pane, char character);
+
             /// <summary>Poste la séquence de touche Entrée.</summary>
             /// <param name="pane">Handle du volet.</param>
             /// <returns><see langword="true"/> si les messages sont postés.</returns>
             bool PostEnter(IntPtr pane);
+
             /// <summary>Attend l’exécution dans l’interface du VBE.</summary>
             /// <param name="milliseconds">Durée en millisecondes.</param>
             void Pause(int milliseconds);
@@ -759,18 +889,22 @@ namespace VBAi
         /// <summary>Implémente l’envoi de commandes texte dans le volet Immediate via les messages clavier natifs.</summary>
         private sealed class NativeImmediateProbe : IImmediateProbe
         {
+
             /// <summary>Recherche la fenêtre racine du VBE.</summary>
             /// <returns>Handle racine, ou zéro si absent.</returns>
             public IntPtr VbeRoot() { return FindVbeRoot(); }
+
             /// <summary>Énumère les fenêtres enfants d’une racine.</summary>
             /// <param name="root">Handle parent.</param>
             /// <returns>Handles enfants.</returns>
             public List<IntPtr> Children(IntPtr root) { return ChildWindows(root); }
+
             /// <summary>Recherche le volet Immediate parmi les fenêtres candidates.</summary>
             /// <param name="panes">Handles candidats.</param>
             /// <param name="names">Noms possibles du volet.</param>
             /// <returns>Handle du volet ou zéro.</returns>
             public IntPtr Pane(IEnumerable<IntPtr> panes, params string[] names) { return FindPane(panes, names); }
+
             /// <summary>Place le focus dans le volet Immediate et lit son texte initial.</summary>
             /// <param name="pane">Handle du volet.</param>
             /// <returns>Texte observable après préparation.</returns>
@@ -786,16 +920,19 @@ namespace VBAi
                 atEnd.Select();
                 return before;
             }
+
             /// <summary>Lit le texte accessible courant du volet Immediate.</summary>
             /// <param name="pane">Handle du volet.</param>
             /// <returns>Texte affiché.</returns>
             public string Text(IntPtr pane) { return ImmediateText(pane); }
+
             /// <summary>Poste un message de caractère dans le volet.</summary>
             /// <param name="pane">Handle du volet.</param>
             /// <param name="character">Caractère à transmettre.</param>
             /// <returns><see langword="true"/> si le message a été posté.</returns>
             public bool PostChar(IntPtr pane, char character)
             { return PostMessage(pane, WmChar, new IntPtr(character), IntPtr.Zero); }
+
             /// <summary>Poste l’appui puis le relâchement de la touche Entrée.</summary>
             /// <param name="pane">Handle du volet.</param>
             /// <returns><see langword="true"/> si les messages ont été postés.</returns>
@@ -804,6 +941,7 @@ namespace VBAi
                 return PostMessage(pane, WmKeyDown, new IntPtr(VkReturn), IntPtr.Zero) &&
                     PostMessage(pane, WmKeyUp, new IntPtr(VkReturn), IntPtr.Zero);
             }
+
             /// <summary>Attend la durée indiquée pour laisser le VBE traiter la saisie.</summary>
             /// <param name="milliseconds">Durée en millisecondes.</param>
             public void Pause(int milliseconds) { PauseNative(milliseconds); }
@@ -812,41 +950,52 @@ namespace VBAi
         /// <summary>Implémente la lecture des volets et dialogues par Win32, UI Automation et MSAA.</summary>
         private sealed class NativeProbe : INativeProbe
         {
+
             /// <summary>PID auquel les dialogues observés doivent appartenir.</summary>
             private readonly int dialogProcessId;
+
             /// <summary>Crée une sonde limitée au processus hôte courant.</summary>
             internal NativeProbe() : this(Process.GetCurrentProcess().Id) { }
+
             /// <summary>Crée une sonde limitée au processus indiqué.</summary>
             /// <param name="processId">PID positif propriétaire des dialogues recherchés.</param>
             internal NativeProbe(int processId) { if (processId <= 0) throw new ArgumentOutOfRangeException(nameof(processId)); dialogProcessId = processId; }
+
             /// <summary>Recherche la fenêtre racine du VBE.</summary>
             /// <returns>Handle de la fenêtre, ou zéro.</returns>
             public IntPtr VbeRoot() { return FindVbeRoot(); }
+
             /// <summary>Retourne les fenêtres enfants d’une racine.</summary>
             /// <param name="root">Handle parent.</param>
             /// <returns>Handles enfants.</returns>
             public List<IntPtr> Children(IntPtr root) { return ChildWindows(root); }
+
             /// <summary>Recherche un volet parmi les fenêtres candidates.</summary>
             /// <param name="panes">Fenêtres à examiner.</param>
             /// <param name="names">Titres possibles.</param>
             /// <returns>Handle du volet ou zéro.</returns>
             public IntPtr Pane(IEnumerable<IntPtr> panes, params string[] names) { return FindPane(panes, names); }
+
             /// <summary>Lit les lignes accessibles d’un volet.</summary>
             /// <param name="handle">Handle du volet.</param>
             /// <returns>Instantané de la liste.</returns>
             public object List(IntPtr handle) { return ReadList(handle); }
+
             /// <summary>Lit l’éditeur Immediate.</summary>
             /// <param name="handle">Handle du volet Immediate.</param>
             /// <returns>Instantané de texte.</returns>
             public object Immediate(IntPtr handle) { return ReadImmediate(handle); }
+
             /// <summary>Lit la pile d’appels associée au volet Locals.</summary>
             /// <param name="locals">Handle du volet Locals.</param>
             /// <returns>État de la pile d’appels.</returns>
             public object CallStack(IntPtr locals) { return ReadCallStack(locals); }
+
             /// <summary>Recherche un dialogue par ses titres possibles.</summary>
             /// <param name="titles">Titres à rechercher.</param>
             /// <returns>Handle du dialogue ou zéro.</returns>
             public IntPtr Dialog(params string[] titles) { return FindDialogForProcess(dialogProcessId, titles); }
+
             /// <summary>Énumère les contrôles enfants d’un dialogue natif.</summary>
             /// <param name="dialog">Handle du dialogue.</param>
             /// <returns>Contrôles avec handle, classe, texte et visibilité.</returns>
@@ -860,18 +1009,22 @@ namespace VBAi
                 }, IntPtr.Zero);
                 return controls;
             }
+
             /// <summary>Lit le message accessible d’un dialogue.</summary>
             /// <param name="dialog">Handle du dialogue.</param>
             /// <returns>Message accessible.</returns>
             public string DialogMessage(IntPtr dialog) { return AccessibleDialogMessage(dialog); }
+
             /// <summary>Poste une activation standard du contrôle.</summary>
             /// <param name="handle">Handle à activer.</param>
             /// <returns><see langword="true"/> si le message est posté.</returns>
             public bool Click(IntPtr handle) { return PostMessage(handle, BmClick, IntPtr.Zero, IntPtr.Zero); }
+
             /// <summary>Vérifie la visibilité actuelle d’une fenêtre.</summary>
             /// <param name="handle">Handle à tester.</param>
             /// <returns><see langword="true"/> si visible.</returns>
             public bool Visible(IntPtr handle) { return IsWindowVisible(handle); }
+
             /// <summary>Attend la durée indiquée.</summary>
             /// <param name="milliseconds">Durée en millisecondes.</param>
             public void Pause(int milliseconds) { PauseNative(milliseconds); }
@@ -914,15 +1067,17 @@ namespace VBAi
 
         // The Compile command can open a modal native diagnostic. Its UI-thread
         // Execute call cannot be awaited with Control.Invoke in that case.
-                /// <summary>Vérifie qu’aucun dialogue d’erreur de compilation n’est encore ouvert.</summary>
-                /// <param name="processId">PID de l’instance hôte à contrôler.</param>
-                /// <exception cref="InvalidOperationException">Un dialogue de compilation reste visible.</exception>
+        /// <summary>Vérifie qu’aucun dialogue d’erreur de compilation n’est encore ouvert.</summary>
+        /// <param name="processId">PID de l’instance hôte à contrôler.</param>
+        /// <exception cref="InvalidOperationException">Un dialogue de compilation reste visible.</exception>
         internal static void EnsureNoCompileDialog(int processId) { EnsureNoCompileDialog(new NativeProbe(processId)); }
+
         /// <summary>Attend la commande de compilation et lit tout dialogue natif dans le processus indiqué.</summary>
         /// <param name="completed">Signal de fin de compilation.</param>
         /// <param name="processId">PID de l’instance hôte à observer.</param>
         /// <returns>Diagnostic du dialogue reconnu, ou chaîne vide.</returns>
         internal static string AwaitCompileDialog(ManualResetEventSlim completed, int processId) { return AwaitCompileDialog(completed, new NativeProbe(processId)); }
+
         /// <summary>Vérifie qu’aucun dialogue de compilation n’est ouvert dans l’hôte courant.</summary>
         public static void EnsureNoCompileDialog()
         {
@@ -1280,6 +1435,7 @@ namespace VBAi
                 Verification = "NativeOptionsReadback", DialogClosed = true,
                 Limit = "This is the currently displayed VBE-wide preference, not a diagnosis of an active runtime error." };
         }
+
         /// <summary>Lit les onglets et contrôles du dialogue Options sans enregistrer ni modifier les préférences.</summary>
         /// <returns>Valeurs visibles et erreurs individuelles de lecture.</returns>
         public static object ReadVbeOptions()
@@ -1306,6 +1462,7 @@ namespace VBAi
                 OptionsVersion = OptionsRevision(tabs), DialogClosed = true, Verification = "NativeOptionsReadback",
                 Limit = "Only visible native controls were observed; no settings were changed." };
         }
+
         /// <summary>Exécute une ligne texte dans le volet Immediate visible en vérifiant le contenu avant et après.</summary>
         /// <param name="command">Ligne à saisir dans le VBE.</param>
         /// <returns>Texte observé avant et après l’exécution.</returns>
@@ -1324,6 +1481,7 @@ namespace VBAi
         /// <summary>Revalidates the owning VBE context and submits Enter through the caller's STA dispatcher.</summary>
         /// <param name="command">The printable Immediate command.</param>
         /// <param name="submitEnter">Synchronous owner-thread validation followed by exactly one Enter callback.</param>
+        /// <returns>object produced by the operation for execute immediate guarded on vbe debug windows.</returns>
         internal static object ExecuteImmediateGuarded(string command, Action<Action> submitEnter)
         { return ExecuteImmediate(command, new NativeImmediateProbe(), submitEnter); }
 
@@ -1331,6 +1489,7 @@ namespace VBAi
         /// <param name="command">The printable Immediate command.</param>
         /// <param name="native">Native pane boundary.</param>
         /// <param name="submitEnter">Synchronous validation and submission boundary.</param>
+        /// <returns>object produced by the operation for execute immediate on vbe debug windows.</returns>
         internal static object ExecuteImmediate(string command, IImmediateProbe native, Action<Action> submitEnter)
         {
             if (submitEnter == null) throw new ArgumentNullException(nameof(submitEnter));
@@ -1885,6 +2044,7 @@ namespace VBAi
         /// <returns>Handle du dialogue trouvé, ou zéro.</returns>
         private static IntPtr FindDialog(params string[] titles)
         { return FindDialogForProcess(Process.GetCurrentProcess().Id, titles); }
+
         /// <summary>Recherche un dialogue visible dans un processus et selon une liste de titres acceptés.</summary>
         /// <param name="processId">PID dont les fenêtres sont examinées.</param>
         /// <param name="titles">Titres localisés admissibles.</param>
@@ -1994,10 +2154,10 @@ namespace VBAi
                 Coverage = "UIAExposedRowsOnly" }; }
         }
 
-                /// <summary>Identifie une observation complète, en conservant le contexte et chaque segment du chemin.</summary>
-                /// <param name="raw">Texte brut de la ligne accessible.</param>
-                /// <param name="path">Segments du chemin UI Automation de la ligne.</param>
-                /// <returns>Clé JSON stable de la ligne et de son contexte.</returns>
+        /// <summary>Identifie une observation complète, en conservant le contexte et chaque segment du chemin.</summary>
+        /// <param name="raw">Texte brut de la ligne accessible.</param>
+        /// <param name="path">Segments du chemin UI Automation de la ligne.</param>
+        /// <returns>Clé JSON stable de la ligne et de son contexte.</returns>
         internal static string DebugRowIdentity(string raw, string[] path) =>
             new System.Web.Script.Serialization.JavaScriptSerializer().Serialize(new { Raw = raw, PathSegments = path ?? new string[0] });
 
@@ -2210,6 +2370,7 @@ namespace VBAi
         /// <returns>Nom de classe, ou chaîne vide si la lecture échoue.</returns>
         private static string ClassName(IntPtr handle)
         { var text = new StringBuilder(128); GetClassName(handle, text, text.Capacity); return text.ToString(); }
+
         /// <summary>Lit le texte ou titre Win32 d’une fenêtre.</summary>
         /// <param name="handle">Handle à interroger.</param>
         /// <returns>Texte observé, ou chaîne vide si la lecture échoue.</returns>

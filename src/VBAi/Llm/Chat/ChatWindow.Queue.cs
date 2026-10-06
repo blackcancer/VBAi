@@ -4,30 +4,39 @@ using System.Linq;
 using System.Threading.Tasks;
 namespace VBAi
 {
+
     /// <summary>Represents a chat message waiting to be sent, with its captured references, attachments, and memory.</summary>
     internal sealed class QueuedChatMessage
     {
+
         /// <summary>Gets or sets the id.</summary>
-        /// <value>The current value represented by this member.</value>
+        /// <value>Stable identifier used to select this message in the pending queue.</value>
         public string Id { get; set; } = Guid.NewGuid().ToString("N");
+
         /// <summary>Gets or sets the text.</summary>
-        /// <value>The current value represented by this member.</value>
+        /// <value>User authored prompt text awaiting dispatch.</value>
         public string Text { get; set; }
+
         /// <summary>Gets or sets the references.</summary>
-        /// <value>The current value represented by this member.</value>
+        /// <value>VBA references captured from the prompt when it was queued.</value>
         public VbeChatReference[] References { get; set; }
+
         /// <summary>Gets or sets the attachments.</summary>
-        /// <value>The current value represented by this member.</value>
+        /// <value>Files captured from the composer when this message was queued.</value>
         public ChatAttachment[] Attachments { get; set; }
+
         /// <summary>Gets or sets the memory.</summary>
-        /// <value>The current value represented by this member.</value>
+        /// <value>Memory snapshot captured with the queued prompt, when memory was enabled.</value>
         public string Memory { get; set; }
     }
-    /// <summary>Provides the chat window implementation.</summary>
+
+    /// <summary>Owns the chat window state and operations.</summary>
     internal sealed partial class ChatWindow
     {
+
         /// <summary>Identifies the queued message selected for dispatch immediately after the active response stops.</summary>
         private string immediateMessageId;
+
         /// <summary>Gets the current session&apos;s messages waiting for dispatch.</summary>
         /// <value>The current session&apos;s queued messages, or null when there is no active session.</value>
         private List<QueuedChatMessage> PendingMessages
@@ -38,6 +47,7 @@ namespace VBAi
                 return currentSession.PendingMessages ?? (currentSession.PendingMessages = new List<QueuedChatMessage>());
             }
         }
+
         /// <summary>Moves the current composer text, references, attachments, and captured memory into the pending queue.</summary>
         private void QueueComposerMessage()
         {
@@ -51,6 +61,7 @@ namespace VBAi
             queuedDraftMemory = null; prompt.Clear(); selectedReferences.Clear(); draftAttachments.Clear(); attachMemory.Checked = false;
             HideReferences(); RefreshContextChips(); RefreshPendingMessages(); SaveCurrentSession();
         }
+
         /// <summary>Rebuilds the pending message rows and hooks up their send, edit, and delete actions.</summary>
         private void RefreshPendingMessages()
         {
@@ -74,6 +85,7 @@ namespace VBAi
             }
             finally { pendingMessagesPanel.ResumeLayout(true); }
         }
+
         /// <summary>Removes a queued message from the current session and persists the updated queue.</summary>
         /// <param name="item">Queued message to remove.</param>
         private void DeletePendingMessage(QueuedChatMessage item)
@@ -82,6 +94,7 @@ namespace VBAi
             if (immediateMessageId == item.Id) immediateMessageId = null;
             RefreshPendingMessages(); SaveCurrentSession();
         }
+
         /// <summary>Moves a queued message back into the composer when the current draft is empty.</summary>
         /// <param name="item">Queued message to move back into the composer.</param>
         private void EditPendingMessage(QueuedChatMessage item)
@@ -100,9 +113,10 @@ namespace VBAi
             prompt.Text = item.Text; prompt.CaretIndex = prompt.Text.Length; prompt.Focus();
             RefreshContextChips(); RefreshPendingMessages(); SaveCurrentSession();
         }
+
         /// <summary>Dispatches a selected queued message immediately, stopping the active response when needed.</summary>
         /// <param name="item">Queued message to dispatch ahead of other pending messages.</param>
-        /// <returns>The result produced by this operation.</returns>
+        /// <returns>task produced by the operation for send pending now async on chat window.</returns>
         private async Task SendPendingNowAsync(QueuedChatMessage item)
         {
             if (PendingMessages?.Contains(item) != true) return;
@@ -112,9 +126,10 @@ namespace VBAi
             await StopTurnAsync();
             if (busy && !stopRequested) immediateMessageId = null;
         }
+
         /// <summary>Sends the next queued message after a response completes, unless dispatch is paused or stopped.</summary>
         /// <param name="completed">Indicates whether completed is enabled.</param>
-        /// <returns>The result produced by this operation.</returns>
+        /// <returns>task produced by the operation for dispatch pending async on chat window.</returns>
         private async Task DispatchPendingAsync(bool completed)
         {
             if (IsDisposed || busy || PendingMessages == null) return;
@@ -123,6 +138,7 @@ namespace VBAi
             if (item == null && completed && !stopRequested && currentSession.BudgetPaused != true) item = PendingMessages.FirstOrDefault();
             if (item != null) await SendRequestAsync(item);
         }
+
         /// <summary>Keeps the selected queued message memory attached while its text is being edited in the composer.</summary>
         private string queuedDraftMemory;
     }

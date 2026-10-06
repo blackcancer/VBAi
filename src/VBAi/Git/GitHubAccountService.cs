@@ -7,19 +7,26 @@ using System.Threading.Tasks;
 
 namespace VBAi
 {
+
     /// <summary>Liste et authentifie les comptes GitHub gérés par Git Credential Manager.</summary>
     internal sealed class GitHubAccountService
     {
+
         /// <summary>Exécuteur des commandes GCM, injectable pour fournir un transport alternatif.</summary>
         private readonly Func<string, CancellationToken, Task<string>> execute;
+
         /// <summary>Démarre le processus Git natif sans modifier le protocole GCM.</summary>
         internal Action<Process> StartProcess = process => process.Start();
+
         /// <summary>Attend la fin du processus avec le délai de production.</summary>
         internal Func<Process, int, bool> WaitForExit = (process, milliseconds) => process.WaitForExit(milliseconds);
+
         /// <summary>Vérifie si le processus est déjà terminé avant l’annulation.</summary>
         internal Func<Process, bool> HasExited = process => process.HasExited;
+
         /// <summary>Interrompt uniquement le processus démarré par cette opération.</summary>
         internal Action<Process> KillProcess = process => process.Kill();
+
         /// <summary>Crée le service avec l’exécuteur fourni, ou l’exécution système par défaut.</summary>
         /// <param name="execute">Fonction d’exécution facultative recevant les arguments et le jeton d’annulation.</param>
         internal GitHubAccountService(Func<string, CancellationToken, Task<string>> execute = null)
@@ -33,6 +40,7 @@ namespace VBAi
         {
             return ParseAccounts(await execute("credential-manager github list --url https://github.com --no-ui", cancellation));
         }
+
         /// <summary>Lance la connexion GitHub dans le navigateur au moyen de GCM.</summary>
         /// <param name="cancellation">Jeton d’annulation transmis à la commande.</param>
         /// <returns>Tâche terminée lorsque GCM a fini le processus de connexion.</returns>
@@ -40,6 +48,7 @@ namespace VBAi
         {
             await execute("credential-manager github login --url https://github.com --browser", cancellation);
         }
+
         /// <summary>Vérifie qu’une chaîne correspond au format d’un nom de compte GitHub.</summary>
         /// <param name="value">Nom à contrôler.</param>
         /// <returns><see langword="true"/> si le nom satisfait le motif de compte, sinon <see langword="false"/>.</returns>
@@ -47,6 +56,7 @@ namespace VBAi
         {
             return Regex.IsMatch(value ?? "", @"^[A-Za-z0-9](?:[A-Za-z0-9-]{0,37}[A-Za-z0-9])?$");
         }
+
         /// <summary>Analyse la liste de comptes GCM, valide chaque ligne et retourne des valeurs distinctes triées.</summary>
         /// <param name="text">Sortie texte de la commande de liste.</param>
         /// <returns>Comptes nettoyés, distincts sans tenir compte de la casse et triés.</returns>
@@ -58,6 +68,7 @@ namespace VBAi
                 throw new InvalidOperationException(UiText.Get("Unexpected Git Credential Manager response. Check its version."));
             return lines.Distinct(StringComparer.OrdinalIgnoreCase).OrderBy(x => x, StringComparer.OrdinalIgnoreCase).ToArray();
         }
+
         /// <summary>Exécute git.exe sans fenêtre, capture ses flux et annule ou interrompt une commande trop longue.</summary>
         /// <param name="arguments">Arguments transmis à git.exe.</param>
         /// <param name="cancellation">Jeton d’annulation de l’opération.</param>

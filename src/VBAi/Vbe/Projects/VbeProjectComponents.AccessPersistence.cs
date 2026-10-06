@@ -7,22 +7,33 @@ using System.Threading.Tasks;
 
 namespace VBAi
 {
+
+    /// <summary>Owns the vbe project components state and operations.</summary>
     internal sealed partial class VbeProjectComponents
     {
+
         /// <summary>Bounds read-only verification after Access returns from its single native Save command.</summary>
         internal TimeSpan AccessSaveVerificationTimeout = TimeSpan.FromSeconds(3);
+
         /// <summary>Injects the dialog boundary in managed tests; production binds the exact native VBE owner.</summary>
         internal Func<IntPtr, int, IEnumerable<AccessSaveApprovedComponent>, IAccessSaveConfirmation> AccessSaveConfirmationFactory = null;
         // Bridge, editor and chat share the same native VBE owner thread, across service instances.
+        /// <summary>Maintains the access save pending state for vbe project components.</summary>
         [ThreadStatic] private static bool accessSavePending;
 
         /// <summary>Invokes Access Save once and observes delayed completion on its originating VBE STA.</summary>
+        /// <param name="request">request that supplies the request for this operation.</param>
+        /// <param name="native">i other host probe that supplies the native for this operation.</param>
+        /// <returns>task&lt;object&gt; produced by the operation for save access document async on vbe project components.</returns>
         internal Task<object> SaveAccessDocumentAsync(Request request, IOtherHostProbe native)
         {
             return VbeUiTask.Run(() => SaveAccessDocumentCoreAsync(request, native));
         }
 
         /// <summary>Keeps every approved identity and revision guard while yielding only for read-only observations.</summary>
+        /// <param name="request">request that supplies the request for this operation.</param>
+        /// <param name="native">i other host probe that supplies the native for this operation.</param>
+        /// <returns>task&lt;object&gt; produced by the operation for save access document core async on vbe project components.</returns>
         private async Task<object> SaveAccessDocumentCoreAsync(Request request, IOtherHostProbe native)
         {
             if (native == null || native.HostKind != "Access") throw new InvalidOperationException("Deferred Access saving requires the current Access host.");
@@ -199,12 +210,17 @@ namespace VBAi
         }
 
         /// <summary>Balances one native getter acquisition without invalidating a shared RCW through FinalRelease.</summary>
+        /// <param name="value">object that supplies the value for this operation.</param>
         private static void ReleaseAccessObservation(object value)
         {
             if (value != null && Marshal.IsComObject(value)) Marshal.ReleaseComObject(value);
         }
 
         /// <summary>Reads exact selection and component ownership without changing focus or native selection.</summary>
+        /// <param name="project">object that supplies the project for this operation.</param>
+        /// <param name="pane">object that supplies the pane for this operation.</param>
+        /// <param name="component">object that supplies the component for this operation.</param>
+        /// <param name="native">i other host probe that supplies the native for this operation.</param>
         private void RequireAccessSaveSelection(object project, object pane, object component, IOtherHostProbe native)
         {
             object activeProject = vbe.ActiveVBProject, activePane = vbe.ActiveCodePane;

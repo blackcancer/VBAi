@@ -7,34 +7,48 @@ using System.Linq;
 
 namespace VBAi
 {
+
     /// <summary>Implémente la copie partielle d’une Frame et des Labels/TextBox directs de son profil simple.</summary>
     internal sealed partial class VbeForms
     {
+
         /// <summary>Capture les valeurs autorisées à recopier sur un Label ou TextBox enfant.</summary>
         private sealed class SimpleFrameChild
         {
+
             /// <summary>Type MSForms du contrôle enfant.</summary>
             public string Kind;
+
             /// <summary>Nom proposé pour le contrôle copié.</summary>
             public string Name;
+
             /// <summary>Légende copiée pour un Label.</summary>
             public string Caption;
+
             /// <summary>Valeur copiée pour un TextBox lorsque sa source contient du texte.</summary>
             public string TextValue;
+
             /// <summary>Position horizontale de l’enfant dans sa Frame.</summary>
             public double Left;
+
             /// <summary>Position verticale de l’enfant dans sa Frame.</summary>
             public double Top;
+
             /// <summary>Largeur de l’enfant.</summary>
             public double Width;
+
             /// <summary>Hauteur de l’enfant.</summary>
             public double Height;
+
             /// <summary>Couleur OLE convertie du fond du Label.</summary>
             public int BackColor;
+
             /// <summary>Nom de police copié pour le Label.</summary>
             public string FontName;
+
             /// <summary>Taille de police copiée pour le Label.</summary>
             public double FontSize;
+
             /// <summary>Indique si la police du Label est en gras.</summary>
             public bool FontBold;
         }

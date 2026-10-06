@@ -17,9 +17,11 @@ using VARFLAGS = System.Runtime.InteropServices.ComTypes.VARFLAGS;
 
 namespace VBAi
 {
+
     /// <summary>Reads only type-library metadata, never instantiates referenced automation classes.</summary>
     internal static class EditorReferenceIndex
     {
+
         /// <summary>Charge une bibliothèque de types depuis un fichier sans consulter le registre COM.</summary>
         /// <param name="path">Chemin du fichier de bibliothèque de types.</param>
         /// <param name="registration">Mode de chargement OLE Automation.</param>
@@ -27,10 +29,13 @@ namespace VBAi
         /// <exception cref="COMException">Le fichier ne peut pas être chargé comme bibliothèque de types.</exception>
         [DllImport("oleaut32.dll", CharSet = CharSet.Unicode, PreserveSig = false)]
         private static extern void LoadTypeLibEx(string path, int registration, out ITypeLib library);
+
         /// <summary>Clé de cache du dernier index sur le thread courant.</summary>
         [ThreadStatic] private static string cacheKey;
+
         /// <summary>Symboles issus du dernier index correspondant à la clé de cache.</summary>
         [ThreadStatic] private static EditorSymbol[] cacheValue;
+
         /// <summary>Correspondance des types Automation scalaires avec leur nom VBA.</summary>
         private static readonly Dictionary<VarEnum, string> PrimitiveTypes = new Dictionary<VarEnum, string> {
             { VarEnum.VT_EMPTY, "Variant" }, { VarEnum.VT_VOID, "Void" }, { VarEnum.VT_VARIANT, "Variant" },
@@ -39,6 +44,7 @@ namespace VBAi
             { VarEnum.VT_CY, "Currency" }, { VarEnum.VT_DATE, "Date" }, { VarEnum.VT_BSTR, "String" },
             { VarEnum.VT_BOOL, "Boolean" }, { VarEnum.VT_DISPATCH, "Object" }, { VarEnum.VT_UNKNOWN, "Object" }
         };
+
         /// <summary>Lit les membres accessibles des types demandés dans les fichiers de référence.</summary>
         /// <param name="paths">Chemins des bibliothèques de types référencées.</param>
         /// <param name="requestedTypes">Noms complets des types utilisés par le projet.</param>
@@ -92,10 +98,11 @@ namespace VBAi
             }
             cacheValue = symbols.ToArray(); cacheKey = key; return cacheValue;
         }
-        /// <summary>Performs the return type operation for EditorReferenceIndex.</summary>
-        /// <param name="info">The info used by this operation.</param>
-        /// <param name="description">The description used by this operation.</param>
-        /// <returns>The result produced by this operation.</returns>
+
+        /// <summary>Handles return type for editor reference index.</summary>
+        /// <param name="info">i type info that supplies the info for this operation.</param>
+        /// <param name="description">typedesc that supplies the description for this operation.</param>
+        /// <returns>Text produced by the operation for return type on editor reference index.</returns>
         private static string ReturnType(ITypeInfo info, TYPEDESC description)
         {
             var kind = (VarEnum)description.vt;
@@ -113,6 +120,7 @@ namespace VBAi
             }
             finally { Marshal.ReleaseComObject(target); }
         }
+
         /// <summary>Ajoute les fonctions et propriétés visibles d’un type, puis parcourt ses interfaces héritées.</summary>
         /// <param name="info">Informations COM du type à lire.</param>
         /// <param name="owner">Nom du type qui possédera les symboles indexés.</param>

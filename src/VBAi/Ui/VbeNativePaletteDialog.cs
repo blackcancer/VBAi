@@ -10,61 +10,79 @@ using Row = VBAi.VbeNativePaletteState.ColorRow;
 
 namespace VBAi
 {
+
     /// <summary>Reads and writes native editor colors through an owned Options dialog.</summary>
     internal static class VbeNativePaletteDialog
     {
+
         /// <summary>Callback signature used by the native window-enumeration functions.</summary>
         /// <param name="window">Window handle reported by Windows.</param><param name="parameter">Caller-supplied enumeration context.</param>
         /// <returns><see langword="true"/> to continue enumeration.</returns>
         private delegate bool EnumProc(IntPtr window, IntPtr parameter);
+
         /// <summary>Enumerates top-level desktop windows.</summary>
         /// <param name="callback">Callback invoked for each top-level window.</param><param name="parameter">Context passed to each callback.</param>
         /// <returns><see langword="true"/> when enumeration succeeds.</returns>
         [DllImport("user32.dll")] private static extern bool EnumWindows(EnumProc callback, IntPtr parameter);
+
         /// <summary>Enumerates child windows of a native parent.</summary>
         /// <param name="parent">Parent window handle.</param><param name="callback">Callback invoked for each child.</param>
         /// <param name="parameter">Context passed to each callback.</param><returns><see langword="true"/> when enumeration succeeds.</returns>
         [DllImport("user32.dll")] private static extern bool EnumChildWindows(IntPtr parent, EnumProc callback, IntPtr parameter);
+
         /// <summary>Gets the class name associated with a native window handle.</summary>
         /// <param name="window">Window handle to query.</param><param name="name">Buffer that receives the class name.</param>
         /// <param name="capacity">Character capacity of the buffer.</param><returns>Number of characters copied.</returns>
         [DllImport("user32.dll", CharSet = CharSet.Unicode)] private static extern int GetClassName(IntPtr window, StringBuilder name, int capacity);
+
         /// <summary>Gets a dialog control's identifier.</summary><param name="window">Control handle.</param><returns>Control identifier.</returns>
         [DllImport("user32.dll")] private static extern int GetDlgCtrlID(IntPtr window);
+
         /// <summary>Reads a native window style value.</summary><param name="window">Window handle.</param><param name="index">Style index.</param><returns>Style bits.</returns>
         [DllImport("user32.dll", EntryPoint = "GetWindowLongW")] private static extern int GetWindowStyle(IntPtr window, int index);
+
         /// <summary>Gets the process and thread that created a native window.</summary><param name="window">Window handle.</param>
         /// <param name="process">Receives the owning process identifier.</param><returns>Owning thread identifier.</returns>
         [DllImport("user32.dll")] private static extern uint GetWindowThreadProcessId(IntPtr window, out uint process);
+
         /// <summary>Gets a related native window according to a Windows relationship command.</summary><param name="window">Starting window.</param>
         /// <param name="command">Relationship selector.</param><returns>Related window handle, or zero when absent.</returns>
         [DllImport("user32.dll")] private static extern IntPtr GetWindow(IntPtr window, uint command);
+
         /// <summary>Gets the immediate parent of a child window.</summary><param name="window">Child window.</param><returns>Parent window handle.</returns>
         [DllImport("user32.dll")] private static extern IntPtr GetParent(IntPtr window);
+
         /// <summary>Gets a dialog item by its control identifier.</summary><param name="window">Dialog window handle.</param>
         /// <param name="id">Control identifier.</param><returns>Control handle, or zero when absent.</returns>
         [DllImport("user32.dll")] private static extern IntPtr GetDlgItem(IntPtr window, int id);
+
         /// <summary>Checks whether a native window is visible.</summary><param name="window">Window handle.</param><returns>Visibility state.</returns>
         [DllImport("user32.dll")] private static extern bool IsWindowVisible(IntPtr window);
+
         /// <summary>Checks whether a native window accepts input.</summary><param name="window">Window handle.</param><returns>Enabled state.</returns>
         [DllImport("user32.dll")] private static extern bool IsWindowEnabled(IntPtr window);
+
         /// <summary>Posts a message to a native window's queue.</summary><param name="window">Target window.</param><param name="message">Message identifier.</param>
         /// <param name="wParam">Message-specific first value.</param><param name="lParam">Message-specific second value.</param>
         /// <returns><see langword="true"/> when the message was posted.</returns>
         [DllImport("user32.dll")] private static extern bool PostMessage(IntPtr window, uint message, IntPtr wParam, IntPtr lParam);
+
         /// <summary>Sends a message to a native window and waits for its result.</summary><param name="window">Target window.</param>
         /// <param name="message">Message identifier.</param><param name="wParam">Message-specific first value.</param>
         /// <param name="lParam">Message-specific second value.</param><returns>Window procedure result.</returns>
         [DllImport("user32.dll")] private static extern IntPtr SendMessage(IntPtr window, uint message, IntPtr wParam, IntPtr lParam);
 
-        /// <summary>Stores the open timeout milliseconds,worker timeout milliseconds,close timeout milliseconds,page timeout milliseconds used by VbeNativePaletteDialog.</summary>
+        /// <summary>Maintains the open timeout milliseconds and worker timeout milliseconds and close timeout milliseconds and page timeout milliseconds state for vbe native palette dialog.</summary>
         internal static int OpenTimeoutMilliseconds = 10000, WorkerTimeoutMilliseconds = 30000,
             CloseTimeoutMilliseconds = 2000, PageTimeoutMilliseconds = 1000;
-        /// <summary>Stores the post dialog message used by VbeNativePaletteDialog.</summary>
+
+        /// <summary>Maintains the post dialog message state for vbe native palette dialog.</summary>
         internal static Func<IntPtr, uint, IntPtr, IntPtr, bool> PostDialogMessage = PostMessage;
-        /// <summary>Stores the wait worker used by VbeNativePaletteDialog.</summary>
+
+        /// <summary>Maintains the wait worker state for vbe native palette dialog.</summary>
         internal static Func<Thread, int, bool> WaitWorker = (worker, timeout) => worker.Join(timeout);
-        /// <summary>Stores the owned windows used by VbeNativePaletteDialog.</summary>
+
+        /// <summary>Maintains the owned windows state for vbe native palette dialog.</summary>
         internal static Func<IntPtr, HashSet<IntPtr>> OwnedWindows = Windows;
 
         /// <summary>Opens the VBE Options dialog, reads its ten color rows, optionally updates them, then closes it.</summary>

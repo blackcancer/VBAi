@@ -1,26 +1,37 @@
 namespace VBAi
 {
+
     /// <summary>Designer-generated controls and layout for updater progress.</summary>
     partial class UpdateProgressWindow
     {
+
         /// <summary>Container that owns the progress timer.</summary>
         private System.ComponentModel.IContainer components;
+
         /// <summary>Root table layout for progress text and actions.</summary>
         private System.Windows.Forms.TableLayoutPanel layout;
+
         /// <summary>Window heading.</summary>
         private System.Windows.Forms.Label heading;
+
         /// <summary>Window heading.</summary>
         private System.Windows.Forms.Label version;
+
         /// <summary>Window heading.</summary>
         private System.Windows.Forms.Label status;
+
         /// <summary>Installer progress indicator.</summary>
         private System.Windows.Forms.ProgressBar progress;
+
         /// <summary>Close or cancel action.</summary>
         private VBAi.UiActionButton cancel;
+
         /// <summary>Timer that polls the updater job.</summary>
         private System.Windows.Forms.Timer timer;
+
         /// <summary>Releases Designer-owned components.</summary><param name="disposing">Whether managed components should be disposed.</param>
         protected override void Dispose(bool disposing) { if (disposing && components != null) components.Dispose(); base.Dispose(disposing); }
+
         /// <summary>Creates and arranges progress controls and the polling timer.</summary>
         private void InitializeComponent()
         {

@@ -6,18 +6,23 @@ using System.Web.Script.Serialization;
 
 namespace VBAi
 {
+
     /// <summary>Durable recovery state for the ten native VBE syntax categories.</summary>
     internal sealed class VbeNativePaletteState
     {
+
         /// <summary>Gets or sets the serialized recovery schema version.</summary>
         /// <value>Schema version understood by this add-in.</value>
         public int Schema { get; set; } = 1;
+
         /// <summary>Gets or sets the VBE version whose palette was captured.</summary>
         /// <value>Version string used to scope the saved colors.</value>
         public string VbeVersion { get; set; }
+
         /// <summary>Gets or sets the original ten syntax-category colors.</summary>
         /// <value>Original palette rows in VBE category order.</value>
         public ColorRow[] Original { get; set; }
+
         /// <summary>Gets or sets the dark palette that was applied.</summary>
         /// <value>Configured dark palette rows in VBE category order.</value>
         public ColorRow[] Applied { get; set; }
@@ -25,15 +30,19 @@ namespace VBAi
         /// <summary>Color-index values and category name captured from one VBE syntax row.</summary>
         public sealed class ColorRow
         {
+
             /// <summary>Gets or sets the VBE syntax-category name.</summary>
             /// <value>Unique category label.</value>
             public string Name { get; set; }
+
             /// <summary>Gets or sets the foreground palette index.</summary>
             /// <value>Index of the foreground color in the VBE palette.</value>
             public int Foreground { get; set; }
+
             /// <summary>Gets or sets the background palette index.</summary>
             /// <value>Index of the background color in the VBE palette.</value>
             public int Background { get; set; }
+
             /// <summary>Gets or sets the indicator palette index.</summary>
             /// <value>Index of the indicator color in the VBE palette.</value>
             public int Indicator { get; set; }

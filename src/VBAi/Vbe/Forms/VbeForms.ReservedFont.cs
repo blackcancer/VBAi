@@ -7,11 +7,18 @@ using System.Web.Script.Serialization;
 
 namespace VBAi
 {
+
+    /// <summary>Owns the vbe forms state and operations.</summary>
     internal sealed partial class VbeForms
     {
         // MSForms' reserved Font alias is a PROPERTYPUT-only member, not a
         // separately readable persisted resource. The ordinary Font stays in
         // every snapshot and retains its existing getter/member error checks.
+        /// <summary>Attempts to describe reserved font write only for vbe forms.</summary>
+        /// <param name="target">object that supplies the target for this operation.</param>
+        /// <param name="descriptor">property descriptor that supplies the descriptor for this operation.</param>
+        /// <param name="info">vbe property info that supplies the info for this operation.</param>
+        /// <returns>Boolean indicating the result of the check for try describe reserved font write only on vbe forms.</returns>
         internal static bool TryDescribeReservedFontWriteOnly(object target,
             PropertyDescriptor descriptor, VbePropertyInfo info)
         {
@@ -22,6 +29,11 @@ namespace VBAi
             return TryDescribeReservedFontWriteOnly(descriptor, metadata, info);
         }
 
+        /// <summary>Attempts to describe reserved font write only for vbe forms.</summary>
+        /// <param name="descriptor">property descriptor that supplies the descriptor for this operation.</param>
+        /// <param name="metadata">object that supplies the metadata for this operation.</param>
+        /// <param name="info">vbe property info that supplies the info for this operation.</param>
+        /// <returns>Boolean indicating the result of the check for try describe reserved font write only on vbe forms.</returns>
         internal static bool TryDescribeReservedFontWriteOnly(PropertyDescriptor descriptor,
             object metadata, VbePropertyInfo info)
         {
@@ -37,6 +49,10 @@ namespace VBAi
             return true;
         }
 
+        /// <summary>Determines whether reserved font descriptor for vbe forms.</summary>
+        /// <param name="descriptor">property descriptor that supplies the descriptor for this operation.</param>
+        /// <param name="info">vbe property info that supplies the info for this operation.</param>
+        /// <returns>Boolean indicating the result of the check for is reserved font descriptor on vbe forms.</returns>
         private static bool IsReservedFontDescriptor(PropertyDescriptor descriptor, VbePropertyInfo info)
         {
             return descriptor != null && info != null &&
@@ -44,6 +60,9 @@ namespace VBAi
                 descriptor.PropertyType == typeof(Font);
         }
 
+        /// <summary>Handles reserved font metadata is write only for vbe forms.</summary>
+        /// <param name="metadata">object that supplies the metadata for this operation.</param>
+        /// <returns>Boolean indicating the result of the check for reserved font metadata is write only on vbe forms.</returns>
         internal static bool ReservedFontMetadataIsWriteOnly(object metadata)
         {
             if (metadata == null) return false;

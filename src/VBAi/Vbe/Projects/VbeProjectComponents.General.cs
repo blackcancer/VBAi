@@ -6,12 +6,27 @@ using System.Threading.Tasks;
 
 namespace VBAi
 {
+
+    /// <summary>Owns the vbe project components state and operations.</summary>
     internal sealed partial class VbeProjectComponents
     {
+
+        /// <summary>Maintains the general native factory state for vbe project components.</summary>
         internal Func<IntPtr, Action, VbeProjectGeneralOperation.INative> GeneralNativeFactory = (root, context) => new VbeProjectGeneralNative(root, context);
+
+        /// <summary>Maintains the general operation factory state for vbe project components.</summary>
         internal Func<VbeProjectGeneralOperation.INative, VbeProjectGeneralOperation> GeneralOperationFactory = native => new VbeProjectGeneralOperation(native);
+
+        /// <summary>Maintains the general project identity state for vbe project components.</summary>
         internal Func<object, object, bool> GeneralProjectIdentity = SameGeneralProject;
         // Additive route only. Existing set_project_property is never called by this workflow.
+        /// <summary>Handles project general async for vbe project components.</summary>
+        /// <param name="source">request that supplies the source for this operation.</param>
+        /// <param name="write">Indicates whether write is enabled.</param>
+        /// <param name="captureExactCommand">func&lt;request, action, action&lt;action&gt;&gt; that supplies the capture exact command for this operation.</param>
+        /// <param name="durableClaim">result&gt; that supplies the durable claim for this operation.</param>
+        /// <param name="requireNativeContext">action that supplies the require native context for this operation.</param>
+        /// <returns>task&lt;object&gt; produced by the operation for project general async on vbe project components.</returns>
         internal async Task<object> ProjectGeneralAsync(Request source, bool write,
             Func<Request, Action, Action<Action>> captureExactCommand,
             Action<VbeProjectGeneralOperation.Result> durableClaim, Action requireNativeContext)
@@ -87,6 +102,10 @@ namespace VBAi
             RecordGeneralPublication(result, durableClaim);
             return result;
         }
+
+        /// <summary>Handles record general publication for vbe project components.</summary>
+        /// <param name="result">result that supplies the result for this operation.</param>
+        /// <param name="durableClaim">result&gt; that supplies the durable claim for this operation.</param>
         private static void RecordGeneralPublication(VbeProjectGeneralOperation.Result result, Action<VbeProjectGeneralOperation.Result> durableClaim)
         {
             try { durableClaim(result); }
@@ -96,6 +115,11 @@ namespace VBAi
                 result.Uncertain |= result.CommandEntered; result.Available = false; ClearGeneralMetadata(result);
             }
         }
+
+        /// <summary>Compares general project for vbe project components.</summary>
+        /// <param name="first">object that supplies the first for this operation.</param>
+        /// <param name="second">object that supplies the second for this operation.</param>
+        /// <returns>Boolean indicating the result of the check for same general project on vbe project components.</returns>
         private static bool SameGeneralProject(object first, object second)
         {
             if (first == null || second == null) return false;
@@ -103,8 +127,15 @@ namespace VBAi
             try { b = Marshal.GetIUnknownForObject(second); return a == b; }
             finally { if (b != IntPtr.Zero) Marshal.Release(b); Marshal.Release(a); }
         }
+
+        /// <summary>Clears general metadata for vbe project components.</summary>
+        /// <param name="result">result that supplies the result for this operation.</param>
         private static void ClearGeneralMetadata(VbeProjectGeneralOperation.Result result)
         { result.Available = false; result.Name = result.Description = result.HelpFile = result.HelpContextText = result.ConditionalCompilation = result.OptionsVersion = null; }
+
+        /// <summary>Requires general int32 for vbe project components.</summary>
+        /// <param name="value">object that supplies the value for this operation.</param>
+        /// <returns>int produced by the operation for require general int32 on vbe project components.</returns>
         internal static int RequireGeneralInt32(object value)
         {
             if (value == null || value is bool || value is char || value.GetType().IsEnum)
@@ -136,6 +167,10 @@ namespace VBAi
                 throw new ArgumentException("General HelpContextID must be an exact in-range Int32.");
             return (int)number;
         }
+
+        /// <summary>Requires general help file for vbe project components.</summary>
+        /// <param name="value">object that supplies the value for this operation.</param>
+        /// <returns>Text produced by the operation for require general help file on vbe project components.</returns>
         internal static string RequireGeneralHelpFile(object value)
         {
             if (!(value is string path) || string.IsNullOrWhiteSpace(path) || path.IndexOf('\0') >= 0 || !Path.IsPathRooted(path) ||

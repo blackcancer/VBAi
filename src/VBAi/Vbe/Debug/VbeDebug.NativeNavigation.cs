@@ -6,21 +6,28 @@ using System.Web.Script.Serialization;
 
 namespace VBAi
 {
+
     /// <summary>Planifie et observe la navigation par commandes natives de définition et de dernière position.</summary>
     internal sealed partial class VbeDebug
     {
+
         /// <summary>Opération de navigation en attente ou récemment achevée.</summary>
         private sealed class NavigationOperation
         {
-            /// <summary>Stores the id,state,error,action used by NavigationOperation.</summary>
+
+            /// <summary>Identifies the id and state and error and action associated with navigation operation.</summary>
             public string Id, State, Error, Action;
-            /// <summary>Stores the before,after used by NavigationOperation.</summary>
+
+            /// <summary>Maintains the before and after state for navigation operation.</summary>
             public object Before, After;
-            /// <summary>Stores the command completed,navigation observed used by NavigationOperation.</summary>
+
+            /// <summary>Maintains the command completed and navigation observed state for navigation operation.</summary>
             public bool CommandCompleted, NavigationObserved;
-            /// <summary>Stores the readback deadline utc used by NavigationOperation.</summary>
+
+            /// <summary>Maintains the readback deadline utc state for navigation operation.</summary>
             public DateTime ReadbackDeadlineUtc;
         }
+
         /// <summary>Historique borné des opérations de navigation suivies dans cette session.</summary>
         private readonly List<NavigationOperation> nativeNavigations = new List<NavigationOperation>();
 
@@ -102,6 +109,7 @@ namespace VBAi
             catch (Exception ex) { operation.Error = ex.Message; operation.State = "Failed"; }
             return NavigationResult(operation);
         }
+
         /// <summary>Relit la position native après le retour dans la boucle de messages VBE.</summary>
         /// <param name="operation">Opération dont l’observation est en cours.</param>
         private void ObserveNavigation(NavigationOperation operation)
@@ -135,6 +143,7 @@ namespace VBAi
             pane.GetSelection(ref line, ref column, ref end, ref endColumn);
             return new { ActiveWindow = activeWindow, ObjectBrowserVisible = browserVisible, CodePaneAvailable = true, Project = project, Module = (string)component.Name, StartLine = line, StartColumn = column, EndLine = end, EndColumn = endColumn };
         }
+
         /// <summary>Détermine si la fenêtre ou la sélection active a changé de destination.</summary>
         /// <param name="before">Position capturée avant l’appel natif.</param>
         /// <param name="after">Position capturée après le retour à la boucle de messages.</param>
@@ -151,10 +160,12 @@ namespace VBAi
                 before.StartLine != after.StartLine || before.StartColumn != after.StartColumn ||
                 before.EndLine != after.EndLine || before.EndColumn != after.EndColumn;
         }
+
         /// <summary>Sérialise une position native pour comparaison exacte avant exécution différée.</summary>
         /// <param name="position">Position native capturée.</param>
         /// <returns>Représentation JSON utilisée comme clé de comparaison.</returns>
         private static string PositionKey(object position) { return new JavaScriptSerializer().Serialize(position); }
+
         /// <summary>Construit le résultat sérialisable d’une opération de navigation.</summary>
         /// <param name="operation">Opération à exposer.</param>
         /// <returns>État, observations, erreurs et limites d’interprétation.</returns>

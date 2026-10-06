@@ -8,13 +8,17 @@ using System.Threading.Tasks;
 
 namespace VBAi
 {
+
     /// <summary>Prépare, transmet et suit les appels scalaires aux procédures publiques du VBE.</summary>
     internal sealed partial class VbeDebug
     {
+
         /// <summary>Appels récents conservés dans cette session, sans autorité de relancement.</summary>
         private readonly List<ProcedureOperation> procedureOperations = new List<ProcedureOperation>();
+
         /// <summary>Frontière native asynchrone injectable pour les essais locaux.</summary>
         internal Func<string, Task<object>> ExecuteProcedureCall = command => Task.Run(() => VbeDebugWindows.ExecuteImmediate(command));
+
         /// <summary>Ouverture du volet Exécution, injectable pour les tests sans hôte.</summary>
         internal Action ShowProcedureImmediate;
 
@@ -151,25 +155,30 @@ namespace VBAi
             }
             throw new ArgumentException("Procedure arguments must be strings, finite numbers, booleans or null.");
         }
-                /// <summary>Refuse toute syntaxe autre qu’un identifiant VBA qualifiable.</summary>
-                /// <param name="name">Nom de projet, module ou procédure à vérifier.</param>
+
+        /// <summary>Refuse toute syntaxe autre qu’un identifiant VBA qualifiable.</summary>
+        /// <param name="name">Nom de projet, module ou procédure à vérifier.</param>
         private static void ValidateProcedureIdentifier(string name)
         {
             if (!Regex.IsMatch(name ?? "", @"^\p{L}[\p{L}\p{N}_]{0,254}$")) throw new ArgumentException("An exact VBA identifier is required.");
         }
-                /// <summary>Sérialise le suivi sans assimiler transmission et succès runtime.</summary>
-                /// <param name="operation">Opération d’appel enregistrée en mémoire.</param>
-                /// <returns>État de transmission, sortie observée et limites de vérification runtime.</returns>
+
+        /// <summary>Sérialise le suivi sans assimiler transmission et succès runtime.</summary>
+        /// <param name="operation">Opération d’appel enregistrée en mémoire.</param>
+        /// <returns>État de transmission, sortie observée et limites de vérification runtime.</returns>
         private static object ProcedureResult(ProcedureOperation operation) => new { operation.Project, operation.Module,
             operation.Procedure, Query = operation.Id, operation.State, operation.Command, operation.Output, operation.Error,
             Pending = operation.State == "Queued" || operation.State == "Delivering", RuntimeSuccessVerified = false,
             NextRead = "procedure_run_status, debug_state, debug_dialog",
             Limit = "Scalar arguments only; optional ArgumentNames must match the inspected live signature. No named ParamArray/conditional calls, object/array arguments or returned COM values. Runtime errors and modal code can outlive delivery; do not retry automatically." };
+
         /// <summary>État borné en mémoire d’une seule tentative d’appel.</summary>
         private sealed class ProcedureOperation
         {
+
             /// <summary>Identifiant de suivi et identité de la cible.</summary>
             public string Id, Project, Module, Procedure, State, Command, Error;
+
             /// <summary>Sortie de transmission ou résultat exposé par l’interface native.</summary>
             public object Output;
         }

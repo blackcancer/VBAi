@@ -4,9 +4,11 @@ using System.Text;
 
 namespace VBAi
 {
+
     /// <summary>Expose les consignes de sécurité du client et un instantané des capacités du VBE courant.</summary>
     internal static class LlmVbeContext
     {
+
         /// <summary>Consignes développeur qui limitent les opérations de l’assistant aux outils VBE fournis et à la politique de l’hôte.</summary>
         /// <value>Instructions incluant les règles d’encodage et les contraintes des documents liés.</value>
         public static string DeveloperInstructions

@@ -11,34 +11,95 @@ using System.Web.Script.Serialization;
 
 namespace VBAi
 {
+
     /// <summary>A single disposable native qualification, never a general Git bridge.</summary>
     internal sealed class OwnerGitQualificationManifest
     {
+
+        /// <summary>Environment variable captured when the add-in connects to arm the owned fixture.</summary>
         internal const string EnvironmentName = "VBAi_TEST_OWNER_GIT_MANIFEST";
+
+        /// <summary>Only bridge command accepted by this diagnostic plan.</summary>
         internal const string CommandName = "diagnostic_userform_git";
         // net48 FileStream uses the classic unprefixed Windows path contract here.
         // Reserve 80 characters below MAX_PATH for receipts (57), Git objects/refs
         // (at least 60), and fixed snapshot directories plus VBA component names.
+        /// <summary>Maximum evidence-root path length that leaves room for every bounded receipt and Git object path.</summary>
         internal const int MaxEvidenceRootLength = 179;
+
+        /// <summary>Maximum path length accepted by the classic net48 file API used by the fixture.</summary>
         internal const int MaxClassicFilePathLength = 259;
+
+        /// <summary>Maximum repository-directory path length accepted by the classic net48 directory API.</summary>
         internal const int MaxClassicDirectoryPathLength = 247;
+
+        /// <summary>Gets or sets the serialized manifest schema version.</summary>
+        /// <value>Must be <c>1</c>; other schema versions are refused.</value>
         public int Version { get; set; }
+
+        /// <summary>Gets or sets the process ID of the host that owns the armed fixture.</summary>
+        /// <value>Positive PID captured from the original connected host, checked with its creation time to detect PID reuse.</value>
         public int OwnerPid { get; set; }
+
+        /// <summary>Gets or sets the UTC process-start ticks for the original host process.</summary>
+        /// <value>Positive UTC ticks used with <see cref="OwnerPid"/> to prove the same process still owns the fixture.</value>
         public long OwnerBirthUtcTicks { get; set; }
+
+        /// <summary>Gets or sets the native thread ID of the host's owning VBE STA.</summary>
+        /// <value>Nonzero TID captured during setup; native work must still execute on this thread.</value>
         public uint OwnerNativeTid { get; set; }
+
+        /// <summary>Gets or sets the original VBE root window handle.</summary>
+        /// <value>Nonzero native handle whose process, thread, and root ancestry are revalidated before each step.</value>
         public long VbeHandle { get; set; }
+
+        /// <summary>Gets or sets the candidate add-in module version ID frozen for this qualification.</summary>
+        /// <value>Canonical dashed GUID of the exact assembly admitted by the fixture.</value>
         public string AssemblyMvid { get; set; }
+
+        /// <summary>Gets or sets the SHA-256 digest of the candidate add-in assembly.</summary>
+        /// <value>Lowercase or uppercase hexadecimal digest checked against the frozen candidate.</value>
         public string AssemblySha256 { get; set; }
+
+        /// <summary>Gets or sets the GUID-named root of the owned disposable workbook fixture.</summary>
+        /// <value>Absolute fixture directory that must contain <see cref="WorkbookPath"/>.</value>
         public string FixtureRoot { get; set; }
+
+        /// <summary>Gets or sets the absolute path of the disposable workbook bound to this plan.</summary>
+        /// <value>Classic-length child path under <see cref="FixtureRoot"/> matching the authorized project identity.</value>
         public string WorkbookPath { get; set; }
+
+        /// <summary>Gets or sets the isolated directory for repository data, immutable snapshots, and operation receipts.</summary>
+        /// <value>GUID-suffixed absolute directory validated for path bounds and reparse points before use.</value>
         public string EvidenceRoot { get; set; }
+
+        /// <summary>Gets or sets the single repository directory name relative to the evidence root.</summary>
+        /// <value>One nonrooted path component; separators, dot segments, and paths outside the evidence root are refused.</value>
         public string RepoRelativePath { get; set; }
+
+        /// <summary>Gets or sets the canonical VBA project identity authorized for Git operations.</summary>
+        /// <value>Must match the disposable workbook path under the plan's case-insensitive identity check.</value>
         public string Project { get; set; }
+
+        /// <summary>Gets or sets the exact local branch expected by the fixture.</summary>
+        /// <value>Nonempty branch name bounded to 128 characters and rechecked before each operation.</value>
         public string Branch { get; set; }
+
+        /// <summary>Gets or sets the optional qualification remote URL.</summary>
+        /// <value>Null for local banks; otherwise must equal the single frozen qualification repository URL.</value>
         public string RemoteUrl { get; set; }
+
+        /// <summary>Gets or sets the exact incoming commit for the optional remote pull step.</summary>
+        /// <value>Required for a pull plan and absent from local plans.</value>
         public string RemoteCommit { get; set; }
+
+        /// <summary>Gets or sets the fixed ordered steps allowed for this fixture.</summary>
+        /// <value>One to four validated steps from the local, malformed-checkpoint, or frozen remote bank.</value>
         public OwnerGitQualificationStep[] Steps { get; set; }
 
+        /// <summary>Parses and validates the complete frozen owner-Git plan before any repository operation.</summary>
+        /// <param name="json">Serialized manifest, limited to 32 KiB and required to contain exactly the known fields.</param>
+        /// <returns>A validated plan bound to one host process, VBE STA, candidate assembly, workbook, evidence root, and ordered step bank.</returns>
         internal static OwnerGitQualificationManifest Parse(string json)
         {
             if (string.IsNullOrWhiteSpace(json) || Encoding.UTF8.GetByteCount(json) > 32768)
@@ -144,13 +205,22 @@ namespace VBAi
             return manifest;
         }
 
+        /// <summary>Requires an object to contain exactly the manifest fields named by the frozen schema.</summary>
+        /// <param name="value">Deserialized JSON object to validate.</param>
+        /// <param name="keys">Expected field names; missing or extra keys are refused.</param>
         private static void RequireKeys(IDictionary<string, object> value, string[] keys)
         {
             if (value == null || value.Count != keys.Length || value.Keys.Except(keys, StringComparer.Ordinal).Any() ||
                 keys.Any(key => !value.ContainsKey(key))) throw new ArgumentException("Exact owner Git manifest fields required.");
         }
+
+        /// <summary>Checks whether the JSON serializer returned an integer representation accepted for tick, TID, or handle fields.</summary>
+        /// <param name="value">Deserialized JSON value to check.</param>
+        /// <returns>True when the value is an <see cref="int"/> or <see cref="long"/>.</returns>
         private static bool Number(object value) => value is int || value is long;
 
+        /// <summary>Accepts only the diagnostic command, one canonical step GUID, and a SHA-256 coordinator revision.</summary>
+        /// <param name="json">Raw bridge request JSON; additional or missing fields are rejected.</param>
         internal static void RequireExactRequest(string json)
         {
             var value = new JavaScriptSerializer().DeserializeObject(json) as IDictionary<string, object>;
@@ -161,6 +231,12 @@ namespace VBAi
                 throw new ArgumentException("Exact diagnostic command, step id and coordinator revision required.");
         }
 
+        /// <summary>Returns only the next ordered step and refuses a repeated, reordered, exhausted, or quarantined plan.</summary>
+        /// <param name="manifest">Validated frozen plan containing the allowed step sequence.</param>
+        /// <param name="next">Zero-based index of the next step to execute.</param>
+        /// <param name="quarantined">Whether a prior uncertain outcome has disabled further execution.</param>
+        /// <param name="stepId">Action GUID supplied by the current bridge request.</param>
+        /// <returns>The next step when its ID exactly matches <paramref name="stepId"/>.</returns>
         internal static OwnerGitQualificationStep RequireStep(OwnerGitQualificationManifest manifest, int next,
             bool quarantined, string stepId)
         {
@@ -170,6 +246,16 @@ namespace VBAi
             return manifest.Steps[next];
         }
 
+        /// <summary>Requires the same host process instance, original VBE window, and owner STA captured when the disposable fixture was armed.</summary>
+        /// <param name="plan">Frozen identity fields loaded from the pinned manifest.</param>
+        /// <param name="actualPid">Current host process ID.</param>
+        /// <param name="actualBirth">Current process start time in UTC ticks, preventing PID reuse from matching the original host.</param>
+        /// <param name="windowPid">Process ID that owns the frozen VBE root handle.</param>
+        /// <param name="windowTid">Native thread ID that owns the frozen VBE root handle.</param>
+        /// <param name="currentTid">Native thread ID of the thread performing this validation.</param>
+        /// <param name="currentHandle">Current VBE owner handle retained by the session.</param>
+        /// <param name="activeProject">Whether the authorized workbook is the active project and remains the session scope.</param>
+        /// <param name="apartment">Apartment state of the calling thread; native qualification requires STA.</param>
         internal static void RequireOwnerIdentity(OwnerGitQualificationManifest plan, int actualPid, long actualBirth,
             uint windowPid, uint windowTid, uint currentTid, long currentHandle, bool activeProject, System.Threading.ApartmentState apartment)
         {
@@ -179,17 +265,28 @@ namespace VBAi
                 throw new InvalidOperationException("Exact active VBE owner/project changed.");
         }
 
+        /// <summary>Requires policy for owner git qualification manifest.</summary>
+        /// <param name="policy">Text that supplies the policy value. Use the format required by the calling operation.</param>
         internal static void RequirePolicy(string policy)
         {
             if (policy != "Automatic")
                 throw new InvalidOperationException("Qualification mutation requires current Automatic VBE edit policy.");
         }
 
+        /// <summary>Handles sha for owner git qualification manifest.</summary>
+        /// <param name="value">Text that supplies the value value. Use the format required by the calling operation.</param>
+        /// <returns>Boolean indicating the result of the check for sha on owner git qualification manifest.</returns>
         internal static bool Sha(string value) => value != null && value.Length == 64 && value.All(c =>
             c >= '0' && c <= '9' || c >= 'a' && c <= 'f' || c >= 'A' && c <= 'F');
+
+        /// <summary>Handles commit for owner git qualification manifest.</summary>
+        /// <param name="value">Text that supplies the value value. Use the format required by the calling operation.</param>
+        /// <returns>Boolean indicating the result of the check for commit on owner git qualification manifest.</returns>
         private static bool Commit(string value) => value != null && value.Length == 40 && value.All(c =>
             c >= '0' && c <= '9' || c >= 'a' && c <= 'f' || c >= 'A' && c <= 'F');
 
+        /// <summary>Requires guid root for owner git qualification manifest.</summary>
+        /// <param name="root">Text that supplies the root value. Use the format required by the calling operation.</param>
         internal static void RequireGuidRoot(string root)
         {
             RequireClassicDirectoryPath(root);
@@ -198,6 +295,10 @@ namespace VBAi
             RequireNoReparse(root);
         }
 
+        /// <summary>Requires child for owner git qualification manifest.</summary>
+        /// <param name="parent">Text that supplies the parent value. Use the format required by the calling operation.</param>
+        /// <param name="child">Text that supplies the child value. Use the format required by the calling operation.</param>
+        /// <param name="directory">Indicates whether directory is enabled.</param>
         internal static void RequireChild(string parent, string child, bool directory)
         {
             if (directory) RequireClassicDirectoryPath(child);
@@ -210,6 +311,8 @@ namespace VBAi
                 throw new ArgumentException("Unexpected filesystem object type.");
         }
 
+        /// <summary>Requires canonical local path for owner git qualification manifest.</summary>
+        /// <param name="path">Path used for the path being processed.</param>
         private static void RequireCanonicalLocalPath(string path)
         {
             // Reject NTFS streams before GetFullPath, which throws NotSupportedException
@@ -220,6 +323,8 @@ namespace VBAi
                 throw new ArgumentException("Canonical local path without alternate streams required.");
         }
 
+        /// <summary>Requires evidence root budget for owner git qualification manifest.</summary>
+        /// <param name="root">Text that supplies the root value. Use the format required by the calling operation.</param>
         internal static void RequireEvidenceRootBudget(string root)
         {
             if (string.IsNullOrWhiteSpace(root) || root.Length > MaxEvidenceRootLength)
@@ -227,6 +332,9 @@ namespace VBAi
             RequireClassicDirectoryPath(root);
         }
 
+        /// <summary>Requires receipt paths for owner git qualification manifest.</summary>
+        /// <param name="evidenceRoot">Text that supplies the evidence root value. Use the format required by the calling operation.</param>
+        /// <param name="stepId">Text that supplies the step id value. Use the format required by the calling operation.</param>
         internal static void RequireReceiptPaths(string evidenceRoot, string stepId)
         {
             RequireEvidenceRootBudget(evidenceRoot);
@@ -237,6 +345,8 @@ namespace VBAi
                 RequireClassicFilePath(prefix + suffix);
         }
 
+        /// <summary>Requires classic file path for owner git qualification manifest.</summary>
+        /// <param name="path">Path used for the path being processed.</param>
         internal static void RequireClassicFilePath(string path)
         {
             if (string.IsNullOrWhiteSpace(path) || path.Length > MaxClassicFilePathLength)
@@ -245,6 +355,8 @@ namespace VBAi
             RequireClassicDirectoryPath(Path.GetDirectoryName(path));
         }
 
+        /// <summary>Requires classic directory path for owner git qualification manifest.</summary>
+        /// <param name="path">Path used for the path being processed.</param>
         internal static void RequireClassicDirectoryPath(string path)
         {
             if (string.IsNullOrWhiteSpace(path) || path.Length > MaxClassicDirectoryPathLength)
@@ -252,6 +364,8 @@ namespace VBAi
             RequireCanonicalLocalPath(path);
         }
 
+        /// <summary>Requires no reparse for owner git qualification manifest.</summary>
+        /// <param name="path">Path used for the path being processed.</param>
         internal static void RequireNoReparse(string path)
         {
             string current = Path.GetPathRoot(path);
@@ -264,12 +378,22 @@ namespace VBAi
             }
         }
 
+        /// <summary>Determines whether it has h for owner git qualification manifest.</summary>
+        /// <param name="data">byte[] that supplies the data for this operation.</param>
+        /// <returns>Text produced by the operation for hash on owner git qualification manifest.</returns>
         internal static string Hash(byte[] data)
         {
             using (var sha = SHA256.Create()) return BitConverter.ToString(sha.ComputeHash(data)).Replace("-", "").ToLowerInvariant();
         }
+
+        /// <summary>Determines whether it has h file for owner git qualification manifest.</summary>
+        /// <param name="path">Path used for the path being processed.</param>
+        /// <returns>Text produced by the operation for hash file on owner git qualification manifest.</returns>
         internal static string HashFile(string path) => Hash(File.ReadAllBytes(path));
 
+        /// <summary>Handles snapshot hash for owner git qualification manifest.</summary>
+        /// <param name="snapshot">vba git snapshot that supplies the snapshot for this operation.</param>
+        /// <returns>Text produced by the operation for snapshot hash on owner git qualification manifest.</returns>
         internal static string SnapshotHash(VbaGitSnapshot snapshot)
         {
             using (var stream = new MemoryStream())
@@ -283,6 +407,10 @@ namespace VBAi
             }
         }
 
+        /// <summary>Reads snapshot for owner git qualification manifest.</summary>
+        /// <param name="directory">Text that supplies the directory value. Use the format required by the calling operation.</param>
+        /// <param name="expectedHash">Text that supplies the expected hash value. Use the format required by the calling operation.</param>
+        /// <returns>vba git snapshot produced by the operation for read snapshot on owner git qualification manifest.</returns>
         internal static VbaGitSnapshot ReadSnapshot(string directory, string expectedHash)
         {
             RequireNoReparse(directory);
@@ -297,6 +425,9 @@ namespace VBAi
             return VbaGitSnapshot.Read(files);
         }
 
+        /// <summary>Handles snapshot directory hash for owner git qualification manifest.</summary>
+        /// <param name="directory">Text that supplies the directory value. Use the format required by the calling operation.</param>
+        /// <returns>Text produced by the operation for snapshot directory hash on owner git qualification manifest.</returns>
         internal static string SnapshotDirectoryHash(string directory)
         {
             RequireNoReparse(directory);
@@ -310,6 +441,9 @@ namespace VBAi
             return HashFiles(paths);
         }
 
+        /// <summary>Determines whether it has h files for owner git qualification manifest.</summary>
+        /// <param name="paths">i enumerable&lt;string&gt; that supplies the paths for this operation.</param>
+        /// <returns>Text produced by the operation for hash files on owner git qualification manifest.</returns>
         private static string HashFiles(IEnumerable<string> paths)
         {
             using (var stream = new MemoryStream())
@@ -324,19 +458,51 @@ namespace VBAi
             }
         }
 
+        /// <summary>Returns current thread id for owner git qualification manifest.</summary>
+        /// <returns>uint produced by the operation for get current thread id on owner git qualification manifest.</returns>
         [DllImport("kernel32.dll")] internal static extern uint GetCurrentThreadId();
+
+        /// <summary>Returns window thread process id for owner git qualification manifest.</summary>
+        /// <param name="hwnd">Native handle that supplies the hwnd for this operation.</param>
+        /// <param name="pid">uint that supplies the pid for this operation.</param>
+        /// <returns>uint produced by the operation for get window thread process id on owner git qualification manifest.</returns>
         [DllImport("user32.dll")] internal static extern uint GetWindowThreadProcessId(IntPtr hwnd, out uint pid);
     }
 
+    /// <summary>Owns the owner git qualification step state and operations.</summary>
     internal sealed class OwnerGitQualificationStep
     {
+
+        /// <summary>Gets or sets the id.</summary>
+        /// <value>Current id exposed by owner git qualification step.</value>
         public string Id { get; set; }
+
+        /// <summary>Gets or sets the verb.</summary>
+        /// <value>Current verb exposed by owner git qualification step.</value>
         public string Verb { get; set; }
+
+        /// <summary>Gets or sets the expected snapshot directory.</summary>
+        /// <value>Current expected snapshot directory exposed by owner git qualification step.</value>
         public string ExpectedSnapshotDirectory { get; set; }
+
+        /// <summary>Gets or sets the expected snapshot sha256.</summary>
+        /// <value>Current expected snapshot sha256 exposed by owner git qualification step.</value>
         public string ExpectedSnapshotSha256 { get; set; }
+
+        /// <summary>Gets or sets the target snapshot directory.</summary>
+        /// <value>Current target snapshot directory exposed by owner git qualification step.</value>
         public string TargetSnapshotDirectory { get; set; }
+
+        /// <summary>Gets or sets the target snapshot sha256.</summary>
+        /// <value>Current target snapshot sha256 exposed by owner git qualification step.</value>
         public string TargetSnapshotSha256 { get; set; }
+
+        /// <summary>Gets or sets the checkpoint id.</summary>
+        /// <value>Current checkpoint id exposed by owner git qualification step.</value>
         public string CheckpointId { get; set; }
+
+        /// <summary>Gets or sets the expected error substring.</summary>
+        /// <value>Current expected error substring exposed by owner git qualification step.</value>
         public string ExpectedErrorSubstring { get; set; }
     }
 }

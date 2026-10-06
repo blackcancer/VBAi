@@ -1,74 +1,109 @@
 namespace VBAi
 {
+
     /// <summary>Designer-generated controls and layout for the Git workflow window.</summary>
     internal sealed partial class GitWindow
     {
+
         /// <summary>Root layout for document selection, tabs, operations, and status.</summary>
         private System.Windows.Forms.TableLayoutPanel layout;
+
         /// <summary>Label showing the active VBA document.</summary>
         private System.Windows.Forms.Label documentLabel;
+
         /// <summary>Tab control containing local Git workflows and GitHub views.</summary>
         private VBAi.ThemedTabControl tabs;
+
         /// <summary>Changes review tab.</summary>
         private System.Windows.Forms.TabPage changesTab;
+
         /// <summary>Commit history tab.</summary>
         private System.Windows.Forms.TabPage historyTab;
+
         /// <summary>Branch management tab.</summary>
         private System.Windows.Forms.TabPage branchesTab;
+
         /// <summary>Checkpoint management tab.</summary>
         private System.Windows.Forms.TabPage checkpointsTab;
+
         /// <summary>Merge conflict resolution tab.</summary>
         private System.Windows.Forms.TabPage conflictsTab;
+
         /// <summary>GitHub repository and pull-request tab.</summary>
         private System.Windows.Forms.TabPage githubTab;
+
         /// <summary>Repository import tab.</summary>
         private System.Windows.Forms.TabPage importTab;
+
         /// <summary>Embedded GitHub repository and pull-request pane.</summary>
         private VBAi.GitHubPane githubPane;
+
         /// <summary>Primary repository operation buttons.</summary>
         private System.Windows.Forms.FlowLayoutPanel actions;
+
         /// <summary>Compares local and remote content.</summary>
         private VBAi.ThemedButton compare;
+
         /// <summary>Fetches remote references.</summary>
         private VBAi.ThemedButton fetch;
+
         /// <summary>Pushes local commits.</summary>
         private VBAi.ThemedButton push;
+
         /// <summary>Pulls remote changes.</summary>
         private VBAi.ThemedButton pull;
+
         /// <summary>Restores a selected checkpoint or revision.</summary>
         private VBAi.ThemedButton restore;
+
         /// <summary>Previews importing a remote repository.</summary>
         private VBAi.ThemedButton previewImport;
+
         /// <summary>Remote synchronization state text.</summary>
         private System.Windows.Forms.Label syncStatus;
+
         /// <summary>General operation feedback.</summary>
         private System.Windows.Forms.Label status;
+
         /// <summary>Layout for the active operation status and progress.</summary>
         private System.Windows.Forms.TableLayoutPanel operationStatus;
+
         /// <summary>Progress indicator for repository operations.</summary>
         private System.Windows.Forms.ProgressBar operationProgress;
+
         /// <summary>Cancels the current repository operation.</summary>
         private VBAi.ThemedButton cancelOperation;
+
         /// <summary>Tooltips associated with repository actions.</summary>
         private System.Windows.Forms.ToolTip toolTips;
+
         /// <summary>Container that owns Designer components.</summary>
         private System.ComponentModel.IContainer components;
+
         /// <summary>GitHub connection tab.</summary>
         private System.Windows.Forms.TabPage connectionTab;
+
         /// <summary>Embedded connection and account settings view.</summary>
         private VBAi.GitConnectionView gitConnectionView;
+
         /// <summary>Embedded working-tree changes view.</summary>
         private VBAi.GitChangesView gitChangesView;
+
         /// <summary>Embedded commit history view.</summary>
         private VBAi.GitHistoryView gitHistoryView;
+
         /// <summary>Embedded branch management view.</summary>
         private VBAi.GitBranchesView gitBranchesView;
+
         /// <summary>Embedded checkpoint management view.</summary>
         private VBAi.GitCheckpointsView gitCheckpointsView;
+
         /// <summary>Embedded merge conflict view.</summary>
         private VBAi.GitConflictsView gitConflictsView;
+
         /// <summary>Embedded repository import view.</summary>
         private VBAi.GitImportView gitImportView;
+
         /// <summary>Creates and arranges Git workflow tabs and their child views.</summary>
         private void InitializeComponent()
         {

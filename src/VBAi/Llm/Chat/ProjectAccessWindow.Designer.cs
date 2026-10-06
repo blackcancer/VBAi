@@ -1,32 +1,43 @@
 namespace VBAi
 {
+
     /// <summary>Collects the projects and shared context that the chat assistant may read.</summary>
     partial class ProjectAccessWindow
     {
-        /// <summary>Stores the components used by ProjectAccessWindow.</summary>
+
+        /// <summary>Maintains the components state for project access window.</summary>
         private System.ComponentModel.IContainer components;
-        /// <summary>Stores the explanation used by ProjectAccessWindow.</summary>
+
+        /// <summary>Maintains the explanation state for project access window.</summary>
         private System.Windows.Forms.Label explanation;
-        /// <summary>Stores the project list used by ProjectAccessWindow.</summary>
+
+        /// <summary>Maintains the project list state for project access window.</summary>
         private VBAi.UiCheckedListBox projectList;
-        /// <summary>Stores the shared context used by ProjectAccessWindow.</summary>
+
+        /// <summary>Maintains the shared context state for project access window.</summary>
         private System.Windows.Forms.CheckBox sharedContext;
-        /// <summary>Stores the shared explanation used by ProjectAccessWindow.</summary>
+
+        /// <summary>Maintains the shared explanation state for project access window.</summary>
         private System.Windows.Forms.Label sharedExplanation;
-        /// <summary>Stores the apply button used by ProjectAccessWindow.</summary>
+
+        /// <summary>Maintains the apply button state for project access window.</summary>
         private VBAi.UiActionButton applyButton;
-        /// <summary>Stores the cancel button used by ProjectAccessWindow.</summary>
+
+        /// <summary>Tracks the cancel button state of project access window.</summary>
         private VBAi.UiActionButton cancelButton;
-        /// <summary>Stores the tool tip used by ProjectAccessWindow.</summary>
+
+        /// <summary>Maintains the tool tip state for project access window.</summary>
         private System.Windows.Forms.ToolTip toolTip;
-        /// <summary>Performs the dispose operation for ProjectAccessWindow.</summary>
+
+        /// <summary>Disposes  for project access window.</summary>
         /// <param name="disposing">Indicates whether disposing is enabled.</param>
         protected override void Dispose(bool disposing)
         {
             if (disposing) { UiTheme.Changed -= ApplyAppearance; components?.Dispose(); }
             base.Dispose(disposing);
         }
-        /// <summary>Performs the initialize component operation for ProjectAccessWindow.</summary>
+
+        /// <summary>Handles initialize component for project access window.</summary>
         private void InitializeComponent()
         {
             this.components = new System.ComponentModel.Container();

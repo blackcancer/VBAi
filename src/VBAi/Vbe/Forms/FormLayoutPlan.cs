@@ -3,28 +3,36 @@ using System.Linq;
 
 namespace VBAi
 {
+
     /// <summary>Géométrie d’un contrôle identifiée par son chemin canonique dans le formulaire.</summary>
     internal sealed class FormLayoutBox
     {
+
         /// <summary>Chemin du contrôle dans l’arbre Designer.</summary>
         /// <value>Chemin utilisé pour retrouver le contrôle à appliquer.</value>
         public string Path { get; set; }
+
         /// <summary>Position horizontale du bord gauche, en points.</summary>
         /// <value>Coordonnée relative au conteneur parent.</value>
         public double Left { get; set; }
+
         /// <summary>Position verticale du bord supérieur, en points.</summary>
         /// <value>Coordonnée relative au conteneur parent.</value>
         public double Top { get; set; }
+
         /// <summary>Largeur du contrôle, en points.</summary>
         /// <value>Dimension positive validée.</value>
         public double Width { get; set; }
+
         /// <summary>Hauteur du contrôle, en points.</summary>
         /// <value>Dimension positive validée.</value>
         public double Height { get; set; }
     }
+
     /// <summary>Calcule une disposition de contrôles sans modifier leur taille ou position d’origine.</summary>
     internal static class FormLayoutPlan
     {
+
         /// <summary>Crée les nouvelles géométries après alignement, distribution, espacement ou centrage des contrôles.</summary>
         /// <param name="input">Contrôles sélectionnés avec leur chemin et géométrie actuelle.</param>
         /// <param name="action">Opération de disposition reconnue, comme align_left ou distribute_horizontal.</param>

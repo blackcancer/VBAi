@@ -6,23 +6,32 @@ using System.Windows.Forms;
 
 namespace VBAi
 {
+
     /// <summary>Écran de support éditable dans le Designer : aperçu avant transmission et secours local.</summary>
     internal sealed partial class CrashReportWindow : Form
     {
+
         /// <summary>Report currently displayed and edited by the window.</summary>
         private CrashReport report;
+
         /// <summary>Delivery in progress, completed submission, uncertain outcome, and theme-subscription flags.</summary>
         private bool busy, submitted, uncertain, runtimeInitialized;
+
         /// <summary>Cancellation source used when the dialog closes during an asynchronous send.</summary>
         private readonly CancellationTokenSource cancellation = new CancellationTokenSource();
+
         /// <summary>Delivery service used by the send and email actions.</summary>
         internal CrashReportDelivery Delivery = new CrashReportDelivery();
+
         /// <summary>Action used to copy report text or its saved path.</summary>
         internal Action<string> CopyText = Clipboard.SetText;
-        /// <summary>Stores the open link used by CrashReportWindow.</summary>
+
+        /// <summary>Maintains the open link state for crash report window.</summary>
         internal Action<string> OpenLink = SafeLinks.Open;
+
         /// <summary>Delegate that saves a report body and returns its local path.</summary>
         internal Func<CrashReport, string, string> Store = (report, body) => report.Save(body);
+
         /// <summary>Path of the local backup saved before delivery.</summary>
         private string savedPath;
 
@@ -69,6 +78,7 @@ namespace VBAi
         /// <summary>Refreshes the report preview after an editable field changes.</summary>
         /// <param name="sender">Input control that changed.</param><param name="e">Change event arguments.</param>
         private void ContentChanged(object sender, EventArgs e) { RefreshPreview(); }
+
         /// <summary>Formats the current input as Markdown and updates whether delivery actions are available.</summary>
         private void RefreshPreview()
         {
@@ -147,6 +157,7 @@ namespace VBAi
             try { CopyText(report.Body(titleInput.Text, descriptionInput.Text)); status.Text = UiText.Get("Technical details copied."); }
             catch (Exception) { status.Text = UiText.Get("Unable to copy technical details."); }
         }
+
         /// <summary>Saves a local Markdown copy and copies its path to the clipboard.</summary>
         /// <param name="sender">Save button.</param><param name="e">Click event arguments.</param>
         private void Save_Click(object sender, EventArgs e)
@@ -159,6 +170,7 @@ namespace VBAi
             }
             catch (Exception) { status.Text = UiText.Get("Unable to save the report."); }
         }
+
         /// <summary>Opens the successfully published GitHub issue.</summary>
         /// <param name="sender">Issue link.</param><param name="e">Link-click event arguments.</param>
         private void Issue_Click(object sender, LinkLabelLinkClickedEventArgs e)
@@ -166,12 +178,14 @@ namespace VBAi
             try { OpenLink(Delivery.IssueUrl); }
             catch (Exception) { status.Text = UiText.Get("Unable to open the link."); }
         }
+
         /// <summary>Prevents user closure while a delivery operation is still running.</summary>
         /// <param name="sender">Report window.</param><param name="e">Closing event arguments that may be cancelled.</param>
         private void WindowClosing(object sender, FormClosingEventArgs e)
         {
             if (busy && e.CloseReason == CloseReason.UserClosing) e.Cancel = true;
         }
+
         /// <summary>Unsubscribes from theme changes and cancels any outstanding send.</summary>
         private void DisposeRuntime()
         {
@@ -199,11 +213,14 @@ namespace VBAi
                 AddIn.ShowModal(window, owner);
             }
         }
+
         /// <summary>WinForms owner wrapper for a native VBE window handle.</summary>
         private sealed class NativeOwner : IWin32Window
         {
+
             /// <summary>Creates the wrapper for a native owner window.</summary><param name="handle">Native window handle.</param>
             internal NativeOwner(IntPtr handle) { Handle = handle; }
+
             /// <summary>Gets the native owner-window handle.</summary><value>Handle supplied to the constructor.</value>
             public IntPtr Handle { get; }
         }

@@ -6,13 +6,16 @@ using System.Runtime.InteropServices;
 namespace VBAi
 {
     // Uses the host VBE's own CommandBars and Office CommandBarButton COM event.
-        /// <summary>Ajoute les boutons principaux et, si demandé, les commandes de l’éditeur.</summary>
+    /// <summary>Ajoute les boutons principaux et, si demandé, les commandes de l’éditeur.</summary>
     internal sealed class VbeMenu : IDisposable
     {
+
         /// <summary>Abonne un délégué à un événement COM d’une source Office.</summary>
         internal static Action<object, Guid, int, Delegate> SubscribeDefault = ComEventsHelper.Combine;
+
         /// <summary>Lit l’icône embarquée dans les ressources du type de fenêtre.</summary>
         internal Func<Type, System.Drawing.Icon> ReadIcon = ReadIconNative;
+
         /// <summary>Récupère l’icône <c>$this.Icon</c> des ressources associées à une fenêtre.</summary>
         /// <param name="windowType">Type de fenêtre qui possède les ressources.</param>
         /// <returns>Icône extraite des ressources du type.</returns>
@@ -25,26 +28,37 @@ namespace VBAi
                 return VbeWindowIcons.Icon("assistant");
             return (System.Drawing.Icon)new System.ComponentModel.ComponentResourceManager(windowType).GetObject("$this.Icon");
         }
+
         /// <summary>IID de l’interface Office utilisée pour recevoir les clics de CommandBarButton.</summary>
         private static readonly Guid ClickInterface = new Guid("000C0351-0000-0000-C000-000000000046");
+
         /// <summary>Bouton VBAi ajouté au menu View du VBE.</summary>
         private readonly object viewButton;
+
         /// <summary>Bouton VBAi ajouté au menu Tools du VBE.</summary>
         private readonly object settingsButton;
+
         /// <summary>Gestionnaire COM du bouton assistant.</summary>
         private readonly ClickHandler viewHandler;
+
         /// <summary>Gestionnaire COM du bouton de paramètres.</summary>
         private readonly ClickHandler settingsHandler;
+
         /// <summary>Boutons GitHub et commandes ajoutés aux menus contextuels de l’éditeur.</summary>
         private readonly List<Tuple<object, ClickHandler>> editorButtons = new List<Tuple<object, ClickHandler>>();
+
         /// <summary>Images OLE et masques détenus pendant la durée de vie du menu.</summary>
         private readonly List<System.Drawing.Bitmap> menuImages = new List<System.Drawing.Bitmap>();
+
         /// <summary>Fonction d’abonnement aux événements COM des boutons.</summary>
         private readonly Action<object, Guid, int, Delegate> subscribe;
+
         /// <summary>Fonction de désabonnement des événements COM des boutons.</summary>
         private readonly Action<object, Guid, int, Delegate> unsubscribe;
+
         /// <summary>Fonction appliquant l’icône associée à la fenêtre.</summary>
         private readonly Action<object, Type> applyIcon;
+
         /// <summary>Empêche la suppression répétée des commandes et images.</summary>
         private bool disposed;
 
@@ -233,19 +247,21 @@ namespace VBAi
         /// <summary>Expose la conversion d’une image WinForms vers IPictureDisp.</summary>
         private sealed class MenuPicture : System.Windows.Forms.AxHost
         {
-        /// <summary>Expose la conversion d’une image WinForms vers IPictureDisp.</summary>
+
+            /// <summary>Expose la conversion d’une image WinForms vers IPictureDisp.</summary>
             private MenuPicture() : base("") { }
+
         /// <summary>Convertit une image .NET en représentation OLE IPictureDisp.</summary>
         /// <param name="image">Image .NET à convertir en image OLE.</param>
         /// <returns>Objet IPictureDisp utilisable par CommandBarButton.</returns>
-internal static object ToOle(System.Drawing.Image image) { return GetIPictureDispFromPicture(image); }
+        internal static object ToOle(System.Drawing.Image image) { return GetIPictureDispFromPicture(image); }
         }
 
         /// <summary>Recherche le menu VBE View ou Tools en tenant compte de la langue de l’hôte.</summary>
         /// <param name="application">Objet dont les barres de commande sont recherchées.</param>
         /// <param name="view">Indique si le menu recherché est View plutôt que Tools.</param>
         /// <returns>Menu VBE correspondant à la langue et au type demandés.</returns>
-private static dynamic FindMenu(object application, bool view)
+        private static dynamic FindMenu(object application, bool view)
         {
             foreach (dynamic bar in ((dynamic)application).CommandBars)
             {
@@ -265,7 +281,7 @@ private static dynamic FindMenu(object application, bool view)
         /// <summary>Normalise une légende de menu pour comparaison sans casse ni esperluette.</summary>
         /// <param name="caption">Légende de menu à normaliser.</param>
         /// <returns>Légende sans esperluette, espaces périphériques ni différence de casse.</returns>
-private static string Normalize(string caption)
+        private static string Normalize(string caption)
         {
             return (caption ?? "").Replace("&", "").Trim().ToLowerInvariant();
         }

@@ -9,22 +9,44 @@ namespace VBAi
 {
     // This generator never modifies a live project. Its explicit dispatch table is
     // installed through a separate, reviewed project edit before any run.
+    /// <summary>Owns the vba test runtime source state and operations.</summary>
     internal static class VbaTestRuntimeSource
     {
+
+        /// <summary>Maintains the module name state for vba test runtime source.</summary>
         internal const string ModuleName = "VBAiTestSupport";
+
+        /// <summary>Maintains the version state for vba test runtime source.</summary>
         internal const string Version = "3";
+
+        /// <summary>Maintains the dispatcher procedure state for vba test runtime source.</summary>
         internal const string DispatcherProcedure = "VBAiExecuteTest";
+
+        /// <summary>Maintains the pending procedure state for vba test runtime source.</summary>
         internal const string PendingProcedure = "VBAiExecutePendingTest";
+
+        /// <summary>Maintains the maximum message length state for vba test runtime source.</summary>
         internal const int MaximumMessageLength = 8192;
+
+        /// <summary>Maintains the maximum cases per leaf state for vba test runtime source.</summary>
         internal const int MaximumCasesPerLeaf = 128;
+
+        /// <summary>Maintains the maximum leaf body characters state for vba test runtime source.</summary>
         internal const int MaximumLeafBodyCharacters = 16 * 1024;
+
+        /// <summary>Maintains the maximum route children state for vba test runtime source.</summary>
         internal const int MaximumRouteChildren = 32;
 
+        /// <summary>Maintains the header state for vba test runtime source.</summary>
         private const string Header = "Option Explicit\n' VBAi test support version " + Version
             + "\n' Generated dispatch only; refresh this module explicitly after changing tests.\n";
 
+        /// <summary>Maintains the identifier state for vba test runtime source.</summary>
         private static readonly Regex Identifier = new Regex(@"\A\p{L}[\p{L}\p{N}_]{0,254}\z", RegexOptions.CultureInvariant);
 
+        /// <summary>Handles generate for vba test runtime source.</summary>
+        /// <param name="catalog">vba test catalog that supplies the catalog for this operation.</param>
+        /// <returns>Text produced by the operation for generate on vba test runtime source.</returns>
         internal static string Generate(VbaTestCatalog catalog)
         {
             if (catalog == null) throw new ArgumentNullException(nameof(catalog));
@@ -84,6 +106,9 @@ namespace VBAi
             return source.ToString();
         }
 
+        /// <summary>Dispatches branch for vba test runtime source.</summary>
+        /// <param name="test">vba test descriptor that supplies the test for this operation.</param>
+        /// <returns>Text produced by the operation for dispatch branch on vba test runtime source.</returns>
         private static string DispatchBranch(VbaTestDescriptor test)
         {
             string target = test.Module + "." + test.Procedure;
@@ -96,6 +121,10 @@ namespace VBAi
             return source.ToString();
         }
 
+        /// <summary>Handles append leaf for vba test runtime source.</summary>
+        /// <param name="source">string builder that supplies the source for this operation.</param>
+        /// <param name="names">list&lt;string&gt; that supplies the names for this operation.</param>
+        /// <param name="body">string builder that supplies the body for this operation.</param>
         private static void AppendLeaf(StringBuilder source, List<string> names, StringBuilder body)
         {
             string name = "VBAiDispatchLeaf" + names.Count.ToString("D6", CultureInfo.InvariantCulture);
@@ -107,6 +136,10 @@ namespace VBAi
             body.Clear();
         }
 
+        /// <summary>Handles append routes for vba test runtime source.</summary>
+        /// <param name="source">string builder that supplies the source for this operation.</param>
+        /// <param name="children">list&lt;string&gt; that supplies the children for this operation.</param>
+        /// <returns>Text produced by the operation for append routes on vba test runtime source.</returns>
         private static string AppendRoutes(StringBuilder source, List<string> children)
         {
             int route = 0;
@@ -129,6 +162,9 @@ namespace VBAi
             return children[0];
         }
 
+        /// <summary>Dispatches signature for vba test runtime source.</summary>
+        /// <param name="catalog">vba test catalog that supplies the catalog for this operation.</param>
+        /// <returns>Text produced by the operation for dispatch signature on vba test runtime source.</returns>
         internal static string DispatchSignature(VbaTestCatalog catalog)
         {
             var entries = (catalog.Modules ?? new List<VbaTestModule>()).SelectMany(module => (module.Tests ?? new List<VbaTestDescriptor>()).Concat(
@@ -140,6 +176,9 @@ namespace VBAi
 
         // Ownership is a versioned marker, not proof that the source is unchanged.
         // Installation must also back up the old source and review the replacement.
+        /// <summary>Determines whether owned for vba test runtime source.</summary>
+        /// <param name="source">Text that supplies the source value. Use the format required by the calling operation.</param>
+        /// <returns>Boolean indicating the result of the check for is owned on vba test runtime source.</returns>
         internal static bool IsOwned(string source)
         {
             if (source == null) return false;
@@ -149,6 +188,10 @@ namespace VBAi
                 "Option Explicit\n' VBAi test support version 2\n' Generated dispatch only; refresh this module explicitly after changing tests.\n", StringComparison.Ordinal);
         }
 
+        /// <summary>Handles decode for vba test runtime source.</summary>
+        /// <param name="test">vba test descriptor that supplies the test for this operation.</param>
+        /// <param name="native">object that supplies the native for this operation.</param>
+        /// <returns>vba test result produced by the operation for decode on vba test runtime source.</returns>
         internal static VbaTestResult Decode(VbaTestDescriptor test, object native)
         {
             if (test == null) throw new ArgumentNullException(nameof(test));
@@ -173,8 +216,15 @@ namespace VBAi
             return new VbaTestResult { Test = test, Outcome = outcome, Message = message, ErrorNumber = errorNumber };
         }
 
+        /// <summary>Handles safe identifier for vba test runtime source.</summary>
+        /// <param name="name">Text that supplies the name value. Use the format required by the calling operation.</param>
+        /// <returns>Boolean indicating the result of the check for safe identifier on vba test runtime source.</returns>
         private static bool SafeIdentifier(string name) => name != null && Identifier.IsMatch(name);
 
+        /// <summary>Handles eligible for vba test runtime source.</summary>
+        /// <param name="test">vba test descriptor that supplies the test for this operation.</param>
+        /// <param name="module">Text that supplies the module value. Use the format required by the calling operation.</param>
+        /// <returns>Boolean indicating the result of the check for eligible on vba test runtime source.</returns>
         private static bool Eligible(VbaTestDescriptor test, string module)
         {
             return test != null && string.Equals(test.Module, module, StringComparison.OrdinalIgnoreCase)
@@ -183,6 +233,7 @@ namespace VBAi
                 && (test.Kind == "Sub" || test.Kind == "Function");
         }
 
+        /// <summary>Maintains the runtime prefix state for vba test runtime source.</summary>
         private const string RuntimePrefix = @"
 Private Const FailureError As Long = vbObjectError + 2048
 Private Const InconclusiveError As Long = vbObjectError + 2049
@@ -207,6 +258,7 @@ Public Function VBAiExecuteTest(ByVal moduleName As String, ByVal procedureName 
     On Error GoTo FailedCall
 ";
 
+        /// <summary>Maintains the runtime suffix state for vba test runtime source.</summary>
         private const string RuntimeSuffix = @"Executed:
     If mFailed Then
         outcome = ""Failed""

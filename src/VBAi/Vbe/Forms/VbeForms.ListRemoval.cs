@@ -7,9 +7,11 @@ using System.Linq;
 
 namespace VBAi
 {
+
     /// <summary>Retire un élément d’une liste MSForms sous contrôle de sa version et vérifie le résultat.</summary>
     internal sealed partial class VbeForms
     {
+
         /// <summary>Retire une ligne d’une liste à une colonne non liée sous contrôle des versions de l’arbre et de la liste.</summary>
         /// <param name="request">Projet, formulaire, chemin, versions attendues et index de ligne.</param>
         /// <returns>Rapport comprenant la valeur retirée et le statut de vérification.</returns>

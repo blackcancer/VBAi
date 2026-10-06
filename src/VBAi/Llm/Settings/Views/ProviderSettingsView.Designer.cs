@@ -1,68 +1,100 @@
 namespace VBAi
 {
+
     /// <summary>Contrôles générés pour les fournisseurs, modèles et stratégies d’approbation.</summary>
     public sealed partial class ProviderSettingsView
     {
+
         /// <summary>Grille des paramètres du fournisseur.</summary>
         internal System.Windows.Forms.TableLayoutPanel grid;
+
         /// <summary>Disposition des actions CLI Codex.</summary>
         internal System.Windows.Forms.FlowLayoutPanel codexActions;
+
         /// <summary>Sélecteur du fournisseur LLM.</summary>
         internal VBAi.ThemedComboBox provider;
+
         /// <summary>État de la connexion Codex ou Copilot.</summary>
         internal System.Windows.Forms.Label codexStatus;
+
         /// <summary>Action de connexion du CLI sélectionné.</summary>
         internal VBAi.ThemedButton codexLogin;
+
         /// <summary>Action de relecture du statut CLI.</summary>
         internal VBAi.ThemedButton codexRefresh;
+
         /// <summary>Champ de point de terminaison OpenAI.</summary>
         internal VBAi.UiTextBox openAiEndpoint;
+
         /// <summary>Champ de point de terminaison Ollama.</summary>
         internal VBAi.UiTextBox ollamaEndpoint;
+
         /// <summary>Champ de clé du fournisseur.</summary>
         internal VBAi.UiTextBox openAiKey;
+
         /// <summary>Option de suppression de la clé enregistrée.</summary>
         internal System.Windows.Forms.CheckBox clearKey;
+
         /// <summary>Libellé du sélecteur de fournisseur.</summary>
         internal System.Windows.Forms.Label providerLabel;
+
         /// <summary>Libellé du compte fournisseur.</summary>
         internal System.Windows.Forms.Label accountLabel;
+
         /// <summary>Libellé de la section d’authentification.</summary>
         internal System.Windows.Forms.Label authenticationLabel;
+
         /// <summary>Libellé de l’adresse OpenAI.</summary>
         internal System.Windows.Forms.Label openAiEndpointLabel;
+
         /// <summary>Libellé de l’adresse Ollama.</summary>
         internal System.Windows.Forms.Label ollamaEndpointLabel;
+
         /// <summary>Libellé du champ de clé.</summary>
         internal System.Windows.Forms.Label keyLabel;
+
         /// <summary>Note de configuration de la clé fournisseur.</summary>
         internal System.Windows.Forms.Label keyNote;
+
         /// <summary>Libellé de la stratégie d’approbation VBE.</summary>
         internal System.Windows.Forms.Label approvalLabel;
+
         /// <summary>Sélecteur de la stratégie d’approbation.</summary>
         internal VBAi.ThemedComboBox approvalPicker;
+
         /// <summary>Libellé de la liste de modèles manuelle.</summary>
         internal System.Windows.Forms.Label manualModelsLabel;
+
         /// <summary>Champ des modèles saisis manuellement.</summary>
         internal VBAi.UiTextBox manualModels;
+
         /// <summary>Libellé du fournisseur personnalisé.</summary>
         internal System.Windows.Forms.Label customNameLabel;
+
         /// <summary>Champ du nom personnalisé.</summary>
         internal VBAi.UiTextBox customName;
+
         /// <summary>Option d’authentification Azure par Entra.</summary>
         internal System.Windows.Forms.CheckBox azureEntra;
+
         /// <summary>Label for the optional Ollama sampling temperature.</summary>
         internal System.Windows.Forms.Label ollamaTemperatureLabel;
+
         /// <summary>Optional temperature override; blank retains server behavior.</summary>
         internal VBAi.UiTextBox ollamaTemperature;
+
         /// <summary>Label for the optional Ollama nucleus sampling limit.</summary>
         internal System.Windows.Forms.Label ollamaTopPLabel;
+
         /// <summary>Optional top-p override; blank retains server behavior.</summary>
         internal VBAi.UiTextBox ollamaTopP;
+
         /// <summary>Conteneur des composants WinForms non visuels.</summary>
         private System.ComponentModel.IContainer components;
+
         /// <summary>Info-bulles appartenant à la vue.</summary>
         private System.Windows.Forms.ToolTip toolTips;
+
         /// <summary>Libère les composants de la vue avant son contrôle natif.</summary>
         /// <param name="disposing">Indique si les ressources managées doivent être libérées.</param>
         protected override void Dispose(bool disposing)

@@ -5,20 +5,35 @@ using System.Threading.Tasks;
 
 namespace VBAi
 {
+
+    /// <summary>Owns the vbe debug state and operations.</summary>
     internal sealed partial class VbeDebug
     {
+
+        /// <summary>Maintains the local context reader state for vbe debug.</summary>
         internal Func<string> LocalContextReader = VbeDebugWindows.ReadLocalsContext;
+
+        /// <summary>Maintains the ensure scalar dialog absent state for vbe debug.</summary>
         internal Action EnsureScalarDialogAbsent = VbeDebugWindows.EnsureNoQuickWatchDialog;
+
+        /// <summary>Maintains the read scalar dialog state for vbe debug.</summary>
         internal Func<Request, object> ReadScalarDialog = VbeDebugWindows.ReadScalarQuickWatch;
+
+        /// <summary>Maintains the local scalar evaluator state for vbe debug.</summary>
         internal Func<Request, Task<object>> LocalScalarEvaluator;
 
         /// <summary>Explicit, bounded inspection of declared scalar identifiers in one verified paused context.</summary>
+        /// <param name="request">request that supplies the request for this operation.</param>
+        /// <returns>task&lt;object&gt; produced by the operation for inspect local scalars async on vbe debug.</returns>
         internal Task<object> InspectLocalScalarsAsync(Request request)
         {
             VbeInspectionTrace.Current?.Record(VbeInspectionTrace.Phase.CoreEntered);
             return VbeUiTask.Run(() => InspectLocalScalarsCoreAsync(request));
         }
 
+        /// <summary>Inspects local scalars core async for vbe debug.</summary>
+        /// <param name="request">request that supplies the request for this operation.</param>
+        /// <returns>task&lt;object&gt; produced by the operation for inspect local scalars core async on vbe debug.</returns>
         private async Task<object> InspectLocalScalarsCoreAsync(Request request)
         {
             if (request == null || string.IsNullOrWhiteSpace(request.Project) || string.IsNullOrWhiteSpace(request.Module) ||
@@ -137,6 +152,11 @@ namespace VBAi
             }
         }
 
+        /// <summary>Handles evaluate local scalar async for vbe debug.</summary>
+        /// <param name="request">request that supplies the request for this operation.</param>
+        /// <param name="validate">action that supplies the validate for this operation.</param>
+        /// <param name="projectName">Text that supplies the project name value. Use the format required by the calling operation.</param>
+        /// <returns>task&lt;object&gt; produced by the operation for evaluate local scalar async on vbe debug.</returns>
         private async Task<object> EvaluateLocalScalarAsync(Request request, Action validate, string projectName)
         {
             EnsureScalarDialogAbsent();

@@ -5,11 +5,14 @@ using System.Text;
 
 namespace VBAi
 {
+
     /// <summary>Démarre un processus avec une entrée redirigée UTF-8 sans préambule BOM.</summary>
     internal static class ProcessInput
     {
+
         /// <summary>Sérialise temporairement la modification du réglage global d’encodage d’entrée.</summary>
         private static readonly object startLock = new object();
+
         /// <summary>Résout le cache d’encodage du runtime .NET Framework installé.</summary>
         internal static Func<FieldInfo> InputEncodingField = () => typeof(Console).GetField("_inputEncoding", BindingFlags.NonPublic | BindingFlags.Static);
 

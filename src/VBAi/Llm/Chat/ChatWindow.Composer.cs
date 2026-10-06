@@ -16,29 +16,41 @@ using WpfTextBox = System.Windows.Controls.TextBox;
 
 namespace VBAi
 {
+
     /// <summary>Compose les messages et gère la recherche de références du projet dans l’éditeur.</summary>
     internal sealed partial class ChatWindow
     {
+
         /// <summary>Zone de saisie WPF des demandes de conversation.</summary>
         private WpfTextBox prompt;
+
         /// <summary>Fenêtre contextuelle des commandes et références trouvées.</summary>
         private Popup referencePopup;
+
         /// <summary>Résultats sélectionnables de la recherche contextuelle.</summary>
         private Forms.ListBox referenceList;
+
         /// <summary>Hosts the live reference suggestions shown below the composer.</summary>
         private ChatSuggestionsView referenceView;
+
         /// <summary>État de la recherche ou instructions de sélection affichés sous la liste.</summary>
         private Forms.Label referenceStatus;
+
         /// <summary>Index des références du projet VBA courant.</summary>
         private VbeChatReferences referenceIndex;
+
         /// <summary>Minuteur WinForms qui fait progresser la construction de l’index.</summary>
         private Forms.Timer referenceTimer;
+
         /// <summary>Références insérées dans la saisie et disponibles pour le prochain message.</summary>
         private readonly List<VbeChatReference> selectedReferences = new List<VbeChatReference>();
+
         /// <summary>Indique si l’index a été démarré pour la recherche courante.</summary>
         private bool referenceIndexReady;
+
         /// <summary>Position du préfixe # ou @ de la référence actuellement recherchée.</summary>
         private int referenceStart = -1;
+
         /// <summary>Position finale du jeton de référence inséré pour masquer les suggestions.</summary>
         private int acceptedTokenEnd = -1;
 
@@ -163,6 +175,7 @@ namespace VBAi
                 referenceList.Items.Clear(); referenceList.Items.AddRange(targets);
             } finally { referenceList.EndUpdate(); }
         }
+
         /// <summary>Affiche les commandes qui correspondent au préfixe saisi en début de message.</summary>
         /// <param name="caret">Position du curseur dans la zone de saisie.</param>
         /// <returns>true si une liste de commandes correspondantes est affichée.</returns>

@@ -6,6 +6,7 @@ using System.Linq;
 
 namespace VBAi
 {
+
     /// <summary>Implémente le profil de duplication partielle des CheckBox natifs.</summary>
     internal sealed partial class VbeForms
     {

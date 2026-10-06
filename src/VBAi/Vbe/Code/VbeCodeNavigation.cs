@@ -8,15 +8,20 @@ using System.Text.RegularExpressions;
 
 namespace VBAi
 {
+
     /// <summary>Inspecte, navigue et modifie le code des projets VBA en vérifiant les versions attendues.</summary>
     internal sealed partial class VbeCodeNavigation
     {
+
         /// <summary>Instance VBIDE contenant les projets et modules.</summary>
         private readonly dynamic vbe;
+
         /// <summary>Service de lecture de l’arbre des formulaires UserForm.</summary>
         private readonly VbeForms forms;
+
         /// <summary>Lecteur injectable des octets des fichiers de code fournis.</summary>
         internal Func<string, byte[]> ReadSourceBytes = File.ReadAllBytes;
+
         /// <summary>Résolveur injectable des pages de code historiques sans remplacement silencieux des caractères invalides.</summary>
         internal Func<int, Encoding> LegacySourceEncoding = codePage => Encoding.GetEncoding(codePage,
             EncoderFallback.ExceptionFallback, DecoderFallback.ExceptionFallback);

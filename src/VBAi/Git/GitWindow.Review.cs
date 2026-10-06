@@ -6,24 +6,32 @@ using System.Windows.Forms;
 
 namespace VBAi
 {
+
     /// <summary>Affiche l’historique, les changements VBA et les prévisualisations d’import Git.</summary>
     internal sealed partial class GitWindow
     {
+
         /// <summary>Source d’annulation de l’opération de revue ou d’import courante.</summary>
         private CancellationTokenSource operationCancellation;
+
         /// <summary>Commit ou point de contrôle actuellement affiché pour revue.</summary>
         private string reviewCommit;
-    /// <summary>Module et libellé de changement présentés dans la liste de revue.</summary>
+
+        /// <summary>Module et libellé de changement présentés dans la liste de revue.</summary>
         private sealed class ModuleChange
         {
+
             /// <summary>Nom du module concerné, ou null pour un changement global.</summary>
             internal string Name;
+
             /// <summary>Préfixe et nom affichés pour le changement.</summary>
             internal string Label;
+
             /// <summary>Retourne le libellé affiché dans la liste.</summary>
             /// <returns>Libellé de la ligne de revue.</returns>
             public override string ToString() { return Label; }
         }
+
         /// <summary>Relie les événements de navigation de revue au layout et aux services Git.</summary>
         private void InitializeReview()
         {
@@ -35,6 +43,7 @@ namespace VBAi
             githubPane.LoadDraft = () => repository?.PullDraft();
             githubPane.OpenModule = (name, line) => project?.OpenModule(name, line);
         }
+
         /// <summary>Retourne le code d’un composant dans le snapshot, ou l’empreinte des références.</summary>
         /// <param name="snapshot">Snapshot contenant le composant à lire.</param>
         /// <param name="name">Nom du module, ou null pour lire les références.</param>
@@ -46,6 +55,7 @@ namespace VBAi
             var module = snapshot.Manifest.Components.FirstOrDefault(x => x.Name == name);
             return module == null ? "" : VbaGitSnapshot.Utf8.GetString(snapshot.Files[module.FileName]);
         }
+
         /// <summary>Construit la liste des modules et références différentes entre deux snapshots.</summary>
         /// <param name="target">Snapshot courant à présenter.</param>
         /// <param name="baseline">Snapshot précédent utilisé pour comparer les fichiers.</param>
@@ -67,22 +77,26 @@ namespace VBAi
                 changes.Items.Add(new ModuleChange { Label = UiText.Get("VBA references") }, reviewCommit == null);
             if (changes.Items.Count > 0) changes.SelectedIndex = 0;
         }
+
         /// <summary>Affiche le résumé de prévisualisation dans l’onglet d’import.</summary>
         /// <param name="text">Résumé d’import à afficher.</param>
         private void ShowImportSummary(string text)
         {
             importSummary.Text = text; tabs.SelectedTab = importTab;
         }
+
         /// <summary>Transmet à l’interface l’avancement Git si la fenêtre reste disponible.</summary>
         /// <param name="text">Résumé d’import à afficher.</param>
         private void ReportProgress(string text)
         {
             if (IsHandleCreated && !IsDisposed) BeginInvoke(new Action(() => { if (running) status.Text = text; }));
         }
+
         /// <summary>Annule l’opération Git active.</summary>
         /// <param name="sender">Contrôle à l’origine de l’action.</param>
         /// <param name="e">Données de l’événement WinForms.</param>
         private void CancelOperation_Click(object sender, EventArgs e) { operationCancellation?.Cancel(); }
+
         /// <summary>Récupère et compare l’état distant sans importer ses changements.</summary>
         /// <param name="sender">Contrôle à l’origine de l’action.</param>
         /// <param name="e">Données de l’événement WinForms.</param>
@@ -97,6 +111,7 @@ namespace VBAi
                 status.Text = UiText.Get("Preview only. Pull imports these changes with a checkpoint.");
             });
         }
+
         /// <summary>Ouvre dans le VBE le module sélectionné dans la revue.</summary>
         /// <param name="sender">Contrôle à l’origine de l’action.</param>
         /// <param name="e">Données de l’événement WinForms.</param>
@@ -105,6 +120,7 @@ namespace VBAi
             try { var item = changes.SelectedItem as ModuleChange; if (item?.Name != null) project?.OpenModule(item.Name); }
             catch (Exception ex) { status.Text = ex.Message; }
         }
+
         /// <summary>Restaure le module sélectionné depuis le commit de revue.</summary>
         /// <param name="sender">Contrôle à l’origine de l’action.</param>
         /// <param name="e">Données de l’événement WinForms.</param>
@@ -114,6 +130,7 @@ namespace VBAi
             if (item?.Name == null || reviewCommit == null || repository == null) { status.Text = UiText.Get("Select a revision in History or Checkpoints, then a module to restore."); return; }
             await RunGitAction("module_restore", name: reviewCommit, path: item.Name);
         }
+
         /// <summary>Charge un commit et son parent ou la seconde sélection pour comparaison.</summary>
         /// <param name="sender">Contrôle à l’origine de l’action.</param>
         /// <param name="e">Données de l’événement WinForms.</param>
@@ -132,6 +149,7 @@ namespace VBAi
                 status.Text = UiText.Get("Reviewing revision") + " " + current.Id.Substring(0, 8) + " · " + UiText.Get("Compare returns to live VBA.");
             });
         }
+
         /// <summary>Affiche les différences entre le point de contrôle et le projet vivant.</summary>
         /// <param name="sender">Contrôle à l’origine de l’action.</param>
         /// <param name="e">Données de l’événement WinForms.</param>

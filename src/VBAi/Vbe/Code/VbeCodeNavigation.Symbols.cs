@@ -5,9 +5,11 @@ using System.Linq;
 
 namespace VBAi
 {
+
     /// <summary>Recherche les symboles exposés par les modules et les déclarations VBA d’un projet vivant.</summary>
     internal sealed partial class VbeCodeNavigation
     {
+
         /// <summary>Retourne une page de modules, procédures et déclarations correspondant aux filtres de la requête.</summary>
         /// <param name="request">Projet, module facultatif, texte recherché et bornes de pagination.</param>
         /// <returns>Résultats paginés avec positions source, empreintes de modules, erreurs de lecture et limites sémantiques.</returns>
@@ -47,10 +49,11 @@ namespace VBAi
                 Symbols = symbols.Skip(request.Offset).Take(size).ToArray(), HasMore = request.Offset + size < symbols.Count,
                 Errors = errors, Scope = "Live VBIDE modules/procedures and syntactic VBA declarations (variables, constants, parameters, types and enum members). Conditional branches are marked; implicit variables, semantic binding and COM members are not inferred. Use list_reference_types/list_type_members for references." };
         }
-                /// <summary>Associe une déclaration locale à l’accesseur ou à la procédure VBIDE qui la contient.</summary>
-                /// <param name="procedures">Procédures analysées du module.</param>
-                /// <param name="declaration">Déclaration VBA dont la portée doit être résolue.</param>
-                /// <returns>Type de procédure VBIDE correspondant, ou <see langword="null"/> hors procédure.</returns>
+
+        /// <summary>Associe une déclaration locale à l’accesseur ou à la procédure VBIDE qui la contient.</summary>
+        /// <param name="procedures">Procédures analysées du module.</param>
+        /// <param name="declaration">Déclaration VBA dont la portée doit être résolue.</param>
+        /// <returns>Type de procédure VBIDE correspondant, ou <see langword="null"/> hors procédure.</returns>
         private static int? DeclarationProcedureKind(System.Collections.IEnumerable procedures, VbaDeclarationIndex.Declaration declaration)
         {
             foreach (dynamic procedure in procedures)
@@ -59,6 +62,7 @@ namespace VBAi
                     return (int)procedure.Kind;
             return null;
         }
+
         /// <summary>Applique les options de casse et de correspondance exacte ou partielle au nom d’un symbole.</summary>
         /// <param name="name">Nom du symbole analysé.</param>
         /// <param name="request">Options de recherche de la requête.</param>

@@ -4,50 +4,71 @@ using System.Windows.Forms;
 
 namespace VBAi
 {
+
     /// <summary>Fenêtre de configuration des fournisseurs, comptes et préférences de conversation.</summary>
     internal sealed partial class LlmSettingsWindow : Form
     {
+
         /// <summary>Paramètres persistants modifiés par cette fenêtre.</summary>
         private readonly LlmSettings settings;
         // Keep authentication, persistence and notices at replaceable native boundaries.
         /// <summary>Enregistre les paramètres avec le stockage natif.</summary>
         internal static Action<LlmSettings> WriteSettings = (Action<LlmSettings>)Delegate.CreateDelegate(typeof(Action<LlmSettings>), typeof(LlmSettings).GetMethod("Save"));
+
         /// <summary>Ouvre l’authentification native Copilot.</summary>
         internal static Action StartCopilotLogin = CopilotClient.StartLogin;
+
         /// <summary>Ouvre l’authentification native Codex.</summary>
         internal static Action StartCodexLogin = CodexAccount.StartLogin;
+
         /// <summary>Lit l’état de connexion du CLI Copilot.</summary>
         internal static Func<System.Threading.Tasks.Task<string>> ReadCopilotStatus = CopilotClient.ReadStatusAsync;
+
         /// <summary>Lit l’état du compte Codex.</summary>
         internal static Func<System.Threading.Tasks.Task<CodexAccountStatus>> ReadCodexStatus = CodexAccount.ReadStatusAsync;
+
         /// <summary>Applique le thème sélectionné à l’interface.</summary>
         internal static Action<ThemeChoice> SelectTheme = UiTheme.Select;
+
         /// <summary>Applique l’habillage sombre aux fenêtres natives du VBE.</summary>
         internal static Action<bool> SelectNativeVbeTheme = VbeNativeTheme.SetEnabled;
+
         /// <summary>Affiche un message natif appartenant à la fenêtre de configuration.</summary>
         internal static Func<IWin32Window, string, string, MessageBoxButtons, MessageBoxIcon, DialogResult> ShowNotice = MessageBox.Show;
+
         /// <summary>Empêche les recalculs imbriqués de hauteur de contenu.</summary>
         private bool fittingContent;
+
         /// <summary>Annulation des opérations d’authentification et de lecture GitHub.</summary>
         private readonly System.Threading.CancellationTokenSource githubCancellation = new System.Threading.CancellationTokenSource();
+
         /// <summary>Indique si une opération GitHub est en cours.</summary>
         private bool githubBusy;
+
         /// <summary>Indique si la première lecture GitHub a été déclenchée.</summary>
         private bool githubLoaded;
+
         /// <summary>Empêche la libération répétée des ressources appartenant à la fenêtre.</summary>
         private bool resourcesDisposed;
+
         /// <summary>Service Git Credential Manager utilisé pour l’authentification GitHub.</summary>
         private GitHubAccountService githubService = new GitHubAccountService();
+
         /// <summary>Fournisseur affiché dont les saisies sont actuellement éditées.</summary>
         private LlmProvider displayedProvider;
+
         /// <summary>Adresses d’API en cours de modification, indexées par fournisseur.</summary>
         private readonly System.Collections.Generic.Dictionary<string, string> endpointDrafts = new System.Collections.Generic.Dictionary<string, string>();
+
         /// <summary>Clés API en cours de modification, indexées par fournisseur.</summary>
         private readonly System.Collections.Generic.Dictionary<string, string> keyDrafts = new System.Collections.Generic.Dictionary<string, string>();
+
         /// <summary>Fournisseurs dont la clé enregistrée doit être supprimée.</summary>
         private readonly System.Collections.Generic.HashSet<string> clearedKeys = new System.Collections.Generic.HashSet<string>();
+
         /// <summary>Identifiants de modèles en cours de modification, indexés par fournisseur.</summary>
         private readonly System.Collections.Generic.Dictionary<string, string> modelDrafts = new System.Collections.Generic.Dictionary<string, string>();
+
         /// <summary>Ollama generation drafts survive provider changes without altering saved settings.</summary>
         private string ollamaTemperatureDraft, ollamaTopPDraft;
 
@@ -208,6 +229,7 @@ namespace VBAi
         /// <param name="e">Données de l’événement WinForms.</param>
         /// <param name="sender">Contrôle à l’origine de l’événement.</param>
         private async void GitHubLogin_Click(object sender, EventArgs e) { await RefreshGitHubAsync(true); }
+
         /// <summary>Actualise la liste des comptes GitHub sauvegardés.</summary>
         /// <param name="e">Données de l’événement WinForms.</param>
         /// <param name="sender">Contrôle à l’origine de l’événement.</param>

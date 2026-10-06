@@ -7,16 +7,26 @@ using System.Runtime.InteropServices;
 
 namespace VBAi
 {
+
     /// <summary>Writes already validated scalar values without the Framework COM descriptor's undersized VARIANT buffer.</summary>
     internal static class VbeScalarProperty
     {
+
         /// <summary>Identifies the attempted write or its subsequent verification without implying rollback.</summary>
-        internal enum FailurePhase { SetterInvocation, RetentionReadback }
+        internal enum FailurePhase {
+
+/// <summary>Identifies the setter invocation case of failure phase.</summary>
+SetterInvocation,
+
+/// <summary>Identifies the retention readback case of failure phase.</summary>
+RetentionReadback }
 
         /// <summary>Private exception-data identity prevents unrelated annotations from being reported as scalar phases.</summary>
         private static readonly object FailurePhaseKey = new object();
 
         /// <summary>Annotates the original exception; diagnostic failures must never replace it.</summary>
+        /// <param name="error">Exception describing the error failure.</param>
+        /// <param name="phase">failure phase that supplies the phase for this operation.</param>
         internal static void AnnotateFailure(Exception error, FailurePhase phase)
         {
             try
@@ -28,6 +38,8 @@ namespace VBAi
         }
 
         /// <summary>Adds bounded phase information at an error-response boundary, leaving direct callers' exception unchanged.</summary>
+        /// <param name="error">Exception describing the error failure.</param>
+        /// <returns>Text produced by the operation for format failure on vbe scalar property.</returns>
         internal static string FormatFailure(Exception error)
         {
             try

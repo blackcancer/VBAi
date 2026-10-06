@@ -11,29 +11,40 @@ using System.Text;
 
 namespace VBAi
 {
+
     /// <summary>Lecture publique d’abord ; GCM seulement si GitHub réclame l’accès au dépôt privé.</summary>
     internal sealed class UpdateFeed : IDisposable
     {
+
         /// <summary>GitHub API endpoint for the product repository.</summary>
         internal const string ApiRoot = "https://api.github.com/repos/blackcancer/VBAi";
-        /// <summary>Stores the load credential settings used by UpdateFeed.</summary>
+
+        /// <summary>Maintains the load credential settings state for update feed.</summary>
         internal static Func<LlmSettings> LoadCredentialSettings = LlmSettings.Load;
-        /// <summary>Stores the read credential used by UpdateFeed.</summary>
+
+        /// <summary>Maintains the read credential state for update feed.</summary>
         internal static Func<string, CancellationToken, Task<string>> ReadCredential = GitHubApi.ReadCredential;
-        /// <summary>Performs the default credential operation for UpdateFeed.</summary>
+
+        /// <summary>Handles default credential for update feed.</summary>
         /// <param name="ct">Token used to cancel the operation.</param>
-        /// <returns>The result produced by this operation.</returns>
+        /// <returns>task&lt;string&gt; produced by the operation for default credential on update feed.</returns>
         private static Task<string> DefaultCredential(CancellationToken ct) => ReadCredential(LoadCredentialSettings().GitHubAccount, ct);
+
         /// <summary>HTTP client used for release metadata and asset downloads.</summary>
         private readonly HttpClient client;
+
         /// <summary>Optional credential provider invoked after an unauthenticated private-repository response.</summary>
         private readonly Func<CancellationToken, Task<string>> credentials;
+
         /// <summary>GitHub token cached for authenticated API requests, or null.</summary>
         private string token;
+
         /// <summary>Whether this feed has already attempted credential acquisition.</summary>
         private bool triedCredentials;
+
         /// <summary>JSON serializer with the accepted release-response size limit.</summary>
         private readonly JavaScriptSerializer json = new JavaScriptSerializer { MaxJsonLength = 4 * 1024 * 1024 };
+
         /// <summary>Creates a feed with optional HTTP and credential providers.</summary>
         /// <param name="handler">Optional HTTP handler for requests.</param><param name="credentials">Optional token provider used for private access.</param>
         internal UpdateFeed(HttpMessageHandler handler = null, Func<CancellationToken, Task<string>> credentials = null)
@@ -41,6 +52,7 @@ namespace VBAi
             client = new HttpClient(handler ?? new HttpClientHandler { AllowAutoRedirect = false }) { Timeout = TimeSpan.FromMinutes(10) };
             this.credentials = credentials ?? DefaultCredential;
         }
+
         /// <summary>Sends one unauthenticated or currently-token-authenticated GET request.</summary>
         /// <param name="url">Absolute request URL.</param><param name="binary">Whether to request an installer asset.</param><param name="ct">Cancellation token.</param>
         /// <returns>HTTP response owned by the caller.</returns>
@@ -58,6 +70,7 @@ namespace VBAi
                 return await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, ct);
             }
         }
+
         /// <summary>Retries one 404 or 401 response once after obtaining repository credentials.</summary>
         /// <param name="url">Absolute request URL.</param><param name="binary">Whether to request binary content.</param><param name="ct">Cancellation token.</param>
         /// <returns>Final HTTP response owned by the caller.</returns>
@@ -72,6 +85,7 @@ namespace VBAi
             }
             return response;
         }
+
         /// <summary>Checks GitHub releases with a two-minute timeout and returns the newest eligible version.</summary>
         /// <param name="current">Installed version used as the lower bound.</param><param name="previews">Whether prereleases are eligible.</param>
         /// <param name="skipped">Version the user chose to skip, or null.</param><param name="ct">Cancellation token.</param>
@@ -82,6 +96,7 @@ namespace VBAi
             using (var timeout = CancellationTokenSource.CreateLinkedTokenSource(ct))
             { timeout.CancelAfter(TimeSpan.FromMinutes(2)); return await CheckCore(current, previews, skipped, timeout.Token); }
         }
+
         /// <summary>Downloads one validated installer with a ten-minute timeout and verifies its length and digest.</summary>
         /// <param name="asset">GitHub asset metadata and expected SHA-256 digest.</param><param name="root">Update cache root.</param>
         /// <param name="progress">Optional percentage progress reporter.</param><param name="ct">Cancellation token.</param>
@@ -92,6 +107,7 @@ namespace VBAi
             using (var timeout = CancellationTokenSource.CreateLinkedTokenSource(ct))
             { timeout.CancelAfter(TimeSpan.FromMinutes(10)); return await DownloadCore(asset, root, progress, timeout.Token); }
         }
+
         /// <summary>Reads a bounded UTF-8 JSON response and strips an optional byte-order mark.</summary>
         /// <param name="content">HTTP response content.</param><param name="ct">Cancellation token.</param><returns>Decoded JSON text.</returns>
         /// <exception cref="InvalidDataException">The response exceeds the 4 MiB limit.</exception>
@@ -106,6 +122,7 @@ namespace VBAi
                 return Encoding.UTF8.GetString(bytes.ToArray()).TrimStart('\ufeff');
             }
         }
+
         /// <summary>Pages through a bounded list of GitHub releases and selects the highest eligible version.</summary>
         /// <param name="current">Installed version lower bound.</param><param name="previews">Whether prereleases are eligible.</param>
         /// <param name="skipped">Version the user chose to skip, or null.</param><param name="ct">Cancellation token.</param>
@@ -132,6 +149,7 @@ namespace VBAi
             }
             return best;
         }
+
         /// <summary>Downloads a bounded installer through validated HTTPS redirects and verifies its SHA-256 digest.</summary>
         /// <param name="asset">Expected GitHub asset metadata.</param><param name="root">Update cache root.</param>
         /// <param name="progress">Optional percentage progress reporter.</param><param name="ct">Cancellation token.</param>
@@ -183,6 +201,7 @@ namespace VBAi
             }
             finally { if (File.Exists(temporary)) File.Delete(temporary); }
         }
+
         /// <summary>Disposes the HTTP client owned by this feed.</summary>
         public void Dispose() { client.Dispose(); }
     }

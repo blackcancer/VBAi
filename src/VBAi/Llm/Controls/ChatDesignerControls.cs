@@ -6,9 +6,11 @@ using System.Windows.Forms;
 
 namespace VBAi
 {
+
     /// <summary>Fonctions de dessin partagées par les contrôles visuels de conversation.</summary>
     internal static class ChatControlPainting
     {
+
         /// <summary>Construit un chemin graphique rectangulaire aux coins arrondis.</summary>
         /// <param name="bounds">Rectangle à arrondir.</param>
         /// <param name="radius">Rayon nominal des coins, limité aux dimensions disponibles.</param>
@@ -34,6 +36,7 @@ namespace VBAi
     [ToolboxItem(true)]
     public class ChatChoiceBox : UiComboBox
     {
+
         /// <summary>Creates a choice-only selector with the shared input appearance.</summary>
         public ChatChoiceBox() { DropDownStyle = ComboBoxStyle.DropDownList; }
     }
@@ -42,12 +45,15 @@ namespace VBAi
     [ToolboxItem(true)]
     public class ChatComposerPanel : TableLayoutPanel
     {
+
         /// <summary>Whether a boundary is drawn around this surface.</summary>
-        /// <value>The current value represented by this member.</value>
+        /// <value>Current show border exposed by chat composer panel.</value>
         [Category("Appearance"), DefaultValue(true)]
         public bool ShowBorder { get; set; } = true;
+
         /// <summary>Crée le panneau de composition avec double tampon et fond blanc.</summary>
         public ChatComposerPanel() { DoubleBuffered = true; BackColor = Color.White; }
+
         /// <summary>Dessine le fond arrondi sans effacer la surface par défaut.</summary>
         /// <param name="e">Données de l’événement graphique ou pointeur.</param>
         protected override void OnPaintBackground(PaintEventArgs e)

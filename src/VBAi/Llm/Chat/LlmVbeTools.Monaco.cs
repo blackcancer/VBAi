@@ -6,17 +6,22 @@ using System.Windows.Forms;
 
 namespace VBAi
 {
+
     /// <summary>Expose les outils du chat qui inspectent ou modifient le code VBA.</summary>
     internal sealed partial class LlmVbeTools
     {
+
         /// <summary>Fabrique la fenêtre d’éditeur moderne, avec possibilité de la créer.</summary>
         internal Func<bool, ModernEditorWindow> MonacoWindow;
+
         /// <summary>Résout un module dans l’éditeur moderne pour un projet et un module précis.</summary>
         internal Func<string, string, IEditorModule> MonacoModule;
+
         /// <summary>Retourne la fenêtre moderne injectée ou celle portée par la session.</summary>
         /// <param name="create">Autorise la création de la fenêtre si elle n’existe pas.</param>
         /// <returns>Fenêtre associée à cette session, ou <see langword="null"/> si aucune n’est disponible.</returns>
         private ModernEditorWindow EditorWindow(bool create) => MonacoWindow != null ? MonacoWindow(create) : session?.ModernEditor?.Invoke(create);
+
         /// <summary>Résout le module dans le résolveur injecté ou dans la session VBE.</summary>
         /// <param name="project">Clé du projet à résoudre.</param><param name="module">Nom du module exact.</param>
         /// <returns>Adaptateur du module dans l’éditeur moderne.</returns>
@@ -31,6 +36,7 @@ namespace VBAi
             var fields = new[] { "Project", "Module" }.Concat(extra).ToArray();
             return Definition(name, description, fields, fields);
         }
+
         /// <summary>Définitions des outils d’ouverture, lecture, navigation, édition et synchronisation Monaco.</summary>
         /// <value>Définitions JSON offertes au modèle.</value>
         private static object[] MonacoDefinitions => new[] {

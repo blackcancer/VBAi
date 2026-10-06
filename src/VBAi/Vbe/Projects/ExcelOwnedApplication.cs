@@ -6,9 +6,11 @@ using Microsoft.CSharp.RuntimeBinder;
 
 namespace VBAi
 {
+
     /// <summary>Resolves Excel through a document window belonging to the VBE host process.</summary>
     internal static class ExcelOwnedApplication
     {
+
         /// <summary>Uses Office NativeOM before the registered application fallback; callers retain their PID guard.</summary>
         /// <param name="processId">Exact owning process.</param>
         /// <param name="registeredApplication">Compatibility fallback when no native document is available.</param>

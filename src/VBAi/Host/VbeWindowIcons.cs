@@ -3,9 +3,11 @@ using System.Drawing;
 
 namespace VBAi
 {
+
     /// <summary>Charge les icônes et images du complément depuis ses ressources embarquées.</summary>
     internal static class VbeWindowIcons
     {
+
         /// <summary>Charge une icône ICO par nom de ressource et retourne une copie indépendante.</summary>
         /// <param name="name">Nom logique de la ressource, sans extension.</param>
         /// <returns>Icône clonée, ou null si la ressource est absente.</returns>

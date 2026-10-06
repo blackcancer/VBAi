@@ -8,6 +8,7 @@ namespace VBAi
     /// <summary>Crée le lecteur pour l’instance VBE fournie.</summary>
     internal sealed partial class VbeEditorWindows
     {
+
         /// <summary>Instance VBE dont les collections sont inspectées.</summary>
         private readonly dynamic vbe;
 

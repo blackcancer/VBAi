@@ -8,35 +8,50 @@ using System.Windows.Forms;
 
 namespace VBAi
 {
+
     /// <summary>Configuration et pilotage manuel des mises à jour ; aucune requête dans le constructeur Designer.</summary>
     internal sealed partial class UpdateWindow : Form
     {
+
         /// <summary>Release currently displayed in the window.</summary>
         private UpdateRelease release;
+
         /// <summary>Verified download path, or null before the selected installer is staged.</summary>
         private string downloaded;
+
         /// <summary>Whether an asynchronous check, download, or install action is active.</summary>
         private bool busy;
+
         /// <summary>Cancellation source for feed checks and downloads owned by this window.</summary>
         private readonly CancellationTokenSource cancellation = new CancellationTokenSource();
-        /// <summary>Stores the runtime disposed used by UpdateWindow.</summary>
+
+        /// <summary>Maintains the runtime disposed state for update window.</summary>
         private bool runtimeDisposed;
+
         /// <summary>Factory for the release feed.</summary>
         internal Func<UpdateFeed> CreateFeed = () => new UpdateFeed();
+
         /// <summary>Reads persisted update preferences.</summary>
         internal Func<UpdatePreferences> ReadPreferences = () => UpdateState.Load();
+
         /// <summary>Persists update preferences.</summary>
         internal Action<UpdatePreferences> StorePreferences = p => UpdateState.Save(p);
+
         /// <summary>Checks whether the current deployment is installer-managed.</summary>
         internal Func<bool> ManagedInstallation = () => UpdateInstallation.IsManaged(UpdateState.InstallationDirectory);
+
         /// <summary>Schedules a verified release installer with the separate updater process.</summary>
         internal Action<UpdateRelease, string, bool> Schedule = UpdateCoordinator.Schedule;
-        /// <summary>Stores the check release used by UpdateWindow.</summary>
+
+        /// <summary>Maintains the check release state for update window.</summary>
         internal Func<UpdateFeed, UpdateVersion, bool, CancellationToken, Task<UpdateRelease>> CheckRelease = (feed, version, previews, token) => feed.Check(version, previews, null, token);
-        /// <summary>Stores the download installer used by UpdateWindow.</summary>
+
+        /// <summary>Maintains the download installer state for update window.</summary>
         internal Func<UpdateFeed, UpdateAsset, string, IProgress<int>, CancellationToken, Task<string>> DownloadInstaller = (feed, asset, root, progress, token) => feed.Download(asset, root, progress, token);
-        /// <summary>Stores the run background used by UpdateWindow.</summary>
+
+        /// <summary>Maintains the run background state for update window.</summary>
         internal Func<Action, Task> RunBackground = action => Task.Run(action);
+
         /// <summary>Creates the update settings window without starting a check in Designer mode.</summary>
         public UpdateWindow()
         {
@@ -49,6 +64,7 @@ namespace VBAi
             version.TextAlign = description.TextAlign = UiText.Culture.TextInfo.IsRightToLeft ? ContentAlignment.TopRight : ContentAlignment.TopLeft;
             ApplyAppearance(); UiTheme.Changed += ApplyAppearance;
         }
+
         /// <summary>Loads preferences and cached release data, then starts an automatic check when configured.</summary>
         /// <param name="e">Shown event data.</param>
         protected override void OnShown(EventArgs e)
@@ -81,6 +97,7 @@ namespace VBAi
             }
             catch (Exception) { status.Text = UiText.Get("Unable to read the update state."); }
         }
+
         /// <summary>Applies the current theme to update actions and the release notes pane.</summary>
         private void ApplyAppearance()
         {
@@ -89,6 +106,7 @@ namespace VBAi
             check.BackColor = UiTheme.HighContrast() ? SystemColors.Highlight : Color.FromArgb(37, 99, 235);
             check.ForeColor = UiTheme.HighContrast() ? SystemColors.HighlightText : Color.White;
         }
+
         /// <summary>Paints a theme-aware face for an action that is currently disabled.</summary>
         /// <param name="sender">Button being painted.</param><param name="e">Paint graphics and clip data.</param>
         private void PaintDisabled(object sender, PaintEventArgs e)
@@ -125,6 +143,7 @@ namespace VBAi
             preferences.IncludePrereleases = previews.Checked;
             StorePreferences(preferences);
         }
+
         /// <summary>Saves automatic checks, downloads, installation, and prerelease preferences.</summary>
         /// <param name="sender">Save button.</param><param name="e">Click event data.</param>
         private void Save_Click(object sender, EventArgs e)
@@ -132,6 +151,7 @@ namespace VBAi
             try { SavePreferences(); status.Text = UiText.Get("Update preferences saved."); }
             catch (Exception) { status.Text = UiText.Get("Unable to save update preferences."); }
         }
+
         /// <summary>Enables automatic installation only when automatic download is selected.</summary>
         /// <param name="sender">Download preference control.</param><param name="e">Change event data.</param>
         private void DownloadPreferenceChanged(object sender, EventArgs e)
@@ -140,6 +160,7 @@ namespace VBAi
             automaticInstall.Enabled = !busy && ManagedInstallation() && automaticDownload.Checked;
             if (!automaticDownload.Checked) automaticInstall.Checked = false;
         }
+
         /// <summary>Checks the release feed and displays the newest eligible release.</summary>
         /// <param name="sender">Check button.</param><param name="e">Click event data.</param>
         private async void Check_Click(object sender, EventArgs e)
@@ -161,6 +182,7 @@ namespace VBAi
             catch (Exception) { if (!IsDisposed) status.Text = UiText.Get("Unable to check for updates. Check the GitHub account or retry later."); }
             finally { if (!IsDisposed) SetBusy(false); }
         }
+
         /// <summary>Downloads the selected release installer while reporting progress.</summary>
         /// <param name="sender">Download button.</param><param name="e">Click event data.</param>
         private async void Download_Click(object sender, EventArgs e)
@@ -176,6 +198,7 @@ namespace VBAi
             catch (Exception) { if (!IsDisposed) status.Text = UiText.Get("Unable to download or verify the installer."); }
             finally { if (!IsDisposed) SetBusy(false); }
         }
+
         /// <summary>Schedules the staged installer through the separate updater process.</summary>
         /// <param name="sender">Install button.</param><param name="e">Click event data.</param>
         private async void Install_Click(object sender, EventArgs e)
@@ -186,6 +209,7 @@ namespace VBAi
             catch (Exception) { if (!IsDisposed) status.Text = UiText.Get("Unable to schedule the update."); }
             finally { if (!IsDisposed) { SetBusy(false); install.Enabled = false; } }
         }
+
         /// <summary>Saves the displayed version as skipped and closes the window.</summary>
         /// <param name="sender">Skip button.</param><param name="e">Click event data.</param>
         private void Skip_Click(object sender, EventArgs e)
@@ -194,6 +218,7 @@ namespace VBAi
             try { var p = ReadPreferences(); p.SkippedVersion = release.Version.Text; StorePreferences(p); status.Text = UiText.Get("This version will be skipped automatically."); }
             catch (Exception) { status.Text = UiText.Get("Unable to save update preferences."); }
         }
+
         /// <summary>Marks an unfinished installation job as cancelled.</summary>
         /// <param name="sender">Cancel-pending button.</param><param name="e">Click event data.</param>
         private void CancelPending_Click(object sender, EventArgs e)
@@ -211,6 +236,7 @@ namespace VBAi
             catch (IOException) { status.Text = UiText.Get("Installing update…"); }
             catch (Exception) { status.Text = UiText.Get("Unable to read the update state."); }
         }
+
         /// <summary>Updates operation state and action availability while work is active.</summary>
         /// <param name="value">Whether an operation is active.</param>
         private void SetBusy(bool value)
@@ -222,10 +248,13 @@ namespace VBAi
             skip.Enabled = !value && release != null;
             progress.Visible = value; progress.Style = ProgressBarStyle.Marquee;
         }
+
         /// <summary>Cancels outstanding asynchronous work as the window closes.</summary><param name="e">Form-closing event data.</param>
         protected override void OnFormClosing(FormClosingEventArgs e) { cancellation.Cancel(); base.OnFormClosing(e); }
+
         /// <summary>Removes theme notifications and disposes the cancellation source.</summary>
         private void DisposeRuntime() { if (runtimeDisposed) return; runtimeDisposed = true; UiTheme.Changed -= ApplyAppearance; cancellation.Cancel(); cancellation.Dispose(); }
+
         /// <summary>Opens the update window as a modal child of the VBE host.</summary><param name="vbe">VBE automation object.</param>
         internal static void ShowForVbe(object vbe)
         {
@@ -233,9 +262,14 @@ namespace VBAi
             try { owner = new VbeOwner(new IntPtr(Convert.ToInt64(((dynamic)vbe).MainWindow.HWnd))); } catch (Exception) { }
             using (var window = new UpdateWindow()) AddIn.ShowModal(window, owner);
         }
+
         /// <summary>WinForms owner wrapper around the native VBE main window.</summary>
-        private sealed class VbeOwner : IWin32Window { /// <summary>Creates a modal owner wrapper.</summary><param name="handle">VBE main-window handle.</param>
-internal VbeOwner(IntPtr handle) { Handle = handle; } /// <summary>Gets the native window handle used as the modal owner.</summary><value>VBE main-window handle.</value>
+        private sealed class VbeOwner : IWin32Window {
+
+/// <summary>Creates a modal owner wrapper.</summary><param name="handle">VBE main-window handle.</param>
+internal VbeOwner(IntPtr handle) { Handle = handle; }
+
+/// <summary>Gets the native window handle used as the modal owner.</summary><value>VBE main-window handle.</value>
 public IntPtr Handle { get; } }
     }
 }

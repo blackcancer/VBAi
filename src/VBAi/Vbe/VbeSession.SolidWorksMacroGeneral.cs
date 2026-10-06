@@ -1,12 +1,19 @@
-﻿using System;
+using System;
 using System.Threading.Tasks;
 
 namespace VBAi
 {
+
+    /// <summary>Owns the vbe session state and operations.</summary>
     internal sealed partial class VbeSession
     {
         // Only the already authorized publication may perform this nested read.
         // Public General dispatch remains excluded while a macro operation owns the STA.
+        /// <summary>Reads publication general async for vbe session.</summary>
+        /// <param name="source">request that supplies the source for this operation.</param>
+        /// <param name="authorize">action&lt;bool&gt; that supplies the authorize for this operation.</param>
+        /// <param name="context">action that supplies the context for this operation.</param>
+        /// <returns>task&lt;object&gt; produced by the operation for read publication general async on vbe session.</returns>
         private async Task<object> ReadPublicationGeneralAsync(Request source, Action<bool> authorize, Action context)
         {
             context();

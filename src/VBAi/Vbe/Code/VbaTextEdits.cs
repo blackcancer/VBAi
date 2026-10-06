@@ -10,6 +10,7 @@ namespace VBAi
     /// <summary>Applique des transformations explicites à des lignes de code VBA sans revendiquer de résolution sémantique.</summary>
     internal static class VbaTextEdits
     {
+
         /// <summary>Transforme la plage de lignes sélectionnée selon l’action de remplacement, commentaire ou indentation demandée.</summary>
         /// <param name="source">Source VBA complète avant modification.</param>
         /// <param name="request">Action, plage, texte et options de correspondance.</param>

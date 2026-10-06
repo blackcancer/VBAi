@@ -4,18 +4,36 @@ using System.Windows.Forms;
 
 namespace VBAi
 {
+
     /// <summary>Review-only controls, independent of live VBA project services.</summary>
     internal sealed partial class TestSupportReviewDialog
     {
+
+        /// <summary>Maintains the components state for test support review dialog.</summary>
         private IContainer components;
+
+        /// <summary>Maintains the layout state for test support review dialog.</summary>
         private TableLayoutPanel layout;
+
+        /// <summary>Maintains the project label state for test support review dialog.</summary>
         private Label projectLabel;
+
+        /// <summary>Maintains the explanation state for test support review dialog.</summary>
         private Label explanation;
+
+        /// <summary>Maintains the diff state for test support review dialog.</summary>
         private CodeDiffView diff;
+
+        /// <summary>Maintains the actions state for test support review dialog.</summary>
         private FlowLayoutPanel actions;
+
+        /// <summary>Maintains the apply state for test support review dialog.</summary>
         private UiActionButton apply;
+
+        /// <summary>Tracks the cancel state of test support review dialog.</summary>
         private UiActionButton cancel;
 
+        /// <summary>Handles initialize component for test support review dialog.</summary>
         private void InitializeComponent()
         {
             components = new Container();
@@ -87,6 +105,8 @@ namespace VBAi
             ResumeLayout(false);
         }
 
+        /// <summary>Disposes  for test support review dialog.</summary>
+        /// <param name="disposing">Indicates whether disposing is enabled.</param>
         protected override void Dispose(bool disposing)
         {
             if (disposing) components?.Dispose();

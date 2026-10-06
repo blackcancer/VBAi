@@ -5,13 +5,26 @@ using System.Threading;
 
 namespace VBAi
 {
+
     /// <summary>Versioned project-local callback; it never executes VBA or grants execution authority.</summary>
     [ComVisible(true), Guid("DB1B3DAD-A7EC-48CD-A6BE-AB4667524D47"), InterfaceType(ComInterfaceType.InterfaceIsIDispatch)]
     public interface IVbaTestResultSink
     {
+
         /// <summary>Claims the pending call once; returns nonce, module, procedure, phase, revision, run and test.</summary>
+        /// <param name="project">object that supplies the project for this operation.</param>
+        /// <param name="hostPath">Path used for the host path being processed.</param>
+        /// <param name="supportVersion">Text that supplies the support version value. Use the format required by the calling operation.</param>
+        /// <returns>object produced by the operation for request on i vba test result sink.</returns>
         [DispId(1)] object Request(object project, string hostPath, string supportVersion);
+
         /// <summary>Publishes one bounded verdict for the claimed call; native completion remains mandatory.</summary>
+        /// <param name="nonce">Text that supplies the nonce value. Use the format required by the calling operation.</param>
+        /// <param name="revision">Text that supplies the revision value. Use the format required by the calling operation.</param>
+        /// <param name="status">Text that supplies the status value. Use the format required by the calling operation.</param>
+        /// <param name="message">Text that supplies the message value. Use the format required by the calling operation.</param>
+        /// <param name="errorNumber">int that supplies the error number for this operation.</param>
+        /// <returns>Boolean indicating the result of the check for publish on i vba test result sink.</returns>
         [DispId(2)] bool Publish(string nonce, string revision, string status, string message, int errorNumber);
     }
 
@@ -19,23 +32,53 @@ namespace VBAi
     [ComVisible(true), Guid("744E3C39-BF87-49EA-926A-8B6D07F1A0DF"), ClassInterface(ClassInterfaceType.None), ComDefaultInterface(typeof(IVbaTestResultSink))]
     public sealed class VbaTestResultSink : IVbaTestResultSink, IDisposable
     {
+
+        /// <summary>Maintains the owner thread state for vba test result sink.</summary>
         private readonly int ownerThread = Thread.CurrentThread.ManagedThreadId;
+
+        /// <summary>Maintains the same project state for vba test result sink.</summary>
         private readonly Func<object, object, bool> sameProject;
+
+        /// <summary>Maintains the gate state for vba test result sink.</summary>
         private readonly object gate = new object();
+
+        /// <summary>Maintains the active state for vba test result sink.</summary>
         private Attempt active;
+
+        /// <summary>Maintains the disposed and uncertain state for vba test result sink.</summary>
         private bool disposed, uncertain;
 
+        /// <summary>Owns the attempt state and operations.</summary>
         private sealed class Attempt
         {
+
+            /// <summary>Maintains the project state for attempt.</summary>
             internal object Project;
+
+            /// <summary>Identifies the path and version and signature and nonce and revision and run id and module and procedure and test id and phase and fault associated with attempt.</summary>
             internal string Path, Version, Signature, Nonce, Revision, RunId, Module, Procedure, TestId, Phase, Fault;
+
+            /// <summary>Maintains the started and claimed and published state for attempt.</summary>
             internal bool Started, Claimed, Published;
+
+            /// <summary>Maintains the verdict state for attempt.</summary>
             internal object[] Verdict;
         }
 
+        /// <summary>Initializes a VbaTestResultSink instance with the supplied state.</summary>
+        /// <param name="sameProject">func&lt;object, object, bool&gt; that supplies the same project for this operation.</param>
         internal VbaTestResultSink(Func<object, object, bool> sameProject = null)
         { this.sameProject = sameProject ?? VbeDebug.NativeProcedureValuesHost.SameComIdentity; }
 
+        /// <summary>Handles arm for vba test result sink.</summary>
+        /// <param name="project">object that supplies the project for this operation.</param>
+        /// <param name="path">Path used for the path being processed.</param>
+        /// <param name="supportVersion">Text that supplies the support version value. Use the format required by the calling operation.</param>
+        /// <param name="revision">Text that supplies the revision value. Use the format required by the calling operation.</param>
+        /// <param name="runId">Text that supplies the run id value. Use the format required by the calling operation.</param>
+        /// <param name="test">vba test descriptor that supplies the test for this operation.</param>
+        /// <param name="phase">Text that supplies the phase value. Use the format required by the calling operation.</param>
+        /// <param name="supportSignature">Text that supplies the support signature value. Use the format required by the calling operation.</param>
         internal void Arm(object project, string path, string supportVersion, string revision,
             string runId, VbaTestDescriptor test, string phase, string supportSignature = null)
         {
@@ -57,11 +100,18 @@ namespace VBAi
             }
         }
 
+        /// <summary>Handles bind runtime for vba test result sink.</summary>
+        /// <returns>Text produced by the operation for bind runtime on vba test result sink.</returns>
         internal string BindRuntime()
         {
             lock (gate) { RequireCallback(); return active.Nonce; }
         }
 
+        /// <summary>Handles request local for vba test result sink.</summary>
+        /// <param name="binding">Text that supplies the binding value. Use the format required by the calling operation.</param>
+        /// <param name="supportVersion">Text that supplies the support version value. Use the format required by the calling operation.</param>
+        /// <param name="supportSignature">Text that supplies the support signature value. Use the format required by the calling operation.</param>
+        /// <returns>object produced by the operation for request local on vba test result sink.</returns>
         internal object RequestLocal(string binding, string supportVersion, string supportSignature)
         {
             lock (gate)
@@ -76,6 +126,16 @@ namespace VBAi
             }
         }
 
+        /// <summary>Handles publish local for vba test result sink.</summary>
+        /// <param name="binding">Text that supplies the binding value. Use the format required by the calling operation.</param>
+        /// <param name="nonce">Text that supplies the nonce value. Use the format required by the calling operation.</param>
+        /// <param name="revision">Text that supplies the revision value. Use the format required by the calling operation.</param>
+        /// <param name="runId">Text that supplies the run id value. Use the format required by the calling operation.</param>
+        /// <param name="testId">Text that supplies the test id value. Use the format required by the calling operation.</param>
+        /// <param name="status">Text that supplies the status value. Use the format required by the calling operation.</param>
+        /// <param name="message">Text that supplies the message value. Use the format required by the calling operation.</param>
+        /// <param name="errorNumber">int that supplies the error number for this operation.</param>
+        /// <returns>Boolean indicating the result of the check for publish local on vba test result sink.</returns>
         internal bool PublishLocal(string binding, string nonce, string revision, string runId, string testId,
             string status, string message, int errorNumber)
         {
@@ -88,9 +148,15 @@ namespace VBAi
             }
         }
 
+        /// <summary>Gets the has verdict.</summary>
+        /// <value>Current has verdict exposed by vba test result sink.</value>
         internal bool HasVerdict { get { lock (gate) { return active?.Published == true; } } }
+
+        /// <summary>Gets the has fault.</summary>
+        /// <value>Current has fault exposed by vba test result sink.</value>
         internal bool HasFault { get { lock (gate) { return active?.Fault != null; } } }
 
+        /// <summary>Handles begin native for vba test result sink.</summary>
         internal void BeginNative()
         {
             RequireOwner();
@@ -102,6 +168,11 @@ namespace VBAi
         }
 
         /// <inheritdoc/>
+        /// <summary>Handles request for vba test result sink.</summary>
+        /// <param name="project">object that supplies the project for this operation.</param>
+        /// <param name="hostPath">Path used for the host path being processed.</param>
+        /// <param name="supportVersion">Text that supplies the support version value. Use the format required by the calling operation.</param>
+        /// <returns>object produced by the operation for request on vba test result sink.</returns>
         public object Request(object project, string hostPath, string supportVersion)
         {
             lock (gate)
@@ -118,6 +189,13 @@ namespace VBAi
         }
 
         /// <inheritdoc/>
+        /// <summary>Handles publish for vba test result sink.</summary>
+        /// <param name="nonce">Text that supplies the nonce value. Use the format required by the calling operation.</param>
+        /// <param name="revision">Text that supplies the revision value. Use the format required by the calling operation.</param>
+        /// <param name="status">Text that supplies the status value. Use the format required by the calling operation.</param>
+        /// <param name="message">Text that supplies the message value. Use the format required by the calling operation.</param>
+        /// <param name="errorNumber">int that supplies the error number for this operation.</param>
+        /// <returns>Boolean indicating the result of the check for publish on vba test result sink.</returns>
         public bool Publish(string nonce, string revision, string status, string message, int errorNumber)
         {
             lock (gate)
@@ -134,6 +212,10 @@ namespace VBAi
             }
         }
 
+        /// <summary>Handles complete native for vba test result sink.</summary>
+        /// <param name="completed">Indicates whether completed is enabled.</param>
+        /// <param name="nativeError">Text that supplies the native error value. Use the format required by the calling operation.</param>
+        /// <returns>object produced by the operation for complete native on vba test result sink.</returns>
         internal object CompleteNative(bool completed, string nativeError = null)
         {
             RequireOwner();
@@ -152,6 +234,7 @@ namespace VBAi
             }
         }
 
+        /// <summary>Determines whether it can cel undispatched for vba test result sink.</summary>
         internal void CancelUndispatched()
         {
             RequireOwner();
@@ -162,22 +245,35 @@ namespace VBAi
             }
         }
 
+        /// <summary>Requires callback for vba test result sink.</summary>
         private void RequireCallback()
         {
             if (Thread.CurrentThread.ManagedThreadId != ownerThread || disposed || active == null || !active.Started || active.Fault != null)
                 Reject("The callback channel is not available on this owning thread and attempt.");
         }
 
+        /// <summary>Handles reject for vba test result sink.</summary>
+        /// <param name="reason">Text that supplies the reason value. Use the format required by the calling operation.</param>
+        /// <returns>object produced by the operation for reject on vba test result sink.</returns>
         private object Reject(string reason)
         {
             if (active?.Started == true && active.Fault == null) active.Fault = reason;
             throw new InvalidOperationException(reason);
         }
 
+        /// <summary>Requires owner for vba test result sink.</summary>
         private void RequireOwner()
         { if (Thread.CurrentThread.ManagedThreadId != ownerThread) throw new InvalidOperationException("The callback channel requires its owning thread."); }
 
+        /// <summary>Handles bound for vba test result sink.</summary>
+        /// <param name="value">Text that supplies the value value. Use the format required by the calling operation.</param>
+        /// <param name="maximum">int that supplies the maximum for this operation.</param>
+        /// <returns>Boolean indicating the result of the check for bound on vba test result sink.</returns>
         private static bool Bound(string value, int maximum) => !string.IsNullOrWhiteSpace(value) && value.Length <= maximum;
+
+        /// <summary>Handles valid phase for vba test result sink.</summary>
+        /// <param name="value">Text that supplies the value value. Use the format required by the calling operation.</param>
+        /// <returns>Boolean indicating the result of the check for valid phase on vba test result sink.</returns>
         private static bool ValidPhase(string value) => value == "Test" || value == "ModuleInitialize" || value == "ModuleCleanup"
             || value == "TestInitialize" || value == "TestCleanup";
 

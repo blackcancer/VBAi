@@ -1,37 +1,53 @@
 namespace VBAi
 {
+
     /// <summary>Displays a proposed code change with its diff and available undo actions.</summary>
     public sealed partial class ChatChangeCardView
     {
+
         /// <summary>Container that owns the disposable components created by the WinForms Designer.</summary>
         private System.ComponentModel.IContainer components;
+
         /// <summary>ToolTip component used to show full text for transcript controls.</summary>
         private System.Windows.Forms.ToolTip toolTips;
+
         /// <summary>Flow layout panel that contains this transcript view&apos;s child controls.</summary>
         private ChatComposerPanel layout;
+
         /// <summary>Displays the VBA component containing the proposed change.</summary>
         internal ChatActionButton module;
+
         /// <summary>Displays the number of changed lines or blocks.</summary>
         internal System.Windows.Forms.Label count;
-        /// <summary>Stores the section used by ChatChangeCardView.</summary>
+
+        /// <summary>Maintains the section state for chat change card view.</summary>
         internal ChatDisclosureView section;
+
         /// <summary>Displays the code diff for the proposed change.</summary>
         internal CodeDiffView diff;
+
         /// <summary>Provides the action that reverts the proposed code change.</summary>
         internal ChatActionButton undo;
+
         /// <summary>Contains the individual change blocks that can be undone.</summary>
         internal ChatActionButton blocks;
+
         /// <summary>Provides the action that undoes the complete assistant turn.</summary>
         internal ChatActionButton undoTurn;
+
         /// <summary>Context menu for actions on an individual code change block.</summary>
         internal System.Windows.Forms.ContextMenuStrip blockMenu;
+
         /// <summary>Contains the actions available for this change card.</summary>
         internal System.Windows.Forms.FlowLayoutPanel actions;
+
         /// <summary>Displays the current status of the proposed code change.</summary>
         internal System.Windows.Forms.Label state;
+
         /// <summary>Releases the Designer components.</summary>
         /// <param name="disposing">Whether to release managed resources.</param>
         protected override void Dispose(bool disposing) { if (disposing) components?.Dispose(); base.Dispose(disposing); }
+
         /// <summary>Creates and configures the chat change card view controls serialized by the WinForms Designer.</summary>
         private void InitializeComponent()
         {

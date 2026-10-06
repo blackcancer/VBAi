@@ -5,20 +5,36 @@ using System.Text.RegularExpressions;
 
 namespace VBAi
 {
+
     /// <summary>Source candidates only: never claims a complete runtime Locals inventory.</summary>
     internal static class VbaLocalScalarCandidates
     {
+
+        /// <summary>Owns the candidate state and operations.</summary>
         internal sealed class Candidate
         {
+
+            /// <summary>Maintains the name and expression and kind and type name and reason state for candidate.</summary>
             public string Name, Expression, Kind, TypeName, Reason;
+
+            /// <summary>Maintains the line and column state for candidate.</summary>
             public int Line, Column;
+
+            /// <summary>Maintains the eligible state for candidate.</summary>
             public bool Eligible;
         }
 
+        /// <summary>Maintains the scalar types state for vba local scalar candidates.</summary>
         private static readonly HashSet<string> ScalarTypes = new HashSet<string>(StringComparer.OrdinalIgnoreCase) {
             "Boolean", "Byte", "Integer", "Long", "LongLong", "LongPtr", "Single", "Double", "Currency", "Date", "String"
         };
 
+        /// <summary>Reads  for vba local scalar candidates.</summary>
+        /// <param name="source">Text that supplies the source value. Use the format required by the calling operation.</param>
+        /// <param name="procedure">Text that supplies the procedure value. Use the format required by the calling operation.</param>
+        /// <param name="first">int that supplies the first for this operation.</param>
+        /// <param name="last">int that supplies the last for this operation.</param>
+        /// <returns>candidate[] produced by the operation for read on vba local scalar candidates.</returns>
         internal static Candidate[] Read(string source, string procedure, int first, int last)
         {
             if (source == null || string.IsNullOrWhiteSpace(procedure) || first < 1 || last < first)

@@ -1,46 +1,67 @@
 namespace VBAi
 {
+
     /// <summary>Designer-generated pull-request list, composition, and review pages.</summary>
     public sealed partial class GitHubPullRequestsView
     {
+
         /// <summary>Root layout for pull list and review tabs.</summary>
         internal System.Windows.Forms.TableLayoutPanel pullLayout;
+
         /// <summary>Actions for loading and opening pull requests.</summary>
         internal System.Windows.Forms.FlowLayoutPanel pullActions;
+
         /// <summary>Composition and review page selector.</summary>
         internal VBAi.ThemedTabControl pullTabs;
+
         /// <summary>Pull-request composition page.</summary>
         internal System.Windows.Forms.TabPage composeTab;
+
         /// <summary>Pull-request detail page.</summary>
         internal System.Windows.Forms.TabPage detailTab;
+
         /// <summary>Changed-files page.</summary>
         internal System.Windows.Forms.TabPage filesTab;
+
         /// <summary>Review-comments page.</summary>
         internal System.Windows.Forms.TabPage commentsTab;
+
         /// <summary>Continuous-integration checks page.</summary>
         internal System.Windows.Forms.TabPage checksTab;
+
         /// <summary>Pull requests for the selected repository.</summary>
         internal VBAi.UiListBox pulls;
+
         /// <summary>Loads pull requests from GitHub.</summary>
         internal VBAi.ThemedButton loadPulls;
+
         /// <summary>Opens the selected pull request.</summary>
         internal VBAi.ThemedButton openPull;
+
         /// <summary>Loads a saved pull-request draft.</summary>
         internal VBAi.ThemedButton loadDraft;
+
         /// <summary>Pull-request composition editor.</summary>
         internal VBAi.GitHubPullComposeView gitHubPullComposeView;
+
         /// <summary>Selected pull-request summary and metadata.</summary>
         internal VBAi.GitHubPullDetailsView gitHubPullDetailsView;
+
         /// <summary>Changed files for the selected pull request.</summary>
         internal VBAi.GitHubPullFilesView gitHubPullFilesView;
+
         /// <summary>Review comments for the selected pull request.</summary>
         internal VBAi.GitHubPullCommentsView gitHubPullCommentsView;
+
         /// <summary>CI check results for the selected pull request.</summary>
         internal VBAi.GitHubPullChecksView gitHubPullChecksView;
+
         /// <summary>Container that owns Designer components.</summary>
         private System.ComponentModel.IContainer components;
+
         /// <summary>Tooltips associated with pull-request actions.</summary>
         private System.Windows.Forms.ToolTip toolTips;
+
         /// <summary>Libère les composants de la vue avant son contrôle natif.</summary>
         /// <param name="disposing">Indique si les ressources managées doivent être libérées.</param>
         protected override void Dispose(bool disposing)

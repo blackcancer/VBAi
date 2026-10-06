@@ -6,6 +6,7 @@ using System.Linq;
 
 namespace VBAi
 {
+
     /// <summary>Construit en lecture seule un plan limité de duplication de Frames et de leurs contrôles directs.</summary>
     internal sealed partial class VbeForms
     {

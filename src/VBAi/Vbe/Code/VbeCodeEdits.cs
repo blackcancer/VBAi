@@ -6,23 +6,33 @@ using System.Text;
 
 namespace VBAi
 {
+
     /// <summary>Applique des modifications VBA bornées et conserve un historique de session distinct de l’historique natif VBE.</summary>
     internal sealed partial class VbeCodeEdits
     {
+
         /// <summary>Exécuteur des commandes de lecture et remplacement des modules.</summary>
         private readonly Func<Request, Response> execute;
+
         /// <summary>Entrées d’édition disponibles pour annulation.</summary>
         private readonly List<Entry> undo = new List<Entry>();
+
         /// <summary>Entrées d’édition disponibles pour rétablissement.</summary>
         private readonly List<Entry> redo = new List<Entry>();
+
         /// <summary>Indique qu’une écriture provient d’une annulation ou d’un rétablissement.</summary>
         private bool replaying;
+
         /// <summary>Transition de source conservée dans l’historique local à la session.</summary>
-        private sealed class Entry { /// <summary>Stores the project,module,before,after used by Entry.</summary>
+        private sealed class Entry {
+
+/// <summary>Maintains the project and module and before and after state for entry.</summary>
 internal string Project, Module, Before, After; }
+
         /// <summary>Crée l’éditeur transactionnel avec un exécuteur de commandes VBE.</summary>
         /// <param name="execute">Transport des commandes VBE.</param>
         internal VbeCodeEdits(Func<Request, Response> execute) { this.execute = execute; }
+
         /// <summary>Ajoute une transition de code à l’historique borné de session et vide le rétablissement.</summary>
         /// <param name="project">Projet associé à l’édition.</param>
         /// <param name="module">Module associé à l’édition.</param>
@@ -36,6 +46,7 @@ internal string Project, Module, Before, After; }
             // Bounded, session-local history. Never pretend this is the native VBE undo stack.
             while (undo.Count > 50 || undo.Sum(x => (long)x.Before.Length + x.After.Length) > 4 * 1024 * 1024) undo.RemoveAt(0);
         }
+
         /// <summary>Transforme une plage explicite du module ou renvoie un aperçu avant écriture.</summary>
         /// <param name="request">Action textuelle, plage sélectionnée et empreinte source attendue.</param>
         /// <param name="preview">Si true, retourne les sources avant/après sans mutation.</param>
@@ -50,11 +61,12 @@ internal string Project, Module, Before, After; }
                 Scope = "Explicit module line range; identifier replacements are lexical, not semantic refactoring." };
             return Write(request.Project, request.Module, before, after);
         }
-                /// <summary>Prévisualise ou applique un renommage local lié à une déclaration et à la plage VBIDE.</summary>
-                /// <param name="request">Module, procédure, déclaration exacte, nouveau nom et versions attendues.</param>
-                /// <param name="preview">Si true, retourne le plan sans écrire le module.</param>
-                /// <returns>Plan avant/après ou résultat vérifié de l’écriture.</returns>
-                /// <exception cref="InvalidOperationException">La procédure ou déclaration est ambiguë, absente ou a changé.</exception>
+
+        /// <summary>Prévisualise ou applique un renommage local lié à une déclaration et à la plage VBIDE.</summary>
+        /// <param name="request">Module, procédure, déclaration exacte, nouveau nom et versions attendues.</param>
+        /// <param name="preview">Si true, retourne le plan sans écrire le module.</param>
+        /// <returns>Plan avant/après ou résultat vérifié de l’écriture.</returns>
+        /// <exception cref="InvalidOperationException">La procédure ou déclaration est ambiguë, absente ou a changé.</exception>
         internal object RenameLocal(Request request, bool preview)
         {
             string before = Read(request.Project, request.Module); Check(before, request.ExpectedSha256);
@@ -77,6 +89,7 @@ internal string Project, Module, Before, After; }
             if (!state.Ok || (int)((dynamic)state.Data).Mode != 2) throw new InvalidOperationException("Renaming requires design mode.");
             return Write(request.Project, request.Module, before, after);
         }
+
         /// <summary>Annule ou rétablit la dernière édition de session compatible avec le module et son SHA actuel.</summary>
         /// <param name="request">Projet, module et empreinte du code courant.</param>
         /// <param name="forward">Si true, rejoue une entrée d’annulation; sinon, annule une entrée de rétablissement.</param>
@@ -96,6 +109,7 @@ internal string Project, Module, Before, After; }
                 source.Remove(entry); destination.Add(entry); return result;
             } finally { replaying = false; }
         }
+
         /// <summary>Remplace tout le code avec l’empreinte attendue, puis exige une relecture identique.</summary>
         /// <param name="project">Projet cible.</param>
         /// <param name="module">Module cible.</param>
@@ -113,6 +127,7 @@ internal string Project, Module, Before, After; }
                 throw new InvalidOperationException("VBE text differs from the requested edit. Read the module before continuing.");
             return result.Data;
         }
+
         /// <summary>Lit le code d’un module par le transport VBE et propage ses erreurs.</summary>
         /// <param name="project">Projet propriétaire.</param>
         /// <param name="module">Nom du module.</param>
@@ -123,6 +138,7 @@ internal string Project, Module, Before, After; }
             if (!result.Ok) throw new InvalidOperationException(result.Error);
             return (string)((dynamic)result.Data).Code;
         }
+
         /// <summary>Compare le code à l’empreinte attendue et refuse les modifications concurrentes.</summary>
         /// <param name="code">Texte courant du module.</param>
         /// <param name="expected">SHA-256 attendu.</param>
@@ -132,6 +148,7 @@ internal string Project, Module, Before, After; }
             if (string.IsNullOrWhiteSpace(expected) || !string.Equals(Hash(code), expected, StringComparison.OrdinalIgnoreCase))
                 throw new InvalidOperationException("The module changed. Read its current code and SHA before editing or replaying history.");
         }
+
         /// <summary>Calcule l’empreinte SHA-256 hexadécimale minuscule du texte UTF-8.</summary>
         /// <param name="text">Code source à empreinter.</param>
         /// <returns>Empreinte de 64 caractères hexadécimaux.</returns>

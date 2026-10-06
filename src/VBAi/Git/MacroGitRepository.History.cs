@@ -7,66 +7,86 @@ using System.Web.Script.Serialization;
 
 namespace VBAi
 {
+
     /// <summary>Point de contrôle enregistré dans les références privées du dépôt.</summary>
     internal sealed class GitCheckpoint
     {
+
         /// <summary>Identifiant unique de ce point de contrôle.</summary>
         /// <value>Identifiant unique de ce point de contrôle.</value>
         public string Id { get; set; }
+
         /// <summary>Libellé affiché dans la liste des points de contrôle.</summary>
         /// <value>Libellé affiché dans la liste des points de contrôle.</value>
         public string Label { get; set; }
+
         /// <summary>Commit Git capturé par ce point de contrôle.</summary>
         /// <value>Commit Git capturé par ce point de contrôle.</value>
         public string Commit { get; set; }
+
         /// <summary>Retourne le libellé suivi de l’identifiant du point de contrôle.</summary>
         /// <returns>Libellé, séparateur et identifiant du point de contrôle.</returns>
         public override string ToString() { return Label + " · " + Id; }
     }
+
     /// <summary>Plan de fusion calculé depuis les deux commits et l’arbre de résultat.</summary>
     internal sealed class GitMergePlan
     {
+
         /// <summary>Branche locale au début de la fusion.</summary>
         /// <value>Branche locale au début de la fusion.</value>
         public string Branch { get; set; }
+
         /// <summary>Commit local retenu comme côté courant.</summary>
         /// <value>Commit local retenu comme côté courant.</value>
         public string Ours { get; set; }
+
         /// <summary>Commit de la branche fusionnée.</summary>
         /// <value>Commit de la branche fusionnée.</value>
         public string Theirs { get; set; }
+
         /// <summary>Arbre Git résultant, y compris les résolutions déjà enregistrées.</summary>
         /// <value>Arbre Git résultant, y compris les résolutions déjà enregistrées.</value>
         public string Tree { get; set; }
+
         /// <summary>Chemins encore en conflit dans cet arbre.</summary>
         /// <value>Chemins encore en conflit dans cet arbre.</value>
         public string[] Conflicts { get; set; }
     }
+
     /// <summary>Contenu textuel de base, local et entrant d’un conflit.</summary>
     internal sealed class GitConflictContent
     {
+
         /// <summary>Texte de la base commune, si disponible.</summary>
         /// <value>Texte de la base commune, si disponible.</value>
         public string Base { get; set; }
+
         /// <summary>Chemin du fichier concerné dans le paquet VBA.</summary>
         /// <value>Chemin du fichier concerné dans le paquet VBA.</value>
         public string Path { get; set; }
+
         /// <summary>Commit local retenu comme côté courant.</summary>
         /// <value>Commit local retenu comme côté courant.</value>
         public string Ours { get; set; }
+
         /// <summary>Commit de la branche fusionnée.</summary>
         /// <value>Commit de la branche fusionnée.</value>
         public string Theirs { get; set; }
     }
+
     /// <summary>Opérations de branches, points de contrôle et fusion sur le dépôt bare.</summary>
     internal sealed partial class MacroGitRepository
     {
+
         /// <summary>Valide un nom de branche selon les règles acceptées par le dépôt.</summary>
         /// <param name="name">Nom de branche à vérifier.</param>
         internal static void ValidateBranch(string name) { new MacroGitRepository(Path.GetTempPath(), name); }
+
         /// <summary>Retourne les branches locales du dépôt.</summary>
         /// <returns>Noms des branches locales.</returns>
         internal string[] Branches() { return Text("for-each-ref", "--format=%(refname:strip=2)", "refs/heads/").Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries); }
+
         /// <summary>Crée une branche locale au commit HEAD courant.</summary>
         /// <param name="name">Nom de branche à valider.</param>
         internal void CreateBranch(string name)
@@ -75,6 +95,7 @@ namespace VBAi
             string head = Resolve(Head) ?? throw new InvalidOperationException(UiText.Get("Create a commit first."));
             Text("update-ref", "refs/heads/" + name, head, new string('0', 40));
         }
+
         /// <summary>Résout le commit de la branche locale demandée.</summary>
         /// <param name="name">Nom de branche à valider.</param>
         /// <returns>Identifiant du commit de la branche.</returns>
@@ -83,6 +104,7 @@ namespace VBAi
             ValidateBranch(name);
             return Resolve("refs/heads/" + name) ?? throw new InvalidOperationException(UiText.Get("Unknown local branch. Create it or fetch it from the remote repository."));
         }
+
         /// <summary>Sélectionne une branche existante comme branche active du dépôt.</summary>
         /// <param name="name">Nom de branche à valider.</param>
         internal void SelectBranch(string name)
@@ -93,6 +115,7 @@ namespace VBAi
             string previous = Resolve("refs/remotes/origin/selected");
             if (previous != null) Text("update-ref", "-d", "refs/remotes/origin/selected", previous);
         }
+
         /// <summary>Retourne les noms des branches annoncées par origin.</summary>
         /// <returns>Noms des branches distantes annoncées par origin.</returns>
         internal string[] RemoteBranches()
@@ -100,6 +123,7 @@ namespace VBAi
             return Text("ls-remote", "--heads", "origin").Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries)
                 .Select(x => x.Substring(x.IndexOf("refs/heads/", StringComparison.Ordinal) + 11)).ToArray();
         }
+
         /// <summary>Récupère une branche distante qui n’existe pas encore localement.</summary>
         /// <param name="name">Nom de branche à valider.</param>
         internal void TrackBranch(string name)
@@ -108,6 +132,7 @@ namespace VBAi
             if (Resolve("refs/heads/" + name) != null) throw new InvalidOperationException(UiText.Get("This local branch already exists."));
             Text("fetch", "--no-tags", "origin", "refs/heads/" + name + ":refs/heads/" + name);
         }
+
         /// <summary>Crée un commit de point de contrôle et une référence privée associée.</summary>
         /// <param name="live">Snapshot courant des fichiers VBA.</param>
         /// <param name="label">Libellé lisible du point de contrôle.</param>
@@ -121,6 +146,7 @@ namespace VBAi
             SetRef("refs/codex/checkpoints/" + id, commit);
             return new GitCheckpoint { Id = id, Commit = commit, Label = label };
         }
+
         /// <summary>Retourne les points de contrôle privés les plus récents.</summary>
         /// <returns>Points de contrôle triés du plus récent au plus ancien.</returns>
         internal GitCheckpoint[] Checkpoints()
@@ -130,6 +156,7 @@ namespace VBAi
                     var parts = line.Split(new[] { '\t' }, 3); return new GitCheckpoint { Id = parts[0], Commit = parts[1], Label = parts[2] };
                 }).ToArray();
         }
+
         /// <summary>Résout un identifiant de point de contrôle après validation de son format.</summary>
         /// <param name="id">Identifiant du point de contrôle.</param>
         /// <returns>Identifiant du commit du point de contrôle.</returns>
@@ -138,12 +165,15 @@ namespace VBAi
             if (!System.Text.RegularExpressions.Regex.IsMatch(id ?? "", @"^\d{17}-[0-9a-f]{8}$")) throw new ArgumentException("Identifiant de checkpoint invalide.");
             return Resolve("refs/codex/checkpoints/" + id) ?? throw new InvalidOperationException("Checkpoint absent.");
         }
+
         /// <summary>Chemin du fichier d’état du plan de fusion.</summary>
         /// <value>Chemin du fichier d’état du plan de fusion.</value>
         private string MergeFile { get { return Path.Combine(directory, "codex-merge.json"); } }
+
         /// <summary>Plan de fusion enregistré, ou null si aucune fusion n’est en cours.</summary>
         /// <value>Plan de fusion enregistré, ou null si aucune fusion n’est en cours.</value>
         internal GitMergePlan PendingMerge { get { return File.Exists(MergeFile) ? new JavaScriptSerializer().Deserialize<GitMergePlan>(File.ReadAllText(MergeFile)) : null; } }
+
         /// <summary>Persiste atomiquement le plan et conserve son arbre par une référence Git.</summary>
         /// <param name="plan">Plan de fusion à vérifier ou finaliser.</param>
         private void SaveMerge(GitMergePlan plan)
@@ -154,6 +184,7 @@ namespace VBAi
             // Keep generated merge trees reachable during cache maintenance.
             SetRef("refs/codex/merge-tree", plan.Tree);
         }
+
         /// <summary>Calcule et enregistre un plan de fusion sans modifier la branche active.</summary>
         /// <param name="branch">Nom de la branche source ou cible.</param>
         /// <returns>Plan de fusion calculé et persisté.</returns>
@@ -170,12 +201,14 @@ namespace VBAi
             if (!System.Text.RegularExpressions.Regex.IsMatch(plan.Tree, "^[0-9a-f]{40}$")) throw new InvalidOperationException(UiText.Get("Invalid Git merge result."));
             SaveMerge(plan); return plan;
         }
+
         /// <summary>Vérifie que le plan correspond toujours à la branche et au HEAD actifs.</summary>
         /// <param name="plan">Plan de fusion à vérifier ou finaliser.</param>
         internal void AssertMerge(GitMergePlan plan)
         {
             if (plan == null || plan.Branch != Branch || plan.Ours != Resolve(Head)) throw new InvalidOperationException(UiText.Get("The branch changed since the merge started."));
         }
+
         /// <summary>Retourne les contenus de base, local et entrant pour un chemin en conflit.</summary>
         /// <param name="path">Chemin du fichier dans le paquet VBA.</param>
         /// <returns>Version de base, locale et entrante du conflit.</returns>
@@ -186,6 +219,7 @@ namespace VBAi
             string common = Text("merge-base", plan.Ours, plan.Theirs);
             return new GitConflictContent { Path = path, Base = ConflictText(common, path), Ours = ConflictText(plan.Ours, path), Theirs = ConflictText(plan.Theirs, path) };
         }
+
         /// <summary>Lit le contenu texte d’un fichier dans un arbre si sa taille et son encodage le permettent.</summary>
         /// <param name="tree">Identifiant de commit ou arbre Git à lire.</param>
         /// <param name="path">Chemin du fichier dans le paquet VBA.</param>
@@ -200,6 +234,7 @@ namespace VBAi
             try { return VbaGitSnapshot.Utf8.GetString(Run(new[] { "cat-file", "blob", parts[2] }).Bytes); }
             catch (DecoderFallbackException) { return UiText.Get("[Non-UTF-8 content: choose local or incoming]"); }
         }
+
         /// <summary>Résout un conflit avec la version locale, entrante ou un texte VBA fourni.</summary>
         /// <param name="path">Chemin du fichier dans le paquet VBA.</param>
         /// <param name="choice">Résolution choisie : ours, theirs ou text.</param>
@@ -221,6 +256,7 @@ namespace VBAi
             plan.Tree = ReplacePath(plan.Tree, path.Split('/'), 0, entry);
             plan.Conflicts = plan.Conflicts.Where(x => x != path).ToArray(); SaveMerge(plan); return plan;
         }
+
         /// <summary>Résout l’entrée Git située au chemin de fichier demandé.</summary>
         /// <param name="tree">Identifiant de commit ou arbre Git à lire.</param>
         /// <param name="path">Chemin du fichier dans le paquet VBA.</param>
@@ -236,6 +272,7 @@ namespace VBAi
             }
             return entry;
         }
+
         /// <summary>Remplace ou supprime récursivement une entrée dans un arbre Git.</summary>
         /// <param name="tree">Identifiant de commit ou arbre Git à lire.</param>
         /// <param name="path">Chemin du fichier dans le paquet VBA.</param>
@@ -256,6 +293,7 @@ namespace VBAi
             }
             return entries.Count == 0 ? Encoding.UTF8.GetString(Run(new[] { "mktree" }, new byte[0]).Bytes).Trim() : MakeTree(entries);
         }
+
         /// <summary>Crée un commit de fusion après résolution et validation du paquet VBA.</summary>
         /// <param name="plan">Plan de fusion à vérifier ou finaliser.</param>
         /// <param name="message">Message du commit à créer.</param>
@@ -268,6 +306,7 @@ namespace VBAi
             Read(plan.Tree); // Validate the complete VBA package before creating the merge commit.
             return Encoding.UTF8.GetString(Run(new[] { "commit-tree", plan.Tree, "-p", plan.Ours, "-p", plan.Theirs }, VbaGitSnapshot.Utf8.GetBytes(message + "\n")).Bytes).Trim();
         }
+
         /// <summary>Supprime l’état persistant de la fusion en cours.</summary>
         internal void AbortMerge() { if (File.Exists(MergeFile)) File.Delete(MergeFile); }
     }

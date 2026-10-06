@@ -9,30 +9,71 @@ using System.Windows.Forms;
 
 namespace VBAi
 {
+
     /// <summary>Project-scoped VBA test discovery, explicit execution and result inspection.</summary>
     internal sealed partial class TestExplorerWindow : Form
     {
+
+        /// <summary>Maintains the service state for test explorer window.</summary>
         private IVbaTestExplorerService service;
+
+        /// <summary>Maintains the initial native size state for test explorer window.</summary>
         private readonly System.Drawing.Size initialNativeSize;
+
+        /// <summary>Maintains the catalog state for test explorer window.</summary>
         private VbaTestCatalog catalog;
+
+        /// <summary>Maintains the results state for test explorer window.</summary>
         private readonly Dictionary<string, VbaTestResult> results = new Dictionary<string, VbaTestResult>(StringComparer.Ordinal);
+
+        /// <summary>Maintains the result revisions state for test explorer window.</summary>
         private readonly Dictionary<string, string> resultRevisions = new Dictionary<string, string>(StringComparer.Ordinal);
+
+        /// <summary>Tracks the cancellation state of test explorer window.</summary>
         private CancellationTokenSource cancellation;
+
+        /// <summary>Maintains the running and rebuilding and reading projects and close after run and reviewing coverage state for test explorer window.</summary>
         private bool running, rebuilding, readingProjects, closeAfterRun, reviewingCoverage;
+
+        /// <summary>Maintains the unavailable reason state for test explorer window.</summary>
         private string unavailableReason;
+
+        /// <summary>Identifies the displayed project id associated with test explorer window.</summary>
         private string displayedProjectId;
+
+        /// <summary>Maintains the displayed revision state for test explorer window.</summary>
         private string displayedRevision;
+
+        /// <summary>Maintains the coverage unavailable reason state for test explorer window.</summary>
         private string coverageUnavailableReason;
+
+        /// <summary>Maintains the last coverage state for test explorer window.</summary>
         private VbaCoverageReport lastCoverage;
+
+        /// <summary>Maintains the tree selection state for test explorer window.</summary>
         private TreeSelection treeSelection;
+
+        /// <summary>Keeps the choose report export path path available to test explorer window.</summary>
         internal Func<IWin32Window, bool, string> ChooseReportExportPath = (owner, compact) => SelectReportExportPath(owner, compact);
+
+        /// <summary>Maintains the write report clipboard state for test explorer window.</summary>
         internal Action<string> WriteReportClipboard = Clipboard.SetText;
+
+        /// <summary>Maintains the create run dispatcher state for test explorer window.</summary>
         internal Func<Control> CreateRunDispatcher = () => new Control();
+
+        /// <summary>Maintains the confirm coverage state for test explorer window.</summary>
         internal Func<IWin32Window, string, bool> ConfirmCoverage = (owner, text) => MessageBox.Show(owner, text,
             UiText.Get("Review measured VBA procedure coverage"), MessageBoxButtons.YesNo,
             MessageBoxIcon.Question, MessageBoxDefaultButton.Button2) == DialogResult.Yes;
+
+        /// <summary>Maintains the owner thread state for test explorer window.</summary>
         private readonly int ownerThread = Thread.CurrentThread.ManagedThreadId;
+
+        /// <summary>Maintains the run dispatch gate state for test explorer window.</summary>
         private readonly object runDispatchGate = new object();
+
+        /// <summary>Maintains the run continuation dispatcher state for test explorer window.</summary>
         private Control runContinuationDispatcher;
 
         /// <summary>Creates controls without opening a project or executing a test.</summary>
@@ -58,6 +99,9 @@ namespace VBAi
         }
 
         /// <summary>Repairs only an unusable native site while preserving a readable restored VBE layout.</summary>
+        /// <param name="container">chat tool window that supplies the container for this operation.</param>
+        /// <param name="nativeWindow">object that supplies the native window for this operation.</param>
+        /// <param name="owner">i win32 window that supplies the owner for this operation.</param>
         internal void EnsureUsableNativePlacement(ChatToolWindow container, object nativeWindow, IWin32Window owner)
         {
             System.Drawing.Size siteSize;
@@ -77,6 +121,8 @@ namespace VBAi
             window.Top = area.Top + Math.Max(0, (area.Height - height) / 2);
         }
 
+        /// <summary>Handles configure for test explorer window.</summary>
+        /// <param name="explorerService">i vba test explorer service that supplies the explorer service for this operation.</param>
         internal void Configure(IVbaTestExplorerService explorerService)
         {
             if (running) throw new InvalidOperationException("A test run is active.");
@@ -85,6 +131,7 @@ namespace VBAi
             UpdateFreshnessTimer();
         }
 
+        /// <summary>Handles refresh projects for test explorer window.</summary>
         internal void RefreshProjects()
         {
             if (service == null || running || reviewingCoverage) return;
@@ -106,6 +153,8 @@ namespace VBAi
             catch (Exception ex) { catalog = null; status.Text = ex.Message; RebuildTree(); }
         }
 
+        /// <summary>Handles select project for test explorer window.</summary>
+        /// <param name="projectId">Text that supplies the project id value. Use the format required by the calling operation.</param>
         internal void SelectProject(string projectId)
         {
             if (string.IsNullOrEmpty(projectId)) throw new ArgumentException("An exact test project ID is required.", nameof(projectId));
@@ -120,6 +169,7 @@ namespace VBAi
             projectList.SelectedIndex = index;
         }
 
+        /// <summary>Handles discover selected project for test explorer window.</summary>
         private void DiscoverSelectedProject()
         {
             if (running || readingProjects || service == null) return;
@@ -146,11 +196,16 @@ namespace VBAi
             RebuildTree();
         }
 
+        /// <summary>Reads coverage unavailable reason for test explorer window.</summary>
+        /// <param name="discovered">vba test catalog that supplies the discovered for this operation.</param>
+        /// <returns>Text produced by the operation for read coverage unavailable reason on test explorer window.</returns>
         private string ReadCoverageUnavailableReason(VbaTestCatalog discovered) =>
             service is IVbaTestCoverageExplorerService coverageService ? coverageService.CoverageUnavailableReason(discovered) : UiText.Get("Measured procedure coverage is unavailable in this host.");
 
+        /// <summary>Updates freshness timer for test explorer window.</summary>
         private void UpdateFreshnessTimer() => freshnessTimer.Enabled = Visible && service != null && !UiTheme.IsDesignPreview(this);
 
+        /// <summary>Handles check freshness for test explorer window.</summary>
         internal void CheckFreshness()
         {
             if (!Visible || running || reviewingCoverage || readingProjects || service == null || UiTheme.IsDesignPreview(this)) return;
@@ -189,14 +244,21 @@ namespace VBAi
             }
         }
 
+        /// <summary>Handles on visible changed for test explorer window.</summary>
+        /// <param name="e">event args that supplies the e for this operation.</param>
         protected override void OnVisibleChanged(EventArgs e)
         {
             base.OnVisibleChanged(e);
             if (freshnessTimer != null) UpdateFreshnessTimer();
         }
 
+        /// <summary>Handles freshness timer tick for test explorer window.</summary>
+        /// <param name="sender">object that supplies the sender for this operation.</param>
+        /// <param name="e">event args that supplies the e for this operation.</param>
         private void FreshnessTimer_Tick(object sender, EventArgs e) => CheckFreshness();
 
+        /// <summary>Handles visible tests for test explorer window.</summary>
+        /// <returns>i read only list&lt;vba test descriptor&gt; produced by the operation for visible tests on test explorer window.</returns>
         internal IReadOnlyList<VbaTestDescriptor> VisibleTests()
         {
             if (catalog == null) return new VbaTestDescriptor[0];
@@ -208,6 +270,9 @@ namespace VBAi
                 (filter < 0 || Outcome(test) == (VbaTestOutcome)filter)).ToArray();
         }
 
+        /// <summary>Handles outcome for test explorer window.</summary>
+        /// <param name="test">vba test descriptor that supplies the test for this operation.</param>
+        /// <returns>vba test outcome produced by the operation for outcome on test explorer window.</returns>
         private VbaTestOutcome Outcome(VbaTestDescriptor test)
         {
             if (results.TryGetValue(test.Id, out var result)) return result.Outcome;
@@ -216,8 +281,12 @@ namespace VBAi
             return VbaTestOutcome.NotRun;
         }
 
+        /// <summary>Determines whether stale for test explorer window.</summary>
+        /// <param name="test">vba test descriptor that supplies the test for this operation.</param>
+        /// <returns>Boolean indicating the result of the check for is stale on test explorer window.</returns>
         private bool IsStale(VbaTestDescriptor test) => resultRevisions.TryGetValue(test.Id, out var revision) && revision != catalog?.Project.Revision;
 
+        /// <summary>Handles rebuild tree for test explorer window.</summary>
         private void RebuildTree()
         {
             var selected = ReadTreeSelection(testTree.SelectedNode) ?? treeSelection;
@@ -274,19 +343,34 @@ namespace VBAi
             UpdateButtons();
         }
 
+        /// <summary>Owns the test group state and operations.</summary>
         private sealed class TestGroup
         {
+
+            /// <summary>Maintains the name and key state for test group.</summary>
             internal string Name, Key;
+
+            /// <summary>Maintains the grouping state for test group.</summary>
             internal int Grouping;
+
+            /// <summary>Maintains the tests state for test group.</summary>
             internal VbaTestDescriptor[] Tests;
         }
 
+        /// <summary>Owns the tree selection state and operations.</summary>
         private sealed class TreeSelection
         {
+
+            /// <summary>Identifies the project id and module and test id and group key associated with tree selection.</summary>
             internal string ProjectId, Module, TestId, GroupKey;
+
+            /// <summary>Maintains the grouping state for tree selection.</summary>
             internal int Grouping;
         }
 
+        /// <summary>Reads tree selection for test explorer window.</summary>
+        /// <param name="node">tree node that supplies the node for this operation.</param>
+        /// <returns>tree selection produced by the operation for read tree selection on test explorer window.</returns>
         private static TreeSelection ReadTreeSelection(TreeNode node)
         {
             if (node == null) return null;
@@ -301,6 +385,10 @@ namespace VBAi
                 TestId = test?.Id, Grouping = group?.Grouping ?? 0, GroupKey = group?.Key };
         }
 
+        /// <summary>Finds selection for test explorer window.</summary>
+        /// <param name="root">tree node that supplies the root for this operation.</param>
+        /// <param name="selected">tree selection that supplies the selected for this operation.</param>
+        /// <returns>tree node produced by the operation for find selection on test explorer window.</returns>
         private static TreeNode FindSelection(TreeNode root, TreeSelection selected)
         {
             if (selected.TestId != null)
@@ -317,6 +405,10 @@ namespace VBAi
             return root;
         }
 
+        /// <summary>Adds test nodes for test explorer window.</summary>
+        /// <param name="parent">tree node that supplies the parent for this operation.</param>
+        /// <param name="tests">i enumerable&lt;vba test descriptor&gt; that supplies the tests for this operation.</param>
+        /// <param name="checkedIds">hash set&lt;string&gt; that supplies the checked ids for this operation.</param>
         private void AddTestNodes(TreeNode parent, IEnumerable<VbaTestDescriptor> tests, HashSet<string> checkedIds)
         {
             foreach (var test in tests)
@@ -326,6 +418,9 @@ namespace VBAi
             }
         }
 
+        /// <summary>Handles test caption for test explorer window.</summary>
+        /// <param name="test">vba test descriptor that supplies the test for this operation.</param>
+        /// <returns>Text produced by the operation for test caption on test explorer window.</returns>
         private string TestCaption(VbaTestDescriptor test)
         {
             string duration = results.TryGetValue(test.Id, out var result) ? "  " + result.Duration.TotalMilliseconds.ToString("0.##", CultureInfo.CurrentCulture) + " ms" : "";
@@ -334,6 +429,9 @@ namespace VBAi
             return symbol + (grouping.SelectedIndex > 0 ? test.Module + "." : "") + test.Procedure + "  [" + UiText.Get(outcome.ToString()) + "]" + duration + (IsStale(test) ? "  " + UiText.Get("Previous revision") : "");
         }
 
+        /// <summary>Handles test color for test explorer window.</summary>
+        /// <param name="test">vba test descriptor that supplies the test for this operation.</param>
+        /// <returns>color produced by the operation for test color on test explorer window.</returns>
         private System.Drawing.Color TestColor(VbaTestDescriptor test)
         {
             if (IsStale(test)) return UiTheme.Muted;
@@ -346,6 +444,7 @@ namespace VBAi
             }
         }
 
+        /// <summary>Handles test theme changed for test explorer window.</summary>
         private void TestThemeChanged()
         {
             if (IsDisposed) return;
@@ -354,14 +453,20 @@ namespace VBAi
             RebuildTree();
         }
 
+        /// <summary>Handles on shown for test explorer window.</summary>
+        /// <param name="e">event args that supplies the e for this operation.</param>
         protected override void OnShown(EventArgs e)
         {
             base.OnShown(e);
             RebuildTree();
         }
 
+        /// <summary>Handles test nodes for test explorer window.</summary>
+        /// <returns>i enumerable&lt;tree node&gt; produced by the operation for test nodes on test explorer window.</returns>
         private IEnumerable<TreeNode> TestNodes() => testTree.Nodes.Cast<TreeNode>().SelectMany(root => root.Nodes.Cast<TreeNode>()).SelectMany(module => module.Nodes.Cast<TreeNode>()).Where(node => node.Tag is VbaTestDescriptor);
 
+        /// <summary>Handles selected tests for test explorer window.</summary>
+        /// <returns>i read only list&lt;vba test descriptor&gt; produced by the operation for selected tests on test explorer window.</returns>
         internal IReadOnlyList<VbaTestDescriptor> SelectedTests()
         {
             var checkedTests = TestNodes().Where(node => node.Checked).Select(node => (VbaTestDescriptor)node.Tag).GroupBy(test => test.Id).Select(group => group.First()).ToArray();
@@ -370,6 +475,8 @@ namespace VBAi
             return selected == null ? new VbaTestDescriptor[0] : new[] { selected };
         }
 
+        /// <summary>Handles scope tests for test explorer window.</summary>
+        /// <returns>i read only list&lt;vba test descriptor&gt; produced by the operation for scope tests on test explorer window.</returns>
         internal IReadOnlyList<VbaTestDescriptor> ScopeTests()
         {
             var tests = VisibleTests();
@@ -386,13 +493,29 @@ namespace VBAi
             return moduleName == null ? tests : tests.Where(test => test.Module == moduleName).ToArray();
         }
 
+        /// <summary>Runs selected async for test explorer window.</summary>
+        /// <returns>task produced by the operation for run selected async on test explorer window.</returns>
         internal Task RunSelectedAsync() => RunTestsAsync(SelectedTests());
+
+        /// <summary>Runs scope async for test explorer window.</summary>
+        /// <returns>task produced by the operation for run scope async on test explorer window.</returns>
         internal Task RunScopeAsync() => RunTestsAsync(ScopeTests());
+
+        /// <summary>Handles rerun failed async for test explorer window.</summary>
+        /// <returns>task produced by the operation for rerun failed async on test explorer window.</returns>
         internal Task RerunFailedAsync() => RunTestsAsync(VisibleTests().Where(test => !IsStale(test) && (Outcome(test) == VbaTestOutcome.Failed || Outcome(test) == VbaTestOutcome.Error)).ToArray());
 
+        /// <summary>Runs selected coverage async for test explorer window.</summary>
+        /// <returns>task produced by the operation for run selected coverage async on test explorer window.</returns>
         internal Task RunSelectedCoverageAsync() => ReviewCoverageAndRunAsync(SelectedTests());
+
+        /// <summary>Runs scope coverage async for test explorer window.</summary>
+        /// <returns>task produced by the operation for run scope coverage async on test explorer window.</returns>
         internal Task RunScopeCoverageAsync() => ReviewCoverageAndRunAsync(ScopeTests());
 
+        /// <summary>Handles review coverage and run async for test explorer window.</summary>
+        /// <param name="selected">i read only list&lt;vba test descriptor&gt; that supplies the selected for this operation.</param>
+        /// <returns>task produced by the operation for review coverage and run async on test explorer window.</returns>
         private Task ReviewCoverageAndRunAsync(IReadOnlyList<VbaTestDescriptor> selected)
         {
             if (IsDisposed || Disposing || running || catalog == null || selected.Count == 0 || !(service is IVbaTestCoverageExplorerService) || !string.IsNullOrEmpty(coverageUnavailableReason)) return Task.CompletedTask;
@@ -415,6 +538,10 @@ namespace VBAi
             return RunTestsAsync(frozen, true);
         }
 
+        /// <summary>Runs tests async for test explorer window.</summary>
+        /// <param name="requested">i read only list&lt;vba test descriptor&gt; that supplies the requested for this operation.</param>
+        /// <param name="measuredCoverage">Indicates whether measured coverage is enabled.</param>
+        /// <returns>task produced by the operation for run tests async on test explorer window.</returns>
         private async Task RunTestsAsync(IReadOnlyList<VbaTestDescriptor> requested, bool measuredCoverage = false)
         {
             if (IsDisposed || Disposing || running || service == null || catalog == null || requested.Count == 0 ||
@@ -461,12 +588,14 @@ namespace VBAi
             }
         }
 
+        /// <summary>Requires run owner for test explorer window.</summary>
         private void RequireRunOwner()
         {
             if (Thread.CurrentThread.ManagedThreadId != ownerThread)
                 throw new InvalidOperationException("The test explorer continuation requires its owning UI thread.");
         }
 
+        /// <summary>Handles initialize run continuation dispatcher for test explorer window.</summary>
         private void InitializeRunContinuationDispatcher()
         {
             RequireRunOwner();
@@ -475,6 +604,7 @@ namespace VBAi
             catch { control.Dispose(); throw; }
         }
 
+        /// <summary>Releases run continuation dispatcher for test explorer window.</summary>
         private void ReleaseRunContinuationDispatcher()
         {
             RequireRunOwner();
@@ -486,6 +616,9 @@ namespace VBAi
             }
         }
 
+        /// <summary>Runs window disposed for test explorer window.</summary>
+        /// <param name="sender">object that supplies the sender for this operation.</param>
+        /// <param name="e">event args that supplies the e for this operation.</param>
         private void RunWindowDisposed(object sender, EventArgs e)
         {
             RequireRunOwner();
@@ -495,6 +628,10 @@ namespace VBAi
             if (!running) ReleaseRunContinuationDispatcher();
         }
 
+        /// <summary>Handles await owner for test explorer window.</summary>
+        /// <typeparam name="T">The type used for t.</typeparam>
+        /// <param name="task">task&lt;t&gt; that supplies the task for this operation.</param>
+        /// <returns>vba test owner awaitable&lt;t&gt; produced by the operation for await owner on test explorer window.</returns>
         private VbaTestOwnerAwaitable<T> AwaitOwner<T>(Task<T> task)
         {
             RequireRunOwner();
@@ -503,6 +640,9 @@ namespace VBAi
             return new VbaTestOwnerAwaitable<T>(task, action => dispatcher.BeginInvoke(action), RequireRunOwner);
         }
 
+        /// <summary>Handles accept result for test explorer window.</summary>
+        /// <param name="result">vba test result that supplies the result for this operation.</param>
+        /// <param name="revision">Text that supplies the revision value. Use the format required by the calling operation.</param>
         private void AcceptResult(VbaTestResult result, string revision)
         {
             if (result?.Test == null) return;
@@ -521,6 +661,7 @@ namespace VBAi
             RebuildTree();
         }
 
+        /// <summary>Updates summary for test explorer window.</summary>
         private void UpdateSummary()
         {
             var tests = catalog?.Tests.ToArray() ?? new VbaTestDescriptor[0];
@@ -532,6 +673,7 @@ namespace VBAi
                 "  ·  " + UiText.Get("Pass rate") + ": " + (completed > 0 ? (100.0 * passed / completed).ToString("0.##", CultureInfo.CurrentCulture) + "%" : "—");
         }
 
+        /// <summary>Updates coverage for test explorer window.</summary>
         private void UpdateCoverage()
         {
             if (lastCoverage == null)
@@ -549,6 +691,7 @@ namespace VBAi
                 (lastCoverage.Diagnostics.Count == 0 ? "" : Environment.NewLine + string.Join(Environment.NewLine, lastCoverage.Diagnostics.Select(UiText.Get)));
         }
 
+        /// <summary>Updates details for test explorer window.</summary>
         private void UpdateDetails()
         {
             var test = testTree.SelectedNode?.Tag as VbaTestDescriptor;
@@ -568,6 +711,7 @@ namespace VBAi
                 (IsStale(test) ? UiText.Get("Result belongs to a previous source revision.") + Environment.NewLine : "") + test.Diagnostic + Environment.NewLine + test.IgnoreReason;
         }
 
+        /// <summary>Updates buttons for test explorer window.</summary>
         private void UpdateButtons()
         {
             bool available = service != null && catalog != null && !running;
@@ -591,15 +735,38 @@ namespace VBAi
             exportReport.Enabled = copyReport.Enabled;
         }
 
+        /// <summary>Handles refresh click for test explorer window.</summary>
+        /// <param name="sender">object that supplies the sender for this operation.</param>
+        /// <param name="e">event args that supplies the e for this operation.</param>
         private void Refresh_Click(object sender, EventArgs e) => RefreshProjects();
+
+        /// <summary>Handles project list selected index changed for test explorer window.</summary>
+        /// <param name="sender">object that supplies the sender for this operation.</param>
+        /// <param name="e">event args that supplies the e for this operation.</param>
         private void ProjectList_SelectedIndexChanged(object sender, EventArgs e) => DiscoverSelectedProject();
+
+        /// <summary>Handles project list format for test explorer window.</summary>
+        /// <param name="sender">object that supplies the sender for this operation.</param>
+        /// <param name="e">list control convert event args that supplies the e for this operation.</param>
         private void ProjectList_Format(object sender, ListControlConvertEventArgs e)
         {
             if (e.ListItem is VbaTestProjectSnapshot project)
                 e.Value = project.Name + (string.IsNullOrEmpty(project.HostPath) ? "" : " — " + project.HostPath);
         }
+
+        /// <summary>Handles filter changed for test explorer window.</summary>
+        /// <param name="sender">object that supplies the sender for this operation.</param>
+        /// <param name="e">event args that supplies the e for this operation.</param>
         private void Filter_Changed(object sender, EventArgs e) { if (!running) RebuildTree(); }
+
+        /// <summary>Handles test tree after select for test explorer window.</summary>
+        /// <param name="sender">object that supplies the sender for this operation.</param>
+        /// <param name="e">tree view event args that supplies the e for this operation.</param>
         private void TestTree_AfterSelect(object sender, TreeViewEventArgs e) { if (!rebuilding) { treeSelection = ReadTreeSelection(e.Node); UpdateDetails(); UpdateButtons(); } }
+
+        /// <summary>Handles test tree after check for test explorer window.</summary>
+        /// <param name="sender">object that supplies the sender for this operation.</param>
+        /// <param name="e">tree view event args that supplies the e for this operation.</param>
         private void TestTree_AfterCheck(object sender, TreeViewEventArgs e)
         {
             if (rebuilding) return;
@@ -615,6 +782,9 @@ namespace VBAi
             UpdateButtons();
         }
 
+        /// <summary>Handles descendants and self for test explorer window.</summary>
+        /// <param name="node">tree node that supplies the node for this operation.</param>
+        /// <returns>i enumerable&lt;tree node&gt; produced by the operation for descendants and self on test explorer window.</returns>
         private static IEnumerable<TreeNode> DescendantsAndSelf(TreeNode node)
         {
             yield return node;
@@ -622,6 +792,7 @@ namespace VBAi
                 foreach (var descendant in DescendantsAndSelf(child)) yield return descendant;
         }
 
+        /// <summary>Updates group checks for test explorer window.</summary>
         private void UpdateGroupChecks()
         {
             foreach (TreeNode root in testTree.Nodes)
@@ -631,30 +802,77 @@ namespace VBAi
                 root.Checked = root.Nodes.Count > 0 && root.Nodes.Cast<TreeNode>().All(node => node.Checked);
             }
         }
+
+        /// <summary>Runs selected click for test explorer window.</summary>
+        /// <param name="sender">object that supplies the sender for this operation.</param>
+        /// <param name="e">event args that supplies the e for this operation.</param>
         private async void RunSelected_Click(object sender, EventArgs e) => await RunSelectedAsync();
+
+        /// <summary>Runs scope click for test explorer window.</summary>
+        /// <param name="sender">object that supplies the sender for this operation.</param>
+        /// <param name="e">event args that supplies the e for this operation.</param>
         private async void RunScope_Click(object sender, EventArgs e) => await RunScopeAsync();
+
+        /// <summary>Handles rerun failed click for test explorer window.</summary>
+        /// <param name="sender">object that supplies the sender for this operation.</param>
+        /// <param name="e">event args that supplies the e for this operation.</param>
         private async void RerunFailed_Click(object sender, EventArgs e) => await RerunFailedAsync();
+
+        /// <summary>Runs selected coverage click for test explorer window.</summary>
+        /// <param name="sender">object that supplies the sender for this operation.</param>
+        /// <param name="e">event args that supplies the e for this operation.</param>
         private async void RunSelectedCoverage_Click(object sender, EventArgs e) => await RunSelectedCoverageAsync();
+
+        /// <summary>Runs scope coverage click for test explorer window.</summary>
+        /// <param name="sender">object that supplies the sender for this operation.</param>
+        /// <param name="e">event args that supplies the e for this operation.</param>
         private async void RunScopeCoverage_Click(object sender, EventArgs e) => await RunScopeCoverageAsync();
+
+        /// <summary>Stops click for test explorer window.</summary>
+        /// <param name="sender">object that supplies the sender for this operation.</param>
+        /// <param name="e">event args that supplies the e for this operation.</param>
         private void Stop_Click(object sender, EventArgs e)
         {
             cancellation?.Cancel();
             status.Text = UiText.Get("Stopping after the current test; waiting for its verified result.");
             UpdateButtons();
         }
+
+        /// <summary>Handles source click for test explorer window.</summary>
+        /// <param name="sender">object that supplies the sender for this operation.</param>
+        /// <param name="e">event args that supplies the e for this operation.</param>
         private void Source_Click(object sender, EventArgs e)
         {
             if (running || catalog == null || !(testTree.SelectedNode?.Tag is VbaTestDescriptor test)) return;
             try { service.Navigate(catalog, test); } catch (Exception ex) { status.Text = ex.Message; }
         }
+
+        /// <summary>Handles test tree node mouse double click for test explorer window.</summary>
+        /// <param name="sender">object that supplies the sender for this operation.</param>
+        /// <param name="e">tree node mouse click event args that supplies the e for this operation.</param>
         private void TestTree_NodeMouseDoubleClick(object sender, TreeNodeMouseClickEventArgs e) => Source_Click(sender, e);
+
+        /// <summary>Handles report text for test explorer window.</summary>
+        /// <returns>Text produced by the operation for report text on test explorer window.</returns>
         private string ReportText() => resultTabs.SelectedTab == compactTab ? compactReport.Text : resultTabs.SelectedTab == humanTab ? humanReport.Text : "";
+
+        /// <summary>Handles result tabs selected index changed for test explorer window.</summary>
+        /// <param name="sender">object that supplies the sender for this operation.</param>
+        /// <param name="e">event args that supplies the e for this operation.</param>
         private void ResultTabs_SelectedIndexChanged(object sender, EventArgs e) => UpdateButtons();
+
+        /// <summary>Handles copy report click for test explorer window.</summary>
+        /// <param name="sender">object that supplies the sender for this operation.</param>
+        /// <param name="e">event args that supplies the e for this operation.</param>
         private void CopyReport_Click(object sender, EventArgs e)
         {
             if (running || ReportText().Length == 0) return;
             try { WriteReportClipboard(ReportText()); } catch (Exception ex) { status.Text = ex.Message; }
         }
+
+        /// <summary>Handles export report click for test explorer window.</summary>
+        /// <param name="sender">object that supplies the sender for this operation.</param>
+        /// <param name="e">event args that supplies the e for this operation.</param>
         private void ExportReport_Click(object sender, EventArgs e)
         {
             if (running) return;
@@ -669,16 +887,28 @@ namespace VBAi
             catch (Exception ex) { if (!IsDisposed && !Disposing) status.Text = ex.Message; }
         }
 
+        /// <summary>Handles select report export path for test explorer window.</summary>
+        /// <param name="owner">i win32 window that supplies the owner for this operation.</param>
+        /// <param name="compact">Indicates whether compact is enabled.</param>
+        /// <param name="show">func&lt;save file dialog, i win32 window, dialog result&gt; that supplies the show for this operation.</param>
+        /// <returns>Text produced by the operation for select report export path on test explorer window.</returns>
         internal static string SelectReportExportPath(IWin32Window owner, bool compact, Func<SaveFileDialog, IWin32Window, DialogResult> show = null)
         {
             using (var dialog = new SaveFileDialog { FileName = compact ? "vba-test-results.json" : "vba-test-results.txt", Filter = compact ? "JSON (*.json)|*.json" : "Text (*.txt)|*.txt" })
                 return (show == null ? dialog.ShowDialog(owner) : show(dialog, owner)) == DialogResult.OK ? dialog.FileName : null;
         }
+
+        /// <summary>Handles install support click for test explorer window.</summary>
+        /// <param name="sender">object that supplies the sender for this operation.</param>
+        /// <param name="e">event args that supplies the e for this operation.</param>
         private void InstallSupport_Click(object sender, EventArgs e)
         {
             if (running || service == null || catalog == null) return;
             try { service.InstallSupport(catalog); RefreshProjects(); } catch (Exception ex) { status.Text = ex.Message; }
         }
+
+        /// <summary>Handles on form closing for test explorer window.</summary>
+        /// <param name="e">form closing event args that supplies the e for this operation.</param>
         protected override void OnFormClosing(FormClosingEventArgs e)
         {
             if (running) { e.Cancel = true; closeAfterRun = true; Stop_Click(this, EventArgs.Empty); }

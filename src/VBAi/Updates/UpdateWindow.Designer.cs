@@ -1,56 +1,82 @@
 namespace VBAi
 {
+
     /// <summary>Designer-generated controls and layout for update settings and release actions.</summary>
     partial class UpdateWindow
     {
+
         /// <summary>Container that owns the Designer components.</summary>
         private System.ComponentModel.IContainer components;
+
         /// <summary>Root layout for release metadata, preferences, and actions.</summary>
         private System.Windows.Forms.TableLayoutPanel layout;
+
         /// <summary>Window heading.</summary>
         private System.Windows.Forms.Label heading;
+
         /// <summary>Current and available version text.</summary>
         private System.Windows.Forms.Label version;
+
         /// <summary>Release description and notes.</summary>
         private System.Windows.Forms.Label description;
+
         /// <summary>Automatic release-check preference.</summary>
         private System.Windows.Forms.CheckBox automaticCheck;
+
         /// <summary>Automatic installer-download preference.</summary>
         private System.Windows.Forms.CheckBox automaticDownload;
+
         /// <summary>Automatic installer-launch preference.</summary>
         private System.Windows.Forms.CheckBox automaticInstall;
+
         /// <summary>Prerelease eligibility preference.</summary>
         private System.Windows.Forms.CheckBox previews;
+
         /// <summary>Release notes section caption.</summary>
         private System.Windows.Forms.Label notesLabel;
+
         /// <summary>Secondary release action buttons.</summary>
         private System.Windows.Forms.FlowLayoutPanel secondaryButtons;
+
         /// <summary>Read-only release notes pane.</summary>
         private VBAi.UiTextBox notes;
+
         /// <summary>Status and download feedback.</summary>
         private System.Windows.Forms.Label status;
+
         /// <summary>Check and download progress indicator.</summary>
         private System.Windows.Forms.ProgressBar progress;
+
         /// <summary>Primary and secondary update actions.</summary>
         private System.Windows.Forms.FlowLayoutPanel buttons;
+
         /// <summary>Closes the update window.</summary>
         private VBAi.UiActionButton close;
+
         /// <summary>Checks for a newer release.</summary>
         private VBAi.UiActionButton check;
+
         /// <summary>Downloads the selected installer.</summary>
         private VBAi.UiActionButton download;
+
         /// <summary>Schedules installation of the staged package.</summary>
         private VBAi.UiActionButton install;
+
         /// <summary>Skips the selected release.</summary>
         private VBAi.UiActionButton skip;
+
         /// <summary>Saves the selected preferences.</summary>
         private VBAi.UiActionButton save;
+
         /// <summary>Cancels a scheduled installation that has not started.</summary>
         private VBAi.UiActionButton cancelPending;
+
         /// <summary>Tooltips associated with update controls.</summary>
         private System.Windows.Forms.ToolTip tips;
+
         /// <summary>Releases runtime subscriptions and Designer-owned components.</summary><param name="disposing">Whether managed components should be disposed.</param>
         protected override void Dispose(bool disposing) { if (disposing) { DisposeRuntime(); if (components != null) components.Dispose(); } base.Dispose(disposing); }
+
         /// <summary>Creates and arranges the update window controls.</summary>
         private void InitializeComponent()
         {

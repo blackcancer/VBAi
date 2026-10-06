@@ -7,18 +7,24 @@ using System.Linq;
 
 namespace VBAi
 {
+
     /// <summary>Implémente des profils positifs et bornés pour copier une Frame racine avec certains enfants directs.</summary>
     internal sealed partial class VbeForms
     {
+
         /// <summary>Liste les champs et limites vérifiés pour un type de contrôle MSForms.</summary>
         private sealed class VerifiedChildProfile
         {
+
             /// <summary>Nom du type MSForms visé par le profil.</summary>
             public string Type;
+
             /// <summary>ProgID utilisé pour créer le contrôle.</summary>
             public string ProgId;
+
             /// <summary>Noms des propriétés que le profil copie et vérifie.</summary>
             public string[] Fields;
+
             /// <summary>Propriétés et comportements exclus de ce profil.</summary>
             public string Limitation;
         }
@@ -26,36 +32,52 @@ namespace VBAi
         /// <summary>Capture le profil et les valeurs lues d’un enfant avant sa duplication.</summary>
         private sealed class ProfiledChildSnapshot
         {
+
             /// <summary>Profil positif utilisé pour lire, écrire et vérifier l’enfant.</summary>
             public VerifiedChildProfile Profile;
+
             /// <summary>Chemin canonique du contrôle source.</summary>
             public string SourcePath;
+
             /// <summary>Nom du contrôle à créer.</summary>
             public string ProposedName;
+
             /// <summary>Chemin qui identifiera le contrôle créé.</summary>
             public string ProposedPath;
+
             /// <summary>Légende d’un Label, CheckBox, CommandButton ou OptionButton.</summary>
             public string Caption;
+
             /// <summary>Valeur textuelle du TextBox, éventuellement absente.</summary>
             public string TextValue;
+
             /// <summary>État booléen du CheckBox source.</summary>
             public bool BooleanValue;
+
             /// <summary>Largeur de liste textuelle du ComboBox.</summary>
             public string ListWidth;
+
             /// <summary>Position horizontale de l’enfant.</summary>
             public double Left;
+
             /// <summary>Position verticale de l’enfant.</summary>
             public double Top;
+
             /// <summary>Largeur de l’enfant.</summary>
             public double Width;
+
             /// <summary>Hauteur de l’enfant.</summary>
             public double Height;
+
             /// <summary>Couleur OLE du fond d’un Label.</summary>
             public int BackColor;
+
             /// <summary>Nom de police d’un Label.</summary>
             public string FontName;
+
             /// <summary>Taille de police d’un Label.</summary>
             public double FontSize;
+
             /// <summary>Indique si la police d’un Label est en gras.</summary>
             public bool FontBold;
         }
@@ -63,26 +85,37 @@ namespace VBAi
         /// <summary>Capture la Frame, sa version d’arbre, ses enfants admissibles et les problèmes de prévalidation.</summary>
         private sealed class ProfiledFrameSnapshot
         {
+
             /// <summary>Chemin de la Frame source.</summary>
             public string SourcePath;
+
             /// <summary>Nom proposé pour la nouvelle Frame.</summary>
             public string NewName;
+
             /// <summary>Légende de la Frame.</summary>
             public string Caption;
+
             /// <summary>Position horizontale de la Frame.</summary>
             public double Left;
+
             /// <summary>Position verticale de la Frame.</summary>
             public double Top;
+
             /// <summary>Largeur de la Frame.</summary>
             public double Width;
+
             /// <summary>Hauteur de la Frame.</summary>
             public double Height;
+
             /// <summary>Version d’arbre utilisée pour contrôler la prévalidation.</summary>
             public string TreeVersion;
+
             /// <summary>Nombre de nœuds du formulaire avant copie.</summary>
             public int NodeCount;
+
             /// <summary>Snapshots des enfants directs qui disposent d’un profil lisible.</summary>
             public readonly List<ProfiledChildSnapshot> Children = new List<ProfiledChildSnapshot>();
+
             /// <summary>Motifs qui rendent le profil proposé inadmissible.</summary>
             public readonly List<string> Issues = new List<string>();
         }

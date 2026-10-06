@@ -1,23 +1,32 @@
 namespace VBAi
 {
+
     /// <summary>Displays one chat activity step with its state and expandable details.</summary>
     public sealed partial class ChatActivityStepView
     {
+
         /// <summary>Container that owns the disposable components created by the WinForms Designer.</summary>
         private System.ComponentModel.IContainer components;
+
         /// <summary>ToolTip component used to show full text for transcript controls.</summary>
         private System.Windows.Forms.ToolTip toolTips;
+
         /// <summary>Flow layout panel that contains this transcript view&apos;s child controls.</summary>
         private System.Windows.Forms.TableLayoutPanel layout;
-        /// <summary>Stores the section used by ChatActivityStepView.</summary>
+
+        /// <summary>Maintains the section state for chat activity step view.</summary>
         internal ChatDisclosureView section;
+
         /// <summary>Displays the detailed text returned for this tool activity step.</summary>
         internal ChatTextContentView detail;
+
         /// <summary>Displays the current state of this tool activity step.</summary>
         internal System.Windows.Forms.Label state;
+
         /// <summary>Releases the Designer components.</summary>
         /// <param name="disposing">Whether to release managed resources.</param>
         protected override void Dispose(bool disposing) { if (disposing) components?.Dispose(); base.Dispose(disposing); }
+
         /// <summary>Creates and configures the chat activity step view controls serialized by the WinForms Designer.</summary>
         private void InitializeComponent()
         {

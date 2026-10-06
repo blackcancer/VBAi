@@ -4,42 +4,108 @@ using System.Windows.Forms;
 
 namespace VBAi
 {
+
     /// <summary>Designer-owned layout; no project access occurs during construction.</summary>
     internal sealed partial class TestExplorerWindow
     {
+
+        /// <summary>Maintains the components state for test explorer window.</summary>
         private IContainer components;
+
+        /// <summary>Maintains the layout state for test explorer window.</summary>
         private TableLayoutPanel layout;
+
+        /// <summary>Maintains the commands state for test explorer window.</summary>
         private FlowLayoutPanel commands;
+
+        /// <summary>Maintains the filters state for test explorer window.</summary>
         private TableLayoutPanel filters;
+
+        /// <summary>Maintains the project list state for test explorer window.</summary>
         private UiComboBox projectList;
+
+        /// <summary>Maintains the search state for test explorer window.</summary>
         private UiTextBox search;
+
+        /// <summary>Maintains the outcome filter state for test explorer window.</summary>
         private UiComboBox outcomeFilter;
+
+        /// <summary>Maintains the grouping state for test explorer window.</summary>
         private UiComboBox grouping;
+
+        /// <summary>Maintains the test tree state for test explorer window.</summary>
         private TreeView testTree;
+
+        /// <summary>Maintains the split state for test explorer window.</summary>
         private SplitContainer split;
+
+        /// <summary>Maintains the details state for test explorer window.</summary>
         private UiTextBox details;
+
+        /// <summary>Maintains the result tabs state for test explorer window.</summary>
         private ThemedTabControl resultTabs;
+
+        /// <summary>Maintains the details tab state for test explorer window.</summary>
         private TabPage detailsTab;
+
+        /// <summary>Maintains the human tab state for test explorer window.</summary>
         private TabPage humanTab;
+
+        /// <summary>Maintains the compact tab state for test explorer window.</summary>
         private TabPage compactTab;
+
+        /// <summary>Maintains the human report state for test explorer window.</summary>
         private UiTextBox humanReport;
+
+        /// <summary>Maintains the compact report state for test explorer window.</summary>
         private UiTextBox compactReport;
+
+        /// <summary>Maintains the copy report state for test explorer window.</summary>
         private UiActionButton copyReport;
+
+        /// <summary>Maintains the export report state for test explorer window.</summary>
         private UiActionButton exportReport;
+
+        /// <summary>Maintains the summary state for test explorer window.</summary>
         private Label summary;
+
+        /// <summary>Maintains the status state for test explorer window.</summary>
         private Label status;
+
+        /// <summary>Maintains the coverage state for test explorer window.</summary>
         private Label coverage;
+
+        /// <summary>Maintains the refresh state for test explorer window.</summary>
         private UiActionButton refresh;
+
+        /// <summary>Maintains the run selected state for test explorer window.</summary>
         private UiActionButton runSelected;
+
+        /// <summary>Maintains the run scope state for test explorer window.</summary>
         private UiActionButton runScope;
+
+        /// <summary>Maintains the run selected coverage state for test explorer window.</summary>
         private UiActionButton runSelectedCoverage;
+
+        /// <summary>Maintains the run scope coverage state for test explorer window.</summary>
         private UiActionButton runScopeCoverage;
+
+        /// <summary>Maintains the freshness timer state for test explorer window.</summary>
         private Timer freshnessTimer;
+
+        /// <summary>Maintains the rerun failed state for test explorer window.</summary>
         private UiActionButton rerunFailed;
+
+        /// <summary>Maintains the stop state for test explorer window.</summary>
         private UiActionButton stop;
+
+        /// <summary>Maintains the source state for test explorer window.</summary>
         private UiActionButton source;
+
+        /// <summary>Maintains the install support state for test explorer window.</summary>
         private UiActionButton installSupport;
 
+        /// <summary>Handles initialize component for test explorer window.</summary>
         private void InitializeComponent()
         {
             components = new Container();
@@ -279,6 +345,8 @@ namespace VBAi
             ResumeLayout(false);
         }
 
+        /// <summary>Disposes  for test explorer window.</summary>
+        /// <param name="disposing">Indicates whether disposing is enabled.</param>
         protected override void Dispose(bool disposing)
         {
             if (disposing) components?.Dispose();

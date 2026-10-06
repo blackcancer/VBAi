@@ -9,9 +9,11 @@ using IMPLTYPEFLAGS = System.Runtime.InteropServices.ComTypes.IMPLTYPEFLAGS;
 
 namespace VBAi
 {
+
     /// <summary>Inspecte les accesseurs COM déclarés pour une propriété sans prétendre vérifier un setter en exécution.</summary>
     internal static class VbeComPropertyAccessors
     {
+
         /// <summary>Parcourt ITypeInfo et rapporte les interfaces et accesseurs de la propriété demandée.</summary>
         /// <param name="target">Objet COM à inspecter.</param>
         /// <param name="propertyName">Nom de la propriété recherché sans distinction de casse.</param>

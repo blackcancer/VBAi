@@ -11,63 +11,134 @@ using System.Windows.Forms;
 
 namespace VBAi
 {
+
     /// <summary>Session-owned live VBE test operations shared by the UI and guarded tool routes.</summary>
     internal sealed partial class VbeTestExplorerService : IVbaTestExplorerService, IVbaTestExecutionHost, IVbaTestCoverageExplorerService, IDisposable
     {
+
+        /// <summary>Maintains the vbe state for vbe test explorer service.</summary>
         private readonly dynamic vbe;
+
+        /// <summary>Maintains the dispatcher state for vbe test explorer service.</summary>
         private readonly Control dispatcher;
+
+        /// <summary>Maintains the owner thread state for vbe test explorer service.</summary>
         private readonly int ownerThread = Thread.CurrentThread.ManagedThreadId;
+
+        /// <summary>Maintains the projects state for vbe test explorer service.</summary>
         private readonly Dictionary<string, object> projects = new Dictionary<string, object>();
+
+        /// <summary>Maintains the runs state for vbe test explorer service.</summary>
         private readonly Dictionary<string, RunEntry> runs = new Dictionary<string, RunEntry>();
+
+        /// <summary>Maintains the runner state for vbe test explorer service.</summary>
         private readonly VbaTestRunner runner;
+
+        /// <summary>Maintains the disposed and outcome unknown state for vbe test explorer service.</summary>
         private bool disposed, outcomeUnknown;
+
+        /// <summary>Maintains the active state for vbe test explorer service.</summary>
         private RunEntry active;
+
+        /// <summary>Maintains the pending calls state for vbe test explorer service.</summary>
         private readonly List<PendingCall> pendingCalls = new List<PendingCall>();
+
+        /// <summary>Maintains the backup root state for vbe test explorer service.</summary>
         internal Func<string> BackupRoot = () => Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "VBAi", "TestSupportBackups");
+
+        /// <summary>Maintains the host state for vbe test explorer service.</summary>
         internal VbeDebug.IProcedureValuesHost Host = CreateReturnedValuesHost(CurrentProcessName());
+
+        /// <summary>Tracks the is execution host state of vbe test explorer service.</summary>
         internal Func<bool> IsExecutionHost = () => IsReturnedValuesHost(CurrentProcessName());
+
+        /// <summary>Maintains the native runtime reason state for vbe test explorer service.</summary>
         internal Func<string> NativeRuntimeReason = () => NativeRuntimeRegistrationReason();
 
+        /// <summary>Handles current process name for vbe test explorer service.</summary>
+        /// <returns>Text produced by the operation for current process name on vbe test explorer service.</returns>
         private static string CurrentProcessName()
         { using (var process = Process.GetCurrentProcess()) return process.ProcessName; }
 
+        /// <summary>Determines whether returned values host for vbe test explorer service.</summary>
+        /// <param name="processName">Text that supplies the process name value. Use the format required by the calling operation.</param>
+        /// <returns>Boolean indicating the result of the check for is returned values host on vbe test explorer service.</returns>
         internal static bool IsReturnedValuesHost(string processName) => processName.Equals("EXCEL", StringComparison.OrdinalIgnoreCase)
             || processName.Equals("POWERPNT", StringComparison.OrdinalIgnoreCase)
             || processName.Equals("WINWORD", StringComparison.OrdinalIgnoreCase);
 
+        /// <summary>Creates returned values host for vbe test explorer service.</summary>
+        /// <param name="processName">Text that supplies the process name value. Use the format required by the calling operation.</param>
+        /// <returns>i procedure values host produced by the operation for create returned values host on vbe test explorer service.</returns>
         internal static VbeDebug.IProcedureValuesHost CreateReturnedValuesHost(string processName)
         {
             if (processName.Equals("WINWORD", StringComparison.OrdinalIgnoreCase)) return new VbaTestWordValuesHost();
             return processName.Equals("POWERPNT", StringComparison.OrdinalIgnoreCase)
                 ? (VbeDebug.IProcedureValuesHost)new VbaTestPowerPointValuesHost() : new VbeDebug.NativeProcedureValuesHost();
         }
+
+        /// <summary>Maintains the confirm support state for vbe test explorer service.</summary>
         internal Func<VbaTestCatalog, string, string, bool> ConfirmSupport;
+
+        /// <summary>Maintains the show explorer state for vbe test explorer service.</summary>
         internal Func<string, object> ShowExplorer;
+
+        /// <summary>Tracks the is native execution host state of vbe test explorer service.</summary>
         internal Func<bool> IsNativeExecutionHost = () => {
             using (var process = Process.GetCurrentProcess()) return new[] { "EXCEL", "WINWORD", "POWERPNT", "MSACCESS", "MSPUB", "OUTLOOK", "SLDWORKS", "VISIO", "WINPROJ" }
                 .Contains(process.ProcessName.ToUpperInvariant());
         };
+
+        /// <summary>Maintains the native execution host state for vbe test explorer service.</summary>
         private VbaNativeTestExecutionHost nativeExecutionHost;
+
+        /// <summary>Maintains the result sink state for vbe test explorer service.</summary>
         private readonly VbaTestResultSink resultSink = new VbaTestResultSink();
+
+        /// <summary>Maintains the native phase state for vbe test explorer service.</summary>
         private string nativePhase;
 
+        /// <summary>Owns the run entry state and operations.</summary>
         private sealed class RunEntry
         {
+
+            /// <summary>Maintains the run state for run entry.</summary>
             internal VbaTestRun Run;
+
+            /// <summary>Identifies the project id associated with run entry.</summary>
             internal string ProjectId;
+
+            /// <summary>Maintains the state state for run entry.</summary>
             internal string State = "Running";
+
+            /// <summary>Maintains the stop state for run entry.</summary>
             internal CancellationTokenSource Stop = new CancellationTokenSource();
+
+            /// <summary>Maintains the completion state for run entry.</summary>
             internal Task<VbaTestRun> Completion;
+
+            /// <summary>Maintains the execution guard state for run entry.</summary>
             internal Action ExecutionGuard;
+
+            /// <summary>Maintains the returned values state for run entry.</summary>
             internal bool ReturnedValues;
         }
 
+        /// <summary>Owns the pending call state and operations.</summary>
         private sealed class PendingCall
         {
+
+            /// <summary>Maintains the completion state for pending call.</summary>
             internal readonly TaskCompletionSource<VbaTestResult> Completion = new TaskCompletionSource<VbaTestResult>();
+
+            /// <summary>Maintains the invoked state for pending call.</summary>
             internal bool Invoked;
         }
 
+        /// <summary>Initializes a VbeTestExplorerService instance with the supplied state.</summary>
+        /// <param name="vbe">object that supplies the vbe for this operation.</param>
+        /// <param name="dispatcher">control that supplies the dispatcher for this operation.</param>
+        /// <param name="continuationFactory">func&lt;control&gt; that supplies the continuation factory for this operation.</param>
         internal VbeTestExplorerService(object vbe, Control dispatcher, Func<Control> continuationFactory = null)
         {
             this.vbe = vbe ?? throw new ArgumentNullException(nameof(vbe));
@@ -82,12 +153,15 @@ namespace VBAi
                 VbaTestRuntimeSource.DispatchSignature, () => active?.Run.Id ?? throw new InvalidOperationException("No authorized test run is active."));
         }
 
+        /// <summary>Requires owner for vbe test explorer service.</summary>
         private void RequireOwner()
         {
             if (disposed || dispatcher.IsDisposed) throw new ObjectDisposedException(nameof(VbeTestExplorerService));
             if (Thread.CurrentThread.ManagedThreadId != ownerThread) throw new InvalidOperationException("Test operations require the owning VBE thread.");
         }
 
+        /// <summary>Reads projects for vbe test explorer service.</summary>
+        /// <returns>i read only list&lt;vba test project snapshot&gt; produced by the operation for read projects on vbe test explorer service.</returns>
         public IReadOnlyList<VbaTestProjectSnapshot> ReadProjects()
         {
             RequireOwner();
@@ -108,6 +182,9 @@ namespace VBAi
             return result;
         }
 
+        /// <summary>Finds identity for vbe test explorer service.</summary>
+        /// <param name="project">object that supplies the project for this operation.</param>
+        /// <returns>Text produced by the operation for find identity on vbe test explorer service.</returns>
         private string FindIdentity(object project)
         {
             foreach (var entry in projects)
@@ -117,6 +194,9 @@ namespace VBAi
             return id;
         }
 
+        /// <summary>Handles discover selector for vbe test explorer service.</summary>
+        /// <param name="selector">Text that supplies the selector value. Use the format required by the calling operation.</param>
+        /// <returns>vba test catalog produced by the operation for discover selector on vbe test explorer service.</returns>
         internal VbaTestCatalog DiscoverSelector(string selector)
         {
             RequireOwner();
@@ -124,6 +204,9 @@ namespace VBAi
             return Discover(FindIdentity(project));
         }
 
+        /// <summary>Handles discover for vbe test explorer service.</summary>
+        /// <param name="projectId">Text that supplies the project id value. Use the format required by the calling operation.</param>
+        /// <returns>vba test catalog produced by the operation for discover on vbe test explorer service.</returns>
         public VbaTestCatalog Discover(string projectId)
         {
             RequireOwner();
@@ -131,6 +214,9 @@ namespace VBAi
             return VbaTestDiscovery.Discover(Snapshot(projectId, project));
         }
 
+        /// <summary>Resolves live for vbe test explorer service.</summary>
+        /// <param name="id">Text that supplies the id value. Use the format required by the calling operation.</param>
+        /// <returns>object produced by the operation for resolve live on vbe test explorer service.</returns>
         private object ResolveLive(string id)
         {
             if (string.IsNullOrWhiteSpace(id) || !projects.TryGetValue(id, out object wanted)) throw new InvalidOperationException("The selected test project is no longer available.");
@@ -139,6 +225,10 @@ namespace VBAi
             throw new InvalidOperationException("The selected project was closed or replaced.");
         }
 
+        /// <summary>Handles snapshot for vbe test explorer service.</summary>
+        /// <param name="id">Text that supplies the id value. Use the format required by the calling operation.</param>
+        /// <param name="project">dynamic that supplies the project for this operation.</param>
+        /// <returns>vba test project snapshot produced by the operation for snapshot on vbe test explorer service.</returns>
         private VbaTestProjectSnapshot Snapshot(string id, dynamic project)
         {
             if ((int)project.Protection != 0) throw new InvalidOperationException("The selected VBA project is protected.");
@@ -166,11 +256,20 @@ namespace VBAi
                 HostPath = path, Revision = Hash(identity.ToString()), ReferencesHash = Hash(references.ToString()), Modules = modules.ToArray() };
         }
 
+        /// <summary>Determines whether it has h for vbe test explorer service.</summary>
+        /// <param name="source">Text that supplies the source value. Use the format required by the calling operation.</param>
+        /// <returns>Text produced by the operation for hash on vbe test explorer service.</returns>
         internal static string Hash(string source)
         { using (var hash = SHA256.Create()) return BitConverter.ToString(hash.ComputeHash(Encoding.UTF8.GetBytes(source ?? ""))).Replace("-", ""); }
 
+        /// <summary>Determines whether it can onical for vbe test explorer service.</summary>
+        /// <param name="source">Text that supplies the source value. Use the format required by the calling operation.</param>
+        /// <returns>Text produced by the operation for canonical on vbe test explorer service.</returns>
         private static string Canonical(string source) => (source ?? "").Replace("\r\n", "\n").TrimEnd('\n');
 
+        /// <summary>Handles execution unavailable reason for vbe test explorer service.</summary>
+        /// <param name="catalog">vba test catalog that supplies the catalog for this operation.</param>
+        /// <returns>Text produced by the operation for execution unavailable reason on vbe test explorer service.</returns>
         public string ExecutionUnavailableReason(VbaTestCatalog catalog)
         {
             RequireOwner();
@@ -197,6 +296,8 @@ namespace VBAi
             return null;
         }
 
+        /// <summary>Validates  for vbe test explorer service.</summary>
+        /// <param name="catalog">vba test catalog that supplies the catalog for this operation.</param>
         public void Validate(VbaTestCatalog catalog)
         {
             RequireOwner();
@@ -207,6 +308,11 @@ namespace VBAi
                 throw new VbaTestInvocationException("The project changed since test discovery. Refresh before execution.", false);
         }
 
+        /// <summary>Invokes async for vbe test explorer service.</summary>
+        /// <param name="catalog">vba test catalog that supplies the catalog for this operation.</param>
+        /// <param name="procedure">vba test descriptor that supplies the procedure for this operation.</param>
+        /// <param name="phase">Text that supplies the phase value. Use the format required by the calling operation.</param>
+        /// <returns>task&lt;vba test result&gt; produced by the operation for invoke async on vbe test explorer service.</returns>
         public Task<VbaTestResult> InvokeAsync(VbaTestCatalog catalog, VbaTestDescriptor procedure, string phase)
         {
             RequireOwner();
@@ -253,6 +359,9 @@ namespace VBAi
             return completion.Task;
         }
 
+        /// <summary>Releases returned target for vbe test explorer service.</summary>
+        /// <param name="target">object that supplies the target for this operation.</param>
+        /// <param name="uncertain">Indicates whether uncertain is enabled.</param>
         private static void ReleaseReturnedTarget(object target, bool uncertain)
         {
             if (target is VbaTestWordValuesHost.OwnedTarget word)
@@ -261,10 +370,25 @@ namespace VBAi
                 word.Dispose();
             }
         }
+
+        /// <summary>Runs async for vbe test explorer service.</summary>
+        /// <param name="catalog">vba test catalog that supplies the catalog for this operation.</param>
+        /// <param name="tests">i read only list&lt;vba test descriptor&gt; that supplies the tests for this operation.</param>
+        /// <param name="onResult">action&lt;vba test result&gt; that supplies the on result for this operation.</param>
+        /// <param name="cancellation">Token used to cancel the operation.</param>
+        /// <returns>task&lt;vba test run&gt; produced by the operation for run async on vbe test explorer service.</returns>
         public Task<VbaTestRun> RunAsync(VbaTestCatalog catalog, IReadOnlyList<VbaTestDescriptor> tests,
             Action<VbaTestResult> onResult, CancellationToken cancellation)
         { return BeginRun(catalog, tests, onResult, cancellation, null); }
 
+        /// <summary>Handles begin run for vbe test explorer service.</summary>
+        /// <param name="catalog">vba test catalog that supplies the catalog for this operation.</param>
+        /// <param name="tests">i read only list&lt;vba test descriptor&gt; that supplies the tests for this operation.</param>
+        /// <param name="onResult">action&lt;vba test result&gt; that supplies the on result for this operation.</param>
+        /// <param name="cancellation">Token used to cancel the operation.</param>
+        /// <param name="executionGuard">action that supplies the execution guard for this operation.</param>
+        /// <param name="measureCoverage">Indicates whether measure coverage is enabled.</param>
+        /// <returns>task&lt;vba test run&gt; produced by the operation for begin run on vbe test explorer service.</returns>
         private Task<VbaTestRun> BeginRun(VbaTestCatalog catalog, IReadOnlyList<VbaTestDescriptor> tests,
             Action<VbaTestResult> onResult, CancellationToken cancellation, Action executionGuard, bool measureCoverage = false)
         {
@@ -284,6 +408,14 @@ namespace VBAi
             return entry.Completion;
         }
 
+        /// <summary>Handles complete run for vbe test explorer service.</summary>
+        /// <param name="entry">run entry that supplies the entry for this operation.</param>
+        /// <param name="catalog">vba test catalog that supplies the catalog for this operation.</param>
+        /// <param name="tests">i read only list&lt;vba test descriptor&gt; that supplies the tests for this operation.</param>
+        /// <param name="progress">action&lt;vba test result&gt; that supplies the progress for this operation.</param>
+        /// <param name="cancellation">Token used to cancel the operation.</param>
+        /// <param name="measureCoverage">Indicates whether measure coverage is enabled.</param>
+        /// <returns>task&lt;vba test run&gt; produced by the operation for complete run on vbe test explorer service.</returns>
         private async Task<VbaTestRun> CompleteRun(RunEntry entry, VbaTestCatalog catalog, IReadOnlyList<VbaTestDescriptor> tests,
             Action<VbaTestResult> progress, CancellationToken cancellation, bool measureCoverage)
         {
@@ -311,6 +443,13 @@ namespace VBAi
             }
         }
 
+        /// <summary>Starts run for vbe test explorer service.</summary>
+        /// <param name="selector">Text that supplies the selector value. Use the format required by the calling operation.</param>
+        /// <param name="revision">Text that supplies the revision value. Use the format required by the calling operation.</param>
+        /// <param name="ids">string[] that supplies the ids for this operation.</param>
+        /// <param name="executionGuard">action that supplies the execution guard for this operation.</param>
+        /// <param name="measureCoverage">Indicates whether measure coverage is enabled.</param>
+        /// <returns>object produced by the operation for start run on vbe test explorer service.</returns>
         internal object StartRun(string selector, string revision, string[] ids, Action executionGuard = null, bool measureCoverage = false)
         {
             var catalog = DiscoverSelector(selector);
@@ -324,6 +463,8 @@ namespace VBAi
             return ReportRunStatus(catalog, entry.Run.Id, entry, "compact", 0, 0);
         }
 
+        /// <summary>Handles queue coverage start for vbe test explorer service.</summary>
+        /// <returns>task&lt;bool&gt; produced by the operation for queue coverage start on vbe test explorer service.</returns>
         private Task<bool> QueueCoverageStart()
         {
             var completion = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
@@ -332,6 +473,13 @@ namespace VBAi
             return completion.Task;
         }
 
+        /// <summary>Runs status for vbe test explorer service.</summary>
+        /// <param name="selector">Text that supplies the selector value. Use the format required by the calling operation.</param>
+        /// <param name="id">Text that supplies the id value. Use the format required by the calling operation.</param>
+        /// <param name="format">Text that supplies the format value. Use the format required by the calling operation.</param>
+        /// <param name="offset">int that supplies the offset for this operation.</param>
+        /// <param name="limit">int that supplies the limit for this operation.</param>
+        /// <returns>object produced by the operation for run status on vbe test explorer service.</returns>
         internal object RunStatus(string selector, string id, string format, int offset = 0, int limit = 0)
         {
             RequireOwner();
@@ -341,6 +489,14 @@ namespace VBAi
             return ReportRunStatus(catalog, id, entry, format, offset, limit);
         }
 
+        /// <summary>Handles report run status for vbe test explorer service.</summary>
+        /// <param name="catalog">vba test catalog that supplies the catalog for this operation.</param>
+        /// <param name="id">Text that supplies the id value. Use the format required by the calling operation.</param>
+        /// <param name="entry">run entry that supplies the entry for this operation.</param>
+        /// <param name="format">Text that supplies the format value. Use the format required by the calling operation.</param>
+        /// <param name="offset">int that supplies the offset for this operation.</param>
+        /// <param name="limit">int that supplies the limit for this operation.</param>
+        /// <returns>object produced by the operation for report run status on vbe test explorer service.</returns>
         private static object ReportRunStatus(VbaTestCatalog catalog, string id, RunEntry entry, string format, int offset, int limit)
         {
             return new { Query = id, entry.State, Pending = entry.State == "Running" || entry.State == "StopRequested",
@@ -349,6 +505,10 @@ namespace VBAi
                     { MaxJsonLength = 10 * 1024 * 1024 }.DeserializeObject(VbaTestReports.CompactPage(entry.Run, offset, limit)) };
         }
 
+        /// <summary>Stops run for vbe test explorer service.</summary>
+        /// <param name="selector">Text that supplies the selector value. Use the format required by the calling operation.</param>
+        /// <param name="id">Text that supplies the id value. Use the format required by the calling operation.</param>
+        /// <returns>object produced by the operation for stop run on vbe test explorer service.</returns>
         internal object StopRun(string selector, string id)
         {
             var catalog = DiscoverSelector(selector);
@@ -357,6 +517,9 @@ namespace VBAi
             return RunStatus(selector, id, "compact");
         }
 
+        /// <summary>Handles navigate for vbe test explorer service.</summary>
+        /// <param name="catalog">vba test catalog that supplies the catalog for this operation.</param>
+        /// <param name="test">vba test descriptor that supplies the test for this operation.</param>
         public void Navigate(VbaTestCatalog catalog, VbaTestDescriptor test)
         {
             RequireOwner();
@@ -369,6 +532,8 @@ namespace VBAi
             throw new InvalidOperationException("The test module is unavailable.");
         }
 
+        /// <summary>Handles install support for vbe test explorer service.</summary>
+        /// <param name="catalog">vba test catalog that supplies the catalog for this operation.</param>
         public void InstallSupport(VbaTestCatalog catalog)
         {
             RequireOwner();
@@ -380,6 +545,9 @@ namespace VBAi
             ApplySupport(catalog, after);
         }
 
+        /// <summary>Handles preview support for vbe test explorer service.</summary>
+        /// <param name="selector">Text that supplies the selector value. Use the format required by the calling operation.</param>
+        /// <returns>object produced by the operation for preview support on vbe test explorer service.</returns>
         internal object PreviewSupport(string selector)
         {
             var catalog = DiscoverSelector(selector);
@@ -388,6 +556,9 @@ namespace VBAi
         }
 
         /// <summary>Bridge operations; assistant permission checks remain in the tool gateway.</summary>
+        /// <param name="request">request that supplies the request for this operation.</param>
+        /// <param name="executionGuard">action that supplies the execution guard for this operation.</param>
+        /// <returns>object produced by the operation for command on vbe test explorer service.</returns>
         internal object Command(Request request, Action executionGuard = null)
         {
             RequireOwner();
@@ -444,6 +615,10 @@ namespace VBAi
             throw new ArgumentException("Unknown VBA test command.");
         }
 
+        /// <summary>Handles apply support for vbe test explorer service.</summary>
+        /// <param name="catalog">vba test catalog that supplies the catalog for this operation.</param>
+        /// <param name="approvedSource">Text that supplies the approved source value. Use the format required by the calling operation.</param>
+        /// <returns>object produced by the operation for apply support on vbe test explorer service.</returns>
         internal object ApplySupport(VbaTestCatalog catalog, string approvedSource)
         {
             RequireOwner(); Validate(catalog);
@@ -476,6 +651,7 @@ namespace VBAi
             { throw new InvalidOperationException("Test support may be partially written. No automatic retry or restoration was attempted. Preserved backup: " + backup + ". " + error.Message, error); }
         }
 
+        /// <summary>Disposes  for vbe test explorer service.</summary>
         public void Dispose()
         {
             if (disposed) return;

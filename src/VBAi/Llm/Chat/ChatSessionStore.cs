@@ -7,36 +7,47 @@ using System.Web.Script.Serialization;
 
 namespace VBAi
 {
+
     /// <summary>Enregistre un message affiché ou généré dans une session de conversation.</summary>
     internal sealed class ChatEntry
     {
+
         /// <summary>Obtient ou définit l’identifiant du locuteur, par exemple utilisateur ou assistant.</summary>
         /// <value>Nom du locuteur.</value>
         public string Speaker { get; set; }
+
         /// <summary>Étape native détaillée lorsqu’il s’agit d’une activité de l’agent.</summary>
         /// <value>Métadonnées de l’action, ou null pour un ancien message.</value>
         public CodexAgentActivity Activity { get; set; }
+
         /// <summary>Obtient ou définit le texte du message.</summary>
         /// <value>Texte brut du message.</value>
         public string Text { get; set; }
+
         /// <summary>Obtient ou définit l’identifiant du flux auquel le message appartient, s’il est diffusé.</summary>
         /// <value>Identifiant du flux ou nul.</value>
         public string StreamId { get; set; }
+
         /// <summary>Obtient ou définit le changement de code associé au message, le cas échéant.</summary>
         /// <value>Changement de code ou nul.</value>
         public CodeChange Change { get; set; }
+
         /// <summary>Coupe de concepteur proposant une récupération du formulaire.</summary>
         /// <value>Changement récupérable ou null.</value>
         public FormCutChange FormCut { get; set; }
+
         /// <summary>Obtient ou définit les références VBE citées par le message.</summary>
         /// <value>Références du message.</value>
         public VbeChatReference[] References { get; set; }
+
         /// <summary>Obtient ou définit la mémoire de projet jointe au message.</summary>
         /// <value>Texte de mémoire ou nul.</value>
         public string AttachedMemory { get; set; }
+
         /// <summary>Obtient ou définit les pièces jointes du message.</summary>
         /// <value>Pièces jointes de l’entrée.</value>
         public ChatAttachment[] Attachments { get; set; }
+
         /// <summary>Obtient ou définit l’identifiant du tour de conversation associé.</summary>
         /// <value>Identifiant du tour courant.</value>
         public string TurnId { get; set; }
@@ -45,126 +56,175 @@ namespace VBAi
     /// <summary>Contient l’état persistant d’une conversation, son brouillon et ses entrées.</summary>
     internal sealed class ChatSessionState
     {
+
         /// <summary>Opaque database revision loaded with this snapshot; never sent to a provider.</summary>
         internal string StorageVersion;
+
+        /// <summary>Identifies the writer id associated with chat session state.</summary>
         internal readonly string WriterId = Guid.NewGuid().ToString("N");
+
         /// <summary>Obtient ou définit l’identifiant stable de la session.</summary>
         /// <value>Identifiant texte au format GUID compact.</value>
         public string Id { get; set; } = Guid.NewGuid().ToString("N");
+
         /// <summary>Obtient ou définit la portée de projet à laquelle appartient la session.</summary>
         /// <value>Clé de portée du projet.</value>
         public string Scope { get; set; }
+
         /// <summary>Obtient ou définit le titre persistant de la session.</summary>
         /// <value>Titre stocké.</value>
         public string Title { get; set; } = "Nouvelle conversation";
+
         /// <summary>Obtient ou définit l’état archivé de la session.</summary>
         /// <value><see langword="true"/> si la session est archivée.</value>
         public bool Archived { get; set; }
+
         /// <summary>Obtient ou définit l’état épinglé de la session.</summary>
         /// <value><see langword="true"/> si la session est épinglée.</value>
         public bool Pinned { get; set; }
+
         /// <summary>Obtient ou définit le mode de conversation.</summary>
         /// <value>Mode choisi.</value>
         public ChatMode Mode { get; set; } = ChatMode.Agent;
+
         /// <summary>Gets or sets the read project grants.</summary>
-        /// <value>The current value represented by this member.</value>
+        /// <value>Current read project grants exposed by chat session state.</value>
         public string[] ReadProjectGrants { get; set; } = new string[0];
+
         /// <summary>Gets or sets the shared context read allowed.</summary>
-        /// <value>The current value represented by this member.</value>
+        /// <value>Current shared context read allowed exposed by chat session state.</value>
         public bool SharedContextReadAllowed { get; set; }
+
         /// <summary>Gets or sets the read access policy version.</summary>
-        /// <value>The current value represented by this member.</value>
+        /// <value>Current read access policy version exposed by chat session state.</value>
         public int ReadAccessPolicyVersion { get; set; } = 1;
+
         /// <summary>Gets or sets the provider history start index.</summary>
-        /// <value>The current value represented by this member.</value>
+        /// <value>Current provider history start index exposed by chat session state.</value>
         public int ProviderHistoryStartIndex { get; set; }
+
         /// <summary>Gets or sets the pending messages.</summary>
-        /// <value>The current value represented by this member.</value>
+        /// <value>Current pending messages exposed by chat session state.</value>
         public List<QueuedChatMessage> PendingMessages { get; set; } = new List<QueuedChatMessage>();
+
         /// <summary>Gets or sets the budget paused.</summary>
-        /// <value>The current value represented by this member.</value>
+        /// <value>Current budget paused exposed by chat session state.</value>
         public bool BudgetPaused { get; set; }
+
         /// <summary>Gets or sets the paused turn id.</summary>
-        /// <value>The current value represented by this member.</value>
+        /// <value>Current paused turn id exposed by chat session state.</value>
         public string PausedTurnId { get; set; }
+
         /// <summary>Gets or sets the paused provider.</summary>
-        /// <value>The current value represented by this member.</value>
+        /// <value>Current paused provider exposed by chat session state.</value>
         public string PausedProvider { get; set; }
+
         /// <summary>Gets or sets the paused model.</summary>
-        /// <value>The current value represented by this member.</value>
+        /// <value>Current paused model exposed by chat session state.</value>
         public string PausedModel { get; set; }
+
         /// <summary>Gets or sets the paused effort.</summary>
-        /// <value>The current value represented by this member.</value>
+        /// <value>Current paused effort exposed by chat session state.</value>
         public string PausedEffort { get; set; }
+
         /// <summary>Gets or sets the paused mode.</summary>
-        /// <value>The current value represented by this member.</value>
+        /// <value>Current paused mode exposed by chat session state.</value>
         public ChatMode PausedMode { get; set; }
+
         /// <summary>Gets or sets the completed tool actions.</summary>
-        /// <value>The current value represented by this member.</value>
+        /// <value>Current completed tool actions exposed by chat session state.</value>
         public List<string> CompletedToolActions { get; set; } = new List<string>();
+
         /// <summary>Obtient ou définit les pièces jointes du brouillon.</summary>
         /// <value>Pièces jointes en attente du prochain message.</value>
         public ChatAttachment[] DraftAttachments { get; set; }
+
         /// <summary>Obtient ou définit le fournisseur utilisé pour la session.</summary>
         /// <value>Nom du fournisseur.</value>
         public string Provider { get; set; } = "Codex";
+
         /// <summary>Obtient ou définit l’identifiant du modèle choisi.</summary>
         /// <value>Identifiant de modèle ou nul.</value>
         public string Model { get; set; }
+
         /// <summary>Obtient ou définit le niveau d’effort choisi pour le modèle.</summary>
         /// <value>Identifiant d’effort ou nul.</value>
         public string Effort { get; set; }
+
         /// <summary>Obtient ou définit l’identifiant de fil de conversation Codex associé.</summary>
         /// <value>Identifiant de fil, ou nul si non applicable.</value>
         public string CodexThreadId { get; set; }
+
         /// <summary>Dossier privé auquel appartient le fil ; nul pour un ancien fil extérieur.</summary>
         /// <value>Chemin du stockage Codex ayant créé ce fil.</value>
         public string CodexThreadHome { get; set; }
+
         /// <summary>Empreinte des consignes développeur effectivement appliquées au fil Codex.</summary>
         /// <value>SHA-256 local, ou nul lorsque les consignes du fil ne sont pas connues.</value>
         public string CodexDeveloperInstructionsHash { get; set; }
+
         /// <summary>Obtient ou définit le contexte nécessaire pour reprendre la conversation.</summary>
         /// <value>Contexte de reprise ou nul.</value>
         public string ResumeContext { get; set; }
+
         /// <summary>Obtient ou définit la représentation JSON des messages conservée pour compatibilité.</summary>
         /// <value>Messages sérialisés, ou nul.</value>
         public string MessagesJson { get; set; }
+
         /// <summary>Obtient ou définit le texte du brouillon courant.</summary>
         /// <value>Texte du compositeur.</value>
         public string Draft { get; set; }
+
         /// <summary>Gets or sets the draft captured memory.</summary>
-        /// <value>The current value represented by this member.</value>
+        /// <value>Current draft captured memory exposed by chat session state.</value>
         public string DraftCapturedMemory { get; set; }
+
         /// <summary>Obtient ou définit les références VBE du brouillon.</summary>
         /// <value>Références sélectionnées pour le prochain message.</value>
         public VbeChatReference[] DraftReferences { get; set; }
+
         /// <summary>Obtient ou définit les entrées de la session.</summary>
         /// <value>Messages et changements ordonnés de la conversation.</value>
         public List<ChatEntry> Entries { get; set; } = new List<ChatEntry>();
+
         /// <summary>Obtient le titre destiné à l’affichage, traduit lorsque le titre est celui par défaut.</summary>
         /// <value>Titre localisé ou titre personnalisé.</value>
         [ScriptIgnore]
         public string DisplayTitle { get { return Title == "Nouvelle conversation" ? UiText.Get("New conversation") : Title; } }
+
         /// <summary>Retourne le titre d’affichage précédé d’une étoile lorsque la session est épinglée.</summary>
         /// <returns>Le libellé présenté dans la liste des sessions.</returns>
         public override string ToString() { return (Pinned ? "★ " : "") + DisplayTitle; }
     }
 
-    /// <summary>Persiste les sessions de chat et la mémoire de projet dans la base SQLite Windows.</summary>
     // Uses the SQLite runtime shipped with Windows. SQL values are always bound parameters.
+    /// <summary>Persiste les sessions de chat et la mémoire de projet dans la base SQLite Windows.</summary>
     internal sealed partial class ChatSessionStore : IDisposable
     {
+
+        /// <summary>Determines whether transient scope for chat session store.</summary>
+        /// <param name="scope">Text that supplies the scope value. Use the format required by the calling operation.</param>
+        /// <returns>Boolean indicating the result of the check for is transient scope on chat session store.</returns>
         internal static bool IsTransientScope(string scope) => scope != null && scope.StartsWith("temporary:", StringComparison.Ordinal);
+
         /// <summary>Handle natif de la base SQLite ouverte.</summary>
         private IntPtr database;
+
+        /// <summary>Gets or sets the database path.</summary>
+        /// <value>Current database path exposed by chat session store.</value>
         internal string DatabasePath { get; private set; }
+
         /// <summary>Sérialiseur JSON configuré pour les charges utiles de session volumineuses.</summary>
         private readonly JavaScriptSerializer json = new JavaScriptSerializer { MaxJsonLength = 32 * 1024 * 1024 };
+
         /// <summary>Ouvre la base, configure l’attente sur verrou et crée les tables et index nécessaires.</summary>
         /// <param name="path">Chemin du fichier de base SQLite.</param>
         /// <exception cref="IOException">La base ne peut pas être ouverte ou initialisée.</exception>
         public ChatSessionStore(string path) : this(path, false) { }
 
+        /// <summary>Initializes a ChatSessionStore instance with the supplied state.</summary>
+        /// <param name="path">Path used for the path being processed.</param>
+        /// <param name="readOnly">Indicates whether read only is enabled.</param>
         private ChatSessionStore(string path, bool readOnly)
         {
             DatabasePath = Path.GetFullPath(path);
@@ -194,6 +254,12 @@ namespace VBAi
         }
 
         /// <summary>Writes an immutable UI snapshot on the connection's owning worker.</summary>
+        /// <param name="id">Text that supplies the id value. Use the format required by the calling operation.</param>
+        /// <param name="scope">Text that supplies the scope value. Use the format required by the calling operation.</param>
+        /// <param name="title">Text that supplies the title value. Use the format required by the calling operation.</param>
+        /// <param name="payload">Text that supplies the payload value. Use the format required by the calling operation.</param>
+        /// <param name="expectedVersion">Text that supplies the expected version value. Use the format required by the calling operation.</param>
+        /// <returns>Text produced by the operation for save payload on chat session store.</returns>
         internal string SavePayload(string id, string scope, string title, string payload, string expectedVersion)
         {
             if (IsTransientScope(scope)) return null;
@@ -210,6 +276,9 @@ namespace VBAi
         }
 
         /// <summary>Deletes only the local conversation revision owned by this writer.</summary>
+        /// <param name="id">Text that supplies the id value. Use the format required by the calling operation.</param>
+        /// <param name="scope">Text that supplies the scope value. Use the format required by the calling operation.</param>
+        /// <param name="expectedVersion">Text that supplies the expected version value. Use the format required by the calling operation.</param>
         internal void Delete(string id, string scope, string expectedVersion)
         {
             if (IsTransientScope(scope)) return;
@@ -243,12 +312,18 @@ namespace VBAi
             return result;
         }
 
+        /// <summary>Determines whether it has sessions for chat session store.</summary>
+        /// <param name="scope">Text that supplies the scope value. Use the format required by the calling operation.</param>
+        /// <returns>Boolean indicating the result of the check for has sessions on chat session store.</returns>
         internal bool HasSessions(string scope)
         {
             if (IsTransientScope(scope)) return false;
             using (var statement = Prepare("SELECT 1 FROM chat_sessions WHERE scope = ?1 LIMIT 1", scope)) return statement.Step() == 100;
         }
 
+        /// <summary>Determines whether it has scope data for chat session store.</summary>
+        /// <param name="scope">Text that supplies the scope value. Use the format required by the calling operation.</param>
+        /// <returns>Boolean indicating the result of the check for has scope data on chat session store.</returns>
         internal bool HasScopeData(string scope)
         {
             if (IsTransientScope(scope)) return false;
@@ -256,19 +331,34 @@ namespace VBAi
                 return statement.Step() == 100;
         }
 
+        /// <summary>Owns the promotion row state and operations.</summary>
         internal sealed class PromotionRow
         {
+
+            /// <summary>Identifies the id and title and payload associated with promotion row.</summary>
             internal string Id, Title, Payload;
         }
+
+        /// <summary>Owns the scope occupied exception state and operations.</summary>
         private sealed class ScopeOccupiedException : Exception { }
+
+        /// <summary>Owns the promotion outcome unverified exception state and operations.</summary>
         internal sealed class PromotionOutcomeUnverifiedException : IOException
         {
+
+            /// <summary>Initializes a PromotionOutcomeUnverifiedException instance with the supplied state.</summary>
+            /// <param name="error">Exception describing the error failure.</param>
+            /// <param name="rollback">Exception describing the rollback failure.</param>
             internal PromotionOutcomeUnverifiedException(Exception error, Exception rollback) : base(
                 "History promotion failed and its database outcome is unverified. Reopen the conversation before saving again.",
                 rollback == null ? error : new AggregateException(error, rollback)) { }
         }
 
         /// <summary>Claims an empty saved scope and writes its initial conversations and notes atomically.</summary>
+        /// <param name="scope">Text that supplies the scope value. Use the format required by the calling operation.</param>
+        /// <param name="rows">i list&lt;promotion row&gt; that supplies the rows for this operation.</param>
+        /// <param name="memory">Text that supplies the memory value. Use the format required by the calling operation.</param>
+        /// <returns>dictionary&lt;string, string&gt; produced by the operation for promote empty scope on chat session store.</returns>
         internal Dictionary<string, string> PromoteEmptyScope(string scope, IList<PromotionRow> rows, string memory)
         {
             if (IsTransientScope(scope) || !Path.IsPathRooted(scope)) throw new ArgumentException("A saved document scope is required.");
@@ -297,6 +387,9 @@ namespace VBAi
             }
         }
 
+        /// <summary>Handles rollback promotion for chat session store.</summary>
+        /// <param name="error">Exception describing the error failure.</param>
+        /// <returns>Boolean indicating the result of the check for rollback promotion on chat session store.</returns>
         private bool RollbackPromotion(out Exception error)
         {
             error = null;
@@ -306,13 +399,22 @@ namespace VBAi
             return Native.sqlite3_get_autocommit(database) != 0;
         }
 
+        /// <summary>Owns the scope snapshot state and operations.</summary>
         internal sealed class ScopeSnapshot
         {
+
+            /// <summary>Maintains the sessions state for scope snapshot.</summary>
             internal List<ChatSessionState> Sessions;
+
+            /// <summary>Maintains the memory state for scope snapshot.</summary>
             internal string Memory;
         }
 
         /// <summary>Owns the read connection and decoded objects entirely on a worker until publication.</summary>
+        /// <param name="path">Path used for the path being processed.</param>
+        /// <param name="scope">Text that supplies the scope value. Use the format required by the calling operation.</param>
+        /// <param name="includeSessions">Indicates whether include sessions is enabled.</param>
+        /// <returns>task&lt;scope snapshot&gt; produced by the operation for read scope async on chat session store.</returns>
         internal static System.Threading.Tasks.Task<ScopeSnapshot> ReadScopeAsync(string path, string scope, bool includeSessions)
         {
             if (IsTransientScope(scope)) return System.Threading.Tasks.Task.FromResult(new ScopeSnapshot { Sessions = new List<ChatSessionState>(), Memory = "" });
@@ -326,8 +428,8 @@ namespace VBAi
         }
 
         /// <summary>Deserializes a stored chat session and restores its persisted queue and state.</summary>
-        /// <param name="payload">Text containing the payload.</param>
-        /// <returns>The result produced by this operation.</returns>
+        /// <param name="payload">Text that supplies the payload value. Use the format required by the calling operation.</param>
+        /// <returns>chat session state produced by the operation for decode session on chat session store.</returns>
         internal static ChatSessionState DecodeSession(string payload)
         {
             var serializer = new JavaScriptSerializer { MaxJsonLength = 32 * 1024 * 1024 };
@@ -399,6 +501,7 @@ namespace VBAi
         /// <param name="text">Texte à encoder.</param>
         /// <returns>Octets UTF-8 terminés par zéro.</returns>
         private static byte[] Utf8(string text) { return Encoding.UTF8.GetBytes(text + "\0"); }
+
         /// <summary>Lit une chaîne UTF-8 terminée par zéro depuis un pointeur natif.</summary>
         /// <param name="ptr">Pointeur vers les octets natifs, éventuellement nul.</param>
         /// <returns>Texte décodé, ou une chaîne vide si le pointeur est nul.</returns>
@@ -421,18 +524,23 @@ namespace VBAi
         /// <summary>Possède un état d’instruction SQLite préparée et le finalise à sa libération.</summary>
         private sealed class Statement : IDisposable
         {
+
             /// <summary>Base propriétaire utilisée pour vérifier les erreurs d’exécution.</summary>
             private readonly ChatSessionStore owner;
+
             /// <summary>Obtient le handle de l’instruction native préparée.</summary>
             /// <value>Handle SQLite de l’instruction, remis à zéro après finalisation.</value>
             public IntPtr Handle { get; private set; }
+
             /// <summary>Associe le handle d’instruction à son magasin propriétaire.</summary>
             /// <param name="owner">Magasin qui fournit la vérification des erreurs SQLite.</param>
             /// <param name="handle">Handle de l’instruction préparée.</param>
             public Statement(ChatSessionStore owner, IntPtr handle) { this.owner = owner; Handle = handle; }
+
             /// <summary>Exécute une étape de l’instruction et vérifie son code de retour.</summary>
             /// <returns>Code SQLite de l’étape, notamment ligne disponible ou fin des résultats.</returns>
             public int Step() { int result = owner.StepNative(Handle); owner.Check(result); return result; }
+
             /// <summary>Finalise l’instruction native une seule fois.</summary>
             public void Dispose() { if (Handle != IntPtr.Zero) { Native.sqlite3_finalize(Handle); Handle = IntPtr.Zero; } }
         }
@@ -440,6 +548,7 @@ namespace VBAi
         /// <summary>Déclarations P/Invoke des fonctions utilisées dans winsqlite3.dll.</summary>
         private static class Native
         {
+
             /// <summary>Ouvre une base SQLite à partir d’un chemin encodé en UTF-8.</summary>
             /// <param name="path">Chemin terminé par zéro du fichier de base.</param>
             /// <param name="db">Reçoit le handle de base, y compris en cas d’échec partiel.</param>
@@ -447,16 +556,23 @@ namespace VBAi
             /// <param name="vfs">VFS SQLite à utiliser, ou nul pour le VFS par défaut.</param>
             /// <returns>Code de résultat SQLite.</returns>
             [DllImport("winsqlite3.dll", CallingConvention = CallingConvention.Cdecl)] internal static extern int sqlite3_open_v2(byte[] path, out IntPtr db, int flags, IntPtr vfs);
+
             /// <summary>Ferme une base SQLite et libère ses ressources.</summary>
             /// <param name="db">Handle de la base à fermer.</param>
             /// <returns>Code de résultat SQLite.</returns>
             [DllImport("winsqlite3.dll", CallingConvention = CallingConvention.Cdecl)] internal static extern int sqlite3_close_v2(IntPtr db);
+
+            /// <summary>Handles sqlite3 get autocommit for native.</summary>
+            /// <param name="db">Native handle that supplies the db for this operation.</param>
+            /// <returns>int produced by the operation for sqlite3 get autocommit on native.</returns>
             [DllImport("winsqlite3.dll", CallingConvention = CallingConvention.Cdecl)] internal static extern int sqlite3_get_autocommit(IntPtr db);
+
             /// <summary>Définit le délai maximal d’attente d’un verrou SQLite.</summary>
             /// <param name="db">Handle de la base.</param>
             /// <param name="ms">Durée d’attente en millisecondes.</param>
             /// <returns>Code de résultat SQLite.</returns>
             [DllImport("winsqlite3.dll", CallingConvention = CallingConvention.Cdecl)] internal static extern int sqlite3_busy_timeout(IntPtr db, int ms);
+
             /// <summary>Compile une instruction SQL en instruction préparée.</summary>
             /// <param name="db">Handle de la base.</param>
             /// <param name="sql">Instruction encodée en UTF-8.</param>
@@ -465,6 +581,7 @@ namespace VBAi
             /// <param name="tail">Pointeur facultatif vers le reste du texte SQL.</param>
             /// <returns>Code de résultat SQLite.</returns>
             [DllImport("winsqlite3.dll", CallingConvention = CallingConvention.Cdecl)] internal static extern int sqlite3_prepare_v2(IntPtr db, byte[] sql, int count, out IntPtr statement, IntPtr tail);
+
             /// <summary>Liaison d’une valeur texte à un paramètre d’instruction.</summary>
             /// <param name="statement">Instruction préparée.</param>
             /// <param name="index">Index du paramètre, à partir de un.</param>
@@ -473,21 +590,28 @@ namespace VBAi
             /// <param name="destructor">Destructeur SQLite de la mémoire ; -1 indique que SQLite peut la copier.</param>
             /// <returns>Code de résultat SQLite.</returns>
             [DllImport("winsqlite3.dll", CallingConvention = CallingConvention.Cdecl)] internal static extern int sqlite3_bind_text(IntPtr statement, int index, byte[] text, int count, IntPtr destructor);
+
             /// <summary>Exécute l’étape suivante d’une instruction préparée.</summary>
             /// <param name="statement">Instruction préparée.</param>
             /// <returns>Code indiquant une ligne, la fin des résultats ou une erreur.</returns>
             [DllImport("winsqlite3.dll", CallingConvention = CallingConvention.Cdecl)] internal static extern int sqlite3_step(IntPtr statement);
+
             /// <summary>Returns the number of rows changed by the most recent write on this connection.</summary>
+            /// <param name="db">Native handle that supplies the db for this operation.</param>
+            /// <returns>int produced by the operation for sqlite3 changes on native.</returns>
             [DllImport("winsqlite3.dll", CallingConvention = CallingConvention.Cdecl)] internal static extern int sqlite3_changes(IntPtr db);
+
             /// <summary>Finalise une instruction préparée et libère ses ressources.</summary>
             /// <param name="statement">Instruction à finaliser.</param>
             /// <returns>Code de résultat SQLite.</returns>
             [DllImport("winsqlite3.dll", CallingConvention = CallingConvention.Cdecl)] internal static extern int sqlite3_finalize(IntPtr statement);
+
             /// <summary>Obtient le pointeur vers la valeur texte d’une colonne de la ligne courante.</summary>
             /// <param name="statement">Instruction ayant produit la ligne courante.</param>
             /// <param name="column">Index de la colonne, à partir de zéro.</param>
             /// <returns>Pointeur natif vers la valeur UTF-8 ou nul.</returns>
             [DllImport("winsqlite3.dll", CallingConvention = CallingConvention.Cdecl)] internal static extern IntPtr sqlite3_column_text(IntPtr statement, int column);
+
             /// <summary>Obtient le message d’erreur associé à une base SQLite.</summary>
             /// <param name="db">Handle de la base concernée.</param>
             /// <returns>Pointeur vers le message UTF-8 géré par SQLite.</returns>

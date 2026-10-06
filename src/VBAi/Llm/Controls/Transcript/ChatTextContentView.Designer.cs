@@ -1,25 +1,35 @@
 namespace VBAi
 {
+
     /// <summary>Displays selectable transcript text and Markdown with clickable references and code copying.</summary>
     public sealed partial class ChatTextContentView
     {
+
         /// <summary>Container that owns the disposable components created by the WinForms Designer.</summary>
         private System.ComponentModel.IContainer components;
+
         /// <summary>ToolTip component used to show full text for transcript controls.</summary>
         private System.Windows.Forms.ToolTip toolTips;
+
         /// <summary>Flow layout panel that contains this transcript view&apos;s child controls.</summary>
         private System.Windows.Forms.TableLayoutPanel layout;
-        /// <summary>Stores the content used by ChatTextContentView.</summary>
+
+        /// <summary>Maintains the content state for chat text content view.</summary>
         internal VBAi.UiRichTextBox content;
-        /// <summary>Stores the copy menu used by ChatTextContentView.</summary>
+
+        /// <summary>Maintains the copy menu state for chat text content view.</summary>
         internal System.Windows.Forms.ContextMenuStrip copyMenu;
-        /// <summary>Stores the copy selection used by ChatTextContentView.</summary>
+
+        /// <summary>Maintains the copy selection state for chat text content view.</summary>
         internal System.Windows.Forms.ToolStripMenuItem copySelection;
-        /// <summary>Stores the copy code used by ChatTextContentView.</summary>
+
+        /// <summary>Maintains the copy code state for chat text content view.</summary>
         internal System.Windows.Forms.ToolStripMenuItem copyCode;
+
         /// <summary>Releases the Designer components.</summary>
         /// <param name="disposing">Whether to release managed resources.</param>
         protected override void Dispose(bool disposing) { if (disposing) { DisposeTextResources(); components?.Dispose(); } base.Dispose(disposing); }
+
         /// <summary>Creates and configures the chat text content view controls serialized by the WinForms Designer.</summary>
         private void InitializeComponent()
         {

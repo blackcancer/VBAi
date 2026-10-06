@@ -6,31 +6,43 @@ using System.IO;
 
 namespace VBAi
 {
+
     /// <summary>Gère les signets et les commandes arrière/avant des emplacements de code VBA.</summary>
     internal sealed class VbeNavigationHistory
     {
+
         /// <summary>Instance VBE facultative utilisée pour résoudre les projets et capturer le volet actif.</summary>
         private readonly dynamic vbe;
+
         /// <summary>Exécuteur des commandes de lecture et de sélection de code.</summary>
         private readonly Func<Request, Response> execute;
+
         /// <summary>Signets temporaires des projets non enregistrés, indexés par identité de session et nom.</summary>
         private readonly Dictionary<string, Location> bookmarks = new Dictionary<string, Location>(StringComparer.OrdinalIgnoreCase);
+
         /// <summary>Chemin de la base locale qui conserve les signets des projets enregistrés.</summary>
         private readonly string bookmarkDatabase;
+
         /// <summary>Clés de session attribuées aux projets sans chemin persistant.</summary>
         private readonly Dictionary<object, string> unsavedProjectScopes = new Dictionary<object, string>();
+
         /// <summary>Pile des emplacements précédents pour la navigation arrière.</summary>
         private readonly List<Location> back = new List<Location>();
+
         /// <summary>Pile des emplacements futurs après un déplacement arrière.</summary>
         private readonly List<Location> forward = new List<Location>();
+
         /// <summary>Emplacement de code identifié par projet, module, empreinte et position.</summary>
         private sealed class Location
         {
-            /// <summary>Stores the project,module,sha256 used by Location.</summary>
+
+            /// <summary>Maintains the project and module and sha256 state for location.</summary>
             public string Project, Module, Sha256;
-            /// <summary>Stores the line,column used by Location.</summary>
+
+            /// <summary>Maintains the line and column state for location.</summary>
             public int Line, Column;
         }
+
         /// <summary>Crée l’historique avec le VBE, le transport de commandes et le stockage des signets persistants.</summary>
         /// <param name="vbe">Instance VBE, ou null pour un transport sans automatisation directe.</param>
         /// <param name="execute">Transport des lectures et sélections de code.</param>
@@ -40,6 +52,7 @@ namespace VBAi
             this.vbe = vbe; this.execute = execute;
             this.bookmarkDatabase = bookmarkDatabase ?? Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "VBAi", "chat.db");
         }
+
         /// <summary>Ajoute, liste, supprime ou ouvre un signet pour un projet enregistré ou non enregistré.</summary>
         /// <param name="request">Action et nom du signet, ou cible lors de son ajout.</param>
         /// <returns>Signets listés, état de suppression ou résultat de navigation.</returns>
@@ -78,6 +91,7 @@ namespace VBAi
             }
             throw new ArgumentException("Use add, list, remove or go.");
         }
+
         /// <summary>Effectue les opérations de signet SQLite sous la portée du chemin canonique d’un projet enregistré.</summary>
         /// <param name="request">Action et nom de signet.</param>
         /// <param name="scope">Chemin absolu du projet.</param>
@@ -118,6 +132,7 @@ namespace VBAi
             try { string path = (string)project.FileName; if (!string.IsNullOrWhiteSpace(path) && Path.IsPathRooted(path)) return Path.GetFullPath(path); } catch { }
             return (string)project.Name;
         }
+
         /// <summary>Va vers une cible ou exécute une commande back/forward dans l’historique du projet courant.</summary>
         /// <param name="request">Action de navigation, cible et empreinte source attendue.</param>
         /// <returns>Données renvoyées par la commande de sélection VBE.</returns>
@@ -143,6 +158,7 @@ namespace VBAi
             if (request.Action != "go") throw new ArgumentException("Use go, back or forward.");
             return Navigate(new Location { Project = project, Module = request.Module, Sha256 = request.ExpectedSha256, Line = request.StartLine, Column = request.StartColumn }, true);
         }
+
         /// <summary>Capture l’emplacement du volet de code actif s’il est lisible.</summary>
         /// <returns>Emplacement courant lié à l’empreinte du module, ou null si aucun volet n’est exploitable.</returns>
         private Location CaptureCurrent()
@@ -165,6 +181,7 @@ namespace VBAi
             catch { /* A missing active pane does not prevent navigation to a valid target. */ }
             return current;
         }
+
         /// <summary>Valide une cible et demande au VBE de sélectionner sa position.</summary>
         /// <param name="target">Projet, module, source versionnée et position à ouvrir.</param>
         /// <param name="remember">Indique s’il faut capturer l’emplacement actif pour alimenter l’historique arrière.</param>
@@ -179,6 +196,7 @@ namespace VBAi
             if (remember) { forward.Clear(); if (current != null) { back.Add(current); if (back.Count > 100) back.RemoveAt(0); } }
             return result.Data;
         }
+
         /// <summary>Vérifie l’empreinte du module et les limites de ligne/colonne avant une navigation.</summary>
         /// <param name="target">Emplacement à valider.</param>
         /// <exception cref="InvalidOperationException">La source a changé ou le module n’a pas pu être lu.</exception>

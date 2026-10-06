@@ -10,10 +10,13 @@ using System.Threading;
 
 namespace VBAi
 {
+
     /// <summary>Restores only preflighted, declared standard fonts on the actual native VBE owner thread.</summary>
     internal static class FormFontRestoration
     {
+
         /// <summary>Refuses external-STA font transfer before any project mutation is started.</summary>
+        /// <param name="project">object that supplies the project for this operation.</param>
         internal static void RequireOwner(object project)
         {
             object editor = null, main = null;
@@ -32,6 +35,10 @@ namespace VBAi
         }
 
         /// <summary>Preflights every declared font owner and root child before any delivery, with identity guards.</summary>
+        /// <param name="component">object that supplies the component for this operation.</param>
+        /// <param name="bindings">form font binding[] that supplies the bindings for this operation.</param>
+        /// <param name="revalidate">action that supplies the revalidate for this operation.</param>
+        /// <param name="observation">form font observation that supplies the observation for this operation.</param>
         internal static void Restore(object component, FormStreamPadding.FormFontBinding[] bindings, Action revalidate,
             FormFontObservation observation = null)
         {
@@ -136,6 +143,11 @@ namespace VBAi
         }
 
         /// <summary>One predeclared attached-font delivery after the initial capture; no fallback or replay.</summary>
+        /// <param name="descriptor">byte[] that supplies the descriptor for this operation.</param>
+        /// <param name="revalidate">action that supplies the revalidate for this operation.</param>
+        /// <param name="intent">action&lt;byte[]&gt; that supplies the intent for this operation.</param>
+        /// <param name="deliver">action&lt;byte[]&gt; that supplies the deliver for this operation.</param>
+        /// <param name="returned">action that supplies the returned for this operation.</param>
         internal static void DeliverDeferredRoot(byte[] descriptor, Action revalidate, Action<byte[]> intent,
             Action<byte[]> deliver, Action returned)
         {
@@ -146,6 +158,9 @@ namespace VBAi
         }
 
         /// <summary>Releases every acquired reference and retains the native failure before any cleanup failures.</summary>
+        /// <param name="references">i list&lt;object&gt; that supplies the references for this operation.</param>
+        /// <param name="release">action&lt;object&gt; that supplies the release for this operation.</param>
+        /// <param name="primary">Exception describing the primary failure.</param>
         internal static void ReleaseOwnedReferences(IList<object> references, Action<object> release, Exception primary)
         {
             var failures = new List<Exception>();
@@ -160,6 +175,7 @@ namespace VBAi
         }
 
         /// <summary>Accepts the bounded MS-OFORMS StdFont profile; no decoder or COM activation occurs.</summary>
+        /// <param name="data">byte[] that supplies the data for this operation.</param>
         internal static void ValidateDescriptor(byte[] data)
         {
             if (data == null || data.Length < 11 || data[0] != 1 || (data[3] & ~14) != 0 ||
@@ -170,10 +186,18 @@ namespace VBAi
                 if (data[i] >= 128) throw new InvalidOperationException("Unsupported persisted standard font name.");
         }
 
+        /// <summary>Maintains the child names state for form font restoration.</summary>
         private static readonly string[] ChildNames = { "Name", "Size", "Bold", "Italic", "Underline", "Strikethrough", "Weight", "Charset" };
+
+        /// <summary>Maintains the child types state for form font restoration.</summary>
         private static readonly Type[] ChildTypes = { typeof(string), typeof(decimal), typeof(bool), typeof(bool), typeof(bool), typeof(bool), typeof(short), typeof(short) };
 
         /// <summary>Delivers each declared scalar once on the owning STA; Weight follows all style fields.</summary>
+        /// <param name="children">object[] that supplies the children for this operation.</param>
+        /// <param name="data">byte[] that supplies the data for this operation.</param>
+        /// <param name="revalidate">action that supplies the revalidate for this operation.</param>
+        /// <param name="observation">form font observation that supplies the observation for this operation.</param>
+        /// <param name="afterTemporary">action that supplies the after temporary for this operation.</param>
         private static void AssignRoot(object[] children, byte[] data, Action revalidate,
             FormFontObservation observation, Action afterTemporary)
         {
@@ -183,6 +207,13 @@ namespace VBAi
         }
 
         /// <summary>One predeclared delivery per field; the diagnostic may prepend one distinct Name value.</summary>
+        /// <param name="children">object[] that supplies the children for this operation.</param>
+        /// <param name="data">byte[] that supplies the data for this operation.</param>
+        /// <param name="revalidate">action that supplies the revalidate for this operation.</param>
+        /// <param name="temporaryName">Text that supplies the temporary name value. Use the format required by the calling operation.</param>
+        /// <param name="beforeDelivery">action&lt;string, object&gt; that supplies the before delivery for this operation.</param>
+        /// <param name="afterDelivery">action&lt;string, object, object&gt; that supplies the after delivery for this operation.</param>
+        /// <param name="afterTemporary">action that supplies the after temporary for this operation.</param>
         internal static void AssignRootCore(object[] children, byte[] data, Action revalidate, string temporaryName,
             Action<string, object> beforeDelivery, Action<string, object, object> afterDelivery, Action afterTemporary)
         {
@@ -242,6 +273,10 @@ namespace VBAi
         }
 
         /// <summary>Loads the exact descriptor into a new local font, then transfers it once to a nested owner.</summary>
+        /// <param name="owner">object that supplies the owner for this operation.</param>
+        /// <param name="data">byte[] that supplies the data for this operation.</param>
+        /// <param name="setter">Text that supplies the setter value. Use the format required by the calling operation.</param>
+        /// <param name="revalidate">action that supplies the revalidate for this operation.</param>
         private static void AssignNested(object owner, byte[] data, string setter = "MSForms.Font.set", Action revalidate = null)
         {
             var description = new FontDescription {
@@ -293,6 +328,10 @@ namespace VBAi
         }
 
         /// <summary>Retains the exact failed native getter without exposing project content or retrying it.</summary>
+        /// <typeparam name="T">The type used for t.</typeparam>
+        /// <param name="operation">Text that supplies the operation value. Use the format required by the calling operation.</param>
+        /// <param name="read">func&lt;t&gt; that supplies the read for this operation.</param>
+        /// <returns>t produced by the operation for native read on form font restoration.</returns>
         private static T NativeRead<T>(string operation, Func<T> read)
         {
             try { return read(); }
@@ -301,35 +340,97 @@ namespace VBAi
         }
 
         /// <summary>Preserves the original native-operation failure and HRESULT with its constant operation name.</summary>
+        /// <param name="operation">Text that supplies the operation value. Use the format required by the calling operation.</param>
+        /// <param name="error">Exception describing the error failure.</param>
+        /// <returns>invalid operation exception produced by the operation for native failure on form font restoration.</returns>
         private static InvalidOperationException NativeFailure(string operation, Exception error)
         {
             return new InvalidOperationException("UserForm font restoration failed at " + operation +
                 " (HRESULT 0x" + error.HResult.ToString("X8", CultureInfo.InvariantCulture) + "): " + error.Message, error);
         }
 
+        /// <summary>Releases  for form font restoration.</summary>
+        /// <param name="value">object that supplies the value for this operation.</param>
         private static void Release(object value) { if (value != null && Marshal.IsComObject(value)) Marshal.ReleaseComObject(value); }
+
+        /// <summary>Returns window thread process id for form font restoration.</summary>
+        /// <param name="handle">Native handle that supplies the handle for this operation.</param>
+        /// <param name="process">uint that supplies the process for this operation.</param>
+        /// <returns>uint produced by the operation for get window thread process id on form font restoration.</returns>
         [DllImport("user32.dll")] private static extern uint GetWindowThreadProcessId(IntPtr handle, out uint process);
+
+        /// <summary>Returns current thread id for form font restoration.</summary>
+        /// <returns>uint produced by the operation for get current thread id on form font restoration.</returns>
         [DllImport("kernel32.dll")] private static extern uint GetCurrentThreadId();
+
+        /// <summary>Creates stream on h global for form font restoration.</summary>
+        /// <param name="handle">Native handle that supplies the handle for this operation.</param>
+        /// <param name="free">Indicates whether free is enabled.</param>
+        /// <param name="stream">i stream that supplies the stream for this operation.</param>
+        /// <returns>int produced by the operation for create stream on h global on form font restoration.</returns>
         [DllImport("ole32.dll", ExactSpelling = true)]
         private static extern int CreateStreamOnHGlobal(IntPtr handle, [MarshalAs(UnmanagedType.Bool)] bool free, out IStream stream);
+
+        /// <summary>Handles ole create font indirect for form font restoration.</summary>
+        /// <param name="description">font description that supplies the description for this operation.</param>
+        /// <param name="iid">Identifier that supplies the iid for this operation.</param>
+        /// <param name="font">Native handle that supplies the font for this operation.</param>
+        /// <returns>int produced by the operation for ole create font indirect on form font restoration.</returns>
         [DllImport("oleaut32.dll", ExactSpelling = true)]
         private static extern int OleCreateFontIndirect(ref FontDescription description, ref Guid iid, out IntPtr font);
+
+        /// <summary>Carries the font description values passed between operations.</summary>
         [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
         private struct FontDescription
         {
+
+            /// <summary>Maintains the structure size state for font description.</summary>
             internal uint StructureSize;
+
+            /// <summary>Maintains the name state for font description.</summary>
             [MarshalAs(UnmanagedType.LPWStr)] internal string Name;
+
+            /// <summary>Maintains the size state for font description.</summary>
             internal long Size;
+
+            /// <summary>Maintains the weight and charset state for font description.</summary>
             internal short Weight, Charset;
+
+            /// <summary>Maintains the italic state for font description.</summary>
             [MarshalAs(UnmanagedType.Bool)] internal bool Italic;
+
+            /// <summary>Maintains the underline state for font description.</summary>
             [MarshalAs(UnmanagedType.Bool)] internal bool Underline;
+
+            /// <summary>Maintains the strikethrough state for font description.</summary>
             [MarshalAs(UnmanagedType.Bool)] internal bool Strikethrough;
         }
+
+        /// <summary>Defines the persist stream contract.</summary>
         [ComImport, Guid("00000109-0000-0000-C000-000000000046"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
         private interface PersistStream
         {
-            void GetClassID(out Guid clsid); [PreserveSig] int IsDirty();
-            void Load(IStream stream); void Save(IStream stream, [MarshalAs(UnmanagedType.Bool)] bool clearDirty); void GetSizeMax(out long size);
+
+            /// <summary>Returns class id for persist stream.</summary>
+            /// <param name="clsid">Identifier that supplies the clsid for this operation.</param>
+            void GetClassID(out Guid clsid);
+
+/// <summary>Determines whether dirty for persist stream.</summary>
+/// <returns>int produced by the operation for is dirty on persist stream.</returns>
+[PreserveSig] int IsDirty();
+
+            /// <summary>Loads  for persist stream.</summary>
+            /// <param name="stream">i stream that supplies the stream for this operation.</param>
+            void Load(IStream stream);
+
+/// <summary>Saves  for persist stream.</summary>
+/// <param name="stream">i stream that supplies the stream for this operation.</param>
+/// <param name="clearDirty">Indicates whether clear dirty is enabled.</param>
+void Save(IStream stream, [MarshalAs(UnmanagedType.Bool)] bool clearDirty);
+
+/// <summary>Returns size max for persist stream.</summary>
+/// <param name="size">long that supplies the size for this operation.</param>
+void GetSizeMax(out long size);
         }
     }
 }

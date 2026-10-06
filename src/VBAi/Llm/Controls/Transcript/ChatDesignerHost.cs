@@ -4,21 +4,25 @@ using System.Windows.Forms;
 using System.Windows.Forms.Integration;
 namespace VBAi
 {
+
     /// <summary>Hosts a transcript view in the WinForms Designer and measures its preferred height.</summary>
     internal sealed class ChatDesignerHost : WindowsFormsHost
     {
+
         /// <summary>Gets the view.</summary>
-        /// <value>The current value represented by this member.</value>
+        /// <value>Current view exposed by chat designer host.</value>
         internal UserControl View => Child as UserControl;
+
         /// <summary>Initializes a ChatDesignerHost instance with the supplied state.</summary>
-        /// <param name="view">The view used by this operation.</param>
+        /// <param name="view">user control that supplies the view for this operation.</param>
         internal ChatDesignerHost(UserControl view)
         {
             Child = view;
             view.SizeChanged += (s,e) => InvalidateMeasure();
         }
+
         /// <summary>Measures the hosted transcript view within the available designer width.</summary>
-        /// <param name="constraint">The constraint used by this operation.</param>
+        /// <param name="constraint">size that supplies the constraint for this operation.</param>
         /// <returns>The measured size required by the hosted transcript view.</returns>
         protected override Size MeasureOverride(Size constraint)
         {

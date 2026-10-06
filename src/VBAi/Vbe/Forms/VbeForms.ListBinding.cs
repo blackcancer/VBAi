@@ -8,9 +8,11 @@ using System.Text.RegularExpressions;
 
 namespace VBAi
 {
+
     /// <summary>Liaison déclarative d’une ComboBox ou ListBox à une plage de feuille Excel.</summary>
     internal sealed partial class VbeForms
     {
+
         /// <summary>Insère ou actualise dans le code du UserForm une instruction RowSource gérée pour une plage bornée.</summary>
         /// <param name="request">Classeur, formulaire, chemin du contrôle, feuille/plage et révisions attendues.</param>
         /// <returns>Résultat de la mutation et vérification du bloc VBA généré.</returns>
@@ -69,11 +71,13 @@ namespace VBAi
                 throw new ArgumentException("The range must be inside Excel limits and contain at most 10 columns and 10000 rows.");
             return right - left + 1;
         }
+
         /// <summary>Convertit les lettres d’une colonne Excel en indice numérique à partir de un.</summary>
         /// <param name="value">Lettres majuscules ou minuscules de la colonne.</param>
         /// <returns>Indice ordinal de la colonne.</returns>
         private static int ExcelColumn(string value)
         { int result = 0; foreach (char c in value.ToUpperInvariant()) result = result * 26 + c - 'A' + 1; return result; }
+
         /// <summary>Construit l’instruction VBA RowSource pour l’accès validé au contrôle et à la plage.</summary>
         /// <param name="accessor">Expression générée vers le contrôle du UserForm.</param>
         /// <param name="sheet">Nom de la feuille déjà validé.</param>
@@ -81,6 +85,7 @@ namespace VBAi
         /// <returns>Instruction VBA qui lie RowSource à une adresse Excel externe.</returns>
         private static string BindingLine(string accessor, string sheet, string address)
         { return "    Me." + accessor + ".RowSource = ThisWorkbook.Worksheets(\"" + sheet.Replace("\"", "\"\"") + "\").Range(\"" + address.ToUpperInvariant() + "\").Address(External:=True)"; }
+
         /// <summary>Vérifie qu’une ligne de code correspond à la forme contrôlée d’une liaison RowSource générée.</summary>
         /// <param name="line">Ligne VBA à vérifier.</param>
         /// <param name="accessor">Expression du contrôle cible.</param>

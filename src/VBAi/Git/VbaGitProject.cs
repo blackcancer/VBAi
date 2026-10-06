@@ -11,18 +11,24 @@ namespace VBAi
     /// <summary>Associe un résolveur de projet et son chemin hôte attendu.</summary>
     internal sealed class VbaGitProject
     {
+
         /// <summary>Fournit le projet COM courant sans déplacer les appels hors du thread VBE.</summary>
         private readonly Func<object> resolve;
+
         /// <summary>Chemin absolu du document hôte auquel le cache Git est lié.</summary>
         private readonly string hostPath;
+
         /// <summary>Project identity captured when this integration is opened.</summary>
         private readonly object boundProject;
+
         /// <summary>Reads the current persisted document path on the VBE thread.</summary>
         private readonly Func<object, string> readHostPath;
+
         /// <summary>Retourne la page de codes ANSI du système Windows.</summary>
         /// <returns>Identifiant numérique de la page de codes ANSI active.</returns>
         [System.Runtime.InteropServices.DllImport("kernel32.dll")]
         private static extern uint GetACP();
+
         /// <summary>Encodage natif strict utilisé pour lire et écrire les exports COM.</summary>
         /// <value>Encodage natif strict utilisé pour lire et écrire les exports COM.</value>
         private static Encoding NativeEncoding { get { return Encoding.GetEncoding(
@@ -265,6 +271,9 @@ namespace VBAi
         }
 
         /// <summary>Reacquires the one imported component after the first post-import capture.</summary>
+        /// <param name="observation">form font observation that supplies the observation for this operation.</param>
+        /// <param name="imported">object that supplies the imported for this operation.</param>
+        /// <param name="bindings">form font binding[] that supplies the bindings for this operation.</param>
         private void RestoreDeferredFormFonts(FormFontObservation observation, object imported,
             FormStreamPadding.FormFontBinding[] bindings)
         {
@@ -292,6 +301,9 @@ namespace VBAi
         }
 
         /// <summary>Exports only the verified imported component without reading or assigning font properties.</summary>
+        /// <param name="name">Text that supplies the name value. Use the format required by the calling operation.</param>
+        /// <param name="imported">object that supplies the imported for this operation.</param>
+        /// <returns>vba git snapshot produced by the operation for capture imported form on vba git project.</returns>
         private VbaGitSnapshot CaptureImportedForm(string name, object imported)
         {
             RequireImportedForm(name, imported);
@@ -311,6 +323,8 @@ namespace VBAi
         }
 
         /// <summary>Balances fresh identity readback references without releasing the imported component lease.</summary>
+        /// <param name="name">Text that supplies the name value. Use the format required by the calling operation.</param>
+        /// <param name="imported">object that supplies the imported for this operation.</param>
         private void RequireImportedForm(string name, object imported)
         {
             object components = null, current = null;
@@ -329,6 +343,9 @@ namespace VBAi
         }
 
         /// <summary>Removes only the single leading blank line added by VBIDE's native form import.</summary>
+        /// <param name="codeModule">object that supplies the code module for this operation.</param>
+        /// <param name="exported">Text that supplies the exported value. Use the format required by the calling operation.</param>
+        /// <param name="revalidate">action that supplies the revalidate for this operation.</param>
         internal static void RestoreFormImportCode(object codeModule, string exported, Action revalidate)
         {
             string source = Normalize(exported);
@@ -364,6 +381,7 @@ namespace VBAi
             int count = (int)module.CountOfLines;
             return count == 0 ? "" : Normalize((string)module.Lines[1, count]);
         }
+
         /// <summary>Remplace CRLF et CR par LF.</summary>
         /// <param name="text">Texte source dont les fins de ligne sont normalisées.</param>
         /// <returns>Texte dont les séparateurs de ligne sont des LF.</returns>
@@ -372,12 +390,15 @@ namespace VBAi
         /// <summary>Répertoire temporaire privé utilisé pour un transfert de fichiers.</summary>
         private sealed class Scratch : IDisposable
         {
-        /// <summary>Chemin unique du répertoire temporaire de l’opération.</summary>
+
+            /// <summary>Chemin unique du répertoire temporaire de l’opération.</summary>
             internal readonly string Path = System.IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
                 "VBAi", "GitTemporary", Guid.NewGuid().ToString("N"));
+
             /// <summary>Crée le répertoire temporaire unique.</summary>
             internal Scratch() { Directory.CreateDirectory(Path); }
-        /// <summary>Supprime les fichiers générés dans le répertoire temporaire.</summary>
+
+            /// <summary>Supprime les fichiers générés dans le répertoire temporaire.</summary>
             public void Dispose()
             {
                 // Only our freshly generated, private flat directory is cleaned up.

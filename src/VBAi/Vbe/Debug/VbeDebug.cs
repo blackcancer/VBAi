@@ -9,9 +9,11 @@ using System.Threading;
 
 namespace VBAi
 {
+
     /// <summary>Expose les commandes de débogage, navigation et inspection du VBE.</summary>
     internal sealed partial class VbeDebug
     {
+
         /// <summary>Instance VBE utilisée pour résoudre les projets et exécuter les commandes IDE.</summary>
         private readonly dynamic vbe;
 
@@ -76,6 +78,9 @@ namespace VBAi
         }
 
         /// <summary>Finds an enabled control directly when possible, revalidating its identity and caption each time.</summary>
+        /// <param name="id">int that supplies the id for this operation.</param>
+        /// <param name="allowed">func&lt;command entry, bool&gt; that supplies the allowed for this operation.</param>
+        /// <returns>command entry produced by the operation for find available command on vbe debug.</returns>
         private CommandEntry FindAvailableCommand(int id, Func<CommandEntry, bool> allowed)
         {
             if (id > 0)
@@ -92,7 +97,11 @@ namespace VBAi
                 catch { } // Hosts without FindControl, stale menus or duplicate IDs use the bounded inventory.
             return EnumerateCommands().FirstOrDefault(entry => (id == 0 || entry.Id == id) && entry.Enabled && allowed(entry));
         }
+
         /// <summary>Resolves an editor action without repeatedly rebuilding paginated command inventories.</summary>
+        /// <param name="action">Text that supplies the action value. Use the format required by the calling operation.</param>
+        /// <param name="mode">int that supplies the mode for this operation.</param>
+        /// <returns>object produced by the operation for find editor command on vbe debug.</returns>
         internal object FindEditorCommand(string action, int mode)
         {
             int id = action == "toggle_breakpoint" ? 51 : action == "step_into" ? 188 : 0;
@@ -810,14 +819,19 @@ namespace VBAi
         /// <summary>Représente un contrôle CommandBars et ses informations de recherche.</summary>
         private sealed class CommandEntry
         {
+
             /// <summary>Référence du contrôle COM à invoquer.</summary>
             public object Control;
+
             /// <summary>Chemin hiérarchique de menu jusqu’au contrôle.</summary>
             public string Path;
+
             /// <summary>Légende du contrôle.</summary>
             public string Caption;
+
             /// <summary>Identifiant numérique temporaire du contrôle.</summary>
             public int Id;
+
             /// <summary>Indique si le contrôle peut être invoqué actuellement.</summary>
             public bool Enabled;
         }

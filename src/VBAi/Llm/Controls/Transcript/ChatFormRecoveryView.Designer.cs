@@ -1,23 +1,32 @@
 namespace VBAi
 {
+
     /// <summary>Displays recoverable changes made to a VBA form.</summary>
     public sealed partial class ChatFormRecoveryView
     {
+
         /// <summary>Container that owns the disposable components created by the WinForms Designer.</summary>
         private System.ComponentModel.IContainer components;
+
         /// <summary>ToolTip component used to show full text for transcript controls.</summary>
         private System.Windows.Forms.ToolTip toolTips;
+
         /// <summary>Flow layout panel that contains this transcript view&apos;s child controls.</summary>
         private ChatComposerPanel layout;
+
         /// <summary>Displays the form recovery prompt.</summary>
         internal System.Windows.Forms.Label title;
+
         /// <summary>Displays the number of recoverable form changes.</summary>
         internal System.Windows.Forms.Label count;
+
         /// <summary>Provides the action that restores the recovered form changes.</summary>
         internal ChatActionButton recover;
+
         /// <summary>Releases the Designer components.</summary>
         /// <param name="disposing">Whether to release managed resources.</param>
         protected override void Dispose(bool disposing) { if (disposing) components?.Dispose(); base.Dispose(disposing); }
+
         /// <summary>Creates and configures the chat form recovery view controls serialized by the WinForms Designer.</summary>
         private void InitializeComponent()
         {

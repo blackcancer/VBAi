@@ -1,28 +1,40 @@
 namespace VBAi
 {
+
     /// <summary>Designer-generated controls and layout for the GitHub browser pane.</summary>
     public sealed partial class GitHubPane
     {
+
         /// <summary>Tab control for repository and pull-request pages.</summary>
         private VBAi.ThemedTabControl pages;
+
         /// <summary>Repository list page.</summary>
         private System.Windows.Forms.TabPage repositoriesPage;
+
         /// <summary>Pull-request list page.</summary>
         private System.Windows.Forms.TabPage pullsPage;
+
         /// <summary>Connection and request status text.</summary>
         private System.Windows.Forms.Label status;
+
         /// <summary>Cancels active GitHub requests.</summary>
         private VBAi.ThemedButton cancel;
+
         /// <summary>Footer layout for status and cancellation.</summary>
         private System.Windows.Forms.FlowLayoutPanel footer;
+
         /// <summary>Tooltips for GitHub pane actions.</summary>
         private System.Windows.Forms.ToolTip tips;
+
         /// <summary>Container for Designer-managed nonvisual components.</summary>
         private System.ComponentModel.IContainer components;
+
         /// <summary>Embedded repository list and selection view.</summary>
         private VBAi.GitHubRepositoriesView gitHubRepositoriesView;
+
         /// <summary>Embedded pull-request list and detail view.</summary>
         private VBAi.GitHubPullRequestsView gitHubPullRequestsView;
+
         /// <summary>Creates and arranges the repository and pull-request pages.</summary>
         private void InitializeComponent()
         {

@@ -1,18 +1,25 @@
 namespace VBAi
 {
+
     /// <summary>Designer-generated commit history list and details controls.</summary>
     public sealed partial class GitHistoryView
     {
+
         /// <summary>Commit history entries.</summary>
         internal VBAi.UiListBox history;
+
         /// <summary>Details for the selected commit.</summary>
         internal VBAi.UiTextBox historyDetails;
+
         /// <summary>Compares the selected commit with the current project.</summary>
         internal VBAi.ThemedButton historyCompare;
+
         /// <summary>Container that owns Designer components.</summary>
         private System.ComponentModel.IContainer components;
+
         /// <summary>Tooltips associated with history actions.</summary>
         private System.Windows.Forms.ToolTip toolTips;
+
         /// <summary>Libère les composants de la vue avant son contrôle natif.</summary>
         /// <param name="disposing">Indique si les ressources managées doivent être libérées.</param>
         protected override void Dispose(bool disposing)

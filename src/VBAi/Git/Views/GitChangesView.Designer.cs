@@ -1,34 +1,49 @@
 namespace VBAi
 {
+
     /// <summary>Designer-generated controls for reviewing and committing project changes.</summary>
     public sealed partial class GitChangesView
     {
+
         /// <summary>Caption for the commit message input.</summary>
         internal System.Windows.Forms.Label messageLabel;
+
         /// <summary>Commit message input.</summary>
         internal VBAi.UiTextBox commitMessage;
+
         /// <summary>Commits selected changes.</summary>
         internal VBAi.ThemedButton commit;
+
         /// <summary>Split layout for changed files and their code diff.</summary>
         internal System.Windows.Forms.SplitContainer changeSplit;
+
         /// <summary>Side-by-side or unified diff for the selected file.</summary>
         internal VBAi.CodeDiffView diff;
+
         /// <summary>Changed files available for staging and review.</summary>
         internal VBAi.UiCheckedListBox changes;
+
         /// <summary>Actions for opening and restoring the selected module.</summary>
         internal System.Windows.Forms.FlowLayoutPanel reviewActions;
+
         /// <summary>Opens the selected VBA module.</summary>
         internal VBAi.ThemedButton openModule;
+
         /// <summary>Restores the selected module content.</summary>
         internal VBAi.ThemedButton restoreModule;
+
         /// <summary>Layout for the code-diff editor.</summary>
         internal System.Windows.Forms.TableLayoutPanel editorLayout;
+
         /// <summary>Container that owns Designer components.</summary>
         private System.ComponentModel.IContainer components;
+
         /// <summary>Chat-style commit composer, editable in the Designer.</summary>
         private VBAi.ChatComposerPanel commitComposer;
+
         /// <summary>Tooltips associated with change actions.</summary>
         private System.Windows.Forms.ToolTip toolTips;
+
         /// <summary>Libère les composants de la vue avant son contrôle natif.</summary>
         /// <param name="disposing">Indique si les ressources managées doivent être libérées.</param>
         protected override void Dispose(bool disposing)

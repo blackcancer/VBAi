@@ -9,15 +9,20 @@ using System.Text.RegularExpressions;
 
 namespace VBAi
 {
-        /// <summary>Route les commandes du protocole vers les services VBE et Excel.</summary>
+
+    /// <summary>Route les commandes du protocole vers les services VBE et Excel.</summary>
     internal sealed partial class VbeSession
     {
+
         /// <summary>Fournit la fenêtre d’éditeur moderne, en pouvant la créer à la demande.</summary>
         internal Func<bool, ModernEditorWindow> ModernEditor;
+
         /// <summary>Session-owned testing service shared with the native explorer.</summary>
         internal VbeTestExplorerService TestExplorer;
+
         /// <summary>Per-dispatch assistant authorization captured by an asynchronous test batch.</summary>
         internal Action TestExecutionGuard;
+
         /// <summary>Résout un composant du projet vers l’adaptateur de module VBE.</summary>
         /// <param name="projectName">Sélecteur du projet dans la session.</param>
         /// <param name="moduleName">Nom exact du composant à résoudre.</param>
@@ -31,33 +36,45 @@ namespace VBAi
                     return new EditorVbeModule((object)vbe, (object)project, (object)component);
             throw new InvalidOperationException("Module not found: " + moduleName);
         }
+
         /// <summary>Instance VBE cible utilisée pour résoudre projets et modules.</summary>
         private readonly dynamic vbe;
+
         /// <summary>Service des opérations de débogage et des boîtes de dialogue natives.</summary>
         private readonly VbeDebug debugger;
+
         /// <summary>Service de lecture et de modification des UserForms.</summary>
         private readonly VbeForms forms;
+
         /// <summary>Service des propriétés, composants et références des projets VBA.</summary>
         private readonly VbeProjectComponents components;
+
         /// <summary>Service d’inspection et de contrôle des fenêtres de l’éditeur VBE.</summary>
         private readonly VbeEditorWindows editorWindows;
+
         /// <summary>Service de recherche et de modification des procédures et fichiers de code.</summary>
         private readonly VbeCodeNavigation codeNavigation;
+
         /// <summary>Service d’inspection des bibliothèques et types exposés par les références.</summary>
         private readonly VbeReferenceTypes referenceTypes;
+
         /// <summary>Service d’édition du code source par opérations préparées.</summary>
         private readonly VbeCodeEdits codeEdits;
+
         /// <summary>Service de lecture et d’écriture du presse-papiers de code.</summary>
         private readonly VbeCodeClipboard codeClipboard;
+
         /// <summary>Service de navigation et d’historique de positions du code.</summary>
         private readonly VbeNavigationHistory navigationHistory;
 
         /// <summary>Abstraction du magasin de certificats utilisée pour lire les certificats de signature.</summary>
         internal interface ISigningStore : IDisposable
         {
+
             /// <summary>Certificats présents dans le magasin ouvert.</summary>
             /// <value>Collection fournie par le magasin actuellement ouvert.</value>
             X509Certificate2Collection Certificates { get; }
+
             /// <summary>Ouvre le magasin selon les droits indiqués.</summary>
             /// <param name="flags">Options d’ouverture du magasin de certificats.</param>
             void Open(OpenFlags flags);
@@ -66,28 +83,36 @@ namespace VBAi
         /// <summary>Adaptateur vers le magasin de certificats Windows.</summary>
         private sealed class NativeSigningStore : ISigningStore
         {
-        /// <summary>Magasin Windows encapsulé.</summary>
+
+            /// <summary>Magasin Windows encapsulé.</summary>
             private readonly X509Store store;
+
             /// <summary>Crée un accès au magasin personnel de l’emplacement indiqué.</summary>
             /// <param name="location">Emplacement Windows du magasin personnel à ouvrir.</param>
             public NativeSigningStore(StoreLocation location) { store = new X509Store(StoreName.My, location); }
+
             /// <summary>Expose les certificats du magasin natif.</summary>
             /// <value>Collection de certificats exposée par le magasin Windows.</value>
             public X509Certificate2Collection Certificates => store.Certificates;
-        /// <summary>Ouvre le magasin natif avec les options demandées.</summary>
-        /// <param name="flags">Options d’ouverture du magasin de certificats.</param>
+
+            /// <summary>Ouvre le magasin natif avec les options demandées.</summary>
+            /// <param name="flags">Options d’ouverture du magasin de certificats.</param>
             public void Open(OpenFlags flags) { store.Open(flags); }
-        /// <summary>Libère le magasin natif.</summary>
+
+            /// <summary>Libère le magasin natif.</summary>
             public void Dispose() { store.Dispose(); }
         }
 
         // Keep OS reads and native scheduling injectable without changing the signing checks.
         /// <summary>Fabrique injectable de magasins de certificats, initialisée avec l’implémentation Windows.</summary>
         internal Func<StoreLocation, ISigningStore> SigningStore = location => new NativeSigningStore(location);
+
         /// <summary>Fournit le nom du processus hôte pour appliquer les validations Excel.</summary>
         internal Func<string> SigningProcessName = () => System.Diagnostics.Process.GetCurrentProcess().ProcessName;
+
         /// <summary>Horloge utilisée pour vérifier la période de validité du certificat.</summary>
         internal Func<DateTime> SigningClock = () => DateTime.Now;
+
         /// <summary>Planifie l’affichage de la boîte de signature native pour une requête validée.</summary>
         internal Func<Request, object> SignatureScheduler;
 
@@ -113,12 +138,12 @@ namespace VBAi
             : this(vbe, host, bookmarkDatabase, () => System.Diagnostics.Process.GetCurrentProcess().ProcessName,
                 () => Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData)) { }
 
-                /// <summary>Injecte uniquement l'identité du processus et la racine locale avant la restauration native des barres.</summary>
-                /// <param name="vbe">Objet COM du VBE utilisé par les services de session.</param>
-                /// <param name="host">Sonde facultative de l’hôte Excel.</param>
-                /// <param name="bookmarkDatabase">Chemin SQLite des signets, ou nul pour le stockage par défaut.</param>
-                /// <param name="toolbarProcessName">Fournit le nom de processus utilisé pour choisir le profil natif.</param>
-                /// <param name="localApplicationData">Fournit le dossier de données locales pour le profil des barres.</param>
+        /// <summary>Injecte uniquement l'identité du processus et la racine locale avant la restauration native des barres.</summary>
+        /// <param name="vbe">Objet COM du VBE utilisé par les services de session.</param>
+        /// <param name="host">Sonde facultative de l’hôte Excel.</param>
+        /// <param name="bookmarkDatabase">Chemin SQLite des signets, ou nul pour le stockage par défaut.</param>
+        /// <param name="toolbarProcessName">Fournit le nom de processus utilisé pour choisir le profil natif.</param>
+        /// <param name="localApplicationData">Fournit le dossier de données locales pour le profil des barres.</param>
         internal VbeSession(object vbe, VbeProjectComponents.IExcelHostProbe host, string bookmarkDatabase,
             Func<string> toolbarProcessName, Func<string> localApplicationData) { this.vbe = vbe; debugger = new VbeDebug(vbe);
             forms = new VbeForms(vbe); components = host == null
@@ -145,7 +170,10 @@ namespace VBAi
         /// <summary>Obtient la collection émettant les événements de projet.</summary>
         /// <returns>Collection VBProjects native.</returns>
         internal object ProjectsEventSource() { return vbe.VBProjects; }
+
         /// <summary>Resolves a borrowed live project for private owning-thread conversation identity checks.</summary>
+        /// <param name="selector">Text that supplies the selector value. Use the format required by the calling operation.</param>
+        /// <returns>object produced by the operation for project scope source on vbe session.</returns>
         internal object ProjectScopeSource(string selector) => (object)GetProject(selector);
 
         /// <summary>Obtient la collection émettant les événements de composants.</summary>
@@ -167,6 +195,8 @@ namespace VBAi
         }
 
         /// <summary>Runs an explicit Immediate capture on the caller's VBE UI context.</summary>
+        /// <param name="request">request that supplies the request for this operation.</param>
+        /// <returns>task&lt;object&gt; produced by the operation for read immediate async on vbe session.</returns>
         internal System.Threading.Tasks.Task<object> ReadImmediateAsync(Request request)
         {
             RequireGeneralSettled();
@@ -174,6 +204,8 @@ namespace VBAi
         }
 
         /// <summary>Inspects declared scalar locals through the asynchronous native debugger route.</summary>
+        /// <param name="request">request that supplies the request for this operation.</param>
+        /// <returns>task&lt;object&gt; produced by the operation for inspect local scalars async on vbe session.</returns>
         internal System.Threading.Tasks.Task<object> InspectLocalScalarsAsync(Request request)
         {
             RequireGeneralSettled();
@@ -181,15 +213,24 @@ namespace VBAi
         }
 
         /// <summary>Allows queued native saves to finish without blocking the VBE message loop.</summary>
+        /// <param name="request">request that supplies the request for this operation.</param>
+        /// <returns>task&lt;object&gt; produced by the operation for save host document async on vbe session.</returns>
         internal System.Threading.Tasks.Task<object> SaveHostDocumentAsync(Request request)
         {
             RequireGeneralSettled();
             return components.SaveHostDocumentAsync(request);
         }
 
+        /// <summary>Maintains the general in flight and general quarantined state for vbe session.</summary>
         private bool generalInFlight, generalQuarantined;
+
+        /// <summary>Maintains the general authorization depth state for vbe session.</summary>
         private int generalAuthorizationDepth;
+
+        /// <summary>Maintains the bridge operations in flight state for vbe session.</summary>
         private int bridgeOperationsInFlight;
+
+        /// <summary>Requires general settled for vbe session.</summary>
         internal void RequireGeneralSettled()
         {
             RequireMacroSettled();
@@ -199,6 +240,8 @@ namespace VBAi
 
         // Claimed and released on the bridge's owning STA. The worker keeps its
         // existing native thread while General cannot enter during its dispatch.
+        /// <summary>Handles admit bridge operation for vbe session.</summary>
+        /// <returns>action produced by the operation for admit bridge operation on vbe session.</returns>
         internal Action AdmitBridgeOperation()
         {
             RequireGeneralSettled();
@@ -217,6 +260,9 @@ namespace VBAi
         }
 
         /// <summary>Reads or edits the native General page on the original VBE UI thread.</summary>
+        /// <param name="request">request that supplies the request for this operation.</param>
+        /// <param name="write">Indicates whether write is enabled.</param>
+        /// <returns>task&lt;object&gt; produced by the operation for project general async on vbe session.</returns>
         internal async System.Threading.Tasks.Task<object> ProjectGeneralAsync(Request request, bool write)
         {
             RequireGeneralSettled();
@@ -816,26 +862,33 @@ namespace VBAi
         /// <summary>Données sérialisables d’une référence de projet VBA.</summary>
         private sealed class ReferenceInfo
         {
-        /// <summary>Nom de la référence lorsqu’il est accessible.</summary>
-        /// <value>Nom lu depuis la référence VBE.</value>
+
+            /// <summary>Nom de la référence lorsqu’il est accessible.</summary>
+            /// <value>Nom lu depuis la référence VBE.</value>
             public string Name { get; set; }
-        /// <summary>Identifiant GUID de la bibliothèque référencée.</summary>
-        /// <value>GUID de la bibliothèque référencée.</value>
+
+            /// <summary>Identifiant GUID de la bibliothèque référencée.</summary>
+            /// <value>GUID de la bibliothèque référencée.</value>
             public string Guid { get; set; }
-        /// <summary>Version majeure de la référence.</summary>
-        /// <value>Numéro de version majeure déclaré par le VBE.</value>
+
+            /// <summary>Version majeure de la référence.</summary>
+            /// <value>Numéro de version majeure déclaré par le VBE.</value>
             public int Major { get; set; }
-        /// <summary>Version mineure de la référence.</summary>
-        /// <value>Numéro de version mineure déclaré par le VBE.</value>
+
+            /// <summary>Version mineure de la référence.</summary>
+            /// <value>Numéro de version mineure déclaré par le VBE.</value>
             public int Minor { get; set; }
-        /// <summary>Indique si le VBE signale une référence manquante.</summary>
-        /// <value>État de résolution de la référence indiqué par le VBE.</value>
+
+            /// <summary>Indique si le VBE signale une référence manquante.</summary>
+            /// <value>État de résolution de la référence indiqué par le VBE.</value>
             public bool IsBroken { get; set; }
-        /// <summary>Indique si la référence est intégrée au projet hôte.</summary>
-        /// <value>Indique si le VBE classe la référence comme intégrée.</value>
+
+            /// <summary>Indique si la référence est intégrée au projet hôte.</summary>
+            /// <value>Indique si le VBE classe la référence comme intégrée.</value>
             public bool BuiltIn { get; set; }
-        /// <summary>Chemin du fichier de bibliothèque lorsqu’il est disponible.</summary>
-        /// <value>Chemin de la bibliothèque lorsqu’il est résolu.</value>
+
+            /// <summary>Chemin du fichier de bibliothèque lorsqu’il est disponible.</summary>
+            /// <value>Chemin de la bibliothèque lorsqu’il est résolu.</value>
             public string FullPath { get; set; }
         }
 

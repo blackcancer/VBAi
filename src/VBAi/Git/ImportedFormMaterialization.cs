@@ -10,13 +10,28 @@ using System.Threading;
 
 namespace VBAi
 {
+
     /// <summary>Initializes an imported designer only when its persisted resources differ from the declared target.</summary>
     internal static class ImportedFormMaterialization
     {
+
         /// <summary>Records how initialization settled, independently of the final import acceptance.</summary>
-        internal enum MaterializationOutcome { ResourcesExactBeforeFocus = 1, Rendered = 2 }
+        internal enum MaterializationOutcome {
+
+/// <summary>Identifies the resources exact before focus case of materialization outcome.</summary>
+ResourcesExactBeforeFocus = 1,
+
+/// <summary>Identifies the rendered case of materialization outcome.</summary>
+Rendered = 2 }
 
         /// <summary>Preserves exact resources and returns only font owners still different after one initialization.</summary>
+        /// <param name="target">vba git snapshot that supplies the target for this operation.</param>
+        /// <param name="component">vba git component that supplies the component for this operation.</param>
+        /// <param name="bindings">form font binding[] that supplies the bindings for this operation.</param>
+        /// <param name="capture">func&lt;vba git snapshot&gt; that supplies the capture for this operation.</param>
+        /// <param name="materialize">func&lt;func&lt;bool&gt;, materialization outcome&gt; that supplies the materialize for this operation.</param>
+        /// <param name="revalidate">action that supplies the revalidate for this operation.</param>
+        /// <returns>form font binding[] produced by the operation for prepare on imported form materialization.</returns>
         internal static FormStreamPadding.FormFontBinding[] Prepare(VbaGitSnapshot target, VbaGitComponent component,
             FormStreamPadding.FormFontBinding[] bindings, Func<VbaGitSnapshot> capture, Func<Func<bool>, MaterializationOutcome> materialize, Action revalidate)
         {
@@ -48,6 +63,11 @@ namespace VBAi
         }
 
         /// <summary>Synchronously initializes only the verified designer on its actual owning VBE STA.</summary>
+        /// <param name="project">object that supplies the project for this operation.</param>
+        /// <param name="component">object that supplies the component for this operation.</param>
+        /// <param name="resourcesExactBeforeFocus">func&lt;bool&gt; that supplies the resources exact before focus for this operation.</param>
+        /// <param name="revalidate">action that supplies the revalidate for this operation.</param>
+        /// <returns>materialization outcome produced by the operation for materialize on imported form materialization.</returns>
         internal static MaterializationOutcome Materialize(object project, object component, Func<bool> resourcesExactBeforeFocus, Action revalidate)
         {
             FormFontRestoration.RequireOwner(project);
@@ -91,6 +111,12 @@ namespace VBAi
         }
 
         /// <summary>Opens the owned designer once and avoids focus and rendering when an exact resource probe suffices.</summary>
+        /// <param name="show">action that supplies the show for this operation.</param>
+        /// <param name="resourcesExactBeforeFocus">func&lt;bool&gt; that supplies the resources exact before focus for this operation.</param>
+        /// <param name="focus">action that supplies the focus for this operation.</param>
+        /// <param name="render">action that supplies the render for this operation.</param>
+        /// <param name="revalidate">action that supplies the revalidate for this operation.</param>
+        /// <returns>materialization outcome produced by the operation for show and initialize on imported form materialization.</returns>
         internal static MaterializationOutcome ShowAndInitialize(Action show, Func<bool> resourcesExactBeforeFocus,
             Action focus, Action render, Action revalidate)
         {
@@ -109,6 +135,14 @@ namespace VBAi
         }
 
         /// <summary>Restores the prior view only while the expected native navigation remains current.</summary>
+        /// <param name="originallyVisible">Indicates whether originally visible is enabled.</param>
+        /// <param name="previousDistinct">Indicates whether previous distinct is enabled.</param>
+        /// <param name="designerActive">func&lt;bool&gt; that supplies the designer active for this operation.</param>
+        /// <param name="previousActive">func&lt;bool&gt; that supplies the previous active for this operation.</param>
+        /// <param name="focusPrevious">action that supplies the focus previous for this operation.</param>
+        /// <param name="hideDesigner">action that supplies the hide designer for this operation.</param>
+        /// <param name="revalidate">action that supplies the revalidate for this operation.</param>
+        /// <param name="exactBeforeFocus">Indicates whether exact before focus is enabled.</param>
         internal static void RestoreView(bool originallyVisible, bool previousDistinct, Func<bool> designerActive,
             Func<bool> previousActive, Action focusPrevious, Action hideDesigner, Action revalidate, bool exactBeforeFocus = false)
         {
@@ -138,6 +172,9 @@ namespace VBAi
         }
 
         /// <summary>Balances the acquired active-window alias without changing user navigation.</summary>
+        /// <param name="editor">object that supplies the editor for this operation.</param>
+        /// <param name="expected">object that supplies the expected for this operation.</param>
+        /// <returns>Boolean indicating the result of the check for is active on imported form materialization.</returns>
         private static bool IsActive(object editor, object expected)
         {
             object current = null;
@@ -150,6 +187,12 @@ namespace VBAi
         }
 
         /// <summary>Reads exact window/project ownership around one bounded native render.</summary>
+        /// <param name="project">object that supplies the project for this operation.</param>
+        /// <param name="window">object that supplies the window for this operation.</param>
+        /// <param name="editor">object that supplies the editor for this operation.</param>
+        /// <param name="main">object that supplies the main for this operation.</param>
+        /// <param name="previous">object that supplies the previous for this operation.</param>
+        /// <param name="revalidate">action that supplies the revalidate for this operation.</param>
         private static void Render(object project, object window, object editor, object main, object previous, Action revalidate)
         {
             revalidate();
@@ -179,6 +222,13 @@ namespace VBAi
         }
 
         /// <summary>Refuses a foreign, hidden or inactive designer before acquiring its drawing surface.</summary>
+        /// <param name="project">object that supplies the project for this operation.</param>
+        /// <param name="window">object that supplies the window for this operation.</param>
+        /// <param name="editor">object that supplies the editor for this operation.</param>
+        /// <param name="main">object that supplies the main for this operation.</param>
+        /// <param name="previous">object that supplies the previous for this operation.</param>
+        /// <param name="stage">Text that supplies the stage value. Use the format required by the calling operation.</param>
+        /// <returns>int ptr produced by the operation for read target on imported form materialization.</returns>
         private static IntPtr ReadTarget(object project, object window, object editor, object main, object previous, string stage)
         {
             object activeProject = null, activeWindow = null;
@@ -228,6 +278,19 @@ namespace VBAi
         }
 
         /// <summary>Preserves the native refusal and reports only the operands observed at that validation stage.</summary>
+        /// <param name="stage">Text that supplies the stage value. Use the format required by the calling operation.</param>
+        /// <param name="root">Native handle that supplies the root for this operation.</param>
+        /// <param name="designer">Native handle that supplies the designer for this operation.</param>
+        /// <param name="projectMatches">Indicates whether project matches is enabled.</param>
+        /// <param name="designerMatches">Indicates whether designer matches is enabled.</param>
+        /// <param name="mainVisible">Indicates whether main visible is enabled.</param>
+        /// <param name="designerVisible">bool that supplies the designer visible for this operation.</param>
+        /// <param name="designerType">int that supplies the designer type for this operation.</param>
+        /// <param name="expectedPid">uint that supplies the expected pid for this operation.</param>
+        /// <param name="owner">func&lt;int ptr, uint&gt; that supplies the owner for this operation.</param>
+        /// <param name="ownershipObservation">func&lt;string&gt; that supplies the ownership observation for this operation.</param>
+        /// <param name="failureObservation">func&lt;string&gt; that supplies the failure observation for this operation.</param>
+        /// <returns>int ptr produced by the operation for select observed target on imported form materialization.</returns>
         internal static IntPtr SelectObservedTarget(string stage, IntPtr root, IntPtr designer, bool projectMatches,
             bool designerMatches, bool mainVisible, bool? designerVisible, int designerType, uint expectedPid,
             Func<IntPtr, uint> owner, Func<string> ownershipObservation, Func<string> failureObservation = null)
@@ -260,6 +323,15 @@ namespace VBAi
         }
 
         /// <summary>Allows the owning VBE root only when the exact active designer has no HWND.</summary>
+        /// <param name="root">Native handle that supplies the root for this operation.</param>
+        /// <param name="designer">Native handle that supplies the designer for this operation.</param>
+        /// <param name="projectMatches">Indicates whether project matches is enabled.</param>
+        /// <param name="designerMatches">Indicates whether designer matches is enabled.</param>
+        /// <param name="visible">Indicates whether visible is enabled.</param>
+        /// <param name="designerType">int that supplies the designer type for this operation.</param>
+        /// <param name="expectedPid">uint that supplies the expected pid for this operation.</param>
+        /// <param name="owner">func&lt;int ptr, uint&gt; that supplies the owner for this operation.</param>
+        /// <returns>int ptr produced by the operation for select target on imported form materialization.</returns>
         internal static IntPtr SelectTarget(IntPtr root, IntPtr designer, bool projectMatches, bool designerMatches,
             bool visible, int designerType, uint expectedPid, Func<IntPtr, uint> owner)
         {
@@ -274,14 +346,33 @@ namespace VBAi
 
         /// <summary>Native screen rectangle used solely to bound an owned rendering surface.</summary>
         [StructLayout(LayoutKind.Sequential)]
-        private struct Rectangle { internal int Left, Top, Right, Bottom; }
+        private struct Rectangle {
+
+/// <summary>Maintains the left and top and right and bottom state for rectangle.</summary>
+internal int Left, Top, Right, Bottom; }
+
         /// <summary>Reads bounds of the already verified owned window.</summary>
+        /// <param name="window">Native handle that supplies the window for this operation.</param>
+        /// <param name="bounds">rectangle that supplies the bounds for this operation.</param>
+        /// <returns>Boolean indicating the result of the check for get window rect on imported form materialization.</returns>
         [DllImport("user32.dll")] private static extern bool GetWindowRect(IntPtr window, out Rectangle bounds);
+
         /// <summary>Synchronously renders the owned window into an in-memory surface without storing an image.</summary>
+        /// <param name="window">Native handle that supplies the window for this operation.</param>
+        /// <param name="dc">Native handle that supplies the dc for this operation.</param>
+        /// <param name="flags">uint that supplies the flags for this operation.</param>
+        /// <returns>Boolean indicating the result of the check for print window on imported form materialization.</returns>
         [DllImport("user32.dll")] private static extern bool PrintWindow(IntPtr window, IntPtr dc, uint flags);
+
         /// <summary>Reads native process ownership without activating another window.</summary>
+        /// <param name="window">Native handle that supplies the window for this operation.</param>
+        /// <param name="pid">uint that supplies the pid for this operation.</param>
+        /// <returns>uint produced by the operation for get window thread process id on imported form materialization.</returns>
         [DllImport("user32.dll", SetLastError = true)] private static extern uint GetWindowThreadProcessId(IntPtr window, out uint pid);
+
         /// <summary>Observes the already acquired owner root only after an identity refusal; never enables it.</summary>
+        /// <param name="window">Native handle that supplies the window for this operation.</param>
+        /// <returns>Boolean indicating the result of the check for is window enabled on imported form materialization.</returns>
         [DllImport("user32.dll")] private static extern bool IsWindowEnabled(IntPtr window);
     }
 }

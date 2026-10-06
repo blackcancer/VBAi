@@ -7,9 +7,11 @@ using System.Linq;
 
 namespace VBAi
 {
+
     /// <summary>Inspecte les accesseurs COM et duplique un Label avec un profil de propriétés limité.</summary>
     internal sealed partial class VbeForms
     {
+
         /// <summary>Inspecte les métadonnées d’un accesseur COM sur le formulaire ou le contrôle ciblé.</summary>
         /// <param name="request">Projet, formulaire, chemin de contrôle facultatif et propriété à inspecter.</param>
         /// <returns>Rapport de métadonnées des accesseurs COM trouvés.</returns>

@@ -4,9 +4,11 @@ using System.Linq;
 
 namespace VBAi
 {
+
     /// <summary>Finds the Codex CLI independently of the host application's PATH.</summary>
     internal static class CodexCliLocator
     {
+
         /// <summary>Résout la CLI Codex à partir de la configuration puis des emplacements installés connus.</summary>
         /// <param name="fileExists">Fonction qui vérifie l’existence d’un fichier.</param>
         /// <param name="getDirectories">Fonction qui énumère les installations versionnées.</param>

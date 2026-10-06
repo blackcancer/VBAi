@@ -8,101 +8,281 @@ using System.Text.RegularExpressions;
 
 namespace VBAi
 {
+
+    /// <summary>Owns the vba coverage probe state and operations.</summary>
     internal sealed class VbaCoverageProbe
     {
+
+        /// <summary>Gets or sets the index1 based.</summary>
+        /// <value>Current index1 based exposed by vba coverage probe.</value>
         public int Index1Based { get; set; }
+
+        /// <summary>Gets or sets the id.</summary>
+        /// <value>Current id exposed by vba coverage probe.</value>
         public string Id { get; set; }
+
+        /// <summary>Gets or sets the module.</summary>
+        /// <value>Current module exposed by vba coverage probe.</value>
         public string Module { get; set; }
+
+        /// <summary>Gets or sets the procedure.</summary>
+        /// <value>Current procedure exposed by vba coverage probe.</value>
         public string Procedure { get; set; }
+
+        /// <summary>Gets or sets the kind.</summary>
+        /// <value>Current kind exposed by vba coverage probe.</value>
         public string Kind { get; set; }
+
+        /// <summary>Gets or sets the original line.</summary>
+        /// <value>Current original line exposed by vba coverage probe.</value>
         public int OriginalLine { get; set; }
+
+        /// <summary>Gets or sets the original column.</summary>
+        /// <value>Current original column exposed by vba coverage probe.</value>
         public int OriginalColumn { get; set; }
+
+        /// <summary>Gets or sets the metric.</summary>
+        /// <value>Current metric exposed by vba coverage probe.</value>
         public string Metric { get; set; } = "Procedure";
     }
 
+    /// <summary>Owns the vba coverage module state and operations.</summary>
     internal sealed class VbaCoverageModule
     {
+
+        /// <summary>Gets or sets the name.</summary>
+        /// <value>Current name exposed by vba coverage module.</value>
         public string Name { get; set; }
+
+        /// <summary>Gets or sets the component type.</summary>
+        /// <value>Current component type exposed by vba coverage module.</value>
         public int ComponentType { get; set; }
+
+        /// <summary>Gets or sets the original hash.</summary>
+        /// <value>Current original hash exposed by vba coverage module.</value>
         public string OriginalHash { get; set; }
+
+        /// <summary>Gets or sets the original source.</summary>
+        /// <value>Current original source exposed by vba coverage module.</value>
         public string OriginalSource { get; set; }
+
+        /// <summary>Gets or sets the instrumented source.</summary>
+        /// <value>Current instrumented source exposed by vba coverage module.</value>
         public string InstrumentedSource { get; set; }
+
+        /// <summary>Gets or sets the edits.</summary>
+        /// <value>Current edits exposed by vba coverage module.</value>
         public List<VbaCoverageEdit> Edits { get; set; } = new List<VbaCoverageEdit>();
     }
 
+    /// <summary>Owns the vba coverage edit state and operations.</summary>
     internal sealed class VbaCoverageEdit
     {
+
+        /// <summary>Gets or sets the original line.</summary>
+        /// <value>Current original line exposed by vba coverage edit.</value>
         public int OriginalLine { get; set; }
+
+        /// <summary>Gets or sets the original column.</summary>
+        /// <value>Current original column exposed by vba coverage edit.</value>
         public int OriginalColumn { get; set; }
+
+        /// <summary>Gets or sets the text.</summary>
+        /// <value>Current text exposed by vba coverage edit.</value>
         public string Text { get; set; }
+
+        /// <summary>Gets or sets the is whole line.</summary>
+        /// <value>Current is whole line exposed by vba coverage edit.</value>
         public bool IsWholeLine { get; set; }
     }
 
+    /// <summary>Owns the vba coverage exclusion state and operations.</summary>
     internal sealed class VbaCoverageExclusion
     {
+
+        /// <summary>Gets or sets the module.</summary>
+        /// <value>Current module exposed by vba coverage exclusion.</value>
         public string Module { get; set; }
+
+        /// <summary>Gets or sets the procedure.</summary>
+        /// <value>Current procedure exposed by vba coverage exclusion.</value>
         public string Procedure { get; set; }
+
+        /// <summary>Gets or sets the kind.</summary>
+        /// <value>Current kind exposed by vba coverage exclusion.</value>
         public string Kind { get; set; }
+
+        /// <summary>Gets or sets the original line.</summary>
+        /// <value>Current original line exposed by vba coverage exclusion.</value>
         public int OriginalLine { get; set; }
+
+        /// <summary>Gets or sets the reason.</summary>
+        /// <value>Current reason exposed by vba coverage exclusion.</value>
         public string Reason { get; set; }
+
+        /// <summary>Gets or sets the intentional.</summary>
+        /// <value>Current intentional exposed by vba coverage exclusion.</value>
         public bool Intentional { get; set; }
     }
 
+    /// <summary>Owns the vba coverage plan state and operations.</summary>
     internal sealed class VbaCoveragePlan
     {
+
+        /// <summary>Gets or sets the original.</summary>
+        /// <value>Current original exposed by vba coverage plan.</value>
         public string Original { get; set; }
+
+        /// <summary>Gets or sets the revision.</summary>
+        /// <value>Current revision exposed by vba coverage plan.</value>
         public string Revision { get; set; }
+
+        /// <summary>Gets or sets the modules.</summary>
+        /// <value>Current modules exposed by vba coverage plan.</value>
         public List<VbaCoverageModule> Modules { get; set; } = new List<VbaCoverageModule>();
+
+        /// <summary>Gets or sets the probes.</summary>
+        /// <value>Current probes exposed by vba coverage plan.</value>
         public List<VbaCoverageProbe> Probes { get; set; } = new List<VbaCoverageProbe>();
+
+        /// <summary>Gets or sets the exclusions.</summary>
+        /// <value>Current exclusions exposed by vba coverage plan.</value>
         public List<VbaCoverageExclusion> Exclusions { get; set; } = new List<VbaCoverageExclusion>();
+
+        /// <summary>Gets or sets the diagnostics.</summary>
+        /// <value>Current diagnostics exposed by vba coverage plan.</value>
         public List<string> Diagnostics { get; set; } = new List<string>();
+
+        /// <summary>Gets or sets the denominator known.</summary>
+        /// <value>Current denominator known exposed by vba coverage plan.</value>
         public bool DenominatorKnown { get; set; } = true;
+
+        /// <summary>Gets or sets the eligible procedure count.</summary>
+        /// <value>Current eligible procedure count exposed by vba coverage plan.</value>
         public int EligibleProcedureCount { get; set; }
+
+        /// <summary>Gets the can instrument.</summary>
+        /// <value>Current can instrument exposed by vba coverage plan.</value>
         public bool CanInstrument => DenominatorKnown && Diagnostics.Count == 0;
+
+        /// <summary>Gets the statement coverage available.</summary>
+        /// <value>Current statement coverage available exposed by vba coverage plan.</value>
         public bool StatementCoverageAvailable => false;
+
+        /// <summary>Gets or sets the runtime source.</summary>
+        /// <value>Current runtime source exposed by vba coverage plan.</value>
         public string RuntimeSource { get; set; }
     }
 
+    /// <summary>Owns the vba coverage hit state and operations.</summary>
     internal sealed class VbaCoverageHit
     {
+
+        /// <summary>Gets or sets the probe.</summary>
+        /// <value>Current probe exposed by vba coverage hit.</value>
         public VbaCoverageProbe Probe { get; set; }
+
+        /// <summary>Gets or sets the entered.</summary>
+        /// <value>Current entered exposed by vba coverage hit.</value>
         public bool Entered { get; set; }
     }
 
+    /// <summary>Owns the vba coverage report state and operations.</summary>
     internal sealed class VbaCoverageReport
     {
+
+        /// <summary>Gets or sets the original.</summary>
+        /// <value>Current original exposed by vba coverage report.</value>
         public string Original { get; set; }
+
+        /// <summary>Gets or sets the revision.</summary>
+        /// <value>Current revision exposed by vba coverage report.</value>
         public string Revision { get; set; }
+
+        /// <summary>Gets or sets the metric.</summary>
+        /// <value>Current metric exposed by vba coverage report.</value>
         public string Metric { get; set; } = "Procedure";
+
+        /// <summary>Gets or sets the available.</summary>
+        /// <value>Current available exposed by vba coverage report.</value>
         public bool Available { get; set; }
+
+        /// <summary>Gets or sets the complete.</summary>
+        /// <value>Current complete exposed by vba coverage report.</value>
         public bool Complete { get; set; }
+
+        /// <summary>Gets or sets the denominator known.</summary>
+        /// <value>Current denominator known exposed by vba coverage report.</value>
         public bool DenominatorKnown { get; set; }
+
+        /// <summary>Gets or sets the eligible.</summary>
+        /// <value>Current eligible exposed by vba coverage report.</value>
         public int? Eligible { get; set; }
+
+        /// <summary>Gets or sets the hit.</summary>
+        /// <value>Current hit exposed by vba coverage report.</value>
         public int? Hit { get; set; }
+
+        /// <summary>Gets or sets the percent.</summary>
+        /// <value>Current percent exposed by vba coverage report.</value>
         public double? Percent { get; set; }
+
+        /// <summary>Gets the statement coverage available.</summary>
+        /// <value>Current statement coverage available exposed by vba coverage report.</value>
         public bool StatementCoverageAvailable => false;
+
+        /// <summary>Gets or sets the hits.</summary>
+        /// <value>Current hits exposed by vba coverage report.</value>
         public List<VbaCoverageHit> Hits { get; set; } = new List<VbaCoverageHit>();
+
+        /// <summary>Gets or sets the exclusions.</summary>
+        /// <value>Current exclusions exposed by vba coverage report.</value>
         public List<VbaCoverageExclusion> Exclusions { get; set; } = new List<VbaCoverageExclusion>();
+
+        /// <summary>Gets or sets the diagnostics.</summary>
+        /// <value>Current diagnostics exposed by vba coverage report.</value>
         public List<string> Diagnostics { get; set; } = new List<string>();
     }
 
     /// <summary>Pure procedure-entry instrumentation, intended exclusively for a disposable project clone.</summary>
     internal static class VbaCoverageInstrumentation
     {
+
+        /// <summary>Maintains the module name state for vba coverage instrumentation.</summary>
         internal const string ModuleName = "VBAiCoverageSupport";
+
+        /// <summary>Maintains the reset procedure state for vba coverage instrumentation.</summary>
         internal const string ResetProcedure = "VBAiResetCoverageHits";
+
+        /// <summary>Maintains the snapshot procedure state for vba coverage instrumentation.</summary>
         internal const string SnapshotProcedure = "VBAiReadCoverageHits";
+
+        /// <summary>Maintains the hits variable state for vba coverage instrumentation.</summary>
         internal const string HitsVariable = "VBAiProcedureCoverageHits";
+
+        /// <summary>Maintains the maximum probes state for vba coverage instrumentation.</summary>
         internal const int MaximumProbes = 16000;
+
+        /// <summary>Maintains the name pattern state for vba coverage instrumentation.</summary>
         private static readonly Regex NamePattern = new Regex(@"\A\p{L}[\p{L}\p{N}_]{0,254}[$%&!#@^]?\z", RegexOptions.CultureInvariant);
+
+        /// <summary>Maintains the test marker state for vba coverage instrumentation.</summary>
         private static readonly Regex TestMarker = new Regex(@"^\s*'\s*@TestModule(?:\s|$)", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
 
+        /// <summary>Owns the insertion state and operations.</summary>
         private sealed class Insertion
         {
+
+            /// <summary>Maintains the offset state for insertion.</summary>
             internal int Offset;
+
+            /// <summary>Maintains the text state for insertion.</summary>
             internal string Text;
         }
 
+        /// <summary>Creates  for vba coverage instrumentation.</summary>
+        /// <param name="snapshot">vba test project snapshot that supplies the snapshot for this operation.</param>
+        /// <returns>vba coverage plan produced by the operation for create on vba coverage instrumentation.</returns>
         public static VbaCoveragePlan Create(VbaTestProjectSnapshot snapshot)
         {
             if (snapshot == null) throw new ArgumentNullException(nameof(snapshot));
@@ -252,6 +432,11 @@ namespace VBAi
             return plan;
         }
 
+        /// <summary>Reads  for vba coverage instrumentation.</summary>
+        /// <param name="plan">vba coverage plan that supplies the plan for this operation.</param>
+        /// <param name="native">object that supplies the native for this operation.</param>
+        /// <param name="complete">Indicates whether complete is enabled.</param>
+        /// <returns>vba coverage report produced by the operation for read on vba coverage instrumentation.</returns>
         public static VbaCoverageReport Read(VbaCoveragePlan plan, object native, bool complete = true)
         {
             if (plan == null) throw new ArgumentNullException(nameof(plan));
@@ -273,8 +458,17 @@ namespace VBAi
             return report;
         }
 
+        /// <summary>Handles decode for vba coverage instrumentation.</summary>
+        /// <param name="plan">vba coverage plan that supplies the plan for this operation.</param>
+        /// <param name="native">object that supplies the native for this operation.</param>
+        /// <param name="complete">Indicates whether complete is enabled.</param>
+        /// <returns>vba coverage report produced by the operation for decode on vba coverage instrumentation.</returns>
         public static VbaCoverageReport Decode(VbaCoveragePlan plan, object native, bool complete = true) => Read(plan, native, complete);
 
+        /// <summary>Handles unavailable for vba coverage instrumentation.</summary>
+        /// <param name="plan">vba coverage plan that supplies the plan for this operation.</param>
+        /// <param name="reason">Text that supplies the reason value. Use the format required by the calling operation.</param>
+        /// <returns>vba coverage report produced by the operation for unavailable on vba coverage instrumentation.</returns>
         public static VbaCoverageReport Unavailable(VbaCoveragePlan plan, string reason)
         {
             if (plan == null) throw new ArgumentNullException(nameof(plan));
@@ -283,18 +477,32 @@ namespace VBAi
             return report;
         }
 
+        /// <summary>Handles report for vba coverage instrumentation.</summary>
+        /// <param name="plan">vba coverage plan that supplies the plan for this operation.</param>
+        /// <returns>vba coverage report produced by the operation for report on vba coverage instrumentation.</returns>
         private static VbaCoverageReport Report(VbaCoveragePlan plan) => new VbaCoverageReport { Original = plan.Original, Revision = plan.Revision,
             DenominatorKnown = plan.DenominatorKnown, Eligible = plan.DenominatorKnown ? plan.EligibleProcedureCount : (int?)null,
             Exclusions = plan.Exclusions.ToList(), Diagnostics = plan.Diagnostics.ToList() };
 
+        /// <summary>Handles header member for vba coverage instrumentation.</summary>
+        /// <param name="tokens">token&gt; that supplies the tokens for this operation.</param>
+        /// <returns>int produced by the operation for header member on vba coverage instrumentation.</returns>
         private static int HeaderMember(List<VbaDeclarationIndex.Token> tokens)
         {
             int index = 0;
             while (index < tokens.Count && new[] { "Public", "Private", "Friend", "Global", "Static" }.Contains(tokens[index].Text, StringComparer.OrdinalIgnoreCase)) index++;
             return index < tokens.Count && new[] { "Sub", "Function", "Property" }.Contains(tokens[index].Text, StringComparer.OrdinalIgnoreCase) ? index : -1;
         }
+
+        /// <summary>Determines whether header for vba coverage instrumentation.</summary>
+        /// <param name="tokens">token&gt; that supplies the tokens for this operation.</param>
+        /// <returns>Boolean indicating the result of the check for is header on vba coverage instrumentation.</returns>
         private static bool IsHeader(List<VbaDeclarationIndex.Token> tokens) => HeaderMember(tokens) >= 0;
 
+        /// <summary>Handles identifier tokens for vba coverage instrumentation.</summary>
+        /// <param name="token">token that supplies the token for this operation.</param>
+        /// <param name="lines">string[] that supplies the lines for this operation.</param>
+        /// <returns>token&gt; produced by the operation for identifier tokens on vba coverage instrumentation.</returns>
         private static IEnumerable<VbaDeclarationIndex.Token> IdentifierTokens(VbaDeclarationIndex.Token token, string[] lines)
         {
             if (token.Text != "<literal>") { yield return token; yield break; }
@@ -308,6 +516,9 @@ namespace VBAi
                 yield return new VbaDeclarationIndex.Token { Text = match.Value, Line = token.Line, Column = token.Column + 1 + match.Index };
         }
 
+        /// <summary>Handles line offsets for vba coverage instrumentation.</summary>
+        /// <param name="source">Text that supplies the source value. Use the format required by the calling operation.</param>
+        /// <returns>int[] produced by the operation for line offsets on vba coverage instrumentation.</returns>
         private static int[] LineOffsets(string source)
         {
             var offsets = new List<int> { 0 };
@@ -315,6 +526,11 @@ namespace VBAi
             return offsets.ToArray();
         }
 
+        /// <summary>Handles header end offset for vba coverage instrumentation.</summary>
+        /// <param name="source">Text that supplies the source value. Use the format required by the calling operation.</param>
+        /// <param name="offsets">int[] that supplies the offsets for this operation.</param>
+        /// <param name="tokens">token&gt; that supplies the tokens for this operation.</param>
+        /// <returns>int produced by the operation for header end offset on vba coverage instrumentation.</returns>
         private static int HeaderEndOffset(string source, int[] offsets, List<VbaDeclarationIndex.Token> tokens)
         {
             var last = tokens[tokens.Count - 1];
@@ -334,12 +550,19 @@ namespace VBAi
             return -1;
         }
 
+        /// <summary>Handles physical line for vba coverage instrumentation.</summary>
+        /// <param name="offsets">int[] that supplies the offsets for this operation.</param>
+        /// <param name="offset">int that supplies the offset for this operation.</param>
+        /// <returns>int produced by the operation for physical line on vba coverage instrumentation.</returns>
         internal static int PhysicalLine(int[] offsets, int offset)
         {
             int physicalLine = Array.BinarySearch(offsets, offset);
             return physicalLine < 0 ? ~physicalLine - 1 : physicalLine;
         }
 
+        /// <summary>Runs time for vba coverage instrumentation.</summary>
+        /// <param name="count">int that supplies the count for this operation.</param>
+        /// <returns>Text produced by the operation for runtime on vba coverage instrumentation.</returns>
         private static string Runtime(int count)
         {
             return "Option Explicit\r\n' VBAi procedure coverage support version 1; disposable clone only.\r\n"
@@ -348,11 +571,22 @@ namespace VBAi
                 + "\r\n        " + HitsVariable + "(index) = False\r\n    Next index\r\n    " + ResetProcedure + " = True\r\nEnd Function\r\n"
                 + "Public Function " + SnapshotProcedure + "(Optional ByVal ignoredHostArgument1 As Variant, Optional ByVal ignoredHostArgument2 As Variant) As Variant\r\n    " + SnapshotProcedure + " = " + HitsVariable + "\r\nEnd Function\r\n";
         }
+
+        /// <summary>Handles diagnose for vba coverage instrumentation.</summary>
+        /// <param name="plan">vba coverage plan that supplies the plan for this operation.</param>
+        /// <param name="module">Text that supplies the module value. Use the format required by the calling operation.</param>
+        /// <param name="line">int that supplies the line for this operation.</param>
+        /// <param name="reason">Text that supplies the reason value. Use the format required by the calling operation.</param>
+        /// <param name="unknownDenominator">Indicates whether unknown denominator is enabled.</param>
         private static void Diagnose(VbaCoveragePlan plan, string module, int line, string reason, bool unknownDenominator)
         {
             plan.Diagnostics.Add((module ?? "<missing>") + (line > 0 ? " (line " + line.ToString(CultureInfo.InvariantCulture) + ")" : "") + ": " + reason);
             if (unknownDenominator) plan.DenominatorKnown = false;
         }
+
+        /// <summary>Determines whether it has h for vba coverage instrumentation.</summary>
+        /// <param name="source">Text that supplies the source value. Use the format required by the calling operation.</param>
+        /// <returns>Text produced by the operation for hash on vba coverage instrumentation.</returns>
         private static string Hash(string source)
         { using (var hash = SHA256.Create()) return BitConverter.ToString(hash.ComputeHash(Encoding.UTF8.GetBytes(source ?? ""))).Replace("-", ""); }
     }

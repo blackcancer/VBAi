@@ -5,9 +5,11 @@ using System.Threading.Tasks;
 
 namespace VBAi
 {
+
     /// <summary>Expose aux outils les opérations de lecture, navigation et modification des brouillons Monaco.</summary>
     internal sealed partial class ModernEditorWindow
     {
+
         /// <summary>Indique si au moins un document contient un brouillon modifié ou un conflit non résolu.</summary>
         /// <value><see langword="true"/> dès qu’un document est modifié ou en conflit.</value>
         internal bool HasPendingEditorDraft => documents.Values.Any(d => d.Dirty || d.Conflict);

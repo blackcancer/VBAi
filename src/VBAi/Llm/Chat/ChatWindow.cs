@@ -12,37 +12,53 @@ using System.Windows.Forms;
 
 namespace VBAi
 {
+
     /// <summary>Fenêtre principale de conversation avec les fournisseurs LLM et les outils VBE.</summary>
     internal sealed partial class ChatWindow : Form
     {
+
         /// <summary>Configuration persistée des fournisseurs et options de la conversation.</summary>
         private readonly LlmSettings settings;
+
         /// <summary>Outils permettant au fournisseur d’interroger ou modifier le projet VBE.</summary>
         private readonly LlmVbeTools tools;
+
         /// <summary>Client Codex App Server actif, lorsqu’un fournisseur Codex est sélectionné.</summary>
         private CodexAppServerClient codex;
+
         /// <summary>Historique de messages transmis au fournisseur courant.</summary>
         private readonly List<object> messages = new List<object>();
+
         /// <summary>Modifications de code enregistrées dans la session.</summary>
         private readonly List<CodeChange> codeChanges = new List<CodeChange>();
+
         /// <summary>Sérialiseur des messages et charges utiles fournisseur.</summary>
         private readonly JavaScriptSerializer json = new JavaScriptSerializer { MaxJsonLength = 10 * 1024 * 1024 };
+
         /// <summary>Indique qu’un tour de conversation est actif.</summary>
         private bool busy;
+
         /// <summary>Version du chargement de catalogue la plus récente, utilisée pour ignorer les réponses périmées.</summary>
         private int catalogueVersion;
+
         /// <summary>Bloque la persistance des sélections pendant leur restauration depuis la session.</summary>
         private bool restoringSelection;
+
         /// <summary>Indique qu’une annulation du tour courant a été demandée.</summary>
         private bool stopRequested;
+
         /// <summary>Client HTTP actif, disposé pour interrompre un tour non Codex.</summary>
         private LlmChatClient activeHttpClient;
+
         /// <summary>Substitution facultative du tour Codex, principalement destinée aux validations automatisées.</summary>
         internal Func<string, string, string, Task<string>> CodexTurnOverride;
+
         /// <summary>Substitution facultative de l’interruption Codex.</summary>
         internal Func<Task> CodexInterruptOverride;
+
         /// <summary>Substitution facultative du chargement de catalogue de modèles.</summary>
         internal Func<LlmProvider, Task<LlmModelOption[]>> ModelCatalogueOverride;
+
         /// <summary>Fabrique facultative du gestionnaire HTTP utilisé par les clients de chat.</summary>
         internal Func<HttpMessageHandler> HttpHandlerOverride;
 
@@ -382,8 +398,8 @@ namespace VBAi
         }
 
         /// <summary>Builds and sends a chat request, then removes its queued message after dispatch succeeds.</summary>
-        /// <param name="queued">The queued used by this operation.</param>
-        /// <returns>The result produced by this operation.</returns>
+        /// <param name="queued">queued chat message that supplies the queued for this operation.</param>
+        /// <returns>task produced by the operation for send request async on chat window.</returns>
         private async Task SendRequestAsync(QueuedChatMessage queued)
         {
             if (loadingScope) return;
@@ -508,6 +524,7 @@ namespace VBAi
             }
         }
 
+        /// <summary>Maintains the runtime disposed state for chat window.</summary>
         private bool runtimeDisposed;
 
         /// <summary>Saves the session and releases each resource even if another cleanup fails.</summary>
@@ -536,6 +553,8 @@ namespace VBAi
             CleanupRuntime(DisposeComposer);
         }
 
+        /// <summary>Handles cleanup runtime for chat window.</summary>
+        /// <param name="cleanup">action that supplies the cleanup for this operation.</param>
         private static void CleanupRuntime(Action cleanup)
         {
             try { cleanup(); }
@@ -547,58 +566,77 @@ namespace VBAi
 
 namespace VBAi
 {
+
     /// <summary>Fenêtre de conversation avec adaptateurs substituables pour les effets externes.</summary>
     internal sealed partial class ChatWindow
     {
         // Native defaults; tests may substitute only the external effects of a chat.
         /// <summary>Charge les paramètres persistants des fournisseurs.</summary>
         internal static Func<LlmSettings> ReadSettings = LlmSettings.Load;
+
         /// <summary>Enregistre les paramètres persistants des fournisseurs.</summary>
         internal static Action<LlmSettings> WriteSettings = (Action<LlmSettings>)Delegate.CreateDelegate(typeof(Action<LlmSettings>), typeof(LlmSettings).GetMethod("Save"));
+
         /// <summary>Retourne le chemin de la base de sessions.</summary>
         internal static Func<string> HistoryPath = DefaultHistoryPath;
+
         /// <summary>Ouvre le stockage des sessions au chemin donné.</summary>
         internal static Func<string, ChatSessionStore> OpenHistory = OpenHistoryNative;
+
         /// <summary>Affiche un formulaire modal avec son propriétaire.</summary>
         internal static Func<Form, IWin32Window, DialogResult> ShowModal = (Func<Form, IWin32Window, DialogResult>)Delegate.CreateDelegate(typeof(Func<Form, IWin32Window, DialogResult>), typeof(Form).GetMethod("ShowDialog", new[] { typeof(IWin32Window) }));
+
         /// <summary>Affiche une boîte de dialogue d’enregistrement avec son propriétaire.</summary>
         internal static Func<CommonDialog, IWin32Window, DialogResult> ShowSaveDialog = (Func<CommonDialog, IWin32Window, DialogResult>)Delegate.CreateDelegate(typeof(Func<CommonDialog, IWin32Window, DialogResult>), typeof(CommonDialog).GetMethod("ShowDialog", new[] { typeof(IWin32Window) }));
+
         /// <summary>Affiche une notification à l’utilisateur.</summary>
         internal static Func<IWin32Window, string, string, MessageBoxButtons, MessageBoxIcon, DialogResult> ShowNotice = MessageBox.Show;
+
         /// <summary>Lit les touches de modification courantes du clavier.</summary>
         internal static Func<System.Windows.Input.ModifierKeys> ReadModifiers = (Func<System.Windows.Input.ModifierKeys>)Delegate.CreateDelegate(typeof(Func<System.Windows.Input.ModifierKeys>), typeof(System.Windows.Input.Keyboard).GetProperty("Modifiers").GetGetMethod());
+
         /// <summary>Copie du texte dans le presse-papiers Windows.</summary>
         internal static Action<string> WriteClipboard = System.Windows.Clipboard.SetText;
+
         /// <summary>Crée le transport natif vers Codex App Server.</summary>
         internal static Func<ICodexAppServerTransport> TransportFactory = CreateNativeTransport;
+
         /// <summary>Charge le catalogue des modèles d’un fournisseur.</summary>
         internal static Func<LlmProvider, LlmSettings, Task<LlmModelOption[]>> ReadModelCatalogue = LlmChatClient.ListModelsAsync;
+
         /// <summary>Exécute une commande protocole dans la session VBE.</summary>
         internal static Func<VbeSession, Request, Response> ReadHost = ReadHostNative;
+
         /// <summary>Exécute un outil VBE par son nom et ses arguments JSON.</summary>
         internal static Func<LlmVbeTools, string, string, Task<string>> InvokeTool = InvokeToolNative;
+
         /// <summary>Calcule l’emplacement par défaut de la base de sessions.</summary>
         /// <returns>Chemin local par défaut de chat.db.</returns>
         private static string DefaultHistoryPath() { return Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "VBAi", "chat.db"); }
+
         /// <summary>Ouvre une instance native du stockage de sessions.</summary>
         /// <param name="path">Chemin du fichier de stockage des sessions.</param>
         /// <returns>Stockage natif associé au chemin fourni.</returns>
         private static ChatSessionStore OpenHistoryNative(string path) { return new ChatSessionStore(path); }
+
         /// <summary>Crée le transport processus vers Codex App Server.</summary>
         /// <returns>Transport Codex App Server démarré à la demande.</returns>
         private static ICodexAppServerTransport CreateNativeTransport() { return new CodexProcessTransport(); }
+
         /// <summary>Délègue l’exécution à la session VBE.</summary>
         /// <param name="session">Session VBE qui exécute la commande.</param>
         /// <param name="request">Commande reçue par le pont local.</param>
         /// <returns>Réponse du traitement de commande VBE.</returns>
         private static Response ReadHostNative(VbeSession session, Request request) { return session.Execute(request); }
+
         /// <summary>Délègue l’appel au service d’outils VBE.</summary>
         /// <param name="tools">Service d’outils à invoquer.</param>
         /// <param name="name">Nom stable de l’outil.</param>
         /// <param name="arguments">Arguments de l’outil sérialisés en JSON.</param>
         /// <returns>Tâche produisant le résultat sérialisé de l’outil.</returns>
         private static Task<string> InvokeToolNative(LlmVbeTools tools, string name, string arguments) { return tools.InvokeAsync(name, arguments); }
-        /// <summary>Stores the refreshing approval used by ChatWindow.</summary>
+
+        /// <summary>Maintains the refreshing approval state for chat window.</summary>
         private bool refreshingApproval;
 
         /// <summary>Restores the policy without treating restoration as a user edit.</summary>
@@ -610,7 +648,7 @@ namespace VBAi
         }
 
         /// <summary>Changes the same VBE policy consumed by both native and HTTP tools.</summary>
-        /// <param name="sender">The sender used by this operation.</param>
+        /// <param name="sender">object that supplies the sender for this operation.</param>
         /// <param name="e">Native event data.</param>
         private void ApprovalPicker_SelectedIndexChanged(object sender, EventArgs e)
         {
@@ -623,7 +661,7 @@ namespace VBAi
         }
 
         /// <summary>Mirrors the menu choice into the existing verification preference.</summary>
-        /// <param name="sender">The sender used by this operation.</param>
+        /// <param name="sender">object that supplies the sender for this operation.</param>
         /// <param name="e">Native event data.</param>
         private void VerifyChanges_CheckedChanged(object sender, EventArgs e)
         {
@@ -631,7 +669,7 @@ namespace VBAi
         }
 
         /// <summary>Reveals the Designer-built provider, model and effort selectors.</summary>
-        /// <param name="sender">The sender used by this operation.</param>
+        /// <param name="sender">object that supplies the sender for this operation.</param>
         /// <param name="e">Native event data.</param>
         private void ModelSummary_Click(object sender, EventArgs e)
         {

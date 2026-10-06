@@ -9,6 +9,7 @@ namespace VBAi
     /// <summary>Convertit entre l’historique Chat Completions conservé par le complément et l’API Messages de Claude.</summary>
     internal static class ClaudeProtocol
     {
+
         /// <summary>Convertit une valeur sérialisée en dictionnaire objet, avec aller-retour JSON si nécessaire.</summary>
         /// <param name="value">Valeur à convertir.</param>
         /// <returns>Dictionnaire de propriétés, ou null si la valeur ne peut pas être convertie.</returns>
@@ -17,12 +18,14 @@ namespace VBAi
             return value as IDictionary<string, object> ??
                 new JavaScriptSerializer().DeserializeObject(new JavaScriptSerializer().Serialize(value)) as IDictionary<string, object>;
         }
+
         /// <summary>Lit une propriété et la convertit en texte.</summary>
         /// <param name="value">Dictionnaire source, éventuellement null.</param>
         /// <param name="key">Nom de la propriété à lire.</param>
         /// <returns>Valeur convertie en chaîne, ou null si la clé est absente.</returns>
         internal static string Text(IDictionary<string, object> value, string key)
         { object raw; return value != null && value.TryGetValue(key, out raw) ? Convert.ToString(raw) : null; }
+
         /// <summary>Lit une propriété tableau du dictionnaire.</summary>
         /// <param name="value">Dictionnaire source, éventuellement null.</param>
         /// <param name="key">Nom de la propriété à lire.</param>

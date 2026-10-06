@@ -5,23 +5,32 @@ using System.Windows.Forms;
 
 namespace VBAi
 {
+
     /// <summary>Progression de l’installateur externe, entièrement construite dans le Designer.</summary>
     internal sealed partial class UpdateProgressWindow : Form
     {
+
         /// <summary>Install job polled while the separate updater waits for hosts to close.</summary>
         private UpdateInstallJob job;
+
         /// <summary>Runner that verifies host leases and starts the installer.</summary>
         private UpdateInstallerRunner runner;
+
         /// <summary>Update root containing the pending job and host leases.</summary>
         private string root;
+
         /// <summary>Whether a poll is active and whether the updater was launched in background mode.</summary>
         private bool polling, background;
+
         /// <summary>Whether this window is handling runtime prerequisite installation instead of a product update.</summary>
         private bool prerequisite, closingInternally;
-        /// <summary>Stores the create prerequisite used by UpdateProgressWindow.</summary>
+
+        /// <summary>Maintains the create prerequisite state for update progress window.</summary>
         internal Func<WebViewRuntimePrerequisite> CreatePrerequisite = () => new WebViewRuntimePrerequisite();
-        /// <summary>Stores the set exit code used by UpdateProgressWindow.</summary>
+
+        /// <summary>Maintains the set exit code state for update progress window.</summary>
         internal Action<int> SetExitCode = code => Environment.ExitCode = code;
+
         /// <summary>Configures this window for the WebView2 runtime prerequisite flow.</summary>
         internal void ConfigureWebView()
         {
@@ -30,6 +39,7 @@ namespace VBAi
             status.Text = UpdateText.Get("Installing update…");
             cancel.Text = UpdateText.Get("Close"); cancel.Enabled = false;
         }
+
         /// <summary>Creates the progress dialog and attaches current theme handling.</summary>
         public UpdateProgressWindow()
         {
@@ -37,6 +47,7 @@ namespace VBAi
             if (LicenseManager.UsageMode == LicenseUsageMode.Designtime) return;
             UiTheme.Attach(this);
         }
+
         /// <summary>Sets the update job, selects its language, and begins progress polling.</summary>
         /// <param name="root">Update root containing job state.</param><param name="job">Job to display and monitor.</param><param name="background">Whether the worker should hide after showing.</param>
         internal void Configure(string root, UpdateInstallJob job, bool background)
@@ -53,6 +64,7 @@ namespace VBAi
             version.Text = "VBAi " + job.TargetVersion;
             timer.Start();
         }
+
         /// <summary>Hides background windows and installs the WebView prerequisite when configured for that flow.</summary>
         /// <param name="e">Shown event data.</param>
         protected override async void OnShown(EventArgs e)
@@ -70,6 +82,7 @@ namespace VBAi
             catch (Exception) { status.Text = UpdateText.Get("Installation failed. Check the installer log."); SetExitCode(1); }
             finally { polling = false; cancel.Enabled = true; progress.Visible = false; }
         }
+
         /// <summary>Refreshes worker status and advances one runner tick when no poll is already active.</summary>
         /// <param name="sender">Timer that raised the tick.</param><param name="e">Tick event arguments.</param>
         private async void Poll(object sender, EventArgs e)
@@ -90,7 +103,8 @@ namespace VBAi
             catch (Exception) { SetExitCode(1); timer.Stop(); status.Text = UpdateText.Get("Installation failed. Check the installer log."); CloseBackground(); }
             finally { polling = false; }
         }
-        /// <summary>Performs the close background operation for UpdateProgressWindow.</summary>
+
+        /// <summary>Closes background for update progress window.</summary>
         private void CloseBackground()
         {
             if (!background) return;
@@ -98,6 +112,7 @@ namespace VBAi
             try { Close(); }
             finally { closingInternally = false; }
         }
+
         /// <summary>Marks an unfinished job cancelled and closes when no installation is in progress.</summary>
         /// <param name="sender">Close or cancel button.</param><param name="e">Click event arguments.</param>
         private void Close_Click(object sender, EventArgs e)
@@ -106,6 +121,7 @@ namespace VBAi
             CancelPendingJob();
             Close();
         }
+
         /// <summary>Blocks user closure during polling and records cancellation for an unfinished job.</summary>
         /// <param name="sender">Progress dialog.</param><param name="e">Closing event data that may be cancelled.</param>
         private void WindowClosing(object sender, FormClosingEventArgs e)
@@ -114,6 +130,7 @@ namespace VBAi
             if (e.CloseReason == CloseReason.UserClosing && (polling || runner?.Installing == true)) { e.Cancel = true; return; }
             if (e.CloseReason == CloseReason.UserClosing) CancelPendingJob();
         }
+
         /// <summary>Records a user cancellation as an unsuccessful final result.</summary>
         private void CancelPendingJob()
         {

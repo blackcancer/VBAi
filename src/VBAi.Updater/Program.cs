@@ -5,8 +5,14 @@ using System.Threading;
 using System.Windows.Forms;
 using VBAi;
 
+/// <summary>Routes updater command-line modes and serializes per-user installation work.</summary>
 internal static class Program
 {
+
+    /// <summary>Handles the WebView2 prerequisite switches, then runs at most one per-user installation worker.
+    /// If a previous install was interrupted, records an uncertain outcome rather than starting it again.</summary>
+    /// <param name="args">Command-line arguments. Accepts no switch, <c>--background</c>,
+    /// <c>--check-webview2</c>, or <c>--ensure-webview2</c>; unknown or additional arguments are refused.</param>
     [STAThread]
     private static void Main(string[] args)
     {

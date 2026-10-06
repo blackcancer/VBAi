@@ -2,20 +2,29 @@ using System;
 
 namespace VBAi
 {
+
     /// <summary>Canonicalizes only documented MS-OFORMS padding in supported logical f/o streams.</summary>
     internal static partial class FormStreamPadding
     {
         // Primary grammar: MS-OFORMS 2.1.1.2.4, 2.2.1, 2.2.4, 2.2.10 and 2.3.
         // https://learn.microsoft.com/en-us/openspecs/office_file_formats/ms-oforms/622ed335-0723-4491-b271-e4767d7453e3
         // Property descriptors, lengths, masks, strings and extension bytes remain significant.
+        /// <summary>Maintains the max stream bytes state for form stream padding.</summary>
         private const int MaxStreamBytes = 32 * 1024 * 1024;
+
+        /// <summary>Identifies the text font guid associated with form stream padding.</summary>
         private static readonly byte[] TextFontGuid = new Guid("AFC20920-DA4E-11CE-B943-00AA006887B4").ToByteArray();
+
+        /// <summary>Identifies the std font guid associated with form stream padding.</summary>
         private static readonly byte[] StdFontGuid = new Guid("0BE35203-8F91-11CE-9DE3-00AA004BB851").ToByteArray();
 
         /// <summary>
         /// Returns cloned streams with padding zeroed, or the original pair when any layout is unsupported.
         /// This is a comparison representation, never a resource to import. No input bytes are modified.
         /// </summary>
+        /// <param name="form">byte[] that supplies the form for this operation.</param>
+        /// <param name="objects">byte[] that supplies the objects for this operation.</param>
+        /// <returns>byte[][] produced by the operation for normalize on form stream padding.</returns>
         internal static byte[][] Normalize(byte[] form, byte[] objects)
         {
             var original = new[] { form, objects };
@@ -36,9 +45,20 @@ namespace VBAi
             }
         }
 
+        /// <summary>Determines whether it has  for form stream padding.</summary>
+        /// <param name="mask">uint that supplies the mask for this operation.</param>
+        /// <param name="bit">int that supplies the bit for this operation.</param>
+        /// <returns>Boolean indicating the result of the check for has on form stream padding.</returns>
         private static bool Has(uint mask, int bit) { return (mask & (1u << bit)) != 0; }
+
+        /// <summary>Requires  for form stream padding.</summary>
+        /// <param name="condition">Indicates whether condition is enabled.</param>
         private static void Require(bool condition) { if (!condition) throw new UnsupportedLayoutException(); }
 
+        /// <summary>Parses form for form stream padding.</summary>
+        /// <param name="form">reader that supplies the form for this operation.</param>
+        /// <param name="objects">reader that supplies the objects for this operation.</param>
+        /// <param name="node">storage node that supplies the node for this operation.</param>
         private static void ParseForm(Reader form, Reader objects, StorageNode node = null)
         {
             Reader block = form.Block(0x0400);
@@ -101,6 +121,9 @@ namespace VBAi
 
         // MS-OFORMS 2.4.6 / 2.4.12. Font bytes remain significant; only their exact
         // documented extent is consumed, so subsequent site padding can be parsed.
+        /// <summary>Parses form font for form stream padding.</summary>
+        /// <param name="form">reader that supplies the form for this operation.</param>
+        /// <param name="node">storage node that supplies the node for this operation.</param>
         private static void ParseFormFont(Reader form, StorageNode node = null)
         {
             int start = form.Position;
@@ -124,6 +147,10 @@ namespace VBAi
             if (node != null) node.Font = form.Copy(start + 16, form.Position - start - 16);
         }
 
+        /// <summary>Parses site for form stream padding.</summary>
+        /// <param name="sites">reader that supplies the sites for this operation.</param>
+        /// <param name="objects">reader that supplies the objects for this operation.</param>
+        /// <param name="node">storage node that supplies the node for this operation.</param>
         private static void ParseSite(Reader sites, Reader objects, StorageNode node = null)
         {
             Reader block = sites.Block(0);
@@ -170,6 +197,9 @@ namespace VBAi
             control.Finish();
         }
 
+        /// <summary>Parses leaf for form stream padding.</summary>
+        /// <param name="control">reader that supplies the control for this operation.</param>
+        /// <param name="label">Indicates whether label is enabled.</param>
         private static void ParseLeaf(Reader control, bool label)
         {
             Reader block = control.Block(0x0200);
@@ -192,6 +222,8 @@ namespace VBAi
             ParseText(control);
         }
 
+        /// <summary>Parses text for form stream padding.</summary>
+        /// <param name="control">reader that supplies the control for this operation.</param>
         private static void ParseText(Reader control)
         {
             Reader block = control.Block(0x0200);
@@ -209,36 +241,85 @@ namespace VBAi
         /// <summary>Bounded little-endian reader; clears only padding reached by the property grammar.</summary>
         private sealed class Reader
         {
+
+            /// <summary>Maintains the bytes state for reader.</summary>
             private readonly byte[] bytes;
+
+            /// <summary>Maintains the end and origin state for reader.</summary>
             private readonly int end, origin;
+
+            /// <summary>Gets or sets the position.</summary>
+            /// <value>Current position exposed by reader.</value>
             internal int Position { get; private set; }
+
+            /// <summary>Gets the remaining.</summary>
+            /// <value>Current remaining exposed by reader.</value>
             internal int Remaining { get { return end - Position; } }
+
+            /// <summary>Initializes a Reader instance with the supplied state.</summary>
+            /// <param name="bytes">byte[] that supplies the bytes for this operation.</param>
+            /// <param name="start">int that supplies the start for this operation.</param>
+            /// <param name="length">int that supplies the length for this operation.</param>
+            /// <param name="origin">int that supplies the origin for this operation.</param>
             internal Reader(byte[] bytes, int start, int length, int origin)
             {
                 Require(start >= 0 && length >= 0 && start <= bytes.Length - length);
                 this.bytes = bytes; Position = start; end = start + length; this.origin = origin;
             }
+
+            /// <summary>Handles byte for reader.</summary>
+            /// <returns>byte produced by the operation for byte on reader.</returns>
             internal byte Byte() { Require(Remaining >= 1); return bytes[Position++]; }
+
+            /// <summary>Handles u int16 for reader.</summary>
+            /// <returns>ushort produced by the operation for u int16 on reader.</returns>
             internal ushort UInt16() { uint a = Byte(); return (ushort)(a | ((uint)Byte() << 8)); }
+
+            /// <summary>Handles u int32 for reader.</summary>
+            /// <returns>uint produced by the operation for u int32 on reader.</returns>
             internal uint UInt32() { uint a = UInt16(); return a | ((uint)UInt16() << 16); }
+
+            /// <summary>Handles skip for reader.</summary>
+            /// <param name="length">int that supplies the length for this operation.</param>
             internal void Skip(int length) { Require(length >= 0 && length <= Remaining); Position += length; }
+
+            /// <summary>Handles copy for reader.</summary>
+            /// <param name="start">int that supplies the start for this operation.</param>
+            /// <param name="length">int that supplies the length for this operation.</param>
+            /// <returns>byte[] produced by the operation for copy on reader.</returns>
             internal byte[] Copy(int start, int length)
             {
                 Require(start >= 0 && length >= 0 && start <= bytes.Length - length);
                 var copy = new byte[length]; Buffer.BlockCopy(bytes, start, copy, 0, length); return copy;
             }
+
+            /// <summary>Handles padding for reader.</summary>
+            /// <param name="length">int that supplies the length for this operation.</param>
             internal void Padding(int length)
             {
                 Require(length >= 0 && length <= Remaining);
                 Array.Clear(bytes, Position, length); Position += length;
             }
+
+            /// <summary>Handles align for reader.</summary>
+            /// <param name="alignment">int that supplies the alignment for this operation.</param>
             internal void Align(int alignment) { Padding((alignment - ((Position - origin) % alignment)) % alignment); }
+
+            /// <summary>Handles field for reader.</summary>
+            /// <param name="mask">uint that supplies the mask for this operation.</param>
+            /// <param name="bit">int that supplies the bit for this operation.</param>
+            /// <param name="size">int that supplies the size for this operation.</param>
+            /// <param name="defaultValue">uint that supplies the default value for this operation.</param>
+            /// <returns>uint produced by the operation for field on reader.</returns>
             internal uint Field(uint mask, int bit, int size, uint defaultValue = 0)
             {
                 if (!Has(mask, bit)) return defaultValue;
                 Align(size);
                 return size == 4 ? UInt32() : size == 2 ? UInt16() : Byte();
             }
+
+            /// <summary>Handles string for reader.</summary>
+            /// <param name="descriptor">uint that supplies the descriptor for this operation.</param>
             internal void String(uint descriptor)
             {
                 uint length = descriptor & 0x7fffffffu;
@@ -246,6 +327,10 @@ namespace VBAi
                 Skip((int)length);
                 Padding((int)((4 - (length & 3)) & 3));
             }
+
+            /// <summary>Handles string value for reader.</summary>
+            /// <param name="descriptor">uint that supplies the descriptor for this operation.</param>
+            /// <returns>Text produced by the operation for string value on reader.</returns>
             internal string StringValue(uint descriptor)
             {
                 uint length = descriptor & 0x7fffffffu;
@@ -266,6 +351,10 @@ namespace VBAi
                 String(descriptor);
                 return value;
             }
+
+            /// <summary>Handles block for reader.</summary>
+            /// <param name="version">ushort that supplies the version for this operation.</param>
+            /// <returns>reader produced by the operation for block on reader.</returns>
             internal Reader Block(ushort version)
             {
                 int start = Position;
@@ -275,6 +364,11 @@ namespace VBAi
                 Reader result = Section(length, start);
                 return result;
             }
+
+            /// <summary>Handles section for reader.</summary>
+            /// <param name="length">uint that supplies the length for this operation.</param>
+            /// <param name="alignmentOrigin">int that supplies the alignment origin for this operation.</param>
+            /// <returns>reader produced by the operation for section on reader.</returns>
             internal Reader Section(uint length, int? alignmentOrigin = null)
             {
                 Require(length <= (uint)Remaining);
@@ -282,9 +376,12 @@ namespace VBAi
                 Position += (int)length;
                 return result;
             }
+
+            /// <summary>Handles finish for reader.</summary>
             internal void Finish() { Require(Position == end); }
         }
 
+        /// <summary>Owns the unsupported layout exception state and operations.</summary>
         private sealed class UnsupportedLayoutException : Exception { }
     }
 }

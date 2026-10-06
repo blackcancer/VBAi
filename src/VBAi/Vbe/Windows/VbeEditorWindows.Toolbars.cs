@@ -6,9 +6,11 @@ using System.Web.Script.Serialization;
 
 namespace VBAi
 {
+
     /// <summary>Lit et modifie les barres d’outils normales du VBE avec vérification des versions observées.</summary>
     internal sealed partial class VbeEditorWindows
     {
+
         /// <summary>Retourne l’état lisible des barres d’outils normales et leurs erreurs de lecture.</summary>
         /// <returns>Un objet sérialisable contenant les instantanés, les erreurs et la version de la collection.</returns>
         public object Toolbars()
@@ -24,6 +26,7 @@ namespace VBAi
             return new { Toolbars = bars, Errors = errors, ProfileErrors = ToolbarProfileErrors.ToArray(), ToolbarCollectionVersion = collectionVersion,
                 Scope = "Normal VBE command bars only; menu bars and shortcut menus are excluded." };
         }
+
         /// <summary>Capture les propriétés et la géométrie accessibles d’une barre, avec des empreintes distinctes.</summary>
         /// <param name="bar">Barre native à lire.</param>
         /// <returns>Un instantané sérialisable avec erreurs par propriété et versions calculées si la lecture est complète.</returns>
@@ -54,6 +57,7 @@ namespace VBAi
             return new { Properties = state, Errors = errors, Geometry = geometry, GeometryErrors = geometryErrors,
                 ToolbarLayoutVersion = layoutVersion, WindowVersion = version, VersionScope = "Toolbar identity, visibility, enabled state and protection; geometry is observational." };
         }
+
         /// <summary>Affiche ou masque une barre après contrôle de l’empreinte de son état.</summary>
         /// <param name="request">Requête contenant l’action, le nom et la version attendue.</param>
         /// <returns>Le résultat de la mutation et les instantanés avant et après lecture.</returns>
@@ -99,6 +103,7 @@ namespace VBAi
             if ((int)((dynamic)target).Type != 0) throw new InvalidOperationException("Only normal toolbars can be changed; menu bars and popup menus are excluded.");
             return target;
         }
+
         /// <summary>Déplace une barre flottante en pixels ou change son ordre dans une rangée ancrée.</summary>
         /// <param name="request">Requête avec mode, coordonnées ou rangée et empreinte de disposition attendue.</param>
         /// <returns>Le résultat vérifié de l’opération et les états observés avant et après.</returns>
@@ -147,6 +152,7 @@ namespace VBAi
                 NativeError = error, PersistenceVerified = false, NextRead = "list_toolbars",
                 Limit = "VBE may normalize placement or rearrange neighbors. Partial changes are reported, not retried or implicitly rolled back." };
         }
+
         /// <summary>Ancre ou détache une barre selon l’action demandée, après contrôle de sa disposition.</summary>
         /// <param name="request">Requête avec action et empreinte de disposition attendue.</param>
         /// <returns>Le résultat de l’opération, l’état de visibilité et les instantanés observés.</returns>

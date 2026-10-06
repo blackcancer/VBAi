@@ -1,26 +1,37 @@
 namespace VBAi
 {
+
     /// <summary>Designer-generated repository remote and branch connection controls.</summary>
     public sealed partial class GitConnectionView
     {
+
         /// <summary>Caption for the remote URL input.</summary>
         internal System.Windows.Forms.Label remoteLabel;
+
         /// <summary>Caption for the current branch input.</summary>
         internal System.Windows.Forms.Label branchLabel;
+
         /// <summary>Help text for connecting a repository.</summary>
         internal System.Windows.Forms.Label help;
+
         /// <summary>Remote repository URL.</summary>
         internal VBAi.UiTextBox remote;
+
         /// <summary>Current branch name.</summary>
         internal VBAi.UiTextBox branch;
+
         /// <summary>Connects to the configured repository.</summary>
         internal VBAi.ThemedButton connect;
+
         /// <summary>Layout for remote, branch, help, and connection action.</summary>
         internal VBAi.ChatComposerPanel connectionLayout;
+
         /// <summary>Container that owns Designer components.</summary>
         private System.ComponentModel.IContainer components;
+
         /// <summary>Tooltips associated with connection controls.</summary>
         private System.Windows.Forms.ToolTip toolTips;
+
         /// <summary>Libère les composants de la vue avant son contrôle natif.</summary>
         /// <param name="disposing">Indique si les ressources managées doivent être libérées.</param>
         protected override void Dispose(bool disposing)

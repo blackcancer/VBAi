@@ -7,9 +7,11 @@ using System.Windows.Automation;
 
 namespace VBAi
 {
+
     /// <summary>Lit et sélectionne les éléments de l’Explorateur d’objets par UI Automation native.</summary>
     internal static partial class VbeDebugWindows
     {
+
         /// <summary>Native UIA element acquisition, isolated without replacing browser orchestration.</summary>
         internal static Func<IntPtr, AutomationElement> ObjectBrowserElement = AutomationElement.FromHandle;
         // Accessibility must run on a worker thread, never the VBE dispatcher.
@@ -92,6 +94,7 @@ namespace VBAi
 
         /// <summary>Native ancestry and enabled-state boundaries shared by the browser and code view.</summary>
         internal static Func<IntPtr, IntPtr> ObjectBrowserParent = NativeObjectBrowserParent;
+
         /// <summary>Vérificateur de disponibilité native des ancêtres des contrôles.</summary>
         internal static Func<IntPtr, bool> ObjectBrowserEnabled = NativeObjectBrowserEnabled;
 

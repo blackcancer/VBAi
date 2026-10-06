@@ -1,14 +1,19 @@
 namespace VBAi
 {
+
     /// <summary>Déclare les contrôles et leur disposition pour la boîte de dialogue d’approbation.</summary>
     internal sealed partial class VbeApprovalDialog
     {
+
         /// <summary>Champ en lecture seule qui affiche le résumé de l’édition.</summary>
         private VBAi.UiTextBox details;
+
         /// <summary>Barre inférieure qui contient les boutons d’approbation et de refus.</summary>
         private System.Windows.Forms.FlowLayoutPanel actions;
+
         /// <summary>Bouton dont le résultat de dialogue autorise l’édition.</summary>
         private VBAi.UiActionButton approve;
+
         /// <summary>Bouton dont le résultat de dialogue refuse l’édition.</summary>
         private VBAi.UiActionButton reject;
 

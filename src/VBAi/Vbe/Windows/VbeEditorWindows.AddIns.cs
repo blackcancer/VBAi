@@ -6,9 +6,11 @@ using System.Web.Script.Serialization;
 
 namespace VBAi
 {
+
     /// <summary>Expose les opérations contrôlées sur les compléments enregistrés du VBE.</summary>
     internal sealed partial class VbeEditorWindows
     {
+
         /// <summary>Capture l’identité et l’état de connexion lisibles d’un complément.</summary>
         /// <param name="addIn">Complément natif à interroger.</param>
         /// <param name="index">Position facultative dans l’inventaire.</param>

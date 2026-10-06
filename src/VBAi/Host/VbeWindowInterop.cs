@@ -18,6 +18,7 @@ namespace VBAi
     [InterfaceType(ComInterfaceType.InterfaceIsDual)]
     internal interface IVbeWindows
     {
+
         /// <summary>Retourne l’instance VBE propriétaire de la collection.</summary>
         /// <value>Instance VBE via l’interface COM.</value>
         [DispId(1)] object VBE { [return: MarshalAs(UnmanagedType.Interface)] get; }

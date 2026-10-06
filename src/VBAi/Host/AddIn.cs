@@ -5,6 +5,7 @@ using System.Windows.Forms;
 
 namespace VBAi
 {
+
     /// <summary>Point d’entrée COM qui démarre le serveur de commandes et les fenêtres VBAi.</summary>
     [ComVisible(true)]
     [Guid("8E854243-087F-4D6C-9E0E-8622B0E50883")]
@@ -13,32 +14,45 @@ namespace VBAi
     [ComDefaultInterface(typeof(IDTExtensibility2))]
         public sealed class AddIn : IDTExtensibility2
     {
+
         /// <summary>Écrit une entrée dans le journal du complément.</summary>
         internal static Action<string> WriteLog = LoadLog.Write;
+
         /// <summary>Démarre les mises à jour sur un déploiement géré par l’installeur.</summary>
         internal static Action StartUpdateCheck = UpdateCoordinator.Start;
+
         /// <summary>Arrête les vérifications en cours quand le complément est déconnecté.</summary>
         internal static Action StopUpdateCheck = UpdateCoordinator.Stop;
+
         /// <summary>Starts optional observations without changing host cleanup ownership.</summary>
         internal static Func<string, AddInShutdownDiagnostic> CreateShutdownDiagnostic = AddInShutdownDiagnostic.TryBeginFromEnvironment;
+
         /// <summary>Crée le collecteur d’erreurs lié à la session et à son stockage local.</summary>
         internal static Func<Action<CrashReport>, CrashReporter> CreateCrashReporter = show => new CrashReporter(show);
+
         /// <summary>Démarre le pont de commandes local pour la session active.</summary>
         internal static Action<BridgeServer> StartBridge = (Action<BridgeServer>)Delegate.CreateDelegate(typeof(Action<BridgeServer>), typeof(BridgeServer).GetMethod("Start"));
+
         /// <summary>Crée la fenêtre de discussion liée à une session VBE.</summary>
         internal static Func<VbeSession, ChatWindow> CreateChat = CreateChatNative;
+
         /// <summary>Crée le gestionnaire de menus du VBE.</summary>
         internal static Func<object, Action, Action, Action, Action<string>, VbeMenu> CreateMenu = CreateMenuNative;
+
         /// <summary>Charge les paramètres des fournisseurs LLM.</summary>
         internal static Func<LlmSettings> ReadSettings = LlmSettings.Load;
+
         /// <summary>Affiche une fenêtre modale avec son propriétaire Win32.</summary>
         internal static Func<Form, IWin32Window, DialogResult> ShowModal = (Func<Form, IWin32Window, DialogResult>)Delegate.CreateDelegate(typeof(Func<Form, IWin32Window, DialogResult>), typeof(Form).GetMethod("ShowDialog", new[] { typeof(IWin32Window) }));
+
         /// <summary>Affiche une notification WinForms et renvoie le choix de l’utilisateur.</summary>
         internal static Func<string, string, MessageBoxButtons, MessageBoxIcon, DialogResult> ShowNotice = MessageBox.Show;
+
         /// <summary>Crée directement une fenêtre de discussion.</summary>
         /// <param name="session">Session VBE associée à la fenêtre.</param>
         /// <returns>Nouvelle fenêtre de discussion.</returns>
         private static ChatWindow CreateChatNative(VbeSession session) { return new ChatWindow(session); }
+
         /// <summary>Crée directement le gestionnaire des commandes de menu VBE.</summary>
         /// <param name="host">Instance hôte dont les barres de commandes seront utilisées.</param>
         /// <param name="chat">Action d’ouverture de la discussion.</param>
@@ -47,39 +61,62 @@ namespace VBAi
         /// <param name="editor">Action de commande associée au texte fourni.</param>
         /// <returns>Gestionnaire des menus installé sur l’hôte.</returns>
         private static VbeMenu CreateMenuNative(object host, Action chat, Action settings, Action github, Action<string> editor) { return new VbeMenu(host, chat, settings, github, editor, () => AboutWindow.ShowForVbe(host), () => CrashReportWindow.ShowForVbe(host), () => UpdateWindow.ShowForVbe(host)); }
+
         /// <summary>Contrôle WinForms fournissant un contexte de synchronisation pour le serveur local.</summary>
         private Control dispatcher;
+
         /// <summary>Rapporteur d’erreurs de l’add-in hôte.</summary>
         private CrashReporter crashReporter;
+
         /// <summary>Serveur de commandes local rattaché à l’instance du VBE.</summary>
         private BridgeServer server;
+
         /// <summary>Fenêtre de conversation actuellement ouverte.</summary>
         private ChatWindow chat;
+
         /// <summary>Commandes ajoutées aux barres du VBE.</summary>
         private VbeMenu menu;
+
         /// <summary>Instance VBE fournie par l’hôte COM.</summary>
         private object vbe;
+
         /// <summary>Instance COM de l’add-in enregistrée dans l’hôte.</summary>
         private object addIn;
+
         /// <summary>Fenêtre native du VBE qui héberge le contrôle de conversation.</summary>
         private object nativeChatWindow;
+
         /// <summary>Contrôle utilisateur contenu dans la fenêtre native du VBE.</summary>
         private ChatToolWindow nativeChatControl;
+
         /// <summary>Indique si la fenêtre de conversation est attachée au cadre VBE.</summary>
         private bool docked;
-        /// <summary>Stores the create modern editor used by AddIn.</summary>
+
+        /// <summary>Maintains the create modern editor state for add in.</summary>
         internal static Func<ModernEditorWindow> CreateModernEditor = CreateModernEditorNative;
-        /// <summary>Performs the create modern editor native operation for AddIn.</summary>
-        /// <returns>The result produced by this operation.</returns>
+
+        /// <summary>Creates modern editor native for add in.</summary>
+        /// <returns>modern editor window produced by the operation for create modern editor native on add in.</returns>
         private static ModernEditorWindow CreateModernEditorNative() => new ModernEditorWindow();
+
         /// <summary>Fenêtre d’éditeur moderne réutilisée par les commandes de l’add-in.</summary>
         private ModernEditorWindow modernEditor;
+
+        /// <summary>Maintains the test explorer window state for add in.</summary>
         private TestExplorerWindow testExplorerWindow;
+
+        /// <summary>Maintains the test explorer service state for add in.</summary>
         private VbeTestExplorerService testExplorerService;
+
+        /// <summary>Maintains the native test window state for add in.</summary>
         private object nativeTestWindow;
+
+        /// <summary>Maintains the native test control state for add in.</summary>
         private ChatToolWindow nativeTestControl;
-        /// <summary>Stores the editor workspace used by AddIn.</summary>
+
+        /// <summary>Maintains the editor workspace state for add in.</summary>
         private EditorWorkspaceHost editorWorkspace;
+
         /// <summary>Navigation VBE associée à l’éditeur moderne ouvert.</summary>
         private EditorProjectNavigation editorNavigation;
 
@@ -95,7 +132,7 @@ namespace VBAi
         /// <param name="connectMode">Mode de connexion communiqué par l’hôte.</param>
         /// <param name="addInInstance">Instance COM de l’add-in hôte.</param>
         /// <param name="custom">Données personnalisées transmises par l’hôte, éventuellement modifiées par l’add-in.</param>
-public void OnConnection(object application, int connectMode, object addInInstance, ref object[] custom)
+        public void OnConnection(object application, int connectMode, object addInInstance, ref object[] custom)
         {
             try
             {
@@ -158,11 +195,13 @@ public void OnConnection(object application, int connectMode, object addInInstan
         /// <summary>Wrapper de poignée HWND utilisé comme propriétaire WinForms.</summary>
         private sealed class VbeWindowOwner : IWin32Window
         {
-        /// <summary>Wrapper de poignée HWND utilisé comme propriétaire WinForms.</summary>
-        /// <param name="handle">Poignée HWND de la fenêtre propriétaire.</param>
+
+            /// <summary>Wrapper de poignée HWND utilisé comme propriétaire WinForms.</summary>
+            /// <param name="handle">Poignée HWND de la fenêtre propriétaire.</param>
             public VbeWindowOwner(IntPtr handle) { Handle = handle; }
-        /// <summary>Poignée HWND du propriétaire VBE.</summary>
-        /// <value>Poignée HWND du propriétaire VBE.</value>
+
+            /// <summary>Poignée HWND du propriétaire VBE.</summary>
+            /// <value>Poignée HWND du propriétaire VBE.</value>
             public IntPtr Handle { get; private set; }
         }
 
@@ -214,8 +253,8 @@ public void OnConnection(object application, int connectMode, object addInInstan
             catch (Exception ex) { ReportMenuError(ex); }
         }
 
-        /// <summary>Performs the prepare editor action operation for AddIn.</summary>
-        /// <param name="command">Text containing the command.</param>
+        /// <summary>Handles prepare editor action for add in.</summary>
+        /// <param name="command">Text that supplies the command value. Use the format required by the calling operation.</param>
         private async void PrepareEditorAction(string command)
         {
             try
@@ -250,6 +289,7 @@ public void OnConnection(object application, int connectMode, object addInInstan
             }
             return new EditorVbeModule(vbe, project, component);
         }
+
         /// <summary>Crée une session VBE reliée au résolveur de la fenêtre d’éditeur moderne.</summary>
         /// <returns>Nouvelle session configurée pour obtenir l’éditeur moderne à la demande.</returns>
         private VbeSession CreateEditorSession() => new VbeSession(vbe) { ModernEditor = GetModernEditor, TestExplorer = testExplorerService };
@@ -293,6 +333,7 @@ public void OnConnection(object application, int connectMode, object addInInstan
             }
             catch (Exception error) { ReportMenuError(error); }
         }
+
         /// <summary>Ouvre un module dans l’éditeur moderne et rapporte les erreurs d’ouverture.</summary>
         /// <param name="module">Module à afficher.</param>
         private async void OpenModernModule(IEditorModule module)
@@ -300,6 +341,7 @@ public void OnConnection(object application, int connectMode, object addInInstan
             try { await GetModernEditor(true).OpenModule(module); }
             catch (Exception error) { ReportMenuError(error); }
         }
+
         /// <summary>Retourne la fenêtre moderne existante ou la crée et l’affiche selon la demande.</summary>
         /// <param name="show">Crée ou active la fenêtre lorsqu’il est vrai; sinon retourne seulement l’instance existante.</param>
         /// <returns>Fenêtre actuelle, ou nul si elle n’existe pas et que la création n’est pas demandée.</returns>
@@ -318,6 +360,7 @@ public void OnConnection(object application, int connectMode, object addInInstan
             editorWorkspace.Show();
             return modernEditor;
         }
+
         /// <summary>Affiche l’éditeur moderne et y ouvre le module actuellement sélectionné, s’il existe.</summary>
         private async void ShowModernEditor()
         {
@@ -329,6 +372,7 @@ public void OnConnection(object application, int connectMode, object addInInstan
             }
             catch (Exception error) { ReportMenuError(error); }
         }
+
         /// <summary>Construit le propriétaire WinForms à partir de la fenêtre principale du VBE.</summary>
         /// <returns>Fenêtre propriétaire WinForms ancrée sur la fenêtre principale du VBE.</returns>
         private IWin32Window VbeOwner()
@@ -342,6 +386,8 @@ public void OnConnection(object application, int connectMode, object addInInstan
             await VbeUiTask.Run(async () => { await ShowGitHubOnOwnerAsync(); return true; });
         }
 
+        /// <summary>Handles show git hub on owner async for add in.</summary>
+        /// <returns>task produced by the operation for show git hub on owner async on add in.</returns>
         private async System.Threading.Tasks.Task ShowGitHubOnOwnerAsync()
         {
             try
@@ -375,7 +421,7 @@ public void OnConnection(object application, int connectMode, object addInInstan
 
         /// <summary>Journalise et affiche une erreur issue d’une commande du menu.</summary>
         /// <param name="ex">Exception levée pendant une action de menu.</param>
-private void ReportMenuError(Exception ex)
+        private void ReportMenuError(Exception ex)
         {
             WriteLog("VBE menu action failed: " + ex.ToString());
             crashReporter?.ReportUnexpected(ex);
@@ -453,7 +499,7 @@ private void ReportMenuError(Exception ex)
         /// <summary>Libère les services et fenêtres quand l’hôte déconnecte l’add-in.</summary>
         /// <param name="removeMode">Mode de suppression transmis par l’hôte COM.</param>
         /// <param name="custom">Données personnalisées transmises par l’hôte, éventuellement modifiées par l’add-in.</param>
-public void OnDisconnection(int removeMode, ref object[] custom)
+        public void OnDisconnection(int removeMode, ref object[] custom)
         {
             var diagnostic = BeginShutdownObservation("OnDisconnection");
             try
@@ -468,13 +514,15 @@ public void OnDisconnection(int removeMode, ref object[] custom)
 
         /// <summary>Point d’extension COM appelé après la mise à jour de la collection d’add-ins.</summary>
         /// <param name="custom">Données personnalisées transmises par l’hôte, éventuellement modifiées par l’add-in.</param>
-public void OnAddInsUpdate(ref object[] custom) { }
+        public void OnAddInsUpdate(ref object[] custom) { }
+
         /// <summary>Point d’extension COM appelé à la fin du démarrage de l’hôte.</summary>
         /// <param name="custom">Données personnalisées transmises par l’hôte, éventuellement modifiées par l’add-in.</param>
-public void OnStartupComplete(ref object[] custom) { }
+        public void OnStartupComplete(ref object[] custom) { }
+
         /// <summary>Libère les services lorsque l’hôte commence son arrêt.</summary>
         /// <param name="custom">Données personnalisées transmises par l’hôte, éventuellement modifiées par l’add-in.</param>
-public void OnBeginShutdown(ref object[] custom)
+        public void OnBeginShutdown(ref object[] custom)
         {
             var diagnostic = BeginShutdownObservation("OnBeginShutdown");
             try
@@ -487,6 +535,8 @@ public void OnBeginShutdown(ref object[] custom)
         }
 
         /// <summary>A failed diagnostic admission must not prevent the original cleanup.</summary>
+        /// <param name="entryPoint">Text that supplies the entry point value. Use the format required by the calling operation.</param>
+        /// <returns>add in shutdown diagnostic produced by the operation for begin shutdown observation on add in.</returns>
         private static AddInShutdownDiagnostic BeginShutdownObservation(string entryPoint)
         {
             try { return CreateShutdownDiagnostic?.Invoke(entryPoint); }
@@ -499,6 +549,8 @@ public void OnBeginShutdown(ref object[] custom)
             CleanupTemporaryToolbarCommandsObserved(null);
         }
 
+        /// <summary>Handles cleanup temporary toolbar commands observed for add in.</summary>
+        /// <param name="diagnostic">add in shutdown diagnostic that supplies the diagnostic for this operation.</param>
         private void CleanupTemporaryToolbarCommandsObserved(AddInShutdownDiagnostic diagnostic)
         {
             try
@@ -524,6 +576,7 @@ public void OnBeginShutdown(ref object[] custom)
         }
 
         /// <summary>Observes existing calls and field assignments without asserting COM release.</summary>
+        /// <param name="diagnostic">add in shutdown diagnostic that supplies the diagnostic for this operation.</param>
         private void DisposeObserved(AddInShutdownDiagnostic diagnostic)
         {
             try

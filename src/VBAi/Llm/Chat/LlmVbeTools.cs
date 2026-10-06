@@ -11,23 +11,32 @@ using System.Windows.Forms;
 
 namespace VBAi
 {
+
     /// <summary>Décrit et exécute les outils accessibles au modèle pour inspecter et modifier le projet VBE.</summary>
     internal sealed partial class LlmVbeTools
     {
+
         /// <summary>Session VBE utilisée pour exécuter les commandes sur le thread approprié.</summary>
         private readonly VbeSession session;
+
         /// <summary>Fenêtre propriétaire des demandes de confirmation et dialogues.</summary>
         private readonly IWin32Window owner;
+
         /// <summary>Paramètres utilisés par les outils et règles de modification.</summary>
         private readonly LlmSettings settings;
+
         /// <summary>Sérialiseur des arguments des outils et des réponses du pont.</summary>
         private readonly JavaScriptSerializer json = new JavaScriptSerializer { MaxJsonLength = 10 * 1024 * 1024 };
+
         /// <summary>Requêtes explicites de l’utilisateur, utilisées pour limiter la lecture de fichiers locaux.</summary>
         private readonly List<string> userRequests = new List<string>();
+
         /// <summary>Se produit lorsqu’un outil a appliqué une modification de code.</summary>
         public event Action<CodeChange> CodeEdited;
+
         /// <summary>Signale une coupe récupérable effectuée dans le concepteur.</summary>
         public event Action<FormCutChange> FormCut;
+
         /// <summary>Noms des outils dont les opérations sont en lecture seule.</summary>
         private static readonly HashSet<string> ReadOnlyTools = new HashSet<string>(StringComparer.Ordinal) {
             "discover_vba_tests", "preview_vba_test_support", "vba_test_run_status", "navigate_vba_test", "vba_test_coverage", "show_vba_test_explorer",
@@ -38,43 +47,62 @@ namespace VBAi
             "form_state", "form_tree", "form_list_items", "form_properties", "form_control_properties", "form_event_catalog",
             "list_form_control_types", "open_form"
         };
+
         /// <summary>Obtient ou définit le nom du fournisseur courant utilisé pour les décisions d’accès.</summary>
         /// <value>Nom du fournisseur actif.</value>
         public string CurrentProviderName { get; set; }
+
         /// <summary>Obtient ou définit le mode de conversation qui autorise ou bloque les opérations d’écriture.</summary>
         /// <value>Mode courant, Agent par défaut.</value>
         public ChatMode Mode { get; set; } = ChatMode.Agent;
+
         /// <summary>Obtient ou définit le contrôle de portée appelé avant un outil.</summary>
         /// <value>Action de validation facultative.</value>
         public Action ValidateScope { get; set; }
+
         /// <summary>Validates cached conversation selection/privacy without host or COM reads.</summary>
         internal Action ValidateCachedScope;
+
         /// <summary>Obtient ou définit l’identifiant du projet auquel les outils sont limités.</summary>
         /// <value>Nom ou chemin du projet lié à la conversation.</value>
         public string BoundProject { get; set; }
+
         /// <summary>Indique qu’une restauration interne est en cours et peut contourner certaines gardes d’édition.</summary>
         private bool restoring;
+
         /// <summary>Adaptateurs natifs du débogueur, remplaçables par instance à la frontière UI.</summary>
         internal readonly VbeToolNativeBoundary Native = new VbeToolNativeBoundary();
+
         /// <summary>Exécute une commande sur la session hôte, sans remplacer l’orchestration de l’outil.</summary>
         internal Func<Request, Response> Execute;
+
         /// <summary>Dispatches final Immediate validation and Enter to the owning chat/VBE thread.</summary>
         internal Action<Action> ImmediateOwnerDispatch;
+
         /// <summary>Reads the native Immediate buffer asynchronously on the VBE STA.</summary>
         internal Func<Request, Task<object>> ReadImmediateNative;
+
         /// <summary>Inspects declared scalar locals asynchronously on the VBE STA.</summary>
         internal Func<Request, Task<object>> InspectLocalScalarsNative;
+
         /// <summary>Saves and observes completion on the owning VBE STA.</summary>
         internal Func<Request, Task<object>> SaveHostDocumentNative;
+
+        /// <summary>Maintains the solid works macro native state for llm vbe tools.</summary>
         internal Func<Request, Task<object>> SolidWorksMacroNative;
+
         /// <summary>Interroge la disponibilité native d’une récupération dans le concepteur VBE.</summary>
         internal Func<Request, bool> CanRecoverDesignerCut;
+
         /// <summary>Demande la sauvegarde de signature au document hôte.</summary>
         internal Func<string, object> PersistSignature;
+
         /// <summary>Écrit les erreurs de lecture de diff dans le journal de chargement.</summary>
         internal Action<string> WriteLog = LoadLog.Write;
+
         /// <summary>Frontière native injectable, initialisée avec le comportement de production.</summary>
         internal Func<VbeApprovalDialog, IWin32Window, DialogResult> ShowApproval = (dialog, window) => dialog.ShowDialog(window);
+
         /// <summary>Frontière native injectable, initialisée avec le comportement de production.</summary>
         internal Func<IWin32Window, string, string, DialogResult> ConfirmFile = (window, text, title) =>
             MessageBox.Show(window, text, title, MessageBoxButtons.YesNo, MessageBoxIcon.Question, MessageBoxDefaultButton.Button2);
@@ -89,6 +117,7 @@ namespace VBAi
         }
 
         /// <summary>Checks cached chat mode without reading or dispatching to the host.</summary>
+        /// <param name="name">Text that supplies the name value. Use the format required by the calling operation.</param>
         private void GuardModeLocal(string name)
         {
             if (!restoring && Mode != ChatMode.Agent && !ReadOnlyTools.Contains(name))
@@ -411,6 +440,11 @@ namespace VBAi
             return InvokeCoreAsync(name, arguments, false).GetAwaiter().GetResult();
         }
 
+        /// <summary>Invokes core async for llm vbe tools.</summary>
+        /// <param name="name">Text that supplies the name value. Use the format required by the calling operation.</param>
+        /// <param name="arguments">Text that supplies the arguments value. Use the format required by the calling operation.</param>
+        /// <param name="asyncSave">Indicates whether async save is enabled.</param>
+        /// <returns>task&lt;string&gt; produced by the operation for invoke core async on llm vbe tools.</returns>
         private async Task<string> InvokeCoreAsync(string name, string arguments, bool asyncSave)
         {
             if (name == "read_immediate" || name == "inspect_local_scalars")
@@ -671,8 +705,10 @@ namespace VBAi
         /// <summary>Couple le contenu actuel d’un module à son empreinte de version.</summary>
         private sealed class CodeSnapshot
         {
+
             /// <summary>Code source courant.</summary>
             public string Code;
+
             /// <summary>Empreinte SHA-256 du code courant.</summary>
             public string Sha256;
         }

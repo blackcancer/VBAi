@@ -6,6 +6,7 @@ using System.Linq;
 
 namespace VBAi
 {
+
     /// <summary>Implémente la duplication vérifiée des Frames vides.</summary>
     internal sealed partial class VbeForms
     {

@@ -6,42 +6,55 @@ using System.Text.RegularExpressions;
 
 namespace VBAi
 {
+
     /// <summary>Index syntaxique des déclarations VBA avec positions physiques, sans résolution de références COM.</summary>
     internal static class VbaDeclarationIndex
     {
+
         /// <summary>Déclaration navigable du texte source vivant.</summary>
         internal sealed class Declaration
         {
-                        /// <summary>Nom déclaré, sans suffixe de type VBA.</summary>
-                        /// <value>Identifiant nettoyé de son suffixe de type éventuel.</value>
+
+            /// <summary>Nom déclaré, sans suffixe de type VBA.</summary>
+            /// <value>Identifiant nettoyé de son suffixe de type éventuel.</value>
             public string Name { get; set; }
-                        /// <summary>Catégorie syntaxique de la déclaration.</summary>
-                        /// <value>Type de membre tel que Variable, Constant, Procedure ou Field.</value>
+
+            /// <summary>Catégorie syntaxique de la déclaration.</summary>
+            /// <value>Type de membre tel que Variable, Constant, Procedure ou Field.</value>
             public string Kind { get; set; }
-                        /// <summary>Nom de la procédure ou du type contenant la déclaration ; null au niveau module.</summary>
-                        /// <value>Portée lexicale, ou <see langword="null"/> pour une déclaration de module.</value>
+
+            /// <summary>Nom de la procédure ou du type contenant la déclaration ; null au niveau module.</summary>
+            /// <value>Portée lexicale, ou <see langword="null"/> pour une déclaration de module.</value>
             public string Scope { get; set; }
-                        /// <summary>Type écrit dans la déclaration ou déduit de son suffixe.</summary>
-                        /// <value>Nom du type VBA ou Variant par défaut.</value>
+
+            /// <summary>Type écrit dans la déclaration ou déduit de son suffixe.</summary>
+            /// <value>Nom du type VBA ou Variant par défaut.</value>
             public string TypeName { get; set; }
-                        /// <summary>Ligne physique à base un du nom déclaré.</summary>
-                        /// <value>Numéro de ligne dans le texte source d’origine.</value>
+
+            /// <summary>Ligne physique à base un du nom déclaré.</summary>
+            /// <value>Numéro de ligne dans le texte source d’origine.</value>
             public int Line { get; set; }
-                        /// <summary>Colonne physique à base un du nom déclaré.</summary>
-                        /// <value>Position du premier caractère du nom.</value>
+
+            /// <summary>Colonne physique à base un du nom déclaré.</summary>
+            /// <value>Position du premier caractère du nom.</value>
             public int Column { get; set; }
-                        /// <summary>Indique une déclaration située dans une branche de compilation conditionnelle.</summary>
-                        /// <value><see langword="true"/> lorsque la déclaration apparaît dans une branche #If.</value>
+
+            /// <summary>Indique une déclaration située dans une branche de compilation conditionnelle.</summary>
+            /// <value><see langword="true"/> lorsque la déclaration apparaît dans une branche #If.</value>
             public bool Conditional { get; set; }
         }
+
         /// <summary>Jeton lexical hors commentaires et littéraux avec ses coordonnées physiques.</summary>
         internal sealed class Token
         {
+
             /// <summary>Texte exact du jeton, y compris un suffixe de type.</summary>
             public string Text;
+
             /// <summary>Ligne et colonne physiques à base un.</summary>
             public int Line, Column;
         }
+
         /// <summary>Recense variables, constantes, paramètres, types, champs et membres d’énumération.</summary>
         /// <param name="source">Texte du module, chaînes/commentaires exclus des déclarations.</param>
         /// <returns>Déclarations dans leur ordre source, branches conditionnelles marquées.</returns>
@@ -124,12 +137,13 @@ namespace VBAi
             }
             return result.ToArray();
         }
-                /// <summary>Découpe les déclarateurs en respectant tableaux et expressions parenthésées.</summary>
-                /// <param name="tokens">Jetons formant la liste de déclarations.</param>
-                /// <param name="kind">Catégorie affectée aux noms extraits.</param>
-                /// <param name="scope">Portée qui contient ces noms.</param>
-                /// <param name="conditional">Indique si la liste est dans une compilation conditionnelle.</param>
-                /// <param name="result">Collection enrichie avec les déclarations trouvées.</param>
+
+        /// <summary>Découpe les déclarateurs en respectant tableaux et expressions parenthésées.</summary>
+        /// <param name="tokens">Jetons formant la liste de déclarations.</param>
+        /// <param name="kind">Catégorie affectée aux noms extraits.</param>
+        /// <param name="scope">Portée qui contient ces noms.</param>
+        /// <param name="conditional">Indique si la liste est dans une compilation conditionnelle.</param>
+        /// <param name="result">Collection enrichie avec les déclarations trouvées.</param>
         private static void AddList(List<Token> tokens, string kind, string scope, bool conditional, List<Declaration> result)
         {
             int start = 0, depth = 0;
@@ -156,6 +170,7 @@ namespace VBAi
                 Add(part[name], kind, scope, type, conditional, result);
             }
         }
+
         /// <summary>Ajoute un symbole en séparant son nom de son éventuel suffixe de type.</summary>
         /// <param name="token">Jeton portant le nom déclaré.</param>
         /// <param name="kind">Catégorie de déclaration.</param>
@@ -166,14 +181,17 @@ namespace VBAi
         private static void Add(Token token, string kind, string scope, string type, bool conditional, List<Declaration> output) =>
             output.Add(new Declaration { Name = Bare(token.Text), Kind = kind, Scope = scope, TypeName = type,
                 Line = token.Line, Column = token.Column, Conditional = conditional });
+
         /// <summary>Retire un suffixe de type VBA éventuel du nom lexical.</summary>
         /// <param name="text">Jeton ou identifiant à normaliser.</param>
         /// <returns>Nom sans suffixe de type final.</returns>
         private static string Bare(string text) => text.TrimEnd('$', '%', '&', '!', '#', '@', '^');
+
         /// <summary>Vérifie la forme lexicale d’un identifiant VBA, suffixe de type facultatif compris.</summary>
         /// <param name="text">Texte du jeton à valider.</param>
         /// <returns><see langword="true"/> si le jeton correspond à un nom VBA reconnu.</returns>
         private static bool IsName(string text) => Regex.IsMatch(text, @"^\p{L}[\p{L}\p{N}_]*[$%&!#@^]?$");
+
         /// <summary>Convertit un caractère suffixe VBA en nom de type correspondant.</summary>
         /// <param name="suffix">Suffixe placé à la fin d’un identifiant.</param>
         /// <returns>Type VBA associé, ou Variant pour un suffixe non reconnu.</returns>
@@ -182,9 +200,10 @@ namespace VBAi
             switch (suffix) { case '$': return "String"; case '%': return "Integer"; case '&': return "Long";
                 case '!': return "Single"; case '#': return "Double"; case '@': return "Currency"; case '^': return "LongLong"; default: return "Variant"; }
         }
-                /// <summary>Lexeur de déclarations : conserve les positions, les continuations et les séparateurs.</summary>
-                /// <param name="source">Texte VBA à découper.</param>
-                /// <returns>Listes de jetons séparées par des fins de ligne ou des séparateurs d’instruction.</returns>
+
+        /// <summary>Lexeur de déclarations : conserve les positions, les continuations et les séparateurs.</summary>
+        /// <param name="source">Texte VBA à découper.</param>
+        /// <returns>Listes de jetons séparées par des fins de ligne ou des séparateurs d’instruction.</returns>
         internal static IEnumerable<List<Token>> Statements(string source)
         {
             var statement = new List<Token>();

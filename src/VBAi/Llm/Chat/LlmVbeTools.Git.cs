@@ -6,17 +6,22 @@ using System.Windows.Forms;
 
 namespace VBAi
 {
+
     /// <summary>Expose au modèle les opérations Git limitées au document de conversation.</summary>
     internal sealed partial class LlmVbeTools
     {
+
         /// <summary>Fabrique injectable des opérations Git pour un projet VBA.</summary>
         /// <value>Résolve une opération pour le nom de projet, ou null pour l’ouverture standard.</value>
         internal Func<string, MacroGitOperations> GitOperationsFactory { get; set; }
+
         /// <summary>Frontière native injectable, initialisée avec le comportement de production.</summary>
         internal Func<string, GitHubApi> GitHubApiFactory = account => new GitHubApi(account);
+
         /// <summary>Frontière native injectable, initialisée avec le comportement de production.</summary>
         internal Func<IWin32Window, string, string, DialogResult> ConfirmGit = (window, text, title) =>
             MessageBox.Show(window, text, title, MessageBoxButtons.YesNo, MessageBoxIcon.Question);
+
         /// <summary>Construit la définition d’outil Git et ses champs requis.</summary>
         /// <param name="action">Nom d’action utilisé pour construire le nom de l’outil.</param>
         /// <param name="description">Description affichée au modèle pour l’opération.</param>
@@ -28,6 +33,7 @@ namespace VBAi
             var names = new[] { "Project" }.Concat(read ? new string[0] : new[] { "ExpectedState" }).Concat(fields).ToArray();
             return Definition("git_" + action, description, names, names);
         }
+
         /// <summary>Définitions des opérations Git exposées au modèle.</summary>
         /// <value>Définitions des opérations Git exposées au modèle.</value>
         private static object[] GitDefinitions { get { return new[] {
@@ -103,6 +109,7 @@ namespace VBAi
             }
             catch (Exception ex) { return json.Serialize(Response.Failure(ex.Message)); }
         }
+
         /// <summary>Ouvre les opérations Git pour le projet de conversation lié.</summary>
         /// <param name="project">Nom du projet VBA lié à la conversation.</param>
         /// <returns>Opérations Git rattachées au projet et à sa portée.</returns>

@@ -5,9 +5,11 @@ using System.Linq;
 
 namespace VBAi
 {
+
     /// <summary>Aligne, espace et ordonne les contrôles directs d’un conteneur UserForm.</summary>
     internal sealed partial class VbeForms
     {
+
         /// <summary>Calcule ou applique un plan de géométrie pour des contrôles sélectionnés dans un même conteneur.</summary>
         /// <param name="request">Chemins canoniques, action, taille de pas et version d’arbre attendue.</param>
         /// <param name="preview">Si true, retourne le plan sans modifier le Designer.</param>
@@ -57,11 +59,13 @@ namespace VBAi
             }
             return new { Applied = true, Verified = true, Saved = false, Tree = Tree(request.Project, request.Form) };
         }
+
         /// <summary>Écrit la taille puis la position prévues sur un contrôle Designer.</summary>
         /// <param name="control">Contrôle natif à déplacer et redimensionner.</param>
         /// <param name="box">Géométrie cible.</param>
         private static void ApplyBox(dynamic control, FormLayoutBox box)
         { control.Width = box.Width; control.Height = box.Height; control.Left = box.Left; control.Top = box.Top; }
+
         /// <summary>Relit la géométrie native et vérifie qu’elle correspond à la boîte demandée.</summary>
         /// <param name="control">Contrôle à vérifier.</param>
         /// <param name="box">Géométrie attendue.</param>

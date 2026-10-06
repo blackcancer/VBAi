@@ -7,25 +7,40 @@ using System.Runtime.InteropServices;
 
 namespace VBAi
 {
+
     /// <summary>Expose le presse-papiers natif du Designer avec versions de précondition et récupération de coupes.</summary>
     internal sealed partial class VbeForms
     {
+
         /// <summary>Données de récupération d’une coupe Designer encore disponible dans la session.</summary>
         private sealed class ClipboardRecovery
         {
-            /// <summary>Stores the id,parent path used by ClipboardRecovery.</summary>
-            public string Id, ParentPath; /// <summary>Stores the form used by ClipboardRecovery.</summary>
-public object Form; /// <summary>Stores the backup used by ClipboardRecovery.</summary>
+
+            /// <summary>Identifies the id and parent path associated with clipboard recovery.</summary>
+            public string Id, ParentPath;
+
+/// <summary>Maintains the form state for clipboard recovery.</summary>
+public object Form;
+
+/// <summary>Maintains the backup state for clipboard recovery.</summary>
 public DesignerClipboardBackup Backup;
-            /// <summary>Stores the original tree,cut tree used by ClipboardRecovery.</summary>
-            public object OriginalTree, CutTree; /// <summary>Stores the boxes used by ClipboardRecovery.</summary>
-public FormLayoutBox[] Boxes; /// <summary>Stores the tab order used by ClipboardRecovery.</summary>
+
+            /// <summary>Maintains the original tree and cut tree state for clipboard recovery.</summary>
+            public object OriginalTree, CutTree;
+
+/// <summary>Maintains the boxes state for clipboard recovery.</summary>
+public FormLayoutBox[] Boxes;
+
+/// <summary>Maintains the tab order state for clipboard recovery.</summary>
 public string[] TabOrder;
-            /// <summary>Stores the recovery attempted used by ClipboardRecovery.</summary>
+
+            /// <summary>Maintains the recovery attempted state for clipboard recovery.</summary>
             public bool RecoveryAttempted;
         }
+
         /// <summary>Conserve les huit sauvegardes de coupe les plus récentes de la session.</summary>
         private readonly Queue<ClipboardRecovery> clipboardRecoveries = new Queue<ClipboardRecovery>();
+
         /// <summary>Republie les formats sauvegardés après vérification des versions du Designer et du presse-papiers.</summary>
         /// <param name="request">Formulaire, conteneur et révisions attendues avec identifiant de récupération.</param>
         /// <returns>État de relecture des données republiées et prochaine action explicite proposée.</returns>
@@ -45,15 +60,20 @@ public string[] TabOrder;
                 State = ClipboardState(request.Project, request.Form, request.ParentPath), NextAction = "native_form_clipboard paste",
                 Limit = "Restores captured clipboard formats only; does not recreate controls. Inspect the current tree before an explicit paste to avoid duplicates. Native paste may change placement; omitted formats are not restored." };
         }
+
         /// <summary>Lit le numéro de séquence natif du presse-papiers Windows.</summary>
         /// <returns>Numéro incrémenté lors des changements du presse-papiers.</returns>
         [DllImport("user32.dll", EntryPoint = "GetClipboardSequenceNumber")] private static extern uint NativeClipboardSequence();
+
         /// <summary>Native clipboard boundaries; tests retain ownership of an in-memory IDataObject only.</summary>
         internal static Func<uint> DesignerClipboardSequence = NativeClipboardSequence;
+
         /// <summary>Délégué injectable de lecture du presse-papiers MSForms.</summary>
         internal static Func<System.Windows.Forms.IDataObject> ReadDesignerClipboard = System.Windows.Forms.Clipboard.GetDataObject;
+
         /// <summary>Délégué injectable d’écriture du presse-papiers MSForms.</summary>
         internal static Action<System.Windows.Forms.IDataObject, bool> WriteDesignerClipboard = System.Windows.Forms.Clipboard.SetDataObject;
+
         /// <summary>Capture l’arbre, la sélection courante et le numéro de séquence du presse-papiers sans lire ses données binaires.</summary>
         /// <param name="projectName">Projet VBA contenant le formulaire.</param>
         /// <param name="formName">Nom du UserForm inspecté.</param>
@@ -80,6 +100,7 @@ public string[] TabOrder;
                 SelectionVersion = selectionVersion, ClipboardVersion = sequence.ToString(CultureInfo.InvariantCulture), CanPaste = canPaste,
                 Limit = "Current Designer selection; binary clipboard data is not read or sent to the model. Clipboard revision is a Windows sequence number, not a content hash." };
         }
+
         /// <summary>Exécute Copy, Cut ou Paste sur le conteneur courant avec validation des versions Designer et clipboard.</summary>
         /// <param name="request">Projet, formulaire, action, conteneur et révisions lues précédemment.</param>
         /// <returns>Différences observées, évolution du numéro clipboard et récupération éventuelle de la coupe.</returns>
@@ -138,6 +159,7 @@ public string[] TabOrder;
                 NativeError = error, Saved = false, NextRead = "form_clipboard_state",
                 Limit = "Native selected controls are copied/cut; paste uses this Designer's current selection context. Event-handler code is not transferred. Binary clipboard contents are not inspected. Partial changes are reported without retry or implicit rollback; Copy/Cut/Paste may not enter native undo history; inspect CanUndo before offering native_form_history. Cut stores up to 8 MiB of readable MSForms formats before removal (latest 8 cuts in this session). restore_form_clipboard can republish the recovery; it does not undo or restore geometry automatically." };
         }
+
         /// <summary>Résout le formulaire racine ou un conteneur canonique pouvant exposer Controls.</summary>
         /// <param name="designer">Designer du UserForm.</param>
         /// <param name="tree">Arbre de formulaire déjà lu.</param>
@@ -153,6 +175,7 @@ public string[] TabOrder;
             ResolveNestedControls((dynamic)designer, parentPath);
             return ResolveTreeItem(designer, parentPath);
         }
+
         /// <summary>Remplace la sélection dans un conteneur par les noms directs fournis, sans changer le focus ni le presse-papiers.</summary>
         /// <param name="request">Conteneur, noms sélectionnés et version de sélection attendue.</param>
         /// <returns>État avant/après et indication de vérification de la sélection.</returns>
@@ -186,6 +209,7 @@ public string[] TabOrder;
             return new { Verified = verified, Before = (object)before, After = after, NativeError = error,
                 NextRead = "form_clipboard_state", Limit = "Changes only the specified container selection; selections in other containers are independent. No focus or clipboard mutation. On partial failure re-read before another action." };
         }
+
         /// <summary>Refuse une commande lorsque la sélection Designer ou le presse-papiers diffère de la lecture attendue.</summary>
         /// <param name="request">Préconditions transmises avec la commande.</param>
         /// <param name="selectionVersion">Version courante de l’arbre et de la sélection.</param>

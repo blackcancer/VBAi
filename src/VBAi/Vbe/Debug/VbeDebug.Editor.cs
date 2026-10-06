@@ -3,9 +3,11 @@ using System.Linq;
 
 namespace VBAi
 {
+
     /// <summary>Modifie la disposition des volets de code natifs d’un module VBE.</summary>
     internal sealed partial class VbeDebug
     {
+
         /// <summary>Fractionne ou rassemble le volet actif après vérification du module et de la commande native.</summary>
         /// <param name="request">Projet, module, position, mode attendu et légende native de Split.</param>
         /// <returns>Nombre de volets observé avant et après l’opération, avec état de vérification.</returns>

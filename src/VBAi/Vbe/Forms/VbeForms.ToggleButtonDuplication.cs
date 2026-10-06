@@ -6,6 +6,7 @@ using System.Linq;
 
 namespace VBAi
 {
+
     /// <summary>Implémente le profil de duplication partielle des ToggleButton natifs.</summary>
     internal sealed partial class VbeForms
     {
