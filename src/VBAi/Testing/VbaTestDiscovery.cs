@@ -13,32 +13,33 @@ namespace VBAi
     internal static class VbaTestDiscovery
     {
 
-        /// <summary>Maintains the roles state for vba test discovery.</summary>
+        /// <summary>Lists procedure annotations recognized as tests or lifecycle fixtures.</summary>
         private static readonly string[] Roles = { "TestMethod", "ModuleInitialize", "ModuleCleanup", "TestInitialize", "TestCleanup" };
 
-        /// <summary>Maintains the annotation pattern state for vba test discovery.</summary>
+        /// <summary>Parses single-line VBA comment annotations with an optional trailing argument.</summary>
         private static readonly Regex AnnotationPattern = new Regex(@"^\s*'\s*@(?<name>[A-Za-z]+)\b(?<argument>.*)$", RegexOptions.CultureInvariant);
 
-        /// <summary>Maintains the quoted argument state for vba test discovery.</summary>
+        /// <summary>Accepts one quoted argument and VBA doubled-quote escapes for category and ignore metadata.</summary>
         private static readonly Regex QuotedArgument = new Regex("^\"(?:[^\"]|\"\")*\"$", RegexOptions.CultureInvariant);
 
-        /// <summary>Owns the annotation state and operations.</summary>
+        /// <summary>Stores a parsed annotation and its one-based source line until it binds to a declaration.</summary>
         private sealed class Annotation
         {
 
-            /// <summary>Maintains the name state for annotation.</summary>
+            /// <summary>Gets or sets the annotation name without the leading at sign.</summary>
             public string Name;
 
-            /// <summary>Maintains the argument state for annotation.</summary>
+            /// <summary>Gets or sets the trimmed argument text following the annotation name.</summary>
             public string Argument;
 
-            /// <summary>Maintains the line state for annotation.</summary>
+            /// <summary>Gets or sets the one-based line containing the annotation.</summary>
             public int Line;
         }
 
-        /// <summary>Handles discover for vba test discovery.</summary>
-        /// <param name="project">vba test project snapshot that supplies the project for this operation.</param>
-        /// <returns>vba test catalog produced by the operation for discover on vba test discovery.</returns>
+        /// <summary>Builds a deterministic test catalog from the captured project source without invoking VBA.</summary>
+        /// <param name="project">Snapshot whose module text, identity, and revision bound the discovery result.</param>
+        /// <returns>Catalog with sorted module groups and diagnostics for duplicate or unsupported identities.</returns>
+        /// <exception cref="ArgumentNullException"><paramref name="project"/> is null.</exception>
         public static VbaTestCatalog Discover(VbaTestProjectSnapshot project)
         {
             if (project == null) throw new ArgumentNullException(nameof(project));
@@ -58,11 +59,11 @@ namespace VBAi
             return catalog;
         }
 
-        /// <summary>Reads module for vba test discovery.</summary>
-        /// <param name="project">vba test project snapshot that supplies the project for this operation.</param>
-        /// <param name="snapshot">vba test module snapshot that supplies the snapshot for this operation.</param>
-        /// <param name="diagnostics">list&lt;string&gt; that supplies the diagnostics for this operation.</param>
-        /// <returns>vba test module produced by the operation for read module on vba test discovery.</returns>
+        /// <summary>Parses one module's comments and declarations, validating annotation placement, signature, and uniqueness.</summary>
+        /// <param name="project">Project identity used to create stable descriptor identifiers.</param>
+        /// <param name="snapshot">Component name, type, and source captured at the project's revision.</param>
+        /// <param name="diagnostics">Catalog-level sink for unattached annotations and module discovery issues.</param>
+        /// <returns>A module group when it contains test metadata or diagnostics; otherwise null.</returns>
         private static VbaTestModule ReadModule(VbaTestProjectSnapshot project, VbaTestModuleSnapshot snapshot, List<string> diagnostics)
         {
             var module = new VbaTestModule { Name = snapshot.Name ?? "" };
@@ -156,16 +157,16 @@ namespace VBAi
             return module;
         }
 
-        /// <summary>Reads comments for vba test discovery.</summary>
-        /// <param name="lines">string[] that supplies the lines for this operation.</param>
-        /// <param name="start">int that supplies the start for this operation.</param>
-        /// <param name="end">int that supplies the end for this operation.</param>
-        /// <param name="pending">list&lt;annotation&gt; that supplies the pending for this operation.</param>
-        /// <param name="module">vba test module that supplies the module for this operation.</param>
-        /// <param name="diagnostics">list&lt;string&gt; that supplies the diagnostics for this operation.</param>
-        /// <param name="moduleAnnotations">int that supplies the module annotations for this operation.</param>
-        /// <param name="sawProcedure">Indicates whether saw procedure is enabled.</param>
-        /// <param name="conditionalDepth">int that supplies the conditional depth for this operation.</param>
+        /// <summary>Collects recognized annotations from a source-line interval and diagnoses metadata that cannot bind.</summary>
+        /// <param name="lines">Normalized source lines from the captured module.</param>
+        /// <param name="start">Zero-based inclusive first line to inspect.</param>
+        /// <param name="end">Zero-based exclusive line limit.</param>
+        /// <param name="pending">Annotations awaiting the next declaration; cleared when intervening code breaks attachment.</param>
+        /// <param name="module">Module group receiving module-level validation details.</param>
+        /// <param name="diagnostics">Catalog diagnostic sink for annotations that cannot be associated with the module.</param>
+        /// <param name="moduleAnnotations">Updated count of valid-position <c>@TestModule</c> markers.</param>
+        /// <param name="sawProcedure">Whether a procedure declaration has already appeared in the module.</param>
+        /// <param name="conditionalDepth">Current unresolved conditional-compilation nesting depth.</param>
         private static void ReadComments(string[] lines, int start, int end, List<Annotation> pending, VbaTestModule module,
             List<string> diagnostics, ref int moduleAnnotations, bool sawProcedure, int conditionalDepth)
         {
@@ -191,10 +192,10 @@ namespace VBAi
             }
         }
 
-        /// <summary>Handles valid signature for vba test discovery.</summary>
-        /// <param name="tokens">token&gt; that supplies the tokens for this operation.</param>
-        /// <param name="fixture">Indicates whether fixture is enabled.</param>
-        /// <returns>Boolean indicating the result of the check for valid signature on vba test discovery.</returns>
+        /// <summary>Checks the deliberately restricted public, parameterless test or fixture procedure signature.</summary>
+        /// <param name="tokens">Tokens for the declaration, including visibility, member kind, name, and return type.</param>
+        /// <param name="fixture">When true, accepts only a <c>Public Sub</c>; tests may also be Boolean functions.</param>
+        /// <returns>True when the declaration matches the supported invocation contract.</returns>
         private static bool ValidSignature(List<VbaDeclarationIndex.Token> tokens, bool fixture)
         {
             // Accept only the deliberately narrow version-one signature contract.
@@ -205,10 +206,10 @@ namespace VBAi
             return EqualsName(match.Groups["kind"].Value, "Sub") ? !match.Groups["type"].Success : match.Groups["type"].Success;
         }
 
-        /// <summary>Handles apply metadata for vba test discovery.</summary>
-        /// <param name="test">vba test descriptor that supplies the test for this operation.</param>
-        /// <param name="annotations">list&lt;annotation&gt; that supplies the annotations for this operation.</param>
-        /// <param name="fixture">Indicates whether fixture is enabled.</param>
+        /// <summary>Applies category and ignore comments, recording malformed or fixture-inapplicable metadata as diagnostics.</summary>
+        /// <param name="test">Descriptor receiving parsed metadata and validation messages.</param>
+        /// <param name="annotations">Annotations attached to the same procedure declaration.</param>
+        /// <param name="fixture">Whether the descriptor is a lifecycle hook, which does not support these metadata tags.</param>
         private static void ApplyMetadata(VbaTestDescriptor test, List<Annotation> annotations, bool fixture)
         {
             var categories = new List<string>();
@@ -228,10 +229,10 @@ namespace VBAi
             test.Categories = categories.ToArray();
         }
 
-        /// <summary>Sets fixture for vba test discovery.</summary>
-        /// <param name="module">vba test module that supplies the module for this operation.</param>
-        /// <param name="role">Text that supplies the role value. Use the format required by the calling operation.</param>
-        /// <param name="fixture">vba test descriptor that supplies the fixture for this operation.</param>
+        /// <summary>Assigns the first fixture for a lifecycle role and marks duplicate declarations on the module.</summary>
+        /// <param name="module">Module group whose lifecycle slot is assigned.</param>
+        /// <param name="role">Recognized fixture annotation name.</param>
+        /// <param name="fixture">Descriptor for the annotated procedure.</param>
         private static void SetFixture(VbaTestModule module, string role, VbaTestDescriptor fixture)
         {
             VbaTestDescriptor existing = null;
@@ -242,21 +243,21 @@ namespace VBAi
             if (existing != null) module.Diagnostic = Append(module.Diagnostic, "Multiple @" + role + " fixtures.");
         }
 
-        /// <summary>Handles report unattached for vba test discovery.</summary>
-        /// <param name="annotations">list&lt;annotation&gt; that supplies the annotations for this operation.</param>
-        /// <param name="module">vba test module that supplies the module for this operation.</param>
-        /// <param name="diagnostics">list&lt;string&gt; that supplies the diagnostics for this operation.</param>
+        /// <summary>Reports each pending annotation that was separated from any procedure declaration.</summary>
+        /// <param name="annotations">Annotations that could not be attached.</param>
+        /// <param name="module">Module name used to qualify each diagnostic.</param>
+        /// <param name="diagnostics">Catalog-level sink receiving one message per annotation.</param>
         private static void ReportUnattached(List<Annotation> annotations, VbaTestModule module, List<string> diagnostics)
         {
             foreach (var annotation in annotations)
                 diagnostics.Add(module.Name + " (line " + annotation.Line + "): @" + annotation.Name + " is not attached to a procedure declaration.");
         }
 
-        /// <summary>Handles identity for vba test discovery.</summary>
-        /// <param name="project">Text that supplies the project value. Use the format required by the calling operation.</param>
-        /// <param name="module">Text that supplies the module value. Use the format required by the calling operation.</param>
-        /// <param name="procedure">Text that supplies the procedure value. Use the format required by the calling operation.</param>
-        /// <returns>Text produced by the operation for identity on vba test discovery.</returns>
+        /// <summary>Creates a case-insensitive SHA-256 key from project, module, and procedure identity.</summary>
+        /// <param name="project">Project identifier; null is normalized to an empty string.</param>
+        /// <param name="module">Containing component name.</param>
+        /// <param name="procedure">Procedure name.</param>
+        /// <returns>Lowercase hexadecimal SHA-256 identifier independent of source line positions.</returns>
         private static string Identity(string project, string module, string procedure)
         {
             // Source positions are navigation metadata; inserting lines must not rebind historical results.
@@ -265,16 +266,16 @@ namespace VBAi
                 return string.Concat(hash.ComputeHash(Encoding.UTF8.GetBytes(input)).Select(x => x.ToString("x2", CultureInfo.InvariantCulture)));
         }
 
-        /// <summary>Handles equals name for vba test discovery.</summary>
-        /// <param name="left">Text that supplies the left value. Use the format required by the calling operation.</param>
-        /// <param name="right">Text that supplies the right value. Use the format required by the calling operation.</param>
-        /// <returns>Boolean indicating the result of the check for equals name on vba test discovery.</returns>
+        /// <summary>Compares VBA identifiers using ordinal case-insensitive rules.</summary>
+        /// <param name="left">First identifier.</param>
+        /// <param name="right">Second identifier.</param>
+        /// <returns>True when both names compare equal ignoring case.</returns>
         private static bool EqualsName(string left, string right) => string.Equals(left, right, StringComparison.OrdinalIgnoreCase);
 
-        /// <summary>Handles append for vba test discovery.</summary>
-        /// <param name="current">Text that supplies the current value. Use the format required by the calling operation.</param>
-        /// <param name="message">Text that supplies the message value. Use the format required by the calling operation.</param>
-        /// <returns>Text produced by the operation for append on vba test discovery.</returns>
+        /// <summary>Appends a diagnostic with one separating space, preserving the prior text.</summary>
+        /// <param name="current">Existing diagnostic string, possibly null or empty.</param>
+        /// <param name="message">New diagnostic to append.</param>
+        /// <returns>The new message when no prior text exists; otherwise the combined diagnostic.</returns>
         private static string Append(string current, string message) => string.IsNullOrEmpty(current) ? message : current + " " + message;
     }
 }
