@@ -15,49 +15,49 @@ namespace VBAi
     internal sealed class VbeDebugClipboard
     {
 
-        /// <summary>Returns clipboard sequence number for vbe debug clipboard.</summary>
-        /// <returns>uint produced by the operation for get clipboard sequence number on vbe debug clipboard.</returns>
+        /// <summary>Reads the global clipboard sequence counter used to detect intervening clipboard changes.</summary>
+        /// <returns>Sequence value that changes when clipboard contents are updated.</returns>
         [DllImport("user32.dll")] private static extern uint GetClipboardSequenceNumber();
 
-        /// <summary>Returns clipboard owner for vbe debug clipboard.</summary>
-        /// <returns>int ptr produced by the operation for get clipboard owner on vbe debug clipboard.</returns>
+        /// <summary>Gets the HWND currently owning clipboard data.</summary>
+        /// <returns>Owner window handle, or zero when no window owns the clipboard.</returns>
         [DllImport("user32.dll")] private static extern IntPtr GetClipboardOwner();
 
-        /// <summary>Returns window thread process id for vbe debug clipboard.</summary>
-        /// <param name="window">Native handle that supplies the window for this operation.</param>
-        /// <param name="processId">uint that supplies the process id for this operation.</param>
-        /// <returns>uint produced by the operation for get window thread process id on vbe debug clipboard.</returns>
+        /// <summary>Reads the process and thread that own a window.</summary>
+        /// <param name="window">Clipboard owner HWND.</param>
+        /// <param name="processId">Receives the owner process ID.</param>
+        /// <returns>Owner native thread ID.</returns>
         [DllImport("user32.dll")] private static extern uint GetWindowThreadProcessId(IntPtr window, out uint processId);
 
-        /// <summary>Maintains the sequence state for vbe debug clipboard.</summary>
+        /// <summary>Clipboard sequence reader, injectable at the native boundary for deterministic tests.</summary>
         internal Func<uint> Sequence = GetClipboardSequenceNumber;
 
-        /// <summary>Maintains the yield native state for vbe debug clipboard.</summary>
+        /// <summary>Asynchronous yield that lets the owning VBE message loop process a queued native Copy.</summary>
         internal Func<Task> YieldNative = () => Task.Delay(20);
 
-        /// <summary>Maintains the reading state for vbe debug clipboard.</summary>
+        /// <summary>Interlocked one-capture-at-a-time guard shared by Immediate and other native debug clipboard reads.</summary>
         private int reading;
 
-        /// <summary>Maintains the read data state for vbe debug clipboard.</summary>
+        /// <summary>Clipboard snapshot provider used before and after native Copy.</summary>
         internal Func<IDataObject> ReadData = Clipboard.GetDataObject;
 
-        /// <summary>Maintains the write data state for vbe debug clipboard.</summary>
+        /// <summary>Restores the captured format set, clearing the clipboard only when the snapshot was empty.</summary>
         internal Action<DataObject> WriteData = data => {
             if (data == null) Clipboard.Clear();
             else Clipboard.SetDataObject(data, true, 3, 20);
         };
 
-        /// <summary>Tracks the is host owner state of vbe debug clipboard.</summary>
+        /// <summary>Checks whether the current clipboard owner HWND belongs to the VBAi host process.</summary>
         internal Func<bool> IsHostOwner = () => {
             GetWindowThreadProcessId(GetClipboardOwner(), out uint processId);
             return processId == (uint)Process.GetCurrentProcess().Id;
         };
 
         /// <summary>Runs a validated Copy command once, reads its new text and restores the captured formats.</summary>
-        /// <param name="prepareSelection">action that supplies the prepare selection for this operation.</param>
-        /// <param name="copy">action that supplies the copy for this operation.</param>
-        /// <param name="validateTarget">action that supplies the validate target for this operation.</param>
-        /// <returns>task&lt;string&gt; produced by the operation for read async on vbe debug clipboard.</returns>
+        /// <param name="prepareSelection">Selects the intended Immediate/debugger text without changing the clipboard.</param>
+        /// <param name="copy">Original native Copy command; it is invoked once and never retried after an exception.</param>
+        /// <param name="validateTarget">Optional owner/project/selection recheck run before and after queued native work.</param>
+        /// <returns>Copied text up to one million characters after verifying this host produced the clipboard update and restoring all captured formats.</returns>
         internal async Task<string> ReadAsync(Action prepareSelection, Action copy, Action validateTarget = null)
         {
             if (Thread.CurrentThread.GetApartmentState() != ApartmentState.STA || SynchronizationContext.Current == null)
@@ -68,11 +68,11 @@ namespace VBAi
             finally { Interlocked.Exchange(ref reading, 0); }
         }
 
-        /// <summary>Reads core async for vbe debug clipboard.</summary>
-        /// <param name="prepareSelection">action that supplies the prepare selection for this operation.</param>
-        /// <param name="copy">action that supplies the copy for this operation.</param>
-        /// <param name="validateTarget">action that supplies the validate target for this operation.</param>
-        /// <returns>task&lt;string&gt; produced by the operation for read core async on vbe debug clipboard.</returns>
+        /// <summary>Captures clipboard formats, queues one Copy, accepts output only from this host, then restores and verifies the prior clipboard if ownership remains unchanged.</summary>
+        /// <param name="prepareSelection">Selection preparation callback executed before the first message-loop yield.</param>
+        /// <param name="copy">One native Copy callback; exceptions propagate without replay.</param>
+        /// <param name="validateTarget">Optional callback that must confirm the intended native target throughout capture.</param>
+        /// <returns>Validated copied text; changes by another process cause rejection and preserve that newer clipboard content.</returns>
         private async Task<string> ReadCoreAsync(Action prepareSelection, Action copy, Action validateTarget)
         {
             int ownerThread = Thread.CurrentThread.ManagedThreadId;
@@ -141,15 +141,15 @@ namespace VBAi
         internal sealed class Snapshot
         {
 
-            /// <summary>Maintains the maximum bytes state for snapshot.</summary>
+            /// <summary>Maximum aggregate byte size accepted for formats retained before native Copy.</summary>
             internal const int MaximumBytes = 8 * 1024 * 1024;
 
-            /// <summary>Maintains the values state for snapshot.</summary>
+            /// <summary>Independent copies of supported text and MemoryStream formats keyed by their exact format names.</summary>
             private readonly Dictionary<string, object> values = new Dictionary<string, object>(StringComparer.Ordinal);
 
-            /// <summary>Captures  for snapshot.</summary>
-            /// <param name="data">i data object that supplies the data for this operation.</param>
-            /// <returns>snapshot produced by the operation for capture on snapshot.</returns>
+            /// <summary>Copies every clipboard format within the 8 MiB budget, refusing formats that cannot be restored exactly.</summary>
+            /// <param name="data">Current clipboard data object, which may be null when the clipboard is empty.</param>
+            /// <returns>Independent format snapshot suitable for restoration and verification.</returns>
             internal static Snapshot Capture(IDataObject data)
             {
                 var snapshot = new Snapshot();
@@ -169,8 +169,8 @@ namespace VBAi
                 return snapshot;
             }
 
-            /// <summary>Creates data object for snapshot.</summary>
-            /// <returns>data object produced by the operation for create data object on snapshot.</returns>
+            /// <summary>Reconstructs a WinForms data object from the captured text and byte-array copies.</summary>
+            /// <returns>Data object containing every captured format, or null for an empty clipboard snapshot.</returns>
             internal DataObject CreateDataObject()
             {
                 if (values.Count == 0) return null;
@@ -180,9 +180,9 @@ namespace VBAi
                 return data;
             }
 
-            /// <summary>Handles matches for snapshot.</summary>
-            /// <param name="data">i data object that supplies the data for this operation.</param>
-            /// <returns>Boolean indicating the result of the check for matches on snapshot.</returns>
+            /// <summary>Verifies exact format names and values against the captured clipboard snapshot.</summary>
+            /// <param name="data">Current clipboard data object after restoration.</param>
+            /// <returns><see langword="true"/> only when the empty state or every captured format and value matches.</returns>
             internal bool Matches(IDataObject data)
             {
                 if (values.Count == 0) return data == null || data.GetFormats(false).Length == 0;

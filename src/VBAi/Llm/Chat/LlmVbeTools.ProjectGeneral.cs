@@ -11,16 +11,16 @@ namespace VBAi
     internal sealed partial class LlmVbeTools
     {
 
-        /// <summary>Maintains the project general native state for llm vbe tools.</summary>
+        /// <summary>Asynchronous native adapter for reading or applying one VBE Project Properties General setting.</summary>
         internal Func<Request, bool, Task<object>> ProjectGeneralNative;
 
-        /// <summary>Determines whether project general tool for llm vbe tools.</summary>
-        /// <param name="name">Text that supplies the name value. Use the format required by the calling operation.</param>
-        /// <returns>Boolean indicating the result of the check for is project general tool on llm vbe tools.</returns>
+        /// <summary>Recognizes the two public General-page tool commands.</summary>
+        /// <param name="name">Tool name to classify.</param>
+        /// <returns><see langword="true"/> only for <c>read_project_general</c> and <c>set_project_general</c>.</returns>
         private static bool IsProjectGeneralTool(string name) => name == "read_project_general" || name == "set_project_general";
 
         /// <summary>Validates project general request for llm vbe tools.</summary>
-        /// <param name="request">request that supplies the request for this operation.</param>
+        /// <param name="request">Parsed tool request whose mode, property, and value define the requested operation.</param>
         private static void ValidateProjectGeneralRequest(Request request)
         {
             if (request.ExpectedMode != 2)
@@ -43,12 +43,12 @@ namespace VBAi
                 throw new ArgumentException("HelpContextID must be a nonnegative Int32 integer.");
         }
 
-        /// <summary>Invokes project general async for llm vbe tools.</summary>
-        /// <param name="name">Text that supplies the name value. Use the format required by the calling operation.</param>
-        /// <param name="arguments">Text that supplies the arguments value. Use the format required by the calling operation.</param>
-        /// <param name="request">request that supplies the request for this operation.</param>
-        /// <param name="editApproved">Indicates whether edit approved is enabled.</param>
-        /// <returns>task&lt;response&gt; produced by the operation for invoke project general async on llm vbe tools.</returns>
+        /// <summary>Runs the native route through current mode, project binding, privacy, legacy-editor, and edit-approval checks, then revalidates before returning metadata.</summary>
+        /// <param name="name">Public General-page command name; determines whether the route is read-only or mutating.</param>
+        /// <param name="arguments">Original JSON arguments retained for repeated project/privacy guard checks.</param>
+        /// <param name="request">Validated request passed to the native General coordinator.</param>
+        /// <param name="editApproved">Whether this request passed the current AskEachTime approval step.</param>
+        /// <returns>Success result or a failure/uncertain-result response; revoked access after a write never advertises retry.</returns>
         private async Task<Response> InvokeProjectGeneralAsync(string name, string arguments, Request request, bool editApproved)
         {
             bool write = name == "set_project_general";

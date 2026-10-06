@@ -6,23 +6,23 @@ using System.Threading.Tasks;
 namespace VBAi
 {
 
-    /// <summary>Owns the llm vbe tools state and operations.</summary>
+    /// <summary>Loads provider-visible tool families on demand while retaining ordinary mode, privacy, project, and approval guards.</summary>
     internal sealed partial class LlmVbeTools
     {
 
-        /// <summary>Maintains the loaded families state for llm vbe tools.</summary>
+        /// <summary>Tool families discovered by the provider and included in later catalog responses.</summary>
         private readonly HashSet<string> loadedFamilies = new HashSet<string>(StringComparer.Ordinal);
 
-        /// <summary>Maintains the family priority state for llm vbe tools.</summary>
+        /// <summary>Most-recent discovery order used to rank loaded families within the provider tool limit.</summary>
         private readonly Dictionary<string, int> familyPriority = new Dictionary<string, int>(StringComparer.Ordinal);
 
-        /// <summary>Maintains the next family priority state for llm vbe tools.</summary>
+        /// <summary>Monotonic priority assigned to each newly discovered family.</summary>
         private int nextFamilyPriority;
 
-        /// <summary>Maintains the families state for llm vbe tools.</summary>
+        /// <summary>Supported lazy-loaded catalog families.</summary>
         private static readonly string[] Families = { "code", "forms", "debug", "git", "environment", "testing" };
 
-        /// <summary>Maintains the core tools state for llm vbe tools.</summary>
+        /// <summary>Always-loaded catalog and basic inspection tools shown independently of family discovery.</summary>
         private static readonly HashSet<string> CoreTools = new HashSet<string>(StringComparer.Ordinal)
         { "status", "list_projects", "list_modules", "read_module", "monaco_open", "monaco_read", "discover_tools", "invoke_tool" };
 
@@ -34,13 +34,13 @@ namespace VBAi
         };
 
         /// <summary>Determines whether a tool name belongs to the provider catalog.</summary>
-        /// <param name="name">Text that supplies the name value. Use the format required by the calling operation.</param>
-        /// <returns>Boolean indicating the result of the check for is catalog tool on llm vbe tools.</returns>
+        /// <param name="name">Provider tool name to classify.</param>
+        /// <returns><see langword="true"/> for the discover and invoke catalog gateways.</returns>
         internal static bool IsCatalogTool(string name) => name == "discover_tools" || name == "invoke_tool";
 
         /// <summary>Returns the catalog family that owns the specified tool.</summary>
-        /// <param name="name">Text that supplies the name value. Use the format required by the calling operation.</param>
-        /// <returns>Text produced by the operation for tool family on llm vbe tools.</returns>
+        /// <param name="name">Exact provider tool name.</param>
+        /// <returns>Owning family, with unclassified tools assigned to <c>environment</c>.</returns>
         internal static string ToolFamily(string name)
         {
             if (IsTestingTool(name)) return "testing";
@@ -56,8 +56,8 @@ namespace VBAi
         }
 
         /// <summary>Builds the tool catalog available to the selected provider.</summary>
-        /// <param name="gatewayOnly">Indicates whether gateway only is enabled.</param>
-        /// <returns>object[] produced by the operation for catalog for provider on llm vbe tools.</returns>
+        /// <param name="gatewayOnly">True to return core tools only, without loaded family definitions.</param>
+        /// <returns>Mode-allowed core and discovered definitions, ordered by core status then discovery recency and capped at 64.</returns>
         internal object[] CatalogForProvider(bool gatewayOnly = false)
         {
             return Definitions.Where(raw =>
@@ -74,9 +74,9 @@ namespace VBAi
         internal void ResetCatalog() { loadedFamilies.Clear(); familyPriority.Clear(); nextFamilyPriority = 0; }
 
         /// <summary>Dispatches a provider catalog tool to its owning tool family.</summary>
-        /// <param name="name">Text that supplies the name value. Use the format required by the calling operation.</param>
-        /// <param name="arguments">Text that supplies the arguments value. Use the format required by the calling operation.</param>
-        /// <returns>task&lt;string&gt; produced by the operation for invoke catalog async on llm vbe tools.</returns>
+        /// <param name="name">Catalog command to execute: <c>discover_tools</c> or <c>invoke_tool</c>.</param>
+        /// <param name="arguments">Serialized JSON object; discovery requires one Family field and invocation requires ToolName plus ArgumentsJson strings.</param>
+        /// <returns>Serialized response. Invalid shapes, unknown families, and recursive catalog calls become failure responses.</returns>
         internal async Task<string> InvokeCatalogAsync(string name, string arguments)
         {
             try
