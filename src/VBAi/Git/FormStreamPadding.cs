@@ -9,22 +9,22 @@ namespace VBAi
         // Primary grammar: MS-OFORMS 2.1.1.2.4, 2.2.1, 2.2.4, 2.2.10 and 2.3.
         // https://learn.microsoft.com/en-us/openspecs/office_file_formats/ms-oforms/622ed335-0723-4491-b271-e4767d7453e3
         // Property descriptors, lengths, masks, strings and extension bytes remain significant.
-        /// <summary>Maintains the max stream bytes state for form stream padding.</summary>
+        /// <summary>Rejects comparison normalization when either logical stream exceeds 32 MiB.</summary>
         private const int MaxStreamBytes = 32 * 1024 * 1024;
 
-        /// <summary>Identifies the text font guid associated with form stream padding.</summary>
+        /// <summary>MS-OFORMS TextFont record GUID in the byte order used by the persisted stream.</summary>
         private static readonly byte[] TextFontGuid = new Guid("AFC20920-DA4E-11CE-B943-00AA006887B4").ToByteArray();
 
-        /// <summary>Identifies the std font guid associated with form stream padding.</summary>
+        /// <summary>MS-OFORMS StdFont record GUID in the byte order used by the persisted stream.</summary>
         private static readonly byte[] StdFontGuid = new Guid("0BE35203-8F91-11CE-9DE3-00AA004BB851").ToByteArray();
 
         /// <summary>
         /// Returns cloned streams with padding zeroed, or the original pair when any layout is unsupported.
         /// This is a comparison representation, never a resource to import. No input bytes are modified.
         /// </summary>
-        /// <param name="form">byte[] that supplies the form for this operation.</param>
-        /// <param name="objects">byte[] that supplies the objects for this operation.</param>
-        /// <returns>byte[][] produced by the operation for normalize on form stream padding.</returns>
+        /// <param name="form">Logical MS-OFORMS <c>f</c> stream; never modified.</param>
+        /// <param name="objects">Logical MS-OFORMS <c>o</c> stream; never modified.</param>
+        /// <returns>Cloned <c>f</c>/<c>o</c> streams with only documented padding zeroed, or the original pair if parsing rejects any layout.</returns>
         internal static byte[][] Normalize(byte[] form, byte[] objects)
         {
             var original = new[] { form, objects };
@@ -45,20 +45,20 @@ namespace VBAi
             }
         }
 
-        /// <summary>Determines whether it has  for form stream padding.</summary>
-        /// <param name="mask">uint that supplies the mask for this operation.</param>
-        /// <param name="bit">int that supplies the bit for this operation.</param>
-        /// <returns>Boolean indicating the result of the check for has on form stream padding.</returns>
+        /// <summary>Tests one property-presence bit in an MS-OFORMS mask.</summary>
+        /// <param name="mask">32-bit property mask.</param>
+        /// <param name="bit">Zero-based bit index.</param>
+        /// <returns>True when the selected bit is set.</returns>
         private static bool Has(uint mask, int bit) { return (mask & (1u << bit)) != 0; }
 
-        /// <summary>Requires  for form stream padding.</summary>
-        /// <param name="condition">Indicates whether condition is enabled.</param>
+        /// <summary>Aborts normalization when a stream does not match the supported grammar.</summary>
+        /// <param name="condition">Required layout or value predicate.</param>
         private static void Require(bool condition) { if (!condition) throw new UnsupportedLayoutException(); }
 
-        /// <summary>Parses form for form stream padding.</summary>
-        /// <param name="form">reader that supplies the form for this operation.</param>
-        /// <param name="objects">reader that supplies the objects for this operation.</param>
-        /// <param name="node">storage node that supplies the node for this operation.</param>
+        /// <summary>Consumes one form header and its child-site records, clearing only padding validated by the supported grammar.</summary>
+        /// <param name="form">Bounded reader over the logical form stream.</param>
+        /// <param name="objects">Bounded reader over the matching object stream.</param>
+        /// <param name="node">Optional storage node populated while parsing an imported form.</param>
         private static void ParseForm(Reader form, Reader objects, StorageNode node = null)
         {
             Reader block = form.Block(0x0400);
@@ -121,9 +121,9 @@ namespace VBAi
 
         // MS-OFORMS 2.4.6 / 2.4.12. Font bytes remain significant; only their exact
         // documented extent is consumed, so subsequent site padding can be parsed.
-        /// <summary>Parses form font for form stream padding.</summary>
-        /// <param name="form">reader that supplies the form for this operation.</param>
-        /// <param name="node">storage node that supplies the node for this operation.</param>
+        /// <summary>Consumes supported font records while preserving font bytes; unsupported text fonts reject import parsing.</summary>
+        /// <param name="form">Reader positioned at the font record.</param>
+        /// <param name="node">Optional import node receiving the exact standard-font payload.</param>
         private static void ParseFormFont(Reader form, StorageNode node = null)
         {
             int start = form.Position;
@@ -147,10 +147,10 @@ namespace VBAi
             if (node != null) node.Font = form.Copy(start + 16, form.Position - start - 16);
         }
 
-        /// <summary>Parses site for form stream padding.</summary>
-        /// <param name="sites">reader that supplies the sites for this operation.</param>
-        /// <param name="objects">reader that supplies the objects for this operation.</param>
-        /// <param name="node">storage node that supplies the node for this operation.</param>
+        /// <summary>Parses one child site and its optional object payload, rejecting unknown object types or property masks.</summary>
+        /// <param name="sites">Reader over the form's bounded site section.</param>
+        /// <param name="objects">Reader over the paired object stream.</param>
+        /// <param name="node">Optional import storage node receiving site identity and control metadata.</param>
         private static void ParseSite(Reader sites, Reader objects, StorageNode node = null)
         {
             Reader block = sites.Block(0);
@@ -197,9 +197,9 @@ namespace VBAi
             control.Finish();
         }
 
-        /// <summary>Parses leaf for form stream padding.</summary>
-        /// <param name="control">reader that supplies the control for this operation.</param>
-        /// <param name="label">Indicates whether label is enabled.</param>
+        /// <summary>Parses a supported Label or Image leaf object's fixed property blocks.</summary>
+        /// <param name="control">Reader bounded to the object's declared byte length.</param>
+        /// <param name="label">True selects the Label property layout; false selects Image.</param>
         private static void ParseLeaf(Reader control, bool label)
         {
             Reader block = control.Block(0x0200);
@@ -222,8 +222,8 @@ namespace VBAi
             ParseText(control);
         }
 
-        /// <summary>Parses text for form stream padding.</summary>
-        /// <param name="control">reader that supplies the control for this operation.</param>
+        /// <summary>Consumes the fixed text-property block and its optional name string.</summary>
+        /// <param name="control">Reader bounded to the containing object's stream extent.</param>
         private static void ParseText(Reader control)
         {
             Reader block = control.Block(0x0200);
@@ -242,75 +242,75 @@ namespace VBAi
         private sealed class Reader
         {
 
-            /// <summary>Maintains the bytes state for reader.</summary>
+            /// <summary>Backing stream bytes; padding positions may be zeroed during parsing.</summary>
             private readonly byte[] bytes;
 
-            /// <summary>Maintains the end and origin state for reader.</summary>
+            /// <summary>Exclusive end offset and alignment origin for this bounded reader.</summary>
             private readonly int end, origin;
 
-            /// <summary>Gets or sets the position.</summary>
-            /// <value>Current position exposed by reader.</value>
+            /// <summary>Gets the current absolute offset into the backing stream.</summary>
+            /// <value>Offset advanced by each read and skip.</value>
             internal int Position { get; private set; }
 
-            /// <summary>Gets the remaining.</summary>
-            /// <value>Current remaining exposed by reader.</value>
+            /// <summary>Gets the unread byte count within this reader's exclusive end.</summary>
+            /// <value>Never negative for a valid reader.</value>
             internal int Remaining { get { return end - Position; } }
 
             /// <summary>Initializes a Reader instance with the supplied state.</summary>
-            /// <param name="bytes">byte[] that supplies the bytes for this operation.</param>
-            /// <param name="start">int that supplies the start for this operation.</param>
-            /// <param name="length">int that supplies the length for this operation.</param>
-            /// <param name="origin">int that supplies the origin for this operation.</param>
+            /// <param name="bytes">Backing logical stream.</param>
+            /// <param name="start">Absolute starting offset.</param>
+            /// <param name="length">Byte extent available to this reader.</param>
+            /// <param name="origin">Alignment origin used by the stream grammar.</param>
             internal Reader(byte[] bytes, int start, int length, int origin)
             {
                 Require(start >= 0 && length >= 0 && start <= bytes.Length - length);
                 this.bytes = bytes; Position = start; end = start + length; this.origin = origin;
             }
 
-            /// <summary>Handles byte for reader.</summary>
-            /// <returns>byte produced by the operation for byte on reader.</returns>
+            /// <summary>Reads the next byte and advances the cursor by one.</summary>
+            /// <returns>Next byte.</returns>
             internal byte Byte() { Require(Remaining >= 1); return bytes[Position++]; }
 
-            /// <summary>Handles u int16 for reader.</summary>
-            /// <returns>ushort produced by the operation for u int16 on reader.</returns>
+            /// <summary>Reads an unsigned 16-bit little-endian value.</summary>
+            /// <returns>Decoded value.</returns>
             internal ushort UInt16() { uint a = Byte(); return (ushort)(a | ((uint)Byte() << 8)); }
 
-            /// <summary>Handles u int32 for reader.</summary>
-            /// <returns>uint produced by the operation for u int32 on reader.</returns>
+            /// <summary>Reads an unsigned 32-bit little-endian value.</summary>
+            /// <returns>Decoded value.</returns>
             internal uint UInt32() { uint a = UInt16(); return a | ((uint)UInt16() << 16); }
 
-            /// <summary>Handles skip for reader.</summary>
-            /// <param name="length">int that supplies the length for this operation.</param>
+            /// <summary>Advances over a bounded byte range without changing its contents.</summary>
+            /// <param name="length">Number of bytes to consume.</param>
             internal void Skip(int length) { Require(length >= 0 && length <= Remaining); Position += length; }
 
-            /// <summary>Handles copy for reader.</summary>
-            /// <param name="start">int that supplies the start for this operation.</param>
-            /// <param name="length">int that supplies the length for this operation.</param>
-            /// <returns>byte[] produced by the operation for copy on reader.</returns>
+            /// <summary>Copies a range from the backing stream without advancing this reader.</summary>
+            /// <param name="start">Absolute offset in the backing stream.</param>
+            /// <param name="length">Number of bytes to copy.</param>
+            /// <returns>New byte array containing the requested range.</returns>
             internal byte[] Copy(int start, int length)
             {
                 Require(start >= 0 && length >= 0 && start <= bytes.Length - length);
                 var copy = new byte[length]; Buffer.BlockCopy(bytes, start, copy, 0, length); return copy;
             }
 
-            /// <summary>Handles padding for reader.</summary>
-            /// <param name="length">int that supplies the length for this operation.</param>
+            /// <summary>Zeroes exactly the supported padding bytes and advances past them.</summary>
+            /// <param name="length">Padding byte count within the current section.</param>
             internal void Padding(int length)
             {
                 Require(length >= 0 && length <= Remaining);
                 Array.Clear(bytes, Position, length); Position += length;
             }
 
-            /// <summary>Handles align for reader.</summary>
-            /// <param name="alignment">int that supplies the alignment for this operation.</param>
+            /// <summary>Aligns the cursor relative to this stream's grammar origin, clearing skipped padding bytes.</summary>
+            /// <param name="alignment">Required byte alignment, typically 2 or 4.</param>
             internal void Align(int alignment) { Padding((alignment - ((Position - origin) % alignment)) % alignment); }
 
-            /// <summary>Handles field for reader.</summary>
-            /// <param name="mask">uint that supplies the mask for this operation.</param>
-            /// <param name="bit">int that supplies the bit for this operation.</param>
-            /// <param name="size">int that supplies the size for this operation.</param>
-            /// <param name="defaultValue">uint that supplies the default value for this operation.</param>
-            /// <returns>uint produced by the operation for field on reader.</returns>
+            /// <summary>Reads an optional property value when its presence bit is set, aligning before the value.</summary>
+            /// <param name="mask">Property-presence mask.</param>
+            /// <param name="bit">Presence bit for this property.</param>
+            /// <param name="size">Encoded width in bytes: 1, 2, or 4.</param>
+            /// <param name="defaultValue">Value returned when the property is absent.</param>
+            /// <returns>Decoded unsigned value or the supplied default.</returns>
             internal uint Field(uint mask, int bit, int size, uint defaultValue = 0)
             {
                 if (!Has(mask, bit)) return defaultValue;
@@ -318,8 +318,8 @@ namespace VBAi
                 return size == 4 ? UInt32() : size == 2 ? UInt16() : Byte();
             }
 
-            /// <summary>Handles string for reader.</summary>
-            /// <param name="descriptor">uint that supplies the descriptor for this operation.</param>
+            /// <summary>Consumes a length-prefixed fmString and its documented four-byte trailing alignment.</summary>
+            /// <param name="descriptor">String descriptor whose high bit selects compressed form and low 31 bits give byte length.</param>
             internal void String(uint descriptor)
             {
                 uint length = descriptor & 0x7fffffffu;
@@ -328,9 +328,9 @@ namespace VBAi
                 Padding((int)((4 - (length & 3)) & 3));
             }
 
-            /// <summary>Handles string value for reader.</summary>
-            /// <param name="descriptor">uint that supplies the descriptor for this operation.</param>
-            /// <returns>Text produced by the operation for string value on reader.</returns>
+            /// <summary>Decodes a supported fmString, consumes its aligned extent, and rejects malformed UTF-16.</summary>
+            /// <param name="descriptor">String descriptor from the parent property record.</param>
+            /// <returns>Decoded string, with compressed bytes interpreted as low-byte Unicode characters.</returns>
             internal string StringValue(uint descriptor)
             {
                 uint length = descriptor & 0x7fffffffu;
@@ -352,9 +352,9 @@ namespace VBAi
                 return value;
             }
 
-            /// <summary>Handles block for reader.</summary>
-            /// <param name="version">ushort that supplies the version for this operation.</param>
-            /// <returns>reader produced by the operation for block on reader.</returns>
+            /// <summary>Opens a versioned property block with its declared length as a hard read boundary.</summary>
+            /// <param name="version">Required block version identifier.</param>
+            /// <returns>Reader limited to the block payload.</returns>
             internal Reader Block(ushort version)
             {
                 int start = Position;
@@ -365,10 +365,10 @@ namespace VBAi
                 return result;
             }
 
-            /// <summary>Handles section for reader.</summary>
-            /// <param name="length">uint that supplies the length for this operation.</param>
-            /// <param name="alignmentOrigin">int that supplies the alignment origin for this operation.</param>
-            /// <returns>reader produced by the operation for section on reader.</returns>
+            /// <summary>Carves a bounded child reader from the current extent and advances the parent past it.</summary>
+            /// <param name="length">Section byte length, which must fit within the remaining parent bytes.</param>
+            /// <param name="alignmentOrigin">Optional absolute alignment origin; defaults to the section start.</param>
+            /// <returns>Child reader constrained to the declared section.</returns>
             internal Reader Section(uint length, int? alignmentOrigin = null)
             {
                 Require(length <= (uint)Remaining);
@@ -377,11 +377,11 @@ namespace VBAi
                 return result;
             }
 
-            /// <summary>Handles finish for reader.</summary>
+            /// <summary>Requires exact consumption of the bounded section, rejecting unrecognized trailing bytes.</summary>
             internal void Finish() { Require(Position == end); }
         }
 
-        /// <summary>Owns the unsupported layout exception state and operations.</summary>
+        /// <summary>Internal signal that parsing encountered a layout outside the explicitly supported grammar.</summary>
         private sealed class UnsupportedLayoutException : Exception { }
     }
 }
