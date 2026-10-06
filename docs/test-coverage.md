@@ -21,6 +21,38 @@ native renderer code, provider services and host processes have separate checks.
 The qualification sections below are the retained current decisions; detailed
 failed attempts and superseded counters are available in Git history.
 
+## French user manual and usage hints (2026-10-06)
+
+Source `7f3263d434635f02f66ad9a046ab0095e52b9b69`, isolated Debug solution
+build on Windows. Product assembly SHA-256
+`0F184582B2395150A24CFF3A25366AC99EB18B9D8EF8B6080B70EAB8F1B23D9C`.
+This is a focused documentation/UI check, not a new native-host qualification
+or a measurement of whole-product test coverage.
+
+| Check | Observed result |
+| --- | --- |
+| Local help, tooltip inventory, localization, theme, About and WPF composer tests | 32 passed, 0 failed, 0 skipped |
+| Help-builder contract and partial-compiler-failure tests | 10 passed |
+| Markdown checker self-tests | 21 passed |
+| Maintained Markdown links and structure | 42 files, 264 local links, 0 errors |
+| Managed IntelliSense documentation audit | 388 C# files, 8,076 declarations, 0 missing/invalid entries or syntax errors |
+| Synthetic interface capture bank | 47 captures, 0 capture failures; foreground window preserved |
+| Compiled French CHM readback | 73 source/asset files byte-identical after extraction; full-text index present |
+| Actual compiled pages loaded by Windows Trident | 23 chapters; French titles, body text and referenced images checked; foreground preserved |
+
+The CHM SHA-256 is
+`383FFFE1B4A800888557CE9C9692CCFB5F45E18856C4EDBBEC154DFFC975EE20`.
+The same archive is copied beside the add-in and updater outputs. Captures use
+fictional accounts, messages and results in actual controls; their candidate
+hashes and provenance are retained in the screenshot manifest. No Office host,
+provider request or user's macro was used. Interactive search in the Windows
+HTML Help viewer was not exercised.
+
+The XML audit checks declaration coverage and rejects identified generic
+descriptions; it does not establish the correctness of every explanation.
+It excludes C++, JavaScript and test sources. Other help languages await review
+of this French model.
+
 ## Q028 Ollama and embedded Office assistant qualification (2026-10-06)
 
 **Qualified for the complete prepared Q028 matrix on the real
