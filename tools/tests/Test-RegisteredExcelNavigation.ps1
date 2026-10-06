@@ -1,4 +1,4 @@
-param(
+﻿param(
     [Parameter(Mandatory=$true)][string]$AssemblyPath,
     [Parameter(Mandatory=$true)][string]$OutputDirectory,
     [ValidateSet('Navigation','FormLifecycle','FunctionalExtensions','DebuggerTree','Monaco','MonacoStartup')][string]$Scenario = 'Navigation',
@@ -11,9 +11,9 @@ if (@(Get-Process EXCEL,SLDWORKS,WINWORD,MSACCESS,POWERPNT,OUTLOOK -ErrorAction 
 $assembly = (Resolve-Path -LiteralPath $AssemblyPath).Path
 if ([Reflection.AssemblyName]::GetAssemblyName($assembly).Name -ne 'VBAi') { throw 'Unexpected test assembly.' }
 $paths = @(
- 'HKCU:\Software\Classes\CLSID\{8E854243-087F-4D6C-9E0E-8622B0E50883}\InprocServer32',
- 'HKCU:\Software\Classes\CLSID\{8E854243-087F-4D6C-9E0E-8622B0E50883}\InprocServer32\0.1.0.0',
- 'HKCU:\Software\Classes\CLSID\{0F4D723B-97D8-42E5-9B31-70646B97C8D2}\InprocServer32'
+    'HKCU:\Software\Classes\CLSID\{8E854243-087F-4D6C-9E0E-8622B0E50883}\InprocServer32',
+    'HKCU:\Software\Classes\CLSID\{8E854243-087F-4D6C-9E0E-8622B0E50883}\InprocServer32\0.1.0.0',
+    'HKCU:\Software\Classes\CLSID\{0F4D723B-97D8-42E5-9B31-70646B97C8D2}\InprocServer32'
 )
 $typeLib = Join-Path (Split-Path -Parent $assembly) 'VBAi.tlb'
 if (-not (Test-Path -LiteralPath $typeLib)) { throw 'Export the current type library before testing.' }
@@ -38,8 +38,12 @@ try {
     foreach ($entry in $backup) { Set-ItemProperty -LiteralPath $entry.Path -Name CodeBase -Value $codeBase }
     Write-Output ('Registration process bitness: ' + ([IntPtr]::Size * 8))
     foreach ($entry in $backup) { Write-Output ((Get-ItemProperty -LiteralPath $entry.Path).CodeBase) }
-    $probeName = if ($Scenario -eq 'MonacoStartup') { '../probes/Test-RegisteredMonacoStartup.ps1' } elseif ($Scenario -eq 'Monaco') { '../probes/Test-RegisteredMonaco.ps1' } elseif ($Scenario -eq 'DebuggerTree') { '../probes/Test-RegisteredDebuggerTree.ps1' } elseif ($Scenario -eq 'FunctionalExtensions') { '../probes/Test-RegisteredFunctionalExtensions.ps1' } elseif ($Scenario -eq 'FormLifecycle') { '../probes/Test-FormLifecycle.ps1' } else { '../probes/Test-NativeDefinition.ps1' }
+    $probeName = if ($Scenario -eq 'MonacoStartup') { '../probes/Test-RegisteredMonacoStartup.ps1' } elseif ($Scenario -eq 'Monaco') { '../probes/Test-RegisteredMonaco.ps1' } elseif ($Scenario -eq 'DebuggerTree') { '../probes/Test-Debugger.ps1' } elseif ($Scenario -eq 'FunctionalExtensions') { '../probes/Test-VbeEvents.ps1' } elseif ($Scenario -eq 'FormLifecycle') { '../probes/Test-UserFormNative.ps1' } else { '../probes/Test-CodeEditor.ps1' }
     $probeArguments = @('-NoProfile','-STA','-File',(Join-Path $PSScriptRoot $probeName),'-AssemblyPath',$assembly,'-OutputDirectory',$directory,'-UseBridge')
+    if ($Scenario -eq 'FormLifecycle') { $probeArguments += @('-Scenario','Lifecycle') }
+    if ($Scenario -eq 'DebuggerTree') { $probeArguments += @('-Scenario','RegisteredTree') }
+    elseif ($Scenario -eq 'FunctionalExtensions') { $probeArguments += @('-Scenario','RegisteredFunctionalExtensions') }
+    elseif ($Scenario -eq 'Navigation') { $probeArguments += @('-Scenario','NativeDefinition') }
     if ($AllowTemporaryVbaAccess) { $probeArguments += '-AllowTemporaryVbaAccess' }
     & powershell.exe @probeArguments
     if ($LASTEXITCODE -ne 0) { throw "Registered navigation probe exited with $LASTEXITCODE." }

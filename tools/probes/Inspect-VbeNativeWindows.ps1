@@ -1,7 +1,8 @@
-param(
+﻿param(
     [Parameter(Mandatory = $true)] [ValidateRange(1, [int]::MaxValue)] [int] $HostProcessId,
-    [ValidateSet('Tree', 'Windows', 'Children')] [string] $View = 'Tree',
-    [long] $WindowHandle
+    [ValidateSet('Tree', 'Windows', 'Children', 'Panes')] [string] $View = 'Tree',
+    [long] $WindowHandle,
+    [string[]] $PaneNames = @('Variables locales', ('Ex' + [char]0x00E9 + 'cution'))
 )
 
 $ErrorActionPreference = 'Stop'
@@ -86,5 +87,21 @@ namespace VBAi.Tools
 }
 '@
 }
-$rows = @([VBAi.Tools.NativeWindowInventory]::Inspect($HostProcessId, $View, $WindowHandle))
+$nativeView = if ($View -eq 'Panes') { 'Tree' } else { $View }
+$rows = @([VBAi.Tools.NativeWindowInventory]::Inspect($HostProcessId, $nativeView, $WindowHandle))
+if ($View -eq 'Panes') {
+    foreach ($name in $PaneNames) {
+        $panes = @($rows | Where-Object { $_.Class -eq 'VbaWindow' -and $_.Title -eq $name -and $_.Visible })
+        Write-Output "PANE [$name] count=$($panes.Count)"
+        foreach ($pane in $panes) {
+            Write-Output "ROOT HWND=$($pane.Handle) class=$($pane.Class)"
+            $children = @([VBAi.Tools.NativeWindowInventory]::Inspect($HostProcessId, 'Children', $pane.Handle))
+            Write-Output "CHILDREN count=$($children.Count)"
+            foreach ($child in $children) {
+                Write-Output "HWND=$($child.Handle) class=$($child.Class) title=[$($child.Title)] visible=$($child.Visible)"
+            }
+        }
+    }
+    return
+}
 ConvertTo-Json -InputObject $rows -Depth 4 -Compress
