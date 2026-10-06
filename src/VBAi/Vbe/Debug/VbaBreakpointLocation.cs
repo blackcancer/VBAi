@@ -12,9 +12,9 @@ namespace VBAi
 
         /// <summary>Checks the first physical line of a statement inside a procedure.</summary>
         /// <remarks>This is a source filter, not a substitute for the VBA compiler or a breakpoint inventory.</remarks>
-        /// <param name="source">Text that supplies the source value. Use the format required by the calling operation.</param>
-        /// <param name="line">int that supplies the line for this operation.</param>
-        /// <returns>Boolean indicating the result of the check for can request on vba breakpoint location.</returns>
+        /// <param name="source">VBA module source text, including line continuations and conditional-compilation directives.</param>
+        /// <param name="line">One-based physical source line requested for a native breakpoint toggle.</param>
+        /// <returns>True only for a known-active executable statement inside a Sub/Function/Property body.</returns>
         internal static bool CanRequest(string source, int line)
         {
             if (string.IsNullOrEmpty(source) || line < 1) return false;
@@ -51,17 +51,17 @@ namespace VBAi
             return false;
         }
 
-        /// <summary>Owns the conditional branch state and operations.</summary>
+        /// <summary>Nested conditional-compilation state used to fail closed on unknown constants.</summary>
         private sealed class ConditionalBranch
         {
 
-            /// <summary>Maintains the parent and taken and unknown state for conditional branch.</summary>
+            /// <summary>Whether the enclosing branch is active, an earlier arm was taken, or any arm is unknown.</summary>
             internal bool Parent, Taken, Unknown;
         }
 
         /// <summary>Unknown compiler constants cannot safely authorize a native toggle.</summary>
-        /// <param name="lines">string[] that supplies the lines for this operation.</param>
-        /// <returns>bool[] produced by the operation for known active lines on vba breakpoint location.</returns>
+        /// <param name="lines">Physical module lines without carriage returns.</param>
+        /// <returns>Per-line activity mask; malformed directives and conditions using unknown constants are inactive.</returns>
         private static bool[] KnownActiveLines(string[] lines)
         {
             var result = new bool[lines.Length];

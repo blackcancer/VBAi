@@ -15,25 +15,25 @@ namespace VBAi
         /// <summary>Tracks fonts created by this view so they can be disposed with it.</summary>
         private readonly List<Font> ownedFonts = new List<Font>();
 
-        /// <summary>Maintains the content update depth state for chat text content view.</summary>
+        /// <summary>Suppresses intermediate resize work while Markdown or plain content is being replaced.</summary>
         private int contentUpdateDepth;
 
-        /// <summary>Maintains the resizing text state for chat text content view.</summary>
+        /// <summary>Prevents reentrant measurement while text height or native scrollbar state changes.</summary>
         private bool resizingText;
 
         /// <summary>Maps rendered character ranges to navigation, link, and code copy actions.</summary>
         internal readonly List<TextAction> actions = new List<TextAction>();
 
-        /// <summary>Owns the text action state and operations.</summary>
+        /// <summary>Character range and callback associated with a rendered transcript link or code-copy action.</summary>
         internal sealed class TextAction {
 
-/// <summary>Maintains the start and length state for text action.</summary>
+/// <summary>Start index and number of rendered characters covered by this action.</summary>
 internal int Start, Length;
 
-/// <summary>Maintains the invoke state for text action.</summary>
+/// <summary>Callback invoked when the user activates a character within the range.</summary>
 internal Action Invoke;
 
-/// <summary>Maintains the code state for text action.</summary>
+/// <summary>Optional source text copied by the code-copy menu for this action.</summary>
 internal string Code; }
 
         /// <summary>Creates the native read-only text field and context menu.</summary>

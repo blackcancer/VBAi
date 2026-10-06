@@ -398,8 +398,8 @@ namespace VBAi
         }
 
         /// <summary>Builds and sends a chat request, then removes its queued message after dispatch succeeds.</summary>
-        /// <param name="queued">queued chat message that supplies the queued for this operation.</param>
-        /// <returns>task produced by the operation for send request async on chat window.</returns>
+        /// <param name="queued">Previously prepared queued message, or null to use the current composer contents.</param>
+        /// <returns>Task that performs provider dispatch and updates the session after successful send preparation.</returns>
         private async Task SendRequestAsync(QueuedChatMessage queued)
         {
             if (loadingScope) return;
@@ -524,7 +524,7 @@ namespace VBAi
             }
         }
 
-        /// <summary>Maintains the runtime disposed state for chat window.</summary>
+        /// <summary>One-use guard preventing runtime resources from being disposed more than once.</summary>
         private bool runtimeDisposed;
 
         /// <summary>Saves the session and releases each resource even if another cleanup fails.</summary>
@@ -553,8 +553,8 @@ namespace VBAi
             CleanupRuntime(DisposeComposer);
         }
 
-        /// <summary>Handles cleanup runtime for chat window.</summary>
-        /// <param name="cleanup">action that supplies the cleanup for this operation.</param>
+        /// <summary>Runs one cleanup action and logs its failure so later resources are still released.</summary>
+        /// <param name="cleanup">Resource cleanup callback to attempt.</param>
         private static void CleanupRuntime(Action cleanup)
         {
             try { cleanup(); }
@@ -636,7 +636,7 @@ namespace VBAi
         /// <returns>Tâche produisant le résultat sérialisé de l’outil.</returns>
         private static Task<string> InvokeToolNative(LlmVbeTools tools, string name, string arguments) { return tools.InvokeAsync(name, arguments); }
 
-        /// <summary>Maintains the refreshing approval state for chat window.</summary>
+        /// <summary>Suppresses the approval selection handler while restoring policy from settings.</summary>
         private bool refreshingApproval;
 
         /// <summary>Restores the policy without treating restoration as a user edit.</summary>
@@ -648,7 +648,7 @@ namespace VBAi
         }
 
         /// <summary>Changes the same VBE policy consumed by both native and HTTP tools.</summary>
-        /// <param name="sender">object that supplies the sender for this operation.</param>
+        /// <param name="sender">Approval picker control raising the selection event.</param>
         /// <param name="e">Native event data.</param>
         private void ApprovalPicker_SelectedIndexChanged(object sender, EventArgs e)
         {
@@ -661,7 +661,7 @@ namespace VBAi
         }
 
         /// <summary>Mirrors the menu choice into the existing verification preference.</summary>
-        /// <param name="sender">object that supplies the sender for this operation.</param>
+        /// <param name="sender">Verification preference control raising the change event.</param>
         /// <param name="e">Native event data.</param>
         private void VerifyChanges_CheckedChanged(object sender, EventArgs e)
         {
@@ -669,7 +669,7 @@ namespace VBAi
         }
 
         /// <summary>Reveals the Designer-built provider, model and effort selectors.</summary>
-        /// <param name="sender">object that supplies the sender for this operation.</param>
+        /// <param name="sender">Collapsed provider/model summary control raising the click event.</param>
         /// <param name="e">Native event data.</param>
         private void ModelSummary_Click(object sender, EventArgs e)
         {

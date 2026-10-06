@@ -6,20 +6,20 @@ using System.Threading.Tasks;
 namespace VBAi
 {
 
-    /// <summary>Owns the chat window state and operations.</summary>
+    /// <summary>Pauses and resumes HTTP provider tool rounds without replaying completed actions.</summary>
     internal sealed partial class ChatWindow
     {
 
-        /// <summary>Identifies the provider stream id associated with chat window.</summary>
+        /// <summary>Current HTTP provider stream ID used to route incremental UI updates.</summary>
         private string providerStreamId;
 
         /// <summary>Retains only the latest HTTP stream protocol metadata for local diagnostics.</summary>
         private StreamDiagnostics lastHttpStreamDiagnostics;
 
         /// <summary>Runs a pending tool call and records its result for the paused provider turn.</summary>
-        /// <param name="name">Text that supplies the name value. Use the format required by the calling operation.</param>
-        /// <param name="arguments">Text that supplies the arguments value. Use the format required by the calling operation.</param>
-        /// <returns>task&lt;string&gt; produced by the operation for execute budget tool on chat window.</returns>
+        /// <param name="name">Provider tool name or the invoke_tool gateway name.</param>
+        /// <param name="arguments">JSON arguments passed once to the VBE tool handler.</param>
+        /// <returns>Serialized tool result; interrupted/uncertain attempts are recorded for inspection, not replay.</returns>
         private async Task<string> ExecuteBudgetTool(string name, string arguments)
         {
             string label = name;
@@ -46,8 +46,8 @@ namespace VBAi
         }
 
         /// <summary>Persists the current provider turn so it can resume after its execution budget is extended.</summary>
-        /// <param name="provider">llm provider that supplies the provider for this operation.</param>
-        /// <param name="model">Text that supplies the model value. Use the format required by the calling operation.</param>
+        /// <param name="provider">HTTP provider whose turn must resume.</param>
+        /// <param name="model">Exact model ID selected when the turn was paused.</param>
         private void PauseBudget(LlmProvider provider, string model)
         {
             currentSession.BudgetPaused = true;
@@ -135,9 +135,9 @@ namespace VBAi
         }
 
         /// <summary>Runs the HTTP provider turn while applying its configured token and time budgets.</summary>
-        /// <param name="provider">llm provider that supplies the provider for this operation.</param>
-        /// <param name="model">Text that supplies the model value. Use the format required by the calling operation.</param>
-        /// <returns>task&lt;bool&gt; produced by the operation for run http budget async on chat window.</returns>
+        /// <param name="provider">HTTP provider used for every continuation round.</param>
+        /// <param name="model">Model ID frozen for this provider turn.</param>
+        /// <returns>True after a final assistant response; false when the configured loop budget pauses the turn.</returns>
         private async Task<bool> RunHttpBudgetAsync(LlmProvider provider, string model)
         {
                 using (var client = new LlmChatClient(provider, settings,

@@ -11,7 +11,7 @@ namespace VBAi
     internal sealed partial class ProjectAccessWindow : Form
     {
 
-        /// <summary>Initializes a ProjectAccessWindow instance with the supplied state.</summary>
+        /// <summary>Creates the project-consent dialog, applies theme resources, and subscribes to later theme changes.</summary>
         public ProjectAccessWindow()
         {
             InitializeComponent();
@@ -22,10 +22,10 @@ namespace VBAi
             UiTheme.Changed += ApplyAppearance;
         }
 
-        /// <summary>Handles populate for project access window.</summary>
-        /// <param name="projects">i enumerable&lt;key value pair&lt;string, string&gt;&gt; that supplies the projects for this operation.</param>
-        /// <param name="grants">i enumerable&lt;string&gt; that supplies the grants for this operation.</param>
-        /// <param name="shared">Indicates whether shared is enabled.</param>
+        /// <summary>Loads available additional projects and restores previously granted read/shared-context choices.</summary>
+        /// <param name="projects">Selector and display-label pairs for projects the chat may request read access to.</param>
+        /// <param name="grants">Previously selected project selectors; matching is case-insensitive.</param>
+        /// <param name="shared">Whether the shared VBE/clipboard context consent should be checked.</param>
         internal void Populate(IEnumerable<KeyValuePair<string, string>> projects, IEnumerable<string> grants, bool shared)
         {
             var selected = new HashSet<string>(grants ?? Enumerable.Empty<string>(), StringComparer.OrdinalIgnoreCase);
@@ -42,19 +42,19 @@ namespace VBAi
         /// <value>Current shared context exposed by project access window.</value>
         internal bool SharedContext => sharedContext.Checked;
 
-        /// <summary>Owns the project choice state and operations.</summary>
+        /// <summary>Selector/display pair shown in the additional-project checklist.</summary>
         private sealed class ProjectChoice
         {
 
-            /// <summary>Maintains the selector and label state for project choice.</summary>
+            /// <summary>Stable project selector submitted as a read grant and user-visible display label.</summary>
             internal string Selector, Label;
 
-            /// <summary>Handles to string for project choice.</summary>
-            /// <returns>Text produced by the operation for to string on project choice.</returns>
+            /// <summary>Supplies the display text rendered by the checked-list control.</summary>
+            /// <returns>Project label; the selector remains separate from displayed text.</returns>
             public override string ToString() => Label;
         }
 
-        /// <summary>Handles apply appearance for project access window.</summary>
+        /// <summary>Applies the current theme on the window's UI thread, posting when invoked from another thread.</summary>
         private void ApplyAppearance()
         {
             if (IsDisposed) return;
