@@ -7,84 +7,85 @@ using System.Text;
 namespace VBAi
 {
 
-    /// <summary>Owns the vba native test window focus state and operations.</summary>
+    /// <summary>Activates and verifies an exact visible code window owned by the current process and UI thread.</summary>
     internal static class VbaNativeTestWindowFocus
     {
 
-        /// <summary>Owns the window state and operations.</summary>
+        /// <summary>Snapshot of native window identity and eligibility state used during guarded focus.</summary>
         internal sealed class Window
         {
 
-            /// <summary>Maintains the handle and parent state for window.</summary>
+            /// <summary>Window handle and parent handle captured during one observation.</summary>
             internal IntPtr Handle, Parent;
 
-            /// <summary>Maintains the process and thread state for window.</summary>
+            /// <summary>Owning process and UI-thread IDs returned by the operating system.</summary>
             internal uint Process, Thread;
 
-            /// <summary>Maintains the class state for window.</summary>
+            /// <summary>Native window class name used to distinguish the MDI client and VBE code window.</summary>
             internal string Class;
 
-            /// <summary>Maintains the exists and visible and enabled state for window.</summary>
+            /// <summary>Observed existence, visibility, and enabled state required for focus operations.</summary>
             internal bool Exists, Visible, Enabled;
         }
 
-        /// <summary>Defines the i windows contract.</summary>
+        /// <summary>Injectable native-window operations required to locate, activate, and verify focus.</summary>
         internal interface IWindows
         {
 
-            /// <summary>Gets the current process.</summary>
-            /// <value>Current current process exposed by i windows.</value>
+            /// <summary>Gets the process ID of the current process.</summary>
+            /// <value>Current process ID used to reject foreign windows.</value>
             uint CurrentProcess { get; }
 
-            /// <summary>Gets the current thread.</summary>
-            /// <value>Current current thread exposed by i windows.</value>
+            /// <summary>Gets the current UI thread ID.</summary>
+            /// <value>Thread ID used to reject windows owned by another thread.</value>
             uint CurrentThread { get; }
 
-            /// <summary>Reads  for i windows.</summary>
-            /// <param name="handle">Native handle that supplies the handle for this operation.</param>
-            /// <returns>window produced by the operation for read on i windows.</returns>
+            /// <summary>Captures identity, parent, class, and eligibility for one HWND.</summary>
+            /// <param name="handle">Window handle to inspect.</param>
+            /// <returns>Window snapshot; implementations represent invalid handles with <see cref="Window.Exists"/> false.</returns>
             Window Read(IntPtr handle);
 
-            /// <summary>Handles children for i windows.</summary>
-            /// <param name="parent">Native handle that supplies the parent for this operation.</param>
-            /// <returns>int ptr[] produced by the operation for children on i windows.</returns>
+            /// <summary>Enumerates direct child HWNDs of the supplied parent.</summary>
+            /// <param name="parent">Parent whose immediate children are enumerated.</param>
+            /// <returns>Direct child handles in native enumeration order.</returns>
             IntPtr[] Children(IntPtr parent);
 
-            /// <summary>Handles caption for i windows.</summary>
-            /// <param name="handle">Native handle that supplies the handle for this operation.</param>
-            /// <returns>Text produced by the operation for caption on i windows.</returns>
+            /// <summary>Reads the current window caption after ownership and class checks pass.</summary>
+            /// <param name="handle">Eligible HWND whose title is required for exact code-window matching.</param>
+            /// <returns>Current caption text.</returns>
             string Caption(IntPtr handle);
 
-            /// <summary>Handles activate for i windows.</summary>
-            /// <param name="mdi">Native handle that supplies the mdi for this operation.</param>
-            /// <param name="child">Native handle that supplies the child for this operation.</param>
+            /// <summary>Activates one verified MDI child through its verified MDI client.</summary>
+            /// <param name="mdi">Owned MDI client handle.</param>
+            /// <param name="child">Exact code-window child handle to activate.</param>
             void Activate(IntPtr mdi, IntPtr child);
 
-            /// <summary>Handles focus for i windows.</summary>
-            /// <param name="child">Native handle that supplies the child for this operation.</param>
+            /// <summary>Requests keyboard focus for the verified native code-window handle.</summary>
+            /// <param name="child">Exact code-window handle already activated.</param>
             void Focus(IntPtr child);
 
-            /// <summary>Gets the focused.</summary>
-            /// <value>Current focused exposed by i windows.</value>
+            /// <summary>Gets the current keyboard-focus HWND.</summary>
+            /// <value>Focused handle, or zero when no window owns focus.</value>
             IntPtr Focused { get; }
         }
 
-        /// <summary>Owns the target state and operations.</summary>
+        /// <summary>Exact main, MDI-client, and code-window snapshots selected for the operation.</summary>
         internal sealed class Target
         {
 
-            /// <summary>Maintains the main and mdi and code state for target.</summary>
+            /// <summary>Verified ancestry chain from the VBE main window to its code child.</summary>
             internal Window Main, Mdi, Code;
 
-            /// <summary>Maintains the caption state for target.</summary>
+            /// <summary>Exact code-window caption used to detect replacement or ambiguity.</summary>
             internal string Caption;
         }
 
-        /// <summary>Handles focus for vba native test window focus.</summary>
-        /// <param name="windows">i windows that supplies the windows for this operation.</param>
-        /// <param name="main">Native handle that supplies the main for this operation.</param>
-        /// <param name="caption">Text that supplies the caption value. Use the format required by the calling operation.</param>
-        /// <returns>target produced by the operation for focus on vba native test window focus.</returns>
+        /// <summary>Finds, activates, and verifies exactly one owned VBE code window with the requested caption.</summary>
+        /// <param name="windows">Native window access implementation.</param>
+        /// <param name="main">Expected VBE main-window handle.</param>
+        /// <param name="caption">Exact code-window caption; blank or over 1,024 characters is refused.</param>
+        /// <returns>Verified target snapshots after activation and keyboard-focus checks.</returns>
+        /// <exception cref="InvalidOperationException">The owned MDI client or exact code window is absent, ambiguous, or changes during activation.</exception>
         internal static Target Focus(IWindows windows, IntPtr main, string caption)
         {
             if (windows == null) throw new ArgumentNullException(nameof(windows));
@@ -119,10 +120,10 @@ namespace VBAi
             return target;
         }
 
-        /// <summary>Handles verify focus for vba native test window focus.</summary>
-        /// <param name="windows">i windows that supplies the windows for this operation.</param>
-        /// <param name="target">target that supplies the target for this operation.</param>
-        /// <param name="stage">Text that supplies the stage value. Use the format required by the calling operation.</param>
+        /// <summary>Revalidates the target chain and requires focus on the code window or one of its owned descendants.</summary>
+        /// <param name="windows">Native window access implementation used for fresh observations.</param>
+        /// <param name="target">Previously selected target snapshots.</param>
+        /// <param name="stage">Diagnostic stage label included in a refusal report.</param>
         internal static void VerifyFocus(IWindows windows, Target target, string stage = "revalidateFocus")
         {
             VerifyTarget(windows, target, stage);
@@ -138,10 +139,10 @@ namespace VBAi
             throw Refusal("The exact native code window or its owned descendant does not have keyboard focus.");
         }
 
-        /// <summary>Handles verify target for vba native test window focus.</summary>
-        /// <param name="windows">i windows that supplies the windows for this operation.</param>
-        /// <param name="target">target that supplies the target for this operation.</param>
-        /// <param name="stage">Text that supplies the stage value. Use the format required by the calling operation.</param>
+        /// <summary>Rechecks HWND identities, ancestry, caption uniqueness, and ownership before or after native calls.</summary>
+        /// <param name="windows">Native window access implementation.</param>
+        /// <param name="target">Selected VBE main, MDI client, and code window.</param>
+        /// <param name="stage">Diagnostic stage label appended to refusal evidence.</param>
         private static void VerifyTarget(IWindows windows, Target target, string stage)
         {
             VerifyUnchanged(windows, target.Main, stage + "/Main");
@@ -171,10 +172,10 @@ namespace VBAi
             VerifyUnchanged(windows, target.Code, stage + "/CodeAfterInspection");
         }
 
-        /// <summary>Handles verify unchanged for vba native test window focus.</summary>
-        /// <param name="windows">i windows that supplies the windows for this operation.</param>
-        /// <param name="expected">window that supplies the expected for this operation.</param>
-        /// <param name="role">Text that supplies the role value. Use the format required by the calling operation.</param>
+        /// <summary>Requires a fresh HWND snapshot to match the expected parent, class, process, and thread identity.</summary>
+        /// <param name="windows">Native window access implementation.</param>
+        /// <param name="expected">Previously accepted snapshot to compare.</param>
+        /// <param name="role">Diagnostic role label such as Main, Mdi, or Code.</param>
         private static void VerifyUnchanged(IWindows windows, Window expected, string role)
         {
             var current = windows.Read(expected.Handle);
@@ -185,19 +186,19 @@ namespace VBAi
                     + DescribeWindow(windows, current, role) + "; expected={" + DescribeWindow(windows, expected, role) + "}");
         }
 
-        /// <summary>Handles eligible for vba native test window focus.</summary>
-        /// <param name="windows">i windows that supplies the windows for this operation.</param>
-        /// <param name="window">window that supplies the window for this operation.</param>
-        /// <returns>Boolean indicating the result of the check for eligible on vba native test window focus.</returns>
+        /// <summary>Checks that a snapshot is visible, enabled, valid, and owned by the current process and thread.</summary>
+        /// <param name="windows">Source of the current process and thread IDs.</param>
+        /// <param name="window">Snapshot to test; null is ineligible.</param>
+        /// <returns>True only when all native ownership and visibility checks pass.</returns>
         private static bool Eligible(IWindows windows, Window window) => window != null && window.Exists
             && window.Handle != IntPtr.Zero && window.Visible && window.Enabled
             && window.Process != 0 && window.Process == windows.CurrentProcess
             && window.Thread != 0 && window.Thread == windows.CurrentThread;
 
-        /// <summary>Requires owned for vba native test window focus.</summary>
-        /// <param name="windows">i windows that supplies the windows for this operation.</param>
-        /// <param name="window">window that supplies the window for this operation.</param>
-        /// <param name="role">Text that supplies the role value. Use the format required by the calling operation.</param>
+        /// <summary>Rejects any window snapshot that fails current-process, current-thread, visibility, or enabled checks.</summary>
+        /// <param name="windows">Source of current process and thread IDs.</param>
+        /// <param name="window">Observed snapshot to validate.</param>
+        /// <param name="role">Diagnostic role label included in refusal details.</param>
         private static void RequireOwned(IWindows windows, Window window, string role)
         {
             if (!Eligible(windows, window)) throw Refusal("The native window is not visible and enabled on the owning process and UI thread. "
@@ -206,11 +207,11 @@ namespace VBAi
 
         // Diagnostic data comes from the already observed native snapshot. Never
         // read captions, focus another window or enumerate more windows on refusal.
-        /// <summary>Handles describe window for vba native test window focus.</summary>
-        /// <param name="windows">i windows that supplies the windows for this operation.</param>
-        /// <param name="window">window that supplies the window for this operation.</param>
-        /// <param name="role">Text that supplies the role value. Use the format required by the calling operation.</param>
-        /// <returns>Text produced by the operation for describe window on vba native test window focus.</returns>
+        /// <summary>Formats only previously captured scalar window values; it performs no further native inspection.</summary>
+        /// <param name="windows">Source of expected current process and thread IDs.</param>
+        /// <param name="window">Observed snapshot, or null when no HWND could be read.</param>
+        /// <param name="role">Diagnostic role label.</param>
+        /// <returns>Bounded scalar ownership evidence and failed eligibility fields.</returns>
         private static string DescribeWindow(IWindows windows, Window window, string role)
         {
             uint process = windows.CurrentProcess, thread = windows.CurrentThread;
@@ -232,12 +233,12 @@ namespace VBAi
                 + ",expectedPID=" + process + ",expectedThread=" + thread + ",failed=" + string.Join("|", failed) + "}";
         }
 
-        /// <summary>Handles refusal for vba native test window focus.</summary>
-        /// <param name="message">Text that supplies the message value. Use the format required by the calling operation.</param>
-        /// <returns>invalid operation exception produced by the operation for refusal on vba native test window focus.</returns>
+        /// <summary>Creates the fail-closed exception used when the exact native target cannot be established.</summary>
+        /// <param name="message">Refusal reason, optionally including captured scalar diagnostic evidence.</param>
+        /// <returns>Invalid-operation exception for the blocked focus operation.</returns>
         private static InvalidOperationException Refusal(string message) => new InvalidOperationException(message);
 
-        /// <summary>Owns the native windows state and operations.</summary>
+        /// <summary>Uses user32 to inspect and focus the current thread's native VBE windows.</summary>
         internal sealed class NativeWindows : IWindows
         {
 
@@ -321,17 +322,17 @@ namespace VBAi
             /// <returns>int ptr produced by the operation for get focus on native windows.</returns>
             [DllImport("user32.dll")] private static extern IntPtr GetFocus();
 
-            /// <summary>Gets the current process.</summary>
-            /// <value>Current current process exposed by native windows.</value>
+            /// <summary>Gets the current process ID from <see cref="Process.GetCurrentProcess"/>.</summary>
+            /// <value>Current process ID.</value>
             public uint CurrentProcess { get { using (var process = Process.GetCurrentProcess()) return (uint)process.Id; } }
 
-            /// <summary>Gets the current thread.</summary>
+            /// <summary>Gets the Win32 ID of the current UI thread.</summary>
             /// <value>Current current thread exposed by native windows.</value>
             public uint CurrentThread => GetCurrentThreadId();
 
-            /// <summary>Reads  for native windows.</summary>
-            /// <param name="handle">Native handle that supplies the handle for this operation.</param>
-            /// <returns>window produced by the operation for read on native windows.</returns>
+            /// <summary>Reads native identity and state for one handle using user32 queries.</summary>
+            /// <param name="handle">HWND to inspect.</param>
+            /// <returns>Snapshot including existence, visibility, enabled state, ancestry, class, process, and thread.</returns>
             public Window Read(IntPtr handle)
             {
                 uint process;
@@ -342,9 +343,9 @@ namespace VBAi
                     Class = kind.ToString(), Exists = IsWindow(handle), Visible = IsWindowVisible(handle), Enabled = IsWindowEnabled(handle) };
             }
 
-            /// <summary>Handles children for native windows.</summary>
-            /// <param name="parent">Native handle that supplies the parent for this operation.</param>
-            /// <returns>int ptr[] produced by the operation for children on native windows.</returns>
+            /// <summary>Enumerates descendant HWNDs and refuses trees larger than the inspection cap.</summary>
+            /// <param name="parent">Root whose descendant windows are enumerated by user32.</param>
+            /// <returns>Enumerated handles; at most 512 are accepted.</returns>
             public IntPtr[] Children(IntPtr parent)
             {
                 var children = new List<IntPtr>();
@@ -358,9 +359,9 @@ namespace VBAi
                 return children.ToArray();
             }
 
-            /// <summary>Handles caption for native windows.</summary>
-            /// <param name="handle">Native handle that supplies the handle for this operation.</param>
-            /// <returns>Text produced by the operation for caption on native windows.</returns>
+            /// <summary>Reads a caption only when its reported length is between 1 and 1,024 characters.</summary>
+            /// <param name="handle">Eligible HWND whose title is inspected.</param>
+            /// <returns>Exact caption when the full reported length is read; otherwise null.</returns>
             public string Caption(IntPtr handle)
             {
                 int length = GetWindowTextLength(handle);
@@ -370,17 +371,17 @@ namespace VBAi
                 return read == length ? text.ToString() : null;
             }
 
-            /// <summary>Handles activate for native windows.</summary>
-            /// <param name="mdi">Native handle that supplies the mdi for this operation.</param>
-            /// <param name="child">Native handle that supplies the child for this operation.</param>
+            /// <summary>Sends the MDI activate message to make the selected child active.</summary>
+            /// <param name="mdi">MDI client receiving the activation message.</param>
+            /// <param name="child">Child HWND encoded in the activation message.</param>
             public void Activate(IntPtr mdi, IntPtr child) { SendMessage(mdi, 0x0222, child, IntPtr.Zero); }
 
-            /// <summary>Handles focus for native windows.</summary>
-            /// <param name="child">Native handle that supplies the child for this operation.</param>
+            /// <summary>Calls user32 SetFocus for the selected code-window HWND.</summary>
+            /// <param name="child">Window requested to receive keyboard focus.</param>
             public void Focus(IntPtr child) { NativeSetFocus(child); }
 
-            /// <summary>Gets the focused.</summary>
-            /// <value>Current focused exposed by native windows.</value>
+            /// <summary>Reads the focused HWND for the current thread.</summary>
+            /// <value>Current focus handle, or zero when none exists.</value>
             public IntPtr Focused => GetFocus();
         }
     }

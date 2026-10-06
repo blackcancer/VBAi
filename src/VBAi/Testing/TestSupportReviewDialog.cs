@@ -16,21 +16,21 @@ namespace VBAi
             UiText.Apply(this, components);
         }
 
-        /// <summary>Handles confirm for test support review dialog.</summary>
-        /// <param name="owner">i win32 window that supplies the owner for this operation.</param>
-        /// <param name="project">Text that supplies the project value. Use the format required by the calling operation.</param>
-        /// <param name="before">Text that supplies the before value. Use the format required by the calling operation.</param>
-        /// <param name="after">Text that supplies the after value. Use the format required by the calling operation.</param>
-        /// <returns>Boolean indicating the result of the check for confirm on test support review dialog.</returns>
+        /// <summary>Shows the project-local support-module diff and requires an explicit OK response.</summary>
+        /// <param name="owner">Window that owns the modal review dialog.</param>
+        /// <param name="project">Project name displayed above the diff.</param>
+        /// <param name="before">Existing module source, or empty text when no module exists.</param>
+        /// <param name="after">Proposed support-module source.</param>
+        /// <returns>True only when the dialog returns <see cref="DialogResult.OK"/>.</returns>
         internal static bool Confirm(IWin32Window owner, string project, string before, string after) => Confirm(owner, project, before, after, null);
 
-        /// <summary>Handles confirm for test support review dialog.</summary>
-        /// <param name="owner">i win32 window that supplies the owner for this operation.</param>
-        /// <param name="project">Text that supplies the project value. Use the format required by the calling operation.</param>
-        /// <param name="before">Text that supplies the before value. Use the format required by the calling operation.</param>
-        /// <param name="after">Text that supplies the after value. Use the format required by the calling operation.</param>
-        /// <param name="show">func&lt;test support review dialog, i win32 window, dialog result&gt; that supplies the show for this operation.</param>
-        /// <returns>Boolean indicating the result of the check for confirm on test support review dialog.</returns>
+        /// <summary>Displays the review using the native modal UI or an injected display callback.</summary>
+        /// <param name="owner">Window that owns the modal review dialog.</param>
+        /// <param name="project">Project name displayed above the diff.</param>
+        /// <param name="before">Existing module source, or empty text when no module exists.</param>
+        /// <param name="after">Proposed support-module source.</param>
+        /// <param name="show">Optional presentation seam; receives the prepared dialog and owner.</param>
+        /// <returns>True only when the selected presentation returns <see cref="DialogResult.OK"/>.</returns>
         internal static bool Confirm(IWin32Window owner, string project, string before, string after, Func<TestSupportReviewDialog, IWin32Window, DialogResult> show)
         {
             using (var dialog = new TestSupportReviewDialog())
