@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Runtime.InteropServices;
 
@@ -13,8 +14,12 @@ namespace VBAi
         {
             if (project == null) throw new ArgumentNullException(nameof(project));
             native = native ?? new VbeProjectComponents.NativeOtherHostProbe();
+            string hostKind = native.HostKind;
+            bool outlook;
+            using (var process = Process.GetCurrentProcess())
+                outlook = IsOutlookPathHost(hostKind, process.ProcessName);
             string path;
-            if (native.HostKind == "Word")
+            if (hostKind == "Word")
             {
                 object document = VbeProjectComponents.MatchOtherHost(project, native);
                 path = native.State(document).Path;
@@ -26,12 +31,17 @@ namespace VBAi
             if (string.IsNullOrWhiteSpace(path)) return null;
             // Outlook may expose its localized project name as a nonexistent absolute
             // FileName under different caller directories. It is not persisted storage.
-            if (native.HostKind == "Outlook" && (!Path.IsPathRooted(path) ||
+            if (outlook && (!Path.IsPathRooted(path) ||
                 !string.Equals(Path.GetExtension(path), ".otm", StringComparison.OrdinalIgnoreCase) ||
                 !native.FileExists(path))) return null;
             if (!Path.IsPathRooted(path)) throw new InvalidOperationException("The host document path is not absolute.");
             return Path.GetFullPath(path);
         }
+
+        /// <summary>Recognizes Outlook storage without extending the separate document-adapter catalogue.</summary>
+        internal static bool IsOutlookPathHost(string documentHostKind, string processName) =>
+            documentHostKind == "Outlook" || (documentHostKind == null &&
+                string.Equals(processName, "OUTLOOK", StringComparison.OrdinalIgnoreCase));
 
         /// <summary>Uses the explicit host path when present; older protocol fixtures retain their legacy FileName contract.</summary>
         internal static string FromFields(IDictionary<string, object> fields)

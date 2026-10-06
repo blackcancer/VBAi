@@ -119,5 +119,17 @@ namespace VBAi.Tests.Unit
             var probe = new Probe { Kind = "Outlook", Exists = true };
             Assert.AreEqual(Path.GetFullPath(reported), VbeProjectHostPath.Read(project, probe));
         }
+
+        [DataTestMethod]
+        [DataRow(null, "OUTLOOK", true)]
+        [DataRow(null, "outlook", true)]
+        [DataRow("Outlook", "testhost", true)]
+        [DataRow(null, "EXCEL", false)]
+        [DataRow(null, "SLDWORKS", false)]
+        [DataRow(null, null, false)]
+        [DataRow("Word", "OUTLOOK", false)]
+        [DataRow("", "OUTLOOK", false)]
+        public void OutlookProcessRecognitionDoesNotExpandTheDocumentAdapterCatalogue(string kind, string process, bool expected)
+            => Assert.AreEqual(expected, VbeProjectHostPath.IsOutlookPathHost(kind, process));
     }
 }

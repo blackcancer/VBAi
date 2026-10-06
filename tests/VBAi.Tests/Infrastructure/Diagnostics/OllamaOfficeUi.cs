@@ -18,6 +18,7 @@ namespace VBAi.Tests.Integration
         [DllImport("user32.dll")] private static extern bool EnumChildWindows(IntPtr parent, Visitor visitor, IntPtr state);
         [DllImport("user32.dll")] private static extern uint GetWindowThreadProcessId(IntPtr hwnd, out uint pid);
         [DllImport("user32.dll")] private static extern bool IsWindowVisible(IntPtr hwnd);
+        [DllImport("user32.dll")] private static extern bool IsWindowEnabled(IntPtr hwnd);
         [DllImport("user32.dll")] private static extern bool IsWindow(IntPtr hwnd);
         [DllImport("user32.dll")] private static extern bool IsChild(IntPtr parent, IntPtr child);
         [DllImport("user32.dll")] private static extern IntPtr GetAncestor(IntPtr hwnd, uint flag);
@@ -282,6 +283,14 @@ namespace VBAi.Tests.Integration
         internal void Click(string id)
         {
             var button = Leaf(id);
+            IntPtr target = new IntPtr(button.Current.NativeWindowHandle);
+            uint nativePid; uint nativeThread = GetWindowThreadProcessId(target, out nativePid);
+            record(new { Phase = "ButtonPreflight", Id = id, AutomationId = button.Current.AutomationId,
+                Name = button.Current.Name, UiProcessId = button.Current.ProcessId, NativeProcessId = nativePid,
+                NativeThread = nativeThread, ExpectedNativeThread = ownerThread, Handle = target.ToInt64(),
+                UiEnabled = button.Current.IsEnabled, UiOffscreen = button.Current.IsOffscreen,
+                NativeVisible = IsWindowVisible(target), NativeEnabled = IsWindowEnabled(target),
+                OriginalParentMatches = IsChild(chat, target) });
             record(new { Phase = "ButtonIntentOnce", Id = id, Name = button.Current.Name });
             PrivateDesktopUiAction.ClickButtonOnce(button, id, button.Current.Name, chat,
                 new IntPtr(button.Current.NativeWindowHandle), pid, ownerThread);
@@ -372,6 +381,11 @@ namespace VBAi.Tests.Integration
             if (((ValuePattern)Composer().GetCurrentPattern(ValuePattern.Pattern)).Current.Value != prompt)
                 throw new InvalidOperationException("Composer independent readback differs; no SetValue replay.", writeError);
             record(new { Phase = "ComposerExactReadback", ApiErrorAfterApplication = writeError != null });
+            Wait(() => !IsBusy && Leaf("send").Current.IsEnabled && !Leaf("send").Current.IsOffscreen &&
+                IsWindowEnabled(new IntPtr(Leaf("send").Current.NativeWindowHandle)),
+                30, "ready original send button after composer update");
+            if (((ValuePattern)Composer().GetCurrentPattern(ValuePattern.Pattern)).Current.Value != prompt)
+                throw new InvalidOperationException("Composer changed while waiting for readiness; no overwrite or send.");
             StopEmitted = false; SentUnsettled = true; Click("send");
             Wait(() => IsBusy, 10, "observe active turn");
         }

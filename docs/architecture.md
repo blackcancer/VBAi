@@ -248,6 +248,13 @@ Conversation history, queued messages and workflow pauses are persisted separate
 from provider credentials. The permissions on a conversation are not permissions
 on the host process or the diagnostic bridge. See [privacy](privacy.md).
 
+The chat uses the canonical host path for saved project scopes and retained COM
+identity for temporary scopes. Outlook can expose its localized project name as
+a nonexistent absolute `FileName` under different caller directories. This alias
+does not identify saved storage: an Outlook host path requires an existing
+absolute OTM file. A project without that path keeps its temporary scope and is
+addressed by its unambiguous native project name.
+
 ## Local bridge
 
 The host exposes `VBAi.<PID>` as a named pipe with an access rule for the current

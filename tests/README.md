@@ -1345,7 +1345,10 @@ revisions and both reports are retained in its private temporary evidence folder
 no running Outlook process and an initially absent `VbaProject.OTM`. It creates
 only an unsaved disposable inspector. It never sends or saves a mail item,
 changes a profile, replaces an existing OTM or changes trust settings. An opaque
-FileName on a new unpersisted project is selected by its unique project name;
+FileName on a new unpersisted project is selected by its unique project name.
+That alias can appear as a nonexistent absolute path under different caller
+directories. Only an existing absolute OTM path can identify persisted Outlook
+storage; the alias must not create a saved conversation scope. In the fixture,
 the fixed per-user OTM path is used only for recovery. The fixture verifies its
 initial blank source/reference baseline, removes only its unchanged owned modules,
 and deletes a newly created OTM only after verified normal exit and retained backup.
@@ -1412,7 +1415,8 @@ real-desktop campaign, prepare with `-MainDesktopAuthorized` and dispatch using
 -ExpectedPlanSha256 <reviewed-hash>`. Its same-user Limited x64 STA worker runs on
 `WinSta0\Default`; both private-desktop descriptor variables must be empty.
 The worker sets `VBAi_RUN_OLLAMA_OFFICE_MAIN_DESKTOP_TESTS=1` only for native banks;
-Word also uses its established main-desktop bootstrap. No desktop switch occurs.
+Word also uses its established main-desktop bootstrap and the frozen product
+MVID/SHA pins required by that bootstrap. No desktop switch occurs.
 Pre-existing hosts and personal Outlook VBA projects refuse qualification.
 
 Discovery admits the exact embedded ActiveX site once. During an unsettled send,
