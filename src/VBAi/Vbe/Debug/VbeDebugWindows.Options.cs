@@ -294,9 +294,9 @@ namespace VBAi
         private static bool IsCodeColorList(string name) => new[] { "code colors", "couleurs du code", "color text", "texte couleur" }.Contains(NormalizeOptionName(name));
 
         /// <summary>Writes one owned native checkbox without a focus-dependent UIA Toggle provider.</summary>
-        /// <param name="dialog">Native handle that supplies the dialog for this operation.</param>
-        /// <param name="button">Native handle that supplies the button for this operation.</param>
-        /// <param name="desired">Indicates whether desired is enabled.</param>
+        /// <param name="dialog">Captured VBE Options dialog that must still own the checkbox.</param>
+        /// <param name="button">Native Button control whose state is changed.</param>
+        /// <param name="desired">Requested checked state; the operation returns without clicking when it already matches.</param>
         private static void WriteOptionsCheckbox(IntPtr dialog, IntPtr button, bool desired)
         {
             Action guard = () => {
@@ -311,9 +311,9 @@ namespace VBAi
         }
 
         /// <summary>Requires exact before/after native state and never retries an uncertain click.</summary>
-        /// <param name="desired">Indicates whether desired is enabled.</param>
-        /// <param name="read">func&lt;int&gt; that supplies the read for this operation.</param>
-        /// <param name="click">action that supplies the click for this operation.</param>
+        /// <param name="desired">Requested checked state.</param>
+        /// <param name="read">Reads the native check state; only 0 and 1 are accepted.</param>
+        /// <param name="click">Performs the single native BM_CLICK after the before-state check.</param>
         internal static void SetOptionsCheckbox(bool desired, Func<int> read, Action click)
         {
             if (read == null || click == null) throw new ArgumentException("Native read and click are required.");
@@ -383,7 +383,7 @@ namespace VBAi
 
         /// <summary>Refuse toute utilisation de messages ComboBox sur un autre processus ou une autre classe.</summary>
         /// <param name="window">Handle de la ComboBox à vérifier.</param>
-        /// <returns>int produced by the operation for guard options combo on vbe debug windows.</returns>
+        /// <returns>Native style bits after the control is proved to be a same-process ComboBox with native strings.</returns>
         private static int GuardOptionsCombo(IntPtr window)
         {
             GetWindowThreadProcessId(window, out uint pid);
@@ -395,37 +395,37 @@ namespace VBAi
             return style;
         }
 
-        /// <summary>Handles options current thread id for vbe debug windows.</summary>
-        /// <returns>uint produced by the operation for options current thread id on vbe debug windows.</returns>
+        /// <summary>Gets the calling native UI thread ID used to inspect focused Options controls.</summary>
+        /// <returns>Win32 thread ID of the current thread.</returns>
         [System.Runtime.InteropServices.DllImport("kernel32.dll", EntryPoint = "GetCurrentThreadId")]
         private static extern uint OptionsCurrentThreadId();
 
-        /// <summary>Handles options gui thread info for vbe debug windows.</summary>
-        /// <param name="thread">uint that supplies the thread for this operation.</param>
-        /// <param name="info">options gui info that supplies the info for this operation.</param>
-        /// <returns>Boolean indicating the result of the check for options gui thread info on vbe debug windows.</returns>
+        /// <summary>Reads GUI focus/capture/menu ownership state for the specified native thread.</summary>
+        /// <param name="thread">Native UI thread ID being observed.</param>
+        /// <param name="info">Receives the active, focused, captured, menu, move/size, caret, and caret-rectangle data.</param>
+        /// <returns><see langword="true"/> when the GUI thread information was returned.</returns>
         [System.Runtime.InteropServices.DllImport("user32.dll", EntryPoint = "GetGUIThreadInfo")]
         private static extern bool OptionsGuiThreadInfo(uint thread, ref OptionsGuiInfo info);
 
-        /// <summary>Carries the options gui info values passed between operations.</summary>
+        /// <summary>Win32 GUITHREADINFO structure used to identify the actual focused Options control.</summary>
         [System.Runtime.InteropServices.StructLayout(System.Runtime.InteropServices.LayoutKind.Sequential)]
         private struct OptionsGuiInfo
         {
 
-            /// <summary>Maintains the size and flags state for options gui info.</summary>
+            /// <summary>Structure size in bytes and GUI-thread state flags required by GetGUIThreadInfo.</summary>
             internal uint Size, Flags;
 
-            /// <summary>Maintains the active and focus and capture and menu owner and move size and caret state for options gui info.</summary>
+            /// <summary>HWNDs for active window, focus, capture, menu owner, move/size, and caret controls.</summary>
             internal IntPtr Active, Focus, Capture, MenuOwner, MoveSize, Caret;
 
-            /// <summary>Maintains the left and top and right and bottom state for options gui info.</summary>
+            /// <summary>Screen-space caret rectangle returned with the GUI-thread information.</summary>
             internal int Left, Top, Right, Bottom;
         }
 
         // VBE populates its empty Size catalogue on focus, before dropdown expansion.
         // Dispatch only to the captured owned dialog; never use keyboard input or retry.
-        /// <summary>Handles focus options size catalogue for vbe debug windows.</summary>
-        /// <param name="window">Native handle that supplies the window for this operation.</param>
+        /// <summary>Focuses the captured owned size combo so VBE populates its native list, then reads its entries without keyboard input.</summary>
+        /// <param name="window">Size-catalogue ComboBox already resolved from the current Options dialog.</param>
         private static void FocusOptionsSizeCatalogue(IntPtr window)
         {
             IntPtr parent = OptionsComboParent(window);
@@ -539,9 +539,9 @@ namespace VBAi
             }
         }
 
-        /// <summary>Handles options diagnostic role for vbe debug windows.</summary>
-        /// <param name="name">Text that supplies the name value. Use the format required by the calling operation.</param>
-        /// <returns>options role produced by the operation for options diagnostic role on vbe debug windows.</returns>
+        /// <summary>Classifies known English/French control labels into the size, font, palette, or other trace role.</summary>
+        /// <param name="name">Observed UI Automation control name.</param>
+        /// <returns>Role used only to annotate the Options inspection trace.</returns>
         private static VbeInspectionTrace.OptionsRole OptionsDiagnosticRole(string name)
         {
             string normalized = NormalizeOptionName(name);
@@ -550,9 +550,9 @@ namespace VBAi
             return IsColorPalette(name) ? VbeInspectionTrace.OptionsRole.Palette : VbeInspectionTrace.OptionsRole.Other;
         }
 
-        /// <summary>Observes options combo identity for vbe debug windows.</summary>
-        /// <param name="window">Native handle that supplies the window for this operation.</param>
-        /// <param name="observed">options combo evidence that supplies the observed for this operation.</param>
+        /// <summary>Adds best-effort owner, parent, and control-ID metadata to an Options combo trace record.</summary>
+        /// <param name="window">Native ComboBox whose identity was already validated for inspection.</param>
+        /// <param name="observed">Trace object receiving available identity fields; metadata failures are ignored.</param>
         private static void ObserveOptionsComboIdentity(IntPtr window, VbeInspectionTrace.OptionsComboEvidence observed)
         {
             try
@@ -564,10 +564,10 @@ namespace VBAi
             catch { /* Optional metadata has no influence on the native result. */ }
         }
 
-        /// <summary>Observes options combo drop down for vbe debug windows.</summary>
-        /// <param name="window">Native handle that supplies the window for this operation.</param>
-        /// <param name="observed">options combo evidence that supplies the observed for this operation.</param>
-        /// <param name="cleanup">Indicates whether cleanup is enabled.</param>
+        /// <summary>Records whether the validated native combo dropdown is open before or after cleanup.</summary>
+        /// <param name="window">Native ComboBox to inspect.</param>
+        /// <param name="observed">Trace record that receives the selected before/after observation field.</param>
+        /// <param name="cleanup">True to write DropDownAfterCleanup; false to write DropDownAfterExpansion.</param>
         private static void ObserveOptionsComboDropDown(IntPtr window, VbeInspectionTrace.OptionsComboEvidence observed, bool cleanup)
         {
             try
@@ -629,16 +629,16 @@ namespace VBAi
         internal interface IOptionsDialogLifetimeProbe
         {
 
-            /// <summary>Determines whether open for i options dialog lifetime probe.</summary>
-            /// <param name="dialog">Native handle that supplies the dialog for this operation.</param>
-            /// <returns>Boolean indicating the result of the check for is open on i options dialog lifetime probe.</returns>
+            /// <summary>Checks the lifetime of the exact captured Options HWND, including when it is hidden or no longer selected.</summary>
+            /// <param name="dialog">Dialog handle captured before native inspection began.</param>
+            /// <returns><see langword="true"/> while that exact HWND still exists.</returns>
             bool IsOpen(IntPtr dialog);
         }
 
         /// <summary>Cancels once and verifies closure of only the captured dialog; a changed dialog is never cancelled.</summary>
-        /// <param name="native">i options probe that supplies the native for this operation.</param>
-        /// <param name="dialog">Native handle that supplies the dialog for this operation.</param>
-        /// <param name="maximumPauses">int that supplies the maximum pauses for this operation.</param>
+        /// <param name="native">Probe that identifies and closes only the originally captured dialog.</param>
+        /// <param name="dialog">Exact dialog HWND to cancel.</param>
+        /// <param name="maximumPauses">Maximum 50 ms observation intervals allowed to prove closure.</param>
         private static void CancelOwnedOptionsDialog(IOptionsProbe native, IntPtr dialog, int maximumPauses = 40)
         {
             IntPtr current = native.Dialog();
@@ -655,11 +655,11 @@ namespace VBAi
                 throw new InvalidOperationException("The single native Options Cancel request did not close the captured dialog within the bounded observation period; do not retry automatically.");
         }
 
-        /// <summary>Observes destruction of the captured handle, including hidden windows, without sending an action.</summary>
-        /// <param name="native">i options probe that supplies the native for this operation.</param>
-        /// <param name="dialog">Native handle that supplies the dialog for this operation.</param>
-        /// <param name="maximumPauses">int that supplies the maximum pauses for this operation.</param>
-        /// <returns>Boolean indicating the result of the check for wait for options closure on vbe debug windows.</returns>
+        /// <summary>Observes closure of the captured dialog for a bounded period without issuing another native action.</summary>
+        /// <param name="native">Probe that checks HWND lifetime or the current visible dialog identity.</param>
+        /// <param name="dialog">Exact Options HWND whose destruction must be observed.</param>
+        /// <param name="maximumPauses">Maximum number of 50 ms pauses before returning false.</param>
+        /// <returns><see langword="true"/> only when the captured dialog is proved destroyed; identity change throws.</returns>
         private static bool WaitForOptionsClosure(IOptionsProbe native, IntPtr dialog, int maximumPauses)
         {
             for (int attempt = 0; attempt <= maximumPauses; attempt++)
@@ -681,9 +681,9 @@ namespace VBAi
         }
 
         /// <summary>Closes a read-only scope once, retaining both capture and cancellation failures.</summary>
-        /// <param name="native">i options probe that supplies the native for this operation.</param>
-        /// <param name="dialog">Native handle that supplies the dialog for this operation.</param>
-        /// <param name="primary">Exception describing the primary failure.</param>
+        /// <param name="native">Probe used to cancel and verify only the captured dialog.</param>
+        /// <param name="dialog">Exact Options dialog that must be closed after inspection.</param>
+        /// <param name="primary">Original inspection exception, if any; it is preserved with cleanup failure.</param>
         private static void CompleteOptionsRead(IOptionsProbe native, IntPtr dialog, Exception primary)
         {
             Exception cleanup = null;
@@ -700,9 +700,9 @@ namespace VBAi
         /// <returns>Valeurs avant/après et indication de validation/fermeture du dialogue.</returns>
         public static object SetVbeOption(Request request) => TraceOptionsInspection(() => SetVbeOption(request, new NativeOptionsProbe()));
 
-        /// <summary>Handles trace options inspection for vbe debug windows.</summary>
-        /// <param name="inspect">func&lt;object&gt; that supplies the inspect for this operation.</param>
-        /// <returns>object produced by the operation for trace options inspection on vbe debug windows.</returns>
+        /// <summary>Runs an Options inspection inside the current trace scope, creating one when no trace is active.</summary>
+        /// <param name="inspect">Native inspection operation whose events should be recorded.</param>
+        /// <returns>The inspection result unchanged.</returns>
         private static object TraceOptionsInspection(Func<object> inspect)
         {
             var trace = VbeInspectionTrace.Current ?? VbeInspectionTrace.Begin();

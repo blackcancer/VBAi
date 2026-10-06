@@ -16,10 +16,10 @@ namespace VBAi
         /// <summary>Magasin SQLite partagé par les sessions et la mémoire de projet.</summary>
         private ChatSessionStore sessionStore;
 
-        /// <summary>Maintains the persistence worker state for chat window.</summary>
+        /// <summary>Background SQLite writer that receives immutable session snapshots and reports completion on the UI dispatcher.</summary>
         private ChatPersistenceWorker persistenceWorker;
 
-        /// <summary>Maintains the persistence json state for chat window.</summary>
+        /// <summary>Serializer configured for session payloads up to 32 MiB.</summary>
         private readonly System.Web.Script.Serialization.JavaScriptSerializer persistenceJson =
             new System.Web.Script.Serialization.JavaScriptSerializer { MaxJsonLength = 32 * 1024 * 1024 };
 
@@ -29,16 +29,16 @@ namespace VBAi
         /// <summary>Indique qu’un chargement de session est en cours et bloque les sauvegardes déclenchées par l’interface.</summary>
         private bool loadingSession;
 
-        /// <summary>Maintains the loading scope state for chat window.</summary>
+        /// <summary>Prevents scope-selection handlers from starting another load while one is in progress.</summary>
         private bool loadingScope;
 
-        /// <summary>Maintains the session view unavailable state for chat window.</summary>
+        /// <summary>Hides session-history controls when the SQLite store could not be initialized.</summary>
         private bool sessionViewUnavailable;
 
-        /// <summary>Maintains the scope load state for chat window.</summary>
+        /// <summary>Current asynchronous scope-load operation, observed before changing scope again.</summary>
         private System.Threading.Tasks.Task scopeLoad = System.Threading.Tasks.Task.CompletedTask;
 
-        /// <summary>Maintains the read scope state for chat window.</summary>
+        /// <summary>Worker read seam used to load detached session/memory snapshots from a database path and scope.</summary>
         internal Func<string, string, bool, System.Threading.Tasks.Task<ChatSessionStore.ScopeSnapshot>> ReadScope = ChatSessionStore.ReadScopeAsync;
 
         /// <summary>Indique qu’une erreur de stockage a empêché une sauvegarde.</summary>
@@ -53,16 +53,16 @@ namespace VBAi
         /// <summary>Cache des sessions par portée de projet.</summary>
         private readonly Dictionary<string, List<ChatSessionState>> cachedScopes = new Dictionary<string, List<ChatSessionState>>();
 
-        /// <summary>Maintains the transient memory state for chat window.</summary>
+        /// <summary>Unsaved notes keyed by temporary scope; these notes are never written to SQLite.</summary>
         private readonly Dictionary<string, string> transientMemory = new Dictionary<string, string>();
 
-        /// <summary>Maintains the read scope project state for chat window.</summary>
+        /// <summary>Resolver for a borrowed live VBProject used only to capture unsaved-project identity.</summary>
         internal static Func<VbeSession, string, object> ReadScopeProject = (session, selector) => session.ProjectScopeSource(selector);
 
         /// <summary>Minuterie qui regroupe les sauvegardes rapprochées du brouillon.</summary>
         private DispatcherTimer saveTimer;
 
-        /// <summary>Maintains the history search timer state for chat window.</summary>
+        /// <summary>Debounces session-history search input on the WPF dispatcher.</summary>
         private DispatcherTimer historySearchTimer;
 
         /// <summary>Minuterie de nouvelle tentative de découverte lorsque aucun projet n’est ouvert.</summary>
@@ -87,13 +87,13 @@ namespace VBAi
             /// <summary>Nom du projet VBE.</summary>
             public string Name;
 
-            /// <summary>Maintains the identity state for macro scope.</summary>
+            /// <summary>Owned IUnknown identity lease for an unsaved live project; saved scopes use their canonical full path.</summary>
             public ScopeProjectLease Identity;
 
-            /// <summary>Keeps the first saved path and promotion error path available to macro scope.</summary>
+            /// <summary>First path observed after the unsaved project is saved, plus any local-history promotion error.</summary>
             public string FirstSavedPath, PromotionError;
 
-            /// <summary>Maintains the promotion blocked state for macro scope.</summary>
+            /// <summary>Blocks another scope-promotion attempt after SQLite could not prove the first transaction outcome.</summary>
             public bool PromotionBlocked;
 
             /// <summary>Retourne le libellé du sélecteur.</summary>
@@ -105,14 +105,14 @@ namespace VBAi
         private sealed class ScopeProjectLease : IDisposable
         {
 
-            /// <summary>Maintains the project state for scope project lease.</summary>
+            /// <summary>Borrowed project RCW retained only to compare COM identity; this wrapper does not release it.</summary>
             private object project;
 
-            /// <summary>Maintains the unknown state for scope project lease.</summary>
+            /// <summary>One IUnknown reference acquired by this lease and released exactly once during disposal.</summary>
             private IntPtr unknown;
 
-            /// <summary>Initializes a ScopeProjectLease instance with the supplied state.</summary>
-            /// <param name="project">object that supplies the project for this operation.</param>
+            /// <summary>Retains the project RCW for identity checks and acquires one owned IUnknown reference when it is a COM object.</summary>
+            /// <param name="project">Live VBProject whose identity distinguishes an unsaved document from another project.</param>
             internal ScopeProjectLease(object project)
             {
                 this.project = project;
@@ -120,16 +120,16 @@ namespace VBAi
                     unknown = System.Runtime.InteropServices.Marshal.GetIUnknownForObject(project);
             }
 
-            /// <summary>Handles matches for scope project lease.</summary>
-            /// <param name="candidate">object that supplies the candidate for this operation.</param>
-            /// <returns>Boolean indicating the result of the check for matches on scope project lease.</returns>
+            /// <summary>Compares the leased project with a current project without transferring COM reference ownership.</summary>
+            /// <param name="candidate">Current VBProject candidate.</param>
+            /// <returns><see langword="false"/> for null, different, or failed COM identity comparisons.</returns>
             internal bool Matches(object candidate)
             {
                 try { return project != null && VbeProjectHostPath.SameProject(project, candidate); }
                 catch { return false; }
             }
 
-            /// <summary>Disposes  for scope project lease.</summary>
+            /// <summary>Clears the borrowed RCW and releases only the IUnknown reference acquired by this lease.</summary>
             public void Dispose()
             {
                 project = null;
@@ -137,20 +137,20 @@ namespace VBAi
             }
         }
 
-        /// <summary>Attempts to read scope project for chat window.</summary>
-        /// <param name="session">vbe session that supplies the session for this operation.</param>
-        /// <param name="selector">Text that supplies the selector value. Use the format required by the calling operation.</param>
-        /// <returns>object produced by the operation for try read scope project on chat window.</returns>
+        /// <summary>Attempts to resolve a live project and converts resolution failures to an unavailable identity.</summary>
+        /// <param name="session">VBE session that owns project resolution.</param>
+        /// <param name="selector">Project name or path currently associated with the scope.</param>
+        /// <returns>Borrowed VBProject object, or null when resolution fails.</returns>
         private static object TryReadScopeProject(VbeSession session, string selector)
         {
             try { return ReadScopeProject(session, selector); }
             catch { return null; }
         }
 
-        /// <summary>Captures scope identity for chat window.</summary>
-        /// <param name="session">vbe session that supplies the session for this operation.</param>
-        /// <param name="selector">Text that supplies the selector value. Use the format required by the calling operation.</param>
-        /// <returns>scope project lease produced by the operation for capture scope identity on chat window.</returns>
+        /// <summary>Captures a lease for one resolved unsaved project so renames do not silently change its conversation scope.</summary>
+        /// <param name="session">VBE session used to resolve the live project.</param>
+        /// <param name="selector">Current project selector.</param>
+        /// <returns>Identity lease, or null when project resolution or COM identity acquisition fails.</returns>
         private static ScopeProjectLease CaptureScopeIdentity(VbeSession session, string selector)
         {
             object project = TryReadScopeProject(session, selector);
@@ -165,11 +165,11 @@ namespace VBAi
             foreach (var scope in scopePicker.Items.OfType<MacroScope>()) scope.Identity?.Dispose();
         }
 
-        /// <summary>Moves only the exact live unsaved project's in-memory state to its first saved path.</summary>
-        /// <param name="scope">macro scope that supplies the scope for this operation.</param>
-        /// <param name="project">Text that supplies the project value. Use the format required by the calling operation.</param>
-        /// <param name="name">Text that supplies the name value. Use the format required by the calling operation.</param>
-        /// <returns>Boolean indicating the result of the check for promote scope on chat window.</returns>
+        /// <summary>Promotes the exact unsaved project scope to its first saved path, atomically claiming an empty SQLite scope when storage is available.</summary>
+        /// <param name="scope">Temporary scope whose live project identity must still match.</param>
+        /// <param name="project">First canonical saved path observed for that project.</param>
+        /// <param name="name">Current project name used to confirm the live scope identity.</param>
+        /// <returns><see langword="false"/> when identity or destination ownership blocks promotion; true when memory was moved or retained locally.</returns>
         private bool PromoteScope(MacroScope scope, string project, string name)
         {
             string oldKey = scope.Key, newKey = project.ToUpperInvariant();
@@ -339,8 +339,8 @@ namespace VBAi
             scopeLoad = ChangeScopeAsync();
         }
 
-        /// <summary>Handles change scope async for chat window.</summary>
-        /// <returns>task produced by the operation for change scope async on chat window.</returns>
+        /// <summary>Saves the outgoing conversation, loads the selected scope off-thread, and publishes detached sessions/memory only if the selection is still current.</summary>
+        /// <returns>Task that settles after loading, UI publication, or error recovery completes.</returns>
         private async System.Threading.Tasks.Task ChangeScopeAsync()
         {
             if (busy || loadingSession || runtimeDisposed || IsDisposed) return;

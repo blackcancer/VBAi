@@ -60,7 +60,7 @@ namespace VBAi
         /// <summary>Opaque database revision loaded with this snapshot; never sent to a provider.</summary>
         internal string StorageVersion;
 
-        /// <summary>Identifies the writer id associated with chat session state.</summary>
+        /// <summary>Per-process writer identity used to coalesce saves and derive a private recovery filename.</summary>
         internal readonly string WriterId = Guid.NewGuid().ToString("N");
 
         /// <summary>Obtient ou définit l’identifiant stable de la session.</summary>
@@ -202,9 +202,9 @@ namespace VBAi
     internal sealed partial class ChatSessionStore : IDisposable
     {
 
-        /// <summary>Determines whether transient scope for chat session store.</summary>
-        /// <param name="scope">Text that supplies the scope value. Use the format required by the calling operation.</param>
-        /// <returns>Boolean indicating the result of the check for is transient scope on chat session store.</returns>
+        /// <summary>Recognizes temporary conversation scopes that must never be written to SQLite.</summary>
+        /// <param name="scope">Conversation scope identifier.</param>
+        /// <returns><see langword="true"/> when the scope begins with the reserved <c>temporary:</c> prefix.</returns>
         internal static bool IsTransientScope(string scope) => scope != null && scope.StartsWith("temporary:", StringComparison.Ordinal);
 
         /// <summary>Handle natif de la base SQLite ouverte.</summary>
@@ -222,9 +222,9 @@ namespace VBAi
         /// <exception cref="IOException">La base ne peut pas être ouverte ou initialisée.</exception>
         public ChatSessionStore(string path) : this(path, false) { }
 
-        /// <summary>Initializes a ChatSessionStore instance with the supplied state.</summary>
-        /// <param name="path">Path used for the path being processed.</param>
-        /// <param name="readOnly">Indicates whether read only is enabled.</param>
+        /// <summary>Opens the database read-only or read-write/create and initializes schema only for a writable connection.</summary>
+        /// <param name="path">SQLite database file path, normalized to a full path.</param>
+        /// <param name="readOnly">True to avoid directory creation and schema writes; false to create the database and tables.</param>
         private ChatSessionStore(string path, bool readOnly)
         {
             DatabasePath = Path.GetFullPath(path);
@@ -253,13 +253,13 @@ namespace VBAi
             session.StorageVersion = SavePayload(session.Id, session.Scope, session.Title, payload, session.StorageVersion);
         }
 
-        /// <summary>Writes an immutable UI snapshot on the connection's owning worker.</summary>
-        /// <param name="id">Text that supplies the id value. Use the format required by the calling operation.</param>
-        /// <param name="scope">Text that supplies the scope value. Use the format required by the calling operation.</param>
-        /// <param name="title">Text that supplies the title value. Use the format required by the calling operation.</param>
-        /// <param name="payload">Text that supplies the payload value. Use the format required by the calling operation.</param>
-        /// <param name="expectedVersion">Text that supplies the expected version value. Use the format required by the calling operation.</param>
-        /// <returns>Text produced by the operation for save payload on chat session store.</returns>
+        /// <summary>Inserts a new conversation or updates its current revision using an optimistic version match.</summary>
+        /// <param name="id">Conversation ID used as the SQLite primary key.</param>
+        /// <param name="scope">Saved document/project scope; temporary scopes are skipped.</param>
+        /// <param name="title">Display title stored with the conversation.</param>
+        /// <param name="payload">Serialized chat session snapshot.</param>
+        /// <param name="expectedVersion">Previously loaded storage version; null selects insert-only behavior.</param>
+        /// <returns>New timestamp-plus-GUID storage version.</returns>
         internal string SavePayload(string id, string scope, string title, string payload, string expectedVersion)
         {
             if (IsTransientScope(scope)) return null;
@@ -276,9 +276,9 @@ namespace VBAi
         }
 
         /// <summary>Deletes only the local conversation revision owned by this writer.</summary>
-        /// <param name="id">Text that supplies the id value. Use the format required by the calling operation.</param>
-        /// <param name="scope">Text that supplies the scope value. Use the format required by the calling operation.</param>
-        /// <param name="expectedVersion">Text that supplies the expected version value. Use the format required by the calling operation.</param>
+        /// <param name="id">Conversation ID to delete.</param>
+        /// <param name="scope">Saved scope that must match the stored row.</param>
+        /// <param name="expectedVersion">Storage revision owned by this writer; deletion is conditional on an exact match.</param>
         internal void Delete(string id, string scope, string expectedVersion)
         {
             if (IsTransientScope(scope)) return;
@@ -312,18 +312,18 @@ namespace VBAi
             return result;
         }
 
-        /// <summary>Determines whether it has sessions for chat session store.</summary>
-        /// <param name="scope">Text that supplies the scope value. Use the format required by the calling operation.</param>
-        /// <returns>Boolean indicating the result of the check for has sessions on chat session store.</returns>
+        /// <summary>Checks whether a saved scope contains at least one chat session.</summary>
+        /// <param name="scope">Exact scope key to query.</param>
+        /// <returns><see langword="false"/> for transient scopes or when no session row exists.</returns>
         internal bool HasSessions(string scope)
         {
             if (IsTransientScope(scope)) return false;
             using (var statement = Prepare("SELECT 1 FROM chat_sessions WHERE scope = ?1 LIMIT 1", scope)) return statement.Step() == 100;
         }
 
-        /// <summary>Determines whether it has scope data for chat session store.</summary>
-        /// <param name="scope">Text that supplies the scope value. Use the format required by the calling operation.</param>
-        /// <returns>Boolean indicating the result of the check for has scope data on chat session store.</returns>
+        /// <summary>Checks for sessions, project memory, or code bookmarks under one saved scope.</summary>
+        /// <param name="scope">Exact scope key to query.</param>
+        /// <returns><see langword="false"/> for temporary scopes or when all three tables are empty for this scope.</returns>
         internal bool HasScopeData(string scope)
         {
             if (IsTransientScope(scope)) return false;
@@ -331,34 +331,34 @@ namespace VBAi
                 return statement.Step() == 100;
         }
 
-        /// <summary>Owns the promotion row state and operations.</summary>
+        /// <summary>Session identity and serialized content staged for atomic promotion into a saved scope.</summary>
         internal sealed class PromotionRow
         {
 
-            /// <summary>Identifies the id and title and payload associated with promotion row.</summary>
+            /// <summary>Conversation ID, display title, and serialized payload inserted during scope promotion.</summary>
             internal string Id, Title, Payload;
         }
 
-        /// <summary>Owns the scope occupied exception state and operations.</summary>
+        /// <summary>Internal control-flow signal that promotion found existing data and safely rolled its transaction back.</summary>
         private sealed class ScopeOccupiedException : Exception { }
 
-        /// <summary>Owns the promotion outcome unverified exception state and operations.</summary>
+        /// <summary>Signals that promotion or rollback did not establish a known database outcome; callers must reopen before saving.</summary>
         internal sealed class PromotionOutcomeUnverifiedException : IOException
         {
 
-            /// <summary>Initializes a PromotionOutcomeUnverifiedException instance with the supplied state.</summary>
-            /// <param name="error">Exception describing the error failure.</param>
-            /// <param name="rollback">Exception describing the rollback failure.</param>
+            /// <summary>Creates an unverified-outcome error while preserving the promotion and optional rollback failures.</summary>
+            /// <param name="error">Original promotion failure.</param>
+            /// <param name="rollback">Rollback failure, when rollback could not restore a known state.</param>
             internal PromotionOutcomeUnverifiedException(Exception error, Exception rollback) : base(
                 "History promotion failed and its database outcome is unverified. Reopen the conversation before saving again.",
                 rollback == null ? error : new AggregateException(error, rollback)) { }
         }
 
         /// <summary>Claims an empty saved scope and writes its initial conversations and notes atomically.</summary>
-        /// <param name="scope">Text that supplies the scope value. Use the format required by the calling operation.</param>
-        /// <param name="rows">i list&lt;promotion row&gt; that supplies the rows for this operation.</param>
-        /// <param name="memory">Text that supplies the memory value. Use the format required by the calling operation.</param>
-        /// <returns>dictionary&lt;string, string&gt; produced by the operation for promote empty scope on chat session store.</returns>
+        /// <param name="scope">Absolute saved-document scope that must still be empty.</param>
+        /// <param name="rows">Conversation snapshots inserted in the promotion transaction.</param>
+        /// <param name="memory">Optional project memory written in the same transaction.</param>
+        /// <returns>Map from promoted conversation ID to new storage version, or null when the scope is already occupied.</returns>
         internal Dictionary<string, string> PromoteEmptyScope(string scope, IList<PromotionRow> rows, string memory)
         {
             if (IsTransientScope(scope) || !Path.IsPathRooted(scope)) throw new ArgumentException("A saved document scope is required.");
@@ -387,9 +387,9 @@ namespace VBAi
             }
         }
 
-        /// <summary>Handles rollback promotion for chat session store.</summary>
-        /// <param name="error">Exception describing the error failure.</param>
-        /// <returns>Boolean indicating the result of the check for rollback promotion on chat session store.</returns>
+        /// <summary>Rolls back a promotion transaction and verifies that SQLite returned to autocommit mode.</summary>
+        /// <param name="error">Receives the rollback exception, or null when no rollback was needed or it succeeded.</param>
+        /// <returns><see langword="true"/> when the transaction is known to be rolled back; otherwise false.</returns>
         private bool RollbackPromotion(out Exception error)
         {
             error = null;
@@ -399,22 +399,22 @@ namespace VBAi
             return Native.sqlite3_get_autocommit(database) != 0;
         }
 
-        /// <summary>Owns the scope snapshot state and operations.</summary>
+        /// <summary>Worker-produced contents of one scope, published to the UI only after the read connection is disposed.</summary>
         internal sealed class ScopeSnapshot
         {
 
-            /// <summary>Maintains the sessions state for scope snapshot.</summary>
+            /// <summary>Decoded sessions for the requested scope, or null when the caller requested memory only.</summary>
             internal List<ChatSessionState> Sessions;
 
-            /// <summary>Maintains the memory state for scope snapshot.</summary>
+            /// <summary>Project memory text for the scope; empty when no memory row exists.</summary>
             internal string Memory;
         }
 
-        /// <summary>Owns the read connection and decoded objects entirely on a worker until publication.</summary>
-        /// <param name="path">Path used for the path being processed.</param>
-        /// <param name="scope">Text that supplies the scope value. Use the format required by the calling operation.</param>
-        /// <param name="includeSessions">Indicates whether include sessions is enabled.</param>
-        /// <returns>task&lt;scope snapshot&gt; produced by the operation for read scope async on chat session store.</returns>
+        /// <summary>Reads memory and optionally sessions on a worker-owned read-only SQLite connection.</summary>
+        /// <param name="path">Database file to open read-only.</param>
+        /// <param name="scope">Exact document/project scope to read.</param>
+        /// <param name="includeSessions">True to decode session payloads as well as memory; false returns memory only.</param>
+        /// <returns>Task containing detached managed data after the worker connection is disposed.</returns>
         internal static System.Threading.Tasks.Task<ScopeSnapshot> ReadScopeAsync(string path, string scope, bool includeSessions)
         {
             if (IsTransientScope(scope)) return System.Threading.Tasks.Task.FromResult(new ScopeSnapshot { Sessions = new List<ChatSessionState>(), Memory = "" });
@@ -428,8 +428,8 @@ namespace VBAi
         }
 
         /// <summary>Deserializes a stored chat session and restores its persisted queue and state.</summary>
-        /// <param name="payload">Text that supplies the payload value. Use the format required by the calling operation.</param>
-        /// <returns>chat session state produced by the operation for decode session on chat session store.</returns>
+        /// <param name="payload">Serialized session JSON stored in the database.</param>
+        /// <returns>Restored session state, with missing policy-version data defaulted to zero, or null for a non-object payload.</returns>
         internal static ChatSessionState DecodeSession(string payload)
         {
             var serializer = new JavaScriptSerializer { MaxJsonLength = 32 * 1024 * 1024 };
@@ -562,9 +562,9 @@ namespace VBAi
             /// <returns>Code de résultat SQLite.</returns>
             [DllImport("winsqlite3.dll", CallingConvention = CallingConvention.Cdecl)] internal static extern int sqlite3_close_v2(IntPtr db);
 
-            /// <summary>Handles sqlite3 get autocommit for native.</summary>
-            /// <param name="db">Native handle that supplies the db for this operation.</param>
-            /// <returns>int produced by the operation for sqlite3 get autocommit on native.</returns>
+            /// <summary>Checks whether the connection is outside any active transaction.</summary>
+            /// <param name="db">SQLite connection handle.</param>
+            /// <returns>Nonzero when SQLite is in autocommit mode; zero while a transaction remains active.</returns>
             [DllImport("winsqlite3.dll", CallingConvention = CallingConvention.Cdecl)] internal static extern int sqlite3_get_autocommit(IntPtr db);
 
             /// <summary>Définit le délai maximal d’attente d’un verrou SQLite.</summary>
@@ -597,8 +597,8 @@ namespace VBAi
             [DllImport("winsqlite3.dll", CallingConvention = CallingConvention.Cdecl)] internal static extern int sqlite3_step(IntPtr statement);
 
             /// <summary>Returns the number of rows changed by the most recent write on this connection.</summary>
-            /// <param name="db">Native handle that supplies the db for this operation.</param>
-            /// <returns>int produced by the operation for sqlite3 changes on native.</returns>
+            /// <param name="db">SQLite connection whose most recent statement is inspected.</param>
+            /// <returns>Number of rows inserted, updated, or deleted by the most recent write.</returns>
             [DllImport("winsqlite3.dll", CallingConvention = CallingConvention.Cdecl)] internal static extern int sqlite3_changes(IntPtr db);
 
             /// <summary>Finalise une instruction préparée et libère ses ressources.</summary>

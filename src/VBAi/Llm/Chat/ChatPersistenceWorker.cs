@@ -12,27 +12,27 @@ namespace VBAi
     internal sealed class ChatPersistenceWorker : IDisposable
     {
 
-        /// <summary>Owns the snapshot state and operations.</summary>
+        /// <summary>Immutable persistence payload and optimistic-concurrency version captured on the chat's owning thread.</summary>
         internal sealed class Snapshot
         {
 
-            /// <summary>Identifies the writer and id and scope and title and payload and expected version associated with snapshot.</summary>
+            /// <summary>Writer identity, session key/scope/title, serialized payload, and storage version used by one queued write.</summary>
             internal readonly string Writer, Id, Scope, Title, Payload, ExpectedVersion;
 
-            /// <summary>Maintains the deletion state for snapshot.</summary>
+            /// <summary>Completion source present only for a deletion snapshot; resolves with a recovery-file warning or faults on delete failure.</summary>
             internal readonly System.Threading.Tasks.TaskCompletionSource<Exception> Deletion;
 
-            /// <summary>Initializes a Snapshot instance with the supplied state.</summary>
-            /// <param name="session">chat session state that supplies the session for this operation.</param>
-            /// <param name="payload">Text that supplies the payload value. Use the format required by the calling operation.</param>
+            /// <summary>Captures a chat session's storage identity and current serialized payload for background persistence.</summary>
+            /// <param name="session">Session state already snapshotted on the UI thread.</param>
+            /// <param name="payload">Serialized session data to enqueue.</param>
             internal Snapshot(ChatSessionState session, string payload)
             {
                 Writer = session.WriterId; Id = session.Id; Scope = session.Scope;
                 Title = session.Title; Payload = payload; ExpectedVersion = session.StorageVersion;
             }
 
-            /// <summary>Initializes a Snapshot instance with the supplied state.</summary>
-            /// <param name="source">snapshot that supplies the source for this operation.</param>
+            /// <summary>Creates the deletion marker from a save snapshot and gives it an asynchronous completion source.</summary>
+            /// <param name="source">Existing snapshot whose writer, session key, scope, title, payload, and expected version identify the queued conversation.</param>
             internal Snapshot(Snapshot source)
             {
                 Writer = source.Writer; Id = source.Id; Scope = source.Scope;
@@ -41,54 +41,54 @@ namespace VBAi
             }
         }
 
-        /// <summary>Owns the cursor state and operations.</summary>
+        /// <summary>Tracks the latest storage version and a sticky failure for one writer until that conversation is reopened.</summary>
         private sealed class Cursor
         {
 
-            /// <summary>Maintains the version state for cursor.</summary>
+            /// <summary>Version returned by the most recent successful write for this writer.</summary>
             internal string Version;
 
-            /// <summary>Maintains the failure state for cursor.</summary>
+            /// <summary>First storage failure; blocks later queued writes to avoid overwriting an unknown database state.</summary>
             internal Exception Failure;
         }
 
-        /// <summary>Maintains the gate state for chat persistence worker.</summary>
+        /// <summary>Protects the pending queue, writer deletion claims, cursors, and worker lifecycle flags.</summary>
         private readonly object gate = new object();
 
-        /// <summary>Maintains the pending state for chat persistence worker.</summary>
+        /// <summary>Newest coalesced save snapshot for each writer, or its ordered deletion marker.</summary>
         private readonly Dictionary<string, Snapshot> pending = new Dictionary<string, Snapshot>();
 
-        /// <summary>Maintains the order state for chat persistence worker.</summary>
+        /// <summary>Writer IDs in first-enqueued order; repeated saves replace payloads without duplicating queue entries.</summary>
         private readonly Queue<string> order = new Queue<string>();
 
-        /// <summary>Maintains the cursors state for chat persistence worker.</summary>
+        /// <summary>Per-writer expected-version and failure state, retained to serialize optimistic-concurrency writes.</summary>
         private readonly Dictionary<string, Cursor> cursors = new Dictionary<string, Cursor>();
 
-        /// <summary>Maintains the deleting writers state for chat persistence worker.</summary>
+        /// <summary>Writers whose delete is queued or committed; new saves for them are rejected.</summary>
         private readonly HashSet<string> deletingWriters = new HashSet<string>();
 
-        /// <summary>Maintains the thread state for chat persistence worker.</summary>
+        /// <summary>Single background thread that owns SQLite persistence operations.</summary>
         private readonly Thread thread;
 
-        /// <summary>Keeps the path path available to chat persistence worker.</summary>
+        /// <summary>Canonical full path to the chat database opened by the worker thread.</summary>
         private readonly string path;
 
-        /// <summary>Maintains the completed state for chat persistence worker.</summary>
+        /// <summary>UI notification invoked after a save attempt with its captured snapshot, resulting version, and failure.</summary>
         private readonly Action<Snapshot, string, Exception> completed;
 
-        /// <summary>Maintains the stopping and working state for chat persistence worker.</summary>
+        /// <summary>Lifecycle flags protected by <see cref="gate"/>: shutdown has started or the worker is processing a snapshot.</summary>
         private bool stopping, working;
 
-        /// <summary>Maintains the active state for chat persistence worker.</summary>
+        /// <summary>Snapshot currently being written or deleted, protected by <see cref="gate"/>.</summary>
         private Snapshot active;
 
-        /// <summary>Gets or sets the recovery directory.</summary>
-        /// <value>Current recovery directory exposed by chat persistence worker.</value>
+        /// <summary>Gets the local recovery directory used to retain failed or shutdown-interrupted save snapshots.</summary>
+        /// <value>Database path with the <c>.recovery</c> suffix.</value>
         internal string RecoveryDirectory { get; private set; }
 
-        /// <summary>Initializes a ChatPersistenceWorker instance with the supplied state.</summary>
-        /// <param name="databasePath">Path used for the database path being processed.</param>
-        /// <param name="completed">Exception describing the completed failure.</param>
+        /// <summary>Starts the dedicated SQLite worker and derives its adjacent local recovery directory.</summary>
+        /// <param name="databasePath">Chat database path; stored as a full path before the worker starts.</param>
+        /// <param name="completed">Callback for completed save attempts; deletion completion is returned through the snapshot task.</param>
         internal ChatPersistenceWorker(string databasePath, Action<Snapshot, string, Exception> completed)
         {
             path = Path.GetFullPath(databasePath);
@@ -98,8 +98,8 @@ namespace VBAi
             thread.Start();
         }
 
-        /// <summary>Handles enqueue for chat persistence worker.</summary>
-        /// <param name="snapshot">snapshot that supplies the snapshot for this operation.</param>
+        /// <summary>Coalesces the newest save per writer and wakes the worker; transient scopes are never persisted.</summary>
+        /// <param name="snapshot">Immutable UI-thread snapshot containing the serialized chat and expected storage version.</param>
         internal void Enqueue(Snapshot snapshot)
         {
             if (snapshot == null) throw new ArgumentNullException(nameof(snapshot));
@@ -119,8 +119,8 @@ namespace VBAi
         }
 
         /// <summary>Orders deletion after any in-flight write and replaces queued writes for this conversation.</summary>
-        /// <param name="snapshot">snapshot that supplies the snapshot for this operation.</param>
-        /// <returns>task&lt;exception&gt; produced by the operation for delete async on chat persistence worker.</returns>
+        /// <param name="snapshot">Snapshot identifying the conversation to delete; its current pending save is replaced by this ordered delete.</param>
+        /// <returns>Task that completes after deletion, with an exception value if only recovery-file cleanup failed.</returns>
         internal System.Threading.Tasks.Task<Exception> DeleteAsync(Snapshot snapshot)
         {
             if (snapshot == null) throw new ArgumentNullException(nameof(snapshot));
@@ -142,7 +142,7 @@ namespace VBAi
             }
         }
 
-        /// <summary>Runs  for chat persistence worker.</summary>
+        /// <summary>Drains queued writer snapshots in order, retaining local recovery before each save and serializing SQLite access.</summary>
         private void Run()
         {
             ChatSessionStore store = null;
@@ -211,14 +211,14 @@ namespace VBAi
             finally { store?.Dispose(); }
         }
 
-        /// <summary>Handles recovery path for chat persistence worker.</summary>
-        /// <param name="snapshot">snapshot that supplies the snapshot for this operation.</param>
-        /// <returns>Text produced by the operation for recovery path on chat persistence worker.</returns>
+        /// <summary>Builds the stable recovery filename for one writer's conversation snapshot.</summary>
+        /// <param name="snapshot">Snapshot whose writer ID determines the recovery filename.</param>
+        /// <returns>Path under <see cref="RecoveryDirectory"/> ending in the writer ID and <c>.json</c>.</returns>
         private string RecoveryPath(Snapshot snapshot) => Path.Combine(RecoveryDirectory, snapshot.Writer + ".json");
 
-        /// <summary>Writes recovery for chat persistence worker.</summary>
-        /// <param name="snapshot">snapshot that supplies the snapshot for this operation.</param>
-        /// <param name="destination">Text that supplies the destination value. Use the format required by the calling operation.</param>
+        /// <summary>Atomically writes a local recovery snapshot; this file is retained for user recovery and is never replayed automatically.</summary>
+        /// <param name="snapshot">Captured conversation data to serialize; transient scopes are skipped.</param>
+        /// <param name="destination">Optional shutdown-specific filename; null uses the stable per-writer recovery path.</param>
         private void WriteRecovery(Snapshot snapshot, string destination = null)
         {
             if (ChatSessionStore.IsTransientScope(snapshot.Scope)) return;
@@ -231,9 +231,9 @@ namespace VBAi
             }));
         }
 
-        /// <summary>Handles flush for chat persistence worker.</summary>
-        /// <param name="milliseconds">int that supplies the milliseconds for this operation.</param>
-        /// <returns>Boolean indicating the result of the check for flush on chat persistence worker.</returns>
+        /// <summary>Waits for active and queued work to drain, returning false when the time budget expires.</summary>
+        /// <param name="milliseconds">Maximum wait time in milliseconds.</param>
+        /// <returns><see langword="true"/> when no write or delete remains active or queued.</returns>
         internal bool Flush(int milliseconds)
         {
             var elapsed = System.Diagnostics.Stopwatch.StartNew();
@@ -249,7 +249,7 @@ namespace VBAi
             }
         }
 
-        /// <summary>Disposes  for chat persistence worker.</summary>
+        /// <summary>Stops the worker and waits up to two seconds; remaining save snapshots are retained as uniquely named local recovery files.</summary>
         public void Dispose()
         {
             lock (gate) { stopping = true; Monitor.PulseAll(gate); }

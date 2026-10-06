@@ -7,19 +7,19 @@ using System.Text;
 namespace VBAi
 {
 
-    /// <summary>Owns the llm vbe tools state and operations.</summary>
+    /// <summary>Applies conversation-bound project grants and shared-VBE-context policy before tool results are returned to the model.</summary>
     internal sealed partial class LlmVbeTools
     {
 
-        /// <summary>Maintains the read project grants state for llm vbe tools.</summary>
+        /// <summary>Project names or paths explicitly granted read access by the current conversation.</summary>
         private readonly HashSet<string> readProjectGrants = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
-        /// <summary>Maintains the shared context read allowed state for llm vbe tools.</summary>
+        /// <summary>Whether the user separately authorized tools that can inspect shared VBE state outside the bound project.</summary>
         private bool sharedContextReadAllowed;
 
         // These commands do not return source, project inventories or native context.
         // New tools without a Project argument fail closed until classified here.
-        /// <summary>Maintains the independent tools state for llm vbe tools.</summary>
+        /// <summary>Commands whose results are independent of project source, inventories, and shared native VBE context.</summary>
         private static readonly HashSet<string> IndependentTools = new HashSet<string>(StringComparer.Ordinal)
         {
             "status", "list_projects", "discover_tools", "invoke_tool", "read_user_file", "inspect_code_file",
@@ -28,7 +28,7 @@ namespace VBAi
             "list_commands", "list_addins", "list_toolbars", "toolbar_controls", "open_debug_pane"
         };
         // These have a Project argument but native results/effects also span the VBE.
-        /// <summary>Maintains the shared project tools state for llm vbe tools.</summary>
+        /// <summary>Project-scoped commands whose native results or effects also touch shared VBE state.</summary>
         private static readonly HashSet<string> SharedProjectTools = new HashSet<string>(StringComparer.Ordinal)
         {
             "debug_global", "immediate_execute", "read_immediate", "inspect_local_scalars", "run_procedure", "procedure_run_status",
@@ -38,8 +38,8 @@ namespace VBAi
         };
 
         /// <summary>Sets the project grants and shared context policy for tool reads.</summary>
-        /// <param name="projects">i enumerable&lt;string&gt; that supplies the projects for this operation.</param>
-        /// <param name="sharedContext">Indicates whether shared context is enabled.</param>
+        /// <param name="projects">Explicitly granted project selectors; blank values are ignored and matches are case-insensitive.</param>
+        /// <param name="sharedContext">True only when the user authorized access to shared VBE context.</param>
         internal void SetReadAccess(IEnumerable<string> projects, bool sharedContext)
         {
             readProjectGrants.Clear();
@@ -49,7 +49,7 @@ namespace VBAi
         }
 
         /// <summary>Rejects a project read when the current session has not granted access.</summary>
-        /// <param name="project">Text that supplies the project value. Use the format required by the calling operation.</param>
+        /// <param name="project">Project name, path, or unique authorized alias requested by the tool.</param>
         internal void RequireProjectRead(string project)
         {
             if (string.IsNullOrEmpty(BoundProject)) return; // Unbound internal callers retain their contract.
@@ -60,8 +60,8 @@ namespace VBAi
         // Reference tokens use project names, while saved chat scopes use absolute paths.
         // Resolve that alias only against one live project; duplicate names fail closed.
         /// <summary>Checks whether a requested project alias resolves to an authorized project.</summary>
-        /// <param name="selector">Text that supplies the selector value. Use the format required by the calling operation.</param>
-        /// <returns>Boolean indicating the result of the check for is authorized alias on llm vbe tools.</returns>
+        /// <param name="selector">Project name or filename selector to resolve against one live project inventory.</param>
+        /// <returns><see langword="true"/> only when exactly one live row matches and its name or path maps to the bound/granted project.</returns>
         private bool IsAuthorizedAlias(string selector)
         {
             if (string.IsNullOrWhiteSpace(selector)) return false;
@@ -83,15 +83,15 @@ namespace VBAi
         }
 
         /// <summary>Compares project identities using the names accepted by the live VBE session.</summary>
-        /// <param name="first">Text that supplies the first value. Use the format required by the calling operation.</param>
-        /// <param name="second">Text that supplies the second value. Use the format required by the calling operation.</param>
-        /// <returns>Boolean indicating the result of the check for same project on llm vbe tools.</returns>
+        /// <param name="first">Project name or path from the first identity source.</param>
+        /// <param name="second">Project name or path from the second identity source.</param>
+        /// <returns><see langword="true"/> when the selectors match ignoring case.</returns>
         private static bool SameProject(string first, string second) =>
             string.Equals(first, second, StringComparison.OrdinalIgnoreCase);
 
         /// <summary>Guards a tool request against the current project access policy.</summary>
-        /// <param name="name">Text that supplies the name value. Use the format required by the calling operation.</param>
-        /// <param name="arguments">Text that supplies the arguments value. Use the format required by the calling operation.</param>
+        /// <param name="name">Exact tool name whose project and shared-context requirements are checked.</param>
+        /// <param name="arguments">Serialized tool arguments used to inspect its Project selector.</param>
         private void GuardProjectPrivacy(string name, string arguments)
         {
             if (string.IsNullOrEmpty(BoundProject)) return;
@@ -116,14 +116,14 @@ namespace VBAi
         }
 
         /// <summary>Reads project fields only after the configured privacy checks pass.</summary>
-        /// <param name="data">object that supplies the data for this operation.</param>
-        /// <returns>i dictionary&lt;string, object&gt; produced by the operation for fields on llm vbe tools.</returns>
+        /// <param name="data">JSON-serializable tool result object.</param>
+        /// <returns>Dictionary view of the result fields, or null when the serialized value is not an object.</returns>
         private IDictionary<string, object> Fields(object data) =>
             json.DeserializeObject(json.Serialize(data)) as IDictionary<string, object>;
 
         /// <summary>Removes projects that are outside the session&apos;s explicit read grants.</summary>
-        /// <param name="data">object that supplies the data for this operation.</param>
-        /// <returns>object produced by the operation for filter projects on llm vbe tools.</returns>
+        /// <param name="data">Project-list response supplied by the tool implementation.</param>
+        /// <returns>Only rows matching the bound project or an explicit read grant; duplicate-name aliases are excluded.</returns>
         private object FilterProjects(object data)
         {
             if (string.IsNullOrEmpty(BoundProject)) return data;
@@ -141,10 +141,10 @@ namespace VBAi
         }
 
         /// <summary>Removes ungranted project data from a tool response before it reaches the model.</summary>
-        /// <param name="name">Text that supplies the name value. Use the format required by the calling operation.</param>
-        /// <param name="response">response that supplies the response for this operation.</param>
-        /// <param name="requestedProject">Text that supplies the requested project value. Use the format required by the calling operation.</param>
-        /// <returns>response produced by the operation for filter project response on llm vbe tools.</returns>
+        /// <param name="name">Exact tool name whose response is being filtered.</param>
+        /// <param name="response">Tool response before it is exposed to the model.</param>
+        /// <param name="requestedProject">Project selector whose context the caller requested.</param>
+        /// <returns>Filtered project inventory/debug state, or the original response for tools without those data shapes.</returns>
         private Response FilterProjectResponse(string name, Response response, string requestedProject)
         {
             if (!response.Ok || string.IsNullOrEmpty(BoundProject)) return response;

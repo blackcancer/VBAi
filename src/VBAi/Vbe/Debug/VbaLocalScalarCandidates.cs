@@ -10,31 +10,31 @@ namespace VBAi
     internal static class VbaLocalScalarCandidates
     {
 
-        /// <summary>Owns the candidate state and operations.</summary>
+        /// <summary>One source-declared local or parameter candidate, with source coordinates and eligibility diagnostics.</summary>
         internal sealed class Candidate
         {
 
-            /// <summary>Maintains the name and expression and kind and type name and reason state for candidate.</summary>
+            /// <summary>Name/token expression, declaration kind, declared VBA type, and exclusion reason when ineligible.</summary>
             public string Name, Expression, Kind, TypeName, Reason;
 
-            /// <summary>Maintains the line and column state for candidate.</summary>
+            /// <summary>One-based source line and column of the declaration name token.</summary>
             public int Line, Column;
 
-            /// <summary>Maintains the eligible state for candidate.</summary>
+            /// <summary>True only for an unambiguous, supported, unconditional scalar declaration.</summary>
             public bool Eligible;
         }
 
-        /// <summary>Maintains the scalar types state for vba local scalar candidates.</summary>
+        /// <summary>VBA scalar type names supported by the source-based local candidate filter.</summary>
         private static readonly HashSet<string> ScalarTypes = new HashSet<string>(StringComparer.OrdinalIgnoreCase) {
             "Boolean", "Byte", "Integer", "Long", "LongLong", "LongPtr", "Single", "Double", "Currency", "Date", "String"
         };
 
-        /// <summary>Reads  for vba local scalar candidates.</summary>
-        /// <param name="source">Text that supplies the source value. Use the format required by the calling operation.</param>
-        /// <param name="procedure">Text that supplies the procedure value. Use the format required by the calling operation.</param>
-        /// <param name="first">int that supplies the first for this operation.</param>
-        /// <param name="last">int that supplies the last for this operation.</param>
-        /// <returns>candidate[] produced by the operation for read on vba local scalar candidates.</returns>
+        /// <summary>Extracts source declarations in one procedure/range and marks conditional, duplicate, array, auto-instanced, and unsupported types as ineligible.</summary>
+        /// <param name="source">VBA module source to tokenize and index.</param>
+        /// <param name="procedure">Procedure name whose local declarations are selected, compared case-insensitively.</param>
+        /// <param name="first">First one-based source line in the inspected range.</param>
+        /// <param name="last">Last one-based source line; must be at least <paramref name="first"/>.</param>
+        /// <returns>Candidate records only; this source scan is not a complete runtime Locals inventory.</returns>
         internal static Candidate[] Read(string source, string procedure, int first, int last)
         {
             if (source == null || string.IsNullOrWhiteSpace(procedure) || first < 1 || last < first)

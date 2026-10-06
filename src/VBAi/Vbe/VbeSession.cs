@@ -172,8 +172,8 @@ namespace VBAi
         internal object ProjectsEventSource() { return vbe.VBProjects; }
 
         /// <summary>Resolves a borrowed live project for private owning-thread conversation identity checks.</summary>
-        /// <param name="selector">Text that supplies the selector value. Use the format required by the calling operation.</param>
-        /// <returns>object produced by the operation for project scope source on vbe session.</returns>
+        /// <param name="selector">Authorized project selector resolved through the current VBE session.</param>
+        /// <returns>Borrowed live VBProject object for identity checks; ownership remains with the session.</returns>
         internal object ProjectScopeSource(string selector) => (object)GetProject(selector);
 
         /// <summary>Obtient la collection émettant les événements de composants.</summary>
@@ -195,8 +195,8 @@ namespace VBAi
         }
 
         /// <summary>Runs an explicit Immediate capture on the caller's VBE UI context.</summary>
-        /// <param name="request">request that supplies the request for this operation.</param>
-        /// <returns>task&lt;object&gt; produced by the operation for read immediate async on vbe session.</returns>
+        /// <param name="request">Authorized Immediate-window read request.</param>
+        /// <returns>Asynchronous native debugger result; General-page work must be settled before dispatch.</returns>
         internal System.Threading.Tasks.Task<object> ReadImmediateAsync(Request request)
         {
             RequireGeneralSettled();
@@ -204,8 +204,8 @@ namespace VBAi
         }
 
         /// <summary>Inspects declared scalar locals through the asynchronous native debugger route.</summary>
-        /// <param name="request">request that supplies the request for this operation.</param>
-        /// <returns>task&lt;object&gt; produced by the operation for inspect local scalars async on vbe session.</returns>
+        /// <param name="request">Authorized request to inspect declared scalar locals.</param>
+        /// <returns>Asynchronous native debugger result, subject to the General-operation admission guard.</returns>
         internal System.Threading.Tasks.Task<object> InspectLocalScalarsAsync(Request request)
         {
             RequireGeneralSettled();
@@ -213,24 +213,24 @@ namespace VBAi
         }
 
         /// <summary>Allows queued native saves to finish without blocking the VBE message loop.</summary>
-        /// <param name="request">request that supplies the request for this operation.</param>
-        /// <returns>task&lt;object&gt; produced by the operation for save host document async on vbe session.</returns>
+        /// <param name="request">Host-document save request for the selected project.</param>
+        /// <returns>Asynchronous adapter result; the VBE message loop remains available while save completion is observed.</returns>
         internal System.Threading.Tasks.Task<object> SaveHostDocumentAsync(Request request)
         {
             RequireGeneralSettled();
             return components.SaveHostDocumentAsync(request);
         }
 
-        /// <summary>Maintains the general in flight and general quarantined state for vbe session.</summary>
+        /// <summary>Blocks other native operations while General work is pending and permanently after an uncertain outcome.</summary>
         private bool generalInFlight, generalQuarantined;
 
-        /// <summary>Maintains the general authorization depth state for vbe session.</summary>
+        /// <summary>Tracks nested cached-policy authorization callbacks so they cannot re-enter native General work.</summary>
         private int generalAuthorizationDepth;
 
-        /// <summary>Maintains the bridge operations in flight state for vbe session.</summary>
+        /// <summary>Counts admitted asynchronous worker routes that must settle before General can open its native dialog.</summary>
         private int bridgeOperationsInFlight;
 
-        /// <summary>Requires general settled for vbe session.</summary>
+        /// <summary>Rejects native dispatch while General work is pending/quarantined or macro work has not settled.</summary>
         internal void RequireGeneralSettled()
         {
             RequireMacroSettled();
@@ -240,8 +240,8 @@ namespace VBAi
 
         // Claimed and released on the bridge's owning STA. The worker keeps its
         // existing native thread while General cannot enter during its dispatch.
-        /// <summary>Handles admit bridge operation for vbe session.</summary>
-        /// <returns>action produced by the operation for admit bridge operation on vbe session.</returns>
+        /// <summary>Claims one bridge worker operation on the owning STA and returns its same-thread, idempotent release action.</summary>
+        /// <returns>Release callback that decrements the in-flight count once; calling it from another thread throws.</returns>
         internal Action AdmitBridgeOperation()
         {
             RequireGeneralSettled();
@@ -260,9 +260,9 @@ namespace VBAi
         }
 
         /// <summary>Reads or edits the native General page on the original VBE UI thread.</summary>
-        /// <param name="request">request that supplies the request for this operation.</param>
-        /// <param name="write">Indicates whether write is enabled.</param>
-        /// <returns>task&lt;object&gt; produced by the operation for project general async on vbe session.</returns>
+        /// <param name="request">Read or write request containing the approved project and General-page options.</param>
+        /// <param name="write">True for a single authorized property update; false for read-only capture followed by a guarded Cancel.</param>
+        /// <returns>Asynchronous General-operation evidence; this route does not claim persisted host state.</returns>
         internal async System.Threading.Tasks.Task<object> ProjectGeneralAsync(Request request, bool write)
         {
             RequireGeneralSettled();

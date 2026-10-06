@@ -88,7 +88,7 @@ namespace VBAi
         /// <summary>Saves and observes completion on the owning VBE STA.</summary>
         internal Func<Request, Task<object>> SaveHostDocumentNative;
 
-        /// <summary>Maintains the solid works macro native state for llm vbe tools.</summary>
+        /// <summary>Asynchronous native VBE route for create/publish macro commands; it must preserve owner STA and one-shot uncertainty evidence.</summary>
         internal Func<Request, Task<object>> SolidWorksMacroNative;
 
         /// <summary>Interroge la disponibilité native d’une récupération dans le concepteur VBE.</summary>
@@ -117,7 +117,7 @@ namespace VBAi
         }
 
         /// <summary>Checks cached chat mode without reading or dispatching to the host.</summary>
-        /// <param name="name">Text that supplies the name value. Use the format required by the calling operation.</param>
+        /// <param name="name">Exact tool name; non-read-only tools require Agent mode unless the session is restoring state.</param>
         private void GuardModeLocal(string name)
         {
             if (!restoring && Mode != ChatMode.Agent && !ReadOnlyTools.Contains(name))
@@ -440,11 +440,11 @@ namespace VBAi
             return InvokeCoreAsync(name, arguments, false).GetAwaiter().GetResult();
         }
 
-        /// <summary>Invokes core async for llm vbe tools.</summary>
-        /// <param name="name">Text that supplies the name value. Use the format required by the calling operation.</param>
-        /// <param name="arguments">Text that supplies the arguments value. Use the format required by the calling operation.</param>
-        /// <param name="asyncSave">Indicates whether async save is enabled.</param>
-        /// <returns>task&lt;string&gt; produced by the operation for invoke core async on llm vbe tools.</returns>
+        /// <summary>Validates mode, project privacy, argument shape, expected revisions, user paths, and edit approval before dispatching one tool.</summary>
+        /// <param name="name">Exact registered tool name requested by the provider or UI.</param>
+        /// <param name="arguments">JSON object validated against the tool schema and retained for repeated scope checks.</param>
+        /// <param name="asyncSave">True only when entered through the asynchronous UI pipeline required by native save and debugger routes.</param>
+        /// <returns>Serialized success or failure response; host mutations retain their own uncertainty and recovery evidence.</returns>
         private async Task<string> InvokeCoreAsync(string name, string arguments, bool asyncSave)
         {
             if (name == "read_immediate" || name == "inspect_local_scalars")

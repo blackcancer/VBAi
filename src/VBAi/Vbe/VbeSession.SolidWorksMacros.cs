@@ -7,39 +7,39 @@ using System.Web.Script.Serialization;
 namespace VBAi
 {
 
-    /// <summary>Owns the vbe session state and operations.</summary>
+    /// <summary>Serializes SOLIDWORKS macro creation/publication on the VBE STA and quarantines the session after uncertain native effects.</summary>
     internal sealed partial class VbeSession
     {
 
-        /// <summary>Maintains the macro in flight and macro quarantined state for vbe session.</summary>
+        /// <summary>Tracks whether this session has an active native macro call or a non-retryable uncertain outcome.</summary>
         private bool macroInFlight, macroQuarantined;
 
-        /// <summary>Maintains the macro authorization depth state for vbe session.</summary>
+        /// <summary>Allows only the nested project inventory reads required while revalidating native macro authorization.</summary>
         private int macroAuthorizationDepth;
         // Bridge, chat and editor sessions share one native owning STA.
-        /// <summary>Maintains the macro owner state for vbe session.</summary>
+        /// <summary>Thread-local session currently owning a native macro operation on this shared VBE STA.</summary>
         [ThreadStatic] private static VbeSession macroOwner;
 
-        /// <summary>Maintains the macro owner quarantined state for vbe session.</summary>
+        /// <summary>Thread-local quarantine that blocks other sessions on the same STA after an uncertain macro outcome.</summary>
         [ThreadStatic] private static bool macroOwnerQuarantined;
 
-        /// <summary>Handles macro dispatch blocked for vbe session.</summary>
-        /// <param name="command">Text that supplies the command value. Use the format required by the calling operation.</param>
-        /// <returns>Boolean indicating the result of the check for macro dispatch blocked on vbe session.</returns>
+        /// <summary>Blocks dispatch during or after native macro ownership, allowing only the scoped list-projects authorization read.</summary>
+        /// <param name="command">Command being considered for dispatch.</param>
+        /// <returns><see langword="true"/> when this command cannot enter the shared native VBE route.</returns>
         private bool MacroDispatchBlocked(string command) => macroQuarantined || macroOwnerQuarantined ||
             ((macroInFlight || macroOwner != null) &&
              !(macroAuthorizationDepth > 0 && (macroOwner == null || ReferenceEquals(macroOwner, this)) && command == "list_projects"));
 
-        /// <summary>Requires macro settled for vbe session.</summary>
+        /// <summary>Throws while a native macro operation is active or quarantined, preventing a retry after uncertainty.</summary>
         private void RequireMacroSettled()
         {
             if (macroInFlight || macroQuarantined || macroOwner != null || macroOwnerQuarantined)
                 throw new InvalidOperationException("An original native macro operation is pending or uncertain. Inspect locally; do not retry.");
         }
 
-        /// <summary>Handles solid works macro async for vbe session.</summary>
-        /// <param name="request">request that supplies the request for this operation.</param>
-        /// <returns>task&lt;object&gt; produced by the operation for solid works macro async on vbe session.</returns>
+        /// <summary>Runs one authorized create or publish operation on the owning VBE STA and quarantines the route after an uncertain result.</summary>
+        /// <param name="request">Exact create/publish request whose command, project, path, revision, and mode are frozen during revalidation.</param>
+        /// <returns>Native macro operation result with terminal and uncertainty evidence.</returns>
         internal async Task<object> SolidWorksMacroAsync(Request request)
         {
             RequireGeneralSettled();

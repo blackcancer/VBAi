@@ -16,23 +16,23 @@ namespace VBAi
         private sealed class ClipboardRecovery
         {
 
-            /// <summary>Identifies the id and parent path associated with clipboard recovery.</summary>
+            /// <summary>Identifiant de récupération et chemin canonique du conteneur auxquels appartiennent les données copiées.</summary>
             public string Id, ParentPath;
 
-/// <summary>Maintains the form state for clipboard recovery.</summary>
-public object Form;
+            /// <summary>Référence du UserForm vivant auquel cette récupération est attachée.</summary>
+            public object Form;
 
-/// <summary>Maintains the backup state for clipboard recovery.</summary>
-public DesignerClipboardBackup Backup;
+            /// <summary>Copie bornée des formats MSForms capturés avant la coupe.</summary>
+            public DesignerClipboardBackup Backup;
 
-            /// <summary>Maintains the original tree and cut tree state for clipboard recovery.</summary>
+            /// <summary>Arbre avant la coupe et arbre après une coupe ayant produit des différences observables.</summary>
             public object OriginalTree, CutTree;
 
-/// <summary>Maintains the boxes state for clipboard recovery.</summary>
-public FormLayoutBox[] Boxes;
+            /// <summary>Géométrie et noms des contrôles sélectionnés lors de la coupe, conservés pour le rapport de récupération.</summary>
+            public FormLayoutBox[] Boxes;
 
-/// <summary>Maintains the tab order state for clipboard recovery.</summary>
-public string[] TabOrder;
+            /// <summary>Ordre des indices TabIndex et noms des contrôles présents au moment de la coupe.</summary>
+            public string[] TabOrder;
 
             /// <summary>Maintains the recovery attempted state for clipboard recovery.</summary>
             public bool RecoveryAttempted;
