@@ -11,16 +11,16 @@ namespace VBAi
         /// <summary>Flow layout panel that contains this transcript view&apos;s child controls.</summary>
         private System.Windows.Forms.TableLayoutPanel layout;
 
-        /// <summary>Maintains the message state for chat queued message view.</summary>
+        /// <summary>Ellipsized preview of the queued message text.</summary>
         private System.Windows.Forms.Label message;
 
-        /// <summary>Maintains the send now state for chat queued message view.</summary>
+        /// <summary>Button that interrupts the current response and sends this queued message next.</summary>
         private ChatActionButton sendNow;
 
-        /// <summary>Maintains the edit state for chat queued message view.</summary>
+        /// <summary>Button that returns this queued message to the composer for editing.</summary>
         private ChatActionButton edit;
 
-        /// <summary>Maintains the delete state for chat queued message view.</summary>
+        /// <summary>Button that removes this message from the pending queue.</summary>
         private ChatActionButton delete;
 
         /// <summary>ToolTip component used to show full text for transcript controls.</summary>

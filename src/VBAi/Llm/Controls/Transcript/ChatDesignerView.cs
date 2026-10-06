@@ -8,7 +8,7 @@ namespace VBAi
     public class ChatDesignerView : UserControl
     {
 
-        /// <summary>Maintains the watched state for chat designer view.</summary>
+        /// <summary>Prevents duplicate resize subscriptions on nested top-down flow panels.</summary>
         private readonly HashSet<FlowLayoutPanel> watched = new HashSet<FlowLayoutPanel>();
 
         /// <summary>Connects resize behavior to Designer-created containers.</summary>
@@ -19,7 +19,7 @@ namespace VBAi
         }
 
         /// <summary>Registers a control whose preferred height should trigger row remeasurement.</summary>
-        /// <param name="parent">control that supplies the parent for this operation.</param>
+        /// <param name="parent">New control subtree to inspect for top-down FlowLayoutPanel containers.</param>
         private void Watch(Control parent)
         {
             if (parent is FlowLayoutPanel flow && flow.FlowDirection == FlowDirection.TopDown && watched.Add(flow)) {
@@ -34,7 +34,7 @@ namespace VBAi
         }
 
         /// <summary>Resizes the designer host rows to fit their current transcript controls.</summary>
-        /// <param name="flow">flow layout panel that supplies the flow for this operation.</param>
+        /// <param name="flow">Top-down panel whose child controls must fit its current client width.</param>
         private static void ResizeRows(FlowLayoutPanel flow)
         {
             if (flow.ClientSize.Width <= 0) return;

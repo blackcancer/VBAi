@@ -13,8 +13,8 @@ namespace VBAi
         /// <summary>Rectangle Win32 obtenu pour une fenêtre ou un contrôle natif.</summary>
         [StructLayout(LayoutKind.Sequential)] internal struct ViewRect {
 
-/// <summary>Maintains the left and top and right and bottom state for view rect.</summary>
-public int Left, Top, Right, Bottom; }
+            /// <summary>Screen-space edges returned by GetWindowRect; Right and Bottom are exclusive bounds.</summary>
+            public int Left, Top, Right, Bottom; }
 
         /// <summary>Lit les limites d’une fenêtre Win32.</summary>
         /// <param name="hwnd">Handle de la fenêtre à mesurer.</param>
