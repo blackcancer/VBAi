@@ -16,10 +16,10 @@ namespace VBAi
         [System.ComponentModel.Browsable(false), System.ComponentModel.DesignerSerializationVisibility(System.ComponentModel.DesignerSerializationVisibility.Content)]
         public System.Windows.Forms.FlowLayoutPanel ContentPanel => body;
 
-        /// <summary>Maintains the expanded state for chat disclosure view.</summary>
+        /// <summary>Controls whether the body is shown and the disclosure toggle reports expanded state.</summary>
         private bool expanded;
 
-        /// <summary>Maintains the title state for chat disclosure view.</summary>
+        /// <summary>Caption displayed by the disclosure toggle when callers have not set a title.</summary>
         private string title = "Details";
 
         /// <summary>Raised when the section is expanded or collapsed.</summary>

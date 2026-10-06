@@ -25,8 +25,8 @@ RetentionReadback }
         private static readonly object FailurePhaseKey = new object();
 
         /// <summary>Annotates the original exception; diagnostic failures must never replace it.</summary>
-        /// <param name="error">Exception describing the error failure.</param>
-        /// <param name="phase">failure phase that supplies the phase for this operation.</param>
+        /// <param name="error">Original exception to annotate; diagnostic annotation failures are swallowed.</param>
+        /// <param name="phase">Setter-invocation or retention-readback phase; other phases are ignored.</param>
         internal static void AnnotateFailure(Exception error, FailurePhase phase)
         {
             try

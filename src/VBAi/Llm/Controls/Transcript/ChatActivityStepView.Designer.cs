@@ -14,7 +14,7 @@ namespace VBAi
         /// <summary>Flow layout panel that contains this transcript view&apos;s child controls.</summary>
         private System.Windows.Forms.TableLayoutPanel layout;
 
-        /// <summary>Maintains the section state for chat activity step view.</summary>
+        /// <summary>Expandable section containing the activity state and detailed tool result.</summary>
         internal ChatDisclosureView section;
 
         /// <summary>Displays the detailed text returned for this tool activity step.</summary>

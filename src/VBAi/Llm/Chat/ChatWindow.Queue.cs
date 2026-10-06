@@ -30,7 +30,7 @@ namespace VBAi
         public string Memory { get; set; }
     }
 
-    /// <summary>Owns the chat window state and operations.</summary>
+    /// <summary>Queues messages during an active response and dispatches them when session guards permit.</summary>
     internal sealed partial class ChatWindow
     {
 
@@ -128,8 +128,8 @@ namespace VBAi
         }
 
         /// <summary>Sends the next queued message after a response completes, unless dispatch is paused or stopped.</summary>
-        /// <param name="completed">Indicates whether completed is enabled.</param>
-        /// <returns>task produced by the operation for dispatch pending async on chat window.</returns>
+        /// <param name="completed"><see langword="true"/> when normal completion permits dispatch of the next queued message.</param>
+        /// <returns>A task that completes after an eligible queued message is sent, if any.</returns>
         private async Task DispatchPendingAsync(bool completed)
         {
             if (IsDisposed || busy || PendingMessages == null) return;

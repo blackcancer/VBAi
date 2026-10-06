@@ -6,7 +6,7 @@ using System.Windows.Forms;
 namespace VBAi
 {
 
-    /// <summary>Owns the chat window state and operations.</summary>
+    /// <summary>Migrates legacy provider privacy state and manages project-scoped chat consent.</summary>
     internal sealed partial class ChatWindow
     {
 

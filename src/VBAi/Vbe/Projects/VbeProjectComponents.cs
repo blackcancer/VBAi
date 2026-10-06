@@ -276,10 +276,11 @@ namespace VBAi
         }
 
         /// <summary>Rejects path or format changes made by save event handlers without replaying the mutation.</summary>
-        /// <param name="workbook">dynamic that supplies the workbook for this operation.</param>
-        /// <param name="project">dynamic that supplies the project for this operation.</param>
-        /// <param name="expectedPath">Path used for the expected path being processed.</param>
-        /// <param name="expectedFormat">int that supplies the expected format for this operation.</param>
+        /// <param name="workbook">Excel workbook whose post-save identity is being checked.</param>
+        /// <param name="project">VBProject that must remain associated with the workbook.</param>
+        /// <param name="expectedPath">Canonical destination path approved before the save invocation.</param>
+        /// <param name="expectedFormat">Excel file-format code approved for preserving VBA.</param>
+        /// <exception cref="InvalidOperationException">Workbook path, VBProject path, or file format changed during the save.</exception>
         private static void AssertExcelSaveIdentity(dynamic workbook, dynamic project, string expectedPath, int expectedFormat)
         {
             string expected = Path.GetFullPath(expectedPath);
@@ -293,9 +294,9 @@ namespace VBAi
                 throw new InvalidOperationException("Excel Save was invoked but the workbook/project path or file format changed. Inspect the result; do not retry automatically.");
         }
 
-        /// <summary>Determines whether it can preserve excel vba for vbe project components.</summary>
-        /// <param name="fileFormat">int that supplies the file format for this operation.</param>
-        /// <returns>Boolean indicating the result of the check for can preserve excel vba on vbe project components.</returns>
+        /// <summary>Recognizes Excel formats known to retain VBA projects during Save or SaveAs.</summary>
+        /// <param name="fileFormat">Excel XlFileFormat numeric value to inspect.</param>
+        /// <returns><see langword="true"/> for the explicit macro-capable format allowlist; false for unknown or macro-free formats.</returns>
         private static bool CanPreserveExcelVba(int fileFormat)
         {
             // XlFileFormat values for macro-capable workbooks, templates, and add-ins.

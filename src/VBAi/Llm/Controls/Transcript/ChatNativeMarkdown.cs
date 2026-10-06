@@ -27,11 +27,11 @@ namespace VBAi
         { Blocks(view, Markdown.Parse(text,Pipeline), refs,navigate,error); }
 
         /// <summary>Renders Markdown blocks, including nested lists, tables, quotes, and code, into the transcript view.</summary>
-        /// <param name="view">chat text content view that supplies the view for this operation.</param>
+        /// <param name="view">Transcript control receiving rendered text and activation ranges.</param>
         /// <param name="blocks">Parsed Markdown blocks to render.</param>
-        /// <param name="refs">i dictionary&lt;string,vbe chat reference&gt; that supplies the refs for this operation.</param>
-        /// <param name="navigate">action&lt;vbe chat reference&gt; that supplies the navigate for this operation.</param>
-        /// <param name="error">action&lt;string&gt; that supplies the error for this operation.</param>
+        /// <param name="refs">Recognized reference tokens; matching literals become navigation actions.</param>
+        /// <param name="navigate">Callback invoked when a user activates a recognized VBE reference.</param>
+        /// <param name="error">Callback receiving failures while opening an allowed link.</param>
         private static void Blocks(ChatTextContentView view, ContainerBlock blocks, IDictionary<string,VbeChatReference> refs, Action<VbeChatReference> navigate, Action<string> error)
         {
             foreach (var block in blocks) {
@@ -62,13 +62,13 @@ namespace VBAi
         }
 
         /// <summary>Renders inline Markdown and wires allowed links and recognized VBA references to their actions.</summary>
-        /// <param name="view">chat text content view that supplies the view for this operation.</param>
+        /// <param name="view">Transcript control receiving formatted text and activation ranges.</param>
         /// <param name="source">Parsed inline Markdown content to render.</param>
-        /// <param name="refs">i dictionary&lt;string,vbe chat reference&gt; that supplies the refs for this operation.</param>
-        /// <param name="navigate">action&lt;vbe chat reference&gt; that supplies the navigate for this operation.</param>
-        /// <param name="error">action&lt;string&gt; that supplies the error for this operation.</param>
-        /// <param name="style">font style that supplies the style for this operation.</param>
-        /// <param name="size">float that supplies the size for this operation.</param>
+        /// <param name="refs">Reference tokens rendered as clickable navigation actions when matched.</param>
+        /// <param name="navigate">Callback invoked for a recognized VBE reference.</param>
+        /// <param name="error">Callback receiving link-opening errors.</param>
+        /// <param name="style">Font style inherited by the current inline and its descendants.</param>
+        /// <param name="size">Font size in points for the rendered inline text.</param>
         private static void Inlines(ChatTextContentView view, ContainerInline source, IDictionary<string,VbeChatReference> refs, Action<VbeChatReference> navigate, Action<string> error, FontStyle style, float size)
         {
             foreach (var inline in source) {

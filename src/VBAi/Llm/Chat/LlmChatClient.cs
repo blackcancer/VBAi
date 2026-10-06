@@ -109,11 +109,12 @@ namespace VBAi
         }
 
         /// <summary>Refuses nonfinite or out-of-range optional sampling before constructing an HTTP transport.</summary>
-        /// <param name="configured">double that supplies the configured for this operation.</param>
-        /// <param name="minimum">double that supplies the minimum for this operation.</param>
-        /// <param name="maximum">double that supplies the maximum for this operation.</param>
-        /// <param name="excludeMinimum">Indicates whether exclude minimum is enabled.</param>
-        /// <param name="name">Text that supplies the name value. Use the format required by the calling operation.</param>
+        /// <param name="configured">Optional user value; null leaves the provider default unchanged.</param>
+        /// <param name="minimum">Lower bound, excluded only when <paramref name="excludeMinimum"/> is true.</param>
+        /// <param name="maximum">Inclusive upper bound.</param>
+        /// <param name="excludeMinimum">Whether the lower bound itself is invalid, as for top-p.</param>
+        /// <param name="name">Setting name included in the validation error.</param>
+        /// <exception cref="InvalidOperationException">The configured value is nonfinite or outside the supported range.</exception>
         private static void RequireOllamaSampling(double? configured, double minimum, double maximum, bool excludeMinimum, string name)
         {
             if (configured.HasValue && (Double.IsNaN(configured.Value) || Double.IsInfinity(configured.Value) ||

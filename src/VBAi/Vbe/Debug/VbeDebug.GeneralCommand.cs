@@ -4,7 +4,7 @@ using System.Linq;
 namespace VBAi
 {
 
-    /// <summary>Owns the vbe debug state and operations.</summary>
+    /// <summary>Resolves and guards native VBE commands used to inspect project General settings.</summary>
     internal sealed partial class VbeDebug
     {
 
@@ -22,10 +22,12 @@ namespace VBAi
             return matches[0].Caption;
         }
 
-        /// <summary>Captures general command for vbe debug.</summary>
-        /// <param name="request">request that supplies the request for this operation.</param>
-        /// <param name="requireApprovedTarget">action that supplies the require approved target for this operation.</param>
-        /// <returns>action&lt;action&gt; produced by the operation for capture general command on vbe debug.</returns>
+        /// <summary>Captures the exact active-menu General command and returns a one-shot guarded invoker.</summary>
+        /// <param name="request">Request containing the exact observed native menu caption.</param>
+        /// <param name="requireApprovedTarget">Callback that revalidates the approved project and revision before execution.</param>
+        /// <returns>Invoker that accepts the final UI entry guard and executes the native command once.</returns>
+        /// <exception cref="ArgumentException">The exact caption or approved-target callback is missing.</exception>
+        /// <exception cref="InvalidOperationException">The command route is ambiguous, changes, or is attempted more than once.</exception>
         internal Action<Action> CaptureGeneralCommand(Request request, Action requireApprovedTarget)
         {
             if (request == null || requireApprovedTarget == null || string.IsNullOrWhiteSpace(request.ControlCaption))

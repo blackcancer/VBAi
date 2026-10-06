@@ -35,10 +35,11 @@ namespace VBAi
         }
 
         /// <summary>Combines the selected files and captured memory into the request attachment payload.</summary>
-        /// <param name="question">Text that supplies the question value. Use the format required by the calling operation.</param>
-        /// <param name="references">i enumerable&lt;vbe chat reference&gt; that supplies the references for this operation.</param>
-        /// <param name="drafts">i enumerable&lt;chat attachment&gt; that supplies the drafts for this operation.</param>
-        /// <returns>chat attachment[] produced by the operation for prepare request attachments on chat window.</returns>
+        /// <param name="question">Pending user message whose length counts toward the explicit-context limit.</param>
+        /// <param name="references">Pinned VBE references, re-resolved from their captured project and module revisions.</param>
+        /// <param name="drafts">Selected editor or file attachments; source-backed drafts are checked for staleness.</param>
+        /// <returns>Validated attachments to include with the request.</returns>
+        /// <exception cref="InvalidOperationException">A project is unauthorized, an attachment is stale, or combined text exceeds 48,000 characters.</exception>
         private ChatAttachment[] PrepareRequestAttachments(string question, IEnumerable<VbeChatReference> references, IEnumerable<ChatAttachment> drafts)
         {
             var attachments = new List<ChatAttachment>();
@@ -163,9 +164,9 @@ namespace VBAi
             prompt.Text = command + " "; prompt.CaretIndex = prompt.Text.Length; prompt.Focus();
         }
 
-        /// <summary>Handles prepare monaco action for chat window.</summary>
-        /// <param name="command">Text that supplies the command value. Use the format required by the calling operation.</param>
-        /// <param name="attachment">chat attachment that supplies the attachment for this operation.</param>
+        /// <summary>Prepares a chat action from a modern-editor selection and attaches its captured source context.</summary>
+        /// <param name="command">Supported chat command token selected by the modern editor.</param>
+        /// <param name="attachment">Selection text with its editor document identity and captured revision.</param>
         internal void PrepareMonacoAction(string command, ChatAttachment attachment)
         {
             if (busy) { SetStatus(UiText.Get("Wait for the response to finish before preparing an action.")); return; }

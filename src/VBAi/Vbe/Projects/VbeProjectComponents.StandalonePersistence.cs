@@ -10,8 +10,10 @@ namespace VBAi
     {
 
         /// <summary>Normalizes VBIDE's path-not-found state only for an unsaved standalone project.</summary>
-        /// <param name="project">dynamic that supplies the project for this operation.</param>
-        /// <returns>Text produced by the operation for standalone aware project path on vbe project components.</returns>
+        /// <param name="project">VBProject whose file path is read; only a new unsaved standalone macro may lack one.</param>
+        /// <returns>The VBProject file path, or an empty string for the documented pre-SaveAs standalone state.</returns>
+        /// <exception cref="COMException">A COM path error is not the recognized unsaved standalone-project condition.</exception>
+        /// <exception cref="DirectoryNotFoundException">The path is unavailable for a saved or host-document project.</exception>
         private static string StandaloneAwareProjectPath(dynamic project)
         {
             try { return (string)project.FileName; }

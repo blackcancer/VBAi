@@ -815,8 +815,8 @@ namespace VBAi
             }
 
             /// <summary>Observes destruction of the exact captured handle, including hidden dialogs, without acting on another window.</summary>
-            /// <param name="dialog">Native handle that supplies the dialog for this operation.</param>
-            /// <returns>Boolean indicating the result of the check for is open on native options probe.</returns>
+            /// <param name="dialog">Captured native dialog handle whose continued existence is being checked.</param>
+            /// <returns><see langword="true"/> only while that exact handle still identifies this process's Options dialog.</returns>
             public bool IsOpen(IntPtr dialog)
             {
                 bool present = false;
