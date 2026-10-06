@@ -255,7 +255,8 @@ namespace VBAi.Tests.Integration
             {
                 bool handoffSuccess = false;
                 if (id == "checkpointRestore" && !ObserveHandoffTerminal(out handoffSuccess)) { Thread.Sleep(50); continue; }
-                string text = Text("status"); bool idle = Leaf("compare").Current.IsEnabled || Leaf("connect").Current.IsEnabled;
+                string text = Text("status");
+                bool idle = ObserveIdle(id, control => Leaf(control).Current.IsEnabled);
                 busy |= !idle;
                 if (HasKnownTerminal(id, idle, busy, before, text))
                 {
@@ -309,6 +310,15 @@ namespace VBAi.Tests.Integration
             }
             catch (ElementNotAvailableException) { return false; } // Only a disappearing read-only provider, never an identity refusal.
         }
+        /// <summary>Observes the mandatory comparison control and the active connection fallback.</summary>
+        internal static bool ObserveIdle(string action, Func<string, bool> readEnabled)
+        {
+            if (readEnabled == null) throw new ArgumentNullException(nameof(readEnabled));
+            // The re-shown modal can leave the Connection tab unmaterialized.
+            // Its connection button is required only while observing Connect.
+            return readEnabled("compare") || action == "connect" && readEnabled("connect");
+        }
+
         /// <summary>Requires a recognized result in addition to independently observed enabled controls.</summary>
         internal static bool HasKnownTerminal(string action, bool idle, bool busy, string before, string after)
             => EmbeddedGitUiProtocol.IsTerminal(idle, busy, before, after) && ClassifyTerminal(action, after) != 0;

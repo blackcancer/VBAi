@@ -1,11 +1,54 @@
 # Recorded validation
 
-## Q024/Q027 paused handoff candidate (2026-10-06)
+## Q024 qualified Word workflows and incomplete Q027 matrix (2026-10-06)
 
-Qualification is paused at the maintainer's request. The published source
+Exact source `a07c660eda3b7ddcaab515ea05a9012e79a23634` built in isolation
+without warnings or errors. Product MVID is
+`9cc0f56e-2afd-469f-92c4-71ba6cdf008c`; product SHA-256 is
+`AA7EE85E4F35CC4386C4E9293F5E27BC8AA9E2D7083305C18F2DA61BE3382B90`.
+
+| Exact-candidate validation | Result |
+| --- | --- |
+| Complete default managed suite | 5,567 passed, 0 failed, 234 skipped |
+| Prepared synthetic UI matrix | Nine actions passed; original exits and private-desktop release verified |
+| Q024 ordered Word workflows on `WinSta0\Default` | Three passed: canonical same-name isolation/stale SaveAs refusal, installed owner capture/checkpoint/compare, actual Chat-Git entry and known modal close |
+| Original Word exits | All three normal exits proved within the unchanged 15-second bound |
+| Q027 complete ordered UserForm matrix on `WinSta0\Default` | 12 passed, 12 failed, 28 not run; **not qualified** |
+| Original Excel exits in the successful baseline bank | 24 normal exits recorded; original shutdown of the retained import host is unproved |
+| Coverage collection | Not run; no line or branch percentage claimed |
+
+The Q024 independent receipt pins the candidate, native TRX, original process
+handles and actual chat/desktop proof chains. Q027 completed every saved/fresh
+process baseline. The first owner import reported a correlated success, but the
+following Compare observation failed when the harness required a Connect control
+on an unmaterialized Connection tab. The retained host caused all subsequent
+import cases to refuse launch; dependent banks did not execute. No complete
+post-import state or designer acceptance follows from that reported import result.
+
+Separate recovery observed a settled Compare result, closed the exact disposable
+modal/workbook/Excel once normally and preserved saved disk bytes. This recovery
+does not replace the missing original shutdown receipt or change the failed
+campaign verdict. The original worker exited with failure; temporary HKCU COM
+registration was restored and verified. Both completed owned tasks were removed.
+No trust policy, macro execution, force termination or native mutation retry was
+used. The full strict Q027 auditor cannot complete without the retained host's
+original shutdown receipt; its absence is preserved.
+
+Evidence is retained in
+`artifacts/q024-options-popup-owner-gates-20261006/`,
+`artifacts/q024-options-popup-owner-native-20261006/` and
+`artifacts/q027-options-popup-owner-main-20261006/`.
+The subsequent harness correction observes the mandatory Compare control during
+repository operations and requires the Connect fallback during connection only.
+Its regression cases and any later candidate require their own complete gate.
+Q027 and release-wide acceptance remain open.
+
+## Previous Q024/Q027 paused handoff candidate (2026-10-06)
+
+At this earlier checkpoint, qualification was paused at the maintainer's request. The published source
 consolidates the owned-modal Git handoff, strict imported-form resource and font
 checks, bounded diagnostics, native fixtures and their regression mirrors.
-No new Office campaign was started after the pause.
+No new Office campaign had been started at that checkpoint.
 
 The exact tested source is `5f0f605c6ca003b822b888452734a956e335da4a`.
 Its isolated Debug solution build completed without warnings or errors.
