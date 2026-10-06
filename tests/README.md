@@ -1431,6 +1431,14 @@ testhost collection diagnostic. This does not prove native RCW release; the
 original host handles must still observe normal exit within the unchanged
 five-second bound. An exit after that deadline remains a failed bank.
 
+Before any model request, the original isolated Ollama backend enters a private
+Windows job. Its future calculation workers inherit that job. Once requests
+settle and Office exits, shutdown terminates only that synthetic job and verifies
+empty kernel membership, alongside the original backend exit handle. Stopping
+only `ollama.exe` is insufficient: orphan `llama-server.exe` workers can retain
+large committed buffers. There is no kill-on-close flag, process-name sweep or
+shutdown of a personal/default backend; uncertain native work is retained.
+
 `tools/tests/Review-Q028Wire.py --self-test` validates refusal oracles offline.
 Its campaign review binds exact wire arguments/results, the original worker/host
 lifecycle and settings/registration restoration. Later passes do not explain

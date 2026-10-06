@@ -47,7 +47,7 @@ if ($Prepare) {
         'OfficeVbeFixtureDesktopTests','OfficeVbeFixtureDesktopStartupRecoveryTests','OfficeVbeFixtureDesktopAddInConnectionTests','OutlookPrivateDesktopTests',
         'OfficeOwnedShutdownEvidenceTests','OutlookVbaTestFixtureShutdownTests','OllamaOfficeUiTests','OllamaOfficeDesktopTests','ChatStreamReaderTests',
         'ExcelVbeFixtureProjectReadinessTests','OfficeVbeFixtureMainWordDesktopTests','IsolatedTestDesktopMainTests',
-        'VbeProjectHostPathTests','ProjectResolverTests','OfficeVbeFixtureShutdownTests')
+        'VbeProjectHostPathTests','ProjectResolverTests','OfficeVbeFixtureShutdownTests','OllamaBackendJobTests')
     $managedFilter = '(TestCategory=Unit|TestCategory=Scenario)&TestCategory!=OllamaUi&(' +
         (($managedClasses | ForEach-Object {'FullyQualifiedName~VBAi.Tests.Unit.'+$_+'.'}) -join '|') +
         '|FullyQualifiedName~VBAi.Tests.NativeExportTraceTests.)'
@@ -109,7 +109,7 @@ if ($Prepare) {
         Hosts=$hosts;Scenarios=$scenarios;NoRetry=$true;NoDesktopSwitch=$true;NoForceTerminationOfOffice=$true;
         ToolExecutables=$toolExecutables;
         ObserverReferencesDroppedBeforeShutdown=$true;WordSettledScopeGc=$true;WordExitWaitMilliseconds=5000;
-        BackendShutdown='Stop only the exact newly created synthetic headless Ollama server after requests settle; never call this a normal Office exit';
+        BackendShutdown='Stop the private kernel job containing the newly created synthetic backend and future workers after requests settle and Office exits; verify zero job members. No automatic kill on uncertainty; never call this a normal Office exit';
         FrozenFiles=@($files | Select-Object -Unique | ForEach-Object {@{Path=$_;Sha256=(Get-FileHash -LiteralPath $_).Hash}});
         PreparedUtc=[DateTime]::UtcNow.ToString('o')}
     Write-Json (Join-Path $EvidenceRoot 'q028-plan.json') $plan
@@ -132,7 +132,7 @@ $rows = @($plan.Scenarios | ForEach-Object { [pscustomobject]@{Id=$_.Id;Host=$_.
 $ledger = @{State='RUNNING';Qualified=$false;Desktop=if($plan.MainDesktopAuthorized){'Default'}else{$env:VBAi_TEST_DESKTOP_NAME};Scenarios=$rows;ProductMvid=$plan.ProductMvid;ProductSha256=$plan.ProductSha256;StartedUtc=[DateTime]::UtcNow.ToString('o')}
 function Flush { Write-Json $ledgerPath $ledger }
 Flush
-$proxy = $null; $server = $null; $settingsBaseline = $null; $settingsApplied = $null; $registered = $false
+$proxy = $null; $server = $null; $backendJob = $null; $settingsBaseline = $null; $settingsApplied = $null; $registered = $false
 $backup = Join-Path $root 'candidate-registration.clixml'
 $register = Join-Path $plan.Repository 'tools/testing-explorer/Set-TestExplorerCandidate.ps1'
 $settingsFields = @('ProviderName','OllamaEndpoint','OllamaModel','OllamaTemperature','OllamaTopP','VbeEditApproval')
@@ -161,6 +161,8 @@ try {
         $rows[0].State='PASS_REUSED';$rows[0].Trx=$plan.ReuseManaged.Trx;$rows[0].ReusedFrom=$plan.ReuseManaged.Campaign;Flush
     } else { Run-Case $plan.Scenarios[0] $rows[0] }
     if ($rows[0].State -notin @('PASS','PASS_REUSED')) { throw 'Managed gate failed; all real provider/native cases remain NOT_RUN.' }
+    [Reflection.Assembly]::LoadFrom($plan.TestAssembly) | Out-Null
+    $backendJob=New-Object VBAi.Tests.Integration.OllamaBackendJob
     $start = [Diagnostics.ProcessStartInfo]::new($plan.OllamaExe,'serve')
     $start.UseShellExecute=$false;$start.CreateNoWindow=$true;$start.RedirectStandardOutput=$true;$start.RedirectStandardError=$true
     foreach ($key in @($start.EnvironmentVariables.Keys)) {
@@ -176,6 +178,8 @@ try {
     Write-Json (Join-Path $root 'backend-start-intent.json') @{InvocationLimit=1;Exe=$plan.OllamaExe;Port=$plan.BackendPort;ModelDigest=$plan.ModelDigest;Profile='CPU, context8192, parallel1, cloud disabled'}
     if (-not $server.Start()) { throw 'Backend creation returned false; no retry.' }
     $originalBackendHandle=$server.Handle
+    $backendJob.Attach($server)
+    Write-Json (Join-Path $root 'backend-job-attached.json') @{OriginalBackendPid=$server.Id;Members=$backendJob.ReadProcessIds();BeforeAnyModelRequest=$true;KillOnClose=$false;MembershipSource='Private kernel job'}
     $stdout=$server.StandardOutput.ReadToEndAsync();$stderr=$server.StandardError.ReadToEndAsync()
     Write-Json (Join-Path $root 'backend-started.json') @{ProcessId=$server.Id;StartUtc=$server.StartTime.ToUniversalTime().ToString('o');OriginalHandleHeld=($originalBackendHandle -ne [IntPtr]::Zero)}
     $base='http://127.0.0.1:'+$plan.BackendPort
@@ -272,18 +276,22 @@ finally {
                 $proxy.Dispose();$ledger.ProxyClosed=$true
             } catch { $ledger.ProxyCloseError=$_.Exception.ToString();$ledger.State='FAILED_OR_BLOCKED' }
         }
-        if ($server -and -not $server.HasExited -and (-not $proxy -or $ledger.ProxyClosed)) {
-            # This ephemeral server has no user requests, documents or shutdown API. Its held
-            # Process object identifies the one process created above; no PID/name sweep is used.
-            Write-Json (Join-Path $root 'backend-stop-intent.json') @{ProcessId=$server.Id;OriginalHandleHeld=($originalBackendHandle -ne [IntPtr]::Zero);OutstandingProxyRequests=0;NoOfficeTermination=$true}
-            $server.Kill()
+        if ($server -and (-not $proxy -or $ledger.ProxyClosed)) {
+          try {
+            # A private job binds the backend and all future calculation workers. Stopping
+            # only ollama.exe leaks llama-server.exe and its multi-gigabyte committed buffers.
+            Write-Json (Join-Path $root 'backend-stop-intent.json') @{ProcessId=$server.Id;OriginalHandleHeld=($originalBackendHandle -ne [IntPtr]::Zero);OutstandingProxyRequests=0;NoOfficeTermination=$true;Members=$backendJob.ReadProcessIds();ForcedSyntheticJob=$true}
+            $stoppedMembers=$backendJob.Stop($true,$true)
+            Write-Json (Join-Path $root 'backend-job-exit.json') @{StoppedMembers=$stoppedMembers;RemainingMembers=$backendJob.ReadProcessIds();ExitObserved=$true;MembershipSource='Private kernel job';NoOfficeTermination=$true;ForcedSyntheticJob=$true;Utc=[DateTime]::UtcNow.ToString('o')}
             if (-not $server.WaitForExit(15000)) { $ledger.BackendRetainedPid=$server.Id;$ledger.State='FAILED_OR_UNCERTAIN' }
             else {
                 Write-Json (Join-Path $root 'backend-exit.json') @{ProcessId=$server.Id;ExitCode=$server.ExitCode;Scope='Owned headless test server only; not normal Office exit'}
                 if ($stdout.Wait(5000)) { [IO.File]::WriteAllText((Join-Path $root 'backend.stdout.log'),$stdout.GetAwaiter().GetResult()) }
                 if ($stderr.Wait(5000)) { [IO.File]::WriteAllText((Join-Path $root 'backend.stderr.log'),$stderr.GetAwaiter().GetResult()) }
                 $server.Dispose();$ledger.BackendStopped=$true
+                $backendJob.Dispose();$ledger.BackendWorkersStopped=$true
             }
+          } catch { $ledger.BackendStopError=$_.Exception.ToString();$ledger.State='FAILED_OR_UNCERTAIN';$ledger.BackendRetainedPid=$server.Id }
         }
     } else { $ledger.RetainedOffice=@($ownedOfficeLive.Name);$ledger.State='FAILED_OR_UNCERTAIN';$ledger.NoTeardownAfterUncertainty=$true }
     $ledger.CompletedUtc=[DateTime]::UtcNow.ToString('o');Flush

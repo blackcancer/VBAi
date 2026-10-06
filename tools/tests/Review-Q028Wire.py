@@ -298,6 +298,24 @@ def require_native_transcript(observations, embedded, bank):
     require(composer and send and index < composer[0] < send[0], "Native transcript was not bound before first composer/send")
 
 
+def require_backend_shutdown(campaign, attached, intent, terminal):
+    require(campaign.get("BackendWorkersStopped") is True, "Backend calculation workers were not stopped")
+    backend = attached.get("OriginalBackendPid")
+    require(type(backend) is int and backend > 0 and attached.get("BeforeAnyModelRequest") is True and
+            attached.get("KillOnClose") is False and attached.get("MembershipSource") == "Private kernel job" and
+            attached.get("Members") == [backend], "Backend was not exclusively contained before model requests")
+    members = intent.get("Members")
+    require(isinstance(members, list) and backend in members and
+            all(type(pid) is int and pid > 0 for pid in members) and len(set(members)) == len(members) and
+            intent.get("ProcessId") == backend and intent.get("OriginalHandleHeld") is True and
+            intent.get("OutstandingProxyRequests") == 0 and intent.get("NoOfficeTermination") is True and
+            intent.get("ForcedSyntheticJob") is True, "Backend stop ownership/settlement differs")
+    require(terminal.get("MembershipSource") == "Private kernel job" and terminal.get("ExitObserved") is True and
+            terminal.get("NoOfficeTermination") is True and terminal.get("ForcedSyntheticJob") is True and
+            terminal.get("StoppedMembers") == members and terminal.get("RemainingMembers") == [],
+            "Backend job still contains workers or its exit proof differs")
+
+
 def review(root):
     plan, campaign = read_json(root / "q028-plan.json"), read_json(root / "campaign.json")
     require(campaign["State"] == "FUNCTIONAL_MATRIX_PASS_PENDING_OFFLINE_WIRE_REVIEW", "Functional matrix is not complete")
@@ -306,6 +324,8 @@ def review(root):
     require(campaign.get("SettingsRestored") is True and campaign.get("ProxyClosed") is True and campaign.get("BackendStopped") is True,
             "Campaign resources are not restored")
     registration = require_registration(campaign)
+    require_backend_shutdown(campaign, read_json(root / "backend-job-attached.json"),
+                             read_json(root / "backend-stop-intent.json"), read_json(root / "backend-job-exit.json"))
     require_lifecycle(root, plan, campaign)
     records = []
     for request_path in sorted((root / "embedded-wire").glob("*-request.json")):
@@ -482,6 +502,29 @@ class OracleTests(unittest.TestCase):
     def test_empty_matrix_refused(self):
         with self.assertRaises(ValueError):
             require_matrix({"Hosts": [], "Scenarios": []}, {"Scenarios": []})
+
+    def test_backend_descendants_require_exact_job_and_empty_terminal_membership(self):
+        campaign = {"BackendWorkersStopped": True}
+        attached = {"OriginalBackendPid": 100, "BeforeAnyModelRequest": True, "KillOnClose": False,
+                    "MembershipSource": "Private kernel job", "Members": [100]}
+        intent = {"Members": [100, 101], "ProcessId": 100, "OriginalHandleHeld": True,
+                  "OutstandingProxyRequests": 0, "NoOfficeTermination": True, "ForcedSyntheticJob": True}
+        terminal = {"MembershipSource": "Private kernel job", "ExitObserved": True, "NoOfficeTermination": True,
+                    "ForcedSyntheticJob": True, "StoppedMembers": [100, 101], "RemainingMembers": []}
+        require_backend_shutdown(campaign, attached, intent, terminal)
+        for change in ({"RemainingMembers": [101]}, {"StoppedMembers": [100]}, {"ExitObserved": False},
+                       {"MembershipSource": "PID name sweep"}, {"NoOfficeTermination": False}):
+            with self.assertRaises(ValueError):
+                require_backend_shutdown(campaign, attached, intent, dict(terminal, **change))
+        for change in ({"BeforeAnyModelRequest": False}, {"KillOnClose": True}, {"Members": [100, 200]}):
+            with self.assertRaises(ValueError):
+                require_backend_shutdown(campaign, dict(attached, **change), intent, terminal)
+        for change in ({"Members": [101]}, {"Members": [100, 100]}, {"OutstandingProxyRequests": 1},
+                       {"OriginalHandleHeld": False}, {"ProcessId": 200}):
+            with self.assertRaises(ValueError):
+                require_backend_shutdown(campaign, attached, dict(intent, **change), terminal)
+        with self.assertRaises(ValueError):
+            require_backend_shutdown({}, attached, intent, terminal)
 
     def test_docked_and_floating_native_sites_are_supported(self):
         observed = {"ProcessId": 10, "Desktop": "private", "HostedToolWindow": True,
