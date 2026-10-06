@@ -202,7 +202,7 @@ namespace VBAi
             finally { finished = true; }
         }
 
-        /// <summary>Requires import owner for git modal session.</summary>
+        /// <summary>Allows native import only while this exact admitted request is executing outside the modal loop.</summary>
         /// <param name="request">Exact request currently admitted by this session.</param>
         internal void RequireImportOwner(Request request)
         {

@@ -32,7 +32,7 @@ namespace VBAi
         /// <summary>Optional assertion called when the awaited result is retrieved.</summary>
         private readonly Action requireOwner;
 
-        /// <summary>Initializes a VbaTestOwnerAwaitable instance with the supplied state.</summary>
+        /// <summary>Wraps a task with a dispatcher and owner-thread assertion for continuations and result access.</summary>
         /// <param name="task">Operation whose completion is observed.</param>
         /// <param name="post">Dispatcher used after asynchronous completion.</param>
         /// <param name="requireOwner">Owner-thread check executed by <see cref="Awaiter.GetResult"/>.</param>
@@ -44,7 +44,7 @@ namespace VBAi
             this.requireOwner = requireOwner ?? throw new ArgumentNullException(nameof(requireOwner));
         }
 
-        /// <summary>Initializes a VbaTestOwnerAwaitable instance with the supplied state.</summary>
+        /// <summary>Wraps a task whose continuations may complete without owner-thread dispatch.</summary>
         /// <param name="task">Task to await without an owning-thread dispatcher.</param>
         private VbaTestOwnerAwaitable(Task<T> task)
         { this.task = task ?? throw new ArgumentNullException(nameof(task)); post = null; requireOwner = null; }
@@ -71,7 +71,7 @@ namespace VBAi
             /// <summary>Owner-thread assertion run before returning the result.</summary>
             private readonly Action requireOwner;
 
-            /// <summary>Initializes a Awaiter instance with the supplied state.</summary>
+            /// <summary>Captures the task and optional continuation dispatch and affinity callbacks.</summary>
             /// <param name="task">Observed operation.</param>
             /// <param name="post">Optional continuation dispatcher.</param>
             /// <param name="requireOwner">Optional thread-affinity assertion.</param>

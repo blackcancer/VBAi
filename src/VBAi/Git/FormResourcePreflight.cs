@@ -123,7 +123,7 @@ namespace VBAi
             /// <summary>Parsed directory entries whose stream chains can be traversed within the validated FAT.</summary>
             private List<Entry> entries;
 
-            /// <summary>Initializes a CompoundFile instance with the supplied state.</summary>
+            /// <summary>Parses the FRX payload into bounded compound-file storage and stream metadata.</summary>
             /// <param name="bytes">FRX backing bytes.</param>
             /// <param name="origin">Absolute start of the CFB payload.</param>
             /// <param name="length">Payload length declared by its LB/08 envelope.</param>

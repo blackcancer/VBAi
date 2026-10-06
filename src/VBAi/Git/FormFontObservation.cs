@@ -79,7 +79,7 @@ namespace VBAi
         /// <summary>Prevents a second deferred native font transfer in the same observation.</summary>
         private bool transferStarted;
 
-        /// <summary>Initializes a FormFontObservation instance with the supplied state.</summary>
+        /// <summary>Creates the observation from a manifest already validated against the active target and candidate.</summary>
         /// <param name="value">Manifest already validated against the active target and candidate.</param>
         private FormFontObservation(Manifest value) { manifest = value; }
 

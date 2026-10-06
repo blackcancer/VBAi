@@ -244,8 +244,8 @@ namespace VBAi
             }
         }
 
-        /// <summary>Handles on visible changed for test explorer window.</summary>
-        /// <param name="e">event args that supplies the e for this operation.</param>
+        /// <summary>Starts or stops the nonexecuting freshness timer when the explorer visibility changes.</summary>
+        /// <param name="e">WinForms event data.</param>
         protected override void OnVisibleChanged(EventArgs e)
         {
             base.OnVisibleChanged(e);
@@ -586,14 +586,14 @@ namespace VBAi
             }
         }
 
-        /// <summary>Requires run owner for test explorer window.</summary>
+        /// <summary>Requires continuation setup and result handling to run on the explorer's owning UI thread.</summary>
         private void RequireRunOwner()
         {
             if (Thread.CurrentThread.ManagedThreadId != ownerThread)
                 throw new InvalidOperationException("The test explorer continuation requires its owning UI thread.");
         }
 
-        /// <summary>Handles initialize run continuation dispatcher for test explorer window.</summary>
+        /// <summary>Creates an independent UI dispatcher that remains alive while an asynchronous run settles.</summary>
         private void InitializeRunContinuationDispatcher()
         {
             RequireRunOwner();
@@ -614,9 +614,9 @@ namespace VBAi
             }
         }
 
-        /// <summary>Runs window disposed for test explorer window.</summary>
-        /// <param name="sender">object that supplies the sender for this operation.</param>
-        /// <param name="e">event args that supplies the e for this operation.</param>
+        /// <summary>Requests cancellation when the explorer closes and releases its run dispatcher only when no run is pending.</summary>
+        /// <param name="sender">WinForms control that raised the event.</param>
+        /// <param name="e">WinForms event data.</param>
         private void RunWindowDisposed(object sender, EventArgs e)
         {
             RequireRunOwner();
@@ -626,10 +626,10 @@ namespace VBAi
             if (!running) ReleaseRunContinuationDispatcher();
         }
 
-        /// <summary>Handles await owner for test explorer window.</summary>
-        /// <typeparam name="T">The type used for t.</typeparam>
-        /// <param name="task">task&lt;t&gt; that supplies the task for this operation.</param>
-        /// <returns>vba test owner awaitable&lt;t&gt; produced by the operation for await owner on test explorer window.</returns>
+        /// <summary>Wraps an asynchronous operation so each continuation resumes through the run-owned UI dispatcher.</summary>
+        /// <typeparam name="T">Result type produced by the owner-thread operation.</typeparam>
+        /// <param name="task">Asynchronous operation whose continuation must resume on the explorer's owning thread.</param>
+        /// <returns>Awaitable that posts continuations through the run dispatcher and verifies thread ownership.</returns>
         private VbaTestOwnerAwaitable<T> AwaitOwner<T>(Task<T> task)
         {
             RequireRunOwner();
@@ -638,9 +638,9 @@ namespace VBAi
             return new VbaTestOwnerAwaitable<T>(task, action => dispatcher.BeginInvoke(action), RequireRunOwner);
         }
 
-        /// <summary>Handles accept result for test explorer window.</summary>
-        /// <param name="result">vba test result that supplies the result for this operation.</param>
-        /// <param name="revision">Text that supplies the revision value. Use the format required by the calling operation.</param>
+        /// <summary>Stores one completed test result and refreshes the visible tree on the owning UI thread.</summary>
+        /// <param name="result">Completed result to display; results without a test descriptor are ignored.</param>
+        /// <param name="revision">Project revision associated with this result, used to mark stale results.</param>
         private void AcceptResult(VbaTestResult result, string revision)
         {
             if (result?.Test == null) return;
@@ -733,38 +733,38 @@ namespace VBAi
             exportReport.Enabled = copyReport.Enabled;
         }
 
-        /// <summary>Handles refresh click for test explorer window.</summary>
-        /// <param name="sender">object that supplies the sender for this operation.</param>
-        /// <param name="e">event args that supplies the e for this operation.</param>
+        /// <summary>Refreshes the open project list and current discovery catalog.</summary>
+        /// <param name="sender">WinForms control that raised the event.</param>
+        /// <param name="e">WinForms event data.</param>
         private void Refresh_Click(object sender, EventArgs e) => RefreshProjects();
 
-        /// <summary>Handles project list selected index changed for test explorer window.</summary>
-        /// <param name="sender">object that supplies the sender for this operation.</param>
-        /// <param name="e">event args that supplies the e for this operation.</param>
+        /// <summary>Discovers tests for the newly selected project.</summary>
+        /// <param name="sender">WinForms control that raised the event.</param>
+        /// <param name="e">WinForms event data.</param>
         private void ProjectList_SelectedIndexChanged(object sender, EventArgs e) => DiscoverSelectedProject();
 
-        /// <summary>Handles project list format for test explorer window.</summary>
-        /// <param name="sender">object that supplies the sender for this operation.</param>
-        /// <param name="e">list control convert event args that supplies the e for this operation.</param>
+        /// <summary>Formats a project row with its host path when one is available.</summary>
+        /// <param name="sender">WinForms control that raised the event.</param>
+        /// <param name="e">list control convert WinForms event data.</param>
         private void ProjectList_Format(object sender, ListControlConvertEventArgs e)
         {
             if (e.ListItem is VbaTestProjectSnapshot project)
                 e.Value = project.Name + (string.IsNullOrEmpty(project.HostPath) ? "" : " — " + project.HostPath);
         }
 
-        /// <summary>Handles filter changed for test explorer window.</summary>
-        /// <param name="sender">object that supplies the sender for this operation.</param>
-        /// <param name="e">event args that supplies the e for this operation.</param>
+        /// <summary>Rebuilds the visible test tree when search or outcome filters change.</summary>
+        /// <param name="sender">WinForms control that raised the event.</param>
+        /// <param name="e">WinForms event data.</param>
         private void Filter_Changed(object sender, EventArgs e) { if (!running) RebuildTree(); }
 
-        /// <summary>Handles test tree after select for test explorer window.</summary>
-        /// <param name="sender">object that supplies the sender for this operation.</param>
-        /// <param name="e">tree view event args that supplies the e for this operation.</param>
+        /// <summary>Updates selected source details and run-button availability after tree selection.</summary>
+        /// <param name="sender">WinForms control that raised the event.</param>
+        /// <param name="e">tree view WinForms event data.</param>
         private void TestTree_AfterSelect(object sender, TreeViewEventArgs e) { if (!rebuilding) { treeSelection = ReadTreeSelection(e.Node); UpdateDetails(); UpdateButtons(); } }
 
-        /// <summary>Handles test tree after check for test explorer window.</summary>
-        /// <param name="sender">object that supplies the sender for this operation.</param>
-        /// <param name="e">tree view event args that supplies the e for this operation.</param>
+        /// <summary>Propagates a checked test or group state to affected descendants, then refreshes run-button availability.</summary>
+        /// <param name="sender">WinForms control that raised the event.</param>
+        /// <param name="e">tree view WinForms event data.</param>
         private void TestTree_AfterCheck(object sender, TreeViewEventArgs e)
         {
             if (rebuilding) return;
@@ -780,9 +780,9 @@ namespace VBAi
             UpdateButtons();
         }
 
-        /// <summary>Handles descendants and self for test explorer window.</summary>
-        /// <param name="node">tree node that supplies the node for this operation.</param>
-        /// <returns>i enumerable&lt;tree node&gt; produced by the operation for descendants and self on test explorer window.</returns>
+        /// <summary>Enumerates a tree node before recursively yielding each nested child.</summary>
+        /// <param name="node">Root node whose entire subtree is traversed.</param>
+        /// <returns>Nodes in pre-order, beginning with the supplied node itself.</returns>
         private static IEnumerable<TreeNode> DescendantsAndSelf(TreeNode node)
         {
             yield return node;
@@ -801,34 +801,34 @@ namespace VBAi
             }
         }
 
-        /// <summary>Runs selected click for test explorer window.</summary>
-        /// <param name="sender">object that supplies the sender for this operation.</param>
-        /// <param name="e">event args that supplies the e for this operation.</param>
+        /// <summary>Starts the currently checked and selected test set.</summary>
+        /// <param name="sender">WinForms control that raised the event.</param>
+        /// <param name="e">WinForms event data.</param>
         private async void RunSelected_Click(object sender, EventArgs e) => await RunSelectedAsync();
 
-        /// <summary>Runs scope click for test explorer window.</summary>
-        /// <param name="sender">object that supplies the sender for this operation.</param>
-        /// <param name="e">event args that supplies the e for this operation.</param>
+        /// <summary>Starts all tests in the current visible scope.</summary>
+        /// <param name="sender">WinForms control that raised the event.</param>
+        /// <param name="e">WinForms event data.</param>
         private async void RunScope_Click(object sender, EventArgs e) => await RunScopeAsync();
 
-        /// <summary>Handles rerun failed click for test explorer window.</summary>
-        /// <param name="sender">object that supplies the sender for this operation.</param>
-        /// <param name="e">event args that supplies the e for this operation.</param>
+        /// <summary>Starts a run for visible tests with nonstale Failed or Error results.</summary>
+        /// <param name="sender">WinForms control that raised the event.</param>
+        /// <param name="e">WinForms event data.</param>
         private async void RerunFailed_Click(object sender, EventArgs e) => await RerunFailedAsync();
 
-        /// <summary>Runs selected coverage click for test explorer window.</summary>
-        /// <param name="sender">object that supplies the sender for this operation.</param>
-        /// <param name="e">event args that supplies the e for this operation.</param>
+        /// <summary>Starts coverage measurement for checked and selected tests in an owned copy.</summary>
+        /// <param name="sender">WinForms control that raised the event.</param>
+        /// <param name="e">WinForms event data.</param>
         private async void RunSelectedCoverage_Click(object sender, EventArgs e) => await RunSelectedCoverageAsync();
 
-        /// <summary>Runs scope coverage click for test explorer window.</summary>
-        /// <param name="sender">object that supplies the sender for this operation.</param>
-        /// <param name="e">event args that supplies the e for this operation.</param>
+        /// <summary>Starts coverage measurement for the current visible scope in an owned copy.</summary>
+        /// <param name="sender">WinForms control that raised the event.</param>
+        /// <param name="e">WinForms event data.</param>
         private async void RunScopeCoverage_Click(object sender, EventArgs e) => await RunScopeCoverageAsync();
 
-        /// <summary>Stops click for test explorer window.</summary>
-        /// <param name="sender">object that supplies the sender for this operation.</param>
-        /// <param name="e">event args that supplies the e for this operation.</param>
+        /// <summary>Requests cooperative cancellation and waits for the current test's verified result.</summary>
+        /// <param name="sender">WinForms control that raised the event.</param>
+        /// <param name="e">WinForms event data.</param>
         private void Stop_Click(object sender, EventArgs e)
         {
             cancellation?.Cancel();
@@ -836,41 +836,41 @@ namespace VBAi
             UpdateButtons();
         }
 
-        /// <summary>Handles source click for test explorer window.</summary>
-        /// <param name="sender">object that supplies the sender for this operation.</param>
-        /// <param name="e">event args that supplies the e for this operation.</param>
+        /// <summary>Navigates to the selected test only when a current catalog and test descriptor are available.</summary>
+        /// <param name="sender">WinForms control that raised the event.</param>
+        /// <param name="e">WinForms event data.</param>
         private void Source_Click(object sender, EventArgs e)
         {
             if (running || catalog == null || !(testTree.SelectedNode?.Tag is VbaTestDescriptor test)) return;
             try { service.Navigate(catalog, test); } catch (Exception ex) { status.Text = ex.Message; }
         }
 
-        /// <summary>Handles test tree node mouse double click for test explorer window.</summary>
-        /// <param name="sender">object that supplies the sender for this operation.</param>
-        /// <param name="e">tree node mouse click event args that supplies the e for this operation.</param>
+        /// <summary>Opens the source location for the double-clicked test node.</summary>
+        /// <param name="sender">WinForms control that raised the event.</param>
+        /// <param name="e">tree node mouse click WinForms event data.</param>
         private void TestTree_NodeMouseDoubleClick(object sender, TreeNodeMouseClickEventArgs e) => Source_Click(sender, e);
 
-        /// <summary>Handles report text for test explorer window.</summary>
-        /// <returns>Text produced by the operation for report text on test explorer window.</returns>
+        /// <summary>Returns the text from the selected report tab.</summary>
+        /// <returns>Compact JSON, human-readable report, or empty text when a nonreport tab is selected.</returns>
         private string ReportText() => resultTabs.SelectedTab == compactTab ? compactReport.Text : resultTabs.SelectedTab == humanTab ? humanReport.Text : "";
 
-        /// <summary>Handles result tabs selected index changed for test explorer window.</summary>
-        /// <param name="sender">object that supplies the sender for this operation.</param>
-        /// <param name="e">event args that supplies the e for this operation.</param>
+        /// <summary>Refreshes copy/export availability when the selected report tab changes.</summary>
+        /// <param name="sender">WinForms control that raised the event.</param>
+        /// <param name="e">WinForms event data.</param>
         private void ResultTabs_SelectedIndexChanged(object sender, EventArgs e) => UpdateButtons();
 
-        /// <summary>Handles copy report click for test explorer window.</summary>
-        /// <param name="sender">object that supplies the sender for this operation.</param>
-        /// <param name="e">event args that supplies the e for this operation.</param>
+        /// <summary>Copies the selected nonempty report when no run is active.</summary>
+        /// <param name="sender">WinForms control that raised the event.</param>
+        /// <param name="e">WinForms event data.</param>
         private void CopyReport_Click(object sender, EventArgs e)
         {
             if (running || ReportText().Length == 0) return;
             try { WriteReportClipboard(ReportText()); } catch (Exception ex) { status.Text = ex.Message; }
         }
 
-        /// <summary>Handles export report click for test explorer window.</summary>
-        /// <param name="sender">object that supplies the sender for this operation.</param>
-        /// <param name="e">event args that supplies the e for this operation.</param>
+        /// <summary>Exports the selected report as UTF-8 without a BOM.</summary>
+        /// <param name="sender">WinForms control that raised the event.</param>
+        /// <param name="e">WinForms event data.</param>
         private void ExportReport_Click(object sender, EventArgs e)
         {
             if (running) return;
@@ -885,28 +885,28 @@ namespace VBAi
             catch (Exception ex) { if (!IsDisposed && !Disposing) status.Text = ex.Message; }
         }
 
-        /// <summary>Handles select report export path for test explorer window.</summary>
-        /// <param name="owner">i win32 window that supplies the owner for this operation.</param>
-        /// <param name="compact">Indicates whether compact is enabled.</param>
-        /// <param name="show">func&lt;save file dialog, i win32 window, dialog result&gt; that supplies the show for this operation.</param>
-        /// <returns>Text produced by the operation for select report export path on test explorer window.</returns>
+        /// <summary>Prompts for a file path and format matching the selected report representation.</summary>
+        /// <param name="owner">Window that owns the save-file dialog.</param>
+        /// <param name="compact">True to suggest a JSON filename and JSON-only filter; false selects plain text.</param>
+        /// <param name="show">Optional dialog-display callback for noninteractive verification.</param>
+        /// <returns>Chosen filename after confirmation, or null when the dialog is cancelled.</returns>
         internal static string SelectReportExportPath(IWin32Window owner, bool compact, Func<SaveFileDialog, IWin32Window, DialogResult> show = null)
         {
             using (var dialog = new SaveFileDialog { FileName = compact ? "vba-test-results.json" : "vba-test-results.txt", Filter = compact ? "JSON (*.json)|*.json" : "Text (*.txt)|*.txt" })
                 return (show == null ? dialog.ShowDialog(owner) : show(dialog, owner)) == DialogResult.OK ? dialog.FileName : null;
         }
 
-        /// <summary>Handles install support click for test explorer window.</summary>
-        /// <param name="sender">object that supplies the sender for this operation.</param>
-        /// <param name="e">event args that supplies the e for this operation.</param>
+        /// <summary>Requests installation of the reviewed project-local test support module, then refreshes discovery.</summary>
+        /// <param name="sender">WinForms control that raised the event.</param>
+        /// <param name="e">WinForms event data.</param>
         private void InstallSupport_Click(object sender, EventArgs e)
         {
             if (running || service == null || catalog == null) return;
             try { service.InstallSupport(catalog); RefreshProjects(); } catch (Exception ex) { status.Text = ex.Message; }
         }
 
-        /// <summary>Handles on form closing for test explorer window.</summary>
-        /// <param name="e">form closing event args that supplies the e for this operation.</param>
+        /// <summary>Defers closing during a run until cancellation settles; blocks closing during coverage review.</summary>
+        /// <param name="e">form closing WinForms event data.</param>
         protected override void OnFormClosing(FormClosingEventArgs e)
         {
             if (running) { e.Cancel = true; closeAfterRun = true; Stop_Click(this, EventArgs.Empty); }

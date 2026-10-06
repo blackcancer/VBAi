@@ -32,7 +32,7 @@ namespace VBAi
         /// <value>True forbids replay because the execution outcome is unknown.</value>
         internal bool Uncertain { get; }
 
-        /// <summary>Initializes a VbaTestInvocationException instance with the supplied state.</summary>
+        /// <summary>Captures the failure phase and whether a native invocation may have completed without a receipt.</summary>
         /// <param name="message">Diagnostic describing the refusal or uncertain native completion.</param>
         /// <param name="uncertain">True only when dispatch may have occurred without a verified receipt.</param>
         /// <param name="inner">Underlying failure, if one was caught.</param>
@@ -50,7 +50,7 @@ namespace VBAi
         /// <summary>Prevents overlapping runs through the same runner instance.</summary>
         private bool active;
 
-        /// <summary>Initializes a VbaTestRunner instance with the supplied state.</summary>
+        /// <summary>Creates a runner bound to the host adapter that owns validation and native invocation.</summary>
         /// <param name="host">Execution adapter that validates and invokes procedures on the correct host thread.</param>
         internal VbaTestRunner(IVbaTestExecutionHost host) { this.host = host ?? throw new ArgumentNullException(nameof(host)); }
 

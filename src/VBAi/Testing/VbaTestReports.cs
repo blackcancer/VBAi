@@ -121,7 +121,7 @@ namespace VBAi
         internal static int? NextOffset(int offset, int limit, int total) =>
             offset >= total || total - offset <= limit ? (int?)null : offset + limit;
 
-        /// <summary>Returns the largest result or coverage collection size used for shared paging.</summary>
+        /// <summary>Returns the maximum collection length so result and coverage pages share a stable offset.</summary>
         /// <param name="run">Run whose results and optional coverage arrays are measured.</param>
         /// <returns>Maximum item count across those collections.</returns>
         internal static int PageTotal(VbaTestRun run) => Math.Max(run.Results.Count, CoverageTotal(run.Coverage));

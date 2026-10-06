@@ -11,20 +11,20 @@ namespace VBAi
     {
 
         /// <summary>Returns the seven-field pending call for this owning STA and support signature.</summary>
-        /// <param name="supportVersion">Text that supplies the support version value. Use the format required by the calling operation.</param>
-        /// <param name="supportSignature">Text that supplies the support signature value. Use the format required by the calling operation.</param>
-        /// <returns>object produced by the operation for request on i vba test runtime.</returns>
+        /// <param name="supportVersion">Version reported by the generated test support module.</param>
+        /// <param name="supportSignature">Signature reported by that module for this test attempt.</param>
+        /// <returns>Pending attempt fields for the calling VBA thread, or an empty result when the support contract does not match.</returns>
         [DispId(1)] object Request(string supportVersion, string supportSignature);
 
         /// <summary>Publishes one verdict bound to the claimed nonce, revision, run and test.</summary>
-        /// <param name="nonce">Text that supplies the nonce value. Use the format required by the calling operation.</param>
-        /// <param name="revision">Text that supplies the revision value. Use the format required by the calling operation.</param>
-        /// <param name="runId">Text that supplies the run id value. Use the format required by the calling operation.</param>
-        /// <param name="testId">Text that supplies the test id value. Use the format required by the calling operation.</param>
-        /// <param name="status">Text that supplies the status value. Use the format required by the calling operation.</param>
-        /// <param name="message">Text that supplies the message value. Use the format required by the calling operation.</param>
-        /// <param name="errorNumber">int that supplies the error number for this operation.</param>
-        /// <returns>Boolean indicating the result of the check for publish on i vba test runtime.</returns>
+        /// <param name="nonce">One-use nonce returned by <see cref="Request"/> for this attempt.</param>
+        /// <param name="revision">Project revision attached to the dispatched attempt.</param>
+        /// <param name="runId">Run identifier attached to the dispatched attempt.</param>
+        /// <param name="testId">Discovered test identifier being reported.</param>
+        /// <param name="status">Supported terminal verdict such as Passed, Failed, or Skipped.</param>
+        /// <param name="message">Bounded diagnostic text associated with the verdict.</param>
+        /// <param name="errorNumber">VBA error number, or zero when no VBA error occurred.</param>
+        /// <returns>True only when the complete verdict matches the pending attempt and is accepted once.</returns>
         [DispId(2)] bool Publish(string nonce, string revision, string runId, string testId, string status, string message, int errorNumber);
     }
 
@@ -34,13 +34,13 @@ namespace VBAi
     public sealed class VbaTestRuntime : IVbaTestRuntime
     {
 
-        /// <summary>Maintains the pending state for vba test runtime.</summary>
+        /// <summary>Sink currently exposed to the active test on this VBA thread; never shared across threads.</summary>
         [ThreadStatic] private static VbaTestResultSink pending;
 
-        /// <summary>Maintains the sink state for vba test runtime.</summary>
+        /// <summary>Sink bound to this callback handle's single dispatched attempt.</summary>
         private readonly VbaTestResultSink sink;
 
-        /// <summary>Maintains the binding state for vba test runtime.</summary>
+        /// <summary>Opaque binding token minted by the sink when this handle is constructed.</summary>
         private readonly string binding;
 
         /// <summary>Binds only to an already dispatched attempt on the calling VBA thread.</summary>
@@ -51,28 +51,28 @@ namespace VBAi
         }
 
         /// <inheritdoc/>
-        /// <summary>Handles request for vba test runtime.</summary>
-        /// <param name="supportVersion">Text that supplies the support version value. Use the format required by the calling operation.</param>
-        /// <param name="supportSignature">Text that supplies the support signature value. Use the format required by the calling operation.</param>
-        /// <returns>object produced by the operation for request on vba test runtime.</returns>
+        /// <summary>Reads pending attempt data only when generated support version and signature match.</summary>
+        /// <param name="supportVersion">Version reported by the generated support module.</param>
+        /// <param name="supportSignature">Signature reported by the same support module.</param>
+        /// <returns>Seven-field pending call data, or an empty response when the contract is stale or mismatched.</returns>
         public object Request(string supportVersion, string supportSignature) => sink.RequestLocal(binding, supportVersion, supportSignature);
 
         /// <inheritdoc/>
-        /// <summary>Handles publish for vba test runtime.</summary>
-        /// <param name="nonce">Text that supplies the nonce value. Use the format required by the calling operation.</param>
-        /// <param name="revision">Text that supplies the revision value. Use the format required by the calling operation.</param>
-        /// <param name="runId">Text that supplies the run id value. Use the format required by the calling operation.</param>
-        /// <param name="testId">Text that supplies the test id value. Use the format required by the calling operation.</param>
-        /// <param name="status">Text that supplies the status value. Use the format required by the calling operation.</param>
-        /// <param name="message">Text that supplies the message value. Use the format required by the calling operation.</param>
-        /// <param name="errorNumber">int that supplies the error number for this operation.</param>
-        /// <returns>Boolean indicating the result of the check for publish on vba test runtime.</returns>
+        /// <summary>Accepts a verdict only for this handle's current nonce, revision, run, and test.</summary>
+        /// <param name="nonce">One-use nonce supplied by the pending call.</param>
+        /// <param name="revision">Revision supplied by the pending call.</param>
+        /// <param name="runId">Run ID supplied by the pending call.</param>
+        /// <param name="testId">Test ID supplied by the pending call.</param>
+        /// <param name="status">Terminal status token from the supported verdict set.</param>
+        /// <param name="message">Diagnostic text to attach to the result.</param>
+        /// <param name="errorNumber">VBA error number, or zero for a non-error result.</param>
+        /// <returns>True when the sink accepts this verdict; duplicate or mismatched callbacks return false.</returns>
         public bool Publish(string nonce, string revision, string runId, string testId, string status, string message, int errorNumber)
             => sink.PublishLocal(binding, nonce, revision, runId, testId, status, message, errorNumber);
 
-        /// <summary>Handles expose for vba test runtime.</summary>
-        /// <param name="value">vba test result sink that supplies the value for this operation.</param>
-        /// <returns>i disposable produced by the operation for expose on vba test runtime.</returns>
+        /// <summary>Temporarily exposes a result sink so a COM callback can bind on the current VBA thread.</summary>
+        /// <param name="value">Sink for the single active test attempt.</param>
+        /// <returns>Scope that clears the thread-local exposure on disposal by the same thread.</returns>
         internal static IDisposable Expose(VbaTestResultSink value)
         {
             if (value == null) throw new ArgumentNullException(nameof(value));
@@ -82,18 +82,18 @@ namespace VBAi
             return new Exposure(value);
         }
 
-        /// <summary>Owns the exposure state and operations.</summary>
+        /// <summary>Revokes one thread-local sink exposure and enforces same-thread disposal.</summary>
         private sealed class Exposure : IDisposable
         {
 
-            /// <summary>Maintains the owner state for exposure.</summary>
+            /// <summary>Managed thread ID that created this exposure scope.</summary>
             private readonly int owner = Thread.CurrentThread.ManagedThreadId;
 
-            /// <summary>Maintains the value state for exposure.</summary>
+            /// <summary>Sink whose pending thread-local exposure this scope owns.</summary>
             private VbaTestResultSink value;
 
-            /// <summary>Initializes a Exposure instance with the supplied state.</summary>
-            /// <param name="value">vba test result sink that supplies the value for this operation.</param>
+            /// <summary>Captures the sink whose exposure this scope must revoke.</summary>
+            /// <param name="value">Sink installed in the thread-local pending slot.</param>
             internal Exposure(VbaTestResultSink value) { this.value = value; }
 
             /// <summary>Disposes  for exposure.</summary>

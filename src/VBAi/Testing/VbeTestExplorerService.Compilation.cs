@@ -142,10 +142,10 @@ namespace VBAi
             return StartCompilationTimer(tick, timer => timer.Start());
         }
 
-        /// <summary>Starts compilation timer for vbe test explorer service.</summary>
-        /// <param name="tick">action that supplies the tick for this operation.</param>
-        /// <param name="start">action&lt;timer&gt; that supplies the start for this operation.</param>
-        /// <returns>i disposable produced by the operation for start compilation timer on vbe test explorer service.</returns>
+        /// <summary>Creates a 50 ms WinForms timer and arranges for the supplied owner-thread polling callback.</summary>
+        /// <param name="tick">Compilation observation performed on every timer tick.</param>
+        /// <param name="start">Starts the timer; an exception disposes it before being rethrown.</param>
+        /// <returns>Timer lifetime; disposing detaches the event handler and stops the timer.</returns>
         internal static IDisposable StartCompilationTimer(Action tick, Action<Timer> start)
         {
             var timer = new Timer { Interval = 50 };

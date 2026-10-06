@@ -8,7 +8,7 @@ namespace VBAi
     internal sealed partial class TestSupportReviewDialog : Form
     {
 
-        /// <summary>Initializes a TestSupportReviewDialog instance with the supplied state.</summary>
+        /// <summary>Builds the support-source review dialog and its fixed comparison layout.</summary>
         public TestSupportReviewDialog()
         {
             InitializeComponent();
