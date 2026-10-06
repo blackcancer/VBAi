@@ -15,30 +15,30 @@ namespace VBAi
     internal sealed class OwnerGitQualification
     {
 
-        /// <summary>Maintains the session state for owner git qualification.</summary>
+        /// <summary>Connected VBE session used to revalidate the live owner and approved project before each step.</summary>
         private readonly VbeSession session;
 
-        /// <summary>Identifies the connected pid associated with owner git qualification.</summary>
+        /// <summary>Host process ID captured when the bridge session connected; PID reuse is rejected by the manifest birth-time check.</summary>
         private readonly int connectedPid;
 
-        /// <summary>Keeps the manifest path path available to owner git qualification.</summary>
+        /// <summary>Environment-configured manifest path captured at connection; the fixture publishes plan contents only after native setup.</summary>
         private readonly string manifestPath;
 
-        /// <summary>Maintains the manifest state for owner git qualification.</summary>
+        /// <summary>Parsed frozen plan retained after its one allowed load and validation.</summary>
         private OwnerGitQualificationManifest manifest;
 
-        /// <summary>Maintains the manifest hash state for owner git qualification.</summary>
+        /// <summary>Digest of the manifest bytes loaded once; later steps require the source manifest to remain unchanged.</summary>
         private string manifestHash;
 
-        /// <summary>Maintains the next step state for owner git qualification.</summary>
+        /// <summary>Index of the next frozen step; advances only after the preceding step reaches a verified terminal receipt.</summary>
         private int nextStep;
 
-        /// <summary>Maintains the quarantined state for owner git qualification.</summary>
+        /// <summary>Prevents further plan execution after uncertain or post-mutation failure.</summary>
         private bool quarantined;
 
-        /// <summary>Initializes a OwnerGitQualification instance with the supplied state.</summary>
-        /// <param name="session">vbe session that supplies the session for this operation.</param>
-        /// <param name="connectedPid">int that supplies the connected pid for this operation.</param>
+        /// <summary>Creates a qualification runner bound to the connected VBE session and host process identity.</summary>
+        /// <param name="session">Live session used to verify the exact project and VBE owner.</param>
+        /// <param name="connectedPid">Host process ID recorded when this bridge session was established.</param>
         internal OwnerGitQualification(VbeSession session, int connectedPid)
         {
             this.session = session;
@@ -267,13 +267,13 @@ namespace VBAi
         }
     }
 
-    /// <summary>Owns the vbe session state and operations.</summary>
+    /// <summary>Exposes narrowly scoped owner-window and active-project checks for the frozen Git qualification runner.</summary>
     internal sealed partial class VbeSession
     {
 
-        /// <summary>Handles git owner handle for vbe session.</summary>
-        /// <param name="project">Text that supplies the project value. Use the format required by the calling operation.</param>
-        /// <returns>long produced by the operation for git owner handle on vbe session.</returns>
+        /// <summary>Resolves the selected project's VBE MainWindow handle while releasing every acquired COM reference.</summary>
+        /// <param name="project">Exact project selector already authorized by this session.</param>
+        /// <returns>Native VBE main-window handle as a 64-bit integer.</returns>
         internal long GitOwnerHandle(string project)
         {
             object selected = null, editor = null, main = null;
@@ -289,10 +289,10 @@ namespace VBAi
             finally { FormFontRestoration.ReleaseOwnedReferences(new[] { selected, editor, main }, ReleaseOwnerReference, primary); }
         }
 
-        /// <summary>Handles git active project matches for vbe session.</summary>
-        /// <param name="project">Text that supplies the project value. Use the format required by the calling operation.</param>
-        /// <param name="path">Path used for the path being processed.</param>
-        /// <returns>Boolean indicating the result of the check for git active project matches on vbe session.</returns>
+        /// <summary>Checks that the authorized project remains the active VBProject and its live path still matches the frozen path.</summary>
+        /// <param name="project">Exact project selector previously authorized by this session.</param>
+        /// <param name="path">Canonical project path recorded by the frozen Git step.</param>
+        /// <returns><see langword="true"/> when object identity and case-insensitive path comparison both match.</returns>
         internal bool GitActiveProjectMatches(string project, string path)
         {
             object selected = null, active = null;
@@ -308,8 +308,8 @@ namespace VBAi
             finally { FormFontRestoration.ReleaseOwnedReferences(new[] { selected, active }, ReleaseOwnerReference, primary); }
         }
 
-        /// <summary>Releases owner reference for vbe session.</summary>
-        /// <param name="value">object that supplies the value for this operation.</param>
+        /// <summary>Releases an acquired COM reference after owner-window or active-project inspection.</summary>
+        /// <param name="value">COM object to release; non-COM and null values are ignored.</param>
         private static void ReleaseOwnerReference(object value)
         {
             if (value != null && Marshal.IsComObject(value)) Marshal.ReleaseComObject(value);

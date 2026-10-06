@@ -265,28 +265,28 @@ namespace VBAi
                 throw new InvalidOperationException("Exact active VBE owner/project changed.");
         }
 
-        /// <summary>Requires policy for owner git qualification manifest.</summary>
-        /// <param name="policy">Text that supplies the policy value. Use the format required by the calling operation.</param>
+        /// <summary>Rejects qualification mutations unless the current VBIDE edit policy is exactly Automatic.</summary>
+        /// <param name="policy">Current policy name returned by the VBE session.</param>
         internal static void RequirePolicy(string policy)
         {
             if (policy != "Automatic")
                 throw new InvalidOperationException("Qualification mutation requires current Automatic VBE edit policy.");
         }
 
-        /// <summary>Handles sha for owner git qualification manifest.</summary>
-        /// <param name="value">Text that supplies the value value. Use the format required by the calling operation.</param>
-        /// <returns>Boolean indicating the result of the check for sha on owner git qualification manifest.</returns>
+        /// <summary>Checks whether a digest is exactly 64 hexadecimal characters.</summary>
+        /// <param name="value">Candidate SHA-256 hex text; upper- and lowercase digits are accepted.</param>
+        /// <returns><see langword="true"/> when the candidate has the required length and only hexadecimal digits.</returns>
         internal static bool Sha(string value) => value != null && value.Length == 64 && value.All(c =>
             c >= '0' && c <= '9' || c >= 'a' && c <= 'f' || c >= 'A' && c <= 'F');
 
-        /// <summary>Handles commit for owner git qualification manifest.</summary>
-        /// <param name="value">Text that supplies the value value. Use the format required by the calling operation.</param>
-        /// <returns>Boolean indicating the result of the check for commit on owner git qualification manifest.</returns>
+        /// <summary>Checks whether a revision is a full 40-character hexadecimal Git commit ID.</summary>
+        /// <param name="value">Candidate commit ID.</param>
+        /// <returns><see langword="true"/> when all 40 characters are hexadecimal digits.</returns>
         private static bool Commit(string value) => value != null && value.Length == 40 && value.All(c =>
             c >= '0' && c <= '9' || c >= 'a' && c <= 'f' || c >= 'A' && c <= 'F');
 
-        /// <summary>Requires guid root for owner git qualification manifest.</summary>
-        /// <param name="root">Text that supplies the root value. Use the format required by the calling operation.</param>
+        /// <summary>Requires the disposable fixture root to be a canonical local directory named by a GUID and free of reparse points.</summary>
+        /// <param name="root">Absolute path to the disposable root directory.</param>
         internal static void RequireGuidRoot(string root)
         {
             RequireClassicDirectoryPath(root);
@@ -295,10 +295,10 @@ namespace VBAi
             RequireNoReparse(root);
         }
 
-        /// <summary>Requires child for owner git qualification manifest.</summary>
-        /// <param name="parent">Text that supplies the parent value. Use the format required by the calling operation.</param>
-        /// <param name="child">Text that supplies the child value. Use the format required by the calling operation.</param>
-        /// <param name="directory">Indicates whether directory is enabled.</param>
+        /// <summary>Requires a canonical file or directory path to be a descendant of the frozen parent and free of reparse points.</summary>
+        /// <param name="parent">Canonical disposable root that bounds the allowed path.</param>
+        /// <param name="child">Candidate file or directory path.</param>
+        /// <param name="directory">True when the candidate must be a directory; false when it must be a file.</param>
         internal static void RequireChild(string parent, string child, bool directory)
         {
             if (directory) RequireClassicDirectoryPath(child);
@@ -311,8 +311,8 @@ namespace VBAi
                 throw new ArgumentException("Unexpected filesystem object type.");
         }
 
-        /// <summary>Requires canonical local path for owner git qualification manifest.</summary>
-        /// <param name="path">Path used for the path being processed.</param>
+        /// <summary>Rejects blank, relative, UNC, alternate-stream, or non-normalized paths.</summary>
+        /// <param name="path">Candidate absolute local path in canonical GetFullPath form.</param>
         private static void RequireCanonicalLocalPath(string path)
         {
             // Reject NTFS streams before GetFullPath, which throws NotSupportedException
@@ -323,8 +323,8 @@ namespace VBAi
                 throw new ArgumentException("Canonical local path without alternate streams required.");
         }
 
-        /// <summary>Requires evidence root budget for owner git qualification manifest.</summary>
-        /// <param name="root">Text that supplies the root value. Use the format required by the calling operation.</param>
+        /// <summary>Checks the disposable evidence directory against the configured net48 path-length budget.</summary>
+        /// <param name="root">Canonical local evidence-root directory path.</param>
         internal static void RequireEvidenceRootBudget(string root)
         {
             if (string.IsNullOrWhiteSpace(root) || root.Length > MaxEvidenceRootLength)
@@ -332,9 +332,9 @@ namespace VBAi
             RequireClassicDirectoryPath(root);
         }
 
-        /// <summary>Requires receipt paths for owner git qualification manifest.</summary>
-        /// <param name="evidenceRoot">Text that supplies the evidence root value. Use the format required by the calling operation.</param>
-        /// <param name="stepId">Text that supplies the step id value. Use the format required by the calling operation.</param>
+        /// <summary>Checks the three durable receipt filenames and their path budgets without creating or replacing files.</summary>
+        /// <param name="evidenceRoot">Bounded canonical evidence directory.</param>
+        /// <param name="stepId">Step GUID in exact 32-character N format.</param>
         internal static void RequireReceiptPaths(string evidenceRoot, string stepId)
         {
             RequireEvidenceRootBudget(evidenceRoot);
@@ -345,8 +345,8 @@ namespace VBAi
                 RequireClassicFilePath(prefix + suffix);
         }
 
-        /// <summary>Requires classic file path for owner git qualification manifest.</summary>
-        /// <param name="path">Path used for the path being processed.</param>
+        /// <summary>Enforces the classic MAX_PATH-compatible budget and canonical local-path rules for a file.</summary>
+        /// <param name="path">Candidate full file path.</param>
         internal static void RequireClassicFilePath(string path)
         {
             if (string.IsNullOrWhiteSpace(path) || path.Length > MaxClassicFilePathLength)
@@ -355,8 +355,8 @@ namespace VBAi
             RequireClassicDirectoryPath(Path.GetDirectoryName(path));
         }
 
-        /// <summary>Requires classic directory path for owner git qualification manifest.</summary>
-        /// <param name="path">Path used for the path being processed.</param>
+        /// <summary>Enforces the classic MAX_PATH-compatible budget and canonical local-path rules for a directory.</summary>
+        /// <param name="path">Candidate full directory path.</param>
         internal static void RequireClassicDirectoryPath(string path)
         {
             if (string.IsNullOrWhiteSpace(path) || path.Length > MaxClassicDirectoryPathLength)
@@ -364,8 +364,8 @@ namespace VBAi
             RequireCanonicalLocalPath(path);
         }
 
-        /// <summary>Requires no reparse for owner git qualification manifest.</summary>
-        /// <param name="path">Path used for the path being processed.</param>
+        /// <summary>Walks each existing path component and rejects a reparse point to prevent fixture-root redirection.</summary>
+        /// <param name="path">Canonical local file or directory path to inspect.</param>
         internal static void RequireNoReparse(string path)
         {
             string current = Path.GetPathRoot(path);
@@ -378,22 +378,22 @@ namespace VBAi
             }
         }
 
-        /// <summary>Determines whether it has h for owner git qualification manifest.</summary>
-        /// <param name="data">byte[] that supplies the data for this operation.</param>
-        /// <returns>Text produced by the operation for hash on owner git qualification manifest.</returns>
+        /// <summary>Computes lowercase SHA-256 hex over the supplied bytes.</summary>
+        /// <param name="data">Exact serialized bytes to digest.</param>
+        /// <returns>64-character lowercase hexadecimal SHA-256 digest.</returns>
         internal static string Hash(byte[] data)
         {
             using (var sha = SHA256.Create()) return BitConverter.ToString(sha.ComputeHash(data)).Replace("-", "").ToLowerInvariant();
         }
 
-        /// <summary>Determines whether it has h file for owner git qualification manifest.</summary>
-        /// <param name="path">Path used for the path being processed.</param>
-        /// <returns>Text produced by the operation for hash file on owner git qualification manifest.</returns>
+        /// <summary>Reads a file and returns the lowercase SHA-256 digest of its bytes.</summary>
+        /// <param name="path">File whose exact contents are hashed.</param>
+        /// <returns>64-character lowercase hexadecimal SHA-256 digest.</returns>
         internal static string HashFile(string path) => Hash(File.ReadAllBytes(path));
 
-        /// <summary>Handles snapshot hash for owner git qualification manifest.</summary>
-        /// <param name="snapshot">vba git snapshot that supplies the snapshot for this operation.</param>
-        /// <returns>Text produced by the operation for snapshot hash on owner git qualification manifest.</returns>
+        /// <summary>Hashes a Git snapshot's sorted serialized filenames and bytes using explicit NUL and length delimiters.</summary>
+        /// <param name="snapshot">Snapshot whose serialized file set is bound by the digest.</param>
+        /// <returns>Lowercase SHA-256 digest independent of transient object identity.</returns>
         internal static string SnapshotHash(VbaGitSnapshot snapshot)
         {
             using (var stream = new MemoryStream())
@@ -407,10 +407,10 @@ namespace VBAi
             }
         }
 
-        /// <summary>Reads snapshot for owner git qualification manifest.</summary>
-        /// <param name="directory">Text that supplies the directory value. Use the format required by the calling operation.</param>
-        /// <param name="expectedHash">Text that supplies the expected hash value. Use the format required by the calling operation.</param>
-        /// <returns>vba git snapshot produced by the operation for read snapshot on owner git qualification manifest.</returns>
+        /// <summary>Reads a bounded flat snapshot directory, validates its frozen digest, then parses the files as a Git snapshot.</summary>
+        /// <param name="directory">Directory containing the snapshot files; reparse points and subdirectories are refused.</param>
+        /// <param name="expectedHash">Digest recorded in the frozen plan and required to match the current files.</param>
+        /// <returns>Parsed Git snapshot after file-count, byte-size, reparse, and hash checks succeed.</returns>
         internal static VbaGitSnapshot ReadSnapshot(string directory, string expectedHash)
         {
             RequireNoReparse(directory);
@@ -425,9 +425,9 @@ namespace VBAi
             return VbaGitSnapshot.Read(files);
         }
 
-        /// <summary>Handles snapshot directory hash for owner git qualification manifest.</summary>
-        /// <param name="directory">Text that supplies the directory value. Use the format required by the calling operation.</param>
-        /// <returns>Text produced by the operation for snapshot directory hash on owner git qualification manifest.</returns>
+        /// <summary>Validates a bounded snapshot directory's shape and content, then computes its deterministic file-set digest.</summary>
+        /// <param name="directory">Flat directory containing the snapshot files.</param>
+        /// <returns>Digest over sorted filenames and file bytes.</returns>
         internal static string SnapshotDirectoryHash(string directory)
         {
             RequireNoReparse(directory);
@@ -441,9 +441,9 @@ namespace VBAi
             return HashFiles(paths);
         }
 
-        /// <summary>Determines whether it has h files for owner git qualification manifest.</summary>
-        /// <param name="paths">i enumerable&lt;string&gt; that supplies the paths for this operation.</param>
-        /// <returns>Text produced by the operation for hash files on owner git qualification manifest.</returns>
+        /// <summary>Hashes a file set in ordinal filename order, including each filename and byte length before its contents.</summary>
+        /// <param name="paths">Files in the snapshot directory.</param>
+        /// <returns>Lowercase SHA-256 digest of the deterministic file-set encoding.</returns>
         private static string HashFiles(IEnumerable<string> paths)
         {
             using (var stream = new MemoryStream())
@@ -458,18 +458,18 @@ namespace VBAi
             }
         }
 
-        /// <summary>Returns current thread id for owner git qualification manifest.</summary>
-        /// <returns>uint produced by the operation for get current thread id on owner git qualification manifest.</returns>
+        /// <summary>Gets the native ID of the calling UI thread for owner-identity validation.</summary>
+        /// <returns>Current native thread ID.</returns>
         [DllImport("kernel32.dll")] internal static extern uint GetCurrentThreadId();
 
-        /// <summary>Returns window thread process id for owner git qualification manifest.</summary>
-        /// <param name="hwnd">Native handle that supplies the hwnd for this operation.</param>
-        /// <param name="pid">uint that supplies the pid for this operation.</param>
-        /// <returns>uint produced by the operation for get window thread process id on owner git qualification manifest.</returns>
+        /// <summary>Gets the native thread that owns an HWND and returns its process ID through the out parameter.</summary>
+        /// <param name="hwnd">VBE root window whose owner is checked.</param>
+        /// <param name="pid">Receives the owning process ID.</param>
+        /// <returns>Owning native thread ID, or zero when the HWND has no owner.</returns>
         [DllImport("user32.dll")] internal static extern uint GetWindowThreadProcessId(IntPtr hwnd, out uint pid);
     }
 
-    /// <summary>Owns the owner git qualification step state and operations.</summary>
+    /// <summary>One frozen Git action and the expected/target snapshot directories and digests used to verify its result.</summary>
     internal sealed class OwnerGitQualificationStep
     {
 

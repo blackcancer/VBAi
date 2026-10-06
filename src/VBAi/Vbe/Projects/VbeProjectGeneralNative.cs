@@ -365,7 +365,7 @@ namespace VBAi
         internal static bool MatchesCloseCaption(int buttonId, string caption)
             => buttonId == 1 ? caption == "OK" || caption == "&OK" : buttonId == 2 && (caption == "Annuler" || caption == "&Annuler" || caption == "Cancel" || caption == "&Cancel");
 
-        /// <summary>Returns the Win32 class name for a window or throws when it cannot be read.</summary>
+        /// <summary>Reads a window's Win32 class name, failing if the native API returns no class.</summary>
         /// <param name="window">Window whose native class name is queried.</param>
         /// <returns>Class name copied into the bounded 256-character buffer.</returns>
         private static string Class(IntPtr window) { var text = new StringBuilder(256); Require(GetClassName(window, text, text.Capacity) > 0, "Native class unavailable."); return text.ToString(); }

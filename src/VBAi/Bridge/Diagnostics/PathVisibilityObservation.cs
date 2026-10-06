@@ -11,17 +11,17 @@ namespace VBAi
     internal static class PathVisibilityObservation
     {
 
-        /// <summary>Gets the process id.</summary>
-        /// <value>Current process id exposed by path visibility observation.</value>
+        /// <summary>Gets the current process ID used to bind the diagnostic result to its host.</summary>
+        /// <value>Win32 process ID of the calling process.</value>
         internal static uint ProcessId => GetCurrentProcessId();
 
-        /// <summary>Gets the thread id.</summary>
-        /// <value>Current thread id exposed by path visibility observation.</value>
+        /// <summary>Gets the current native thread ID used to verify owner-STA execution.</summary>
+        /// <value>Win32 thread ID of the calling thread.</value>
         internal static uint ThreadId => GetCurrentThreadId();
 
-        /// <summary>Reads  for path visibility observation.</summary>
-        /// <param name="syntheticAllowlist">string[] that supplies the synthetic allowlist for this operation.</param>
-        /// <returns>i dictionary&lt;string, object&gt; produced by the operation for read on path visibility observation.</returns>
+        /// <summary>Observes managed and Win32 attributes for exactly four synthetic paths and captures effective-token metadata before and after.</summary>
+        /// <param name="syntheticAllowlist">Two owned directories and their two fixed synthetic-file paths; any other count is rejected.</param>
+        /// <returns>Process/thread, apartment, token, and per-path attribute observations; no path contents are read.</returns>
         internal static IDictionary<string, object> Read(string[] syntheticAllowlist)
         {
             if (syntheticAllowlist == null || syntheticAllowlist.Length != 4)
@@ -55,22 +55,22 @@ namespace VBAi
             return report;
         }
 
-        /// <summary>Handles error for path visibility observation.</summary>
-        /// <param name="error">Exception describing the error failure.</param>
-        /// <returns>object produced by the operation for error on path visibility observation.</returns>
+        /// <summary>Converts a managed filesystem exception to non-sensitive type and HRESULT fields.</summary>
+        /// <param name="error">Exception raised while reading one path attribute.</param>
+        /// <returns>Object containing the exception type name and HRESULT, without the path contents.</returns>
         private static object Error(Exception error) => new { Type = error.GetType().FullName, error.HResult };
 
-        /// <summary>Returns current process id for path visibility observation.</summary>
-        /// <returns>uint produced by the operation for get current process id on path visibility observation.</returns>
+        /// <summary>Gets the calling process ID for the diagnostic observation.</summary>
+        /// <returns>Current Win32 process ID.</returns>
         [DllImport("kernel32.dll")] private static extern uint GetCurrentProcessId();
 
-        /// <summary>Returns current thread id for path visibility observation.</summary>
-        /// <returns>uint produced by the operation for get current thread id on path visibility observation.</returns>
+        /// <summary>Gets the calling native thread ID for the owner-STA observation.</summary>
+        /// <returns>Current Win32 thread ID.</returns>
         [DllImport("kernel32.dll")] private static extern uint GetCurrentThreadId();
 
-        /// <summary>Returns file attributes w for path visibility observation.</summary>
-        /// <param name="path">Path used for the path being processed.</param>
-        /// <returns>uint produced by the operation for get file attributes w on path visibility observation.</returns>
+        /// <summary>Reads Win32 file attributes without opening or reading the target contents.</summary>
+        /// <param name="path">Synthetic local path from the validated allowlist.</param>
+        /// <returns>Attribute bitmask, or INVALID_FILE_ATTRIBUTES on failure; capture GetLastError immediately in that case.</returns>
         [DllImport("kernel32.dll", CharSet = CharSet.Unicode, ExactSpelling = true, SetLastError = true)]
         private static extern uint GetFileAttributesW(string path);
     }
