@@ -33,34 +33,34 @@ namespace VBAi
     }
 
     // IPersistStream inherits IPersist: keep the complete native vtable order.
-    /// <summary>Defines the i ole picture persistence contract.</summary>
+        /// <summary>Managed declaration of the native IPersistStream vtable used by OLE pictures.</summary>
     [ComImport, Guid("00000109-0000-0000-C000-000000000046"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
     internal interface IOlePicturePersistence
     {
 
-        /// <summary>Returns class id for i ole picture persistence.</summary>
-        /// <param name="classId">Identifier that supplies the class id for this operation.</param>
-        /// <returns>int produced by the operation for get class id on i ole picture persistence.</returns>
+        /// <summary>Reads the COM class identifier of the persisted object.</summary>
+        /// <param name="classId">Receives the OLE picture class identifier when the HRESULT succeeds.</param>
+        /// <returns>The native HRESULT; the declaration preserves it for explicit error handling.</returns>
         [PreserveSig] int GetClassID(out Guid classId);
 
-        /// <summary>Determines whether dirty for i ole picture persistence.</summary>
-        /// <returns>int produced by the operation for is dirty on i ole picture persistence.</returns>
+        /// <summary>Reports whether the persistence object has unsaved changes.</summary>
+        /// <returns>The native HRESULT: S_OK when dirty, S_FALSE when clean, or a failure code.</returns>
         [PreserveSig] int IsDirty();
 
-        /// <summary>Loads  for i ole picture persistence.</summary>
-        /// <param name="stream">i stream that supplies the stream for this operation.</param>
-        /// <returns>int produced by the operation for load on i ole picture persistence.</returns>
+        /// <summary>Loads the object's persisted state from the supplied COM stream.</summary>
+        /// <param name="stream">Readable stream containing the object's native persistence format.</param>
+        /// <returns>The native HRESULT from the persistence implementation.</returns>
         [PreserveSig] int Load([MarshalAs(UnmanagedType.Interface)] IStream stream);
 
-        /// <summary>Saves  for i ole picture persistence.</summary>
-        /// <param name="stream">i stream that supplies the stream for this operation.</param>
-        /// <param name="clearDirty">Indicates whether clear dirty is enabled.</param>
-        /// <returns>int produced by the operation for save on i ole picture persistence.</returns>
+        /// <summary>Writes the object's persisted state to the supplied COM stream.</summary>
+        /// <param name="stream">Writable stream that receives the native persistence bytes.</param>
+        /// <param name="clearDirty">Whether the implementation may clear its dirty state after saving.</param>
+        /// <returns>The native HRESULT from the persistence implementation.</returns>
         [PreserveSig] int Save([MarshalAs(UnmanagedType.Interface)] IStream stream, [MarshalAs(UnmanagedType.Bool)] bool clearDirty);
 
-        /// <summary>Returns size max for i ole picture persistence.</summary>
-        /// <param name="size">ulong that supplies the size for this operation.</param>
-        /// <returns>int produced by the operation for get size max on i ole picture persistence.</returns>
+        /// <summary>Returns the maximum number of bytes required to persist the object.</summary>
+        /// <param name="size">Receives the maximum byte count when the HRESULT succeeds.</param>
+        /// <returns>The native HRESULT from the persistence implementation.</returns>
         [PreserveSig] int GetSizeMax(out ulong size);
     }
 
@@ -68,13 +68,13 @@ namespace VBAi
     internal static class OlePictureLoader
     {
 
-        /// <summary>Maintains the maximum persistence bytes state for ole picture loader.</summary>
+        /// <summary>Maximum accepted serialized image size, in bytes, before allocating persistence buffers.</summary>
         internal const long MaximumPersistenceBytes = 64L * 1024 * 1024;
 
-        /// <summary>Creates stream on h global for ole picture loader.</summary>
-        /// <param name="memory">Native handle that supplies the memory for this operation.</param>
-        /// <param name="deleteOnRelease">Indicates whether delete on release is enabled.</param>
-        /// <param name="stream">i stream that supplies the stream for this operation.</param>
+        /// <summary>Creates an IStream backed by an HGLOBAL according to the OLE ownership flag.</summary>
+        /// <param name="memory">HGLOBAL to wrap, or zero to let OLE allocate the backing memory.</param>
+        /// <param name="deleteOnRelease">Whether releasing the returned stream also frees its HGLOBAL.</param>
+        /// <param name="stream">Receives the COM stream that owns or wraps the specified memory.</param>
         [DllImport("ole32.dll", PreserveSig = false)]
         private static extern void CreateStreamOnHGlobal(IntPtr memory, [MarshalAs(UnmanagedType.Bool)] bool deleteOnRelease,
             [MarshalAs(UnmanagedType.Interface)] out IStream stream);
