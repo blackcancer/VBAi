@@ -5,11 +5,16 @@ using System.Text.RegularExpressions;
 
 namespace VBAi
 {
+
     /// <summary>Filters non-executable source locations before invoking the native breakpoint command.</summary>
     internal static class VbaBreakpointLocation
     {
+
         /// <summary>Checks the first physical line of a statement inside a procedure.</summary>
         /// <remarks>This is a source filter, not a substitute for the VBA compiler or a breakpoint inventory.</remarks>
+        /// <param name="source">Text that supplies the source value. Use the format required by the calling operation.</param>
+        /// <param name="line">int that supplies the line for this operation.</param>
+        /// <returns>Boolean indicating the result of the check for can request on vba breakpoint location.</returns>
         internal static bool CanRequest(string source, int line)
         {
             if (string.IsNullOrEmpty(source) || line < 1) return false;
@@ -46,12 +51,17 @@ namespace VBAi
             return false;
         }
 
+        /// <summary>Owns the conditional branch state and operations.</summary>
         private sealed class ConditionalBranch
         {
+
+            /// <summary>Maintains the parent and taken and unknown state for conditional branch.</summary>
             internal bool Parent, Taken, Unknown;
         }
 
         /// <summary>Unknown compiler constants cannot safely authorize a native toggle.</summary>
+        /// <param name="lines">string[] that supplies the lines for this operation.</param>
+        /// <returns>bool[] produced by the operation for known active lines on vba breakpoint location.</returns>
         private static bool[] KnownActiveLines(string[] lines)
         {
             var result = new bool[lines.Length];

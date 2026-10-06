@@ -7,37 +7,49 @@ using System.Windows.Forms;
 
 namespace VBAi
 {
+
     /// <summary>Présente l’identité VBAi, sa version et les ressources de support.</summary>
     internal sealed partial class AboutWindow : Form
     {
+
         /// <summary>Clipboard action used to copy the support details.</summary>
         internal Action<string> CopyText = Clipboard.SetText;
+
         /// <summary>Safe link-opening action used by the resource links.</summary>
         internal Action<string> OpenLink = SafeLinks.Open;
-        /// <summary>Stores the metadata assembly used by AboutWindow.</summary>
+
+        /// <summary>Maintains the metadata assembly state for about window.</summary>
         internal static Func<Assembly> MetadataAssembly = ReadMetadataAssembly;
-        /// <summary>Stores the process is64 bit used by AboutWindow.</summary>
+
+        /// <summary>Maintains the process is64 bit state for about window.</summary>
         internal static Func<bool> ProcessIs64Bit = ReadProcessIs64Bit;
-        /// <summary>Stores the runtime version used by AboutWindow.</summary>
+
+        /// <summary>Maintains the runtime version state for about window.</summary>
         internal static Func<Version> RuntimeVersion = ReadRuntimeVersion;
-        /// <summary>Performs the read runtime version operation for AboutWindow.</summary>
-        /// <returns>The result produced by this operation.</returns>
+
+        /// <summary>Reads runtime version for about window.</summary>
+        /// <returns>version produced by the operation for read runtime version on about window.</returns>
         private static Version ReadRuntimeVersion() => Environment.Version;
-        /// <summary>Performs the read metadata assembly operation for AboutWindow.</summary>
-        /// <returns>The result produced by this operation.</returns>
+
+        /// <summary>Reads metadata assembly for about window.</summary>
+        /// <returns>assembly produced by the operation for read metadata assembly on about window.</returns>
         private static Assembly ReadMetadataAssembly() => typeof(AboutWindow).Assembly;
-        /// <summary>Performs the read process is64 bit operation for AboutWindow.</summary>
-        /// <returns>The result produced by this operation.</returns>
+
+        /// <summary>Reads process is64 bit for about window.</summary>
+        /// <returns>Boolean indicating the result of the check for read process is64 bit on about window.</returns>
         private static bool ReadProcessIs64Bit() => Environment.Is64BitProcess;
-        /// <summary>Performs the resolve image reader operation for AboutWindow.</summary>
-        /// <param name="sender">The sender used by this operation.</param>
-        /// <param name="request">The request used by this operation.</param>
-        /// <returns>The result produced by this operation.</returns>
+
+        /// <summary>Resolves image reader for about window.</summary>
+        /// <param name="sender">object that supplies the sender for this operation.</param>
+        /// <param name="request">resolve event args that supplies the request for this operation.</param>
+        /// <returns>assembly produced by the operation for resolve image reader on about window.</returns>
         internal static Assembly ResolveImageReader(object sender, ResolveEventArgs request) =>
             request.Name == "System.Resources.Extensions, Version=4.0.0.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51"
                 ? typeof(System.Resources.Extensions.DeserializingResourceReader).Assembly : null;
+
         /// <summary>Current host process name used in metadata and host description.</summary>
         private string hostProcess;
+
         /// <summary>Whether runtime theme subscriptions have been installed.</summary>
         private bool runtimeInitialized;
 
@@ -66,8 +78,8 @@ namespace VBAi
             UiTheme.Changed += ApplyAppearance;
         }
 
-                /// <summary>Informations techniques copiables, sans chemins, identifiants ou contenu de projet.</summary>
-                /// <value>Version, host, platform, CLR, interface language, and theme details.</value>
+        /// <summary>Informations techniques copiables, sans chemins, identifiants ou contenu de projet.</summary>
+        /// <value>Version, host, platform, CLR, interface language, and theme details.</value>
         internal string TechnicalDetails => "VBAi " + versionValue.Text + Environment.NewLine +
             "Host: " + hostProcess + Environment.NewLine +
             "Platform: " + platformValue.Text + Environment.NewLine +
@@ -75,9 +87,9 @@ namespace VBAi
             "Interface: " + UiText.Culture.Name + Environment.NewLine +
             "Theme: " + UiTheme.Choice;
 
-                /// <summary>Décrit les hôtes connus et conserve le nom de processus pour les autres hôtes.</summary>
-                /// <param name="processName">Host process name, such as EXCEL or SLDWORKS.</param>
-                /// <returns>A friendly description for recognized hosts, or the supplied process name.</returns>
+        /// <summary>Décrit les hôtes connus et conserve le nom de processus pour les autres hôtes.</summary>
+        /// <param name="processName">Host process name, such as EXCEL or SLDWORKS.</param>
+        /// <returns>A friendly description for recognized hosts, or the supplied process name.</returns>
         internal static string HostDescription(string processName)
         {
             if (string.Equals(processName, "EXCEL", StringComparison.OrdinalIgnoreCase)) return "Microsoft Excel · Visual Basic Editor";
@@ -131,8 +143,8 @@ namespace VBAi
             if (runtimeInitialized) UiTheme.Changed -= ApplyAppearance;
         }
 
-                /// <summary>Ouvre À propos depuis le VBE, même si le chat est fermé.</summary>
-                /// <param name="vbe">VBE automation object used to obtain the native owner handle.</param>
+        /// <summary>Ouvre À propos depuis le VBE, même si le chat est fermé.</summary>
+        /// <param name="vbe">VBE automation object used to obtain the native owner handle.</param>
         internal static void ShowForVbe(object vbe)
         {
             IWin32Window owner = null;
@@ -140,11 +152,14 @@ namespace VBAi
             catch (Exception error) { LoadLog.Write("About VBE owner unavailable: " + error.Message); }
             using (var window = new AboutWindow()) AddIn.ShowModal(window, owner);
         }
+
         /// <summary>WinForms owner wrapper for the native VBE main-window handle.</summary>
         private sealed class NativeOwner : IWin32Window
         {
+
             /// <summary>Creates the owner wrapper for a native window.</summary><param name="handle">Native owner handle.</param>
             internal NativeOwner(IntPtr handle) { Handle = handle; }
+
             /// <summary>Gets the native owner-window handle.</summary>
             /// <value>Handle supplied to the constructor.</value>
             public IntPtr Handle { get; }

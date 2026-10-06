@@ -5,13 +5,17 @@ using System.Text;
 
 namespace VBAi
 {
+
     /// <summary>Mode d’exécution associé à une commande de conversation.</summary>
     internal enum ChatMode
     {
+
         /// <summary>Échange informatif sans modification du projet.</summary>
         Discussion,
+
         /// <summary>Préparation d’un plan sans appliquer les changements.</summary>
         Plan,
+
         /// <summary>Exécution d’une tâche qui peut modifier le projet.</summary>
         Agent
     }
@@ -19,31 +23,41 @@ namespace VBAi
     /// <summary>Commande de saisie rapide et instruction envoyée au modèle.</summary>
     internal sealed class ChatCommand
     {
+
         /// <summary>Jeton de commande affiché en français.</summary>
         /// <value>Jeton court reconnu dans la saisie.</value>
         public string Token { get; set; }
+
         /// <summary>Jeton de commande reconnu en anglais.</summary>
         /// <value>Jeton anglais accepté en entrée.</value>
         public string EnglishToken { get; set; }
+
         /// <summary>Jeton localisé selon la langue de l’interface.</summary>
         /// <value>Jeton traduit pour la culture active.</value>
         public string DisplayToken { get { return UiText.Culture.TwoLetterISOLanguageName == "fr" ? Token : EnglishToken; } }
+
         /// <summary>Clé de traduction du type de commande.</summary>
         private string kind;
+
         /// <summary>Clé de traduction de l’instruction associée.</summary>
         private string instruction;
+
         /// <summary>Type de commande traduit pour l’interface.</summary>
         /// <value>Valeur traduite depuis la clé de commande.</value>
         public string Kind { get { return UiText.Get(kind); } set { kind = value; } }
+
         /// <summary>Libellé du type de commande affiché.</summary>
         /// <value>Libellé affiché du type de commande.</value>
         public string DisplayKind { get { return Kind; } }
+
         /// <summary>Instruction traduite transmise au modèle.</summary>
         /// <value>Instruction traduite associée au jeton.</value>
         public string Instruction { get { return UiText.Get(instruction); } set { instruction = value; } }
+
         /// <summary>Mode d’exécution associé à la commande.</summary>
         /// <value>Mode assigné à cette commande.</value>
         public ChatMode Mode { get; set; }
+
         /// <summary>Commandes rapides prises en charge et leurs instructions.</summary>
         public static readonly ChatCommand[] All = {
             new ChatCommand { Token = "/expliquer", EnglishToken = "/explain", Kind = "Understand the code", Mode = ChatMode.Discussion, Instruction = "Explain the code and its dependencies without changing it." },
@@ -53,6 +67,7 @@ namespace VBAi
             new ChatCommand { Token = "/tests", EnglishToken = "/tests", Kind = "Prepare VBA tests", Mode = ChatMode.Agent, Instruction = "Propose and create isolated VBA tests. Do not execute them without an explicit request; distinguish written tests from executed tests." },
             new ChatCommand { Token = "/plan", EnglishToken = "/plan", Kind = "Prepare the steps", Mode = ChatMode.Plan, Instruction = "Prepare a concrete plan with the affected modules and checks without changing the project." }
         };
+
         /// <summary>Développe une commande reconnue en instruction suivie du texte saisi.</summary>
         /// <param name="text">Texte saisi, éventuellement précédé d’un jeton de commande.</param>
         /// <returns>Texte d’origine ou instruction développée suivie des arguments.</returns>
@@ -68,24 +83,31 @@ namespace VBAi
     /// <summary>Extrait de code joint à une entrée de conversation.</summary>
     internal sealed class ChatAttachment
     {
+
         /// <summary>Libellé affiché pour l’extrait joint.</summary>
         /// <value>Titre de la pièce jointe.</value>
         public string Label { get; set; }
+
         /// <summary>Texte de l’extrait joint.</summary>
         /// <value>Contenu textuel de la pièce jointe.</value>
         public string Text { get; set; }
+
         /// <summary>Nom du projet VBA source, le cas échéant.</summary>
         /// <value>Projet VBA d’origine lorsqu’il est connu.</value>
         public string Project { get; set; }
+
         /// <summary>Nom du module VBA source, le cas échéant.</summary>
         /// <value>Module VBA d’origine lorsqu’il est connu.</value>
         public string Module { get; set; }
+
         /// <summary>Empreinte du code source lors de sa lecture.</summary>
         /// <value>Empreinte SHA-256 du module lors de la capture.</value>
         public string Sha256 { get; set; }
-                /// <summary>Document Monaco source pour contrôler la fraîcheur du brouillon.</summary>
-                /// <value>The current value represented by this member.</value>
+
+        /// <summary>Document Monaco source pour contrôler la fraîcheur du brouillon.</summary>
+        /// <value>Current editor document id exposed by chat attachment.</value>
         public string EditorDocumentId { get; set; }
+
         /// <summary>Première ligne source de l’extrait.</summary>
         /// <value>Numéro de la première ligne, selon l’indexation de la source.</value>
         public int StartLine { get; set; }
@@ -94,6 +116,7 @@ namespace VBAi
     /// <summary>Recherche et exporte le contenu des sessions de conversation.</summary>
     internal static class ChatHistory
     {
+
         /// <summary>Indique si le titre, le texte ou une modification de session contient la recherche.</summary>
         /// <param name="session">Session dont le contenu est recherché ou exporté.</param>
         /// <param name="query">Texte recherché sans distinction de casse.</param>
@@ -105,6 +128,7 @@ namespace VBAi
                     (x.Change != null && (x.Change.Module.IndexOf(query, StringComparison.OrdinalIgnoreCase) >= 0 ||
                     x.Change.Before.IndexOf(query, StringComparison.OrdinalIgnoreCase) >= 0 || x.Change.After.IndexOf(query, StringComparison.OrdinalIgnoreCase) >= 0)));
         }
+
         /// <summary>Exporte la session en Markdown avec ses modifications et pièces jointes.</summary>
         /// <param name="session">Session dont le contenu est recherché ou exporté.</param>
         /// <returns>Document Markdown représentant la session.</returns>
@@ -121,6 +145,7 @@ namespace VBAi
             }
             return output.ToString();
         }
+
         /// <summary>Encadre le contenu dans un bloc Markdown dont le délimiteur ne ferme pas son contenu.</summary>
         /// <param name="text">Texte saisi, éventuellement précédé d’un jeton de commande.</param>
         /// <param name="language">Identifiant de langage indiqué après le délimiteur Markdown.</param>

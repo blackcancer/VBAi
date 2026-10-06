@@ -15,51 +15,70 @@ namespace VBAi
     /// <summary>Pilote le client GitHub Copilot par son protocole stdio encadré par Content-Length.</summary>
     internal sealed class CopilotClient : IDisposable
     {
+
         /// <summary>Verrou qui protège le processus et les requêtes en attente.</summary>
         private readonly object gate = new object();
+
         /// <summary>Requêtes JSON-RPC en attente, indexées par identifiant.</summary>
         private readonly Dictionary<int, TaskCompletionSource<IDictionary<string, object>>> pending = new Dictionary<int, TaskCompletionSource<IDictionary<string, object>>>();
+
         /// <summary>Identifiants des appels d’outils déjà traités afin d’éviter les exécutions répétées.</summary>
         private readonly HashSet<string> handledTools = new HashSet<string>();
+
         /// <summary>Contexte d’interface capturé à la construction pour publier les fragments et outils.</summary>
         private readonly SynchronizationContext ui = SynchronizationContext.Current;
+
         /// <summary>Processus Copilot CLI associé à la session.</summary>
         private Process process;
+
         /// <summary>Dernier identifiant local de requête JSON-RPC.</summary>
         private int nextId;
+
         /// <summary>Indique si le client a été libéré.</summary>
         private bool disposed;
+
         /// <summary>Identifiant de session Copilot et dernier texte assistant complet.</summary>
         private string sessionId, answer;
+
         /// <summary>Achèvement de la réponse assistant en cours.</summary>
         private TaskCompletionSource<string> completion;
+
         /// <summary>Fonction qui exécute un outil VBA autorisé.</summary>
         private Func<string, string, Task<string>> invoke;
+
         /// <summary>Noms des outils déclarés à Copilot pour la session.</summary>
         private HashSet<string> allowedTools;
+
         /// <summary>Historique de conversation mis à jour avec les appels et résultats d’outils.</summary>
         private IList<object> history;
+
         /// <summary>Callback facultatif pour les fragments de texte reçus en streaming.</summary>
         /// <value>Fonction appelée pour chaque fragment, ou null si le streaming est désactivé.</value>
         public Action<string> TextDelta { get; set; }
+
         /// <summary>Attend le délai natif des requêtes et réponses Copilot.</summary>
         internal Func<TimeSpan, Task> Delay = Task.Delay;
+
         /// <summary>Démarre le processus CLI sans préambule sur son entrée standard.</summary>
         internal Func<Process, bool> StartProcess = ProcessInput.StartWithoutPreamble;
+
         /// <summary>Crée un sérialiseur JSON configuré pour les messages de dix mégaoctets au plus.</summary>
         /// <returns>Sérialiseur de messages Copilot.</returns>
         private static JavaScriptSerializer Json() { return new JavaScriptSerializer { MaxJsonLength = 10 * 1024 * 1024 }; }
+
         /// <summary>Lit une valeur de dictionnaire comme texte.</summary>
         /// <param name="o">Dictionnaire source, éventuellement null.</param>
         /// <param name="k">Nom de la clé.</param>
         /// <returns>Valeur convertie, ou null si la clé manque.</returns>
         private static string Text(IDictionary<string, object> o, string k) { return ClaudeProtocol.Text(o, k); }
+
         /// <summary>Récupère une valeur de dictionnaire si elle-même est un dictionnaire.</summary>
         /// <param name="o">Dictionnaire source, éventuellement null.</param>
         /// <param name="k">Nom de la clé.</param>
         /// <returns>Dictionnaire associé à la clé, ou null.</returns>
         private static IDictionary<string, object> Object(IDictionary<string, object> o, string k)
         { object value; return o != null && o.TryGetValue(k, out value) ? value as IDictionary<string, object> : null; }
+
         /// <summary>Résout le CLI Copilot depuis sa variable de configuration ou son nom exécutable par défaut.</summary>
         /// <value>Valeur de VBAi_COPILOT_CLI, ou « copilot.exe ».</value>
         internal static string Executable { get { return Environment.GetEnvironmentVariable("VBAi_COPILOT_CLI") ?? "copilot.exe"; } }
@@ -280,6 +299,7 @@ namespace VBAi
             lock (gate) foreach (var request in pending.Values) request.TrySetException(error);
             completion?.TrySetException(error);
         }
+
         /// <summary>Autorise seulement un outil personnalisé déclaré et encore actif.</summary>
         /// <param name="permission">Description de la permission demandée.</param>
         /// <returns>Décision « approved » ou « denied-by-rules » du protocole Copilot.</returns>
@@ -291,6 +311,7 @@ namespace VBAi
             return !disposed && Text(permission, "kind") == "custom-tool" && allowedTools != null &&
                 allowedTools.Contains(Text(permission, "toolName")) ? "approved" : "denied-by-rules";
         }
+
         /// <summary>Annule les opérations en attente et arrête le processus Copilot CLI.</summary>
         public void Dispose()
         {

@@ -4,18 +4,39 @@ using System.Linq;
 
 namespace VBAi
 {
+
     /// <summary>Creates a separate PPTM coverage presentation without saving or renaming its original.</summary>
     internal sealed class VbaTestPowerPointCoverageClone
     {
+
+        /// <summary>Maintains the macro enabled presentation format state for vba test power point coverage clone.</summary>
         internal const int MacroEnabledPresentationFormat = 25; // ppSaveAsOpenXMLPresentationMacroEnabled
+
+        /// <summary>Maintains the host state for vba test power point coverage clone.</summary>
         internal VbaTestPowerPointValuesHost Host = new VbaTestPowerPointValuesHost();
+
+        /// <summary>Maintains the save copy state for vba test power point coverage clone.</summary>
         internal Action<object, string> SaveCopy = (presentation, path) => ((dynamic)presentation).SaveCopyAs(path, MacroEnabledPresentationFormat, -2);
+
+        /// <summary>Maintains the open copy state for vba test power point coverage clone.</summary>
         internal Func<object, string, object> OpenCopy = (application, path) => ((dynamic)application).Presentations.Open(path, 0, 0, 0);
+
+        /// <summary>Maintains the close copy state for vba test power point coverage clone.</summary>
         internal Action<object> CloseCopy = presentation => ((dynamic)presentation).Close();
 
+        /// <summary>Creates power point for vba test power point coverage clone.</summary>
+        /// <param name="project">object that supplies the project for this operation.</param>
+        /// <param name="sourcePath">Path used for the source path being processed.</param>
+        /// <param name="folder">Text that supplies the folder value. Use the format required by the calling operation.</param>
+        /// <returns>vba test coverage clone produced by the operation for create power point on vba test power point coverage clone.</returns>
         internal static VbaTestCoverageClone CreatePowerPoint(object project, string sourcePath, string folder)
         { return new VbaTestPowerPointCoverageClone().Create(project, sourcePath, folder); }
 
+        /// <summary>Creates  for vba test power point coverage clone.</summary>
+        /// <param name="project">object that supplies the project for this operation.</param>
+        /// <param name="sourcePath">Path used for the source path being processed.</param>
+        /// <param name="folder">Text that supplies the folder value. Use the format required by the calling operation.</param>
+        /// <returns>vba test coverage clone produced by the operation for create on vba test power point coverage clone.</returns>
         internal VbaTestCoverageClone Create(object project, string sourcePath, string folder)
         {
             var source = (VbaTestPowerPointValuesHost.OwnedTarget)Host.ResolveTarget(project, sourcePath);
@@ -75,6 +96,11 @@ namespace VBAi
             { throw Uncertain("Verifying ownership after opening the PPTM copy", copyPath, error); }
         }
 
+        /// <summary>Handles uncertain for vba test power point coverage clone.</summary>
+        /// <param name="phase">Text that supplies the phase value. Use the format required by the calling operation.</param>
+        /// <param name="retainedPath">Path used for the retained path being processed.</param>
+        /// <param name="error">Exception describing the error failure.</param>
+        /// <returns>vba test invocation exception produced by the operation for uncertain on vba test power point coverage clone.</returns>
         private static VbaTestInvocationException Uncertain(string phase, string retainedPath, Exception error)
         { return new VbaTestInvocationException(phase + " did not return verified completion; no retry was attempted. Retained copy: " + retainedPath + ". " + error.Message, true, error); }
     }

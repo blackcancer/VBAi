@@ -1,41 +1,59 @@
 namespace VBAi
 {
+
     /// <summary>Displays a transcript message with its content, metadata, and available actions.</summary>
     public sealed partial class ChatMessageView
     {
+
         /// <summary>Container that owns the disposable components created by the WinForms Designer.</summary>
         private System.ComponentModel.IContainer components;
+
         /// <summary>ToolTip component used to show full text for transcript controls.</summary>
         private System.Windows.Forms.ToolTip toolTips;
+
         /// <summary>Flow layout panel that contains this transcript view&apos;s child controls.</summary>
         private ChatComposerPanel layout;
+
         /// <summary>Arranges the message author and its available actions.</summary>
         private System.Windows.Forms.TableLayoutPanel header;
+
         /// <summary>Displays the role or name of the message author.</summary>
         internal System.Windows.Forms.Label speaker;
+
         /// <summary>Provides the action that copies the message content.</summary>
         internal ChatActionButton copy;
+
         /// <summary>Provides the action that starts a conversation from this message.</summary>
         internal ChatActionButton fork;
+
         /// <summary>Contains the actions shown alongside the message author.</summary>
         internal System.Windows.Forms.FlowLayoutPanel headingActions;
+
         /// <summary>Displays the message text and its interactive references.</summary>
         internal ChatTextContentView message;
+
         /// <summary>Displays the memory snapshot attached to this message.</summary>
         internal ChatDisclosureView memory;
+
         /// <summary>Contains the files attached to this message.</summary>
         internal System.Windows.Forms.FlowLayoutPanel attachments;
+
         /// <summary>Contains the VBA references associated with this message.</summary>
         internal System.Windows.Forms.FlowLayoutPanel references;
+
         /// <summary>Contains the code change targets produced by this message.</summary>
         internal System.Windows.Forms.FlowLayoutPanel targets;
-        /// <summary>Stores the undo turn used by ChatMessageView.</summary>
+
+        /// <summary>Maintains the undo turn state for chat message view.</summary>
         internal ChatActionButton undoTurn;
-        /// <summary>Stores the fix used by ChatMessageView.</summary>
+
+        /// <summary>Maintains the fix state for chat message view.</summary>
         internal ChatActionButton fix;
+
         /// <summary>Releases the Designer components.</summary>
         /// <param name="disposing">Whether to release managed resources.</param>
         protected override void Dispose(bool disposing) { if (disposing) components?.Dispose(); base.Dispose(disposing); }
+
         /// <summary>Creates and configures the chat message view controls serialized by the WinForms Designer.</summary>
         private void InitializeComponent()
         {

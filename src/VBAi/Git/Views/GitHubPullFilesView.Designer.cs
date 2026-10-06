@@ -1,14 +1,19 @@
 namespace VBAi
 {
+
     /// <summary>Vue listant les fichiers modifiés par la pull request sélectionnée.</summary>
     public sealed partial class GitHubPullFilesView
     {
+
         /// <summary>Liste les chemins des fichiers modifiés et leur état de changement.</summary>
         internal VBAi.UiListBox files;
+
         /// <summary>Conteneur des composants managés de la vue.</summary>
         private System.ComponentModel.IContainer components;
+
         /// <summary>Fournit les info-bulles des contrôles.</summary>
         private System.Windows.Forms.ToolTip toolTips;
+
         /// <summary>Libère les composants de la vue avant son contrôle natif.</summary>
         /// <param name="disposing">Indique si les ressources managées doivent être libérées.</param>
         protected override void Dispose(bool disposing)

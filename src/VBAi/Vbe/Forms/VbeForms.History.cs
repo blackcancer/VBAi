@@ -2,9 +2,11 @@ using System;
 
 namespace VBAi
 {
+
     /// <summary>Applique les commandes Undo et Redo natives au concepteur d’un formulaire.</summary>
     internal sealed partial class VbeForms
     {
+
         /// <summary>Exécute une action d’historique si l’arbre et l’état natif correspondent encore à la lecture fournie.</summary>
         /// <param name="request">Projet, formulaire, action et version d’arbre attendue.</param>
         /// <returns>Action exécutée, changements observés et erreurs de lecture avant/après.</returns>

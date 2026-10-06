@@ -8,49 +8,85 @@ using System.Text.RegularExpressions;
 
 namespace VBAi
 {
+
     /// <summary>Interface Automation de lecture des propriétés d’une image OLE.</summary>
     [ComImport, Guid("7BF80981-BF32-101A-8BBB-00AA00300CAB"),
      InterfaceType(ComInterfaceType.InterfaceIsIDispatch)]
     internal interface IOlePictureDisp
     {
+
         /// <summary>Handle natif de l’image OLE.</summary>
         /// <value>Handle natif de l’image OLE.</value>
         [DispId(0)] int Handle { get; }
+
         /// <summary>Type déclaré de l’image OLE.</summary>
         /// <value>Type déclaré de l’image OLE.</value>
         [DispId(3)] short Type { get; }
+
         /// <summary>Largeur exposée par l’image OLE.</summary>
         /// <value>Largeur exposée par l’image OLE.</value>
         [DispId(4)] int Width { get; }
+
         /// <summary>Hauteur exposée par l’image OLE.</summary>
         /// <value>Hauteur exposée par l’image OLE.</value>
         [DispId(5)] int Height { get; }
     }
 
     // IPersistStream inherits IPersist: keep the complete native vtable order.
+    /// <summary>Defines the i ole picture persistence contract.</summary>
     [ComImport, Guid("00000109-0000-0000-C000-000000000046"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
     internal interface IOlePicturePersistence
     {
+
+        /// <summary>Returns class id for i ole picture persistence.</summary>
+        /// <param name="classId">Identifier that supplies the class id for this operation.</param>
+        /// <returns>int produced by the operation for get class id on i ole picture persistence.</returns>
         [PreserveSig] int GetClassID(out Guid classId);
+
+        /// <summary>Determines whether dirty for i ole picture persistence.</summary>
+        /// <returns>int produced by the operation for is dirty on i ole picture persistence.</returns>
         [PreserveSig] int IsDirty();
+
+        /// <summary>Loads  for i ole picture persistence.</summary>
+        /// <param name="stream">i stream that supplies the stream for this operation.</param>
+        /// <returns>int produced by the operation for load on i ole picture persistence.</returns>
         [PreserveSig] int Load([MarshalAs(UnmanagedType.Interface)] IStream stream);
+
+        /// <summary>Saves  for i ole picture persistence.</summary>
+        /// <param name="stream">i stream that supplies the stream for this operation.</param>
+        /// <param name="clearDirty">Indicates whether clear dirty is enabled.</param>
+        /// <returns>int produced by the operation for save on i ole picture persistence.</returns>
         [PreserveSig] int Save([MarshalAs(UnmanagedType.Interface)] IStream stream, [MarshalAs(UnmanagedType.Bool)] bool clearDirty);
+
+        /// <summary>Returns size max for i ole picture persistence.</summary>
+        /// <param name="size">ulong that supplies the size for this operation.</param>
+        /// <returns>int produced by the operation for get size max on i ole picture persistence.</returns>
         [PreserveSig] int GetSizeMax(out ulong size);
     }
 
     /// <summary>Charge des fichiers d’image comme objets OLE pris en charge par le concepteur.</summary>
     internal static class OlePictureLoader
     {
+
+        /// <summary>Maintains the maximum persistence bytes state for ole picture loader.</summary>
         internal const long MaximumPersistenceBytes = 64L * 1024 * 1024;
+
+        /// <summary>Creates stream on h global for ole picture loader.</summary>
+        /// <param name="memory">Native handle that supplies the memory for this operation.</param>
+        /// <param name="deleteOnRelease">Indicates whether delete on release is enabled.</param>
+        /// <param name="stream">i stream that supplies the stream for this operation.</param>
         [DllImport("ole32.dll", PreserveSig = false)]
         private static extern void CreateStreamOnHGlobal(IntPtr memory, [MarshalAs(UnmanagedType.Bool)] bool deleteOnRelease,
             [MarshalAs(UnmanagedType.Interface)] out IStream stream);
+
         /// <summary>Contrat du chargeur natif d’une image OLE Automation.</summary>
         /// <param name="fileName">Chemin du fichier image à lire.</param>
         /// <param name="picture">Objet image OLE retourné.</param>
         internal delegate void PictureReader(object fileName, out object picture);
+
         /// <summary>Charge l’image avec OleAut par défaut.</summary>
         internal static PictureReader ReadPicture = OleLoadPictureFile;
+
         /// <summary>Charge une image avec l’API OleAut et retourne son objet IDispatch.</summary>
         /// <param name="fileName">Chemin absolu du fichier image à charger.</param>
         /// <param name="picture">Objet image COM fourni par oleaut32.</param>

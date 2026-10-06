@@ -4,21 +4,42 @@ using System.Threading.Tasks;
 
 namespace VBAi
 {
+
     /// <summary>Répond aux demandes de symboles et d’ouverture de définition de l’éditeur Monaco.</summary>
     internal sealed partial class ModernEditorWindow
     {
+
         /// <summary>Language work never queues behind draft persistence and synchronization.</summary>
         private EditorSyncWorker languageWorker;
+
+        /// <summary>Maintains the language cache state for modern editor window.</summary>
         private readonly EditorLanguageCache languageCache = new EditorLanguageCache();
+
+        /// <summary>Maintains the language requests state for modern editor window.</summary>
         private readonly System.Collections.Generic.Dictionary<string, System.Threading.CancellationTokenSource> languageRequests = new System.Collections.Generic.Dictionary<string, System.Threading.CancellationTokenSource>();
+
+        /// <summary>Maintains the language gate state for modern editor window.</summary>
         private readonly System.Threading.SemaphoreSlim languageGate = new System.Threading.SemaphoreSlim(1, 1);
+
+        /// <summary>Maintains the language source project state for modern editor window.</summary>
         private object languageSourceProject;
+
+        /// <summary>Maintains the language sources state for modern editor window.</summary>
         private EditorSource[] languageSources;
+
+        /// <summary>Maintains the language reference paths state for modern editor window.</summary>
         private string[] languageReferencePaths;
+
+        /// <summary>Maintains the language sources at state for modern editor window.</summary>
         private long languageSourcesAt;
+
+        /// <summary>Maintains the language clock state for modern editor window.</summary>
         internal Func<long> LanguageClock = () => System.Diagnostics.Stopwatch.GetTimestamp() / (System.Diagnostics.Stopwatch.Frequency / 1000);
 
         /// <summary>Bounds native catalog reads during a burst of completion/hover requests.</summary>
+        /// <param name="native">editor vbe module that supplies the native for this operation.</param>
+        /// <param name="cancellation">Token that cancels the operation when cancellation is requested.</param>
+        /// <returns>task&lt;editor source[]&gt; produced by the operation for read language sources on modern editor window.</returns>
         private async Task<EditorSource[]> ReadLanguageSources(EditorVbeModule native, System.Threading.CancellationToken cancellation)
         {
             long now = LanguageClock();
@@ -38,7 +59,10 @@ namespace VBAi
             // Overlay drafts on a copy; never poison the cached native snapshot.
             return languageSources.Select(source => new EditorSource { Module = source.Module, Text = source.Text, ComponentType = source.ComponentType }).ToArray();
         }
+
         /// <summary>Reads fresh project state but only parses and transfers changed language data.</summary>
+        /// <param name="message">editor message that supplies the message for this operation.</param>
+        /// <returns>task produced by the operation for language request on modern editor window.</returns>
         private async Task LanguageRequest(EditorMessage message)
         {
             object response = null;
@@ -87,6 +111,7 @@ namespace VBAi
                 if (Ready && !closing && !IsDisposed) await Script("languageReply", message.request, response);
             }
         }
+
         /// <summary>Ouvre le module qui définit le symbole demandé puis révèle sa ligne et sa colonne.</summary>
         /// <param name="message">Destination du symbole fournie par l’index de langage.</param>
         /// <returns>Tâche terminée après l’ouverture et le positionnement éventuels.</returns>

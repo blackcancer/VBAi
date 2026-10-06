@@ -10,20 +10,28 @@ namespace VBAi
     /// <summary>Observe les événements COM de collections de projets ou de composants du VBE.</summary>
     internal sealed class VbeCollectionEvents : IDisposable
     {
+
         /// <summary>Frontière native de combinaison des événements COM, conservée séparément des gardes de connexion.</summary>
         internal static Action<object, Guid, int, Delegate> CombineNative = ComEventsHelper.Combine;
+
         /// <summary>Identifiant de l’interface d’événements native choisie pour la collection.</summary>
         private readonly Guid iid;
+
         /// <summary>Opération qui attache un gestionnaire à un point de connexion.</summary>
         private readonly Action<object, Guid, int, Delegate> add, remove;
+
         /// <summary>Gestionnaires prévus pour la collection surveillée.</summary>
         private readonly List<Tuple<int, Delegate>> handlers = new List<Tuple<int, Delegate>>();
+
         /// <summary>Gestionnaires effectivement attachés et donc à détacher.</summary>
         private readonly List<Tuple<int, Delegate>> attached = new List<Tuple<int, Delegate>>();
+
         /// <summary>Collection COM actuellement observée.</summary>
         private object source;
+
         /// <summary>Indique que l’observateur a été libéré.</summary>
         private bool disposed;
+
         /// <summary>Construit les abonnements adaptés à une collection de projets ou de composants.</summary>
         /// <param name="changed">Callback d’invalidation appelé lors d’un événement pertinent.</param>
         /// <param name="components"><see langword="true"/> pour la collection des composants; sinon celle des projets.</param>
@@ -45,6 +53,7 @@ namespace VBAi
             // of individual components does not invalidate the symbol inventory.
             handlers.Add(Tuple.Create(components ? 6 : 4, (Delegate)item));
         }
+
         /// <summary>Vérifie le point de connexion natif avant d’enregistrer le délégué COM.</summary>
         /// <param name="target">Collection COM source.</param><param name="iid">Interface d’événements attendue.</param>
         /// <param name="member">Identifiant du membre événementiel.</param><param name="handler">Délégué à connecter.</param>
@@ -59,6 +68,7 @@ namespace VBAi
             if (actual != iid) throw new InvalidOperationException("The native event connection interface does not match.");
             CombineNative(target, iid, member, handler);
         }
+
         /// <summary>Remplace la collection observée et attache ses gestionnaires, avec nettoyage si l’attachement échoue.</summary>
         /// <param name="next">Nouvelle source COM, ou <see langword="null"/> pour se désabonner.</param>
         internal void Observe(object next)
@@ -78,6 +88,7 @@ namespace VBAi
             }
             catch { Detach(); throw; }
         }
+
         /// <summary>Détache tous les gestionnaires déjà connectés et libère la référence à la source.</summary>
         private void Detach()
         {
@@ -88,6 +99,7 @@ namespace VBAi
             }
             attached.Clear(); source = null;
         }
+
         /// <summary>Arrête l’observation et détache les gestionnaires au plus une fois.</summary>
         public void Dispose() { if (disposed) return; disposed = true; Detach(); }
     }

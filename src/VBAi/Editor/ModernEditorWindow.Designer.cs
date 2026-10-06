@@ -1,41 +1,59 @@
 namespace VBAi
 {
+
     /// <summary>Déclare les contrôles WinForms qui structurent la fenêtre Monaco.</summary>
     partial class ModernEditorWindow
     {
+
         /// <summary>Conteneur des composants non visuels créés par le concepteur.</summary>
         private System.ComponentModel.IContainer components;
+
         /// <summary>Grille principale qui place la barre d’outils, les onglets, la surface Web et le statut.</summary>
         private System.Windows.Forms.TableLayoutPanel layout;
+
         /// <summary>Barre de commandes de l’éditeur, avec défilement horizontal.</summary>
         private System.Windows.Forms.FlowLayoutPanel toolbar;
+
         /// <summary>Commande qui applique la version éditée après comparaison.</summary>
         private VBAi.ThemedButton resolve;
+
         /// <summary>Commande qui compare le brouillon au code VBA natif.</summary>
         private VBAi.ThemedButton compare;
+
         /// <summary>Commande qui revient à l’édition après la comparaison.</summary>
         private VBAi.ThemedButton edit;
+
         /// <summary>Commande qui recharge la version native en préservant le brouillon.</summary>
         private VBAi.ThemedButton reload;
+
         /// <summary>Commande qui restaure un brouillon récupéré.</summary>
         private VBAi.ThemedButton restore;
+
         /// <summary>Onglets des modules ouverts.</summary>
         private VBAi.ThemedTabControl tabs;
+
         /// <summary>Surface qui héberge le contrôle WebView2.</summary>
         private System.Windows.Forms.Panel surface;
+
         /// <summary>Message d’état et de synchronisation du document actif.</summary>
         private System.Windows.Forms.Label status;
+
         /// <summary>Minuterie de capture des révisions et de synchronisation périodique.</summary>
         private System.Windows.Forms.Timer timer;
+
         /// <summary>Lightweight execution observation independent of document synchronization.</summary>
         private System.Windows.Forms.Timer debugTimer;
+
         /// <summary>Schedules small revisioned typing batches on the VBE owning thread.</summary>
         private System.Windows.Forms.Timer streamTimer;
+
         /// <summary>Info-bulles descriptives des commandes de la barre d’outils.</summary>
         private System.Windows.Forms.ToolTip tips;
+
         /// <summary>Libère les ressources de WebView2, du worker et des fenêtres CodePane détenues.</summary>
         /// <param name="disposing">Indique si la libération concerne aussi les ressources managées.</param>
         protected override void Dispose(bool disposing) { if (disposing) { DisposeRuntime(); components?.Dispose(); } base.Dispose(disposing); }
+
         /// <summary>Crée et dispose les contrôles de la fenêtre d’édition.</summary>
         private void InitializeComponent()
         {

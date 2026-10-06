@@ -1,22 +1,31 @@
 namespace VBAi
 {
+
     /// <summary>Designer-generated controls for creating and restoring local project checkpoints.</summary>
     public sealed partial class GitCheckpointsView
     {
+
         /// <summary>Actions for checkpoint operations.</summary>
         internal System.Windows.Forms.FlowLayoutPanel checkpointActions;
+
         /// <summary>Saved local checkpoints.</summary>
         internal VBAi.UiListBox checkpointList;
+
         /// <summary>New checkpoint name input.</summary>
         internal VBAi.UiTextBox checkpointName;
+
         /// <summary>Creates a checkpoint from the current project state.</summary>
         internal VBAi.ThemedButton checkpointCreate;
+
         /// <summary>Restores the selected checkpoint.</summary>
         internal VBAi.ThemedButton checkpointRestore;
+
         /// <summary>Container that owns Designer components.</summary>
         private System.ComponentModel.IContainer components;
+
         /// <summary>Tooltips associated with checkpoint actions.</summary>
         private System.Windows.Forms.ToolTip toolTips;
+
         /// <summary>Libère les composants de la vue avant son contrôle natif.</summary>
         /// <param name="disposing">Indique si les ressources managées doivent être libérées.</param>
         protected override void Dispose(bool disposing)

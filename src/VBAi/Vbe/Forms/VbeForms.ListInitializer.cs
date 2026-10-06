@@ -10,6 +10,7 @@ using System.Text.RegularExpressions;
 
 namespace VBAi
 {
+
     /// <summary>Gère la génération contrôlée des valeurs de listes dans le code des UserForms.</summary>
     internal sealed partial class VbeForms
     {
@@ -159,11 +160,11 @@ namespace VBAi
             }
         }
 
+        // Uses only validated collection names and quoted control identifiers. The final
+        // live tree lookup remains authoritative; this is not arbitrary VBA evaluation.
         /// <summary>Construit un accès VBA pour un chemin de contrôle validé.</summary>
         /// <param name="path">Chemin canonique utilisant Controls et Pages.</param>
         /// <returns>Accès au contrôle sans expression arbitraire.</returns>
-        // Uses only validated collection names and quoted control identifiers. The final
-        // live tree lookup remains authoritative; this is not arbitrary VBA evaluation.
         internal static string ListControlAccessor(string path)
         {
             string[] parts = (path ?? "").Split('/');

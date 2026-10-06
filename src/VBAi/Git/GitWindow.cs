@@ -7,31 +7,44 @@ using System.Windows.Forms;
 
 namespace VBAi
 {
+
     /// <summary>Fenêtre de synchronisation Git du document VBA, avec revue, branches, points de contrôle et conflits.</summary>
     internal sealed partial class GitWindow : Form
     {
+
         /// <summary>Projet VBA dont les modules sont suivis par Git.</summary>
         private VbaGitProject project;
+
         /// <summary>Dépôt et branche associés au document.</summary>
         private MacroGitRepository repository;
+
         /// <summary>Dossier local de cache et de session pour la portée du document.</summary>
         private string cache;
+
         /// <summary>Verrou exclusif empêchant les opérations concurrentes sur le cache.</summary>
         private FileStream cacheLock;
+
         /// <summary>Indique qu’une opération Git est en cours dans la fenêtre.</summary>
         private bool running;
+
         /// <summary>Compte GitHub utilisé par les commandes de revue.</summary>
         private string account;
+
         /// <summary>Instantané vivant du projet VBA à comparer.</summary>
         private VbaGitSnapshot displayedLive;
+
         /// <summary>Instantané de référence de la branche synchronisée.</summary>
         private VbaGitSnapshot displayedBaseline;
+
         /// <summary>Branche affichée lors de la dernière comparaison.</summary>
         private string displayedBranch;
+
         /// <summary>Résout le cache local associé au document.</summary>
         internal static Func<string, string> CacheDirectory = MacroGitRepository.ResolveScopeDirectory;
+
         /// <summary>Initialise le dépôt et lit son état distant avec les commandes Git natives.</summary>
         internal Func<MacroGitRepository, string, Task> ConnectRepository = (selected, url) => Task.Run(() => { selected.Initialize(url); selected.Fetch(); });
+
         /// <summary>Crée la fenêtre Git et initialise la revue et les ressources visuelles.</summary>
         public GitWindow() { InitializeComponent(); BindViews(); Icon = VbeWindowIcons.Icon("github"); UiText.Apply(this, components); InitializeReview(); }
 
@@ -60,9 +73,11 @@ namespace VBAi
         /// <summary>Configuration locale de l’URL distante et de la branche suivie par un document.</summary>
         private sealed class Binding
         {
+
             /// <summary>Obtient ou définit l’URL distante validée.</summary>
             /// <value>URL HTTPS du dépôt.</value>
             public string Remote { get; set; }
+
             /// <summary>Obtient ou définit le nom de la branche locale associée.</summary>
             /// <value>Nom de branche suivi.</value>
             public string Branch { get; set; }
@@ -100,6 +115,7 @@ namespace VBAi
         /// <param name="sender">Commande de comparaison.</param>
         /// <param name="e">Données de l’événement.</param>
         private async void Compare_Click(object sender, EventArgs e) { await Perform(Compare, true); }
+
         /// <summary>Lit les instantanés VBA et Git et remplit les changements, l’historique, les branches et les conflits.</summary>
         /// <returns>Tâche terminée après l’actualisation de l’interface.</returns>
         private async Task Compare()
@@ -126,14 +142,17 @@ namespace VBAi
         /// <param name="sender">Commande de commit.</param>
         /// <param name="e">Données de l’événement.</param>
         private async void Commit_Click(object sender, EventArgs e) { await RunGitAction("commit_selected", text: commitMessage.Text); }
+
         /// <summary>Publie la branche locale vers le dépôt distant.</summary>
         /// <param name="sender">Commande Push.</param>
         /// <param name="e">Données de l’événement.</param>
         private async void Push_Click(object sender, EventArgs e) { await RunGitAction("push"); }
+
         /// <summary>Récupère les objets distants et actualise la comparaison.</summary>
         /// <param name="sender">Commande Fetch.</param>
         /// <param name="e">Données de l’événement.</param>
         private async void Fetch_Click(object sender, EventArgs e) { await RunGitAction("fetch"); }
+
         /// <summary>Exécute une opération Git sur les éléments cochés, puis relit le dépôt et le projet.</summary>
         /// <param name="action">Nom de l’opération métier à exécuter.</param>
         /// <param name="name">Nom facultatif de branche ou de point de contrôle.</param>
@@ -207,6 +226,7 @@ namespace VBAi
                     request.Complete(operationFailure, PublishHandoffState);
             }
         }
+
         /// <summary>Affiche le diff correspondant au changement sélectionné.</summary>
         /// <param name="sender">Liste des changements.</param>
         /// <param name="e">Données de l’événement.</param>
@@ -221,14 +241,17 @@ namespace VBAi
         /// <param name="sender">Commande Pull.</param>
         /// <param name="e">Données de l’événement.</param>
         private async void Pull_Click(object sender, EventArgs e) { await RunGitAction("pull"); }
+
         /// <summary>Restaure le dernier état VBA synchronisé.</summary>
         /// <param name="sender">Commande de restauration.</param>
         /// <param name="e">Données de l’événement.</param>
         private async void Restore_Click(object sender, EventArgs e) { await RunGitAction("rollback"); }
+
         /// <summary>Crée un point de contrôle nommé.</summary>
         /// <param name="sender">Commande de création.</param>
         /// <param name="e">Données de l’événement.</param>
         private async void CheckpointCreate_Click(object sender, EventArgs e) { await RunGitAction("checkpoint_create", checkpointName.Text); }
+
         /// <summary>Restaure le point de contrôle sélectionné.</summary>
         /// <param name="sender">Commande de restauration.</param>
         /// <param name="e">Données de l’événement.</param>
@@ -237,14 +260,17 @@ namespace VBAi
             var selected = checkpointList.SelectedItem as GitCheckpoint;
             if (selected != null) await RunGitAction("checkpoint_restore", selected.Id);
         }
+
         /// <summary>Crée une branche locale avec le nom saisi.</summary>
         /// <param name="sender">Commande de création de branche.</param>
         /// <param name="e">Données de l’événement.</param>
         private async void BranchCreate_Click(object sender, EventArgs e) { await RunGitAction("branch_create", branchName.Text); }
+
         /// <summary>Configure le suivi de la branche distante indiquée.</summary>
         /// <param name="sender">Commande de suivi.</param>
         /// <param name="e">Données de l’événement.</param>
         private async void BranchTrack_Click(object sender, EventArgs e) { await RunGitAction("branch_track", branchName.Text); }
+
         /// <summary>Charge les branches distantes et les propose dans le sélecteur de branche.</summary>
         /// <param name="sender">Commande de liste des branches distantes.</param>
         /// <param name="e">Données de l’événement.</param>
@@ -257,41 +283,50 @@ namespace VBAi
             });
             if (!running && branchName.Items.Count > 0) branchName.DroppedDown = true;
         }
+
         /// <summary>Bascule vers la branche locale sélectionnée.</summary>
         /// <param name="sender">Commande de bascule.</param>
         /// <param name="e">Données de l’événement.</param>
         private async void BranchSwitch_Click(object sender, EventArgs e)
         { if (branchList.SelectedItem != null) await RunGitAction("branch_switch", branchList.SelectedItem.ToString()); }
+
         /// <summary>Prépare une fusion avec la branche sélectionnée.</summary>
         /// <param name="sender">Commande de démarrage de fusion.</param>
         /// <param name="e">Données de l’événement.</param>
         private async void MergeBegin_Click(object sender, EventArgs e)
         { if (branchList.SelectedItem != null) await RunGitAction("merge_begin", branchList.SelectedItem.ToString()); }
+
         /// <summary>Résout le conflit sélectionné en conservant la version locale.</summary>
         /// <param name="sender">Commande de résolution locale.</param>
         /// <param name="e">Données de l’événement.</param>
         private async void MergeOurs_Click(object sender, EventArgs e) { await ResolveMerge("ours"); }
+
         /// <summary>Résout le conflit sélectionné en conservant la version entrante.</summary>
         /// <param name="sender">Commande de résolution entrante.</param>
         /// <param name="e">Données de l’événement.</param>
         private async void MergeTheirs_Click(object sender, EventArgs e) { await ResolveMerge("theirs"); }
+
         /// <summary>Résout le conflit sélectionné avec le texte fourni par l’utilisateur.</summary>
         /// <param name="sender">Commande de résolution textuelle.</param>
         /// <param name="e">Données de l’événement.</param>
         private async void MergeText_Click(object sender, EventArgs e) { await ResolveMerge("text"); }
+
         /// <summary>Applique le choix de résolution au conflit sélectionné.</summary>
         /// <param name="choice">Version à conserver ou mode textuel.</param>
         /// <returns>Tâche terminée après la mise à jour du dépôt.</returns>
         private async Task ResolveMerge(string choice)
         { if (conflictList.SelectedItem != null) await RunGitAction("merge_resolve", text: resolutionText.Text, choice: choice, path: conflictList.SelectedItem.ToString()); }
+
         /// <summary>Finalise la fusion avec le message de commit courant.</summary>
         /// <param name="sender">Commande de finalisation.</param>
         /// <param name="e">Données de l’événement.</param>
         private async void MergeComplete_Click(object sender, EventArgs e) { await RunGitAction("merge_complete", text: commitMessage.Text); }
+
         /// <summary>Abandonne la fusion en cours.</summary>
         /// <param name="sender">Commande d’abandon.</param>
         /// <param name="e">Données de l’événement.</param>
         private async void MergeAbort_Click(object sender, EventArgs e) { await RunGitAction("merge_abort"); }
+
         /// <summary>Charge les contenus de conflit du fichier sélectionné et peuple la comparaison à deux côtés.</summary>
         /// <param name="sender">Liste des conflits.</param>
         /// <param name="e">Données de l’événement.</param>
@@ -314,6 +349,7 @@ namespace VBAi
                 status.Text = UiText.Get("Conflict: ") + path + UiText.Get(". Choose a version or edit the full content below.");
             });
         }
+
         /// <summary>Exécute une transaction exclusive, gère son annulation, son statut et l’état des commandes.</summary>
         /// <param name="action">Opération asynchrone à exécuter.</param>
         /// <param name="refresh">Autorise le changement de branche observé lors d’une actualisation.</param>
@@ -338,6 +374,7 @@ namespace VBAi
             catch (Exception ex) { operationFailure = ex; status.Text = ex.Message + " [" + GitFailureDiagnostic.Describe(ex) + "] · " + UiText.Get("Check the connection, account and Git state, then retry."); }
             finally { FinishOperation(); }
         }
+
         /// <summary>Recalcule l’activation des commandes selon l’opération, le dépôt et l’état de revue.</summary>
         private void UpdateButtons()
         {
@@ -352,6 +389,7 @@ namespace VBAi
             commitMessage.Enabled = !running;
             branchesTab.Enabled = checkpointsTab.Enabled = conflictsTab.Enabled = !running && repository != null;
         }
+
         /// <summary>Empêche la fermeture pendant une opération Git ou une opération GitHub.</summary>
         /// <param name="e">Annulation et données de l’événement de fermeture.</param>
         protected override void OnFormClosing(FormClosingEventArgs e)
@@ -360,6 +398,7 @@ namespace VBAi
                 DialogResult == DialogResult.OK && e.CloseReason == CloseReason.None)) || githubPane.Busy) { e.Cancel = true; return; }
             base.OnFormClosing(e);
         }
+
         /// <summary>Libère le verrou de cache et les composants du formulaire.</summary>
         /// <param name="disposing"><see langword="true"/> si l’appel provient de <see cref="IDisposable.Dispose()"/>.</param>
         protected override void Dispose(bool disposing)

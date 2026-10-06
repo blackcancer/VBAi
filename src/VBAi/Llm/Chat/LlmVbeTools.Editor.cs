@@ -1,8 +1,10 @@
 namespace VBAi
 {
+
     /// <summary>Expose les outils du chat qui inspectent ou modifient le code VBA.</summary>
     internal sealed partial class LlmVbeTools
     {
+
         /// <summary>Définitions JSON des opérations de renommage et d’exécution de procédures.</summary>
         /// <value>Ensemble des outils proposés par cette partie de l’interface LLM.</value>
         private static object[] EditorDefinitions => new[] {

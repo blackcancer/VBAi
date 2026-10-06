@@ -6,59 +6,86 @@ using System.Windows.Forms;
 
 namespace VBAi
 {
+
     /// <summary>Shared Windows command symbols, serialized by the WinForms Designer.</summary>
     public enum UiSymbol
     {
+
         /// <summary>No symbol.</summary>
         None = 0,
+
         /// <summary>Add.</summary>
         Add = 0xE710,
+
         /// <summary>More commands.</summary>
         More = 0xE712,
+
         /// <summary>Close or cancel.</summary>
         Close = 0xE711,
+
         /// <summary>Settings.</summary>
         Settings = 0xE713,
+
         /// <summary>History.</summary>
         History = 0xE81C,
+
         /// <summary>Attach context.</summary>
         Attach = 0xE723,
+
         /// <summary>Code.</summary>
         Code = 0xE943,
+
         /// <summary>Refresh.</summary>
         Refresh = 0xE72C,
+
         /// <summary>Save.</summary>
         Save = 0xE74E,
+
         /// <summary>Delete.</summary>
         Delete = 0xE74D,
+
         /// <summary>Edit.</summary>
         Edit = 0xE70F,
+
         /// <summary>Copy.</summary>
         Copy = 0xE8C8,
+
         /// <summary>Pin.</summary>
         Pin = 0xE718,
+
         /// <summary>Upload or send.</summary>
         Upload = 0xE898,
+
         /// <summary>Download.</summary>
         Download = 0xE896,
+
         /// <summary>Stop.</summary>
         Stop = 0xE71A,
+
         /// <summary>Play or resume.</summary>
         Play = 0xE768,
+
         /// <summary>Undo or restore.</summary>
         Undo = 0xE7A7,
+
         /// <summary>Inspect.</summary>
         Inspect = 0xE890,
+
         /// <summary>Search.</summary>
         Search = 0xE721,
+
         /// <summary>Accept or verify.</summary>
         Check = 0xE73E,
+
         /// <summary>Open folder.</summary>
         Folder = 0xE8B7,
+
         /// <summary>Email.</summary>
         Mail = 0xE715,
+
         /// <summary>Previous.</summary>
         Previous = 0xE76B,
+
         /// <summary>Next.</summary>
         Next = 0xE76C
     }
@@ -67,14 +94,19 @@ namespace VBAi
     [ToolboxItem(true)]
     public class UiActionButton : Button
     {
-        /// <summary>Stores the symbol used by UiActionButton.</summary>
+
+        /// <summary>Maintains the symbol state for ui action button.</summary>
         private UiSymbol symbol;
-        /// <summary>Stores the icon only,primary,hovered,pressed used by UiActionButton.</summary>
+
+        /// <summary>Maintains the icon only and primary and hovered and pressed state for ui action button.</summary>
         private bool iconOnly, primary, hovered, pressed;
-        /// <summary>Stores the caption tip used by UiActionButton.</summary>
+
+        /// <summary>Maintains the caption tip state for ui action button.</summary>
         private readonly ToolTip captionTip = new ToolTip { ShowAlways = true };
-        /// <summary>Stores the symbol font used by UiActionButton.</summary>
+
+        /// <summary>Maintains the symbol font state for ui action button.</summary>
         private static readonly string SymbolFont = FindSymbolFont();
+
         /// <summary>Creates a native keyboard-accessible command.</summary>
         public UiActionButton()
         {
@@ -82,42 +114,50 @@ namespace VBAi
             FlatStyle = FlatStyle.Flat; FlatAppearance.BorderSize = 0;
             Cursor = Cursors.Hand;
         }
+
         /// <summary>Symbol displayed beside the caption or on its own.</summary>
-        /// <value>The current value represented by this member.</value>
+        /// <value>Current symbol exposed by ui action button.</value>
         [Category("Appearance"), DefaultValue(UiSymbol.None)]
         public UiSymbol Symbol { get => symbol; set { symbol = value; Invalidate(); } }
+
         /// <summary>Hides the painted caption while retaining its tooltip and accessible name.</summary>
-        /// <value>The current value represented by this member.</value>
+        /// <value>Current icon only exposed by ui action button.</value>
         [Category("Appearance"), DefaultValue(false)]
         public bool IconOnly { get => iconOnly; set { iconOnly = value; UpdateCaption(); Invalidate(); } }
+
         /// <summary>Emphasizes the main action in its group.</summary>
-        /// <value>The current value represented by this member.</value>
+        /// <value>Current primary exposed by ui action button.</value>
         [Category("Appearance"), DefaultValue(false)]
         public bool Primary { get => primary; set { primary = value; Invalidate(); } }
+
         /// <summary>Chooses the available Windows icon font for symbols without a bundled SVG.</summary>
-        /// <returns>The result produced by this operation.</returns>
+        /// <returns>Text produced by the operation for find symbol font on ui action button.</returns>
         private static string FindSymbolFont()
         {
             using (var font = new Font("Segoe Fluent Icons", 12))
                 return ChooseSymbolFont(font.Name);
         }
+
         /// <summary>Selects the legacy symbol font when Windows substitutes the requested Fluent font.</summary>
         /// <param name="resolvedName">Font name resolved by the native font subsystem.</param>
         /// <returns>The installed Fluent font or the legacy Windows symbol font.</returns>
         private static string ChooseSymbolFont(string resolvedName) => resolvedName == "Segoe Fluent Icons" ? resolvedName : "Segoe MDL2 Assets";
+
         /// <summary>Updates the tooltip when the caption is hidden.</summary>
         private void UpdateCaption()
         {
             if (captionTip != null) captionTip.SetToolTip(this, iconOnly ? Text : "");
         }
+
         /// <inheritdoc/>
         /// <summary>Refreshes the tooltip and invalidates the caption after its text changes.</summary>
         /// <param name="e">Native event data.</param>
         protected override void OnTextChanged(EventArgs e) { base.OnTextChanged(e); UpdateCaption(); Invalidate(); }
+
         /// <inheritdoc/>
         /// <summary>Measures the caption and icon without accumulating width across layout passes.</summary>
-        /// <param name="proposedSize">The proposed size used by this operation.</param>
-        /// <returns>The result produced by this operation.</returns>
+        /// <param name="proposedSize">size that supplies the proposed size for this operation.</param>
+        /// <returns>size produced by the operation for get preferred size on ui action button.</returns>
         public override Size GetPreferredSize(Size proposedSize)
         {
             if (IconOnly && Symbol != UiSymbol.None) return new Size(32 * DeviceDpi / 96, 30 * DeviceDpi / 96);
@@ -128,22 +168,27 @@ namespace VBAi
             return new Size(Math.Max(MinimumSize.Width, caption.Width + Padding.Horizontal + extra),
                 Math.Max(MinimumSize.Height, Math.Max(caption.Height + Padding.Vertical + 10 * DeviceDpi / 96, 30 * DeviceDpi / 96)));
         }
+
         /// <inheritdoc/>
         /// <summary>Records the hover state and requests a repaint.</summary>
         /// <param name="e">Native event data.</param>
         protected override void OnMouseEnter(EventArgs e) { hovered = true; Invalidate(); base.OnMouseEnter(e); }
+
         /// <inheritdoc/>
         /// <summary>Clears hover state and requests a repaint.</summary>
         /// <param name="e">Native event data.</param>
         protected override void OnMouseLeave(EventArgs e) { hovered = pressed = false; Invalidate(); base.OnMouseLeave(e); }
+
         /// <inheritdoc/>
         /// <summary>Handles native mouse presses and updates the command state.</summary>
         /// <param name="e">Native event data.</param>
         protected override void OnMouseDown(MouseEventArgs e) { pressed = e.Button == MouseButtons.Left; Invalidate(); base.OnMouseDown(e); }
+
         /// <inheritdoc/>
         /// <summary>Releases the pressed state and requests a repaint.</summary>
         /// <param name="e">Native event data.</param>
         protected override void OnMouseUp(MouseEventArgs e) { pressed = false; Invalidate(); base.OnMouseUp(e); }
+
         /// <inheritdoc/>
         /// <summary>Draws the control using its current palette, selection and focus state.</summary>
         /// <param name="e">Native event data.</param>
@@ -194,6 +239,7 @@ namespace VBAi
             }
             TextRenderer.DrawText(e.Graphics, Text, Font, textBounds, foreground, TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter | TextFormatFlags.EndEllipsis);
         }
+
         /// <inheritdoc/>
         /// <summary>Releases the resources owned by this control before base disposal.</summary>
         /// <param name="disposing">Whether managed resources must also be released.</param>

@@ -4,11 +4,23 @@ using System.Threading.Tasks;
 
 namespace VBAi
 {
+
+    /// <summary>Owns the llm vbe tools state and operations.</summary>
     internal sealed partial class LlmVbeTools
     {
+
+        /// <summary>Determines whether solid works macro tool for llm vbe tools.</summary>
+        /// <param name="name">Text that supplies the name value. Use the format required by the calling operation.</param>
+        /// <returns>Boolean indicating the result of the check for is solid works macro tool on llm vbe tools.</returns>
         private static bool IsSolidWorksMacroTool(string name) =>
             name == "create_solidworks_macro" || name == "publish_solidworks_macro";
 
+        /// <summary>Invokes solid works macro async for llm vbe tools.</summary>
+        /// <param name="name">Text that supplies the name value. Use the format required by the calling operation.</param>
+        /// <param name="arguments">Text that supplies the arguments value. Use the format required by the calling operation.</param>
+        /// <param name="request">request that supplies the request for this operation.</param>
+        /// <param name="approved">Indicates whether approved is enabled.</param>
+        /// <returns>task&lt;response&gt; produced by the operation for invoke solid works macro async on llm vbe tools.</returns>
         private async Task<Response> InvokeSolidWorksMacroAsync(string name, string arguments, Request request, bool approved)
         {
             string binding = BoundProject;

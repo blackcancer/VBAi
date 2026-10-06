@@ -7,17 +7,22 @@ using System.Threading;
 
 namespace VBAi
 {
+
     /// <summary>Exécute une commande Run native après validation de l’identité et des révisions du UserForm.</summary>
     internal sealed partial class VbeForms
     {
+
         /// <summary>État suivi d’une commande native de lancement de formulaire.</summary>
         private sealed class FormRunOperation
         {
-            /// <summary>Stores the id,project,form,state,error used by FormRunOperation.</summary>
+
+            /// <summary>Identifies the id and project and form and state and error associated with form run operation.</summary>
             public string Id, Project, Form, State, Error;
-            /// <summary>Stores the command completed used by FormRunOperation.</summary>
+
+            /// <summary>Maintains the command completed state for form run operation.</summary>
             public bool CommandCompleted;
         }
+
         /// <summary>Opérations de lancement récentes conservées pour interrogation de leur état.</summary>
         private readonly List<FormRunOperation> formRuns = new List<FormRunOperation>();
 

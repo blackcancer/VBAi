@@ -1,14 +1,19 @@
 namespace VBAi
 {
+
     /// <summary>Vue en lecture seule des vérifications et statuts d’une pull request.</summary>
     public sealed partial class GitHubPullChecksView
     {
+
         /// <summary>Affiche le résumé des exécutions de vérification et leur état.</summary>
         internal VBAi.UiTextBox checks;
+
         /// <summary>Conteneur des composants managés de la vue.</summary>
         private System.ComponentModel.IContainer components;
+
         /// <summary>Fournit les info-bulles des contrôles.</summary>
         private System.Windows.Forms.ToolTip toolTips;
+
         /// <summary>Libère les composants de la vue avant son contrôle natif.</summary>
         /// <param name="disposing">Indique si les ressources managées doivent être libérées.</param>
         protected override void Dispose(bool disposing)

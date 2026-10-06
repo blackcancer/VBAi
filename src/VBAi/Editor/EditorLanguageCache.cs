@@ -7,32 +7,62 @@ using System.Threading;
 
 namespace VBAi
 {
+
     /// <summary>Bounded worker-owned declaration cache; every native snapshot is still validated by its caller.</summary>
     internal sealed class EditorLanguageCache
     {
+
+        /// <summary>Maintains the modules state for editor language cache.</summary>
         private readonly Dictionary<string, Entry> modules = new Dictionary<string, Entry>();
+
+        /// <summary>Maintains the retained characters state for editor language cache.</summary>
         private int retainedCharacters;
+
         /// <summary>Number of modules actually parsed, for performance diagnostics.</summary>
+        /// <value>Current parsed modules exposed by editor language cache.</value>
         internal int ParsedModules { get; private set; }
+
+        /// <summary>Owns the entry state and operations.</summary>
         private sealed class Entry
         {
+
+            /// <summary>Maintains the symbols state for entry.</summary>
             internal EditorSymbol[] Symbols;
+
+            /// <summary>Maintains the receivers state for entry.</summary>
             internal string[] Receivers;
         }
+
         /// <summary>A module or reference symbol bucket independently versioned for transport.</summary>
         internal sealed class Part
         {
+
+            /// <summary>Maintains the name and key state for part.</summary>
             internal string Name, Key;
+
+            /// <summary>Maintains the symbols state for part.</summary>
             internal EditorSymbol[] Symbols;
         }
+
         /// <summary>Immutable result identified by all source and reference revisions.</summary>
         internal sealed class Snapshot
         {
+
+            /// <summary>Maintains the key state for snapshot.</summary>
             internal string Key;
+
+            /// <summary>Maintains the symbols state for snapshot.</summary>
             internal EditorSymbol[] Symbols;
+
+            /// <summary>Maintains the parts state for snapshot.</summary>
             internal Part[] Parts;
         }
+
         /// <summary>Builds only changed module declarations and reuses reference metadata on its owning worker.</summary>
+        /// <param name="sources">editor source[] that supplies the sources for this operation.</param>
+        /// <param name="paths">string[] that supplies the paths for this operation.</param>
+        /// <param name="cancellation">Token used to cancel the operation.</param>
+        /// <returns>snapshot produced by the operation for build on editor language cache.</returns>
         internal Snapshot Build(EditorSource[] sources, string[] paths, CancellationToken cancellation)
         {
             var symbols = new List<EditorSymbol>();

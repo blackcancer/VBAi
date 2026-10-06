@@ -5,22 +5,29 @@ using System.Runtime.InteropServices;
 
 namespace VBAi
 {
+
     /// <summary>Routines natives pour modifier et mesurer l’affichage du code dans une fenêtre VBE.</summary>
     internal static partial class VbeDebugWindows
     {
+
         /// <summary>Rectangle Win32 obtenu pour une fenêtre ou un contrôle natif.</summary>
-        [StructLayout(LayoutKind.Sequential)] internal struct ViewRect { /// <summary>Stores the left,top,right,bottom used by ViewRect.</summary>
+        [StructLayout(LayoutKind.Sequential)] internal struct ViewRect {
+
+/// <summary>Maintains the left and top and right and bottom state for view rect.</summary>
 public int Left, Top, Right, Bottom; }
+
         /// <summary>Lit les limites d’une fenêtre Win32.</summary>
         /// <param name="hwnd">Handle de la fenêtre à mesurer.</param>
         /// <param name="rect">Rectangle écran retourné par Windows.</param>
         /// <returns><see langword="true"/> si le rectangle a été obtenu.</returns>
         [DllImport("user32.dll", EntryPoint = "GetWindowRect")] private static extern bool NativeViewBounds(IntPtr hwnd, out ViewRect rect);
+
         /// <summary>Frontière injectable de lecture des limites d’une fenêtre.</summary>
         /// <param name="hwnd">Handle de la fenêtre.</param>
         /// <param name="rect">Rectangle écran résultant.</param>
         /// <returns>Indique si la lecture a réussi.</returns>
         internal delegate bool ViewBoundsReader(IntPtr hwnd, out ViewRect rect);
+
         /// <summary>Reads native window geometry; isolated in deterministic window tests.</summary>
         internal static ViewBoundsReader ViewBounds = NativeViewBounds;
 

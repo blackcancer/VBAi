@@ -5,11 +5,14 @@ using Microsoft.Win32;
 
 namespace VBAi
 {
+
     /// <summary>Recense les contrôles MSForms natifs et les contrôles COM enregistrés en 64 bits.</summary>
     internal static class VbeControlCatalog
     {
+
         /// <summary>CATID_Control recherchée dans les catégories COM implémentées.</summary>
         private const string ControlCategory = "{40FC6ED4-2438-11CF-A3DB-080036F12502}";
+
         /// <summary>Ouvre le catalogue COM 64 bits natif dont la lecture reste sans mutation.</summary>
         internal static Func<RegistryKey> OpenClasses = () => RegistryKey.OpenBaseKey(RegistryHive.ClassesRoot, RegistryView.Registry64);
 

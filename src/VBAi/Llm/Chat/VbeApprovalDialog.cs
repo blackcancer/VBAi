@@ -2,9 +2,11 @@ using System.Windows.Forms;
 
 namespace VBAi
 {
+
     /// <summary>Boîte de dialogue modale qui présente une modification VBA et permet de l’autoriser ou de la refuser.</summary>
     internal sealed partial class VbeApprovalDialog : Form
     {
+
         /// <summary>Initialise la boîte de dialogue et applique les libellés localisés.</summary>
         public VbeApprovalDialog()
         {

@@ -7,45 +7,62 @@ using System.Web.Script.Serialization;
 
 namespace VBAi
 {
+
     /// <summary>Rapport technique volontairement limité aux métadonnées et aux méthodes, sans message brut ni chemin.</summary>
     internal sealed class CrashReport
     {
-        /// <summary>Stores the metadata assembly used by CrashReport.</summary>
+
+        /// <summary>Maintains the metadata assembly state for crash report.</summary>
         internal static Func<Assembly> MetadataAssembly = ReadMetadataAssembly;
-        /// <summary>Stores the process is64 bit used by CrashReport.</summary>
+
+        /// <summary>Maintains the process is64 bit state for crash report.</summary>
         internal static Func<bool> ProcessIs64Bit = ReadProcessIs64Bit;
-        /// <summary>Stores the runtime version used by CrashReport.</summary>
+
+        /// <summary>Maintains the runtime version state for crash report.</summary>
         internal static Func<Version> RuntimeVersion = ReadRuntimeVersion;
-        /// <summary>Performs the read runtime version operation for CrashReport.</summary>
-        /// <returns>The result produced by this operation.</returns>
+
+        /// <summary>Reads runtime version for crash report.</summary>
+        /// <returns>version produced by the operation for read runtime version on crash report.</returns>
         private static Version ReadRuntimeVersion() => Environment.Version;
-        /// <summary>Stores the frame snapshot used by CrashReport.</summary>
+
+        /// <summary>Maintains the frame snapshot state for crash report.</summary>
         internal static Func<Exception, StackFrame[]> FrameSnapshot = ReadFrames;
-        /// <summary>Performs the read metadata assembly operation for CrashReport.</summary>
-        /// <returns>The result produced by this operation.</returns>
+
+        /// <summary>Reads metadata assembly for crash report.</summary>
+        /// <returns>assembly produced by the operation for read metadata assembly on crash report.</returns>
         private static Assembly ReadMetadataAssembly() => typeof(CrashReport).Assembly;
-        /// <summary>Performs the read process is64 bit operation for CrashReport.</summary>
-        /// <returns>The result produced by this operation.</returns>
+
+        /// <summary>Reads process is64 bit for crash report.</summary>
+        /// <returns>Boolean indicating the result of the check for read process is64 bit on crash report.</returns>
         private static bool ReadProcessIs64Bit() => Environment.Is64BitProcess;
-        /// <summary>Performs the read frames operation for CrashReport.</summary>
-        /// <param name="error">The error used by this operation.</param>
-        /// <returns>The result produced by this operation.</returns>
+
+        /// <summary>Reads frames for crash report.</summary>
+        /// <param name="error">Exception describing the error failure.</param>
+        /// <returns>stack frame[] produced by the operation for read frames on crash report.</returns>
         private static StackFrame[] ReadFrames(Exception error) => new StackTrace(error, false).GetFrames();
+
         /// <summary>GitHub repository used as the destination for product issue reports.</summary>
         internal const string Repository = "https://github.com/blackcancer/VBAi";
+
         /// <summary>Support mailbox used by Outlook and local mail drafts.</summary>
         internal const string Recipient = "init-sys-rev@hotmail.com";
+
         /// <summary>Gets the unique identifier assigned to this report.</summary><value>32-character lowercase GUID without separators.</value>
         internal string Id { get; } = Guid.NewGuid().ToString("N");
-        /// <summary>Stores the report directory used by CrashReport.</summary>
+
+        /// <summary>Maintains the report directory state for crash report.</summary>
         internal static Func<string> ReportDirectory = NativeReportDirectory;
-        /// <summary>Performs the native report directory operation for CrashReport.</summary>
-        /// <returns>The result produced by this operation.</returns>
+
+        /// <summary>Handles native report directory for crash report.</summary>
+        /// <returns>Text produced by the operation for native report directory on crash report.</returns>
         private static string NativeReportDirectory() => Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "VBAi", "CrashReports");
+
         /// <summary>Gets the per-user directory used to save crash reports.</summary><value>Local application-data CrashReports directory.</value>
         internal static string DirectoryPath => ReportDirectory();
+
         /// <summary>Gets the technical metadata and stack method names captured for the report.</summary><value>Sanitized technical report text.</value>
         internal string TechnicalDetails { get; }
+
         /// <summary>Gets the initial issue title based on the supplied exception or generic report action.</summary><value>Default editable issue title.</value>
         internal string DefaultTitle { get; }
 
@@ -113,19 +130,24 @@ namespace VBAi
             TechnicalDetails = snapshot.Details;
             DefaultTitle = snapshot.Title;
         }
+
         /// <summary>Serialized data retained so a fatal report can be offered after the next start.</summary>
         internal sealed class Snapshot
         {
+
             /// <summary>Report identifier used to locate its Markdown backup.</summary>
             /// <value>Unique report ID.</value>
             public string Id { get; set; }
+
             /// <summary>Sanitized technical detail text.</summary>
             /// <value>Technical report body.</value>
             public string Details { get; set; }
+
             /// <summary>Title displayed when the pending report is reopened.</summary>
             /// <value>Initial report title.</value>
             public string Title { get; set; }
         }
+
         /// <summary>Saves the report and writes a marker for presentation after a later startup.</summary>
         /// <param name="directory">Destination directory, or null to use the local report directory.</param>
         internal void SavePending(string directory = null)
@@ -135,6 +157,7 @@ namespace VBAi
             File.WriteAllText(Path.Combine(directory, Id + ".pending"),
                 new JavaScriptSerializer().Serialize(new Snapshot { Id = Id, Details = TechnicalDetails, Title = DefaultTitle }), new UTF8Encoding(false));
         }
+
         /// <summary>Loads a pending report marker and reconstructs its saved report metadata.</summary>
         /// <param name="path">Path to the pending JSON marker.</param><returns>Reconstructed report.</returns>
         /// <exception cref="InvalidDataException">The marker is oversized, malformed, or inconsistent with its file name.</exception>

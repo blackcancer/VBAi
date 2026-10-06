@@ -8,20 +8,37 @@ using System.Text.RegularExpressions;
 
 namespace VBAi
 {
+
     /// <summary>Discovers explicitly annotated tests from plain source, without opening or executing a host.</summary>
     internal static class VbaTestDiscovery
     {
+
+        /// <summary>Maintains the roles state for vba test discovery.</summary>
         private static readonly string[] Roles = { "TestMethod", "ModuleInitialize", "ModuleCleanup", "TestInitialize", "TestCleanup" };
+
+        /// <summary>Maintains the annotation pattern state for vba test discovery.</summary>
         private static readonly Regex AnnotationPattern = new Regex(@"^\s*'\s*@(?<name>[A-Za-z]+)\b(?<argument>.*)$", RegexOptions.CultureInvariant);
+
+        /// <summary>Maintains the quoted argument state for vba test discovery.</summary>
         private static readonly Regex QuotedArgument = new Regex("^\"(?:[^\"]|\"\")*\"$", RegexOptions.CultureInvariant);
 
+        /// <summary>Owns the annotation state and operations.</summary>
         private sealed class Annotation
         {
+
+            /// <summary>Maintains the name state for annotation.</summary>
             public string Name;
+
+            /// <summary>Maintains the argument state for annotation.</summary>
             public string Argument;
+
+            /// <summary>Maintains the line state for annotation.</summary>
             public int Line;
         }
 
+        /// <summary>Handles discover for vba test discovery.</summary>
+        /// <param name="project">vba test project snapshot that supplies the project for this operation.</param>
+        /// <returns>vba test catalog produced by the operation for discover on vba test discovery.</returns>
         public static VbaTestCatalog Discover(VbaTestProjectSnapshot project)
         {
             if (project == null) throw new ArgumentNullException(nameof(project));
@@ -41,6 +58,11 @@ namespace VBAi
             return catalog;
         }
 
+        /// <summary>Reads module for vba test discovery.</summary>
+        /// <param name="project">vba test project snapshot that supplies the project for this operation.</param>
+        /// <param name="snapshot">vba test module snapshot that supplies the snapshot for this operation.</param>
+        /// <param name="diagnostics">list&lt;string&gt; that supplies the diagnostics for this operation.</param>
+        /// <returns>vba test module produced by the operation for read module on vba test discovery.</returns>
         private static VbaTestModule ReadModule(VbaTestProjectSnapshot project, VbaTestModuleSnapshot snapshot, List<string> diagnostics)
         {
             var module = new VbaTestModule { Name = snapshot.Name ?? "" };
@@ -134,6 +156,16 @@ namespace VBAi
             return module;
         }
 
+        /// <summary>Reads comments for vba test discovery.</summary>
+        /// <param name="lines">string[] that supplies the lines for this operation.</param>
+        /// <param name="start">int that supplies the start for this operation.</param>
+        /// <param name="end">int that supplies the end for this operation.</param>
+        /// <param name="pending">list&lt;annotation&gt; that supplies the pending for this operation.</param>
+        /// <param name="module">vba test module that supplies the module for this operation.</param>
+        /// <param name="diagnostics">list&lt;string&gt; that supplies the diagnostics for this operation.</param>
+        /// <param name="moduleAnnotations">int that supplies the module annotations for this operation.</param>
+        /// <param name="sawProcedure">Indicates whether saw procedure is enabled.</param>
+        /// <param name="conditionalDepth">int that supplies the conditional depth for this operation.</param>
         private static void ReadComments(string[] lines, int start, int end, List<Annotation> pending, VbaTestModule module,
             List<string> diagnostics, ref int moduleAnnotations, bool sawProcedure, int conditionalDepth)
         {
@@ -159,6 +191,10 @@ namespace VBAi
             }
         }
 
+        /// <summary>Handles valid signature for vba test discovery.</summary>
+        /// <param name="tokens">token&gt; that supplies the tokens for this operation.</param>
+        /// <param name="fixture">Indicates whether fixture is enabled.</param>
+        /// <returns>Boolean indicating the result of the check for valid signature on vba test discovery.</returns>
         private static bool ValidSignature(List<VbaDeclarationIndex.Token> tokens, bool fixture)
         {
             // Accept only the deliberately narrow version-one signature contract.
@@ -169,6 +205,10 @@ namespace VBAi
             return EqualsName(match.Groups["kind"].Value, "Sub") ? !match.Groups["type"].Success : match.Groups["type"].Success;
         }
 
+        /// <summary>Handles apply metadata for vba test discovery.</summary>
+        /// <param name="test">vba test descriptor that supplies the test for this operation.</param>
+        /// <param name="annotations">list&lt;annotation&gt; that supplies the annotations for this operation.</param>
+        /// <param name="fixture">Indicates whether fixture is enabled.</param>
         private static void ApplyMetadata(VbaTestDescriptor test, List<Annotation> annotations, bool fixture)
         {
             var categories = new List<string>();
@@ -188,6 +228,10 @@ namespace VBAi
             test.Categories = categories.ToArray();
         }
 
+        /// <summary>Sets fixture for vba test discovery.</summary>
+        /// <param name="module">vba test module that supplies the module for this operation.</param>
+        /// <param name="role">Text that supplies the role value. Use the format required by the calling operation.</param>
+        /// <param name="fixture">vba test descriptor that supplies the fixture for this operation.</param>
         private static void SetFixture(VbaTestModule module, string role, VbaTestDescriptor fixture)
         {
             VbaTestDescriptor existing = null;
@@ -198,12 +242,21 @@ namespace VBAi
             if (existing != null) module.Diagnostic = Append(module.Diagnostic, "Multiple @" + role + " fixtures.");
         }
 
+        /// <summary>Handles report unattached for vba test discovery.</summary>
+        /// <param name="annotations">list&lt;annotation&gt; that supplies the annotations for this operation.</param>
+        /// <param name="module">vba test module that supplies the module for this operation.</param>
+        /// <param name="diagnostics">list&lt;string&gt; that supplies the diagnostics for this operation.</param>
         private static void ReportUnattached(List<Annotation> annotations, VbaTestModule module, List<string> diagnostics)
         {
             foreach (var annotation in annotations)
                 diagnostics.Add(module.Name + " (line " + annotation.Line + "): @" + annotation.Name + " is not attached to a procedure declaration.");
         }
 
+        /// <summary>Handles identity for vba test discovery.</summary>
+        /// <param name="project">Text that supplies the project value. Use the format required by the calling operation.</param>
+        /// <param name="module">Text that supplies the module value. Use the format required by the calling operation.</param>
+        /// <param name="procedure">Text that supplies the procedure value. Use the format required by the calling operation.</param>
+        /// <returns>Text produced by the operation for identity on vba test discovery.</returns>
         private static string Identity(string project, string module, string procedure)
         {
             // Source positions are navigation metadata; inserting lines must not rebind historical results.
@@ -211,7 +264,17 @@ namespace VBAi
             using (var hash = SHA256.Create())
                 return string.Concat(hash.ComputeHash(Encoding.UTF8.GetBytes(input)).Select(x => x.ToString("x2", CultureInfo.InvariantCulture)));
         }
+
+        /// <summary>Handles equals name for vba test discovery.</summary>
+        /// <param name="left">Text that supplies the left value. Use the format required by the calling operation.</param>
+        /// <param name="right">Text that supplies the right value. Use the format required by the calling operation.</param>
+        /// <returns>Boolean indicating the result of the check for equals name on vba test discovery.</returns>
         private static bool EqualsName(string left, string right) => string.Equals(left, right, StringComparison.OrdinalIgnoreCase);
+
+        /// <summary>Handles append for vba test discovery.</summary>
+        /// <param name="current">Text that supplies the current value. Use the format required by the calling operation.</param>
+        /// <param name="message">Text that supplies the message value. Use the format required by the calling operation.</param>
+        /// <returns>Text produced by the operation for append on vba test discovery.</returns>
         private static string Append(string current, string message) => string.IsNullOrEmpty(current) ? message : current + " " + message;
     }
 }

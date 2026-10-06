@@ -6,13 +6,21 @@ using System.Threading.Tasks;
 
 namespace VBAi
 {
+
     /// <summary>Routes native General operations through the ordinary guarded asynchronous tool pipeline.</summary>
     internal sealed partial class LlmVbeTools
     {
+
+        /// <summary>Maintains the project general native state for llm vbe tools.</summary>
         internal Func<Request, bool, Task<object>> ProjectGeneralNative;
 
+        /// <summary>Determines whether project general tool for llm vbe tools.</summary>
+        /// <param name="name">Text that supplies the name value. Use the format required by the calling operation.</param>
+        /// <returns>Boolean indicating the result of the check for is project general tool on llm vbe tools.</returns>
         private static bool IsProjectGeneralTool(string name) => name == "read_project_general" || name == "set_project_general";
 
+        /// <summary>Validates project general request for llm vbe tools.</summary>
+        /// <param name="request">request that supplies the request for this operation.</param>
         private static void ValidateProjectGeneralRequest(Request request)
         {
             if (request.ExpectedMode != 2)
@@ -35,6 +43,12 @@ namespace VBAi
                 throw new ArgumentException("HelpContextID must be a nonnegative Int32 integer.");
         }
 
+        /// <summary>Invokes project general async for llm vbe tools.</summary>
+        /// <param name="name">Text that supplies the name value. Use the format required by the calling operation.</param>
+        /// <param name="arguments">Text that supplies the arguments value. Use the format required by the calling operation.</param>
+        /// <param name="request">request that supplies the request for this operation.</param>
+        /// <param name="editApproved">Indicates whether edit approved is enabled.</param>
+        /// <returns>task&lt;response&gt; produced by the operation for invoke project general async on llm vbe tools.</returns>
         private async Task<Response> InvokeProjectGeneralAsync(string name, string arguments, Request request, bool editApproved)
         {
             bool write = name == "set_project_general";

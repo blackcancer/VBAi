@@ -4,11 +4,14 @@ using System.Windows;
 using System.Windows.Controls;
 namespace VBAi
 {
+
     /// <summary>Fenêtre du chat, y compris les cartes de récupération des contrôles coupés.</summary>
     internal sealed partial class ChatWindow
     {
+
         /// <summary>Boutons de récupération associés aux opérations de coupe de formulaire.</summary>
         private readonly Dictionary<FormCutChange, System.Windows.Forms.Button> formCutButtons = new Dictionary<FormCutChange, System.Windows.Forms.Button>();
+
         /// <summary>Construit une carte de transcript permettant de restaurer les contrôles d’une coupe.</summary>
         /// <param name="change">Changement de formulaire et état de récupération à présenter.</param>
         /// <returns>Carte WPF avec l’action de restauration et son état courant.</returns>
@@ -29,6 +32,7 @@ namespace VBAi
             formCutButtons[change] = card.recover; RefreshFormCutCards();
             return new ChatDesignerHost(card) { Margin = new Thickness(0,0,4,14) };
         }
+
         /// <summary>Met à jour disponibilité et libellé des boutons selon l’état des récupérations.</summary>
         private void RefreshFormCutCards()
         {

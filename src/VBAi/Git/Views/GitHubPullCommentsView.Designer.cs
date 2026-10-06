@@ -1,18 +1,25 @@
 namespace VBAi
 {
+
     /// <summary>Designer-generated review comment list and selected comment text.</summary>
     public sealed partial class GitHubPullCommentsView
     {
+
         /// <summary>Layout for the comment list and body.</summary>
         internal System.Windows.Forms.TableLayoutPanel commentLayout;
+
         /// <summary>Review comments on the selected pull request.</summary>
         internal VBAi.UiListBox comments;
+
         /// <summary>Text of the selected review comment.</summary>
         internal VBAi.UiTextBox commentBody;
+
         /// <summary>Container that owns Designer components.</summary>
         private System.ComponentModel.IContainer components;
+
         /// <summary>Tooltips associated with comments.</summary>
         private System.Windows.Forms.ToolTip toolTips;
+
         /// <summary>Libère les composants de la vue avant son contrôle natif.</summary>
         /// <param name="disposing">Indique si les ressources managées doivent être libérées.</param>
         protected override void Dispose(bool disposing)

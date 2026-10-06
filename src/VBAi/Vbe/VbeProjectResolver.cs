@@ -4,6 +4,7 @@ using System.IO;
 
 namespace VBAi
 {
+
     /// <summary>Sélectionne un projet VBA par son nom ou par le chemin de son fichier enregistré.</summary>
     internal static class VbeProjectResolver
     {

@@ -10,17 +10,35 @@ using System.Web.Script.Serialization;
 
 namespace VBAi
 {
+
     /// <summary>One explicitly armed, disposable owner-STA Git qualification. No caller-supplied verbs or paths.</summary>
     internal sealed class OwnerGitQualification
     {
+
+        /// <summary>Maintains the session state for owner git qualification.</summary>
         private readonly VbeSession session;
+
+        /// <summary>Identifies the connected pid associated with owner git qualification.</summary>
         private readonly int connectedPid;
+
+        /// <summary>Keeps the manifest path path available to owner git qualification.</summary>
         private readonly string manifestPath;
+
+        /// <summary>Maintains the manifest state for owner git qualification.</summary>
         private OwnerGitQualificationManifest manifest;
+
+        /// <summary>Maintains the manifest hash state for owner git qualification.</summary>
         private string manifestHash;
+
+        /// <summary>Maintains the next step state for owner git qualification.</summary>
         private int nextStep;
+
+        /// <summary>Maintains the quarantined state for owner git qualification.</summary>
         private bool quarantined;
 
+        /// <summary>Initializes a OwnerGitQualification instance with the supplied state.</summary>
+        /// <param name="session">vbe session that supplies the session for this operation.</param>
+        /// <param name="connectedPid">int that supplies the connected pid for this operation.</param>
         internal OwnerGitQualification(VbeSession session, int connectedPid)
         {
             this.session = session;
@@ -29,6 +47,12 @@ namespace VBAi
             manifestPath = Environment.GetEnvironmentVariable(OwnerGitQualificationManifest.EnvironmentName);
         }
 
+        /// <summary>Executes the next frozen Git step after revalidating the owner, project, revision, and snapshot hashes.
+        /// It records intent before dispatch, admits at most one native mutation, and writes a terminal receipt. An uncertain
+        /// or post-mutation failure quarantines the plan instead of retrying the native operation.</summary>
+        /// <param name="request">Bridge request whose action ID must equal the next unconsumed step and whose expected revision must match the live project.</param>
+        /// <param name="requestJson">Original JSON checked for the exact diagnostic command, action ID, and expected revision fields.</param>
+        /// <returns>Operation outcome and the path of its durable terminal receipt.</returns>
         internal async Task<object> ExecuteAsync(Request request, string requestJson)
         {
             OwnerGitQualificationManifest.RequireExactRequest(requestJson);
@@ -163,6 +187,7 @@ namespace VBAi
             }
         }
 
+        /// <summary>Loads the GUID-named manifest once, pins its hash, and verifies it belongs to the connected host.</summary>
         private void LoadOnce()
         {
             if (manifest != null) return;
@@ -182,6 +207,7 @@ namespace VBAi
             manifest = parsed;
         }
 
+        /// <summary>Rechecks the manifest hash, original process and VBE STA identity, active project, scope, and loaded assembly candidate.</summary>
         private void RequireContext()
         {
             if (manifest == null || OwnerGitQualificationManifest.HashFile(manifestPath) != manifestHash)
@@ -207,6 +233,9 @@ namespace VBAi
                 throw new InvalidOperationException("Disposable workbook or evidence root disappeared.");
         }
 
+        /// <summary>Creates a new durable receipt without replacing an existing intent or terminal record.</summary>
+        /// <param name="path">Destination path for a receipt under the frozen evidence root.</param>
+        /// <param name="value">Receipt object serialized as UTF-8 JSON before the file is created.</param>
         private static void WriteNew(string path, object value)
         {
             OwnerGitQualificationManifest.RequireClassicFilePath(path);
@@ -215,6 +244,18 @@ namespace VBAi
             { file.Write(bytes, 0, bytes.Length); file.Flush(true); }
         }
 
+        /// <summary>Proves a declared malformed-checkpoint refusal occurred before mutation by checking recovery state, Git refs, and live project state.</summary>
+        /// <param name="expectedError">Exact error substring declared for the frozen malformed-checkpoint scenario.</param>
+        /// <param name="actualError">Error message returned by the attempted preflight.</param>
+        /// <param name="mutationStarted">Whether the one-shot native mutation boundary was entered.</param>
+        /// <param name="recoveryBefore">Recovery marker observed before preflight.</param>
+        /// <param name="recoveryAfter">Recovery marker observed after refusal.</param>
+        /// <param name="backupBefore">Backup commit resolved before preflight.</param>
+        /// <param name="backupAfter">Backup commit resolved after refusal.</param>
+        /// <param name="afterImportBefore">After-import commit resolved before preflight.</param>
+        /// <param name="afterImportAfter">After-import commit resolved after refusal.</param>
+        /// <param name="projectUnchanged">Whether a fresh live project capture still matches the preflight snapshot.</param>
+        /// <returns>True only when the expected error is present, no mutation began, and all recovery, ref, and project observations are unchanged.</returns>
         internal static bool IsProvenPrewriteRefusal(string expectedError, string actualError, bool mutationStarted,
             bool recoveryBefore, bool recoveryAfter, string backupBefore, string backupAfter,
             string afterImportBefore, string afterImportAfter, bool projectUnchanged)
@@ -226,8 +267,13 @@ namespace VBAi
         }
     }
 
+    /// <summary>Owns the vbe session state and operations.</summary>
     internal sealed partial class VbeSession
     {
+
+        /// <summary>Handles git owner handle for vbe session.</summary>
+        /// <param name="project">Text that supplies the project value. Use the format required by the calling operation.</param>
+        /// <returns>long produced by the operation for git owner handle on vbe session.</returns>
         internal long GitOwnerHandle(string project)
         {
             object selected = null, editor = null, main = null;
@@ -243,6 +289,10 @@ namespace VBAi
             finally { FormFontRestoration.ReleaseOwnedReferences(new[] { selected, editor, main }, ReleaseOwnerReference, primary); }
         }
 
+        /// <summary>Handles git active project matches for vbe session.</summary>
+        /// <param name="project">Text that supplies the project value. Use the format required by the calling operation.</param>
+        /// <param name="path">Path used for the path being processed.</param>
+        /// <returns>Boolean indicating the result of the check for git active project matches on vbe session.</returns>
         internal bool GitActiveProjectMatches(string project, string path)
         {
             object selected = null, active = null;
@@ -258,6 +308,8 @@ namespace VBAi
             finally { FormFontRestoration.ReleaseOwnedReferences(new[] { selected, active }, ReleaseOwnerReference, primary); }
         }
 
+        /// <summary>Releases owner reference for vbe session.</summary>
+        /// <param name="value">object that supplies the value for this operation.</param>
         private static void ReleaseOwnerReference(object value)
         {
             if (value != null && Marshal.IsComObject(value)) Marshal.ReleaseComObject(value);

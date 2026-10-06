@@ -8,9 +8,17 @@ using System.Web.Script.Serialization;
 
 namespace VBAi
 {
+
+    /// <summary>Owns the vbe project components state and operations.</summary>
     internal sealed partial class VbeProjectComponents
     {
         // A transport oracle, separate from source-local revision/TreeVersion guards.
+        /// <summary>Handles publication designer content equals for vbe project components.</summary>
+        /// <param name="expected">publication component that supplies the expected for this operation.</param>
+        /// <param name="actual">publication component that supplies the actual for this operation.</param>
+        /// <param name="expectedExport">Text that supplies the expected export value. Use the format required by the calling operation.</param>
+        /// <param name="actualExport">Text that supplies the actual export value. Use the format required by the calling operation.</param>
+        /// <returns>Boolean indicating the result of the check for publication designer content equals on vbe project components.</returns>
         internal static bool PublicationDesignerContentEquals(PublicationComponent expected,
             PublicationComponent actual, string expectedExport, string actualExport)
         {
@@ -30,6 +38,11 @@ namespace VBAi
                 throw new InvalidOperationException("Complete persisted control inventories are required.");
             return serializer.Serialize(ac) == serializer.Serialize(bc);
         }
+
+        /// <summary>Handles publication designer header for vbe project components.</summary>
+        /// <param name="path">Path used for the path being processed.</param>
+        /// <param name="name">Text that supplies the name value. Use the format required by the calling operation.</param>
+        /// <returns>Text produced by the operation for publication designer header on vbe project components.</returns>
         private static string PublicationDesignerHeader(string path, string name)
         {
             byte[] bytes = File.ReadAllBytes(path);
@@ -51,6 +64,11 @@ namespace VBAi
             return header.Substring(0, blobs[0].Groups[2].Index) + "$owned-frx" +
                 header.Substring(blobs[0].Groups[2].Index + blobs[0].Groups[2].Length);
         }
+
+        /// <summary>Handles publication designer root properties for vbe project components.</summary>
+        /// <param name="tree">dictionary&lt;string, object&gt; that supplies the tree for this operation.</param>
+        /// <param name="header">Text that supplies the header value. Use the format required by the calling operation.</param>
+        /// <returns>sorted dictionary&lt;string, string&gt; produced by the operation for publication designer root properties on vbe project components.</returns>
         private static SortedDictionary<string, string> PublicationDesignerRootProperties(
             Dictionary<string, object> tree, string header)
         {
@@ -93,6 +111,12 @@ namespace VBAi
                 }
             return result;
         }
+
+        /// <summary>Handles publication root header value for vbe project components.</summary>
+        /// <param name="header">Text that supplies the header value. Use the format required by the calling operation.</param>
+        /// <param name="name">Text that supplies the name value. Use the format required by the calling operation.</param>
+        /// <param name="fallback">object that supplies the fallback for this operation.</param>
+        /// <returns>object produced by the operation for publication root header value on vbe project components.</returns>
         private static object PublicationRootHeaderValue(string header, string name, object fallback)
         {
             var matches = Regex.Matches(header, @"(?m)^\s*" + Regex.Escape(name) + @"\s*=\s*([^\r\n]*)\r?$");
@@ -111,6 +135,11 @@ namespace VBAi
             }
             throw new InvalidOperationException("A persisted root setting has an unsupported encoding.");
         }
+
+        /// <summary>Handles publication surplus imported cr lf prefix for vbe project components.</summary>
+        /// <param name="expected">Text that supplies the expected value. Use the format required by the calling operation.</param>
+        /// <param name="actual">Text that supplies the actual value. Use the format required by the calling operation.</param>
+        /// <returns>int produced by the operation for publication surplus imported cr lf prefix on vbe project components.</returns>
         internal static int PublicationSurplusImportedCrLfPrefix(string expected, string actual)
         {
             if (expected == null || actual == null || actual.Length <= expected.Length ||

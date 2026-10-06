@@ -7,32 +7,45 @@ using System.Linq;
 
 namespace VBAi
 {
+
     /// <summary>Implémente une copie transactionnelle limitée aux Frames racines avec Labels directs.</summary>
     internal sealed partial class VbeForms
     {
+
         /// <summary>Capture le chemin source et les propriétés de Label autorisées pour une copie de Frame.</summary>
         private sealed class DirectLabelCopy
         {
+
             /// <summary>Chemin canonique du Label source.</summary>
             public string SourcePath;
+
             /// <summary>Nom proposé pour le Label copié.</summary>
             public string Name;
+
             /// <summary>Légende du Label.</summary>
             public string Caption;
+
             /// <summary>Position horizontale dans la Frame.</summary>
             public double Left;
+
             /// <summary>Position verticale dans la Frame.</summary>
             public double Top;
+
             /// <summary>Largeur du Label.</summary>
             public double Width;
+
             /// <summary>Hauteur du Label.</summary>
             public double Height;
+
             /// <summary>Couleur OLE du fond du Label.</summary>
             public int BackColor;
+
             /// <summary>Nom de police du Label.</summary>
             public string FontName;
+
             /// <summary>Taille de police du Label.</summary>
             public double FontSize;
+
             /// <summary>Indique si la police du Label est en gras.</summary>
             public bool FontBold;
         }

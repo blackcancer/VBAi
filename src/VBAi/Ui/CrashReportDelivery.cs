@@ -8,49 +8,73 @@ using Microsoft.Win32;
 
 namespace VBAi
 {
+
     /// <summary>Résultat explicite : une création incertaine ne doit jamais déclencher un second envoi automatique.</summary>
-    internal enum CrashDeliveryResult { /// <summary>Issue creation completed on GitHub.</summary>
-GitHub, /// <summary>Report was handed to a configured Outlook account.</summary>
-Outlook, /// <summary>Local mail client draft opened for the user to send.</summary>
-Draft, /// <summary>Delivery may have completed, so automatic retries are unsafe.</summary>
+    internal enum CrashDeliveryResult {
+
+/// <summary>Issue creation completed on GitHub.</summary>
+GitHub,
+
+/// <summary>Report was handed to a configured Outlook account.</summary>
+Outlook,
+
+/// <summary>Local mail client draft opened for the user to send.</summary>
+Draft,
+
+/// <summary>Delivery may have completed, so automatic retries are unsafe.</summary>
 Uncertain }
 
     /// <summary>Publie sur le dépôt du produit avec GCM, ou utilise Outlook puis le client mail local.</summary>
     internal sealed class CrashReportDelivery
     {
-        /// <summary>Stores the load settings used by CrashReportDelivery.</summary>
+
+        /// <summary>Maintains the load settings state for crash report delivery.</summary>
         internal static Func<LlmSettings> LoadSettings = LlmSettings.Load;
-        /// <summary>Stores the read credential used by CrashReportDelivery.</summary>
+
+        /// <summary>Maintains the read credential state for crash report delivery.</summary>
         internal static Func<string, CancellationToken, Task<string>> ReadCredential = GitHubApi.ReadCredential;
-        /// <summary>Stores the create api used by CrashReportDelivery.</summary>
+
+        /// <summary>Maintains the create api state for crash report delivery.</summary>
         internal static Func<string, Func<CancellationToken, Task<string>>, GitHubApi> CreateApi =
             (account, credential) => new GitHubApi(account, credential: credential);
-        /// <summary>Stores the active outlook used by CrashReportDelivery.</summary>
+
+        /// <summary>Maintains the active outlook state for crash report delivery.</summary>
         internal static Func<string, object> ActiveOutlook = Marshal.GetActiveObject;
-        /// <summary>Stores the outlook type used by CrashReportDelivery.</summary>
+
+        /// <summary>Maintains the outlook type state for crash report delivery.</summary>
         internal static Func<string, Type> OutlookType = Type.GetTypeFromProgID;
-        /// <summary>Stores the create outlook used by CrashReportDelivery.</summary>
+
+        /// <summary>Maintains the create outlook state for crash report delivery.</summary>
         internal static Func<Type, object> CreateOutlook = Activator.CreateInstance;
-        /// <summary>Stores the is com reference used by CrashReportDelivery.</summary>
+
+        /// <summary>Tracks the is com reference state of crash report delivery.</summary>
         internal static Func<object, bool> IsComReference = Marshal.IsComObject;
-        /// <summary>Stores the release reference used by CrashReportDelivery.</summary>
+
+        /// <summary>Maintains the release reference state for crash report delivery.</summary>
         internal static Func<object, int> ReleaseReference = Marshal.ReleaseComObject;
-        /// <summary>Stores the open profiles used by CrashReportDelivery.</summary>
+
+        /// <summary>Maintains the open profiles state for crash report delivery.</summary>
         internal static Func<string, IDisposable> OpenProfiles = path => Registry.CurrentUser.OpenSubKey(path);
-        /// <summary>Stores the read profile sub keys used by CrashReportDelivery.</summary>
+
+        /// <summary>Maintains the read profile sub keys state for crash report delivery.</summary>
         internal static Func<IDisposable, int> ReadProfileSubKeys = profiles => ((RegistryKey)profiles).SubKeyCount;
-        /// <summary>Stores the profile count used by CrashReportDelivery.</summary>
+
+        /// <summary>Counts the profile count maintained by crash report delivery.</summary>
         internal static Func<string, int?> ProfileCount = version =>
         {
             using (var profiles = OpenProfiles(@"Software\Microsoft\Office" + version + @"\Outlook\Profiles"))
                 return profiles == null ? (int?)null : ReadProfileSubKeys(profiles);
         };
+
         /// <summary>Publisher delegate used to create a GitHub issue.</summary>
         internal Func<string, string, CancellationToken, Task<string>> Publish = PublishNative;
+
         /// <summary>Delegate that hands a report to a configured Outlook account.</summary>
         internal Func<string, string, bool> SendOutlook = SendOutlookNative;
+
         /// <summary>Delegate that opens a mailto draft in the system mail client.</summary>
         internal Action<string> OpenDraft = url => Process.Start(new ProcessStartInfo(url) { UseShellExecute = true });
+
         /// <summary>Gets the validated GitHub issue URL after successful publication.</summary>
         /// <value>Published issue URL, or null when no validated issue URL was returned.</value>
         internal string IssueUrl { get; private set; }
@@ -168,6 +192,7 @@ Uncertain }
 
     /// <summary>La demande n’a pas été envoyée car aucun identifiant utilisable n’a été obtenu.</summary>
     internal sealed class CrashCredentialUnavailable : Exception { }
+
     /// <summary>Outlook a été sollicité mais son état final ne peut être établi.</summary>
     internal sealed class CrashMailUncertain : Exception { }
 }

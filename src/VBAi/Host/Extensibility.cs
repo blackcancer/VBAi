@@ -3,12 +3,14 @@ using System.Runtime.InteropServices;
 
 namespace VBAi
 {
+
     /// <summary>Contrat COM des notifications du cycle de vie d’un complément Office.</summary>
     [ComImport]
     [Guid("B65AD801-ABAF-11D0-BB8B-00A0C90F2744")]
     [InterfaceType(ComInterfaceType.InterfaceIsDual)]
     public interface IDTExtensibility2
     {
+
         /// <summary>Notifie le complément de sa connexion à l’application hôte.</summary>
         /// <param name="application">Objet Automation de l’application hôte.</param>
         /// <param name="connectMode">Mode de connexion défini par l’hôte.</param>

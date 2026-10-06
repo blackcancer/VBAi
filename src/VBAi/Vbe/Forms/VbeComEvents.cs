@@ -9,11 +9,13 @@ using FUNCDESC = System.Runtime.InteropServices.ComTypes.FUNCDESC;
 
 namespace VBAi
 {
+
     /// <summary>Interface COM qui expose les informations de type de la classe d’un objet.</summary>
     [ComImport, Guid("B196B283-BAB4-101A-B69C-00AA00341D07"),
         InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
     internal interface IProvideClassInfo
     {
+
         /// <summary>Retourne la description Automation de la classe COM.</summary>
         /// <param name="typeInfo">Reçoit les informations de type.</param>
         void GetClassInfo(out ITypeInfo typeInfo);
@@ -22,6 +24,7 @@ namespace VBAi
     /// <summary>Découvre les événements des interfaces COM source exposées par un contrôle.</summary>
     internal static class VbeComEvents
     {
+
         /// <summary>Lit les interfaces source via IProvideClassInfo et rapporte les événements ainsi que les limites de la découverte.</summary>
         /// <param name="target">Objet COM à inspecter.</param>
         /// <returns>Rapport contenant les interfaces source, événements, erreurs et indicateurs de complétude.</returns>

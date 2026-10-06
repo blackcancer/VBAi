@@ -9,18 +9,24 @@ using Microsoft.CSharp.RuntimeBinder;
 
 namespace VBAi
 {
+
     /// <summary>Adapte la lecture et la sauvegarde sécurisée de composants VBA aux hôtes Office reconnus.</summary>
     internal sealed partial class VbeProjectComponents
     {
+
         /// <summary>Reads the identity-matched Office document state; Access has no document Saved flag.</summary>
         internal sealed class OtherHostDocumentState
         {
+
             /// <summary>Chemin complet, ou chaîne vide avant première sauvegarde.</summary>
             internal string Path;
+
             /// <summary>Native document Saved state, or null when the host exposes no document flag.</summary>
             internal bool? Saved;
+
             /// <summary>État natif de lecture seule; un état indéterminé est traité comme lecture seule.</summary>
             internal bool ReadOnly;
+
             /// <summary>Native Word, Access or Publisher format; null for PowerPoint.</summary>
             internal int? Format;
         }
@@ -28,67 +34,90 @@ namespace VBAi
         /// <summary>Frontière injectable d'identité, état et sauvegarde du seul processus hôte courant.</summary>
         internal interface IOtherHostProbe
         {
-                        /// <summary>Word, PowerPoint, Access, Publisher, or null for an unrecognized process.</summary>
-                        /// <value>Canonical Office host name, or null when the current process has no adapter.</value>
+
+            /// <summary>Word, PowerPoint, Access, Publisher, or null for an unrecognized process.</summary>
+            /// <value>Canonical Office host name, or null when the current process has no adapter.</value>
             string HostKind { get; }
-                        /// <summary>PID du processus hébergeant l'add-in.</summary>
-                        /// <value>Identifiant Windows du processus courant.</value>
+
+            /// <summary>PID du processus hébergeant l'add-in.</summary>
+            /// <value>Identifiant Windows du processus courant.</value>
             int CurrentProcessId { get; }
-                        /// <summary>Obtient une application déjà ouverte, sans lancement d'hôte.</summary>
-                        /// <returns>Objet Application qui a été vérifié comme appartenant au processus courant.</returns>
+
+            /// <summary>Obtient une application déjà ouverte, sans lancement d'hôte.</summary>
+            /// <returns>Objet Application qui a été vérifié comme appartenant au processus courant.</returns>
             object Application();
-                        /// <summary>Vérifie les handles natifs de cette application et retourne leur PID commun.</summary>
-                        /// <param name="application">Application Office à vérifier.</param>
-                        /// <returns>PID commun, ou zéro si les fenêtres ne peuvent pas être attribuées à un seul processus.</returns>
+
+            /// <summary>Vérifie les handles natifs de cette application et retourne leur PID commun.</summary>
+            /// <param name="application">Application Office à vérifier.</param>
+            /// <returns>PID commun, ou zéro si les fenêtres ne peuvent pas être attribuées à un seul processus.</returns>
             uint ApplicationProcessId(object application);
-                        /// <summary>Énumère tous les documents ouverts de l'application vérifiée.</summary>
-                        /// <param name="application">Application dont les documents seront parcourus.</param>
-                        /// <returns>Documents ouverts sous forme d’objets COM.</returns>
+
+            /// <summary>Énumère tous les documents ouverts de l'application vérifiée.</summary>
+            /// <param name="application">Application dont les documents seront parcourus.</param>
+            /// <returns>Documents ouverts sous forme d’objets COM.</returns>
             IList<object> Documents(object application);
-                        /// <summary>Resolves the project by COM identity or its unique path within the bound VBE.</summary>
-                        /// <param name="document">Native Office document or Access CurrentProject.</param>
-                        /// <returns>Projet VBA attaché au document.</returns>
+
+            /// <summary>Resolves the project by COM identity or its unique path within the bound VBE.</summary>
+            /// <param name="document">Native Office document or Access CurrentProject.</param>
+            /// <returns>Projet VBA attaché au document.</returns>
             object DocumentProject(object document);
-                        /// <summary>Compare les identités IUnknown COM des deux projets.</summary>
-                        /// <param name="first">Premier projet à comparer.</param>
-                        /// <param name="second">Second projet à comparer.</param>
-                        /// <returns><see langword="true"/> si les projets partagent la même identité COM.</returns>
+
+            /// <summary>Compare les identités IUnknown COM des deux projets.</summary>
+            /// <param name="first">Premier projet à comparer.</param>
+            /// <param name="second">Second projet à comparer.</param>
+            /// <returns><see langword="true"/> si les projets partagent la même identité COM.</returns>
             bool SameProject(object first, object second);
-                        /// <summary>Lit chemin, Saved, lecture seule et format natif disponible.</summary>
-                        /// <param name="document">Document à inspecter.</param>
-                        /// <returns>État natif du document à l’instant de lecture.</returns>
+
+            /// <summary>Lit chemin, Saved, lecture seule et format natif disponible.</summary>
+            /// <param name="document">Document à inspecter.</param>
+            /// <returns>État natif du document à l’instant de lecture.</returns>
             OtherHostDocumentState State(object document);
-                        /// <summary>Invokes one native document save or the guarded Access VBE Save command.</summary>
-                        /// <param name="document">Document dont l’API de sauvegarde doit être appelée.</param>
-                        /// <param name="saveAs">Sélectionne l’opération SaveAs lorsqu’il vaut true.</param>
-                        /// <param name="destination">Chemin de destination de SaveAs.</param>
-                        /// <param name="format">Format natif transmis à l’hôte.</param>
+
+            /// <summary>Invokes one native document save or the guarded Access VBE Save command.</summary>
+            /// <param name="document">Document dont l’API de sauvegarde doit être appelée.</param>
+            /// <param name="saveAs">Sélectionne l’opération SaveAs lorsqu’il vaut true.</param>
+            /// <param name="destination">Chemin de destination de SaveAs.</param>
+            /// <param name="format">Format natif transmis à l’hôte.</param>
             void Save(object document, bool saveAs, string destination, int format);
-                        /// <summary>Indique si un fichier de destination existe.</summary>
-                        /// <param name="path">Chemin à tester.</param>
-                        /// <returns><see langword="true"/> si le fichier existe.</returns>
+
+            /// <summary>Indique si un fichier de destination existe.</summary>
+            /// <param name="path">Chemin à tester.</param>
+            /// <returns><see langword="true"/> si le fichier existe.</returns>
             bool FileExists(string path);
-                        /// <summary>Indique si le dossier parent existe.</summary>
-                        /// <param name="path">Chemin du dossier.</param>
-                        /// <returns><see langword="true"/> si le dossier existe.</returns>
+
+            /// <summary>Indique si le dossier parent existe.</summary>
+            /// <param name="path">Chemin du dossier.</param>
+            /// <returns><see langword="true"/> si le dossier existe.</returns>
             bool DirectoryExists(string path);
-                        /// <summary>Lit la taille du fichier après invocation native.</summary>
-                        /// <param name="path">Fichier dont la taille doit être lue.</param>
-                        /// <returns>Taille en octets.</returns>
+
+            /// <summary>Lit la taille du fichier après invocation native.</summary>
+            /// <param name="path">Fichier dont la taille doit être lue.</param>
+            /// <returns>Taille en octets.</returns>
             long FileLength(string path);
         }
 
         /// <summary>Native probe restricted to the current Office process; each operation requires native qualification.</summary>
         internal sealed class NativeOtherHostProbe : IOtherHostProbe
         {
+
+            /// <summary>Maintains the editor and bound project and bound document and access save control state for native other host probe.</summary>
             private object editor, boundProject, boundDocument, accessSaveControl;
+
+            /// <summary>Maintains the access expected pane and access expected component state for native other host probe.</summary>
             private object accessExpectedPane, accessExpectedComponent;
+
+            /// <summary>Maintains the read identity state for native other host probe.</summary>
             internal Func<object, object, bool> ReadIdentity = SameComIdentity;
+
+            /// <summary>Gets or sets the save invocation started.</summary>
+            /// <value>Current save invocation started exposed by native other host probe.</value>
             internal bool SaveInvocationStarted { get; private set; }
             // Bound only by the original owner-thread Access async save; never approves an existing prompt.
+            /// <summary>Maintains the access before save state for native other host probe.</summary>
             internal Action AccessBeforeSave;
 
             /// <summary>Binds the actual selected VBIDE project, never a host-specific invented VBProject property.</summary>
+            /// <param name="project">object that supplies the project for this operation.</param>
             internal void BindProject(object project)
             {
                 if (HostKind != "Access" && HostKind != "Publisher") return;
@@ -100,12 +129,15 @@ namespace VBAi
             }
 
             /// <summary>Retains the exact document identity found during project association.</summary>
+            /// <param name="document">object that supplies the document for this operation.</param>
             internal void BindDocument(object document)
             {
                 if (HostKind == "Access" || HostKind == "Publisher") boundDocument = document;
             }
 
             /// <summary>Retains the exact async-approved Access selection for final pre-command revalidation.</summary>
+            /// <param name="pane">object that supplies the pane for this operation.</param>
+            /// <param name="component">object that supplies the component for this operation.</param>
             internal void BindAccessSaveSelection(object pane, object component)
             {
                 if (HostKind != "Access" || pane == null || component == null)
@@ -114,6 +146,7 @@ namespace VBAi
             }
 
             /// <summary>Prepares the existing native Save command without invoking it or compiling VBA.</summary>
+            /// <param name="document">object that supplies the document for this operation.</param>
             internal void PrepareSave(object document)
             {
                 if (HostKind != "Access") return;
@@ -131,29 +164,39 @@ namespace VBAi
                         throw new InvalidOperationException("The approved Access code selection changed before Save.");
                 }
             }
+
             /// <summary>Reads the real process kind by default; isolates host contracts during qualification.</summary>
             internal Func<string> ReadHostKind = CurrentHostKind;
+
             /// <summary>Resolves an existing ROT application without starting Office.</summary>
             internal Func<string, object> ReadActiveApplication = Marshal.GetActiveObject;
+
             /// <summary>Reads the running executable's Office major version without choosing an installed instance.</summary>
             internal Func<int> ReadHostMajorVersion = () => {
                 using (var process = Process.GetCurrentProcess())
                     return FileVersionInfo.GetVersionInfo(process.MainModule.FileName).FileMajorPart;
             };
+
             /// <summary>Reads the native window owner used by all application PID guards.</summary>
             internal Func<IntPtr, uint> ReadOwner = Owner;
+
+            /// <summary>Maintains the read power point window state for native other host probe.</summary>
             internal Func<object, IntPtr> ReadPowerPointWindow = PowerPointWindow.Read;
-            /// <summary>Performs the current host kind operation for NativeOtherHostProbe.</summary>
-            /// <returns>The result produced by this operation.</returns>
+
+            /// <summary>Handles current host kind for native other host probe.</summary>
+            /// <returns>Text produced by the operation for current host kind on native other host probe.</returns>
             private static string CurrentHostKind() => RecognizeOtherHost(Process.GetCurrentProcess().ProcessName);
-                        /// <summary>Recognizes WINWORD, POWERPNT, MSACCESS and MSPUB process names.</summary>
-                        /// <value>Word, PowerPoint, Access, Publisher, or null for another process.</value>
+
+            /// <summary>Recognizes WINWORD, POWERPNT, MSACCESS and MSPUB process names.</summary>
+            /// <value>Word, PowerPoint, Access, Publisher, or null for another process.</value>
             public string HostKind => ReadHostKind();
-                        /// <summary>PID du processus de l'add-in.</summary>
-                        /// <value>Identifiant du processus courant.</value>
+
+            /// <summary>PID du processus de l'add-in.</summary>
+            /// <value>Identifiant du processus courant.</value>
             public int CurrentProcessId => Process.GetCurrentProcess().Id;
-                        /// <summary>Résout le ROT, puis NativeOM dans un document appartenant au PID courant si nécessaire.</summary>
-                        /// <returns>Application Office existante vérifiée comme appartenant au processus courant.</returns>
+
+            /// <summary>Résout le ROT, puis NativeOM dans un document appartenant au PID courant si nécessaire.</summary>
+            /// <returns>Application Office existante vérifiée comme appartenant au processus courant.</returns>
             public object Application()
             {
                 if (HostKind == null) throw new InvalidOperationException("Only the current Word, PowerPoint, Access or Publisher process is supported.");
@@ -202,9 +245,10 @@ namespace VBAi
                 }
                 throw new InvalidOperationException("No running Office application was verified as belonging to this VBE PID.");
             }
-                        /// <summary>Verifies the native application window owner without selecting a document.</summary>
-                        /// <param name="application">Application Office à inspecter.</param>
-                        /// <returns>PID propriétaire commun, ou zéro lorsque la vérification échoue.</returns>
+
+            /// <summary>Verifies the native application window owner without selecting a document.</summary>
+            /// <param name="application">Application Office à inspecter.</param>
+            /// <returns>PID propriétaire commun, ou zéro lorsque la vérification échoue.</returns>
             public uint ApplicationProcessId(object application)
             {
                 if (HostKind == "PowerPoint") return ReadOwner(ReadPowerPointWindow(application));
@@ -221,14 +265,16 @@ namespace VBAi
                 }
                 return result;
             }
-                        /// <summary>Obtient le propriétaire Win32 d'une fenêtre, ou zéro pour un handle absent.</summary>
-                        /// <param name="window">Handle natif à vérifier.</param>
-                        /// <returns>PID propriétaire de la fenêtre.</returns>
+
+            /// <summary>Obtient le propriétaire Win32 d'une fenêtre, ou zéro pour un handle absent.</summary>
+            /// <param name="window">Handle natif à vérifier.</param>
+            /// <returns>PID propriétaire de la fenêtre.</returns>
             private static uint Owner(IntPtr window)
             { uint owner; GetWindowThreadProcessId(window, out owner); return owner; }
-                        /// <summary>Énumère les documents sans ignorer une erreur d'accès au catalogue.</summary>
-                        /// <param name="application">Application Office vérifiée.</param>
-                        /// <returns>Documents ou présentations ouverts, dans leur ordre natif.</returns>
+
+            /// <summary>Énumère les documents sans ignorer une erreur d'accès au catalogue.</summary>
+            /// <param name="application">Application Office vérifiée.</param>
+            /// <returns>Documents ou présentations ouverts, dans leur ordre natif.</returns>
             public IList<object> Documents(object application)
             {
                 var result = new List<object>();
@@ -238,9 +284,10 @@ namespace VBAi
                 { if (result.Count >= 1000) throw new InvalidOperationException("Unexpected Office document count."); result.Add(document); }
                 return result;
             }
-                        /// <summary>Lit l'objet projet attaché au document.</summary>
-                        /// <param name="document">Document hôte à inspecter.</param>
-                        /// <returns>VBProject associé.</returns>
+
+            /// <summary>Lit l'objet projet attaché au document.</summary>
+            /// <param name="document">Document hôte à inspecter.</param>
+            /// <returns>VBProject associé.</returns>
             public object DocumentProject(object document)
             {
                 if (HostKind != "Access" && HostKind != "Publisher") return ((dynamic)document).VBProject;
@@ -266,6 +313,8 @@ namespace VBAi
             }
 
             /// <summary>Associates a pathless Publisher project only within one exact native document/VBE pair.</summary>
+            /// <param name="document">object that supplies the document for this operation.</param>
+            /// <returns>object produced by the operation for sole publisher project on native other host probe.</returns>
             private object SolePublisherProject(object document)
             {
                 object application = Application();
@@ -286,12 +335,17 @@ namespace VBAi
                     throw new InvalidOperationException("The sole Publisher project is not the selected project's COM identity and VBE.");
                 return sole;
             }
-                        /// <summary>Compare IUnknown et libère seulement les références acquises par cette comparaison.</summary>
-                        /// <param name="first">Première référence de projet.</param>
-                        /// <param name="second">Seconde référence de projet.</param>
-                        /// <returns><see langword="true"/> si les deux références désignent le même projet COM.</returns>
+
+            /// <summary>Compare IUnknown et libère seulement les références acquises par cette comparaison.</summary>
+            /// <param name="first">Première référence de projet.</param>
+            /// <param name="second">Seconde référence de projet.</param>
+            /// <returns><see langword="true"/> si les deux références désignent le même projet COM.</returns>
             public bool SameProject(object first, object second) => ReadIdentity(first, second);
 
+            /// <summary>Compares com identity for native other host probe.</summary>
+            /// <param name="first">object that supplies the first for this operation.</param>
+            /// <param name="second">object that supplies the second for this operation.</param>
+            /// <returns>Boolean indicating the result of the check for same com identity on native other host probe.</returns>
             private static bool SameComIdentity(object first, object second)
             {
                 if (first == null || second == null || !Marshal.IsComObject(first) || !Marshal.IsComObject(second)) return false;
@@ -299,9 +353,10 @@ namespace VBAi
                 try { a = Marshal.GetIUnknownForObject(first); b = Marshal.GetIUnknownForObject(second); return a == b; }
                 finally { if (a != IntPtr.Zero) Marshal.Release(a); if (b != IntPtr.Zero) Marshal.Release(b); }
             }
-                        /// <summary>Lit les états natifs; aucune propriété FileFormat inexistante n'est inventée pour PowerPoint.</summary>
-                        /// <param name="document">Document hôte observé.</param>
-                        /// <returns>Chemin, indicateurs natifs et format lorsqu’il est disponible.</returns>
+
+            /// <summary>Lit les états natifs; aucune propriété FileFormat inexistante n'est inventée pour PowerPoint.</summary>
+            /// <param name="document">Document hôte observé.</param>
+            /// <returns>Chemin, indicateurs natifs et format lorsqu’il est disponible.</returns>
             public OtherHostDocumentState State(object document)
             {
                 if (HostKind == "Access")
@@ -317,11 +372,12 @@ namespace VBAi
                     Saved = HostKind == "PowerPoint" ? Convert.ToInt32(item.Saved) == -1 : (bool)item.Saved,
                     Format = HostKind == "PowerPoint" ? null : (int?)Convert.ToInt32(item.SaveFormat) };
             }
-                        /// <summary>Appelle la méthode native appropriée sans fermer, imprimer ou démarrer un document.</summary>
-                        /// <param name="document">Document qui sera sauvegardé.</param>
-                        /// <param name="saveAs">Indique si l’opération utilise SaveAs.</param>
-                        /// <param name="destination">Chemin demandé pour SaveAs.</param>
-                        /// <param name="format">Verified native Office file format.</param>
+
+            /// <summary>Appelle la méthode native appropriée sans fermer, imprimer ou démarrer un document.</summary>
+            /// <param name="document">Document qui sera sauvegardé.</param>
+            /// <param name="saveAs">Indique si l’opération utilise SaveAs.</param>
+            /// <param name="destination">Chemin demandé pour SaveAs.</param>
+            /// <param name="format">Verified native Office file format.</param>
             public void Save(object document, bool saveAs, string destination, int format)
             {
                 SaveInvocationStarted = false;
@@ -358,38 +414,44 @@ namespace VBAi
                 else if (HostKind == "Publisher") item.SaveAs(destination, format, false);
                 else item.SaveAs(destination, format);
             }
-                        /// <summary>Existence du fichier natif.</summary>
-                        /// <param name="path">Chemin du fichier.</param>
-                        /// <returns><see langword="true"/> si le chemin désigne un fichier existant.</returns>
+
+            /// <summary>Existence du fichier natif.</summary>
+            /// <param name="path">Chemin du fichier.</param>
+            /// <returns><see langword="true"/> si le chemin désigne un fichier existant.</returns>
             public bool FileExists(string path) => File.Exists(path);
-                        /// <summary>Existence du dossier natif.</summary>
-                        /// <param name="path">Chemin du dossier.</param>
-                        /// <returns><see langword="true"/> si le chemin désigne un dossier existant.</returns>
+
+            /// <summary>Existence du dossier natif.</summary>
+            /// <param name="path">Chemin du dossier.</param>
+            /// <returns><see langword="true"/> si le chemin désigne un dossier existant.</returns>
             public bool DirectoryExists(string path) => Directory.Exists(path);
-                        /// <summary>Taille native sans lire le contenu.</summary>
-                        /// <param name="path">Chemin du fichier sauvegardé.</param>
-                        /// <returns>Taille du fichier en octets.</returns>
+
+            /// <summary>Taille native sans lire le contenu.</summary>
+            /// <param name="path">Chemin du fichier sauvegardé.</param>
+            /// <returns>Taille du fichier en octets.</returns>
             public long FileLength(string path) => new FileInfo(path).Length;
         }
 
-                /// <summary>Recognizes the four Office processes using this adapter.</summary>
-                /// <param name="processName">Nom de processus sans extension.</param>
-                /// <returns>Word, PowerPoint, Access, Publisher, or null for another process.</returns>
+        /// <summary>Recognizes the four Office processes using this adapter.</summary>
+        /// <param name="processName">Nom de processus sans extension.</param>
+        /// <returns>Word, PowerPoint, Access, Publisher, or null for another process.</returns>
         internal static string RecognizeOtherHost(string processName) => string.Equals(processName, "WINWORD", StringComparison.OrdinalIgnoreCase) ? "Word" :
             string.Equals(processName, "POWERPNT", StringComparison.OrdinalIgnoreCase) ? "PowerPoint" :
             string.Equals(processName, "MSACCESS", StringComparison.OrdinalIgnoreCase) ? "Access" :
             string.Equals(processName, "MSPUB", StringComparison.OrdinalIgnoreCase) ? "Publisher" : null;
-                /// <summary>Indique seulement qu'un adaptateur existe; ne constitue pas une qualification native.</summary>
-                /// <value><see langword="true"/> when the current process has an Office document adapter.</value>
+
+        /// <summary>Indique seulement qu'un adaptateur existe; ne constitue pas une qualification native.</summary>
+        /// <value><see langword="true"/> when the current process has an Office document adapter.</value>
         internal bool SupportsOtherHost => new NativeOtherHostProbe().HostKind != null;
-                /// <summary>Lit l'état du document associé au projet par son identité COM.</summary>
-                /// <param name="selector">Sélecteur du projet VBA.</param>
-                /// <returns>État de persistance exposé à l’appelant; les échecs sont renvoyés comme indisponibilité.</returns>
+
+        /// <summary>Lit l'état du document associé au projet par son identité COM.</summary>
+        /// <param name="selector">Sélecteur du projet VBA.</param>
+        /// <returns>État de persistance exposé à l’appelant; les échecs sont renvoyés comme indisponibilité.</returns>
         internal object OtherHostPersistence(string selector) => OtherHostPersistence(selector, new NativeOtherHostProbe());
-                /// <summary>Lecture injectable sans mutation ni lancement d'application.</summary>
-                /// <param name="selector">Sélecteur du projet VBA.</param>
-                /// <param name="native">Sonde utilisée pour l’application hôte, les documents et les états.</param>
-                /// <returns>État de persistance natif ou résultat décrivant pourquoi il n’est pas disponible.</returns>
+
+        /// <summary>Lecture injectable sans mutation ni lancement d'application.</summary>
+        /// <param name="selector">Sélecteur du projet VBA.</param>
+        /// <param name="native">Sonde utilisée pour l’application hôte, les documents et les états.</param>
+        /// <returns>État de persistance natif ou résultat décrivant pourquoi il n’est pas disponible.</returns>
         internal object OtherHostPersistence(string selector, IOtherHostProbe native)
         {
             dynamic project = GetProject(selector);
@@ -409,17 +471,18 @@ namespace VBAi
             }
         }
 
-                /// <summary>Saves a matched Office document after version, path, COM identity and process guards.</summary>
-                /// <param name="request">Projet, version attendue et chemin éventuel fournis par l’appelant.</param>
-                /// <param name="saveAs">Choisit une première sauvegarde sous un nouveau chemin.</param>
-                /// <returns>Résultat de la sauvegarde native et état des vérifications.</returns>
+        /// <summary>Saves a matched Office document after version, path, COM identity and process guards.</summary>
+        /// <param name="request">Projet, version attendue et chemin éventuel fournis par l’appelant.</param>
+        /// <param name="saveAs">Choisit une première sauvegarde sous un nouveau chemin.</param>
+        /// <returns>Résultat de la sauvegarde native et état des vérifications.</returns>
         internal object SaveOtherHost(Request request, bool saveAs) => SaveOtherHost(request, saveAs, new NativeOtherHostProbe());
-                /// <summary>Sauvegarde injectable; une exception après invocation produit explicitement un résultat incertain.</summary>
-                /// <param name="request">Projet et préconditions de sauvegarde.</param>
-                /// <param name="saveAs">Indique si une opération SaveAs est demandée.</param>
-                /// <param name="native">Sonde des opérations hôte et du document associé.</param>
-                /// <param name="approvedApplication">Optional retained Access application required throughout save preflight.</param>
-                /// <returns>Résultat vérifié ou résultat incertain si une mutation a été appelée mais non confirmée.</returns>
+
+        /// <summary>Sauvegarde injectable; une exception après invocation produit explicitement un résultat incertain.</summary>
+        /// <param name="request">Projet et préconditions de sauvegarde.</param>
+        /// <param name="saveAs">Indique si une opération SaveAs est demandée.</param>
+        /// <param name="native">Sonde des opérations hôte et du document associé.</param>
+        /// <param name="approvedApplication">Optional retained Access application required throughout save preflight.</param>
+        /// <returns>Résultat vérifié ou résultat incertain si une mutation a été appelée mais non confirmée.</returns>
         internal object SaveOtherHost(Request request, bool saveAs, IOtherHostProbe native, object approvedApplication = null)
         {
             if (request == null || string.IsNullOrWhiteSpace(request.ExpectedProjectVersion)) throw new ArgumentException("ExpectedProjectVersion is required.");
@@ -509,12 +572,12 @@ namespace VBAi
             finally { if (approvedApplication != null) ReleaseAccessObservation(document); }
         }
 
-                /// <summary>Associe un seul document au projet IUnknown et refuse toute application d'un autre PID.</summary>
-                /// <param name="project">VBProject sélectionné par l’appelant.</param>
-                /// <param name="native">Sonde qui fournit l’application, ses documents et leurs identités.</param>
-                /// <param name="approvedApplication">Optional retained Access application whose COM identity must remain exact.</param>
-                /// <returns>Document unique dont le VBProject partage l’identité COM avec le projet demandé.</returns>
-                /// <exception cref="InvalidOperationException">L’hôte, le processus ou l’identité du document ne peut pas être vérifié de façon unique.</exception>
+        /// <summary>Associe un seul document au projet IUnknown et refuse toute application d'un autre PID.</summary>
+        /// <param name="project">VBProject sélectionné par l’appelant.</param>
+        /// <param name="native">Sonde qui fournit l’application, ses documents et leurs identités.</param>
+        /// <param name="approvedApplication">Optional retained Access application whose COM identity must remain exact.</param>
+        /// <returns>Document unique dont le VBProject partage l’identité COM avec le projet demandé.</returns>
+        /// <exception cref="InvalidOperationException">L’hôte, le processus ou l’identité du document ne peut pas être vérifié de façon unique.</exception>
         internal static object MatchOtherHost(object project, IOtherHostProbe native, object approvedApplication = null)
         {
             if (native == null || !new[] { "Word", "PowerPoint", "Access", "Publisher" }.Contains(native.HostKind)) throw new InvalidOperationException("This host has no Office document save adapter.");
@@ -548,11 +611,12 @@ namespace VBAi
                 }
             }
         }
-                /// <summary>Maps supported native document extensions to exact Microsoft file format constants.</summary>
-                /// <param name="kind">Word, PowerPoint, Access or Publisher.</param>
-                /// <param name="path">Chemin dont l’extension détermine le format.</param>
-                /// <returns>Constante SaveAs native associée au format macro-enabled.</returns>
-                /// <exception cref="ArgumentException">L’hôte ou l’extension n’est pas prise en charge.</exception>
+
+        /// <summary>Maps supported native document extensions to exact Microsoft file format constants.</summary>
+        /// <param name="kind">Word, PowerPoint, Access or Publisher.</param>
+        /// <param name="path">Chemin dont l’extension détermine le format.</param>
+        /// <returns>Constante SaveAs native associée au format macro-enabled.</returns>
+        /// <exception cref="ArgumentException">L’hôte ou l’extension n’est pas prise en charge.</exception>
         internal static int OtherHostFormat(string kind, string path)
         {
             string extension = Path.GetExtension(path).ToLowerInvariant();
@@ -562,9 +626,10 @@ namespace VBAi
             if (kind == "Access" && extension == ".accdb") return 12;
             throw new ArgumentException("Word requires .docm/.dotm; PowerPoint requires .pptm/.potm/.ppsm; existing Access documents require .accdb; existing Publisher documents require .pub. Other formats are refused.");
         }
-                /// <summary>Lit FileName et distingue une absence de chemin d'une autre erreur native.</summary>
-                /// <param name="project">Projet VBA du document.</param>
-                /// <returns>Chemin du projet ou chaîne vide si l’hôte ne fournit pas FileName.</returns>
+
+        /// <summary>Lit FileName et distingue une absence de chemin d'une autre erreur native.</summary>
+        /// <param name="project">Projet VBA du document.</param>
+        /// <returns>Chemin du projet ou chaîne vide si l’hôte ne fournit pas FileName.</returns>
         private static string OtherHostProjectPath(object project)
         {
             try { return (string)((dynamic)project).FileName; }
@@ -573,6 +638,10 @@ namespace VBAi
         }
 
         /// <summary>Vérifie le chemin VBIDE seulement lorsque ce chemin représente le document hôte.</summary>
+        /// <param name="project">object that supplies the project for this operation.</param>
+        /// <param name="expectedPath">Path used for the expected path being processed.</param>
+        /// <param name="hostKind">Text that supplies the host kind value. Use the format required by the calling operation.</param>
+        /// <returns>Boolean indicating the result of the check for other host project path matches on vbe project components.</returns>
         private static bool OtherHostProjectPathMatches(object project, string expectedPath, string hostKind)
         {
             // MatchOtherHost and the final readback still require the same document/project COM identity,
@@ -586,15 +655,17 @@ namespace VBAi
             if (hostKind == "Publisher" && string.IsNullOrWhiteSpace(projectPath)) return true;
             return OtherHostSamePath(projectPath, expectedPath);
         }
-                /// <summary>Compare deux chemins pleinement qualifiés, sans accepter un nom de fichier relatif.</summary>
-                /// <param name="first">Premier chemin à comparer.</param>
-                /// <param name="second">Second chemin attendu.</param>
-                /// <returns><see langword="true"/> si le premier est absolu et correspond au second sans tenir compte de la casse.</returns>
+
+        /// <summary>Compare deux chemins pleinement qualifiés, sans accepter un nom de fichier relatif.</summary>
+        /// <param name="first">Premier chemin à comparer.</param>
+        /// <param name="second">Second chemin attendu.</param>
+        /// <returns><see langword="true"/> si le premier est absolu et correspond au second sans tenir compte de la casse.</returns>
         private static bool OtherHostSamePath(string first, string second) => !string.IsNullOrWhiteSpace(first) && Path.IsPathRooted(first) &&
             string.Equals(Path.GetFullPath(first), second, StringComparison.OrdinalIgnoreCase);
-                /// <summary>Versionne toutes les sources live et identités de composants avant/après sauvegarde.</summary>
-                /// <param name="project">VBProject dont les composants doivent être empreintés.</param>
-                /// <returns>Empreinte SHA-256 des noms, types et sources des composants.</returns>
+
+        /// <summary>Versionne toutes les sources live et identités de composants avant/après sauvegarde.</summary>
+        /// <param name="project">VBProject dont les composants doivent être empreintés.</param>
+        /// <returns>Empreinte SHA-256 des noms, types et sources des composants.</returns>
         private static string OtherHostSourceSha(object project)
         {
             var rows = new List<object>();

@@ -4,14 +4,20 @@ using System.Linq;
 
 namespace VBAi
 {
+
+    /// <summary>Owns the llm vbe tools state and operations.</summary>
     internal sealed partial class LlmVbeTools
     {
+
+        /// <summary>Maintains the testing tools state for llm vbe tools.</summary>
         private static readonly HashSet<string> TestingTools = new HashSet<string>(StringComparer.Ordinal)
         {
             "discover_vba_tests", "preview_vba_test_support", "install_vba_test_support", "run_vba_tests",
             "vba_test_run_status", "stop_vba_tests", "navigate_vba_test", "vba_test_coverage", "show_vba_test_explorer"
         };
 
+        /// <summary>Gets the testing definitions.</summary>
+        /// <value>Current testing definitions exposed by llm vbe tools.</value>
         private static object[] TestingDefinitions => new[]
         {
             Definition("discover_vba_tests", "Discover explicitly annotated VBA tests and fixtures in one authorized project without executing or editing source. Returns stable test IDs, blocking discovery diagnostics and the whole-project ExpectedProjectVersion. A discovered test is not a passing test. Standard modules use @TestModule and @TestMethod; valid tests are explicit Public parameterless Subs or Functions As Boolean.", new[] { "Project" }, "Project"),
@@ -25,8 +31,13 @@ namespace VBAi
             Definition("show_vba_test_explorer", "Open the test explorer and select one exact authorized project without executing or editing VBA. Returns the owned window handle and docking state. A running batch retains its frozen project scope.", new[] { "Project" }, "Project")
         };
 
+        /// <summary>Determines whether testing tool for llm vbe tools.</summary>
+        /// <param name="name">Text that supplies the name value. Use the format required by the calling operation.</param>
+        /// <returns>Boolean indicating the result of the check for is testing tool on llm vbe tools.</returns>
         private static bool IsTestingTool(string name) => TestingTools.Contains(name);
 
+        /// <summary>Handles prepare testing request for llm vbe tools.</summary>
+        /// <param name="request">request that supplies the request for this operation.</param>
         private void PrepareTestingRequest(Request request)
         {
             if (request.Command == "vba_test_run_status" || request.Command == "vba_test_coverage")
@@ -61,6 +72,11 @@ namespace VBAi
                 throw new InvalidOperationException("Text must exactly match the reviewed test-support preview.");
         }
 
+        /// <summary>Handles revalidate testing dispatch for llm vbe tools.</summary>
+        /// <param name="name">Text that supplies the name value. Use the format required by the calling operation.</param>
+        /// <param name="arguments">Text that supplies the arguments value. Use the format required by the calling operation.</param>
+        /// <param name="approved">Indicates whether approved is enabled.</param>
+        /// <param name="expectedBinding">Text that supplies the expected binding value. Use the format required by the calling operation.</param>
         private void RevalidateTestingDispatch(string name, string arguments, bool approved, string expectedBinding)
         {
             GuardMode(name);
@@ -73,6 +89,13 @@ namespace VBAi
                 throw new InvalidOperationException("VBE edit policy changed before the test operation.");
         }
 
+        /// <summary>Executes testing request for llm vbe tools.</summary>
+        /// <param name="request">request that supplies the request for this operation.</param>
+        /// <param name="name">Text that supplies the name value. Use the format required by the calling operation.</param>
+        /// <param name="arguments">Text that supplies the arguments value. Use the format required by the calling operation.</param>
+        /// <param name="approved">Indicates whether approved is enabled.</param>
+        /// <param name="expectedBinding">Text that supplies the expected binding value. Use the format required by the calling operation.</param>
+        /// <returns>response produced by the operation for execute testing request on llm vbe tools.</returns>
         private Response ExecuteTestingRequest(Request request, string name, string arguments, bool approved, string expectedBinding)
         {
             if (name != "run_vba_tests" || session == null) return Execute(request);

@@ -5,14 +5,28 @@ using System.Windows.Forms;
 
 namespace VBAi
 {
+
+    /// <summary>Owns the vbe test explorer service state and operations.</summary>
     internal sealed partial class VbeTestExplorerService
     {
+
+        /// <summary>Maintains the default compile coverage delegate state for vbe test explorer service.</summary>
         private readonly Action<object> defaultCompileCoverageDelegate;
+
+        /// <summary>Maintains the current coverage compile guard state for vbe test explorer service.</summary>
         private Action currentCoverageCompileGuard;
+
+        /// <summary>Maintains the start coverage compilation timer state for vbe test explorer service.</summary>
         internal Func<Action, IDisposable> StartCoverageCompilationTimer = StartCompilationTimer;
+
+        /// <summary>Maintains the coverage compilation clock state for vbe test explorer service.</summary>
         internal Func<long> CoverageCompilationClock = () => (long)(1000d * Stopwatch.GetTimestamp() / Stopwatch.Frequency);
+
+        /// <summary>Maintains the compilation deadline milliseconds state for vbe test explorer service.</summary>
         private const int CompilationDeadlineMilliseconds = 3000;
 
+        /// <summary>Handles compile coverage clone for vbe test explorer service.</summary>
+        /// <param name="copiedProject">object that supplies the copied project for this operation.</param>
         private void CompileCoverageClone(object copiedProject)
         {
             RequireOwner();
@@ -39,6 +53,9 @@ namespace VBAi
         }
 
         /// <summary>Observes compilation only after returning to the owner UI; never executes the command again.</summary>
+        /// <param name="copiedProject">object that supplies the copied project for this operation.</param>
+        /// <param name="guard">action that supplies the guard for this operation.</param>
+        /// <returns>task&lt;bool&gt; produced by the operation for verify coverage compilation async on vbe test explorer service.</returns>
         internal Task<bool> VerifyCoverageCompilationAsync(object copiedProject, Action guard)
         {
             RequireOwner();
@@ -93,6 +110,8 @@ namespace VBAi
             return completion.Task;
         }
 
+        /// <summary>Requires compilation project for vbe test explorer service.</summary>
+        /// <param name="copiedProject">object that supplies the copied project for this operation.</param>
         private void RequireCompilationProject(object copiedProject)
         {
             RequireOwner();
@@ -103,6 +122,8 @@ namespace VBAi
                 throw new InvalidOperationException("The coverage compiler requires the owned project in design mode.");
         }
 
+        /// <summary>Reads compilation control for vbe test explorer service.</summary>
+        /// <returns>object produced by the operation for read compilation control on vbe test explorer service.</returns>
         private object ReadCompilationControl()
         {
             dynamic compile = vbe.CommandBars.FindControl(1, 578);
@@ -112,11 +133,18 @@ namespace VBAi
             return compile;
         }
 
+        /// <summary>Starts compilation timer for vbe test explorer service.</summary>
+        /// <param name="tick">action that supplies the tick for this operation.</param>
+        /// <returns>i disposable produced by the operation for start compilation timer on vbe test explorer service.</returns>
         private static IDisposable StartCompilationTimer(Action tick)
         {
             return StartCompilationTimer(tick, timer => timer.Start());
         }
 
+        /// <summary>Starts compilation timer for vbe test explorer service.</summary>
+        /// <param name="tick">action that supplies the tick for this operation.</param>
+        /// <param name="start">action&lt;timer&gt; that supplies the start for this operation.</param>
+        /// <returns>i disposable produced by the operation for start compilation timer on vbe test explorer service.</returns>
         internal static IDisposable StartCompilationTimer(Action tick, Action<Timer> start)
         {
             var timer = new Timer { Interval = 50 };

@@ -1,13 +1,20 @@
 namespace VBAi
 {
+
+    /// <summary>Owns the form stream padding state and operations.</summary>
     internal static partial class FormStreamPadding
     {
         // MS-OFORMS 2.2.5.1-.8, 2.4.5 and property applicability in 2.5.
         // https://learn.microsoft.com/en-us/openspecs/office_file_formats/ms-oforms/19014e19-67fa-4060-8c81-d1463809f117
         // A comparison clone retains every property byte; only proven alignment bytes are cleared.
+        /// <summary>Determines whether morph type for form stream padding.</summary>
+        /// <param name="type">uint that supplies the type for this operation.</param>
+        /// <returns>Boolean indicating the result of the check for is morph type on form stream padding.</returns>
         private static bool IsMorphType(uint type) { return type >= 23 && type <= 28; }
 
         /// <summary>Reads the shared grammar of six streamed MorphData controls without interpreting their content.</summary>
+        /// <param name="control">reader that supplies the control for this operation.</param>
+        /// <param name="type">uint that supplies the type for this operation.</param>
         private static void ParseMorph(Reader control, uint type)
         {
             Reader block = control.Block(0x0200);
@@ -57,6 +64,8 @@ namespace VBAi
         }
 
         /// <summary>Restricts mask fields to those applicable to the cached control's DisplayStyle.</summary>
+        /// <param name="type">uint that supplies the type for this operation.</param>
+        /// <returns>ulong produced by the operation for morph properties on form stream padding.</returns>
         private static ulong MorphProperties(uint type)
         {
             const ulong common = (1UL << 0) | (1UL << 1) | (1UL << 2) | (1UL << 6) | (1UL << 7) |
@@ -76,12 +85,16 @@ namespace VBAi
             }
         }
 
+        /// <summary>Handles morph style for form stream padding.</summary>
+        /// <param name="type">uint that supplies the type for this operation.</param>
+        /// <returns>uint produced by the operation for morph style on form stream padding.</returns>
         private static uint MorphStyle(uint type)
         {
             return type == 23 ? 1u : type == 24 ? 2u : type == 25 ? 3u : type - 22;
         }
 
         /// <summary>Reads a column's optional signed Width while preserving its exact representation.</summary>
+        /// <param name="control">reader that supplies the control for this operation.</param>
         private static void ParseMorphColumn(Reader control)
         {
             Reader block = control.Block(0x0200);

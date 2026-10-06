@@ -6,14 +6,17 @@ using System.Web.Script.Serialization;
 
 namespace VBAi
 {
+
     /// <summary>Inspecte et commande l’historique partagé natif du code du projet VBE.</summary>
     internal sealed partial class VbeDebug
     {
+
         /// <summary>Vérifie si une fenêtre VBE reste activée malgré les dialogues modaux.</summary>
         /// <param name="window">Handle de la fenêtre principale du VBE.</param>
         /// <returns><see langword="true"/> si Windows signale la fenêtre comme activée.</returns>
         [DllImport("user32.dll", EntryPoint = "IsWindowEnabled")]
         private static extern bool NativeHistoryWindowEnabled(IntPtr window);
+
         /// <summary>Preserves the native modal-window check while allowing isolated host contracts.</summary>
         internal static Func<IntPtr, bool> HistoryWindowEnabled = NativeHistoryWindowEnabled;
 
@@ -73,26 +76,34 @@ namespace VBAi
         /// <summary>Code et empreinte d’un module capturé dans l’instantané d’historique.</summary>
         private sealed class HistoryModule
         {
+
             /// <summary>Gets or sets the module.</summary>
-            /// <value>The current value represented by this member.</value>
+            /// <value>Current module exposed by history module.</value>
             public string Module { get; set; }
+
             /// <summary>Gets or sets the code.</summary>
-            /// <value>The current value represented by this member.</value>
+            /// <value>Current code exposed by history module.</value>
             public string Code { get; set; }
+
             /// <summary>Gets or sets the sha256.</summary>
-            /// <value>The current value represented by this member.</value>
+            /// <value>Current sha256 exposed by history module.</value>
             public string Sha256 { get; set; }
         }
+
         /// <summary>Instantané du projet utilisé pour vérifier une opération d’historique native.</summary>
         private sealed class HistorySnapshot
         {
-            /// <summary>Stores the version used by HistorySnapshot.</summary>
+
+            /// <summary>Maintains the version state for history snapshot.</summary>
             public string Version;
-            /// <summary>Stores the modules used by HistorySnapshot.</summary>
+
+            /// <summary>Maintains the modules state for history snapshot.</summary>
             public List<HistoryModule> Modules;
-            /// <summary>Stores the commands used by HistorySnapshot.</summary>
+
+            /// <summary>Maintains the commands state for history snapshot.</summary>
             public object[] Commands;
         }
+
         /// <summary>Capture tous les modules et commandes d’historique du projet pris en charge.</summary>
         /// <param name="selector">Sélecteur du projet dans la session VBE.</param>
         /// <returns>Instantané avec version calculée à partir des sources et commandes lues.</returns>

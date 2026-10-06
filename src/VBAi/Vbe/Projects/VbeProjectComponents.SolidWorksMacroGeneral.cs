@@ -1,15 +1,25 @@
-﻿using System;
+using System;
 
 namespace VBAi
 {
+
+    /// <summary>Owns the vbe project components state and operations.</summary>
     internal sealed partial class VbeProjectComponents
     {
+
+        /// <summary>Owns the publication general selection state and operations.</summary>
         internal sealed class PublicationGeneralSelection
         {
+
+            /// <summary>Tracks the canonical state of publication general selection.</summary>
             internal object Canonical;
+
+            /// <summary>Maintains the name and version state for publication general selection.</summary>
             internal string Name, Version;
         }
 
+        /// <summary>Captures publication general selection for vbe project components.</summary>
+        /// <returns>publication general selection produced by the operation for capture publication general selection on vbe project components.</returns>
         internal PublicationGeneralSelection CapturePublicationGeneralSelection()
         {
             object canonical = (object)vbe.ActiveVBProject;
@@ -21,6 +31,8 @@ namespace VBAi
                 Version = (string)((dynamic)ProjectProperties(name)).Version };
         }
 
+        /// <summary>Handles restore publication general selection for vbe project components.</summary>
+        /// <param name="selection">publication general selection that supplies the selection for this operation.</param>
         internal void RestorePublicationGeneralSelection(PublicationGeneralSelection selection)
         {
             if (selection == null || !GeneralProjectIdentity(selection.Canonical, (object)GetDesignProject(selection.Name)))
@@ -34,6 +46,8 @@ namespace VBAi
             AssertProjectVersion(guard, selection.Canonical);
         }
 
+        /// <summary>Handles select publication general project for vbe project components.</summary>
+        /// <param name="request">request that supplies the request for this operation.</param>
         internal void SelectPublicationGeneralProject(Request request)
         {
             if (request == null || request.Command != "read_project_general" || request.ExpectedMode != 2 ||

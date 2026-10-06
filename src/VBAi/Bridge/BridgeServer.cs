@@ -11,63 +11,92 @@ using System.Windows.Forms;
 
 namespace VBAi
 {
+
     /// <summary>Frontières natives du débogueur, conservant leurs implémentations VBE par défaut.</summary>
     internal sealed class VbeToolNativeBoundary
     {
+
         /// <summary>Lit la liste native de l’explorateur d’objets pour les critères demandés.</summary>
         internal Func<Request, object> ListObjectBrowser = VbeDebugWindows.ListObjectBrowser;
+
         /// <summary>Lit les nœuds de navigation natifs sur le worker d'accessibilité.</summary>
         internal Func<Request, object> ReadNavigationSurface = VbeDebugWindows.ReadNavigationSurface;
+
         /// <summary>Refuse de réutiliser un dialogue de propriétés déjà ouvert.</summary>
         internal Action EnsureNoProjectPropertiesDialog = VbeDebugWindows.EnsureNoProjectPropertiesDialog;
+
         /// <summary>Lit la protection native sans restituer de secret.</summary>
         internal Func<Request, object> ReadProjectProtection = VbeDebugWindows.ReadProjectProtection;
+
         /// <summary>Configure la protection via le dialogue natif exact.</summary>
         internal Func<Request, object> SetProjectProtection = VbeDebugWindows.SetProjectProtection;
+
         /// <summary>Sélectionne ou développe un nœud de navigation identifié.</summary>
         internal Func<Request, object> ChangeNavigationSurface = VbeDebugWindows.ChangeNavigationSurface;
+
         /// <summary>Sélectionne une entrée native de l’explorateur d’objets.</summary>
         internal Func<Request, object> SelectObjectBrowser = VbeDebugWindows.SelectObjectBrowser;
+
         /// <summary>Inspecte l’explorateur d’objets par son fournisseur d’automatisation Windows.</summary>
         internal Func<object> ReadObjectBrowser = VbeDebugWindows.ReadObjectBrowser;
+
         /// <summary>Inspecte les formulaires VBA actifs par l’automatisation Windows.</summary>
         internal Func<object> ReadRuntimeForms = VbeDebugWindows.ReadRuntimeForms;
+
         /// <summary>Frontière native injectable, initialisée avec le comportement de production.</summary>
         internal Func<bool, object> Capture = VbeDebugWindows.Capture;
+
         /// <summary>Frontière native injectable, initialisée avec le comportement de production.</summary>
         internal Func<object> ReadDebugDialog = VbeDebugWindows.ReadDebugDialog;
+
         /// <summary>Frontière native injectable, initialisée avec le comportement de production.</summary>
         internal Func<Request, object> ChangeDebugItem = VbeDebugWindows.ChangeDebugItem;
+
         /// <summary>Frontière native injectable, initialisée avec le comportement de production.</summary>
         internal Func<Request, object> RespondDebugDialog = VbeDebugWindows.RespondDebugDialog;
+
         /// <summary>Frontière native injectable, initialisée avec le comportement de production.</summary>
         internal Func<string, Action<Action>, object> ExecuteImmediate = VbeDebugWindows.ExecuteImmediateGuarded;
+
         /// <summary>Frontière native injectable, initialisée avec le comportement de production.</summary>
         internal Action EnsureNoCompileDialog = VbeDebugWindows.EnsureNoCompileDialog;
+
         /// <summary>Frontière native injectable, initialisée avec le comportement de production.</summary>
         internal Func<ManualResetEventSlim, string> AwaitCompileDialog = VbeDebugWindows.AwaitCompileDialog;
+
         /// <summary>Frontière native injectable, initialisée avec le comportement de production.</summary>
         internal Func<Request, object> CompleteAddWatch = VbeDebugWindows.CompleteAddWatch;
+
         /// <summary>Frontière native injectable, initialisée avec le comportement de production.</summary>
         internal Func<Request, object> SelectWatch = VbeDebugWindows.SelectWatch;
+
         /// <summary>Frontière native injectable, initialisée avec le comportement de production.</summary>
         internal Func<Request, object> CompleteEditWatch = VbeDebugWindows.CompleteEditWatch;
+
         /// <summary>Frontière native injectable, initialisée avec le comportement de production.</summary>
         internal Func<Request, object> CompleteQuickWatch = VbeDebugWindows.CompleteQuickWatch;
+
         /// <summary>Frontière native injectable, initialisée avec le comportement de production.</summary>
         internal Action EnsureNoDebugOptionsDialog = VbeDebugWindows.EnsureNoDebugOptionsDialog;
+
         /// <summary>Frontière native injectable, initialisée avec le comportement de production.</summary>
         internal Func<object> ReadVbeOptions = VbeDebugWindows.ReadVbeOptions;
+
         /// <summary>Écrit seulement les préférences natives d’édition/débogage reconnues.</summary>
         internal Func<Request, object> SetVbeOption = VbeDebugWindows.SetVbeOption;
+
         /// <summary>Frontière native injectable, initialisée avec le comportement de production.</summary>
         internal Func<object> ReadDebugOptions = VbeDebugWindows.ReadDebugOptions;
+
         /// <summary>Frontière native injectable, initialisée avec le comportement de production.</summary>
         internal Action EnsureNoSignatureDialog = VbeDebugWindows.EnsureNoSignatureDialog;
+
         /// <summary>Frontière native injectable, initialisée avec le comportement de production.</summary>
         internal Func<string, object> ReadSignatureDialog = VbeDebugWindows.ReadSignatureDialog;
+
         /// <summary>Frontière native injectable, initialisée avec le comportement de production.</summary>
         internal Func<string, string, string, bool, object> CompleteProjectSignature = VbeDebugWindows.CompleteProjectSignature;
+
         /// <summary>Frontière native injectable, initialisée avec le comportement de production.</summary>
         internal Func<Request, object> VerifyWatchRemoved = VbeDebugWindows.VerifyWatchRemoved;
     }
@@ -75,43 +104,64 @@ namespace VBAi
     /// <summary>Expose les opérations de session VBE par un canal nommé propre au processus.</summary>
     internal sealed class BridgeServer : IDisposable
     {
+
         /// <summary>Contrôle WinForms utilisé pour exécuter les appels COM sur le thread UI.</summary>
         private readonly Control dispatcher;
+
         /// <summary>Session qui traite les requêtes destinées au VBE.</summary>
         private readonly VbeSession session;
+
         /// <summary>Host-only qualification opt-in, captured at connection and absent from the LLM catalogue.</summary>
         private readonly PathVisibilityDiagnostic pathVisibility;
+
         /// <summary>Explicit disposable owner-Git diagnostic, never exposed to the LLM catalogue.</summary>
         private readonly OwnerGitQualification ownerGitQualification;
+
         /// <summary>Adaptateurs natifs du débogueur, remplaçables par instance à la frontière UI.</summary>
         internal readonly VbeToolNativeBoundary Native = new VbeToolNativeBoundary();
+
         /// <summary>Exécute une commande sur la session hôte, sans remplacer l’orchestration de l’outil.</summary>
         internal Func<Request, Response> Execute;
+
         /// <summary>Captures Immediate output while yielding to the owning VBE message loop.</summary>
         internal Func<Request, Task<object>> ReadImmediateNative;
+
         /// <summary>Inspects declared scalar locals on the owning VBE UI thread.</summary>
         internal Func<Request, Task<object>> InspectLocalScalarsNative;
+
         /// <summary>Saves and observes completion while yielding to the owning VBE STA.</summary>
         internal Func<Request, Task<object>> SaveHostDocumentNative;
+
+        /// <summary>Maintains the solid works macro native state for bridge server.</summary>
         internal Func<Request, Task<object>> SolidWorksMacroNative;
+
         /// <summary>Runs the guarded native General operation on the VBE UI thread.</summary>
         internal Func<Request, bool, Task<object>> ProjectGeneralNative;
+
         /// <summary>Demande la sauvegarde de signature au document hôte.</summary>
         internal Func<string, object> PersistSignature;
+
         /// <summary>Crée le canal local avec la sécurité de l’utilisateur courant.</summary>
         internal Func<PipeSecurity, NamedPipeServerStream> OpenPipe;
+
         /// <summary>Nom du canal nommé associé au processus hôte.</summary>
         private readonly string pipeName;
+
         /// <summary>Thread d’arrière-plan qui accepte les connexions du client.</summary>
         private readonly Thread worker;
+
         /// <summary>Indique que l’arrêt du serveur a été demandé.</summary>
         private volatile bool stopping;
+
         /// <summary>Connexion actuellement acceptée, fermée lors de l’arrêt.</summary>
         private NamedPipeServerStream listener;
+
         /// <summary>Budget de réception d'une requête complète, indépendant de la durée d'exécution VBE.</summary>
         internal TimeSpan RequestReadTimeout = TimeSpan.FromSeconds(10);
+
         /// <summary>Limits response delivery independently of native command execution.</summary>
         internal TimeSpan ResponseWriteTimeout = TimeSpan.FromSeconds(10);
+
         /// <summary>Limite UTF-8 appliquée avant l'allocation de la ligne JSON complète.</summary>
         internal int MaxRequestBytes = 10 * 1024 * 1024;
 
@@ -455,6 +505,9 @@ namespace VBAi
         // Native worker routes bypass Execute. Hold their session admission until
         // dispatch settles, so General cannot enter between the STA check and a
         // worker native call. General claims its own in-flight state on the STA.
+        /// <summary>Handles admit session request for bridge server.</summary>
+        /// <param name="request">request that supplies the request for this operation.</param>
+        /// <returns>action produced by the operation for admit session request on bridge server.</returns>
         private Action AdmitSessionRequest(Request request)
         {
             if (request?.Command == "status" || session == null) return null;

@@ -13,9 +13,11 @@ using System.Web.Script.Serialization;
 
 namespace VBAi
 {
+
     /// <summary>Inspecte les projets VBIDE et applique les opérations de gestion de composants explicitement validées.</summary>
     internal sealed partial class VbeProjectComponents
     {
+
         /// <summary>Obtient le PID du processus propriétaire d’une fenêtre Win32.</summary>
         /// <param name="window">Handle de la fenêtre.</param>
         /// <param name="processId">Reçoit l’identifiant du processus propriétaire.</param>
@@ -26,15 +28,19 @@ namespace VBAi
         /// <summary>Fournit les informations Excel nécessaires pour associer sûrement un projet VBE à son classeur.</summary>
         internal interface IExcelHostProbe
         {
+
             /// <summary>Indique si l’hôte courant est Excel.</summary>
             /// <value><see langword="true"/> si le processus hôte est Excel.</value>
             bool IsExcel { get; }
+
             /// <summary>Obtient l’identifiant du processus courant.</summary>
             /// <value>PID du processus hôte.</value>
             int CurrentProcessId { get; }
+
             /// <summary>Obtient l’objet d’application Excel actif.</summary>
             /// <returns>Application Excel exposant la collection de classeurs.</returns>
             object ExcelApplication();
+
             /// <summary>Obtient le PID propriétaire d’un handle de fenêtre.</summary>
             /// <param name="window">Handle de fenêtre à vérifier.</param>
             /// <returns>Identifiant du processus propriétaire.</returns>
@@ -44,19 +50,24 @@ namespace VBAi
         /// <summary>Implémente le sondage Excel avec les API Windows et l’objet d’application actif.</summary>
         private sealed class NativeExcelHostProbe : IExcelHostProbe
         {
+
             /// <summary>Indique si le processus courant est EXCEL.EXE.</summary>
             /// <value><see langword="true"/> lorsque le nom du processus est EXCEL.</value>
             public bool IsExcel => string.Equals(Process.GetCurrentProcess().ProcessName,
                 "EXCEL", StringComparison.OrdinalIgnoreCase);
+
             /// <summary>Obtient le PID du processus courant.</summary>
             /// <value>PID du processus courant.</value>
             public int CurrentProcessId => Process.GetCurrentProcess().Id;
+
             /// <summary>Obtient l’application Excel du processus via NativeOM, avec repli ROT protégé par PID.</summary>
             /// <returns>Objet COM Excel.Application.</returns>
             public object ExcelApplication() { return ExcelOwnedApplication.Resolve(CurrentProcessId, RegisteredExcel); }
+
             /// <summary>Obtient l’entrée ROT historique si aucune fenêtre de document du processus ne fournit NativeOM.</summary>
             /// <returns>Objet COM enregistré, dont le PID doit encore être vérifié par l’appelant.</returns>
             private static object RegisteredExcel() { return Marshal.GetActiveObject("Excel.Application"); }
+
             /// <summary>Retourne le PID propriétaire de la fenêtre native.</summary>
             /// <param name="window">Handle de la fenêtre Excel.</param>
             /// <returns>Identifiant du processus associé à la fenêtre.</returns>
@@ -70,10 +81,13 @@ namespace VBAi
 
         /// <summary>Instance VBE interrogée pour résoudre les projets.</summary>
         private readonly dynamic vbe;
+
         /// <summary>Gestionnaire de contrôles MSForms, utilisé pour lire l’état des formulaires.</summary>
         private readonly VbeForms forms;
+
         /// <summary>Accès injectable aux informations du processus hôte Excel.</summary>
         private readonly IExcelHostProbe host;
+
         /// <summary>Sérialiseur des états utilisés pour calculer les versions de projet et composant.</summary>
         private readonly JavaScriptSerializer json = new JavaScriptSerializer { MaxJsonLength = 10 * 1024 * 1024 };
 
@@ -262,6 +276,10 @@ namespace VBAi
         }
 
         /// <summary>Rejects path or format changes made by save event handlers without replaying the mutation.</summary>
+        /// <param name="workbook">dynamic that supplies the workbook for this operation.</param>
+        /// <param name="project">dynamic that supplies the project for this operation.</param>
+        /// <param name="expectedPath">Path used for the expected path being processed.</param>
+        /// <param name="expectedFormat">int that supplies the expected format for this operation.</param>
         private static void AssertExcelSaveIdentity(dynamic workbook, dynamic project, string expectedPath, int expectedFormat)
         {
             string expected = Path.GetFullPath(expectedPath);
@@ -275,6 +293,9 @@ namespace VBAi
                 throw new InvalidOperationException("Excel Save was invoked but the workbook/project path or file format changed. Inspect the result; do not retry automatically.");
         }
 
+        /// <summary>Determines whether it can preserve excel vba for vbe project components.</summary>
+        /// <param name="fileFormat">int that supplies the file format for this operation.</param>
+        /// <returns>Boolean indicating the result of the check for can preserve excel vba on vbe project components.</returns>
         private static bool CanPreserveExcelVba(int fileFormat)
         {
             // XlFileFormat values for macro-capable workbooks, templates, and add-ins.

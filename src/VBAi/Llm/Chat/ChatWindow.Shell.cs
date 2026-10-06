@@ -8,9 +8,11 @@ using System.Windows.Media;
 
 namespace VBAi
 {
+
     /// <summary>Fenêtre de conversation avec commandes de navigation, de sélection et de gestion du contexte.</summary>
     internal sealed partial class ChatWindow
     {
+
         /// <summary>Crée un pinceau WPF à partir d’une couleur de thème exprimée en hexadécimal.</summary>
         /// <param name="hex">Couleur à résoudre via le thème actif.</param>
         /// <returns>Pinceau solide correspondant à la couleur résolue.</returns>
@@ -41,66 +43,85 @@ namespace VBAi
         /// <param name="sender">Bouton déclencheur.</param>
         /// <param name="e">Données de l’événement.</param>
         private void NewChat_Click(object sender, EventArgs e) { StartNewChat(); }
+
         /// <summary>Ouvre le menu des options de conversation.</summary>
         /// <param name="sender">Bouton déclencheur.</param>
         /// <param name="e">Données de l’événement.</param>
         private void Options_Click(object sender, EventArgs e) { optionsMenu.Show(options, 0, options.Height); }
-                /// <summary>Affiche la boîte d’informations depuis la commande de menu.</summary>
-                /// <param name="sender">Élément de menu qui a déclenché l’événement.</param>
-                /// <param name="e">Arguments de l’événement de clic.</param>
+
+        /// <summary>Affiche la boîte d’informations depuis la commande de menu.</summary>
+        /// <param name="sender">Élément de menu qui a déclenché l’événement.</param>
+        /// <param name="e">Arguments de l’événement de clic.</param>
         private void About_Click(object sender, EventArgs e)
         {
             using (var dialog = new AboutWindow()) ShowModal(dialog, this);
         }
+
         /// <summary>Demande l’ancrage de la fenêtre si aucun tour n’est actif.</summary>
         /// <param name="sender">Bouton déclencheur.</param>
         /// <param name="e">Données de l’événement.</param>
         private void Docking_Click(object sender, EventArgs e) { if (!busy) DockRequested?.Invoke(); }
+
         /// <summary>Affiche ou masque le panneau d’historique.</summary>
         /// <param name="sender">Bouton déclencheur.</param>
         /// <param name="e">Données de l’événement.</param>
         private void History_Click(object sender, EventArgs e) { historyPanel.Visible = !historyPanel.Visible; if (historyPanel.Visible) historyPanel.BringToFront(); }
+
         /// <summary>Réactive le défilement automatique et revient au dernier message.</summary>
         /// <param name="sender">Bouton déclencheur.</param>
         /// <param name="e">Données de l’événement.</param>
         private void JumpToLatest_Click(object sender, EventArgs e) { followConversation = true; FollowLatest(); }
+
         /// <summary>Actualise l’historique lorsque l’option des sessions archivées change.</summary>
         /// <param name="sender">Contrôle déclencheur.</param>
         /// <param name="e">Données de l’événement.</param>
         private void ShowArchived_CheckedChanged(object sender, EventArgs e) { RefreshHistory(); }
+
         /// <summary>Applique le titre saisi à la session active.</summary>
         /// <param name="sender">Bouton déclencheur.</param>
         /// <param name="e">Données de l’événement.</param>
         private void Rename_Click(object sender, EventArgs e) { RenameCurrentChat(); }
+
         /// <summary>Archive ou restaure la session active.</summary>
         /// <param name="sender">Bouton déclencheur.</param>
         /// <param name="e">Données de l’événement.</param>
         private void Archive_Click(object sender, EventArgs e) { ToggleArchiveCurrentChat(); }
+
+        /// <summary>Handles delete session click for chat window.</summary>
+        /// <param name="sender">object that supplies the sender for this operation.</param>
+        /// <param name="e">event args that supplies the e for this operation.</param>
         private async void DeleteSession_Click(object sender, EventArgs e) { await DeleteSelectedSessionAsync(); }
+
         /// <summary>Enregistre la mémoire de projet affichée.</summary>
         /// <param name="sender">Bouton déclencheur.</param>
         /// <param name="e">Données de l’événement.</param>
         private void SaveMemory_Click(object sender, EventArgs e) { SaveProjectMemory(); }
+
         /// <summary>Actualise les puces de contexte lorsque l’inclusion de mémoire change.</summary>
         /// <param name="sender">Case à cocher déclencheuse.</param>
         /// <param name="e">Données de l’événement.</param>
         private void AttachMemory_CheckedChanged(object sender, EventArgs e) { RefreshContextChips(); }
+
         /// <summary>Capture le code sélectionné dans le VBE pour le contexte de conversation.</summary>
         /// <param name="sender">Bouton déclencheur.</param>
         /// <param name="e">Données de l’événement.</param>
         private void Selection_Click(object sender, EventArgs e) { CaptureSelection(); }
+
         /// <summary>Insère le préfixe de référence d’un projet ou module dans le compositeur.</summary>
         /// <param name="sender">Bouton déclencheur.</param>
         /// <param name="e">Données de l’événement.</param>
         private void Modules_Click(object sender, EventArgs e) { InsertReferencePrefix('#'); }
+
         /// <summary>Insère le préfixe de référence d’une procédure dans le compositeur.</summary>
         /// <param name="sender">Bouton déclencheur.</param>
         /// <param name="e">Données de l’événement.</param>
         private void Methods_Click(object sender, EventArgs e) { InsertReferencePrefix('@'); }
+
         /// <summary>Exporte la conversation courante.</summary>
         /// <param name="sender">Bouton déclencheur.</param>
         /// <param name="e">Données de l’événement.</param>
         private void Export_Click(object sender, EventArgs e) { ExportCurrentChat(); }
+
         /// <summary>Ouvre l’intégration GitHub pour le document enregistré de la portée courante.</summary>
         /// <param name="sender">Commande GitHub.</param>
         /// <param name="e">Données de l’événement.</param>
@@ -110,6 +131,8 @@ namespace VBAi
             await VbeUiTask.Run(async () => { await GitHubOnOwnerAsync(); return true; });
         }
 
+        /// <summary>Handles git hub on owner async for chat window.</summary>
+        /// <returns>task produced by the operation for git hub on owner async on chat window.</returns>
         private async System.Threading.Tasks.Task GitHubOnOwnerAsync()
         {
             ChatGitModalDiagnostic diagnostic = null;
@@ -144,6 +167,7 @@ namespace VBAi
                 if (diagnostic != null) diagnostic.SchedulePostHandler(callback => BeginInvoke(callback));
             }
         }
+
         /// <summary>Uses the native top-level chat root as the modal owner when the chat is hosted by VBE.</summary>
         /// <returns>The standalone chat or an exact native root on the chat's owning thread.</returns>
         internal System.Windows.Forms.IWin32Window GitModalOwner()
@@ -159,14 +183,30 @@ namespace VBAi
             return root == Handle ? (System.Windows.Forms.IWin32Window)this : new ChatGitWindowOwner(root);
         }
 
+        /// <summary>Owns the chat git window owner state and operations.</summary>
         private sealed class ChatGitWindowOwner : System.Windows.Forms.IWin32Window
         {
+
+            /// <summary>Gets the handle.</summary>
+            /// <value>Current handle exposed by chat git window owner.</value>
             public IntPtr Handle { get; }
+
+            /// <summary>Initializes a ChatGitWindowOwner instance with the supplied state.</summary>
+            /// <param name="handle">Native handle that supplies the handle for this operation.</param>
             internal ChatGitWindowOwner(IntPtr handle) { Handle = handle; }
         }
 
+        /// <summary>Handles git owner ancestor for chat window.</summary>
+        /// <param name="window">Native handle that supplies the window for this operation.</param>
+        /// <param name="flags">uint that supplies the flags for this operation.</param>
+        /// <returns>int ptr produced by the operation for git owner ancestor on chat window.</returns>
         [DllImport("user32.dll", EntryPoint = "GetAncestor")]
         private static extern IntPtr GitOwnerAncestor(IntPtr window, uint flags);
+
+        /// <summary>Handles git owner thread for chat window.</summary>
+        /// <param name="window">Native handle that supplies the window for this operation.</param>
+        /// <param name="processId">uint that supplies the process id for this operation.</param>
+        /// <returns>uint produced by the operation for git owner thread on chat window.</returns>
         [DllImport("user32.dll", EntryPoint = "GetWindowThreadProcessId")]
         private static extern uint GitOwnerThread(IntPtr window, out uint processId);
 
@@ -178,6 +218,7 @@ namespace VBAi
             if (busy || currentSession == null) return;
             currentSession.Pinned = !currentSession.Pinned; SaveCurrentSession(); RefreshHistory();
         }
+
         /// <summary>Affiche ou masque l’éditeur de mémoire de projet.</summary>
         /// <param name="sender">Bouton déclencheur.</param>
         /// <param name="e">Données de l’événement.</param>
@@ -186,6 +227,7 @@ namespace VBAi
             memoryPanel.Visible = !memoryPanel.Visible;
             historyLayout.RowStyles[7].Height = memoryPanel.Visible ? 226 : 0;
         }
+
         /// <summary>Affiche ou masque l’aperçu du contexte et le recalcule à l’ouverture.</summary>
         /// <param name="sender">Bouton déclencheur.</param>
         /// <param name="e">Données de l’événement.</param>
@@ -194,6 +236,7 @@ namespace VBAi
             contextPanel.Visible = !contextPanel.Visible;
             if (contextPanel.Visible) RefreshContextPreview();
         }
+
         /// <summary>Applique le mode sélectionné à la session et aux outils, puis programme sa sauvegarde.</summary>
         /// <param name="sender">Sélecteur de mode.</param>
         /// <param name="e">Données de l’événement.</param>
@@ -205,6 +248,7 @@ namespace VBAi
             ScheduleSessionSave();
             SetStatus(currentSession.Mode == ChatMode.Agent ? UiText.Get("Agent: edits allowed by the VBE policy") : UiText.Get(currentSession.Mode == ChatMode.Discussion ? "Chat" : "Plan") + UiText.Get(": no edits or macro execution"));
         }
+
         /// <summary>Lance la vérification du projet et restaure l’état inactif du formulaire à la fin.</summary>
         /// <param name="sender">Bouton de compilation.</param>
         /// <param name="e">Données de l’événement.</param>
@@ -214,6 +258,7 @@ namespace VBAi
             SetBusy(true);
             try { await VerifyProjectAsync(); } finally { SetBusy(false); SaveCurrentSession(); }
         }
+
         /// <summary>Intercepte Ctrl+N pour créer une conversation, puis délègue les autres raccourcis au formulaire.</summary>
         /// <param name="msg">Message Windows traité par le contrôle.</param>
         /// <param name="keyData">Touche et modificateurs pressés.</param>

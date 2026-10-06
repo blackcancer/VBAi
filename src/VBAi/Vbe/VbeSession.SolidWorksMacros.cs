@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
@@ -6,24 +6,40 @@ using System.Web.Script.Serialization;
 
 namespace VBAi
 {
+
+    /// <summary>Owns the vbe session state and operations.</summary>
     internal sealed partial class VbeSession
     {
+
+        /// <summary>Maintains the macro in flight and macro quarantined state for vbe session.</summary>
         private bool macroInFlight, macroQuarantined;
+
+        /// <summary>Maintains the macro authorization depth state for vbe session.</summary>
         private int macroAuthorizationDepth;
         // Bridge, chat and editor sessions share one native owning STA.
+        /// <summary>Maintains the macro owner state for vbe session.</summary>
         [ThreadStatic] private static VbeSession macroOwner;
+
+        /// <summary>Maintains the macro owner quarantined state for vbe session.</summary>
         [ThreadStatic] private static bool macroOwnerQuarantined;
 
+        /// <summary>Handles macro dispatch blocked for vbe session.</summary>
+        /// <param name="command">Text that supplies the command value. Use the format required by the calling operation.</param>
+        /// <returns>Boolean indicating the result of the check for macro dispatch blocked on vbe session.</returns>
         private bool MacroDispatchBlocked(string command) => macroQuarantined || macroOwnerQuarantined ||
             ((macroInFlight || macroOwner != null) &&
              !(macroAuthorizationDepth > 0 && (macroOwner == null || ReferenceEquals(macroOwner, this)) && command == "list_projects"));
 
+        /// <summary>Requires macro settled for vbe session.</summary>
         private void RequireMacroSettled()
         {
             if (macroInFlight || macroQuarantined || macroOwner != null || macroOwnerQuarantined)
                 throw new InvalidOperationException("An original native macro operation is pending or uncertain. Inspect locally; do not retry.");
         }
 
+        /// <summary>Handles solid works macro async for vbe session.</summary>
+        /// <param name="request">request that supplies the request for this operation.</param>
+        /// <returns>task&lt;object&gt; produced by the operation for solid works macro async on vbe session.</returns>
         internal async Task<object> SolidWorksMacroAsync(Request request)
         {
             RequireGeneralSettled();

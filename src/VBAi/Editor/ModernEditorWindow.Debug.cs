@@ -6,15 +6,26 @@ using System.Threading.Tasks;
 
 namespace VBAi
 {
+
     /// <summary>Suit le mode d’exécution VBE et exécute les commandes de compilation ou de débogage native.</summary>
     internal sealed partial class ModernEditorWindow
     {
+
         /// <summary>Dernier mode VBE observé pour le document actif.</summary>
         private int lastDebugMode = -1;
+
+        /// <summary>Maintains the debug commands state for modern editor window.</summary>
         private readonly SemaphoreSlim debugCommands = new SemaphoreSlim(1, 1);
+
+        /// <summary>Maintains the observing debug state for modern editor window.</summary>
         private bool observingDebug;
+
+        /// <summary>Maintains the post step observation pending state for modern editor window.</summary>
         private bool postStepObservationPending;
+
         /// <summary>Orders user/native commands without collapsing repeated toggles or steps.</summary>
+        /// <param name="message">editor message that supplies the message for this operation.</param>
+        /// <returns>task produced by the operation for editor command on modern editor window.</returns>
         private async Task EditorCommand(EditorMessage message)
         {
             var timing = PerformanceSample == null ? null : System.Diagnostics.Stopwatch.StartNew();
@@ -28,6 +39,7 @@ namespace VBAi
                 if (message.request > 0 && Ready && !closing && !IsDisposed) await Script("commandFinished", message.request);
             }
         }
+
         /// <summary>Starts pending observation only after user commands release their gate and busy state.</summary>
         private void SchedulePostStepObservation()
         {
@@ -40,20 +52,30 @@ namespace VBAi
             // command still yields before execution, outside the current UI callback.
             DebugTimerTick(this, EventArgs.Empty);
         }
+
         /// <summary>Updates all execution decorations in one renderer round trip.</summary>
+        /// <param name="id">Text that supplies the id value. Use the format required by the calling operation.</param>
+        /// <param name="line">int that supplies the line for this operation.</param>
+        /// <param name="reveal">Indicates whether reveal is enabled.</param>
+        /// <returns>task produced by the operation for execution state on modern editor window.</returns>
         private Task ExecutionState(string id, int line, bool reveal = true)
         { return Script("executionBatch", id, line, reveal); }
-                /// <summary>Checks that compilation starts without an existing native diagnostic.</summary>
+
+        /// <summary>Checks that compilation starts without an existing native diagnostic.</summary>
         internal Action<int> EnsureCompileDialogAbsent = VbeDebugWindows.EnsureNoCompileDialog;
+
         /// <summary>Observes the host diagnostic until its compilation command completes.</summary>
         internal Func<ManualResetEventSlim, int, string> ObserveCompileDialog = VbeDebugWindows.AwaitCompileDialog;
+
         /// <summary>Identifiant du document associé au dernier mode observé.</summary>
         private string lastDebugDocument, lastDebugPosition;
-        /// <summary>Stores the last execution line,last execution version used by ModernEditorWindow.</summary>
+
+        /// <summary>Maintains the last execution line and last execution version state for modern editor window.</summary>
         private int lastExecutionLine, lastExecutionVersion;
-        /// <summary>Performs the debug position operation for ModernEditorWindow.</summary>
-        /// <param name="native">The native used by this operation.</param>
-        /// <returns>The result produced by this operation.</returns>
+
+        /// <summary>Handles debug position for modern editor window.</summary>
+        /// <param name="native">editor vbe module that supplies the native for this operation.</param>
+        /// <returns>Text produced by the operation for debug position on modern editor window.</returns>
         private string DebugPosition(EditorVbeModule native)
         {
             dynamic pane = ((dynamic)native.Vbe).ActiveCodePane;
@@ -61,6 +83,7 @@ namespace VBAi
             int a = 0, b = 0, c = 0, d = 0; pane.GetSelection(ref a, ref b, ref c, ref d);
             return (string)pane.CodeModule.Parent.Name + ":" + a + ":" + b + ":" + c + ":" + d;
         }
+
         /// <summary>Actualise l’état d’exécution affiché dans Monaco lorsque change le mode du projet.</summary>
         /// <returns>Tâche terminée après la mise à jour de l’état d’exécution.</returns>
         private async Task ObserveDebugMode()
@@ -83,6 +106,7 @@ namespace VBAi
             await EditorCommand(new EditorMessage { id = Current.Id, version = versions[Current.Id], name = "show_next_statement" });
             lastDebugMode = mode; lastDebugPosition = DebugPosition(native);
         }
+
         /// <summary>Valide puis exécute une commande de compilation ou de débogage sur le projet courant.</summary>
         /// <param name="message">Commande et révision envoyées par l’interface Monaco.</param>
         /// <returns>Tâche terminée après l’exécution et l’actualisation de l’interface.</returns>

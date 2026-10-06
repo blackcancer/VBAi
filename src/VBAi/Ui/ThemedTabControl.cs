@@ -5,19 +5,25 @@ using System.Drawing.Drawing2D;
 using System.Windows.Forms;
 namespace VBAi
 {
+
     /// <summary>Native Designer-editable tabs using the chat's rounded surfaces and focus states.</summary>
     public sealed class ThemedTabControl : TabControl
     {
-        /// <summary>Stores the hovered tab used by ThemedTabControl.</summary>
+
+        /// <summary>Maintains the hovered tab state for themed tab control.</summary>
         private int hoveredTab = -1;
-        /// <summary>Stores the close hovered used by ThemedTabControl.</summary>
+
+        /// <summary>Maintains the close hovered state for themed tab control.</summary>
         private bool closeHovered;
+
         /// <summary>Displays a close command on each document tab.</summary>
-        /// <value>The current value represented by this member.</value>
+        /// <value>Current show close buttons exposed by themed tab control.</value>
         [DefaultValue(false)]
         public bool ShowCloseButtons { get; set; }
+
         /// <summary>Requests closure of a document without selecting a different tab.</summary>
         public event EventHandler<TabControlEventArgs> CloseRequested;
+
         /// <summary>Creates the shared tab appearance without replacing the native tab model.</summary>
         public ThemedTabControl()
         {
@@ -25,14 +31,16 @@ namespace VBAi
             ItemSize = new Size(0, 36);
             Padding = new Point(12, 6);
         }
+
         /// <summary>Computes the close command rectangle for a document tab.</summary>
-        /// <param name="index">The index used by this operation.</param>
-        /// <returns>The result produced by this operation.</returns>
+        /// <param name="index">int that supplies the index for this operation.</param>
+        /// <returns>rectangle produced by the operation for close bounds on themed tab control.</returns>
         private Rectangle CloseBounds(int index)
         {
             var bounds = GetTabRect(index); int size = 22 * DeviceDpi / 96;
             return new Rectangle(bounds.Right - size - 6 * DeviceDpi / 96, bounds.Top + (bounds.Height - size) / 2, size, size);
         }
+
         /// <inheritdoc/>
         /// <summary>Handles native mouse presses and updates the command state.</summary>
         /// <param name="e">Native event data.</param>
@@ -43,6 +51,7 @@ namespace VBAi
                     if (CloseBounds(i).Contains(e.Location)) { CloseRequested?.Invoke(this, new TabControlEventArgs(TabPages[i], i, TabControlAction.Deselecting)); return; }
             base.OnMouseDown(e);
         }
+
         /// <inheritdoc/>
         /// <summary>Updates the hovered tab and its close command.</summary>
         /// <param name="e">Native event data.</param>
@@ -55,18 +64,22 @@ namespace VBAi
             if (hoveredTab != index || closeHovered != close) { hoveredTab = index; closeHovered = close; Invalidate(); }
             Cursor = close ? Cursors.Hand : Cursors.Default;
         }
+
         /// <inheritdoc/>
         /// <summary>Clears hover state and requests a repaint.</summary>
         /// <param name="e">Native event data.</param>
         protected override void OnMouseLeave(EventArgs e) { hoveredTab = -1; closeHovered = false; Cursor = Cursors.Default; Invalidate(); base.OnMouseLeave(e); }
+
         /// <inheritdoc/>
         /// <summary>Repaints the focus outline after the control gains focus.</summary>
         /// <param name="e">Native event data.</param>
         protected override void OnGotFocus(EventArgs e) { base.OnGotFocus(e); Invalidate(); }
+
         /// <inheritdoc/>
         /// <summary>Repaints the focus outline after the control loses focus.</summary>
         /// <param name="e">Native event data.</param>
         protected override void OnLostFocus(EventArgs e) { base.OnLostFocus(e); Invalidate(); }
+
         /// <inheritdoc/>
         /// <summary>Draws the control using its current palette, selection and focus state.</summary>
         /// <param name="e">Native event data.</param>
@@ -102,13 +115,16 @@ namespace VBAi
                     TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter | TextFormatFlags.EndEllipsis | TextFormatFlags.NoPrefix);
             }
         }
+
         /// <inheritdoc/>
         /// <summary>Repaints the current selection after its index changes.</summary>
         /// <param name="e">Native event data.</param>
         protected override void OnSelectedIndexChanged(EventArgs e) { base.OnSelectedIndexChanged(e); Invalidate(); }
     }
+
     /// <summary>Bouton WinForms qui adapte le texte désactivé au thème sombre.</summary>
     public sealed class ThemedButton : UiActionButton { }
+
     /// <summary>ComboBox WinForms dont la flèche et le contour sont repeints en thème sombre.</summary>
     public sealed class ThemedComboBox : UiComboBox { }
 }

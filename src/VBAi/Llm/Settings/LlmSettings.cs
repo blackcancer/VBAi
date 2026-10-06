@@ -7,54 +7,74 @@ using System.Web.Script.Serialization;
 
 namespace VBAi
 {
+
     /// <summary>Stocke les fournisseurs, modèles, points de terminaison et secrets de configuration LLM.</summary>
     internal sealed partial class LlmSettings
     {
+
         /// <summary>Remplacement facultatif du chemin de stockage, principalement utilisé par les tests isolés.</summary>
         internal static string StoragePathOverride;
+
         /// <summary>Obtient ou définit le fournisseur sélectionné par défaut.</summary>
         /// <value>Nom du fournisseur, « Codex » par défaut.</value>
         public string ProviderName { get; set; } = "Codex";
+
         /// <summary>Obtient ou définit le compte GitHub utilisé par l’intégration GitHub.</summary>
         /// <value>Nom de compte, ou nul si aucun compte n’est choisi.</value>
         public string GitHubAccount { get; set; }
+
         /// <summary>Obtient ou définit la stratégie de confirmation des modifications VBE.</summary>
         /// <value>Identifiant de stratégie persisté.</value>
         public string VbeEditApproval { get; set; } = "Automatic";
+
         /// <summary>Obtient ou définit l’habillage sombre expérimental des fenêtres natives du VBE.</summary>
         /// <value><see langword="true"/> pour activer l’habillage natif dans le processus hôte.</value>
         public bool NativeVbeDarkTheme { get; set; }
+
         /// <summary>Obtient ou définit le modèle Codex choisi.</summary>
         /// <value>Identifiant du modèle Codex.</value>
         public string CodexModel { get; set; }
+
         /// <summary>Obtient ou définit le modèle sélectionné pour l’API OpenAI.</summary>
         /// <value>Identifiant du modèle OpenAI.</value>
         public string OpenAiModel { get; set; }
+
         /// <summary>Obtient ou définit le modèle sélectionné pour Ollama.</summary>
         /// <value>Identifiant du modèle Ollama.</value>
         public string OllamaModel { get; set; }
+
         /// <summary>Optional Ollama generation temperature; null preserves the backend's historical default.</summary>
+        /// <value>Current ollama temperature exposed by llm settings.</value>
         public double? OllamaTemperature { get; set; }
+
         /// <summary>Optional Ollama nucleus sampling probability; null preserves the backend's historical default.</summary>
+        /// <value>Current ollama top p exposed by llm settings.</value>
         public double? OllamaTopP { get; set; }
+
         /// <summary>Obtient ou définit le point de terminaison personnalisé de l’API OpenAI.</summary>
         /// <value>Adresse personnalisée, ou nul pour utiliser la valeur par défaut ou l’environnement.</value>
         public string OpenAiEndpoint { get; set; }
+
         /// <summary>Obtient ou définit le point de terminaison personnalisé d’Ollama.</summary>
         /// <value>Adresse personnalisée d’Ollama.</value>
         public string OllamaEndpoint { get; set; }
+
         /// <summary>Obtient ou définit la clé OpenAI protégée avec DPAPI pour l’utilisateur courant.</summary>
         /// <value>Clé chiffrée encodée en Base64.</value>
         public string EncryptedOpenAiKey { get; set; }
+
         /// <summary>Obtient ou définit le nom affiché des fournisseurs personnalisés.</summary>
         /// <value>Libellé personnalisé des fournisseurs concernés.</value>
         public string CustomProviderName { get; set; }
+
         /// <summary>Obtient ou définit si Azure OpenAI utilise le jeton Entra fourni par variable d’environnement.</summary>
         /// <value><see langword="true"/> pour utiliser le jeton Entra.</value>
         public bool AzureUseEntraToken { get; set; }
+
         /// <summary>Obtient ou définit les listes de modèles saisies manuellement, indexées par fournisseur.</summary>
         /// <value>Dictionnaire des listes manuelles par nom de fournisseur.</value>
         public Dictionary<string, string> ManualModelLists { get; set; } = new Dictionary<string, string>();
+
         /// <summary>Retourne la liste de modèles manuelle du fournisseur ou, à défaut, sa variable d’environnement.</summary>
         /// <param name="provider">Fournisseur dont il faut lire la liste.</param>
         /// <returns>Liste configurée ou valeur de variable d’environnement ; nul si aucune n’existe.</returns>
@@ -64,17 +84,22 @@ namespace VBAi
             return ManualModelLists != null && ManualModelLists.TryGetValue(provider.Name, out value) ? value :
                 (provider.ModelVariable == null ? null : Environment.GetEnvironmentVariable(provider.ModelVariable));
         }
+
         /// <summary>Applique le nom personnalisé enregistré aux fournisseurs personnalisables.</summary>
         public void ApplyProviderLabels() { foreach (var provider in LlmProvider.All) if (provider.IsCustom) provider.CustomDisplayName = CustomProviderName; }
+
         /// <summary>Obtient ou définit les niveaux de raisonnement, indexés par fournisseur et modèle.</summary>
         /// <value>Dictionnaire indexé par le nom du fournisseur et l’identifiant du modèle.</value>
         public Dictionary<string, string> ReasoningEfforts { get; set; } = new Dictionary<string, string>();
+
         /// <summary>Obtient ou définit les modèles choisis pour les fournisseurs génériques.</summary>
         /// <value>Dictionnaire des identifiants de modèles.</value>
         public Dictionary<string, string> ProviderModels { get; set; } = new Dictionary<string, string>();
+
         /// <summary>Obtient ou définit les points de terminaison des fournisseurs génériques.</summary>
         /// <value>Dictionnaire des URL configurées.</value>
         public Dictionary<string, string> ProviderEndpoints { get; set; } = new Dictionary<string, string>();
+
         /// <summary>Obtient ou définit les clés fournisseurs protégées par utilisateur.</summary>
         /// <value>Dictionnaire de clés DPAPI encodées en Base64.</value>
         public Dictionary<string, string> EncryptedProviderKeys { get; set; } = new Dictionary<string, string>();

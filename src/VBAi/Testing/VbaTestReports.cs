@@ -7,15 +7,30 @@ using System.Web.Script.Serialization;
 
 namespace VBAi
 {
+
     /// <summary>Human and compact machine reports derived from the same verified run.</summary>
     internal static class VbaTestReports
     {
+
+        /// <summary>Handles human for vba test reports.</summary>
+        /// <param name="run">vba test run that supplies the run for this operation.</param>
+        /// <returns>Text produced by the operation for human on vba test reports.</returns>
         internal static string Human(VbaTestRun run)
         { return HumanReport(run, null, 0); }
 
+        /// <summary>Handles human page for vba test reports.</summary>
+        /// <param name="run">vba test run that supplies the run for this operation.</param>
+        /// <param name="offset">int that supplies the offset for this operation.</param>
+        /// <param name="limit">int that supplies the limit for this operation.</param>
+        /// <returns>Text produced by the operation for human page on vba test reports.</returns>
         internal static string HumanPage(VbaTestRun run, int offset = 0, int limit = 0)
         { return HumanReport(run, offset, PageLimit(offset, limit)); }
 
+        /// <summary>Handles human report for vba test reports.</summary>
+        /// <param name="run">vba test run that supplies the run for this operation.</param>
+        /// <param name="offset">int that supplies the offset for this operation.</param>
+        /// <param name="limit">int that supplies the limit for this operation.</param>
+        /// <returns>Text produced by the operation for human report on vba test reports.</returns>
         private static string HumanReport(VbaTestRun run, int? offset, int limit)
         {
             if (run == null) return UiText.Get("No test run results.");
@@ -58,9 +73,16 @@ namespace VBAi
             return text.ToString();
         }
 
+        /// <summary>Handles compact for vba test reports.</summary>
+        /// <param name="run">vba test run that supplies the run for this operation.</param>
+        /// <returns>Text produced by the operation for compact on vba test reports.</returns>
         internal static string Compact(VbaTestRun run) => Compact(run, 512 * 1024 * 1024);
 
         // A smaller bound can validate failure reporting without constructing an oversized report.
+        /// <summary>Handles compact for vba test reports.</summary>
+        /// <param name="run">vba test run that supplies the run for this operation.</param>
+        /// <param name="maximum">int that supplies the maximum for this operation.</param>
+        /// <returns>Text produced by the operation for compact on vba test reports.</returns>
         internal static string Compact(VbaTestRun run, int maximum)
         {
             try { return SerializeCompact(run, null, 0, maximum); }
@@ -68,12 +90,21 @@ namespace VBAi
             { throw new InvalidOperationException("The complete local VBA test JSON report could not be serialized within its " + maximum.ToString(CultureInfo.InvariantCulture) + " serialized-character limit. Use paged run status; no messages were truncated and the canonical run remains retained. " + error.Message, error); }
         }
 
+        /// <summary>Handles compact page for vba test reports.</summary>
+        /// <param name="run">vba test run that supplies the run for this operation.</param>
+        /// <param name="offset">int that supplies the offset for this operation.</param>
+        /// <param name="limit">int that supplies the limit for this operation.</param>
+        /// <returns>Text produced by the operation for compact page on vba test reports.</returns>
         internal static string CompactPage(VbaTestRun run, int offset = 0, int limit = 0)
         {
             limit = PageLimit(offset, limit);
             return SerializeCompact(run, offset, limit, 10 * 1024 * 1024);
         }
 
+        /// <summary>Handles page limit for vba test reports.</summary>
+        /// <param name="offset">int that supplies the offset for this operation.</param>
+        /// <param name="limit">int that supplies the limit for this operation.</param>
+        /// <returns>int produced by the operation for page limit on vba test reports.</returns>
         internal static int PageLimit(int offset, int limit)
         {
             if (offset < 0) throw new ArgumentException("Offset must be a nonnegative Int32.");
@@ -81,14 +112,34 @@ namespace VBAi
             return limit == 0 ? 100 : limit;
         }
 
+        /// <summary>Handles next offset for vba test reports.</summary>
+        /// <param name="offset">int that supplies the offset for this operation.</param>
+        /// <param name="limit">int that supplies the limit for this operation.</param>
+        /// <param name="total">int that supplies the total for this operation.</param>
+        /// <returns>int produced by the operation for next offset on vba test reports.</returns>
         internal static int? NextOffset(int offset, int limit, int total) =>
             offset >= total || total - offset <= limit ? (int?)null : offset + limit;
 
+        /// <summary>Handles page total for vba test reports.</summary>
+        /// <param name="run">vba test run that supplies the run for this operation.</param>
+        /// <returns>int produced by the operation for page total on vba test reports.</returns>
         internal static int PageTotal(VbaTestRun run) => Math.Max(run.Results.Count, CoverageTotal(run.Coverage));
 
+        /// <summary>Handles page for vba test reports.</summary>
+        /// <typeparam name="T">The type used for t.</typeparam>
+        /// <param name="source">i enumerable&lt;t&gt; that supplies the source for this operation.</param>
+        /// <param name="offset">int that supplies the offset for this operation.</param>
+        /// <param name="limit">int that supplies the limit for this operation.</param>
+        /// <returns>i enumerable&lt;t&gt; produced by the operation for page on vba test reports.</returns>
         private static IEnumerable<T> Page<T>(IEnumerable<T> source, int? offset, int limit) =>
             offset.HasValue ? source.Skip(offset.Value).Take(limit) : source;
 
+        /// <summary>Serializes compact for vba test reports.</summary>
+        /// <param name="run">vba test run that supplies the run for this operation.</param>
+        /// <param name="offset">int that supplies the offset for this operation.</param>
+        /// <param name="limit">int that supplies the limit for this operation.</param>
+        /// <param name="maximum">int that supplies the maximum for this operation.</param>
+        /// <returns>Text produced by the operation for serialize compact on vba test reports.</returns>
         private static string SerializeCompact(VbaTestRun run, int? offset, int limit, int maximum)
         {
             if (run == null) return "{\"v\":1,\"run\":null}";
@@ -114,6 +165,9 @@ namespace VBAi
             return new JavaScriptSerializer { MaxJsonLength = maximum }.Serialize(data);
         }
 
+        /// <summary>Handles coverage text for vba test reports.</summary>
+        /// <param name="report">vba coverage report that supplies the report for this operation.</param>
+        /// <returns>Text produced by the operation for coverage text on vba test reports.</returns>
         internal static string CoverageText(VbaCoverageReport report)
         {
             if (report == null || !report.Available) return UiText.Get("VBA code coverage: unavailable");
@@ -121,9 +175,17 @@ namespace VBAi
                 " (" + report.Hit + "/" + report.Eligible + ")" + (report.Complete ? "" : " — " + UiText.Get("Partial measurement"));
         }
 
+        /// <summary>Handles coverage total for vba test reports.</summary>
+        /// <param name="report">vba coverage report that supplies the report for this operation.</param>
+        /// <returns>int produced by the operation for coverage total on vba test reports.</returns>
         private static int CoverageTotal(VbaCoverageReport report) => report == null ? 0 :
             Math.Max(report.Hits.Count, Math.Max(report.Exclusions.Count, report.Diagnostics.Count));
 
+        /// <summary>Handles coverage page for vba test reports.</summary>
+        /// <param name="report">vba coverage report that supplies the report for this operation.</param>
+        /// <param name="offset">int that supplies the offset for this operation.</param>
+        /// <param name="limit">int that supplies the limit for this operation.</param>
+        /// <returns>object produced by the operation for coverage page on vba test reports.</returns>
         internal static object CoveragePage(VbaCoverageReport report, int offset = 0, int limit = 0)
         {
             limit = PageLimit(offset, limit);
@@ -138,6 +200,11 @@ namespace VBAi
                 NextOffset = NextOffset(offset, limit, CoverageTotal(report)) };
         }
 
+        /// <summary>Handles compact coverage for vba test reports.</summary>
+        /// <param name="report">vba coverage report that supplies the report for this operation.</param>
+        /// <param name="offset">int that supplies the offset for this operation.</param>
+        /// <param name="limit">int that supplies the limit for this operation.</param>
+        /// <returns>object produced by the operation for compact coverage on vba test reports.</returns>
         private static object CompactCoverage(VbaCoverageReport report, int? offset = null, int limit = 0)
         {
             if (report == null) return new { available = false, reason = "No coverage run was requested." };

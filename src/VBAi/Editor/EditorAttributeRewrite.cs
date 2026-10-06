@@ -5,21 +5,28 @@ using System.Text.RegularExpressions;
 
 namespace VBAi
 {
+
     /// <summary>Préserve les attributs de procédure masqués dans un export lorsque le code VBA est réécrit.</summary>
     internal static class EditorAttributeRewrite
     {
+
         /// <summary>Procédure extraite du code, avec les lignes source et attributs associés.</summary>
         private sealed class Procedure
         {
-            /// <summary>Stores the name,kind used by Procedure.</summary>
+
+            /// <summary>Maintains the name and kind state for procedure.</summary>
             internal string Name, Kind;
-            /// <summary>Stores the first,last used by Procedure.</summary>
+
+            /// <summary>Maintains the first and last state for procedure.</summary>
             internal int First, Last;
-            /// <summary>Stores the attributes used by Procedure.</summary>
+
+            /// <summary>Maintains the attributes state for procedure.</summary>
             internal readonly List<string> Attributes = new List<string>();
         }
+
         /// <summary>Reconnaît le préfixe des lignes Attribute dans les exports VBIDE.</summary>
         private static readonly Regex Attribute = new Regex(@"^\s*Attribute\s+", RegexOptions.IgnoreCase);
+
         /// <summary>Extrait les signatures de procédure d’un texte et leurs étendues de lignes.</summary>
         /// <param name="source">Code VBA visible à analyser.</param>
         /// <returns>Procédures trouvées, ou <see langword="null"/> si les signatures sont ambiguës.</returns>
@@ -52,6 +59,7 @@ namespace VBAi
             var start = Regex.Match(text, @"(?im)^Attribute VB_Name\s*=");
             return start.Success ? text.Substring(start.Index) : text;
         }
+
         /// <summary>Applique un diff au code exporté en réassociant les attributs masqués aux déclarations préservées.</summary>
         /// <param name="exported">Export VBIDE contenant les lignes Attribute.</param>
         /// <param name="before">Code visible avant le diff.</param>
@@ -117,6 +125,7 @@ namespace VBAi
             }
             return string.Join("\r\n", output);
         }
+
         /// <summary>Détecte les attributs associés à une déclaration répartie sur plusieurs lignes.</summary>
         /// <param name="exported">Export complet du composant.</param>
         /// <returns><see langword="true"/> si la réécriture par CodeModule ne peut pas conserver sûrement les métadonnées.</returns>
@@ -126,6 +135,7 @@ namespace VBAi
             var procedures = Procedures(string.Join("\n", code.Split('\n').Where(line => !Attribute.IsMatch(line))));
             return procedures == null || procedures.Any(d => d.First != d.Last && Regex.IsMatch(code, @"(?im)^\s*Attribute\s+" + Regex.Escape(d.Name) + @"\."));
         }
+
         /// <summary>Combine l’en-tête d’origine et le nouveau code dans un export aux fins de ligne CRLF.</summary>
         /// <param name="original">Export source contenant les informations de composant.</param>
         /// <param name="code">Section de code modifiée.</param>
@@ -136,10 +146,12 @@ namespace VBAi
             var start = Regex.Match(normalized, @"(?im)^Attribute VB_Name\s*=");
             return EditorDocument.Normalize((start.Success ? normalized.Substring(0, start.Index) : "") + code).Replace("\n", "\r\n");
         }
+
         /// <summary>Extrait les attributs de membre en excluant l’attribut d’identité du composant.</summary>
         /// <param name="source">Texte d’export à analyser.</param>
         /// <returns>Lignes de métadonnées propres aux membres.</returns>
         internal static string MemberMetadata(string source) => string.Join("\n", Metadata(source).Split('\n').Where(line => !Regex.IsMatch(line, @"^Attribute VB_Name\s*=", RegexOptions.IgnoreCase)));
+
         /// <summary>Extrait toutes les lignes Attribute d’un texte normalisé.</summary>
         /// <param name="source">Code ou export source.</param>
         /// <returns>Lignes d’attributs séparées par LF.</returns>

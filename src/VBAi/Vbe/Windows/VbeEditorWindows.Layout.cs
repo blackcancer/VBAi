@@ -7,9 +7,11 @@ using System.Web.Script.Serialization;
 
 namespace VBAi
 {
+
     /// <summary>Lit, versionne et modifie l’état des fenêtres et volets natifs du VBE.</summary>
     internal sealed partial class VbeEditorWindows
     {
+
         /// <summary>Lit les propriétés d’une fenêtre et calcule une version si toutes les lectures réussissent.</summary>
         /// <param name="caption">Légende exacte de la fenêtre.</param>
         /// <param name="type">Type VBIDE de la fenêtre.</param>
@@ -172,6 +174,7 @@ namespace VBAi
                 throw new InvalidOperationException("The window layout changed or could not be read completely. Read window_layout again.");
             return state;
         }
+
         /// <summary>Vérifie qu’une frame contient exactement une fenêtre de légende et type donnés.</summary>
         /// <param name="frame">Frame dont les membres sont parcourus.</param>
         /// <param name="caption">Légende attendue.</param>
@@ -183,6 +186,7 @@ namespace VBAi
             foreach (dynamic window in frame.LinkedWindows) if ((string)window.Caption == caption && (int)window.Type == type) matches++;
             return matches == 1;
         }
+
         /// <summary>Vérifie qu’une frame ne contient que la fenêtre attendue.</summary>
         /// <param name="frame">Frame à contrôler.</param>
         /// <param name="caption">Légende attendue.</param>

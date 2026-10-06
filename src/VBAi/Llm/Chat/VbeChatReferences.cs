@@ -5,37 +5,50 @@ using System.Web.Script.Serialization;
 
 namespace VBAi
 {
+
     /// <summary>Identifie un projet, module ou élément de code VBE et conserve son contexte de sélection.</summary>
     internal sealed class VbeChatReference
     {
+
         /// <summary>Nom du projet associé à la référence.</summary>
         public string Project;
+
         /// <summary>Nom du module, nul pour une référence au projet entier.</summary>
         public string Module;
+
         /// <summary>Nom de la procédure, nul pour une référence au module ou au projet.</summary>
         public string Name;
+
         /// <summary>Portée d’une déclaration, nulle pour les procédures et les symboles de module.</summary>
         public string DeclarationScope;
+
         /// <summary>Colonne de déclaration, indexée à partir de un.</summary>
         public int DeclarationColumn;
+
         /// <summary>Obtient ou définit la catégorie affichée de la référence.</summary>
         /// <value>Catégorie de référence.</value>
         public string Kind { get; set; }
+
         /// <summary>Obtient la catégorie traduite lorsque la référence désigne le projet.</summary>
         /// <value>Catégorie localisée du projet ou catégorie d’origine.</value>
         public string DisplayKind { get { return Kind == "Projet" ? UiText.Get("Project") : Kind; } }
+
         /// <summary>Index COM du type de procédure propriété.</summary>
         public int ProcKind;
+
         /// <summary>Première ligne de la procédure dans le module, indexée à partir de un.</summary>
         public int StartLine;
+
         /// <summary>Dernière ligne de la procédure dans le module, indexée à partir de un.</summary>
         public int EndLine;
+
         /// <summary>Empreinte du module à la découverte de la procédure.</summary>
         public string Sha256;
 
         /// <summary>Obtient le jeton textuel inséré dans une conversation.</summary>
         /// <value>Valeur de <see cref="Token"/>.</value>
         public string DisplayToken { get { return Token; } }
+
         /// <summary>Obtient le chemin textuel unique de la référence, préfixé par # pour un projet ou @ pour un élément nommé.</summary>
         /// <value>Jeton d’identification construit à partir du projet, du module et du nom.</value>
         public string Token
@@ -55,6 +68,7 @@ namespace VBAi
         /// <summary>Obtient le jeton suivi de sa catégorie d’affichage.</summary>
         /// <value>Libellé de référence destiné à l’interface.</value>
         public string Display { get { return Token + "  —  " + DisplayKind; } }
+
         /// <summary>Retourne le libellé destiné à l’affichage.</summary>
         /// <returns>Valeur de <see cref="Display"/>.</returns>
         public override string ToString() { return Display; }
@@ -63,23 +77,32 @@ namespace VBAi
     /// <summary>Charge progressivement les projets, modules et procédures disponibles pour les références de conversation.</summary>
     internal sealed class VbeChatReferences
     {
+
         /// <summary>Session VBE utilisée pour lire et naviguer dans le code.</summary>
         private readonly VbeSession session;
+
         /// <summary>Exécute les requêtes de lecture et navigation via la session hôte par défaut.</summary>
         internal Func<Request, Response> Execute;
+
         /// <summary>Sérialiseur utilisé pour convertir les résultats de pont en dictionnaires simples.</summary>
         private readonly JavaScriptSerializer json = new JavaScriptSerializer();
+
         /// <summary>Projets dont les modules doivent encore être énumérés.</summary>
         private readonly Queue<string> projects = new Queue<string>();
+
         /// <summary>Modules dont les procédures doivent encore être chargées.</summary>
         private readonly Queue<VbeChatReference> pending = new Queue<VbeChatReference>();
+
         /// <summary>Références découvertes et exposées à la recherche.</summary>
         private readonly List<VbeChatReference> entries = new List<VbeChatReference>();
+
         /// <summary>Se produit lorsque l’état de chargement ou la liste des références change.</summary>
         public event Action Changed;
+
         /// <summary>Obtient la dernière erreur de lecture, le cas échéant.</summary>
         /// <value>Message de la dernière exception capturée, ou nul.</value>
         public string Error { get; private set; }
+
         /// <summary>Indique si des projets ou modules restent à charger.</summary>
         /// <value><see langword="true"/> lorsqu’une file de chargement n’est pas vide.</value>
         public bool IsLoading { get { return projects.Count > 0 || pending.Count > 0; } }
@@ -87,6 +110,7 @@ namespace VBAi
         /// <summary>Crée le chargeur progressif lié à la session VBE.</summary>
         /// <param name="session">Session utilisée pour les commandes VBE.</param>
         public VbeChatReferences(VbeSession session) { this.session = session; Execute = request => session.Execute(request); }
+
         /// <summary>Obtient la liste actuelle des projets, modules et procédures découverts.</summary>
         /// <value>Références actuellement disponibles.</value>
         public IList<VbeChatReference> Entries { get { return entries; } }

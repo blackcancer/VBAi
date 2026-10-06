@@ -1,10 +1,15 @@
-﻿using System;
+using System;
 using System.Linq;
 
 namespace VBAi
 {
+
+    /// <summary>Owns the vbe debug state and operations.</summary>
     internal sealed partial class VbeDebug
     {
+
+        /// <summary>Reads general command caption for vbe debug.</summary>
+        /// <returns>Text produced by the operation for read general command caption on vbe debug.</returns>
         internal string ReadGeneralCommandCaption()
         {
             string menuName = (string)vbe.CommandBars.ActiveMenuBar.Name;
@@ -17,6 +22,10 @@ namespace VBAi
             return matches[0].Caption;
         }
 
+        /// <summary>Captures general command for vbe debug.</summary>
+        /// <param name="request">request that supplies the request for this operation.</param>
+        /// <param name="requireApprovedTarget">action that supplies the require approved target for this operation.</param>
+        /// <returns>action&lt;action&gt; produced by the operation for capture general command on vbe debug.</returns>
         internal Action<Action> CaptureGeneralCommand(Request request, Action requireApprovedTarget)
         {
             if (request == null || requireApprovedTarget == null || string.IsNullOrWhiteSpace(request.ControlCaption))

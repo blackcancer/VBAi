@@ -14,42 +14,58 @@ namespace VBAi
     /// <summary>Gère un dépôt Git bare par document VBA sans arbre de travail.</summary>
     internal sealed partial class MacroGitRepository
     {
+
         /// <summary>Répertoire du dépôt bare utilisé comme cache du document.</summary>
         private readonly string directory;
+
         /// <summary>Compte GitHub configuré pour l’authentification distante.</summary>
         private readonly string account;
+
         /// <summary>Frontière d’exécution optionnelle des commandes ; null utilise le processus Git natif.</summary>
         internal Func<string[], byte[], bool, bool, Result> CommandOverride;
+
         /// <summary>Démarre le processus natif sans préambule sur son entrée standard.</summary>
         internal Func<Process, bool> StartProcess = ProcessInput.StartWithoutPreamble;
+
         /// <summary>Attend la fin du processus dans le délai fourni.</summary>
         internal Func<Process, int, bool> WaitForExit = (process, timeout) => process.WaitForExit(timeout);
+
         /// <summary>Interrompt le processus Git possédé par cette opération.</summary>
         internal Action<Process> StopProcess = process => process.Kill();
+
         /// <summary>Reads only the recovery marker metadata; failures remain observable rather than meaning absence.</summary>
         internal Func<string, FileAttributes> RecoveryAttributes = File.GetAttributes;
+
         /// <summary>Deletes the confirmed regular recovery marker once, without retry after an uncertain outcome.</summary>
         internal Action<string> DeleteRecoveryMarker = File.Delete;
+
         /// <summary>Branche locale active.</summary>
         /// <value>Branche locale active.</value>
         internal string Branch { get; private set; }
+
         /// <summary>Référence privée du dernier état servant de base à une synchronisation.</summary>
         internal const string Baseline = "refs/codex/baseline";
+
         /// <summary>Référence privée des sauvegardes avant import.</summary>
         internal const string Backup = "refs/codex/backup";
+
         /// <summary>Référence privée de l’état VBA après import.</summary>
         internal const string AfterImport = "refs/codex/after-import";
+
         /// <summary>Nom complet de la référence HEAD de la branche active.</summary>
         /// <value>Nom complet de la référence HEAD de la branche active.</value>
         internal string Head { get { return "refs/heads/" + Branch; } }
+
         /// <summary>Chemin du marqueur de récupération d’import.</summary>
         /// <value>Chemin du marqueur de récupération d’import.</value>
         internal string RecoveryFile { get { return Path.Combine(directory, "codex-recovery"); } }
+
         /// <summary>Indique si un marqueur de récupération est présent.</summary>
         /// <value>Indique si un marqueur de récupération est présent.</value>
         internal bool RecoveryPending { get { return ObserveRecoveryMarker().HasValue; } }
 
         /// <summary>Only a definite missing marker is absence; any access, I/O or other metadata error propagates.</summary>
+        /// <returns>file attributes produced by the operation for observe recovery marker on macro git repository.</returns>
         private FileAttributes? ObserveRecoveryMarker()
         {
             try { return RecoveryAttributes(RecoveryFile); }
@@ -65,6 +81,7 @@ namespace VBAi
         }
 
         /// <summary>Rejects invalid marker types before any native import or marker deletion.</summary>
+        /// <param name="attributes">file attributes that supplies the attributes for this operation.</param>
         private static void RequireRegularRecoveryMarker(FileAttributes attributes)
         {
             if ((attributes & (FileAttributes.Directory | FileAttributes.ReparsePoint)) != 0)
@@ -283,6 +300,7 @@ namespace VBAi
         {
             return Encoding.UTF8.GetString(Run(new[] { "ls-tree", "-z", tree }).Bytes).Split(new[] { '\0' }, StringSplitOptions.RemoveEmptyEntries).ToList();
         }
+
         /// <summary>Crée un arbre Git à partir des entrées fournies.</summary>
         /// <param name="entries">Entrées de l’arbre à créer.</param>
         /// <returns>Identifiant de l’arbre Git créé.</returns>
@@ -290,15 +308,19 @@ namespace VBAi
         {
             return Encoding.UTF8.GetString(Run(new[] { "mktree", "-z" }, VbaGitSnapshot.Utf8.GetBytes(string.Join("\0", entries) + "\0")).Bytes).Trim();
         }
+
         /// <summary>Exécute Git et décode la sortie standard en texte UTF-8.</summary>
         /// <returns>Sortie standard décodée et sans espaces terminaux.</returns>
         /// <param name="args">Arguments Git à transmettre.</param>
         private string Text(params string[] args) { return Encoding.UTF8.GetString(Run(args).Bytes).Trim(); }
+
         /// <summary>Sortie binaire et code de retour d’un processus Git.</summary>
         internal sealed class Result
         {
+
             /// <summary>Octets écrits sur la sortie standard du processus.</summary>
             internal byte[] Bytes;
+
             /// <summary>Code de sortie du processus Git.</summary>
             internal int ExitCode;
         }
@@ -312,6 +334,7 @@ namespace VBAi
             return "\"" + Regex.Replace(value, "(\\\\*)\"", "$1$1\\\"").TrimEnd('\\') +
                 new string('\\', value.Reverse().TakeWhile(x => x == '\\').Count() * 2) + "\"";
         }
+
         /// <summary>Exécute Git sans shell, avec annulation, progression et contrôle des erreurs.</summary>
         /// <param name="args">Arguments Git transmis sans interprétation par un shell.</param>
         /// <param name="input">Octets envoyés à l’entrée standard de Git, le cas échéant.</param>

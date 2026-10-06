@@ -4,9 +4,11 @@ using System.Linq;
 
 namespace VBAi
 {
+
     /// <summary>Récupère de manière gardée un arbre de contrôles coupé et sauvegardé par le presse-papiers Designer.</summary>
     internal sealed partial class VbeForms
     {
+
         /// <summary>Indique si une récupération de coupe correspond encore au formulaire, au conteneur et à la révision fournis.</summary>
         /// <param name="request">Formulaire, chemin parent et identifiant de récupération.</param>
         /// <returns><see langword="true"/> si la sauvegarde est encore admissible et n’a jamais été tentée.</returns>
@@ -21,6 +23,7 @@ namespace VBAi
             }
             catch { return false; }
         }
+
         /// <summary>Restaure les noms, positions et ordre de tabulation des contrôles coupés après vérification de l’arbre courant.</summary>
         /// <param name="request">Formulaire, conteneur, révisions et identifiant du presse-papiers de récupération.</param>
         /// <returns>État de vérification, différences restantes et limites de fidélité de la restauration.</returns>

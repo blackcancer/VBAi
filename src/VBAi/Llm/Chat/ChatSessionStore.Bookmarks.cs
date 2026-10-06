@@ -4,30 +4,39 @@ using System.Linq;
 
 namespace VBAi
 {
+
     /// <summary>Repère persistant vers une position de code dans un module d’un projet.</summary>
     internal sealed class CodeBookmark
     {
+
         /// <summary>Obtient ou définit le libellé unique du repère.</summary>
         /// <value>Nom utilisé pour retrouver le repère sans tenir compte de la casse.</value>
         public string Name { get; set; }
+
         /// <summary>Obtient ou définit le nom du module ciblé.</summary>
         /// <value>Nom du module VBA contenant la position.</value>
         public string Module { get; set; }
+
         /// <summary>Obtient ou définit l’empreinte SHA-256 du code lors de la création.</summary>
         /// <value>Empreinte source qui permet de contextualiser le repère.</value>
         public string Sha256 { get; set; }
+
         /// <summary>Obtient ou définit la ligne, indexée à partir de un.</summary>
         /// <value>Numéro de ligne dans le module.</value>
         public int Line { get; set; }
+
         /// <summary>Obtient ou définit la colonne, indexée à partir de un.</summary>
         /// <value>Numéro de colonne dans la ligne.</value>
         public int Column { get; set; }
     }
+
     /// <summary>Persistance SQLite des conversations et de leurs repères de code.</summary>
     internal sealed partial class ChatSessionStore
     {
+
         /// <summary>Exécute une étape SQLite native ; la validation et les transactions restent dans le magasin.</summary>
         internal Func<IntPtr, int> StepNative = Native.sqlite3_step;
+
         /// <summary>Charge les repères du projet, triés sans tenir compte de la casse.</summary>
         /// <param name="scope">Clé du projet dont les repères sont demandés.</param>
         /// <returns>Repères désérialisés associés à cette clé.</returns>
@@ -39,6 +48,7 @@ namespace VBAi
                 while (statement.Step() == 100) result.Add(json.Deserialize<CodeBookmark>(ReadText(Native.sqlite3_column_text(statement.Handle, 0))));
             return result;
         }
+
         /// <summary>Insère ou remplace un repère dans une transaction, avec une limite de 200 par projet.</summary>
         /// <param name="scope">Clé du projet propriétaire.</param>
         /// <param name="bookmark">Repère à enregistrer.</param>
@@ -57,6 +67,7 @@ namespace VBAi
             }
             catch { Execute("ROLLBACK"); throw; }
         }
+
         /// <summary>Supprime un repère par son nom insensible à la casse.</summary>
         /// <param name="scope">Clé du projet propriétaire.</param>
         /// <param name="name">Nom du repère à supprimer.</param>

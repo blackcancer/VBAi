@@ -4,10 +4,14 @@ using System.Runtime.InteropServices;
 
 namespace VBAi
 {
+
     /// <summary>Gère l’enregistrement natif des projets VBA autonomes de macros SWP.</summary>
     internal sealed partial class VbeProjectComponents
     {
+
         /// <summary>Normalizes VBIDE's path-not-found state only for an unsaved standalone project.</summary>
+        /// <param name="project">dynamic that supplies the project for this operation.</param>
+        /// <returns>Text produced by the operation for standalone aware project path on vbe project components.</returns>
         private static string StandaloneAwareProjectPath(dynamic project)
         {
             try { return (string)project.FileName; }
@@ -24,9 +28,10 @@ namespace VBAi
                 return "";
             }
         }
-                /// <summary>Détecte uniquement un projet VBA autonome de macro SWP, jamais un projet intégré à un document Office.</summary>
-                /// <param name="project">Projet VBIDE à examiner.</param>
-                /// <returns><see langword="true"/> si le type et le chemin correspondent à une macro autonome SWP.</returns>
+
+        /// <summary>Détecte uniquement un projet VBA autonome de macro SWP, jamais un projet intégré à un document Office.</summary>
+        /// <param name="project">Projet VBIDE à examiner.</param>
+        /// <returns><see langword="true"/> si le type et le chemin correspondent à une macro autonome SWP.</returns>
         private static bool SupportsStandaloneMacro(dynamic project)
         {
             try
@@ -37,10 +42,11 @@ namespace VBAi
             }
             catch { return false; }
         }
-                /// <summary>Lit le fichier natif d’une macro autonome et son état de sauvegarde VBIDE.</summary>
-                /// <param name="selector">Identifiant du projet à inclure dans le résultat.</param>
-                /// <param name="project">Projet VBIDE dont l’état de persistance est lu.</param>
-                /// <returns>Un instantané sérialisable des indicateurs de sauvegarde et du fichier hôte.</returns>
+
+        /// <summary>Lit le fichier natif d’une macro autonome et son état de sauvegarde VBIDE.</summary>
+        /// <param name="selector">Identifiant du projet à inclure dans le résultat.</param>
+        /// <param name="project">Projet VBIDE dont l’état de persistance est lu.</param>
+        /// <returns>Un instantané sérialisable des indicateurs de sauvegarde et du fichier hôte.</returns>
         private object StandalonePersistence(string selector, dynamic project)
         {
             bool solidWorksDraft = SolidWorksSaveProbe().IsSolidWorks;
@@ -55,10 +61,11 @@ namespace VBAi
                 Reason = solidWorksDraft ? "A generic Type101 SaveAs does not create a native SOLIDWORKS container. Use publish_solidworks_macro to retain this draft and create a new native macro, or create_solidworks_macro with a path from the start." : null,
                 Limit = "Generic standalone VBIDE persistence is distinct from native SOLIDWORKS SWP hosting. File metadata is not proof of reload fidelity or signature trust." };
         }
-                /// <summary>Enregistre une macro SWP autonome par VBIDE après contrôle de sa version et de son chemin.</summary>
-                /// <param name="request">Requête contenant le projet, sa version attendue et éventuellement le chemin de destination.</param>
-                /// <param name="saveAs">Sélectionne une nouvelle destination lorsque la valeur est vraie.</param>
-                /// <returns>Le résultat de l’enregistrement et la vérification du chemin, de l’état et du fichier produit.</returns>
+
+        /// <summary>Enregistre une macro SWP autonome par VBIDE après contrôle de sa version et de son chemin.</summary>
+        /// <param name="request">Requête contenant le projet, sa version attendue et éventuellement le chemin de destination.</param>
+        /// <param name="saveAs">Sélectionne une nouvelle destination lorsque la valeur est vraie.</param>
+        /// <returns>Le résultat de l’enregistrement et la vérification du chemin, de l’état et du fichier produit.</returns>
         private object SaveStandaloneMacro(Request request, bool saveAs)
         {
             if (SolidWorksSaveProbe().IsSolidWorks)

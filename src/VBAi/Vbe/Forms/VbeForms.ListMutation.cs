@@ -7,9 +7,11 @@ using System.Linq;
 
 namespace VBAi
 {
+
     /// <summary>Ajoute un élément à une liste MSForms sous contrôle de sa version et vérifie le résultat.</summary>
     internal sealed partial class VbeForms
     {
+
         /// <summary>Ajoute un élément à une liste à une colonne non liée, si ses versions correspondent, puis relit toutes ses valeurs.</summary>
         /// <param name="request">Projet, formulaire, chemin, versions attendues et texte à ajouter.</param>
         /// <returns>Rapport qui distingue application, vérification réussie et relecture en attente.</returns>

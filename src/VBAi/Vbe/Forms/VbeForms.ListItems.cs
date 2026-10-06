@@ -10,6 +10,7 @@ using System.Web.Script.Serialization;
 
 namespace VBAi
 {
+
     /// <summary>Lit les cellules de listes MSForms avec pagination et version calculée de la liste complète.</summary>
     internal sealed partial class VbeForms
     {

@@ -8,20 +8,27 @@ using System.Windows.Automation;
 
 namespace VBAi
 {
+
     /// <summary>Inspecte les surfaces de navigation visibles et leurs actions accessibles.</summary>
     internal static partial class VbeDebugWindows
     {
+
         /// <summary>État réellement exposé d'un nœud de navigation natif.</summary>
         internal sealed class NavigationNode
         {
+
             /// <summary>Jetons d’identité du nœud, de son parent, et texte et type observés.</summary>
             public string Token, ParentToken, Name, Kind, Expansion, Error;
+
             /// <summary>État d’activation lu pour le nœud.</summary>
             public bool Enabled;
+
             /// <summary>Sélection UIA directement lisible et sélection observée par MSAA.</summary>
             public bool? Selected, ObservedSelected;
+
             /// <summary>État MSAA brut quand le fournisseur le retourne.</summary>
             public int? MSAAState;
+
             /// <summary>Motif pour lequel l’action de sélection n’est pas disponible.</summary>
             public string ActionUnavailableReason;
         }
@@ -29,14 +36,19 @@ namespace VBAi
         /// <summary>Instantané d'une seule surface native ; les enfants non exposés ne sont pas inventés.</summary>
         internal sealed class NavigationSurface
         {
+
             /// <summary>Disponibilité d’une surface native unique et lisible.</summary>
             public bool Available;
+
             /// <summary>Titre, identité, erreur, fournisseur et portée du contenu retourné.</summary>
             public string Caption, Identity, Error, Provider, Coverage;
+
             /// <summary>Indique si les boutons de la surface sont réellement exposés.</summary>
             public bool? ButtonsExposed;
+
             /// <summary>État MSAA brut du conteneur éventuel.</summary>
             public int? MSAAContainerState;
+
             /// <summary>Nœuds accessibles de la surface, sans descendants supposés.</summary>
             public NavigationNode[] Nodes = new NavigationNode[0];
         }
@@ -44,10 +56,12 @@ namespace VBAi
         /// <summary>Accès injectable aux arbres, onglets et listes de navigation.</summary>
         internal interface INavigationSurfaceProbe
         {
+
             /// <summary>Lit une surface de navigation nommée.</summary>
             /// <param name="pane">Type de surface : projet, toolbox ou macros.</param>
             /// <returns>Instantané des nœuds lisibles.</returns>
             NavigationSurface Read(string pane);
+
             /// <summary>Exécute une action accessible sur un nœud identifiée par son jeton courant.</summary>
             /// <param name="pane">Type de surface native.</param>
             /// <param name="token">Jeton du nœud issu de l’instantané courant.</param>
@@ -55,15 +69,15 @@ namespace VBAi
             void Act(string pane, string token, string action);
         }
 
-                /// <summary>Lit l'explorateur de projets, la boîte à outils ou le sélecteur de macros déjà visible.</summary>
-                /// <param name="request">Surface et paramètres de pagination ou de filtre.</param>
-                /// <returns>Instantané paginé des seuls nœuds exposés par le fournisseur natif.</returns>
+        /// <summary>Lit l'explorateur de projets, la boîte à outils ou le sélecteur de macros déjà visible.</summary>
+        /// <param name="request">Surface et paramètres de pagination ou de filtre.</param>
+        /// <returns>Instantané paginé des seuls nœuds exposés par le fournisseur natif.</returns>
         internal static object ReadNavigationSurface(Request request) => ReadNavigationSurface(request, new NativeNavigationSurfaceProbe());
 
-                /// <summary>Filtre un instantané complet sans utiliser le libellé comme identité de nœud.</summary>
-                /// <param name="request">Surface, filtre, pagination et éventuel contrôle cible.</param>
-                /// <param name="probe">Fournisseur de lecture UIA/MSAA.</param>
-                /// <returns>Nœuds correspondants et version de la surface observée.</returns>
+        /// <summary>Filtre un instantané complet sans utiliser le libellé comme identité de nœud.</summary>
+        /// <param name="request">Surface, filtre, pagination et éventuel contrôle cible.</param>
+        /// <param name="probe">Fournisseur de lecture UIA/MSAA.</param>
+        /// <returns>Nœuds correspondants et version de la surface observée.</returns>
         internal static object ReadNavigationSurface(Request request, INavigationSurfaceProbe probe)
         {
             ValidateNavigationRequest(request, false);
@@ -81,15 +95,15 @@ namespace VBAi
                 ProjectBindingVerified = false };
         }
 
-                /// <summary>Sélectionne, développe ou replie un nœud exact après contrôle de l'ensemble de la surface.</summary>
-                /// <param name="request">Surface, jeton, action et version attendue.</param>
-                /// <returns>État du nœud et vérification après relecture native.</returns>
+        /// <summary>Sélectionne, développe ou replie un nœud exact après contrôle de l'ensemble de la surface.</summary>
+        /// <param name="request">Surface, jeton, action et version attendue.</param>
+        /// <returns>État du nœud et vérification après relecture native.</returns>
         internal static object ChangeNavigationSurface(Request request) => ChangeNavigationSurface(request, new NativeNavigationSurfaceProbe());
 
-                /// <summary>Vérifie l'effet accessible d'une action ; une exception de livraison interdit une relance automatique.</summary>
-                /// <param name="request">Action demandée avec l’empreinte de la surface inspectée.</param>
-                /// <param name="probe">Fournisseur natif de lecture et d’action.</param>
-                /// <returns>État avant/après, résultat observé et erreurs éventuelles.</returns>
+        /// <summary>Vérifie l'effet accessible d'une action ; une exception de livraison interdit une relance automatique.</summary>
+        /// <param name="request">Action demandée avec l’empreinte de la surface inspectée.</param>
+        /// <param name="probe">Fournisseur natif de lecture et d’action.</param>
+        /// <returns>État avant/après, résultat observé et erreurs éventuelles.</returns>
         internal static object ChangeNavigationSurface(Request request, INavigationSurfaceProbe probe)
         {
             ValidateNavigationRequest(request, true);
@@ -125,9 +139,9 @@ namespace VBAi
                 NextRead = "read_navigation_surface", SourceEdited = false, PersistenceVerified = false };
         }
 
-                /// <summary>Valide les actions de navigation et les limites de pagination.</summary>
-                /// <param name="request">Requête à contrôler.</param>
-                /// <param name="mutation">Exige les informations supplémentaires de mutation si vrai.</param>
+        /// <summary>Valide les actions de navigation et les limites de pagination.</summary>
+        /// <param name="request">Requête à contrôler.</param>
+        /// <param name="mutation">Exige les informations supplémentaires de mutation si vrai.</param>
         private static void ValidateNavigationRequest(Request request, bool mutation)
         {
             if (request == null || (request.Pane != "project" && request.Pane != "toolbox" && request.Pane != "macros") ||
@@ -139,8 +153,8 @@ namespace VBAi
                 throw new ArgumentException("Control token, ExpectedWindowVersion and Action select/expand/collapse are required.");
         }
 
-                /// <summary>Refuse un fournisseur incomplet plutôt que présenter un arbre vide comme preuve.</summary>
-                /// <param name="state">Instantané de surface à vérifier.</param>
+        /// <summary>Refuse un fournisseur incomplet plutôt que présenter un arbre vide comme preuve.</summary>
+        /// <param name="state">Instantané de surface à vérifier.</param>
         private static void ValidateNavigationSnapshot(NavigationSurface state)
         {
             if (state == null || state.Nodes == null || state.Nodes.Length > 4096 || state.Nodes.Any(n => n == null || string.IsNullOrEmpty(n.Token)))
@@ -149,27 +163,29 @@ namespace VBAi
                 throw new InvalidOperationException("The visible navigation surface exposes no identifiable nodes.");
         }
 
-                /// <summary>Empreinte des identités, états et erreurs de tous les nœuds observés.</summary>
-                /// <param name="state">Surface native capturée.</param>
-                /// <returns>Empreinte SHA-256 de l’instantané sérialisé.</returns>
+        /// <summary>Empreinte des identités, états et erreurs de tous les nœuds observés.</summary>
+        /// <param name="state">Surface native capturée.</param>
+        /// <returns>Empreinte SHA-256 de l’instantané sérialisé.</returns>
         private static string NavigationRevision(NavigationSurface state)
         {
             using (var sha = SHA256.Create())
                 return BitConverter.ToString(sha.ComputeHash(Encoding.UTF8.GetBytes(new JavaScriptSerializer().Serialize(state)))).Replace("-", "").ToLowerInvariant();
         }
 
-                /// <summary>Compare seulement l'état effectivement accessible correspondant à l'action.</summary>
-                /// <param name="node">État lu d’un nœud.</param>
-                /// <param name="action">Action dont l’effet est attendu.</param>
-                /// <returns><see langword="true"/> si l’état observable correspond à l’action.</returns>
+        /// <summary>Compare seulement l'état effectivement accessible correspondant à l'action.</summary>
+        /// <param name="node">État lu d’un nœud.</param>
+        /// <param name="action">Action dont l’effet est attendu.</param>
+        /// <returns><see langword="true"/> si l’état observable correspond à l’action.</returns>
         private static bool NavigationDesired(NavigationNode node, string action) => action == "select" ? node.Selected == true :
             node.Expansion == (action == "expand" ? "Expanded" : "Collapsed");
 
         /// <summary>Utilise les identités UI Automation et ses patterns sans clavier ni coordonnées souris.</summary>
         private sealed class NativeNavigationSurfaceProbe : INavigationSurfaceProbe
         {
+
             /// <summary>Éléments UIA associés aux jetons de la dernière lecture.</summary>
             private readonly Dictionary<string, AutomationElement> elements = new Dictionary<string, AutomationElement>(StringComparer.Ordinal);
+
             /// <summary>Reads the live UIA parent; isolates provider detachment races during contract qualification.</summary>
             internal Func<AutomationElement, AutomationElement> ReadParent = TreeWalker.ControlViewWalker.GetParent;
 
@@ -277,9 +293,9 @@ namespace VBAi
                 PauseNative(75);
             }
 
-                        /// <summary>Identité de session du fournisseur UIA ; aucun nom seul n'identifie un nœud.</summary>
-                        /// <param name="element">Élément UI Automation à identifier.</param>
-                        /// <returns>Jeton construit à partir de l’identifiant d’exécution UIA.</returns>
+            /// <summary>Identité de session du fournisseur UIA ; aucun nom seul n'identifie un nœud.</summary>
+            /// <param name="element">Élément UI Automation à identifier.</param>
+            /// <returns>Jeton construit à partir de l’identifiant d’exécution UIA.</returns>
             private static string Token(AutomationElement element) => string.Join(".", element.GetRuntimeId());
         }
     }

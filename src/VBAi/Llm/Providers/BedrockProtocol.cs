@@ -5,9 +5,11 @@ using System.Web.Script.Serialization;
 
 namespace VBAi
 {
+
     /// <summary>Convertit les messages et outils internes au format Converse d’Amazon Bedrock.</summary>
     internal static class BedrockProtocol
     {
+
         /// <summary>Adapte l’historique, les résultats d’outils et leurs schémas au format Bedrock.</summary>
         /// <param name="history">Messages conservés au format Chat Completions.</param>
         /// <param name="tools">Définitions des outils disponibles.</param>
@@ -39,6 +41,7 @@ namespace VBAi
                 tools = tools.Select(raw => { var f = ClaudeProtocol.Object(ClaudeProtocol.Object(raw)["function"]); return new { toolSpec = new {
                     name = ClaudeProtocol.Text(f, "name"), description = ClaudeProtocol.Text(f, "description"), inputSchema = new { json = f["parameters"] } } }; }).ToArray() } };
         }
+
         /// <summary>Convertit le message Converse de Bedrock en message assistant au format interne.</summary>
         /// <param name="root">Réponse Bedrock décodée.</param>
         /// <returns>Message assistant avec le contenu Bedrock d’origine conservé et les appels d’outils normalisés.</returns>

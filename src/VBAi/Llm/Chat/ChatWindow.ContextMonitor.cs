@@ -6,17 +6,23 @@ using System.Windows.Forms;
 
 namespace VBAi
 {
+
     /// <summary>Fenêtre du chat et coordination des mises à jour de contexte VBE.</summary>
     internal sealed partial class ChatWindow
     {
+
         /// <summary>Cadence les lectures incrémentales du contexte de projet.</summary>
         private Timer contextMonitorTimer;
+
         /// <summary>Surveille les empreintes des projets, modules et références.</summary>
         private VbeContextMonitor contextMonitor;
+
         /// <summary>Indique qu’un événement ou un sondage impose de rafraîchir le contexte affiché.</summary>
         private bool contextDirty;
+
         /// <summary>Abonnement aux événements d’ajout et retrait de références.</summary>
         private VbeReferenceEvents referenceEvents;
+
         /// <summary>Abonnements aux modifications de projets et de composants.</summary>
         private VbeCollectionEvents projectEvents, componentEvents;
 

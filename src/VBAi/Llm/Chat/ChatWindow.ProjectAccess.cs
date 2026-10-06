@@ -5,10 +5,12 @@ using System.Windows.Forms;
 
 namespace VBAi
 {
-    /// <summary>Provides the chat window implementation.</summary>
+
+    /// <summary>Owns the chat window state and operations.</summary>
     internal sealed partial class ChatWindow
     {
-        /// <summary>Performs the migrate provider privacy operation for ChatWindow.</summary>
+
+        /// <summary>Migrates legacy provider privacy settings to the current project access policy.</summary>
         private void MigrateProviderPrivacy()
         {
             if (currentSession == null || currentSession.ReadAccessPolicyVersion >= 1) return;
@@ -27,7 +29,7 @@ namespace VBAi
             currentSession.ProviderHistoryStartIndex = transcriptEntries.Count;
         }
 
-        /// <summary>Performs the configure project access operation for ChatWindow.</summary>
+        /// <summary>Collects the projects and shared context granted to the current chat session.</summary>
         private void ConfigureProjectAccess()
         {
             if (busy || currentSession == null || tools == null) return;

@@ -5,9 +5,11 @@ using System.Web.Script.Serialization;
 
 namespace VBAi
 {
+
     /// <summary>Inspecte et modifie les vues, sélections et défilements des volets de code natifs.</summary>
     internal sealed partial class VbeDebug
     {
+
         /// <summary>Volets COM observés lors de la dernière lecture, indexés par jeton éphémère.</summary>
         private readonly Dictionary<string, object> inspectedPanes = new Dictionary<string, object>(StringComparer.Ordinal);
 
@@ -160,6 +162,7 @@ namespace VBAi
                 View = (int)pane.CodePaneView, Selection = start + ":" + column + ":" + end + ":" + endColumn,
                 Sha256 = Hash(code), LineCount = count };
         }
+
         /// <summary>Calcule la version SHA-256 d’un état de volet sérialisé.</summary>
         /// <param name="state">État précédemment capturé.</param>
         /// <returns>Empreinte de l’état du volet.</returns>

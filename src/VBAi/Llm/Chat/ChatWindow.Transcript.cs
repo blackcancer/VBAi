@@ -13,39 +13,57 @@ using System.Windows.Threading;
 
 namespace VBAi
 {
+
     /// <summary>Fenêtre de conversation qui affiche les messages et les modifications de code.</summary>
     internal sealed partial class ChatWindow
     {
+
         /// <summary>Défileur de la conversation une fois matérialisé par le template WPF.</summary>
         private ScrollViewer conversationScroll;
+
         /// <summary>Liste virtualisée des éléments affichés dans la conversation.</summary>
         private ListBox conversationItems;
+
         /// <summary>Entrées actuellement visibles par la liste virtualisée.</summary>
         private readonly System.Collections.ObjectModel.ObservableCollection<object> visibleEntries = new System.Collections.ObjectModel.ObservableCollection<object>();
+
         /// <summary>Index de la première entrée du transcript chargée dans la fenêtre visible.</summary>
         private int firstLoadedEntry;
+
         /// <summary>Marqueur inséré pour charger les messages antérieurs.</summary>
         private readonly object earlierEntries = new object();
+
         /// <summary>Indique si le défilement doit rester attaché au dernier message.</summary>
         private bool followConversation = true;
+
+        /// <summary>Maintains the pending follow state for chat window.</summary>
         private DispatcherOperation pendingFollow;
+
+        /// <summary>Maintains the stream render timer state for chat window.</summary>
         private DispatcherTimer streamRenderTimer;
+
+        /// <summary>Maintains the pending stream text state for chat window.</summary>
         private readonly Dictionary<ChatEntry, StringBuilder> pendingStreamText = new Dictionary<ChatEntry, StringBuilder>();
+
+        /// <summary>Maintains the pending activity text state for chat window.</summary>
         private readonly HashSet<ChatEntry> pendingActivityText = new HashSet<ChatEntry>();
+
         /// <summary>Historique complet des entrées de la session courante.</summary>
         private readonly List<ChatEntry> transcriptEntries = new List<ChatEntry>();
+
         /// <summary>Contrôles matérialisés actuellement associés à leurs entrées.</summary>
         private readonly Dictionary<ChatEntry, FrameworkElement> entryViews = new Dictionary<ChatEntry, FrameworkElement>();
+
         /// <summary>Messages de flux actifs indexés par leur identifiant.</summary>
         private readonly Dictionary<string, ChatEntry> liveEntries = new Dictionary<string, ChatEntry>();
+
         /// <summary>Champs texte matérialisés pour afficher le texte des flux actifs.</summary>
-
         private readonly Dictionary<string, System.Windows.Forms.RichTextBox> liveTexts = new Dictionary<string, System.Windows.Forms.RichTextBox>();
+
         /// <summary>Boutons de restauration associés aux changements de code visibles.</summary>
-
         private readonly Dictionary<CodeChange, System.Windows.Forms.Button> rollbackButtons = new Dictionary<CodeChange, System.Windows.Forms.Button>();
-        /// <summary>Libellés d’état associés aux changements de code visibles.</summary>
 
+        /// <summary>Libellés d’état associés aux changements de code visibles.</summary>
         private readonly Dictionary<CodeChange, System.Windows.Forms.Label> changeStates = new Dictionary<CodeChange, System.Windows.Forms.Label>();
 
         /// <summary>Configure la liste virtualisée, les événements de défilement, l’accessibilité et les changements de thème.</summary>
@@ -84,6 +102,7 @@ namespace VBAi
             UiTheme.Changed += themeChanged;
             Disposed += (s, e) => UiTheme.Changed -= themeChanged;
         }
+
         /// <summary>Construit le contrôle visuel d’un élément lorsque le panneau virtualisé le matérialise.</summary>
         /// <param name="item">Élément du transcript à matérialiser.</param>
         private void RealizeEntry(TranscriptItem item)
@@ -105,6 +124,7 @@ namespace VBAi
             }
             else item.Content = item.DataContext as FrameworkElement;
         }
+
         /// <summary>Retire les références aux contrôles temporaires lorsqu’un élément sort de la fenêtre virtualisée.</summary>
         /// <param name="item">Élément du transcript libéré.</param>
         private void ReleaseEntry(TranscriptItem item)
@@ -118,6 +138,7 @@ namespace VBAi
                 if (entry.Change != null) { rollbackButtons.Remove(entry.Change); changeStates.Remove(entry.Change); }
             }
         }
+
         /// <summary>Libère les hôtes natifs avant de remplacer les vues matérialisées.</summary>
         private void DisposeEntryViews()
         {
@@ -125,8 +146,9 @@ namespace VBAi
 
             foreach (var view in visibleEntries.OfType<ChatDesignerHost>().ToArray()) view.Dispose();
         }
-                /// <summary>Libère récursivement les ressources WPF détenues par une entrée et ses enfants visuels/logiques.</summary>
-                /// <param name="view">Racine de l’élément de transcript à nettoyer.</param>
+
+        /// <summary>Libère récursivement les ressources WPF détenues par une entrée et ses enfants visuels/logiques.</summary>
+        /// <param name="view">Racine de l’élément de transcript à nettoyer.</param>
         private static void DisposeEntryView(FrameworkElement view)
         {
 
@@ -134,6 +156,7 @@ namespace VBAi
             if (view is ChatDiffView diff) { diff.Dispose(); return; }
             foreach (var child in LogicalTreeHelper.GetChildren(view).OfType<FrameworkElement>()) DisposeEntryView(child);
         }
+
         /// <summary>Remplace la fenêtre virtualisée par les entrées commençant à l’index demandé.</summary>
         /// <param name="start">Index de départ dans le transcript complet.</param>
         private void RefreshTranscriptWindow(int start)
@@ -148,6 +171,7 @@ namespace VBAi
             ChatEntry previous = null;
             foreach (var entry in transcriptEntries.Skip(start)) { AppendVisibleEntry(entry, previous); previous = entry; }
         }
+
         /// <summary>Efface le transcript complet et réinitialise les contrôles matérialisés et le suivi du défilement.</summary>
         private void ClearTranscript()
         {
@@ -159,6 +183,7 @@ namespace VBAi
             activityGroups.Clear(); activityOwners.Clear(); expandedActivityGroups.Clear(); collapsedActivityGroups.Clear(); expandedActivitySteps.Clear(); collapsedActivitySteps.Clear();
             rollbackButtons.Clear(); changeStates.Clear(); formCutButtons.Clear(); followConversation = true;
         }
+
         /// <summary>Fait défiler vers le dernier élément si le suivi automatique est activé.</summary>
         private void FollowLatest()
         {
@@ -170,21 +195,22 @@ namespace VBAi
                     conversationItems.ScrollIntoView(visibleEntries.Last());
             }));
         }
+
         /// <summary>Crée un champ texte en lecture seule dont le contenu peut être sélectionné et copié.</summary>
         /// <param name="text">Texte à afficher.</param>
         /// <param name="code">Active une police monospace, une ligne non renvoyée et un flux gauche-droite.</param>
         /// <returns>Vue WinForms Designer configurée pour la sélection du texte.</returns>
-
         private ChatTextContentView SelectableText(string text, bool code = false)
         {
 
             var view = new ChatTextContentView { ErrorHandler = SetStatus }; view.ShowPlain(text,code); return view;
         }
+
         /// <summary>Ajoute un message simple au transcript.</summary>
         /// <param name="speaker">Locuteur ou catégorie du message.</param>
-
         /// <param name="content">Message text.</param>
         private void AddTranscriptMessage(string speaker, string content) { AddEntry(new ChatEntry { Speaker = speaker, Text = content }); }
+
         /// <summary>Ajoute une entrée à l’historique et, hors chargement de session, à la liste visible.</summary>
         /// <param name="entry">Entrée à ajouter.</param>
         private void AddEntry(ChatEntry entry)
@@ -354,6 +380,7 @@ namespace VBAi
 
         /// <summary>Identifiants des flux dont le contenu final est disponible.</summary>
         private readonly HashSet<string> completedStreams = new HashSet<string>();
+
         /// <summary>Texte final du flux assistant courant, utilisé pour éviter un message final en double.</summary>
         private string streamedFinalText;
 
@@ -393,6 +420,7 @@ namespace VBAi
             ScheduleSessionSave();
         }
 
+        /// <summary>Handles schedule stream render for chat window.</summary>
         private void ScheduleStreamRender()
         {
             if (streamRenderTimer == null)
@@ -403,12 +431,18 @@ namespace VBAi
             if (!streamRenderTimer.IsEnabled) streamRenderTimer.Start();
         }
 
+        /// <summary>Handles publish stream text for chat window.</summary>
+        /// <param name="entry">chat entry that supplies the entry for this operation.</param>
+        /// <param name="text">Text that supplies the text value. Use the format required by the calling operation.</param>
         private void PublishStreamText(ChatEntry entry, string text)
         {
             if (entry.StreamId == null || !liveTexts.TryGetValue(entry.StreamId, out var live)) return;
             SetTranscriptText(live, text);
         }
 
+        /// <summary>Sets transcript text for chat window.</summary>
+        /// <param name="live">rich text box that supplies the live for this operation.</param>
+        /// <param name="text">Text that supplies the text value. Use the format required by the calling operation.</param>
         private static void SetTranscriptText(System.Windows.Forms.RichTextBox live, string text)
         {
             text = text ?? "";

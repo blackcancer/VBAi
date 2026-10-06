@@ -4,15 +4,20 @@ using System.Linq;
 
 namespace VBAi
 {
+
     /// <summary>Restaure et persiste les profils explicites de barres d’outils VBAi.</summary>
     internal sealed partial class VbeEditorWindows
     {
+
         /// <summary>Préfixe distinguant les commandes conservées dans un profil persistant.</summary>
         private const string PersistentCommandTag = "VBAi.ToolbarCommand.Persistent.";
+
         /// <summary>Stockage facultatif des profils de barres d’outils.</summary>
         internal VbeToolbarProfiles ToolbarProfiles;
+
         /// <summary>Erreurs rencontrées lors de la restauration des profils de barres d’outils.</summary>
         internal readonly List<string> ToolbarProfileErrors = new List<string>();
+
         /// <summary>Restaure les commandes natives exactes des seules barres VBAi enregistrées explicitement.</summary>
         internal void RestoreToolbarProfiles()
         {
@@ -50,6 +55,7 @@ namespace VBAi
                 catch (Exception ex) { ToolbarProfileErrors.Add(profile.Name + ": " + ex.Message); }
             }
         }
+
         /// <summary>Retire à la déconnexion les seules copies de commandes marquées pour la session.</summary>
         internal void RemoveTemporaryToolbarCommands()
         {
@@ -61,6 +67,7 @@ namespace VBAi
                         if (System.Text.RegularExpressions.Regex.IsMatch(tag ?? "", @"^VBAi\.ToolbarCommand\.[0-9a-f]{32}$")) control.Delete();
                     }
         }
+
         /// <summary>Enregistre l’état et les commandes persistantes d’une barre si son profil est suivi.</summary>
         /// <param name="bar">Barre native à capturer.</param>
         /// <param name="create">Indique si un nouveau profil peut être créé.</param>
@@ -77,6 +84,7 @@ namespace VBAi
                     new VbeToolbarProfiles.Command { Id = x.Id, Caption = x.Caption, Tag = x.Tag }).ToArray() };
             ToolbarProfiles.Update(name, profile);
         }
+
         /// <summary>Exige un profil existant avant l’ajout de commandes persistantes à une barre.</summary>
         /// <param name="bar">Barre native sur laquelle une commande persistante doit être ajoutée.</param>
         private void RequirePersistentToolbar(dynamic bar)

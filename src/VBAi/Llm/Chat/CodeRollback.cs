@@ -4,21 +4,27 @@ using System.Linq;
 
 namespace VBAi
 {
+
     /// <summary>Représente une zone contiguë différente entre deux versions d’un module.</summary>
     internal sealed class CodeHunk
     {
+
         /// <summary>Obtient ou définit l’index de la zone dans la séquence de différences.</summary>
         /// <value>Index de la zone dans la séquence de différences.</value>
         public int Index { get; set; }
+
         /// <summary>Obtient ou définit la première ligne concernée dans la version initiale, indexée à partir de zéro.</summary>
         /// <value>Première ligne de l’ancienne version, indexée à partir de zéro.</value>
         public int BeforeStart { get; set; }
+
         /// <summary>Obtient ou définit la première ligne concernée dans la version modifiée, indexée à partir de zéro.</summary>
         /// <value>Première ligne de la nouvelle version, indexée à partir de zéro.</value>
         public int AfterStart { get; set; }
+
         /// <summary>Obtient ou définit les lignes de la version initiale remplacées par cette zone.</summary>
         /// <value>Lignes remplacées dans l’ancienne version.</value>
         public string[] Before { get; set; }
+
         /// <summary>Obtient ou définit les lignes de la version modifiée correspondant à cette zone.</summary>
         /// <value>Lignes insérées dans la nouvelle version.</value>
         public string[] After { get; set; }
@@ -27,6 +33,7 @@ namespace VBAi
     /// <summary>Calcule les différences textuelles et restaure des blocs de code en vérifiant leur contexte.</summary>
     internal static class CodeRollback
     {
+
         /// <summary>Découpe un texte en lignes, normalise les fins de ligne et retourne un tableau vide pour une entrée vide.</summary>
         /// <param name="text">Texte à découper.</param>
         /// <returns>Les lignes du texte sans leurs séparateurs.</returns>

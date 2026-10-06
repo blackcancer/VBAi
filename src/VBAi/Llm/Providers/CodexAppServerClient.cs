@@ -12,18 +12,24 @@ using System.Web.Script.Serialization;
 
 namespace VBAi
 {
+
     /// <summary>Abstraction du processus app-server et de ses échanges par lignes.</summary>
     internal interface ICodexAppServerTransport : IDisposable
     {
+
         /// <summary>Survient lorsqu’une ligne est lue sur la sortie standard.</summary>
         event Action<string> LineReceived;
+
         /// <summary>Survient lorsque le transport cesse de fonctionner.</summary>
         event Action<Exception> Exited;
+
         /// <summary>Indique si le processus app-server est actif.</summary>
         /// <value>Vrai si le processus est actif.</value>
         bool IsRunning { get; }
+
         /// <summary>Démarre le processus et commence à lire ses sorties.</summary>
         void Start();
+
         /// <summary>Écrit une ligne de protocole vers le processus.</summary>
         /// <param name="line">Ligne JSON-RPC à transmettre.</param>
         void Send(string line);
@@ -32,20 +38,28 @@ namespace VBAi
     /// <summary>Transport app-server qui lance le client CLI Codex et échange des lignes UTF-8.</summary>
     internal sealed class CodexProcessTransport : ICodexAppServerTransport
     {
+
         /// <summary>Vérifie la présence du binaire Codex installé à son emplacement local.</summary>
         internal Func<string, bool> InstalledExists = File.Exists;
+
         /// <summary>Accès injectable aux sous-répertoires parcourus pour localiser le CLI Codex.</summary>
         internal Func<string, string[]> GetDirectories = Directory.GetDirectories;
+
         /// <summary>Accès injectable aux dates UTC qui départagent les exécutables candidats.</summary>
         internal Func<string, DateTime> GetLastWriteTimeUtc = File.GetLastWriteTimeUtc;
+
         /// <summary>Démarre le processus Codex sans préambule UTF-8 parasite sur l’entrée standard.</summary>
         internal Func<Process, bool> StartProcess = ProcessInput.StartWithoutPreamble;
+
         /// <summary>Processus CLI Codex détenu par le transport.</summary>
         private Process process;
+
         /// <summary>Relaye les lignes reçues sur la sortie standard.</summary>
         public event Action<string> LineReceived;
+
         /// <summary>Relaye la fin du processus comme une erreur de transport.</summary>
         public event Action<Exception> Exited;
+
         /// <summary>Indique si le processus détenu est vivant.</summary>
         /// <value>Vrai si le processus détenu est actif.</value>
         public bool IsRunning { get { return process != null && !process.HasExited; } }
@@ -96,56 +110,82 @@ namespace VBAi
     /// <summary>Gère une session app-server Codex, ses requêtes JSON-RPC et les appels d’outils du VBE.</summary>
     internal sealed class CodexAppServerClient : IDisposable
     {
+
         /// <summary>Contexte utilisé pour publier les mises à jour sur le fil de l’interface.</summary>
         private readonly SynchronizationContext ui;
+
         /// <summary>Outils VBE exécutés à la demande du processus Codex.</summary>
         private readonly LlmVbeTools tools;
+
         /// <summary>Exécute un outil VBE appelé par le serveur Codex avec son nom et ses arguments JSON.</summary>
         internal Func<string, string, Task<string>> InvokeTool;
+
         /// <summary>Callback qui signale les étapes de connexion et les appels d’outils.</summary>
         private readonly Action<string> progress;
+
         /// <summary>Réglages LLM fournis à cette session.</summary>
         private readonly LlmSettings settings;
+
         /// <summary>Réponses en attente, indexées par identifiant JSON-RPC.</summary>
         private readonly Dictionary<int, TaskCompletionSource<IDictionary<string, object>>> requests =
             new Dictionary<int, TaskCompletionSource<IDictionary<string, object>>>();
+
         /// <summary>Verrou qui protège les échanges et le registre des requêtes.</summary>
         private readonly object gate = new object();
+
         /// <summary>Transport utilisé pour lire et écrire le protocole app-server.</summary>
         private readonly ICodexAppServerTransport transport;
+
         /// <summary>Indique si le transport a été démarré.</summary>
         private bool transportStarted;
+
         /// <summary>Dernier identifiant JSON-RPC attribué aux requêtes.</summary>
         private int nextId;
+
         /// <summary>Identifiant du fil Codex créé ou repris.</summary>
         private string threadId;
+
         /// <summary>Empreinte des consignes confirmées pour le fil Codex courant.</summary>
         private string appliedInstructionsHash;
+
         /// <summary>Source des consignes, injectable pour vérifier leur changement entre deux tours.</summary>
         internal Func<string> DeveloperInstructionSource = () => LlmVbeContext.DeveloperInstructions;
+
         /// <summary>Achèvement de la réponse du tour actif.</summary>
         private TaskCompletionSource<string> turnDone;
+
         /// <summary>Dernier texte final reçu pour le tour actif.</summary>
         private string finalText;
+
         /// <summary>Indique si le client a été libéré.</summary>
         private bool disposed;
+
         /// <summary>Identifiant du tour Codex en cours.</summary>
         private string activeTurnId;
+
         /// <summary>Indique qu’une interruption a été demandée pendant le démarrage ou le tour.</summary>
         private bool interruptRequested;
+
         /// <summary>Identifiant du fil courant.</summary>
         /// <value>Identifiant du fil, ou null avant sa création.</value>
         public string ThreadId { get { return threadId; } }
+
         /// <summary>Empreinte des dernières consignes acceptées par l'app-server.</summary>
+        /// <value>Current applied instructions hash exposed by codex app server client.</value>
         public string AppliedInstructionsHash { get { return appliedInstructionsHash; } }
+
         /// <summary>Survient quand le fil Codex est prêt à recevoir des tours.</summary>
         public event Action<string> ThreadReady;
+
         /// <summary>Publie le texte, le raisonnement et l’état des appels d’outils dans la conversation.</summary>
         public event Action<string, string, string, bool> ChatUpdate;
+
         /// <summary>Publie une étape de travail native avec son état et ses détails.</summary>
         public event Action<CodexAgentActivity> ActivityUpdate;
+
         /// <summary>Section de résumé actuellement diffusée pour chaque item.</summary>
         private readonly Dictionary<string, int> summarySections = new Dictionary<string, int>();
+
         /// <summary>Étapes commencées dont aucun résultat natif n’a encore été reçu.</summary>
         private readonly Dictionary<string, CodexAgentActivity> runningActivities = new Dictionary<string, CodexAgentActivity>();
 
@@ -588,6 +628,7 @@ namespace VBAi
         /// <summary>Crée un sérialiseur configuré pour accepter des messages jusqu’à dix mégaoctets.</summary>
         /// <returns>Sérialiseur JSON utilisé par le protocole.</returns>
         private static JavaScriptSerializer NewJson() { return new JavaScriptSerializer { MaxJsonLength = 10 * 1024 * 1024 }; }
+
         /// <summary>Récupère une propriété uniquement si elle contient un dictionnaire objet.</summary>
         /// <param name="value">Dictionnaire source, éventuellement null.</param>
         /// <param name="key">Nom de la propriété.</param>
@@ -597,6 +638,7 @@ namespace VBAi
             object raw;
             return value != null && value.TryGetValue(key, out raw) ? raw as IDictionary<string, object> : null;
         }
+
         /// <summary>Récupère une propriété et convertit sa valeur en chaîne.</summary>
         /// <param name="value">Dictionnaire source, éventuellement null.</param>
         /// <param name="key">Nom de la propriété.</param>

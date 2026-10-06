@@ -5,33 +5,50 @@ using System.Windows.Controls;
 
 namespace VBAi
 {
+
     /// <summary>Regroupe les activités du fournisseur dans la projection visuelle de la conversation.</summary>
     internal sealed partial class ChatWindow
     {
+
         /// <summary>Activités consécutives affichées sous leur première entrée, sans modifier l'historique persisté.</summary>
         private readonly Dictionary<ChatEntry, List<ChatEntry>> activityGroups = new Dictionary<ChatEntry, List<ChatEntry>>();
+
         /// <summary>Première entrée visible du groupe auquel appartient chaque activité.</summary>
         private readonly Dictionary<ChatEntry, ChatEntry> activityOwners = new Dictionary<ChatEntry, ChatEntry>();
+
         /// <summary>Groupes ouverts par l'utilisateur, conservés pendant les mises à jour et le recyclage.</summary>
         private readonly HashSet<ChatEntry> expandedActivityGroups = new HashSet<ChatEntry>();
+
         /// <summary>Actions dont les détails ont été ouverts par l'utilisateur.</summary>
         private readonly HashSet<ChatEntry> expandedActivitySteps = new HashSet<ChatEntry>();
-        /// <summary>Stores the collapsed activity groups used by ChatWindow.</summary>
+
+        /// <summary>Maintains the collapsed activity groups state for chat window.</summary>
         private readonly HashSet<ChatEntry> collapsedActivityGroups = new HashSet<ChatEntry>();
-        /// <summary>Stores the collapsed activity steps used by ChatWindow.</summary>
+
+        /// <summary>Maintains the collapsed activity steps state for chat window.</summary>
         private readonly HashSet<ChatEntry> collapsedActivitySteps = new HashSet<ChatEntry>();
 
         // View state belongs to the control tree and is released with its virtualized owner.
+        /// <summary>Owns the activity group view state state and operations.</summary>
         private sealed class ActivityGroupViewState
         {
+
+            /// <summary>Maintains the rows state for activity group view state.</summary>
             internal readonly Dictionary<ChatEntry, System.Windows.Forms.Control> Rows =
                 new Dictionary<ChatEntry, System.Windows.Forms.Control>();
+
+            /// <summary>Maintains the updating state for activity group view state.</summary>
             internal bool Updating;
         }
 
+        /// <summary>Owns the activity step view state state and operations.</summary>
         private sealed class ActivityStepViewState
         {
+
+            /// <summary>Maintains the kind state for activity step view state.</summary>
             internal string Kind;
+
+            /// <summary>Maintains the initialized and updating state for activity step view state.</summary>
             internal bool Initialized, Updating;
         }
 
@@ -134,6 +151,10 @@ namespace VBAi
         }
 
         /// <summary>Updates realized rows without replacing their native text controls or user selection.</summary>
+        /// <param name="card">chat activity group view that supplies the card for this operation.</param>
+        /// <param name="owner">chat entry that supplies the owner for this operation.</param>
+        /// <param name="entries">list&lt;chat entry&gt; that supplies the entries for this operation.</param>
+        /// <returns>Boolean indicating the result of the check for update activity group on chat window.</returns>
         private bool UpdateActivityGroup(ChatActivityGroupView card, ChatEntry owner, List<ChatEntry> entries)
         {
             var state = card.Tag as ActivityGroupViewState;
@@ -187,13 +208,15 @@ namespace VBAi
             }
             return true;
         }
+
         /// <summary>Dessine une étape compacte avec résultat, durée native et détail dépliable.</summary>
         /// <param name="entry">Entrée enrichie de l'historique.</param>
         /// <returns>Étape de la chronologie.</returns>
         private FrameworkElement RenderActivityStep(ChatEntry entry) => new ChatDesignerHost(CreateActivityStep(entry));
+
         /// <summary>Creates a transcript row for a tool activity and its displayed state.</summary>
-        /// <param name="entry">The entry used by this operation.</param>
-        /// <returns>The result produced by this operation.</returns>
+        /// <param name="entry">chat entry that supplies the entry for this operation.</param>
+        /// <returns>chat activity step view produced by the operation for create activity step on chat window.</returns>
         private ChatActivityStepView CreateActivityStep(ChatEntry entry)
         {
             var card = new ChatActivityStepView { Tag = new ActivityStepViewState() };
@@ -206,6 +229,9 @@ namespace VBAi
             return card;
         }
 
+        /// <summary>Updates activity step for chat window.</summary>
+        /// <param name="card">chat activity step view that supplies the card for this operation.</param>
+        /// <param name="entry">chat entry that supplies the entry for this operation.</param>
         private void UpdateActivityStep(ChatActivityStepView card, ChatEntry entry)
         {
             var activity = entry.Activity;

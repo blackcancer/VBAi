@@ -4,21 +4,29 @@ using System.Linq;
 
 namespace VBAi
 {
+
     /// <summary>Étape réellement publiée par Codex, indépendante du contrôle qui l'affiche.</summary>
     internal sealed class CodexAgentActivity
     {
+
         /// <summary>Identité stable de l'étape.</summary><value>Identifiant de l'item ou de la section de résumé.</value>
         public string Id { get; set; }
+
         /// <summary>Catégorie native de l'action.</summary><value>Type d'item Codex.</value>
         public string Kind { get; set; }
+
         /// <summary>Action, outil, commande ou recherche reçue.</summary><value>Titre affichable.</value>
         public string Title { get; set; }
+
         /// <summary>Résumé ou résultat textuel borné.</summary><value>Détail selectable de l'étape.</value>
         public string Detail { get; set; }
+
         /// <summary>État natif du travail.</summary><value>inProgress, completed, failed, declined ou interrupted.</value>
         public string Status { get; set; }
+
         /// <summary>Durée fournie par le serveur, sans estimation locale.</summary><value>Millisecondes ou null si absentes.</value>
         public long? DurationMs { get; set; }
+
         /// <summary>Indique un fragment à ajouter au détail existant.</summary><value>Vrai pour les deltas de sortie ou de résumé.</value>
         public bool Append { get; set; }
 
@@ -51,6 +59,7 @@ namespace VBAi
             return new CodexAgentActivity { Id = Text(item, "id"), Kind = kind, Title = Limit(title), Detail = Limit(detail),
                 Status = string.IsNullOrEmpty(status) ? (complete ? "completed" : "inProgress") : status, DurationMs = duration };
         }
+
         /// <summary>Ne reprend que les identités publiques de la cible d'un outil, sans ses arguments secrets ou son code.</summary>
         /// <param name="item">Item d'outil.</param>
         /// <returns>Cible déclarée par le fournisseur.</returns>
@@ -60,8 +69,10 @@ namespace VBAi
             return string.Join(" · ", new[] { "Project", "Module", "ProcedureName", "ControlPath", "Path" }
                 .Select(key => Text(arguments, key)).Where(value => !string.IsNullOrWhiteSpace(value)));
         }
+
         /// <summary>Lit un champ texte optionnel.</summary><param name="item">Objet source.</param><param name="key">Champ demandé.</param><returns>Valeur ou chaîne vide.</returns>
         private static string Text(IDictionary<string, object> item, string key) => item != null && item.TryGetValue(key, out var value) ? Convert.ToString(value) : "";
+
         /// <summary>Borne les détails conservés dans la session.</summary><param name="text">Texte reçu.</param><returns>Au plus 16 384 caractères.</returns>
         internal static string Limit(string text) => string.IsNullOrEmpty(text) ? "" : text.Substring(0, Math.Min(text.Length, 16384));
     }

@@ -10,21 +10,29 @@ namespace VBAi
     /// <summary>Détecte les changements de projet, modules et références par interrogation incrémentale du VBE.</summary>
     internal sealed class VbeContextMonitor
     {
+
         /// <summary>Exécuteur des requêtes VBE utilisées pour lire l’inventaire.</summary>
         private readonly Func<Request, Response> execute;
+
         /// <summary>Sérialiseur utilisé pour comparer les réponses sous forme JSON.</summary>
         private readonly JavaScriptSerializer json = new JavaScriptSerializer { MaxJsonLength = 4 * 1024 * 1024 };
+
         /// <summary>Requêtes de lecture différées entre deux cycles d’interrogation.</summary>
         private readonly Queue<Request> pending = new Queue<Request>();
+
         /// <summary>Dernières empreintes observées par catégorie ou module.</summary>
         private readonly Dictionary<string, string> fingerprints = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+
         /// <summary>Clé du projet actuellement surveillé.</summary>
         private string scope;
+
         /// <summary>Signalé lorsqu’une empreinte précédemment observée change.</summary>
         internal event Action Changed;
+
         /// <summary>Crée le moniteur avec l’exécuteur des commandes hôte.</summary>
         /// <param name="execute">Fonction qui exécute une requête et retourne sa réponse.</param>
         internal VbeContextMonitor(Func<Request, Response> execute) { this.execute = execute; }
+
         /// <summary>Traite une étape de surveillance; chaque appel lit au plus une réponse de module différée.</summary>
         /// <param name="project">Projet courant, ou valeur vide lorsqu’aucun projet n’est sélectionné.</param>
         internal void Step(string project)
@@ -58,11 +66,13 @@ namespace VBAi
             }
             else Observe(request.Command, result);
         }
+
         /// <summary>Enregistre la réponse réussie après sérialisation de ses données.</summary>
         /// <param name="key">Clé stable de la catégorie observée.</param>
         /// <param name="response">Réponse à comparer, ignorée si elle a échoué.</param>
         private void Observe(string key, Response response)
         { if (response.Ok) ObserveValue(key, json.Serialize(response.Data)); }
+
         /// <summary>Mémorise une valeur et signale uniquement les changements après la première observation.</summary>
         /// <param name="key">Clé de l’élément surveillé.</param>
         /// <param name="value">Nouvelle empreinte sérialisée.</param>

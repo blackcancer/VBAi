@@ -9,23 +9,32 @@ using System.Web.Script.Serialization;
 
 namespace VBAi
 {
+
     /// <summary>Coordonne les opérations Git avec l’état courant du projet VBA et son dépôt local.</summary>
     internal sealed class MacroGitOperations : IDisposable
     {
+
         /// <summary>Dépôt Git associé à la portée du document.</summary>
         internal readonly MacroGitRepository Repository;
+
         /// <summary>Accès au projet VBE utilisé pour capturer et appliquer les sources.</summary>
         private readonly VbaGitProject project;
+
         /// <summary>Verrou exclusif conservé pendant la session d’opérations.</summary>
         private FileStream cacheLock;
+
         /// <summary>Callback facultatif appelé avant l’import pour présenter son résumé.</summary>
         internal Action<string> ImportPreview;
+
         /// <summary>Optional read-only modal-owner admission immediately before the existing native mutation boundary.</summary>
         internal Action ImportOwnerPreflight;
+
         /// <summary>Optional qualification-only guard on the commit returned by the one production pull fetch.</summary>
         internal string ExpectedIncomingCommit;
+
         /// <summary>Résout le répertoire de cache de la portée, notamment pour isoler les tests.</summary>
         internal static Func<string, string> CacheDirectory = MacroGitRepository.ResolveScopeDirectory;
+
         /// <summary>Crée un coordinateur pour le projet et le dépôt fournis.</summary>
         /// <param name="project">Projet VBA à lire ou modifier.</param>
         /// <param name="repository">Dépôt associé à ce projet.</param>
@@ -55,6 +64,7 @@ namespace VBAi
             }
             catch { held.Dispose(); throw; }
         }
+
         /// <summary>Libère le verrou de session détenu par ce coordinateur.</summary>
         public void Dispose() { cacheLock?.Dispose(); }
 
@@ -77,6 +87,7 @@ namespace VBAi
                 return BitConverter.ToString(hash.Hash).Replace("-", "").ToLowerInvariant();
             }
         }
+
         /// <summary>Capture le projet et renvoie son état, ses changements, branches, points de contrôle et fusion.</summary>
         /// <returns>Objet de statut destiné au protocole de l’agent.</returns>
         internal async Task<object> StatusAsync()
@@ -90,10 +101,12 @@ namespace VBAi
                 Synchronization = Repository.SynchronizationStatus()
             });
         }
+
         /// <summary>Récupère le contenu des deux côtés d’un conflit pour le chemin indiqué.</summary>
         /// <param name="path">Chemin du fichier en conflit.</param>
         /// <returns>Tâche produisant le contenu du conflit.</returns>
         internal Task<GitConflictContent> ConflictAsync(string path) { return Task.Run(() => Repository.ConflictContent(path)); }
+
         /// <summary>Refuse les opérations incompatibles avec une récupération ou fusion en attente.</summary>
         /// <param name="allowMerge"><see langword="true"/> pour autoriser les actions de progression de fusion.</param>
         /// <exception cref="InvalidOperationException">Une récupération interrompue doit être restaurée ou une fusion doit être terminée.</exception>
@@ -102,6 +115,7 @@ namespace VBAi
             if (Repository.RecoveryPending) throw new InvalidOperationException(UiText.Get("Restore the interrupted import before continuing."));
             if (!allowMerge && Repository.PendingMerge != null) throw new InvalidOperationException(UiText.Get("Complete or abort the current merge."));
         }
+
         /// <summary>Vérifie que les sources locales correspondent à la référence de base du dépôt.</summary>
         /// <param name="live">Instantané courant du projet.</param>
         /// <exception cref="InvalidOperationException">Le dépôt n’a pas de base ou des changements locaux sont présents.</exception>
@@ -110,6 +124,7 @@ namespace VBAi
             var baseline = Repository.Read(Repository.Resolve(MacroGitRepository.Baseline));
             if (baseline == null || !live.SameAs(baseline)) throw new InvalidOperationException(UiText.Get("Local changes exist. Commit them, or create a checkpoint and restore a committed state before switching branches or merging."));
         }
+
         /// <summary>Exécute une action Git après vérification de l’état attendu du projet.</summary>
         /// <param name="action">Identifiant de l’action à exécuter.</param>
         /// <param name="expectedState">Empreinte d’état attendue, ou <see langword="null"/> si aucune n’est fournie.</param>
@@ -196,6 +211,7 @@ namespace VBAi
             }
             return await StatusAsync();
         }
+
         /// <summary>Applique un instantané au projet après sauvegarde et vérifie l’état importé.</summary>
         /// <param name="target">Instantané à importer.</param>
         /// <param name="expected">Instantané courant attendu avant mutation.</param>

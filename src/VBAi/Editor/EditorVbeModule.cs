@@ -5,29 +5,38 @@ using System.Runtime.InteropServices;
 
 namespace VBAi
 {
+
     /// <summary>All methods are called on the owning VBE UI thread. Bind to COM identity, not a mutable module name.</summary>
     internal sealed class EditorVbeModule : IEditorModule
     {
+
         /// <summary>Instance VBE qui possède le projet et le composant.</summary>
         private readonly object vbe, project;
+
         /// <summary>Composant VBComponent suivi par son identité COM.</summary>
         private object component;
+
         /// <summary>Clé de session utilisée lorsque le projet ne possède pas de chemin exploitable.</summary>
         private readonly string sessionKey = Guid.NewGuid().ToString("N");
+
         /// <summary>Fenêtre CodePane ouverte pour garder le module natif disponible.</summary>
         private object nativeWindow;
+
         /// <summary>Point de contrôle facultatif appelé pendant le remplacement d’un composant à attributs.</summary>
         /// <value>Délégué de diagnostic, normalement nul en production.</value>
         internal Action<string> AttributeRewriteCheckpoint { get; set; } // Fault injection for recovery qualification; unset in production.
+
         /// <summary>Crée l’adaptateur d’un composant dans son projet VBE.</summary>
         /// <param name="vbe">Instance VBE propriétaire.</param>
         /// <param name="project">Projet auquel appartient le composant.</param>
         /// <param name="component">Composant dont le code sera lu ou synchronisé.</param>
         internal EditorVbeModule(object vbe, object project, object component)
         { this.vbe = vbe; this.project = project; this.component = component; }
+
         /// <summary>Obtient le nom du projet et du composant pour l’affichage.</summary>
         /// <value>Nom du projet suivi du nom du composant.</value>
         public string Name => (string)((dynamic)project).Name + " · " + (string)((dynamic)component).Name;
+
         /// <summary>Obtient une clé stable fondée sur le chemin du projet ou sur la session et le nom du composant.</summary>
         /// <value>Clé utilisée pour restaurer le brouillon associé au module.</value>
         public string Key
@@ -39,24 +48,30 @@ namespace VBAi
                 return (!string.IsNullOrWhiteSpace(path) && Path.IsPathRooted(path) ? Path.GetFullPath(path).ToUpperInvariant() : sessionKey) + "|" + (string)((dynamic)component).Name;
             }
         }
+
         /// <summary>Indique si un objet VBComponent désigne le composant suivi par cet adaptateur.</summary>
         /// <param name="other">Composant à comparer par identité COM.</param>
         /// <returns><see langword="true"/> si les objets représentent le même composant.</returns>
         internal bool IsComponent(object other) => Same(component, other);
+
         /// <summary>Obtient la référence au composant suivi.</summary>
         /// <value>Objet VBComponent courant.</value>
         internal object Component => component;
+
         /// <summary>Obtient le projet associé au composant.</summary>
         /// <value>Objet VBProject d’origine.</value>
         internal object Project => project;
+
         /// <summary>Obtient l’instance VBE propriétaire.</summary>
         /// <value>Objet VBE utilisé par l’adaptateur.</value>
         internal object Vbe => vbe;
+
         /// <summary>Récupère l’identifiant du processus propriétaire d’une fenêtre Win32.</summary>
         /// <param name="window">Handle de fenêtre à inspecter.</param>
         /// <param name="processId">Reçoit l’identifiant du processus.</param>
         /// <returns>Identifiant du thread propriétaire.</returns>
         [DllImport("user32.dll")] private static extern uint GetWindowThreadProcessId(IntPtr window, out uint processId);
+
         /// <summary>Obtient l’identifiant du processus hôte après validation des références VBE.</summary>
         /// <value>Identifiant du processus qui possède la fenêtre principale de VBE.</value>
         internal int HostProcessId
@@ -70,15 +85,18 @@ namespace VBAi
                 return checked((int)pid);
             }
         }
+
         /// <summary>Obtient le nom courant du composant VBA.</summary>
         /// <value>Nom VBComponent.Name.</value>
         internal string ModuleName => (string)((dynamic)component).Name;
+
         /// <summary>Obtient le chemin du projet lorsque disponible, sinon son nom.</summary>
         /// <value>Identifiant lisible du projet pour les diagnostics et la capture des formulaires.</value>
         internal string ProjectName
         {
             get { try { string path = ((dynamic)project).FileName; if (!string.IsNullOrEmpty(path)) return path; } catch { } return (string)((dynamic)project).Name; }
         }
+
         /// <summary>Lit les sources des composants du projet en laissant le thread hôte traiter les messages entre lectures.</summary>
         /// <param name="cancellation">Stops obsolete language requests between native module reads.</param>
         /// <param name="urgentCommand">Allows a queued debugger operation to preempt background catalog reads.</param>
@@ -96,6 +114,7 @@ namespace VBAi
             }
             return sources.ToArray();
         }
+
         /// <summary>Crée un adaptateur pour un autre composant du même projet, recherché sans tenir compte de la casse.</summary>
         /// <param name="name">Nom du composant frère.</param>
         /// <returns>Adaptateur lié au composant trouvé.</returns>
@@ -106,18 +125,24 @@ namespace VBAi
                 if (string.Equals((string)((dynamic)item).Name, name, StringComparison.OrdinalIgnoreCase)) return new EditorVbeModule(vbe, project, item);
             throw new InvalidOperationException("The VBA module was removed.");
         }
+
         /// <summary>Ouvre et rend visible la fenêtre CodePane du composant suivi.</summary>
         internal void EnsureNativeWindow()
         {
             RetainNativeWindow();
             ((dynamic)nativeWindow).Visible = true;
         }
+
         /// <summary>Retains an existing backing pane without showing, activating or navigating it during passive following.</summary>
         internal void RetainNativeWindow()
         { Validate(); nativeWindow = ((dynamic)component).CodeModule.CodePane.Window; }
 
         /// <summary>Reuses exact COM identity for coherent native window/project activation guards.</summary>
+        /// <param name="first">object that supplies the first for this operation.</param>
+        /// <param name="second">object that supplies the second for this operation.</param>
+        /// <returns>Boolean indicating the result of the check for same identity on editor vbe module.</returns>
         internal static bool SameIdentity(object first, object second) => Same(first, second);
+
         /// <summary>Ferme la fenêtre CodePane détenue lorsque l’hôte l’a encore ouverte.</summary>
         internal void CloseNativeWindow()
         {
@@ -127,6 +152,7 @@ namespace VBAi
             catch (InvalidComObjectException) { } // Host shutdown can detach the retained pane's RCW first.
             finally { nativeWindow = null; }
         }
+
         /// <summary>Compare deux références COM par leur pointeur IUnknown, avec prise en charge des références identiques.</summary>
         /// <param name="a">Première référence.</param>
         /// <param name="b">Seconde référence.</param>
@@ -138,6 +164,7 @@ namespace VBAi
             IntPtr x = Marshal.GetIUnknownForObject(a), y = Marshal.GetIUnknownForObject(b);
             try { return x == y; } finally { Marshal.Release(x); Marshal.Release(y); }
         }
+
         /// <summary>Vérifie que le projet et le composant existent encore dans VBE.</summary>
         /// <exception cref="InvalidOperationException">Le projet est fermé ou le composant a été supprimé.</exception>
         private void Validate()
@@ -149,10 +176,12 @@ namespace VBAi
             foreach (object c in ((dynamic)project).VBComponents) if (Same(c, component)) { found = true; break; }
             if (!found) throw new InvalidOperationException("The VBA module was removed. Your draft is preserved.");
         }
+
         /// <summary>Indique si le projet est en mode de conception et déverrouillé.</summary>
         /// <value><see langword="true"/> lorsque le code peut être modifié dans VBE.</value>
         public bool CanWrite
         { get { Validate(); return ((int)((dynamic)project).Mode == 2 || (int)((dynamic)project).Mode == 1) && (int)((dynamic)project).Protection == 0; } }
+
         /// <summary>Lit toutes les lignes du module après validation de son identité dans le projet.</summary>
         /// <returns>Code source du module, ou chaîne vide s’il ne contient aucune ligne.</returns>
         public string Read()
@@ -161,12 +190,14 @@ namespace VBAi
             int count = (int)module.CountOfLines;
             return count == 0 ? "" : (string)module.Lines[1, count];
         }
+
         /// <summary>Remplace le code après vérification qu’il correspond toujours à la version attendue.</summary>
         /// <param name="expected">Source native qui doit être encore présente.</param>
         /// <param name="text">Nouvelle source à écrire.</param>
         /// <returns>Source native relue après l’écriture.</returns>
         public string Write(string expected, string text)
         { return WritePrepared(expected, text, null); }
+
         /// <summary>Applique un plan de synchronisation validé et restaure la source en cas d’échec de l’édition native.</summary>
         /// <param name="expected">Source native attendue avant l’écriture.</param>
         /// <param name="text">Nouvelle source souhaitée.</param>
@@ -227,6 +258,7 @@ namespace VBAi
                 throw new InvalidOperationException("Code synchronization failed; the original source was restored.", failure);
             }
         }
+
         /// <summary>Réécrit les attributs masqués d’un module exporté lorsque le remplacement direct les perdrait.</summary>
         /// <param name="before">Source présente avant l’édition.</param>
         /// <param name="after">Source demandée après l’édition.</param>
@@ -389,6 +421,7 @@ namespace VBAi
                 throw new InvalidOperationException("Attributed component replacement failed; original source retained or restored.", failure);
             }
         }
+
         /// <summary>Affiche le CodePane natif et sélectionne la position demandée après validation du composant.</summary>
         /// <param name="line">Ligne à afficher, ramenée aux limites du module.</param>
         /// <param name="column">Colonne à afficher, avec une valeur minimale de un.</param>
@@ -401,6 +434,7 @@ namespace VBAi
             ((dynamic)vbe).ActiveCodePane = pane;
             pane.SetSelection(line, column, line, column);
         }
+
         /// <summary>Empêche une édition CodeModule qui supprimerait des attributs de procédure masqués.</summary>
         /// <param name="before">Source avant édition.</param>
         /// <param name="edit">Plage de lignes et texte de remplacement.</param>
@@ -419,6 +453,7 @@ namespace VBAi
             }
             finally { Directory.Delete(directory, true); }
         }
+
         /// <summary>Vérifie qu’un diff n’intersecte pas les déclarations portant des métadonnées VBA invisibles dans CodeModule.</summary>
         /// <param name="exported">Export du composant contenant les lignes Attribute.</param>
         /// <param name="before">Source exposée par CodeModule avant édition.</param>

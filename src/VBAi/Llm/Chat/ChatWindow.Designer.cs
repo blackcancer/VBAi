@@ -1,154 +1,229 @@
 namespace VBAi
 {
+
     /// <summary>Fenêtre de conversation et commandes de son concepteur WinForms.</summary>
     internal sealed partial class ChatWindow
     {
-        /// <summary>Conteneur des composants WinForms dont la durée de vie est gérée par le formulaire.</summary>
+
+        /// <summary>Container that owns the disposable components created by the WinForms Designer.</summary>
         private System.ComponentModel.IContainer components = null;
-        /// <summary>Gestionnaire des infobulles attachées aux commandes du formulaire.</summary>
+
+        /// <summary>ToolTip component used to show full text for transcript controls.</summary>
         private System.Windows.Forms.ToolTip toolTips;
+
         /// <summary>Menu des commandes de configuration et d’intégration.</summary>
         private System.Windows.Forms.ContextMenuStrip optionsMenu;
+
         /// <summary>Commande qui ouvre les paramètres de l’application.</summary>
         private System.Windows.Forms.ToolStripMenuItem configure;
-        /// <summary>Stores the project access used by ChatWindow.</summary>
+
+        /// <summary>Maintains the project access state for chat window.</summary>
         private System.Windows.Forms.ToolStripMenuItem projectAccess;
-        /// <summary>Stores the resume turn used by ChatWindow.</summary>
+
+        /// <summary>Maintains the resume turn state for chat window.</summary>
         private System.Windows.Forms.ToolStripMenuItem resumeTurn;
+
         /// <summary>Commande de menu qui ouvre les informations de l’application.</summary>
         private System.Windows.Forms.ToolStripMenuItem about;
+
         /// <summary>Séparateur placé avant la commande d’informations.</summary>
         private System.Windows.Forms.ToolStripSeparator aboutSeparator;
+
         /// <summary>Commande qui actualise les modèles du fournisseur sélectionné.</summary>
         private System.Windows.Forms.ToolStripMenuItem refreshModels;
+
         /// <summary>Commande de gestion de l’ancrage de la fenêtre.</summary>
         private System.Windows.Forms.ToolStripMenuItem docking;
+
         /// <summary>Commande qui ouvre les fonctions GitHub.</summary>
         private System.Windows.Forms.ToolStripMenuItem github;
+
         /// <summary>Disposition racine du contenu de la fenêtre.</summary>
         private System.Windows.Forms.TableLayoutPanel rootLayout;
+
         /// <summary>Disposition du titre de la conversation et des actions de fenêtre.</summary>
         private System.Windows.Forms.TableLayoutPanel headingLayout;
+
         /// <summary>Libellé du nom de l’application.</summary>
         private System.Windows.Forms.Label appTitle;
+
         /// <summary>Libellé du titre de la session active.</summary>
         private System.Windows.Forms.Label sessionTitle;
+
         /// <summary>Commande de création d’une conversation.</summary>
         private VBAi.ChatActionButton newChat;
+
         /// <summary>Commande d’accès aux options.</summary>
         private VBAi.ChatActionButton options;
+
         /// <summary>Disposition du sélecteur de portée de projet et de l’historique.</summary>
         private System.Windows.Forms.TableLayoutPanel scopeLayout;
+
         /// <summary>Commande d’affichage de l’historique.</summary>
         private VBAi.ChatActionButton history;
+
         /// <summary>Sélecteur du projet auquel la conversation est liée.</summary>
         private VBAi.ChatChoiceBox scopePicker;
+
         /// <summary>Disposition des commandes de mode et de workflow.</summary>
         private System.Windows.Forms.TableLayoutPanel workflowLayout;
+
         /// <summary>Approval policy for the next VBA actions.</summary>
         private VBAi.ChatChoiceBox approvalPicker;
+
         /// <summary>Compact model and effort summary.</summary>
         private VBAi.ChatActionButton modelSummary;
+
         /// <summary>Automatic verification command.</summary>
         private System.Windows.Forms.ToolStripMenuItem verifyChanges;
+
         /// <summary>Sélecteur du mode de conversation.</summary>
         private VBAi.ChatChoiceBox modePicker;
+
         /// <summary>Commande de sélection de code ou de référence.</summary>
         private VBAi.ChatActionButton selection;
+
         /// <summary>Commande de compilation du projet courant.</summary>
         private VBAi.ChatActionButton compile;
+
         /// <summary>Option de vérification après une modification de code.</summary>
         private System.Windows.Forms.CheckBox verifyAfterEdit;
+
         /// <summary>Conteneur de la conversation et de ses vues.</summary>
         private System.Windows.Forms.Panel conversationPanel;
+
         /// <summary>Panneau de recherche et de gestion des sessions.</summary>
         private System.Windows.Forms.Panel historyPanel;
+
         /// <summary>Disposition des contrôles de l’historique.</summary>
         private System.Windows.Forms.TableLayoutPanel historyLayout;
+
         /// <summary>Libellé de la liste des conversations.</summary>
         private System.Windows.Forms.Label historyLabel;
+
         /// <summary>Champ de filtrage des sessions.</summary>
         private VBAi.UiTextBox historySearch;
+
         /// <summary>Liste des sessions de la portée courante.</summary>
         private VBAi.UiListBox sessionList;
+
         /// <summary>Option d’inclusion des sessions archivées.</summary>
         private System.Windows.Forms.CheckBox showArchived;
+
         /// <summary>Champ de modification du titre de la conversation.</summary>
         private VBAi.UiTextBox chatTitleEditor;
+
         /// <summary>Disposition des actions appliquées à la session.</summary>
         private System.Windows.Forms.FlowLayoutPanel historyActions;
+
         /// <summary>Commande de renommage de la session.</summary>
         private VBAi.ChatActionButton rename;
+
         /// <summary>Commande d’archivage ou de restauration de la session.</summary>
         private VBAi.ChatActionButton archive;
+
         /// <summary>Commande d’épinglage de la session.</summary>
         private VBAi.ChatActionButton pin;
+
         /// <summary>Deletes the selected local conversation.</summary>
         private VBAi.ChatActionButton deleteSession;
+
         /// <summary>Commande d’export de la conversation.</summary>
         private VBAi.ChatActionButton export;
+
         /// <summary>Commande d’affichage ou de masquage de la mémoire de projet.</summary>
         private VBAi.ChatActionButton memoryToggle;
+
         /// <summary>Groupe d’édition de la mémoire de projet.</summary>
         private System.Windows.Forms.GroupBox memoryPanel;
+
         /// <summary>Disposition du champ et des commandes de mémoire.</summary>
         private System.Windows.Forms.TableLayoutPanel memoryLayout;
+
         /// <summary>Champ d’édition de la mémoire de projet.</summary>
         private VBAi.UiTextBox memoryEditor;
+
         /// <summary>Commande d’enregistrement de la mémoire de projet.</summary>
         private VBAi.ChatActionButton saveMemory;
+
         /// <summary>Option d’inclusion de la mémoire dans le prochain message.</summary>
         private System.Windows.Forms.CheckBox attachMemory;
+
         /// <summary>Panneau contenant le transcript de conversation.</summary>
         private System.Windows.Forms.Panel transcriptPanel;
+
         /// <summary>Libellé affiché avant la création de la vue du transcript.</summary>
         private System.Windows.Forms.Label transcriptPlaceholder;
+
         /// <summary>Hôte WinForms du transcript WPF.</summary>
         private VBAi.ChatContentHost transcriptHost;
+
         /// <summary>Conteneur de composition du message et de ses commandes.</summary>
         private VBAi.ChatComposerPanel composerLayout;
+
         /// <summary>Disposition des références et pièces jointes sélectionnées.</summary>
         private System.Windows.Forms.FlowLayoutPanel contextChips;
+
         /// <summary>Contains the transcript rows for messages waiting to be sent.</summary>
         private System.Windows.Forms.FlowLayoutPanel pendingMessagesPanel;
+
         /// <summary>Panneau du champ de saisie du message.</summary>
         private System.Windows.Forms.Panel promptPanel;
+
         /// <summary>Libellé indicatif du champ de saisie.</summary>
         private System.Windows.Forms.Label promptPlaceholder;
+
         /// <summary>Hôte WinForms du compositeur WPF.</summary>
         private VBAi.ChatInputView promptHost;
+
         /// <summary>Disposition des commandes du compositeur.</summary>
         private System.Windows.Forms.TableLayoutPanel composerActions;
+
         /// <summary>Commande d’ajout ou de sélection d’un module.</summary>
         private VBAi.ChatActionButton modules;
+
         /// <summary>Commande d’ajout ou de sélection d’une procédure.</summary>
         private VBAi.ChatActionButton methods;
+
         /// <summary>Commande d’envoi du message.</summary>
         private VBAi.ChatActionButton send;
+
         /// <summary>Commande d’affichage du contexte de conversation.</summary>
         private VBAi.ChatActionButton contextToggle;
+
         /// <summary>Panneau contenant l’aperçu du contexte courant.</summary>
         private System.Windows.Forms.Panel contextPanel;
+
         /// <summary>Disposition des éléments d’aperçu du contexte.</summary>
         private System.Windows.Forms.FlowLayoutPanel contextPreview;
+
         /// <summary>Disposition des sélecteurs de fournisseur, modèle et effort.</summary>
         private System.Windows.Forms.TableLayoutPanel providerLayout;
+
         /// <summary>Sélecteur du fournisseur LLM.</summary>
         private VBAi.ChatChoiceBox providerPicker;
+
         /// <summary>Sélecteur du modèle du fournisseur.</summary>
         private VBAi.ChatChoiceBox modelPicker;
+
         /// <summary>Sélecteur du niveau d’effort du modèle.</summary>
         private VBAi.ChatChoiceBox effortPicker;
+
         /// <summary>Disposition du pied de fenêtre.</summary>
         private System.Windows.Forms.TableLayoutPanel footerLayout;
+
         /// <summary>Commande de retour au dernier message du transcript.</summary>
         private VBAi.ChatActionButton jumpToLatest;
+
         /// <summary>Commande d’affichage des modifications de code de la session.</summary>
         private VBAi.ChatActionButton changes;
+
         /// <summary>Disposition du statut et de l’indicateur d’activité.</summary>
         private System.Windows.Forms.TableLayoutPanel statusLayout;
+
         /// <summary>Libellé des messages d’état de l’interface.</summary>
         private System.Windows.Forms.Label status;
+
         /// <summary>Indicateur de progression de l’activité en cours.</summary>
         private System.Windows.Forms.ProgressBar activityBar;
 
@@ -165,8 +240,7 @@ namespace VBAi
         }
 
         #region Windows Form Designer generated code
-
-        /// <summary>Crée les contrôles du formulaire et configure leur disposition et leurs événements.</summary>
+        /// <summary>Creates and configures the chat window controls serialized by the WinForms Designer.</summary>
         private void InitializeComponent()
         {
             this.components = new System.ComponentModel.Container();

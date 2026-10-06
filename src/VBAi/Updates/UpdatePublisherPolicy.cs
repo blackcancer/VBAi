@@ -4,13 +4,18 @@ using System.Security.Cryptography.X509Certificates;
 
 namespace VBAi
 {
+
     /// <summary>Release-owned certificate pins. An update feed or pending job cannot grant trust.</summary>
     internal static class UpdatePublisherPolicy
     {
         // Intentionally empty until the maintainer supplies and approves a signing certificate.
         // Certificate rotation must ship an explicit overlap policy in a trusted product build.
+        /// <summary>Maintains the certificate sha256 state for update publisher policy.</summary>
         private static readonly string[] CertificateSha256 = new string[0];
 
+        /// <summary>Handles accepts for update publisher policy.</summary>
+        /// <param name="path">Path used for the path being processed.</param>
+        /// <returns>Boolean indicating the result of the check for accepts on update publisher policy.</returns>
         internal static bool Accepts(string path)
         {
             if (CertificateSha256.Length == 0) return false;

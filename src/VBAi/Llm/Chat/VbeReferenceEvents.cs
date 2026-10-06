@@ -7,16 +7,22 @@ namespace VBAi
     /// <summary>Observe les ajouts et retraits de références du projet VBA courant.</summary>
     internal sealed class VbeReferenceEvents : IDisposable
     {
+
         /// <summary>IID de l’interface COM d’événements de références VBIDE.</summary>
         private static readonly Guid EventInterface = new Guid("0002E118-0000-0000-C000-000000000046");
+
         /// <summary>Opération d’abonnement COM.</summary>
         private readonly Action<object, Guid, int, Delegate> add;
+
         /// <summary>Opération de désabonnement COM.</summary>
         private readonly Action<object, Guid, int, Delegate> remove;
+
         /// <summary>Callback natif relayé vers l’invalidation du contexte géré.</summary>
         private readonly Action<object> handler;
+
         /// <summary>Projet COM actuellement observé.</summary>
         private object source;
+
         /// <summary>Indicateurs des deux abonnements et de la libération.</summary>
         private bool added, removed, disposed;
 
@@ -60,6 +66,7 @@ namespace VBAi
             added = removed = false;
             source = null;
         }
+
         /// <summary>Retire un identifiant d’événement sans interrompre le nettoyage en cas d’erreur COM.</summary>
         /// <param name="id">Identifiant du membre événementiel à retirer.</param>
         private void TryRemove(int id)
@@ -67,6 +74,7 @@ namespace VBAi
             try { remove(source, EventInterface, id, handler); }
             catch (Exception error) { LoadLog.Write("Reference event detach: " + error.Message); }
         }
+
         /// <summary>Arrête définitivement l’observation et libère les abonnements COM.</summary>
         public void Dispose() { if (disposed) return; disposed = true; Detach(); }
     }

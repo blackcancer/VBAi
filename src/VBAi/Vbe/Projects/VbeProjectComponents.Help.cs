@@ -5,9 +5,11 @@ using System.Runtime.InteropServices;
 
 namespace VBAi
 {
+
     /// <summary>Ouvre l’aide locale configurée dans un projet VBA par l’API Windows HTML Help.</summary>
     internal sealed partial class VbeProjectComponents
     {
+
         /// <summary>Appelle l’API native HTML Help pour un fichier et un contexte de rubrique.</summary>
         /// <param name="owner">Handle de la fenêtre propriétaire, nul pour cet appel.</param>
         /// <param name="file">Chemin du fichier d’aide CHM.</param>
@@ -19,12 +21,13 @@ namespace VBAi
 
         /// <summary>Frontière de l'aide CHM native ; un handle n'atteste pas la lecture de la rubrique.</summary>
         internal Func<string, uint, IntPtr> HelpLauncher = (path, context) => NativeHelp(IntPtr.Zero, path, context == 0 ? 0U : 15U, new UIntPtr(context));
+
         /// <summary>Invokes HtmlHelp by default; permits owned boundary checks without opening a help window.</summary>
         internal static Func<IntPtr, string, uint, UIntPtr, IntPtr> NativeHelp = HtmlHelp;
 
-                /// <summary>Ouvre le fichier CHM et le contexte configurés dans le projet après contrôle de version.</summary>
-                /// <param name="request">Requête contenant le projet et la version attendue de ses propriétés.</param>
-                /// <returns>Le chemin et le contexte invoqués, ainsi que l’indication de création d’une fenêtre.</returns>
+        /// <summary>Ouvre le fichier CHM et le contexte configurés dans le projet après contrôle de version.</summary>
+        /// <param name="request">Requête contenant le projet et la version attendue de ses propriétés.</param>
+        /// <returns>Le chemin et le contexte invoqués, ainsi que l’indication de création d’une fenêtre.</returns>
         public object OpenProjectHelp(Request request)
         {
             if (request == null || string.IsNullOrWhiteSpace(request.Project) || string.IsNullOrWhiteSpace(request.ExpectedProjectVersion))

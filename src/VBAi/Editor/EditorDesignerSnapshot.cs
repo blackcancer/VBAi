@@ -9,6 +9,7 @@ namespace VBAi
     /// <summary>Crée une empreinte sérialisée des propriétés stables du concepteur UserForm et de ses contrôles.</summary>
     internal static class EditorDesignerSnapshot
     {
+
         /// <summary>Sérialise les propriétés de formulaire et de contrôles dans un ordre déterministe.</summary>
         /// <param name="tree">Arbre de Designer produit par le lecteur des formulaires.</param>
         /// <returns>JSON des propriétés pertinentes, triées par chemin et nom.</returns>
@@ -21,6 +22,7 @@ namespace VBAi
             Nodes(root, "Controls", rows);
             return json.Serialize(rows);
         }
+
         /// <summary>Parcourt récursivement les contrôles connus et ajoute leurs propriétés à l’empreinte.</summary>
         /// <param name="owner">Nœud contenant éventuellement une collection d’enfants.</param>
         /// <param name="key">Nom de la propriété qui contient cette collection.</param>
@@ -38,6 +40,7 @@ namespace VBAi
                 Properties(node, path, rows); Nodes(node, "Children", rows);
             }
         }
+
         /// <summary>Ajoute les propriétés persistées d’un nœud et refuse les valeurs opaques qui ne peuvent pas être vérifiées.</summary>
         /// <param name="owner">Nœud contenant la collection de propriétés.</param>
         /// <param name="path">Chemin stable du formulaire ou du contrôle.</param>

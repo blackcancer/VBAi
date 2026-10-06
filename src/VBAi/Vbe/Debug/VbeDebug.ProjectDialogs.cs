@@ -4,9 +4,11 @@ using System.Threading;
 
 namespace VBAi
 {
+
     /// <summary>Ouvre les propriétés natives d’un projet après vérification de son identité active.</summary>
     internal sealed partial class VbeDebug
     {
+
         /// <summary>Programme l'ouverture du dialogue natif des propriétés du projet actif exact.</summary>
         /// <param name="request">Projet, version attendue et légende exacte de la commande 2578.</param>
         /// <param name="versionCheck">Garde de version du projet appelée avant programmation puis avant exécution UI.</param>
@@ -50,9 +52,9 @@ namespace VBAi
                 ControlId = 2578, ControlCaption = captured.ControlCaption };
         }
 
-                /// <summary>Résout une commande différée par chemin/ID/légende/type sans conserver un proxy Office instable.</summary>
-                /// <param name="captured">Commande native capturée avant la programmation du travail UI.</param>
-                /// <returns>Unique commande encore présente avec le même chemin, identifiant, légende et type.</returns>
+        /// <summary>Résout une commande différée par chemin/ID/légende/type sans conserver un proxy Office instable.</summary>
+        /// <param name="captured">Commande native capturée avant la programmation du travail UI.</param>
+        /// <returns>Unique commande encore présente avec le même chemin, identifiant, légende et type.</returns>
         private CommandEntry ResolvePostedNativeCommand(CommandEntry captured)
         {
             var matches = EnumerateCommands().Where(entry => entry.Id == captured.Id && entry.Enabled &&
@@ -65,10 +67,10 @@ namespace VBAi
             return matches[0];
         }
 
-                /// <summary>Exige l'identité active exacte, le mode conception, l'absence de verrouillage et la version attendue.</summary>
-                /// <param name="selected">Projet sélectionné au moment du contrôle.</param>
-                /// <param name="request">Identité et version attendues du projet.</param>
-                /// <param name="versionCheck">Contrôle la version de projet demandée.</param>
+        /// <summary>Exige l'identité active exacte, le mode conception, l'absence de verrouillage et la version attendue.</summary>
+        /// <param name="selected">Projet sélectionné au moment du contrôle.</param>
+        /// <param name="request">Identité et version attendues du projet.</param>
+        /// <param name="versionCheck">Contrôle la version de projet demandée.</param>
         private void RequireProjectPropertiesSelection(object selected, Request request, Func<Request, bool> versionCheck)
         {
             dynamic project = selected;

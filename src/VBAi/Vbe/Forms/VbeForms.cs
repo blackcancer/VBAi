@@ -16,16 +16,20 @@ using System.Web.Script.Serialization;
 
 namespace VBAi
 {
-        /// <summary>Expose les opérations d’inspection et de modification des UserForms du VBE.</summary>
+
+    /// <summary>Expose les opérations d’inspection et de modification des UserForms du VBE.</summary>
     internal sealed partial class VbeForms
     {
+
         /// <summary>Instance VBE utilisée pour résoudre les projets à inspecter.</summary>
         private readonly dynamic vbe;
+
         /// <summary>Fonction injectable qui calcule l’empreinte de la sérialisation de l’arbre.</summary>
         internal static Func<byte[], byte[]> HashTree = bytes =>
         {
             using (var sha = SHA256.Create()) return sha.ComputeHash(bytes);
         };
+
         /// <summary>ProgIDs des contrôles MSForms pris en charge par les opérations de création.</summary>
         private static readonly HashSet<string> BuiltInControls = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
         {

@@ -1,32 +1,46 @@
 namespace VBAi
 {
+
     /// <summary>Vue de saisie du dépôt cible, du titre, du corps et du mode brouillon d’une pull request.</summary>
     public sealed partial class GitHubPullComposeView
     {
+
         /// <summary>Conteneur en grille des champs et commandes de composition.</summary>
         internal System.Windows.Forms.TableLayoutPanel composeLayout;
+
         /// <summary>Choix de la branche cible de la pull request.</summary>
         internal VBAi.ThemedComboBox targetBranch;
+
         /// <summary>Libellé affichant la branche source sélectionnée.</summary>
         internal System.Windows.Forms.Label sourceLabel;
+
         /// <summary>Saisie du titre de la pull request.</summary>
         internal VBAi.UiTextBox pullTitle;
+
         /// <summary>Saisie multiligne de la description de la pull request.</summary>
         internal VBAi.UiTextBox pullBody;
+
         /// <summary>Option de création de la pull request comme brouillon.</summary>
         internal System.Windows.Forms.CheckBox draft;
+
         /// <summary>Commande de création de la pull request.</summary>
         internal VBAi.ThemedButton createPull;
+
         /// <summary>Libellé du sélecteur de branche cible.</summary>
         internal System.Windows.Forms.Label targetLabel;
+
         /// <summary>Libellé du champ de titre.</summary>
         internal System.Windows.Forms.Label titleLabel;
+
         /// <summary>Libellé du champ de description.</summary>
         internal System.Windows.Forms.Label bodyLabel;
+
         /// <summary>Conteneur des composants managés de la vue.</summary>
         private System.ComponentModel.IContainer components;
+
         /// <summary>Fournit les info-bulles des contrôles.</summary>
         private System.Windows.Forms.ToolTip toolTips;
+
         /// <summary>Libère les composants de la vue avant son contrôle natif.</summary>
         /// <param name="disposing">Indique si les ressources managées doivent être libérées.</param>
         protected override void Dispose(bool disposing)

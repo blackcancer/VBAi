@@ -8,15 +8,20 @@ using System.Windows.Controls;
 
 namespace VBAi
 {
+
     /// <summary>Gère la collecte, vérification, prévisualisation et restauration du contexte de conversation.</summary>
     internal sealed partial class ChatWindow
     {
+
         /// <summary>Pièces jointes sélectionnées et en attente du prochain message.</summary>
         private readonly List<ChatAttachment> draftAttachments = new List<ChatAttachment>();
+
         /// <summary>Identifiant du tour de conversation courant.</summary>
         private string activeTurnId;
+
         /// <summary>Notifie l’hôte qu’un changement d’attachement de la fenêtre est demandé.</summary>
         public event Action DockRequested;
+
         /// <summary>Affiche une explication lorsque le VBE ne peut pas attacher la fenêtre.</summary>
         /// <param name="reason">Raison technique de l’échec de l’attachement.</param>
         public void ReportDockFailure(string reason) { SetStatus(UiText.Get("Docking unavailable: ") + reason + UiText.Get(" · check the COM control installation.")); }
@@ -30,10 +35,10 @@ namespace VBAi
         }
 
         /// <summary>Combines the selected files and captured memory into the request attachment payload.</summary>
-        /// <param name="question">Text containing the question.</param>
-        /// <param name="references">The references used by this operation.</param>
-        /// <param name="drafts">The drafts used by this operation.</param>
-        /// <returns>The result produced by this operation.</returns>
+        /// <param name="question">Text that supplies the question value. Use the format required by the calling operation.</param>
+        /// <param name="references">i enumerable&lt;vbe chat reference&gt; that supplies the references for this operation.</param>
+        /// <param name="drafts">i enumerable&lt;chat attachment&gt; that supplies the drafts for this operation.</param>
+        /// <returns>chat attachment[] produced by the operation for prepare request attachments on chat window.</returns>
         private ChatAttachment[] PrepareRequestAttachments(string question, IEnumerable<VbeChatReference> references, IEnumerable<ChatAttachment> drafts)
         {
             var attachments = new List<ChatAttachment>();
@@ -158,9 +163,9 @@ namespace VBAi
             prompt.Text = command + " "; prompt.CaretIndex = prompt.Text.Length; prompt.Focus();
         }
 
-        /// <summary>Performs the prepare monaco action operation for ChatWindow.</summary>
-        /// <param name="command">Text containing the command.</param>
-        /// <param name="attachment">The attachment used by this operation.</param>
+        /// <summary>Handles prepare monaco action for chat window.</summary>
+        /// <param name="command">Text that supplies the command value. Use the format required by the calling operation.</param>
+        /// <param name="attachment">chat attachment that supplies the attachment for this operation.</param>
         internal void PrepareMonacoAction(string command, ChatAttachment attachment)
         {
             if (busy) { SetStatus(UiText.Get("Wait for the response to finish before preparing an action.")); return; }
