@@ -6,15 +6,15 @@ using Microsoft.Win32;
 namespace VBAi
 {
 
-    /// <summary>Owns the vbe test explorer service state and operations.</summary>
+    /// <summary>Implements owner-thread native test dispatch and verifies callback registration.</summary>
     internal sealed partial class VbeTestExplorerService
     {
 
-        /// <summary>Handles prefer returned values for vbe test explorer service.</summary>
-        /// <returns>Boolean indicating the result of the check for prefer returned values on vbe test explorer service.</returns>
+        /// <summary>Chooses returned-value assertions when native dispatch cannot provide trustworthy callback results.</summary>
+        /// <returns>True for a non-native execution host, or when the native runtime registration is invalid.</returns>
         private bool PreferReturnedValues() => IsExecutionHost() && (!IsNativeExecutionHost() || NativeRuntimeReason() != null);
 
-        /// <summary>Handles native execution guard for vbe test explorer service.</summary>
+        /// <summary>Requires the owning thread and stops dispatch after cancellation outside cleanup phases.</summary>
         private void NativeExecutionGuard()
         {
             RequireOwner();
@@ -23,11 +23,12 @@ namespace VBAi
                 throw new VbaTestInvocationException("The test run was stopped before native dispatch.", false);
         }
 
-        /// <summary>Invokes native async for vbe test explorer service.</summary>
-        /// <param name="catalog">vba test catalog that supplies the catalog for this operation.</param>
-        /// <param name="procedure">vba test descriptor that supplies the procedure for this operation.</param>
-        /// <param name="phase">Text that supplies the phase value. Use the format required by the calling operation.</param>
-        /// <returns>task&lt;vba test result&gt; produced by the operation for invoke native async on vbe test explorer service.</returns>
+        /// <summary>Dispatches one test phase to the registered native callback on the owning thread.</summary>
+        /// <param name="catalog">Current catalog used to validate project identity and revision before dispatch.</param>
+        /// <param name="procedure">Discovered procedure selected for this phase.</param>
+        /// <param name="phase">Supported lifecycle phase name, such as setup, invocation, or cleanup.</param>
+        /// <returns>Callback result after owner-thread completion.</returns>
+        /// <exception cref="VbaTestInvocationException">Dispatch is unavailable or its outcome is uncertain.</exception>
         private async Task<VbaTestResult> InvokeNativeAsync(VbaTestCatalog catalog, VbaTestDescriptor procedure, string phase)
         {
             nativePhase = phase;
@@ -42,10 +43,10 @@ namespace VBAi
         }
 
         // Read-only boundary: tests can verify every registration field without editing HKCR.
-        /// <summary>Reads runtime registration value for vbe test explorer service.</summary>
-        /// <param name="path">Path used for the path being processed.</param>
-        /// <param name="name">Text that supplies the name value. Use the format required by the calling operation.</param>
-        /// <returns>object produced by the operation for read runtime registration value on vbe test explorer service.</returns>
+        /// <summary>Reads a 64-bit HKCR registration key or one named value without writing registry state.</summary>
+        /// <param name="path">Registry subkey path relative to 64-bit Classes Root.</param>
+        /// <param name="name">Value name, or null to test whether the key exists.</param>
+        /// <returns>True/false for a null value name; otherwise the stored value or null when absent.</returns>
         internal static object ReadRuntimeRegistrationValue(string path, string name)
         {
             using (var classes = RegistryKey.OpenBaseKey(RegistryHive.ClassesRoot, RegistryView.Registry64))
@@ -53,9 +54,9 @@ namespace VBAi
                 return name == null ? (object)(key != null) : key?.GetValue(name);
         }
 
-        /// <summary>Handles native runtime registration reason for vbe test explorer service.</summary>
-        /// <param name="readValue">func&lt;string, string, object&gt; that supplies the read value for this operation.</param>
-        /// <returns>Text produced by the operation for native runtime registration reason on vbe test explorer service.</returns>
+        /// <summary>Checks that the 64-bit callback registration matches the currently loaded VBAi assembly.</summary>
+        /// <param name="readValue">Optional read-only registry accessor, used to inspect registration without changing it.</param>
+        /// <returns>Null only when CLSID, ProgID, assembly path/name, class, CLR version, and threading model match; otherwise the refusal reason.</returns>
         internal static string NativeRuntimeRegistrationReason(Func<string, string, object> readValue = null)
         {
             try

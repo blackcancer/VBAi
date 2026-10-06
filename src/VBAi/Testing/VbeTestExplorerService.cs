@@ -16,60 +16,60 @@ namespace VBAi
     internal sealed partial class VbeTestExplorerService : IVbaTestExplorerService, IVbaTestExecutionHost, IVbaTestCoverageExplorerService, IDisposable
     {
 
-        /// <summary>Maintains the vbe state for vbe test explorer service.</summary>
+        /// <summary>Live VBE object accessed only on the thread that constructed this service.</summary>
         private readonly dynamic vbe;
 
-        /// <summary>Maintains the dispatcher state for vbe test explorer service.</summary>
+        /// <summary>WinForms control used to marshal asynchronous continuations to the owning VBE thread.</summary>
         private readonly Control dispatcher;
 
-        /// <summary>Maintains the owner thread state for vbe test explorer service.</summary>
+        /// <summary>Managed thread ID captured at construction and required for every live VBE operation.</summary>
         private readonly int ownerThread = Thread.CurrentThread.ManagedThreadId;
 
-        /// <summary>Maintains the projects state for vbe test explorer service.</summary>
+        /// <summary>Known project COM identities keyed by stable explorer project IDs.</summary>
         private readonly Dictionary<string, object> projects = new Dictionary<string, object>();
 
-        /// <summary>Maintains the runs state for vbe test explorer service.</summary>
+        /// <summary>Active or recently completed runs keyed by their caller-visible run IDs.</summary>
         private readonly Dictionary<string, RunEntry> runs = new Dictionary<string, RunEntry>();
 
-        /// <summary>Maintains the runner state for vbe test explorer service.</summary>
+        /// <summary>Orchestrates setup, test, and cleanup phases through this execution host.</summary>
         private readonly VbaTestRunner runner;
 
-        /// <summary>Maintains the disposed and outcome unknown state for vbe test explorer service.</summary>
+        /// <summary>Disposed state and fail-closed latch set when native mutation outcome becomes uncertain.</summary>
         private bool disposed, outcomeUnknown;
 
-        /// <summary>Maintains the active state for vbe test explorer service.</summary>
+        /// <summary>Run currently authorized to issue native test callbacks.</summary>
         private RunEntry active;
 
-        /// <summary>Maintains the pending calls state for vbe test explorer service.</summary>
+        /// <summary>Calls awaiting completion of native callbacks dispatched to the owner thread.</summary>
         private readonly List<PendingCall> pendingCalls = new List<PendingCall>();
 
-        /// <summary>Maintains the backup root state for vbe test explorer service.</summary>
+        /// <summary>Per-user directory used to retain pre-install copies of test support modules.</summary>
         internal Func<string> BackupRoot = () => Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "VBAi", "TestSupportBackups");
 
-        /// <summary>Maintains the host state for vbe test explorer service.</summary>
+        /// <summary>Returned-value adapter selected for the current Office process.</summary>
         internal VbeDebug.IProcedureValuesHost Host = CreateReturnedValuesHost(CurrentProcessName());
 
-        /// <summary>Tracks the is execution host state of vbe test explorer service.</summary>
+        /// <summary>Overrideable check indicating whether the current process supports returned-value execution.</summary>
         internal Func<bool> IsExecutionHost = () => IsReturnedValuesHost(CurrentProcessName());
 
-        /// <summary>Maintains the native runtime reason state for vbe test explorer service.</summary>
+        /// <summary>Overrideable registration check; non-null text blocks native dispatch.</summary>
         internal Func<string> NativeRuntimeReason = () => NativeRuntimeRegistrationReason();
 
-        /// <summary>Handles current process name for vbe test explorer service.</summary>
-        /// <returns>Text produced by the operation for current process name on vbe test explorer service.</returns>
+        /// <summary>Reads the executable name of the current process without its path or extension.</summary>
+        /// <returns>Current process name.</returns>
         private static string CurrentProcessName()
         { using (var process = Process.GetCurrentProcess()) return process.ProcessName; }
 
-        /// <summary>Determines whether returned values host for vbe test explorer service.</summary>
-        /// <param name="processName">Text that supplies the process name value. Use the format required by the calling operation.</param>
-        /// <returns>Boolean indicating the result of the check for is returned values host on vbe test explorer service.</returns>
+        /// <summary>Checks whether the process is one of the Office hosts with a returned-value adapter.</summary>
+        /// <param name="processName">Executable name, compared case-insensitively.</param>
+        /// <returns>True for Excel, PowerPoint, or Word.</returns>
         internal static bool IsReturnedValuesHost(string processName) => processName.Equals("EXCEL", StringComparison.OrdinalIgnoreCase)
             || processName.Equals("POWERPNT", StringComparison.OrdinalIgnoreCase)
             || processName.Equals("WINWORD", StringComparison.OrdinalIgnoreCase);
 
-        /// <summary>Creates returned values host for vbe test explorer service.</summary>
-        /// <param name="processName">Text that supplies the process name value. Use the format required by the calling operation.</param>
-        /// <returns>i procedure values host produced by the operation for create returned values host on vbe test explorer service.</returns>
+        /// <summary>Selects the returned-value adapter for the current Office executable.</summary>
+        /// <param name="processName">Executable name, compared case-insensitively.</param>
+        /// <returns>Word or PowerPoint adapter for those hosts; otherwise the generic native values host.</returns>
         internal static VbeDebug.IProcedureValuesHost CreateReturnedValuesHost(string processName)
         {
             if (processName.Equals("WINWORD", StringComparison.OrdinalIgnoreCase)) return new VbaTestWordValuesHost();
@@ -77,68 +77,68 @@ namespace VBAi
                 ? (VbeDebug.IProcedureValuesHost)new VbaTestPowerPointValuesHost() : new VbeDebug.NativeProcedureValuesHost();
         }
 
-        /// <summary>Maintains the confirm support state for vbe test explorer service.</summary>
+        /// <summary>Confirmation callback for reviewing existing test-support code before replacement.</summary>
         internal Func<VbaTestCatalog, string, string, bool> ConfirmSupport;
 
-        /// <summary>Maintains the show explorer state for vbe test explorer service.</summary>
+        /// <summary>Callback that opens the test explorer and returns its disposable window lifetime.</summary>
         internal Func<string, object> ShowExplorer;
 
-        /// <summary>Tracks the is native execution host state of vbe test explorer service.</summary>
+        /// <summary>Overrideable check for a process that can dispatch native callbacks through VBE.</summary>
         internal Func<bool> IsNativeExecutionHost = () => {
             using (var process = Process.GetCurrentProcess()) return new[] { "EXCEL", "WINWORD", "POWERPNT", "MSACCESS", "MSPUB", "OUTLOOK", "SLDWORKS", "VISIO", "WINPROJ" }
                 .Contains(process.ProcessName.ToUpperInvariant());
         };
 
-        /// <summary>Maintains the native execution host state for vbe test explorer service.</summary>
+        /// <summary>Owner-thread dispatcher for the registered native test callback.</summary>
         private VbaNativeTestExecutionHost nativeExecutionHost;
 
-        /// <summary>Maintains the result sink state for vbe test explorer service.</summary>
+        /// <summary>Validates callback run identity and phase before accepting native result receipts.</summary>
         private readonly VbaTestResultSink resultSink = new VbaTestResultSink();
 
-        /// <summary>Maintains the native phase state for vbe test explorer service.</summary>
+        /// <summary>Phase currently authorized for native result callbacks, or null between dispatches.</summary>
         private string nativePhase;
 
-        /// <summary>Owns the run entry state and operations.</summary>
+        /// <summary>Mutable cancellation and completion state retained for one test run.</summary>
         private sealed class RunEntry
         {
 
-            /// <summary>Maintains the run state for run entry.</summary>
+            /// <summary>Public run record containing IDs, status, and accumulated results.</summary>
             internal VbaTestRun Run;
 
-            /// <summary>Identifies the project id associated with run entry.</summary>
+            /// <summary>Stable project ID against which this run was authorized.</summary>
             internal string ProjectId;
 
-            /// <summary>Maintains the state state for run entry.</summary>
+            /// <summary>Lifecycle label used while the run is in progress or awaiting cleanup.</summary>
             internal string State = "Running";
 
-            /// <summary>Maintains the stop state for run entry.</summary>
+            /// <summary>Cooperative cancellation source checked between safe execution phases.</summary>
             internal CancellationTokenSource Stop = new CancellationTokenSource();
 
-            /// <summary>Maintains the completion state for run entry.</summary>
+            /// <summary>Task representing completion of the full run, including cleanup.</summary>
             internal Task<VbaTestRun> Completion;
 
-            /// <summary>Maintains the execution guard state for run entry.</summary>
+            /// <summary>Revalidates run authorization and project identity before native dispatch.</summary>
             internal Action ExecutionGuard;
 
-            /// <summary>Maintains the returned values state for run entry.</summary>
+            /// <summary>Whether this run uses the host's returned-value execution adapter.</summary>
             internal bool ReturnedValues;
         }
 
-        /// <summary>Owns the pending call state and operations.</summary>
+        /// <summary>Completion receipt for one callback posted to the owner-thread dispatcher.</summary>
         private sealed class PendingCall
         {
 
-            /// <summary>Maintains the completion state for pending call.</summary>
+            /// <summary>Asynchronous result completed by the native callback or dispatch failure.</summary>
             internal readonly TaskCompletionSource<VbaTestResult> Completion = new TaskCompletionSource<VbaTestResult>();
 
-            /// <summary>Maintains the invoked state for pending call.</summary>
+            /// <summary>True after the callback entered; distinguishes pre-dispatch failure from uncertain completion.</summary>
             internal bool Invoked;
         }
 
-        /// <summary>Initializes a VbeTestExplorerService instance with the supplied state.</summary>
-        /// <param name="vbe">object that supplies the vbe for this operation.</param>
-        /// <param name="dispatcher">control that supplies the dispatcher for this operation.</param>
-        /// <param name="continuationFactory">func&lt;control&gt; that supplies the continuation factory for this operation.</param>
+        /// <summary>Creates a session-bound test service on the thread that owns the supplied VBE.</summary>
+        /// <param name="vbe">Live VBE automation object; all access remains on the constructing thread.</param>
+        /// <param name="dispatcher">Created WinForms control used to schedule continuations on that thread.</param>
+        /// <param name="continuationFactory">Optional factory for additional owner-thread continuation controls.</param>
         internal VbeTestExplorerService(object vbe, Control dispatcher, Func<Control> continuationFactory = null)
         {
             this.vbe = vbe ?? throw new ArgumentNullException(nameof(vbe));
@@ -153,7 +153,7 @@ namespace VBAi
                 VbaTestRuntimeSource.DispatchSignature, () => active?.Run.Id ?? throw new InvalidOperationException("No authorized test run is active."));
         }
 
-        /// <summary>Requires owner for vbe test explorer service.</summary>
+        /// <summary>Rejects disposed services and calls made outside the VBE-owning thread.</summary>
         private void RequireOwner()
         {
             if (disposed || dispatcher.IsDisposed) throw new ObjectDisposedException(nameof(VbeTestExplorerService));

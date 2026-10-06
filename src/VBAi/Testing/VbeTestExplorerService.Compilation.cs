@@ -6,27 +6,27 @@ using System.Windows.Forms;
 namespace VBAi
 {
 
-    /// <summary>Owns the vbe test explorer service state and operations.</summary>
+    /// <summary>Implements guarded compilation observation for disposable coverage projects.</summary>
     internal sealed partial class VbeTestExplorerService
     {
 
-        /// <summary>Maintains the default compile coverage delegate state for vbe test explorer service.</summary>
+        /// <summary>Original coverage compiler callback retained so temporary test overrides can be restored.</summary>
         private readonly Action<object> defaultCompileCoverageDelegate;
 
-        /// <summary>Maintains the current coverage compile guard state for vbe test explorer service.</summary>
+        /// <summary>Revalidates coverage authorization immediately before invoking the native compile command.</summary>
         private Action currentCoverageCompileGuard;
 
-        /// <summary>Maintains the start coverage compilation timer state for vbe test explorer service.</summary>
+        /// <summary>Creates the owner-thread timer used to observe whether compilation has finished.</summary>
         internal Func<Action, IDisposable> StartCoverageCompilationTimer = StartCompilationTimer;
 
-        /// <summary>Maintains the coverage compilation clock state for vbe test explorer service.</summary>
+        /// <summary>Monotonic millisecond clock used for the compile observation deadline.</summary>
         internal Func<long> CoverageCompilationClock = () => (long)(1000d * Stopwatch.GetTimestamp() / Stopwatch.Frequency);
 
-        /// <summary>Maintains the compilation deadline milliseconds state for vbe test explorer service.</summary>
+        /// <summary>Maximum time to wait for the compile command to become disabled before refusing test dispatch.</summary>
         private const int CompilationDeadlineMilliseconds = 3000;
 
-        /// <summary>Handles compile coverage clone for vbe test explorer service.</summary>
-        /// <param name="copiedProject">object that supplies the copied project for this operation.</param>
+        /// <summary>Invokes the built-in compile command only while the exact owned coverage copy is active.</summary>
+        /// <param name="copiedProject">Disposable project clone that must remain active and in design mode.</param>
         private void CompileCoverageClone(object copiedProject)
         {
             RequireOwner();
@@ -52,10 +52,11 @@ namespace VBAi
             { throw new VbaTestInvocationException("Coverage compilation command completion is uncertain; no retry was attempted. " + error.Message, true, error); }
         }
 
-        /// <summary>Observes compilation only after returning to the owner UI; never executes the command again.</summary>
-        /// <param name="copiedProject">object that supplies the copied project for this operation.</param>
-        /// <param name="guard">action that supplies the guard for this operation.</param>
-        /// <returns>task&lt;bool&gt; produced by the operation for verify coverage compilation async on vbe test explorer service.</returns>
+        /// <summary>Waits for a later owner-thread observation that the native compile command is no longer enabled.</summary>
+        /// <param name="copiedProject">Exact disposable coverage project expected to remain active during observation.</param>
+        /// <param name="guard">Authorization callback rerun before and after each COM observation.</param>
+        /// <returns>Task that completes when compilation appears idle; faults on identity loss, timeout, or disposal.</returns>
+        /// <remarks>The command is never repeated. A timeout prevents tests from being dispatched.</remarks>
         internal Task<bool> VerifyCoverageCompilationAsync(object copiedProject, Action guard)
         {
             RequireOwner();
@@ -110,8 +111,8 @@ namespace VBAi
             return completion.Task;
         }
 
-        /// <summary>Requires compilation project for vbe test explorer service.</summary>
-        /// <param name="copiedProject">object that supplies the copied project for this operation.</param>
+        /// <summary>Requires the exact coverage clone to be active and in design mode on the owner thread.</summary>
+        /// <param name="copiedProject">Owned disposable project clone targeted by the native compiler.</param>
         private void RequireCompilationProject(object copiedProject)
         {
             RequireOwner();
@@ -122,8 +123,8 @@ namespace VBAi
                 throw new InvalidOperationException("The coverage compiler requires the owned project in design mode.");
         }
 
-        /// <summary>Reads compilation control for vbe test explorer service.</summary>
-        /// <returns>object produced by the operation for read compilation control on vbe test explorer service.</returns>
+        /// <summary>Finds and validates the built-in VBE Compile command before it can be invoked.</summary>
+        /// <returns>Native command-bar control with built-in ID 578 and no assigned macro action.</returns>
         private object ReadCompilationControl()
         {
             dynamic compile = vbe.CommandBars.FindControl(1, 578);
@@ -133,9 +134,9 @@ namespace VBAi
             return compile;
         }
 
-        /// <summary>Starts compilation timer for vbe test explorer service.</summary>
-        /// <param name="tick">action that supplies the tick for this operation.</param>
-        /// <returns>i disposable produced by the operation for start compilation timer on vbe test explorer service.</returns>
+        /// <summary>Starts a WinForms timer that invokes the polling action on the UI thread.</summary>
+        /// <param name="tick">Owner-thread observation to run on each timer tick.</param>
+        /// <returns>Timer lifetime; disposing stops the timer and detaches its callback.</returns>
         private static IDisposable StartCompilationTimer(Action tick)
         {
             return StartCompilationTimer(tick, timer => timer.Start());
