@@ -108,7 +108,7 @@ native Office menu loading and updater installation were not exercised. These
 checks do not measure whole-product coverage or inherit earlier host acceptance.
 
 Reproducible source checks live in the mirrored C# tests and
-`tools/docs/test_build_help.py`. Current local receipts are in
+`tests/tools/test_build_help.py`. Current local receipts are in
 `artifacts/localized-help-tests/`, `artifacts/localized-help-archive-validation.json`
 and `artifacts/localized-help-viewer-validation.json` in the localization worktree.
 Generated guides are distributed exclusively from `dist/help/`; development
