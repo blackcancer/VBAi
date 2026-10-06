@@ -1,5 +1,76 @@
 # Recorded validation
 
+## Q028 Ollama and embedded Office assistant qualification (2026-10-06)
+
+**Qualified for the complete prepared Q028 matrix on the real
+`WinSta0\Default` desktop.** Frozen source
+`85486c00eb28ac148f00d7e8a4b73e4bcc9c5173`, product MVID
+`7f766edc-1a6a-40a2-bf55-fbfc187fcf93`, SHA-256
+`DC8094BC06F25784045FC85E1CE8968C38D48161260574F8C8AAB7C69AB0FCB8`.
+The isolated solution build passed. Native acceptance belongs to those bytes;
+a later merge or rebuild does not inherit it automatically.
+
+The selected backend is Ollama **0.34.4**, `qwen2.5:7b-instruct`, manifest
+SHA-256 `845DBDA0EA48ED749CAAFD9E6037047AA19ACFCFD82E704D7CA97D631A0B697E`,
+CPU, context 8192, one parallel request, temperature 0 and top-p 0.8.
+The existing model blobs were freshly size/hash checked without download or
+substitution. Each selected Office executable is x64 **16.0.20430.20092**.
+
+| Exact-candidate validation | Result |
+| --- | --- |
+| Focused managed transport, chat, privacy, host path, ownership and lifecycle gate | 714 passed, 0 failed, 0 skipped |
+| Real provider prerequisites | 3 passed: exact synthetic tool roundtrip, cancellation/recovery, shown detached streaming chat |
+| Real embedded assistant | 6 passed: Excel, Word, PowerPoint, Access, Publisher and classic Outlook |
+| Ordered VSTest matrix | 723 passed, 0 failed, 0 skipped; every bank invoked once |
+| Independent wire auditor self-tests | 16 passed; synthetic refusal checks, separate from VSTest totals |
+| Frozen independent campaign review | `OFFLINE_NATIVE_WIRE_PASS` for every embedded host |
+| Original native lifecycle | All six owned hosts closed normally; no forced Office termination or uncertain native replay |
+| Coordinator and resource release | Original main worker exit code 0; temporary settings and HKCU Registry64 COM registration restored and verified; launcher task removed |
+| Owned Ollama backend lifecycle | Private kernel job has zero remaining members after stopping its synthetic backend and calculation workers |
+| Documentation validation | 40 maintained Markdown files, 329 local links, 0 errors |
+
+Every embedded bank proves actual installed-candidate/owner identity, assistant
+text while Stop is active, one Stop and visible cancellation, a complete next
+reply, and an unprompted native marker returned by exactly one `read_module`.
+The independent wire review binds the exact conversation selector, tool
+arguments, native result/source hash and final answer. All project source and
+references remain unchanged. The temporary Outlook fixture restores its original
+empty project and leaves its initially absent OTM absent; no mail or VBA runs.
+
+The campaign corrected Outlook's fake absolute `VBProject.FileName`: when no
+verified existing `.otm` path is available, the resolver publishes an explicit
+null host path and uses the temporary project identity rather than a path derived
+from a process-dependent current directory. During unsettled turns the observer
+retains original native window ownership instead of rediscovering an unavailable
+UIA parent. It drops settled managed UIA references before shutdown. Word also
+uses its scoped testhost collection diagnostic; the unchanged five-second
+original-handle exit bound passes. This does not prove native RCW release or
+identify the cause of every earlier exit delay.
+
+Stopping only the isolated `ollama.exe` leaked multi-gigabyte `llama-server.exe`
+workers in earlier batches. The corrected runner attaches the fresh backend to
+an unnamed Windows job before model requests and verifies empty membership at
+settled shutdown. Recovery closed only the exact descendants proven by this
+session's backend receipts; older unknown workers and personal backends were
+preserved. Automatic kill-on-close is disabled so native uncertainty retains
+diagnostic state.
+
+Retained proof root: `artifacts/q28p1/native8/`, including `q028-plan.json`,
+all original TRX files, actual embedded HTTP/SSE wire, host/native shutdown
+receipts, `independent-review.json`, `backend-job-exit.json`, original coordinator
+handle exit and `qualification-acceptance.json`. Earlier `native2` through
+`native7` outcomes remain failed or incomplete, including the first failed
+independent Outlook selector audit and the pre-Office allocation failure. Their
+source/MVID differs and their actions were not replayed to change their verdict.
+
+This closes the selected Q028 provider/Office operation matrix. It does not
+qualify other models/devices, all Office operations, SOLIDWORKS, Visio, Project,
+production Outlook projects or full release acceptance. The historical
+`No text response.` / complete-empty backend cause remains unresolved; the
+passing selected profile is not a universal reliability correction. No coverage
+percentage was measured by this campaign and no failed broad aggregate is
+relabelled green.
+
 ## Q024 Word and Q027 UserForm scoped qualification (2026-10-06)
 
 **Qualified for the complete prepared Q024/Q027 operation matrix on the real
