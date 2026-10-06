@@ -248,39 +248,39 @@ namespace VBAi
     internal static class VbaCoverageInstrumentation
     {
 
-        /// <summary>Maintains the module name state for vba coverage instrumentation.</summary>
+        /// <summary>Name reserved for the generated disposable-project coverage support module.</summary>
         internal const string ModuleName = "VBAiCoverageSupport";
 
-        /// <summary>Maintains the reset procedure state for vba coverage instrumentation.</summary>
+        /// <summary>Entry point injected to clear all generated procedure-hit flags before execution.</summary>
         internal const string ResetProcedure = "VBAiResetCoverageHits";
 
-        /// <summary>Maintains the snapshot procedure state for vba coverage instrumentation.</summary>
+        /// <summary>Entry point injected to return the hit-flag array after execution.</summary>
         internal const string SnapshotProcedure = "VBAiReadCoverageHits";
 
-        /// <summary>Maintains the hits variable state for vba coverage instrumentation.</summary>
+        /// <summary>Public Boolean array populated by procedure-entry probes in the disposable clone.</summary>
         internal const string HitsVariable = "VBAiProcedureCoverageHits";
 
-        /// <summary>Maintains the maximum probes state for vba coverage instrumentation.</summary>
+        /// <summary>Hard limit on generated slots to bound support source size and runtime array allocation.</summary>
         internal const int MaximumProbes = 16000;
 
-        /// <summary>Maintains the name pattern state for vba coverage instrumentation.</summary>
+        /// <summary>Restricts generated/test VBA identifiers to supported language-name syntax.</summary>
         private static readonly Regex NamePattern = new Regex(@"\A\p{L}[\p{L}\p{N}_]{0,254}[$%&!#@^]?\z", RegexOptions.CultureInvariant);
 
-        /// <summary>Maintains the test marker state for vba coverage instrumentation.</summary>
+        /// <summary>Recognizes an explicit <c>@TestModule</c> marker before counting test code.</summary>
         private static readonly Regex TestMarker = new Regex(@"^\s*'\s*@TestModule(?:\s|$)", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
 
-        /// <summary>Owns the insertion state and operations.</summary>
+        /// <summary>Stores one generated probe insertion at an original-source character offset.</summary>
         private sealed class Insertion
         {
 
-            /// <summary>Maintains the offset state for insertion.</summary>
+            /// <summary>Zero-based offset into the normalized original module source.</summary>
             internal int Offset;
 
-            /// <summary>Maintains the text state for insertion.</summary>
+            /// <summary>VBA statement inserted at the procedure entry.</summary>
             internal string Text;
         }
 
-        /// <summary>Creates  for vba coverage instrumentation.</summary>
+        /// <summary>Builds a source-bound procedure-entry plan, rejecting collisions and unknown denominator cases.</summary>
         /// <param name="snapshot">vba test project snapshot that supplies the snapshot for this operation.</param>
         /// <returns>vba coverage plan produced by the operation for create on vba coverage instrumentation.</returns>
         public static VbaCoveragePlan Create(VbaTestProjectSnapshot snapshot)
@@ -458,17 +458,17 @@ namespace VBAi
             return report;
         }
 
-        /// <summary>Handles decode for vba coverage instrumentation.</summary>
-        /// <param name="plan">vba coverage plan that supplies the plan for this operation.</param>
-        /// <param name="native">object that supplies the native for this operation.</param>
-        /// <param name="complete">Indicates whether complete is enabled.</param>
-        /// <returns>vba coverage report produced by the operation for decode on vba coverage instrumentation.</returns>
+        /// <summary>Decodes a native Variant hit array and calculates procedure-entry coverage for the plan.</summary>
+        /// <param name="plan">Plan whose probes and denominator correspond to the executed clone.</param>
+        /// <param name="native">Array returned by the generated snapshot function.</param>
+        /// <param name="complete">Whether the selected run reached a verified complete result.</param>
+        /// <returns>Coverage report; malformed or missing native data produces an unavailable report.</returns>
         public static VbaCoverageReport Decode(VbaCoveragePlan plan, object native, bool complete = true) => Read(plan, native, complete);
 
-        /// <summary>Handles unavailable for vba coverage instrumentation.</summary>
-        /// <param name="plan">vba coverage plan that supplies the plan for this operation.</param>
-        /// <param name="reason">Text that supplies the reason value. Use the format required by the calling operation.</param>
-        /// <returns>vba coverage report produced by the operation for unavailable on vba coverage instrumentation.</returns>
+        /// <summary>Creates a coverage report that explicitly records why measurement is unavailable.</summary>
+        /// <param name="plan">Source-bound plan for the attempted measurement.</param>
+        /// <param name="reason">Optional diagnostic appended to the report.</param>
+        /// <returns>Unavailable report with plan diagnostics and denominator metadata.</returns>
         public static VbaCoverageReport Unavailable(VbaCoveragePlan plan, string reason)
         {
             if (plan == null) throw new ArgumentNullException(nameof(plan));
@@ -477,16 +477,16 @@ namespace VBAi
             return report;
         }
 
-        /// <summary>Handles report for vba coverage instrumentation.</summary>
-        /// <param name="plan">vba coverage plan that supplies the plan for this operation.</param>
-        /// <returns>vba coverage report produced by the operation for report on vba coverage instrumentation.</returns>
+        /// <summary>Copies plan identity, known-denominator state, exclusions, and diagnostics into a report.</summary>
+        /// <param name="plan">Validated instrumentation plan.</param>
+        /// <returns>Initial report without hit measurements.</returns>
         private static VbaCoverageReport Report(VbaCoveragePlan plan) => new VbaCoverageReport { Original = plan.Original, Revision = plan.Revision,
             DenominatorKnown = plan.DenominatorKnown, Eligible = plan.DenominatorKnown ? plan.EligibleProcedureCount : (int?)null,
             Exclusions = plan.Exclusions.ToList(), Diagnostics = plan.Diagnostics.ToList() };
 
-        /// <summary>Handles header member for vba coverage instrumentation.</summary>
-        /// <param name="tokens">token&gt; that supplies the tokens for this operation.</param>
-        /// <returns>int produced by the operation for header member on vba coverage instrumentation.</returns>
+        /// <summary>Finds the member-kind token in a declaration after any supported visibility modifiers.</summary>
+        /// <param name="tokens">Tokenized VBA statement.</param>
+        /// <returns>Token index for Sub, Function, or Property, or -1 when this is not a procedure header.</returns>
         private static int HeaderMember(List<VbaDeclarationIndex.Token> tokens)
         {
             int index = 0;
@@ -494,15 +494,15 @@ namespace VBAi
             return index < tokens.Count && new[] { "Sub", "Function", "Property" }.Contains(tokens[index].Text, StringComparer.OrdinalIgnoreCase) ? index : -1;
         }
 
-        /// <summary>Determines whether header for vba coverage instrumentation.</summary>
-        /// <param name="tokens">token&gt; that supplies the tokens for this operation.</param>
-        /// <returns>Boolean indicating the result of the check for is header on vba coverage instrumentation.</returns>
+        /// <summary>Checks whether tokens begin a supported procedure declaration.</summary>
+        /// <param name="tokens">Tokenized VBA statement.</param>
+        /// <returns>True for Sub, Function, or Property headers after visibility modifiers.</returns>
         private static bool IsHeader(List<VbaDeclarationIndex.Token> tokens) => HeaderMember(tokens) >= 0;
 
-        /// <summary>Handles identifier tokens for vba coverage instrumentation.</summary>
-        /// <param name="token">token that supplies the token for this operation.</param>
-        /// <param name="lines">string[] that supplies the lines for this operation.</param>
-        /// <returns>token&gt; produced by the operation for identifier tokens on vba coverage instrumentation.</returns>
+        /// <summary>Returns identifier tokens, including names embedded in bracketed Excel expressions.</summary>
+        /// <param name="token">Parsed token, which may represent a string or bracket expression.</param>
+        /// <param name="lines">Normalized source lines used to inspect the original token text.</param>
+        /// <returns>Identifiers to test against generated names reserved by the support module.</returns>
         private static IEnumerable<VbaDeclarationIndex.Token> IdentifierTokens(VbaDeclarationIndex.Token token, string[] lines)
         {
             if (token.Text != "<literal>") { yield return token; yield break; }
@@ -516,9 +516,9 @@ namespace VBAi
                 yield return new VbaDeclarationIndex.Token { Text = match.Value, Line = token.Line, Column = token.Column + 1 + match.Index };
         }
 
-        /// <summary>Handles line offsets for vba coverage instrumentation.</summary>
-        /// <param name="source">Text that supplies the source value. Use the format required by the calling operation.</param>
-        /// <returns>int[] produced by the operation for line offsets on vba coverage instrumentation.</returns>
+        /// <summary>Builds a zero-based character offset table for each physical source line.</summary>
+        /// <param name="source">Normalized source with LF line endings.</param>
+        /// <returns>Offset array whose index is a one-based physical line minus one.</returns>
         private static int[] LineOffsets(string source)
         {
             var offsets = new List<int> { 0 };
@@ -526,11 +526,11 @@ namespace VBAi
             return offsets.ToArray();
         }
 
-        /// <summary>Handles header end offset for vba coverage instrumentation.</summary>
-        /// <param name="source">Text that supplies the source value. Use the format required by the calling operation.</param>
-        /// <param name="offsets">int[] that supplies the offsets for this operation.</param>
-        /// <param name="tokens">token&gt; that supplies the tokens for this operation.</param>
-        /// <returns>int produced by the operation for header end offset on vba coverage instrumentation.</returns>
+        /// <summary>Finds a safe insertion offset after a complete single-line procedure header.</summary>
+        /// <param name="source">Normalized module source.</param>
+        /// <param name="offsets">Physical-line start offsets from <see cref="LineOffsets"/>.</param>
+        /// <param name="tokens">Tokens for the procedure header.</param>
+        /// <returns>Offset immediately after the header, or -1 for multiline or ambiguous declarations.</returns>
         private static int HeaderEndOffset(string source, int[] offsets, List<VbaDeclarationIndex.Token> tokens)
         {
             var last = tokens[tokens.Count - 1];
@@ -550,19 +550,19 @@ namespace VBAi
             return -1;
         }
 
-        /// <summary>Handles physical line for vba coverage instrumentation.</summary>
-        /// <param name="offsets">int[] that supplies the offsets for this operation.</param>
-        /// <param name="offset">int that supplies the offset for this operation.</param>
-        /// <returns>int produced by the operation for physical line on vba coverage instrumentation.</returns>
+        /// <summary>Maps a source character offset to its zero-based physical-line index.</summary>
+        /// <param name="offsets">Sorted physical-line start offsets.</param>
+        /// <param name="offset">Character offset in normalized source.</param>
+        /// <returns>Zero-based containing line index.</returns>
         internal static int PhysicalLine(int[] offsets, int offset)
         {
             int physicalLine = Array.BinarySearch(offsets, offset);
             return physicalLine < 0 ? ~physicalLine - 1 : physicalLine;
         }
 
-        /// <summary>Runs time for vba coverage instrumentation.</summary>
-        /// <param name="count">int that supplies the count for this operation.</param>
-        /// <returns>Text produced by the operation for runtime on vba coverage instrumentation.</returns>
+        /// <summary>Generates VBA support source that resets and snapshots a Boolean array of procedure-entry hits.</summary>
+        /// <param name="count">Number of planned probes; array storage has at least one slot.</param>
+        /// <returns>Support module source for a disposable project clone.</returns>
         private static string Runtime(int count)
         {
             return "Option Explicit\r\n' VBAi procedure coverage support version 1; disposable clone only.\r\n"
@@ -572,21 +572,21 @@ namespace VBAi
                 + "Public Function " + SnapshotProcedure + "(Optional ByVal ignoredHostArgument1 As Variant, Optional ByVal ignoredHostArgument2 As Variant) As Variant\r\n    " + SnapshotProcedure + " = " + HitsVariable + "\r\nEnd Function\r\n";
         }
 
-        /// <summary>Handles diagnose for vba coverage instrumentation.</summary>
-        /// <param name="plan">vba coverage plan that supplies the plan for this operation.</param>
-        /// <param name="module">Text that supplies the module value. Use the format required by the calling operation.</param>
-        /// <param name="line">int that supplies the line for this operation.</param>
-        /// <param name="reason">Text that supplies the reason value. Use the format required by the calling operation.</param>
-        /// <param name="unknownDenominator">Indicates whether unknown denominator is enabled.</param>
+        /// <summary>Adds a source-qualified plan diagnostic and optionally marks the coverage denominator unknown.</summary>
+        /// <param name="plan">Plan receiving the diagnostic.</param>
+        /// <param name="module">Component name, or null when unavailable.</param>
+        /// <param name="line">One-based source line, or zero for a module-level issue.</param>
+        /// <param name="reason">Specific analysis or instrumentation refusal.</param>
+        /// <param name="unknownDenominator">Whether this finding prevents a complete eligible-procedure count.</param>
         private static void Diagnose(VbaCoveragePlan plan, string module, int line, string reason, bool unknownDenominator)
         {
             plan.Diagnostics.Add((module ?? "<missing>") + (line > 0 ? " (line " + line.ToString(CultureInfo.InvariantCulture) + ")" : "") + ": " + reason);
             if (unknownDenominator) plan.DenominatorKnown = false;
         }
 
-        /// <summary>Determines whether it has h for vba coverage instrumentation.</summary>
-        /// <param name="source">Text that supplies the source value. Use the format required by the calling operation.</param>
-        /// <returns>Text produced by the operation for hash on vba coverage instrumentation.</returns>
+        /// <summary>Hashes normalized source with SHA-256 for stale-source comparison.</summary>
+        /// <param name="source">Source text, normalized to empty when null.</param>
+        /// <returns>Uppercase hexadecimal SHA-256 digest.</returns>
         private static string Hash(string source)
         { using (var hash = SHA256.Create()) return BitConverter.ToString(hash.ComputeHash(Encoding.UTF8.GetBytes(source ?? ""))).Replace("-", ""); }
     }
