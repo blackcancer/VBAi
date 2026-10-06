@@ -12,15 +12,15 @@ namespace VBAi
     internal interface IVbaTestExecutionHost
     {
 
-        /// <summary>Validates  for i vba test execution host.</summary>
-        /// <param name="catalog">vba test catalog that supplies the catalog for this operation.</param>
+        /// <summary>Revalidates project identity, revision, and host authorization before native execution.</summary>
+        /// <param name="catalog">The exact discovered catalog whose project snapshot is about to be used.</param>
         void Validate(VbaTestCatalog catalog);
 
-        /// <summary>Invokes async for i vba test execution host.</summary>
-        /// <param name="catalog">vba test catalog that supplies the catalog for this operation.</param>
-        /// <param name="procedure">vba test descriptor that supplies the procedure for this operation.</param>
-        /// <param name="phase">Text that supplies the phase value. Use the format required by the calling operation.</param>
-        /// <returns>task&lt;vba test result&gt; produced by the operation for invoke async on i vba test execution host.</returns>
+        /// <summary>Invokes one already-discovered procedure on its owning host thread.</summary>
+        /// <param name="catalog">Catalog whose project and revision were validated.</param>
+        /// <param name="procedure">Test or fixture descriptor to invoke.</param>
+        /// <param name="phase">Lifecycle phase label attached to the result.</param>
+        /// <returns>Task with a verified result; failure after dispatch may represent an uncertain outcome.</returns>
         Task<VbaTestResult> InvokeAsync(VbaTestCatalog catalog, VbaTestDescriptor procedure, string phase);
     }
 
@@ -28,14 +28,14 @@ namespace VBAi
     internal sealed class VbaTestInvocationException : Exception
     {
 
-        /// <summary>Gets the uncertain.</summary>
-        /// <value>Current uncertain exposed by vba test invocation exception.</value>
+        /// <summary>Gets whether the native operation may have executed before the failure was observed.</summary>
+        /// <value>True forbids replay because the execution outcome is unknown.</value>
         internal bool Uncertain { get; }
 
         /// <summary>Initializes a VbaTestInvocationException instance with the supplied state.</summary>
-        /// <param name="message">Text that supplies the message value. Use the format required by the calling operation.</param>
-        /// <param name="uncertain">Indicates whether uncertain is enabled.</param>
-        /// <param name="inner">Exception describing the inner failure.</param>
+        /// <param name="message">Diagnostic describing the refusal or uncertain native completion.</param>
+        /// <param name="uncertain">True only when dispatch may have occurred without a verified receipt.</param>
+        /// <param name="inner">Underlying failure, if one was caught.</param>
         internal VbaTestInvocationException(string message, bool uncertain, Exception inner = null) : base(message, inner)
         { Uncertain = uncertain; }
     }
@@ -44,22 +44,24 @@ namespace VBAi
     internal sealed class VbaTestRunner
     {
 
-        /// <summary>Maintains the host state for vba test runner.</summary>
+        /// <summary>Provides preflight and owning-thread invocation for this runner session.</summary>
         private readonly IVbaTestExecutionHost host;
 
-        /// <summary>Maintains the active state for vba test runner.</summary>
+        /// <summary>Prevents overlapping runs through the same runner instance.</summary>
         private bool active;
 
         /// <summary>Initializes a VbaTestRunner instance with the supplied state.</summary>
-        /// <param name="host">i vba test execution host that supplies the host for this operation.</param>
+        /// <param name="host">Execution adapter that validates and invokes procedures on the correct host thread.</param>
         internal VbaTestRunner(IVbaTestExecutionHost host) { this.host = host ?? throw new ArgumentNullException(nameof(host)); }
 
-        /// <summary>Runs async for vba test runner.</summary>
-        /// <param name="catalog">vba test catalog that supplies the catalog for this operation.</param>
-        /// <param name="selection">i read only list&lt;vba test descriptor&gt; that supplies the selection for this operation.</param>
-        /// <param name="progress">action&lt;vba test result&gt; that supplies the progress for this operation.</param>
-        /// <param name="cancellation">Token used to cancel the operation.</param>
-        /// <returns>task&lt;vba test run&gt; produced by the operation for run async on vba test runner.</returns>
+        /// <summary>Runs a distinct selection serially with module/test fixtures, revalidation, and no-retry uncertainty handling.</summary>
+        /// <param name="catalog">Discovery catalog bound to the project identity and source revision.</param>
+        /// <param name="selection">Distinct descriptors from this catalog; count must be between 1 and 10,000.</param>
+        /// <param name="progress">Optional callback invoked as each descriptor receives a terminal result.</param>
+        /// <param name="cancellation">Cooperative cancellation token checked between native calls.</param>
+        /// <returns>Run receipt containing every selected descriptor's result and any run-level error.</returns>
+        /// <exception cref="ArgumentException">The catalog or selection is invalid, empty, too large, or contains foreign/duplicate descriptors.</exception>
+        /// <exception cref="InvalidOperationException">Another run is already active on this runner.</exception>
         internal async Task<VbaTestRun> RunAsync(VbaTestCatalog catalog, IReadOnlyList<VbaTestDescriptor> selection,
             Action<VbaTestResult> progress, CancellationToken cancellation)
         {
@@ -196,26 +198,26 @@ namespace VBAi
             return run;
         }
 
-        /// <summary>Handles fixture for vba test runner.</summary>
-        /// <param name="catalog">vba test catalog that supplies the catalog for this operation.</param>
-        /// <param name="fixture">vba test descriptor that supplies the fixture for this operation.</param>
-        /// <param name="phase">Text that supplies the phase value. Use the format required by the calling operation.</param>
-        /// <returns>task&lt;vba test result&gt; produced by the operation for fixture on vba test runner.</returns>
+        /// <summary>Invokes a lifecycle fixture when present, preserving null as the no-hook result.</summary>
+        /// <param name="catalog">Validated catalog used for the invocation.</param>
+        /// <param name="fixture">Optional fixture descriptor.</param>
+        /// <param name="phase">Module or test lifecycle phase label.</param>
+        /// <returns>Invocation task, or a completed task containing null when no fixture exists.</returns>
         private Task<VbaTestResult> Fixture(VbaTestCatalog catalog, VbaTestDescriptor fixture, string phase)
         { return fixture == null ? Task.FromResult<VbaTestResult>(null) : Invoke(catalog, fixture, phase); }
 
-        /// <summary>Handles await owner for vba test runner.</summary>
-        /// <typeparam name="T">The type used for t.</typeparam>
-        /// <param name="task">task&lt;t&gt; that supplies the task for this operation.</param>
-        /// <returns>vba test owner awaitable&lt;t&gt; produced by the operation for await owner on vba test runner.</returns>
+        /// <summary>Wraps an operation so its continuation returns to the execution host's owning context when available.</summary>
+        /// <typeparam name="T">Task result type.</typeparam>
+        /// <param name="task">Operation whose completion must be observed.</param>
+        /// <returns>Owner-aware awaitable, or a normal awaitable for hosts without a continuation dispatcher.</returns>
         private VbaTestOwnerAwaitable<T> AwaitOwner<T>(Task<T> task)
         {
             var owned = host as IVbaTestContinuationHost;
             return owned == null ? VbaTestOwnerAwaitable<T>.Unowned(task) : owned.AwaitOwner(task);
         }
 
-        /// <summary>Validates  for vba test runner.</summary>
-        /// <param name="catalog">vba test catalog that supplies the catalog for this operation.</param>
+        /// <summary>Converts adapter preflight failures into explicit safe-refusal invocation failures.</summary>
+        /// <param name="catalog">Catalog to validate before any native procedure call.</param>
         private void Validate(VbaTestCatalog catalog)
         {
             try { host.Validate(catalog); }
@@ -223,11 +225,12 @@ namespace VBAi
             catch (Exception error) { throw new VbaTestInvocationException(error.Message, false, error); }
         }
 
-        /// <summary>Invokes  for vba test runner.</summary>
-        /// <param name="catalog">vba test catalog that supplies the catalog for this operation.</param>
-        /// <param name="procedure">vba test descriptor that supplies the procedure for this operation.</param>
-        /// <param name="phase">Text that supplies the phase value. Use the format required by the calling operation.</param>
-        /// <returns>task&lt;vba test result&gt; produced by the operation for invoke on vba test runner.</returns>
+        /// <summary>Revalidates and invokes one procedure, requiring a matching descriptor and verified terminal verdict.</summary>
+        /// <param name="catalog">Source-bound catalog supplied to the execution adapter.</param>
+        /// <param name="procedure">Procedure descriptor whose identifier must match the returned receipt.</param>
+        /// <param name="phase">Phase name recorded on the result and included in diagnostics.</param>
+        /// <returns>Verified result for the requested procedure.</returns>
+        /// <exception cref="VbaTestInvocationException">Preflight refuses dispatch, or dispatch completion cannot be verified; uncertainty is preserved.</exception>
         private async Task<VbaTestResult> Invoke(VbaTestCatalog catalog, VbaTestDescriptor procedure, string phase)
         {
             try { Validate(catalog); }
@@ -250,12 +253,12 @@ namespace VBAi
             { throw new VbaTestInvocationException(phase + " (" + procedure.Module + "." + procedure.Procedure + "): " + error.Message, true, error); }
         }
 
-        /// <summary>Handles refused for vba test runner.</summary>
-        /// <param name="test">vba test descriptor that supplies the test for this operation.</param>
-        /// <param name="error">Exception describing the error failure.</param>
-        /// <param name="phase">Text that supplies the phase value. Use the format required by the calling operation.</param>
-        /// <param name="cancelled">Indicates whether cancelled is enabled.</param>
-        /// <returns>vba test result produced by the operation for refused on vba test runner.</returns>
+        /// <summary>Maps a refusal exception to blocked, cancelled, or outcome-unknown without inventing a verdict.</summary>
+        /// <param name="test">Descriptor the runner attempted to schedule.</param>
+        /// <param name="error">Failure raised by preflight or invocation.</param>
+        /// <param name="phase">Lifecycle phase in which the refusal occurred.</param>
+        /// <param name="cancelled">Whether cancellation caused a safe refusal before dispatch.</param>
+        /// <returns>Result preserving any possible native execution uncertainty.</returns>
         private static VbaTestResult Refused(VbaTestDescriptor test, Exception error, string phase, bool cancelled = false)
         {
             bool uncertain = error is VbaTestInvocationException invocation && invocation.Uncertain;
@@ -264,9 +267,9 @@ namespace VBAi
                 Message = error.Message, Phase = phase };
         }
 
-        /// <summary>Handles append failure for vba test runner.</summary>
-        /// <param name="result">vba test result that supplies the result for this operation.</param>
-        /// <param name="cleanup">vba test result that supplies the cleanup for this operation.</param>
+        /// <summary>Combines a cleanup failure with the preceding test verdict, promoting uncertain cleanup to unknown.</summary>
+        /// <param name="result">Test result to update in place.</param>
+        /// <param name="cleanup">Cleanup result whose diagnostic and error number are appended.</param>
         private static void AppendFailure(VbaTestResult result, VbaTestResult cleanup)
         {
             result.Message = (result.Message ?? "") + "\r\n" + cleanup.Phase + ": " + cleanup.Message;
@@ -275,21 +278,21 @@ namespace VBAi
             if (cleanup.ErrorNumber != 0) result.ErrorNumber = cleanup.ErrorNumber;
         }
 
-        /// <summary>Handles first message for vba test runner.</summary>
-        /// <param name="messages">string[] that supplies the messages for this operation.</param>
-        /// <returns>Text produced by the operation for first message on vba test runner.</returns>
+        /// <summary>Returns the first nonempty diagnostic from an ordered set of failure sources.</summary>
+        /// <param name="messages">Candidate messages in precedence order.</param>
+        /// <returns>First nonempty message, or an empty string when none are present.</returns>
         private static string FirstMessage(params string[] messages) => messages.FirstOrDefault(message => !string.IsNullOrEmpty(message));
 
-        /// <summary>Adds run error for vba test runner.</summary>
-        /// <param name="run">vba test run that supplies the run for this operation.</param>
-        /// <param name="message">Text that supplies the message value. Use the format required by the calling operation.</param>
+        /// <summary>Appends a run-level diagnostic without discarding earlier failures.</summary>
+        /// <param name="run">Run receipt updated in place.</param>
+        /// <param name="message">New error text to append.</param>
         private static void AddRunError(VbaTestRun run, string message)
         { run.Error = string.IsNullOrEmpty(run.Error) ? message : run.Error + "\r\n" + message; }
 
-        /// <summary>Handles publish for vba test runner.</summary>
-        /// <param name="run">vba test run that supplies the run for this operation.</param>
-        /// <param name="result">vba test result that supplies the result for this operation.</param>
-        /// <param name="progress">action&lt;vba test result&gt; that supplies the progress for this operation.</param>
+        /// <summary>Records one result, updates run-level uncertainty, and notifies the optional progress callback.</summary>
+        /// <param name="run">Run receipt receiving the result.</param>
+        /// <param name="result">Terminal result for one selected descriptor.</param>
+        /// <param name="progress">Optional callback invoked after the result is stored.</param>
         private static void Publish(VbaTestRun run, VbaTestResult result, Action<VbaTestResult> progress)
         {
             run.Results.Add(result);
