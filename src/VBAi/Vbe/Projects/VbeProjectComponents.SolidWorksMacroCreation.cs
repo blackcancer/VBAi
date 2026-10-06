@@ -12,53 +12,53 @@ using System.Threading.Tasks;
 namespace VBAi
 {
 
-    /// <summary>Owns the vbe project components state and operations.</summary>
+    /// <summary>Coordinates native SOLIDWORKS project creation and lifecycle verification.</summary>
     internal sealed partial class VbeProjectComponents
     {
 
-        /// <summary>Owns the solid works macro creation result state and operations.</summary>
+        /// <summary>Reports progress and limits for one native macro-creation request.</summary>
         internal sealed class SolidWorksMacroCreationResult
         {
 
-            /// <summary>Maintains the verified and destination created and uncertain and command entered and original command returned and filename write entered and save queued and dialog closed and terminal state for solid works macro creation result.</summary>
+            /// <summary>Records verification, destination creation, uncertain outcome, command/save milestones, dialog closure, and terminal completion.</summary>
             public bool Verified, DestinationCreated, Uncertain, CommandEntered, OriginalCommandReturned,
                 FilenameWriteEntered, SaveQueued, DialogClosed, Terminal;
 
-            /// <summary>Maintains the command attempts and filename attempts and save attempts state for solid works macro creation result.</summary>
+            /// <summary>Counts claimed attempts; each native creation, filename write, and Save is limited to one.</summary>
             public int CommandAttempts, FilenameAttempts, SaveAttempts;
 
-            /// <summary>Keeps the project and host path and project version and collection version and error path available to solid works macro creation result.</summary>
+            /// <summary>Verified project name, requested host path, resulting project and collection revisions, and any failure detail.</summary>
             public string Project, HostPath, ProjectVersion, CollectionVersion, Error;
 
-            /// <summary>Maintains the claims state for solid works macro creation result.</summary>
+            /// <summary>Ordered durable claims recorded before each native mutation phase.</summary>
             private readonly List<MacroMutationClaim> claims = new List<MacroMutationClaim>();
 
             /// <summary>Gets the claims.</summary>
             /// <value>Current claims exposed by solid works macro creation result.</value>
             public MacroMutationClaim[] Claims => claims.ToArray();
 
-            /// <summary>Adds claim for solid works macro creation result.</summary>
-            /// <param name="claim">macro mutation claim that supplies the claim for this operation.</param>
+            /// <summary>Appends a durable mutation claim to the result's ordered history.</summary>
+            /// <param name="claim">Phase, destination path, and ordinal claim to retain.</param>
             internal void AddClaim(MacroMutationClaim claim) { claims.Add(claim); }
 
-            /// <summary>Gets the retry allowed.</summary>
-            /// <value>Current retry allowed exposed by solid works macro creation result.</value>
+            /// <summary>Gets whether automatic retry is permitted after this native mutation flow.</summary>
+            /// <value>Always <see langword="false"/> because a failed or uncertain native mutation is never replayed.</value>
             public bool RetryAllowed => false;
 
-            /// <summary>Gets the rollback performed.</summary>
-            /// <value>Current rollback performed exposed by solid works macro creation result.</value>
+            /// <summary>Gets whether this flow removed a partially created native project.</summary>
+            /// <value>Always <see langword="false"/>; partial host files and projects require explicit inspection.</value>
             public bool RollbackPerformed => false;
 
-            /// <summary>Gets the persistence reload verified.</summary>
-            /// <value>Current persistence reload verified exposed by solid works macro creation result.</value>
+            /// <summary>Gets whether persisted contents were verified after closing and reopening the file.</summary>
+            /// <value>Always <see langword="false"/>; current verification checks the live host project only.</value>
             public bool PersistenceReloadVerified => false;
 
-            /// <summary>Gets the destination identity verified.</summary>
-            /// <value>Current destination identity verified exposed by solid works macro creation result.</value>
+            /// <summary>Gets whether a newly added project was matched to the requested destination path.</summary>
+            /// <value>Mirrors <see cref="DestinationCreated"/>; it does not qualify reopened persistence.</value>
             public bool DestinationIdentityVerified => DestinationCreated;
 
-            /// <summary>Gets the destination absence proven.</summary>
-            /// <value>Current destination absence proven exposed by solid works macro creation result.</value>
+            /// <summary>Gets whether the destination was proven absent after an uncertain partial operation.</summary>
+            /// <value>Always <see langword="false"/>; callers must inspect the host path without cleanup or retry.</value>
             public bool DestinationAbsenceProven => false;
 
             /// <summary>Gets the limit.</summary>
@@ -66,112 +66,112 @@ namespace VBAi
             public string Limit => "DestinationCreated reports a verified native destination identity. An unverified partial file may exist at HostPath; inspect locally without automatic cleanup or retry. Fresh reopen is required to qualify persisted contents.";
         }
 
-        /// <summary>Owns the macro mutation claim state and operations.</summary>
+        /// <summary>Durable record of one claimed native mutation phase.</summary>
         internal sealed class MacroMutationClaim
         {
 
-            /// <summary>Keeps the phase and host path path available to macro mutation claim.</summary>
+            /// <summary>Mutation phase and exact canonical host destination captured for the claim.</summary>
             public readonly string Phase, HostPath;
 
-            /// <summary>Maintains the ordinal state for macro mutation claim.</summary>
+            /// <summary>One-based sequence of claims within this creation operation.</summary>
             public readonly int Ordinal;
 
-            /// <summary>Maintains the utc state for macro mutation claim.</summary>
+            /// <summary>UTC time at which the mutation phase was claimed.</summary>
             public readonly DateTime Utc;
 
-            /// <summary>Initializes a MacroMutationClaim instance with the supplied state.</summary>
-            /// <param name="phase">Text that supplies the phase value. Use the format required by the calling operation.</param>
-            /// <param name="path">Path used for the path being processed.</param>
-            /// <param name="ordinal">int that supplies the ordinal for this operation.</param>
+            /// <summary>Creates a timestamped claim immediately before a native mutation phase.</summary>
+            /// <param name="phase">Phase label such as BeforeNewMacro, BeforeFilename, BeforeSave, or Terminal.</param>
+            /// <param name="path">Canonical absolute .swp destination associated with this operation.</param>
+            /// <param name="ordinal">One-based order among the operation's claims.</param>
             internal MacroMutationClaim(string phase, string path, int ordinal)
             { Phase = phase; HostPath = path; Ordinal = ordinal; Utc = DateTime.UtcNow; }
         }
 
-        /// <summary>Owns the solid works macro dialog state and operations.</summary>
+            /// <summary>Snapshot of the native New Macro dialog identity and filename field state.</summary>
         internal sealed class SolidWorksMacroDialog
         {
 
-            /// <summary>Maintains the window and filename and save button state for solid works macro dialog.</summary>
+            /// <summary>HWNDs for the dialog, filename edit control, and Save button.</summary>
             internal IntPtr Window, Filename, SaveButton;
 
-            /// <summary>Maintains the thread state for solid works macro dialog.</summary>
+            /// <summary>Native UI thread that owns the dialog HWND.</summary>
             internal uint Thread;
 
-            /// <summary>Maintains the filename text state for solid works macro dialog.</summary>
+            /// <summary>Current filename edit contents read back from the dialog.</summary>
             internal string FilenameText;
 
-            /// <summary>Compares  for solid works macro dialog.</summary>
-            /// <param name="other">solid works macro dialog that supplies the other for this operation.</param>
-            /// <returns>Boolean indicating the result of the check for same on solid works macro dialog.</returns>
+            /// <summary>Compares the dialog and actionable-control HWNDs and owner thread.</summary>
+            /// <param name="other">Fresh snapshot to compare with this frozen dialog identity.</param>
+            /// <returns><see langword="true"/> when all captured native handles and the owner thread match.</returns>
             internal bool Same(SolidWorksMacroDialog other) => other != null && Window == other.Window &&
                 Filename == other.Filename && SaveButton == other.SaveButton && Thread == other.Thread;
         }
 
-        /// <summary>Defines the i solid works macro creation native contract.</summary>
+        /// <summary>Native operations used by the one-shot SOLIDWORKS macro creation state machine.</summary>
         internal interface ISolidWorksMacroCreationNative : IDisposable
         {
 
-            /// <summary>Requires owner for i solid works macro creation native.</summary>
+            /// <summary>Throws unless native calls run on the captured SOLIDWORKS owner thread.</summary>
             void RequireOwner();
 
-            /// <summary>Handles prepare for i solid works macro creation native.</summary>
+            /// <summary>Captures and validates the native application's version and macro command before entry.</summary>
             void Prepare();
 
-            /// <summary>Creates  for i solid works macro creation native.</summary>
-            /// <param name="beforeEntry">action that supplies the before entry for this operation.</param>
+            /// <summary>Enters the native New Macro command once after the final caller-supplied checks.</summary>
+            /// <param name="beforeEntry">Checks to run immediately before command delivery; may refuse the mutation.</param>
             void Create(Action beforeEntry);
 
-            /// <summary>Captures  for i solid works macro creation native.</summary>
-            /// <returns>solid works macro dialog produced by the operation for capture on i solid works macro creation native.</returns>
+            /// <summary>Finds and snapshots the uniquely qualified New Macro dialog, if it is currently present.</summary>
+            /// <returns>Verified dialog snapshot, or <see langword="null"/> when no matching dialog is visible.</returns>
             SolidWorksMacroDialog Capture();
 
-            /// <summary>Requires same for i solid works macro creation native.</summary>
-            /// <param name="expected">solid works macro dialog that supplies the expected for this operation.</param>
+            /// <summary>Revalidates the frozen dialog and child control identities before a mutation.</summary>
+            /// <param name="expected">Previously captured dialog identity that must still be current.</param>
             void RequireSame(SolidWorksMacroDialog expected);
 
-            /// <summary>Writes filename for i solid works macro creation native.</summary>
-            /// <param name="expected">solid works macro dialog that supplies the expected for this operation.</param>
-            /// <param name="path">Path used for the path being processed.</param>
-            /// <param name="beforeEntry">action that supplies the before entry for this operation.</param>
-            /// <param name="beforeDelivery">action that supplies the before delivery for this operation.</param>
+            /// <summary>Writes the canonical destination to the frozen dialog's filename field once.</summary>
+            /// <param name="expected">Dialog snapshot whose identity and edit control are rechecked.</param>
+            /// <param name="path">Canonical absolute destination path ending in .swp.</param>
+            /// <param name="beforeEntry">Checks immediately before beginning the filename mutation.</param>
+            /// <param name="beforeDelivery">Final checks immediately before sending the native edit message.</param>
             void WriteFilename(SolidWorksMacroDialog expected, string path, Action beforeEntry, Action beforeDelivery);
 
-            /// <summary>Saves  for i solid works macro creation native.</summary>
-            /// <param name="expected">solid works macro dialog that supplies the expected for this operation.</param>
-            /// <param name="beforeEntry">action that supplies the before entry for this operation.</param>
-            /// <param name="beforeDelivery">action that supplies the before delivery for this operation.</param>
+            /// <summary>Queues the dialog's one Save action after rechecking its frozen identity.</summary>
+            /// <param name="expected">Dialog snapshot whose Save button must still be current.</param>
+            /// <param name="beforeEntry">Checks immediately before beginning the Save action.</param>
+            /// <param name="beforeDelivery">Final checks immediately before posting the native button command.</param>
             void Save(SolidWorksMacroDialog expected, Action beforeEntry, Action beforeDelivery);
 
-            /// <summary>Closes d for i solid works macro creation native.</summary>
-            /// <param name="expected">solid works macro dialog that supplies the expected for this operation.</param>
-            /// <returns>Boolean indicating the result of the check for closed on i solid works macro creation native.</returns>
+            /// <summary>Checks whether the frozen dialog has closed and no matching dialog replaced it.</summary>
+            /// <param name="expected">Dialog identity captured before filename and Save delivery.</param>
+            /// <returns><see langword="true"/> only when that dialog is gone and no replacement is detected.</returns>
             bool Closed(SolidWorksMacroDialog expected);
 
-            /// <summary>Compares project for i solid works macro creation native.</summary>
-            /// <param name="first">object that supplies the first for this operation.</param>
-            /// <param name="second">object that supplies the second for this operation.</param>
-            /// <returns>Boolean indicating the result of the check for same project on i solid works macro creation native.</returns>
+            /// <summary>Compares canonical project COM identity rather than project names or paths.</summary>
+            /// <param name="first">Original project RCW captured before native creation.</param>
+            /// <param name="second">Current project RCW resolved after a native transition.</param>
+            /// <returns>Whether both references identify the same COM project instance.</returns>
             bool SameProject(object first, object second);
         }
 
-        /// <summary>Maintains the solid works macro creation native factory state for vbe project components.</summary>
+        /// <summary>Factory for the native-dialog adapter, injectable by tests without activating a host.</summary>
         internal Func<object, Action, ISolidWorksMacroCreationNative> SolidWorksMacroCreationNativeFactory =
             (editor, context) => new NativeSolidWorksMacroCreation(editor, context);
 
-        /// <summary>Maintains the solid works macro creation scheduler factory state for vbe project components.</summary>
+        /// <summary>Factory for the owner-STA scheduler that posts command work and polls the modal dialog.</summary>
         internal Func<VbeProjectGeneralOperation.IScheduler> SolidWorksMacroCreationSchedulerFactory =
             () => new SolidWorksMacroCreationScheduler();
 
-        /// <summary>Maintains the solid works macro creation timeout milliseconds state for vbe project components.</summary>
+        /// <summary>Deadline for the asynchronous creation operation, measured by its scheduler in milliseconds.</summary>
         internal long SolidWorksMacroCreationTimeoutMilliseconds = 30000;
 
         // This is an explicit native creation route. It never calls Add101/SaveAs or retries a failed save.
-        /// <summary>Creates solid works macro async for vbe project components.</summary>
-        /// <param name="request">request that supplies the request for this operation.</param>
-        /// <param name="revalidateAuthorization">action&lt;bool&gt; that supplies the revalidate authorization for this operation.</param>
-        /// <param name="recordClaim">action&lt;macro mutation claim&gt; that supplies the record claim for this operation.</param>
-        /// <param name="requireNativeContext">action that supplies the require native context for this operation.</param>
-        /// <returns>task&lt;solid works macro creation result&gt; produced by the operation for create solid works macro async on vbe project components.</returns>
+        /// <summary>Creates one fresh native .swp project through the original SOLIDWORKS New Macro dialog and verifies the live project.</summary>
+        /// <param name="request">Design-mode request with expected project revision and a fresh canonical destination path.</param>
+        /// <param name="revalidateAuthorization">Optional current-authority check; true is used for discovery, false for delivery-sensitive checks.</param>
+        /// <param name="recordClaim">Optional durable recorder invoked before each native mutation and at terminal completion.</param>
+        /// <param name="requireNativeContext">Optional assertion that the caller's native project context is still current.</param>
+        /// <returns>Task completing with mutation milestones and live-host verification; it never retries or rolls back uncertain work.</returns>
         internal Task<SolidWorksMacroCreationResult> CreateSolidWorksMacroAsync(Request request,
             Action<bool> revalidateAuthorization = null, Action<MacroMutationClaim> recordClaim = null, Action requireNativeContext = null)
         {
@@ -244,9 +244,9 @@ namespace VBAi
             finally { if (!consumed) native.Dispose(); }
         }
 
-        /// <summary>Reads native creation components for vbe project components.</summary>
-        /// <param name="nativeProject">object that supplies the native project for this operation.</param>
-        /// <returns>i enumerable&lt;object&gt; produced by the operation for read native creation components on vbe project components.</returns>
+        /// <summary>Reads the live VBComponents collection into name/type records for destination verification.</summary>
+        /// <param name="nativeProject">Canonical project COM object returned by the host's project collection.</param>
+        /// <returns>Snapshot records containing each component's current name and numeric type.</returns>
         private static IEnumerable<object> ReadNativeCreationComponents(object nativeProject)
         {
             dynamic project = nativeProject;
@@ -256,9 +256,9 @@ namespace VBAi
             return result;
         }
 
-        /// <summary>Requires fresh solid works macro path for vbe project components.</summary>
-        /// <param name="path">Path used for the path being processed.</param>
-        /// <returns>Text produced by the operation for require fresh solid works macro path on vbe project components.</returns>
+        /// <summary>Requires a canonical absolute .swp path whose parent exists and whose destination is absent.</summary>
+        /// <param name="path">Destination path; its spelling must already equal <see cref="Path.GetFullPath(string)"/> output.</param>
+        /// <returns>The unchanged path after extension, canonicality, parent-directory, and absence checks.</returns>
         internal static string RequireFreshSolidWorksMacroPath(string path)
         {
             if (string.IsNullOrWhiteSpace(path) || path.IndexOf('\0') >= 0 || !Path.IsPathRooted(path) ||
@@ -270,15 +270,15 @@ namespace VBAi
             return path;
         }
 
-        /// <summary>Runs solid works macro creation async for vbe project components.</summary>
-        /// <param name="path">Path used for the path being processed.</param>
-        /// <param name="native">i solid works macro creation native that supplies the native for this operation.</param>
-        /// <param name="scheduler">i scheduler that supplies the scheduler for this operation.</param>
-        /// <param name="live">action that supplies the live for this operation.</param>
-        /// <param name="final">action that supplies the final for this operation.</param>
-        /// <param name="verify">func&lt;solid works macro creation result, solid works macro creation result&gt; that supplies the verify for this operation.</param>
-        /// <param name="durableClaim">action&lt;solid works macro creation result&gt; that supplies the durable claim for this operation.</param>
-        /// <returns>task&lt;solid works macro creation result&gt; produced by the operation for run solid works macro creation async on vbe project components.</returns>
+        /// <summary>Runs the one-shot command, filename write, Save, and close-verification sequence on the owner STA.</summary>
+        /// <param name="path">Canonical destination carried into the result and native filename write.</param>
+        /// <param name="native">Native adapter that validates and acts on the frozen Save dialog.</param>
+        /// <param name="scheduler">Original owner-STA scheduler for command posting and bounded polling.</param>
+        /// <param name="live">Revalidates current collection identity, authorization, and project context.</param>
+        /// <param name="final">Checks authorization, owner identity, and pending-save state immediately before delivery.</param>
+        /// <param name="verify">Final live-host collection and destination verifier run after the original command returns and dialog closes.</param>
+        /// <param name="durableClaim">Records the current mutation milestone before each native side effect and at completion.</param>
+        /// <returns>Task with terminal result; any uncertain native outcome ends the operation without retry or cleanup mutation.</returns>
         internal Task<SolidWorksMacroCreationResult> RunSolidWorksMacroCreationAsync(string path,
             ISolidWorksMacroCreationNative native, VbeProjectGeneralOperation.IScheduler scheduler,
             Action live, Action final, Func<SolidWorksMacroCreationResult, SolidWorksMacroCreationResult> verify,
@@ -355,34 +355,34 @@ namespace VBAi
             return completion.Task;
         }
 
-        /// <summary>Owns the solid works macro creation scheduler state and operations.</summary>
+        /// <summary>Posts and polls creation work on the original SOLIDWORKS UI synchronization context.</summary>
         private sealed class SolidWorksMacroCreationScheduler : VbeProjectGeneralOperation.IScheduler
         {
 
-            /// <summary>Maintains the context state for solid works macro creation scheduler.</summary>
+            /// <summary>Synchronization context captured when creation starts.</summary>
             private readonly SynchronizationContext context = SynchronizationContext.Current;
 
-            /// <summary>Maintains the owner state for solid works macro creation scheduler.</summary>
+            /// <summary>Managed thread ID required by this scheduler's owner-thread assertions.</summary>
             private readonly int owner = Thread.CurrentThread.ManagedThreadId;
 
-            /// <summary>Maintains the watch state for solid works macro creation scheduler.</summary>
+            /// <summary>Monotonic elapsed-time source used for the operation deadline.</summary>
             private readonly Stopwatch watch = Stopwatch.StartNew();
 
             /// <summary>Gets the elapsed milliseconds.</summary>
             /// <value>Current elapsed milliseconds exposed by solid works macro creation scheduler.</value>
             public long ElapsedMilliseconds => watch.ElapsedMilliseconds;
 
-            /// <summary>Requires owner for solid works macro creation scheduler.</summary>
+            /// <summary>Requires the captured synchronization context, managed thread, and STA apartment.</summary>
             public void RequireOwner() { if (context == null || owner != Thread.CurrentThread.ManagedThreadId || Thread.CurrentThread.GetApartmentState() != ApartmentState.STA)
                 throw new InvalidOperationException("Native macro creation requires the original VBE UI STA/context."); }
 
-            /// <summary>Handles post for solid works macro creation scheduler.</summary>
-            /// <param name="action">action that supplies the action for this operation.</param>
+            /// <summary>Posts one callback to the captured owner synchronization context.</summary>
+            /// <param name="action">Callback to execute asynchronously on the owner thread.</param>
             public void Post(Action action) { RequireOwner(); context.Post(_ => action(), null); }
 
-            /// <summary>Handles poll for solid works macro creation scheduler.</summary>
-            /// <param name="action">action that supplies the action for this operation.</param>
-            /// <returns>i disposable produced by the operation for poll on solid works macro creation scheduler.</returns>
+            /// <summary>Starts a 50 ms WinForms timer that polls the modal operation on the owner thread.</summary>
+            /// <param name="action">One poll callback invoked by each timer tick.</param>
+            /// <returns>Timer handle; disposing it stops further polling.</returns>
             public IDisposable Poll(Action action) { RequireOwner(); var timer = new System.Windows.Forms.Timer { Interval = 50 }; timer.Tick += (s, e) => action(); timer.Start(); return timer; }
         }
 
@@ -391,52 +391,52 @@ namespace VBAi
         private interface ISolidWorksMacroApplication
         {
 
-            /// <summary>Returns process id for i solid works macro application.</summary>
-            /// <returns>int produced by the operation for get process id on i solid works macro application.</returns>
+            /// <summary>Gets the process ID associated with this SOLIDWORKS automation object.</summary>
+            /// <returns>Host process ID used to reject a ROT object from another instance.</returns>
             [DispId(166)] int GetProcessID();
 
-            /// <summary>Handles revision number for i solid works macro application.</summary>
-            /// <returns>Text produced by the operation for revision number on i solid works macro application.</returns>
+            /// <summary>Gets the SOLIDWORKS revision string captured and rechecked around command entry.</summary>
+            /// <returns>Host revision identifier.</returns>
             [DispId(12)] [return: MarshalAs(UnmanagedType.BStr)] string RevisionNumber();
 
-            /// <summary>Runs command for i solid works macro application.</summary>
-            /// <param name="command">int that supplies the command for this operation.</param>
-            /// <param name="title">Text that supplies the title value. Use the format required by the calling operation.</param>
-            /// <returns>Boolean indicating the result of the check for run command on i solid works macro application.</returns>
+            /// <summary>Invokes one host command by numeric command ID and title.</summary>
+            /// <param name="command">SOLIDWORKS command identifier; this flow uses 573 for New Macro.</param>
+            /// <param name="title">Command title parameter, empty for the New Macro route.</param>
+            /// <returns>Host-reported command acceptance; false is surfaced as failure without retry.</returns>
             [DispId(245)] [return: MarshalAs(UnmanagedType.VariantBool)] bool RunCommand(int command, [MarshalAs(UnmanagedType.BStr)] string title);
         }
 
-        /// <summary>Owns the native solid works macro creation state and operations.</summary>
+        /// <summary>Implements native SOLIDWORKS ROT binding and one-shot New Macro dialog mutations.</summary>
         private sealed class NativeSolidWorksMacroCreation : ISolidWorksMacroCreationNative
         {
 
-            /// <summary>Identifies the pid associated with native solid works macro creation.</summary>
+            /// <summary>Current host process ID, used to bind the ROT automation object and dialog windows.</summary>
             private readonly int pid = Process.GetCurrentProcess().Id;
 
-            /// <summary>Maintains the thread state for native solid works macro creation.</summary>
+            /// <summary>Native UI thread captured when this adapter is constructed.</summary>
             private readonly uint thread = NativeThread();
 
-            /// <summary>Maintains the root state for native solid works macro creation.</summary>
+            /// <summary>SOLIDWORKS main-window HWND used as the root of native ownership checks.</summary>
             private readonly IntPtr root;
 
-            /// <summary>Maintains the require context state for native solid works macro creation.</summary>
+            /// <summary>Caller-supplied assertion that the target project context remains authorized and current.</summary>
             private readonly Action requireContext;
 
-            /// <summary>Maintains the application state for native solid works macro creation.</summary>
+            /// <summary>Unique RCW resolved from this process's exact SOLIDWORKS ROT moniker.</summary>
             private readonly object application;
 
-            /// <summary>Maintains the typed state for native solid works macro creation.</summary>
+            /// <summary>Typed dispatch interface used to check host identity and invoke command 573.</summary>
             private readonly ISolidWorksMacroApplication typed;
 
-            /// <summary>Maintains the revision state for native solid works macro creation.</summary>
+            /// <summary>Host revision captured at construction and rechecked before New Macro command entry.</summary>
             private readonly string revision;
 
-            /// <summary>Maintains the command consumed and filename consumed and save consumed and disposed state for native solid works macro creation.</summary>
+            /// <summary>One-use guards for command, filename, Save, and COM cleanup; uncertain actions cannot be replayed.</summary>
             private bool commandConsumed, filenameConsumed, saveConsumed, disposed;
 
-            /// <summary>Initializes a NativeSolidWorksMacroCreation instance with the supplied state.</summary>
-            /// <param name="editor">object that supplies the editor for this operation.</param>
-            /// <param name="context">action that supplies the context for this operation.</param>
+            /// <summary>Binds to the current SOLIDWORKS process, its main window, and exact in-process ROT application.</summary>
+            /// <param name="editor">VBE editor whose MainWindow HWND identifies the current SOLIDWORKS host.</param>
+            /// <param name="context">Callback that revalidates the native project context on each operation.</param>
             internal NativeSolidWorksMacroCreation(object editor, Action context)
             {
                 requireContext = context ?? throw new ArgumentNullException(nameof(context));
@@ -448,7 +448,7 @@ namespace VBAi
                 catch { Marshal.ReleaseComObject(application); throw; }
             }
 
-            /// <summary>Requires owner for native solid works macro creation.</summary>
+            /// <summary>Requires the captured SOLIDWORKS process, window, UI thread, STA, and project context.</summary>
             public void RequireOwner()
             {
                 uint owner; uint tid = WindowThread(root, out owner);
@@ -457,17 +457,17 @@ namespace VBAi
                 requireContext();
             }
 
-            /// <summary>Compares project for native solid works macro creation.</summary>
-            /// <param name="a">object that supplies the a for this operation.</param>
-            /// <param name="b">object that supplies the b for this operation.</param>
-            /// <returns>Boolean indicating the result of the check for same project on native solid works macro creation.</returns>
+            /// <summary>Compares project COM identity using the shared general-project identity rule.</summary>
+            /// <param name="a">Previously captured canonical project COM object.</param>
+            /// <param name="b">Current project COM object resolved after a host transition.</param>
+            /// <returns>Whether both objects refer to the same underlying project.</returns>
             public bool SameProject(object a, object b) => SameGeneralProject(a, b);
 
-            /// <summary>Handles prepare for native solid works macro creation.</summary>
+            /// <summary>Checks owner identity, enabled host window, and absence of any visible host modal dialog.</summary>
             public void Prepare() { RequireOwner(); if (!Enabled(root) || VisibleDialogs().Count != 0) throw new InvalidOperationException("An original host modal is already present."); }
 
-            /// <summary>Creates  for native solid works macro creation.</summary>
-            /// <param name="beforeEntry">action that supplies the before entry for this operation.</param>
+            /// <summary>Consumes the sole New Macro command attempt after host PID/revision and final checks pass.</summary>
+            /// <param name="beforeEntry">Final caller checks run immediately before native command delivery.</param>
             public void Create(Action beforeEntry)
             {
                 RequireOwner(); if (commandConsumed) throw new InvalidOperationException("Native New Macro is already consumed."); commandConsumed = true;
@@ -476,8 +476,8 @@ namespace VBAi
                 if (!typed.RunCommand(573, "")) throw new InvalidOperationException("The single native New Macro returned false.");
             }
 
-            /// <summary>Captures  for native solid works macro creation.</summary>
-            /// <returns>solid works macro dialog produced by the operation for capture on native solid works macro creation.</returns>
+            /// <summary>Captures the sole visible modal only when it has the supported filename and Save controls.</summary>
+            /// <returns>Verified dialog snapshot, or <see langword="null"/> when no host modal is present.</returns>
             public SolidWorksMacroDialog Capture()
             {
                 RequireOwner(); var dialogs = VisibleDialogs(); if (dialogs.Count == 0) return null;
@@ -500,15 +500,15 @@ namespace VBAi
                 return new SolidWorksMacroDialog { Window = dialog, Filename = filenames[0], SaveButton = saves[0], Thread = thread, FilenameText = Text(filenames[0]) };
             }
 
-            /// <summary>Requires same for native solid works macro creation.</summary>
-            /// <param name="expected">solid works macro dialog that supplies the expected for this operation.</param>
+            /// <summary>Captures a fresh snapshot and rejects any change to the frozen dialog or child HWNDs.</summary>
+            /// <param name="expected">Previously captured native dialog identity.</param>
             public void RequireSame(SolidWorksMacroDialog expected) { if (expected == null || !expected.Same(Capture())) throw new InvalidOperationException("Original Save dialog identity changed."); }
 
-            /// <summary>Writes filename for native solid works macro creation.</summary>
-            /// <param name="expected">solid works macro dialog that supplies the expected for this operation.</param>
-            /// <param name="path">Path used for the path being processed.</param>
-            /// <param name="beforeEntry">action that supplies the before entry for this operation.</param>
-            /// <param name="beforeDelivery">action that supplies the before delivery for this operation.</param>
+            /// <summary>Writes the destination path to the filename edit once using bounded SendMessageTimeout.</summary>
+            /// <param name="expected">Frozen dialog snapshot whose HWNDs and control shape must still match.</param>
+            /// <param name="path">Canonical destination path entered in the host's filename edit.</param>
+            /// <param name="beforeEntry">Revalidation before consuming the filename-write phase.</param>
+            /// <param name="beforeDelivery">Final authorization and identity check before the native text message.</param>
             public void WriteFilename(SolidWorksMacroDialog expected, string path, Action beforeEntry, Action beforeDelivery)
             {
                 if (filenameConsumed) throw new InvalidOperationException("Filename delivery is already consumed."); filenameConsumed = true;
@@ -518,10 +518,10 @@ namespace VBAi
                     throw new InvalidOperationException("Original filename write is uncertain; no retry.");
             }
 
-            /// <summary>Saves  for native solid works macro creation.</summary>
-            /// <param name="expected">solid works macro dialog that supplies the expected for this operation.</param>
-            /// <param name="beforeEntry">action that supplies the before entry for this operation.</param>
-            /// <param name="beforeDelivery">action that supplies the before delivery for this operation.</param>
+            /// <summary>Posts one BM_CLICK to the verified Save button after exact filename readback.</summary>
+            /// <param name="expected">Frozen dialog snapshot with the exact requested filename.</param>
+            /// <param name="beforeEntry">Revalidation before consuming the Save phase.</param>
+            /// <param name="beforeDelivery">Final authorization and identity check before the button message.</param>
             public void Save(SolidWorksMacroDialog expected, Action beforeEntry, Action beforeDelivery)
             {
                 if (saveConsumed) throw new InvalidOperationException("Save delivery is already consumed."); saveConsumed = true;
@@ -532,17 +532,17 @@ namespace VBAi
                 if (!Post(expected.SaveButton, 0xF5, UIntPtr.Zero, IntPtr.Zero)) throw new InvalidOperationException("Single Save enqueue failed; no retry.");
             }
 
-            /// <summary>Closes d for native solid works macro creation.</summary>
-            /// <param name="expected">solid works macro dialog that supplies the expected for this operation.</param>
-            /// <returns>Boolean indicating the result of the check for closed on native solid works macro creation.</returns>
+            /// <summary>Checks whether the original dialog closed and the host remains enabled without a replacement modal.</summary>
+            /// <param name="expected">Original dialog snapshot used to distinguish closure from replacement.</param>
+            /// <returns>True only when the original HWND is gone and no visible modal dialog remains.</returns>
             public bool Closed(SolidWorksMacroDialog expected)
             {
                 RequireOwner(); if (VisibleDialogs().Count != 0) { RequireSame(expected); return false; }
                 return !IsWindow(expected.Window) && Enabled(root);
             }
 
-            /// <summary>Handles visible dialogs for native solid works macro creation.</summary>
-            /// <returns>list&lt;int ptr&gt; produced by the operation for visible dialogs on native solid works macro creation.</returns>
+            /// <summary>Enumerates the current desktop and returns visible modal windows owned by this host process.</summary>
+            /// <returns>Complete list of owned visible dialog HWNDs; incomplete enumeration or a foreign owner thread throws.</returns>
             private List<IntPtr> VisibleDialogs()
             {
                 RequireOwner(); var found = new List<IntPtr>(); bool valid = true, sawRoot = false; int count = 0; Exception callbackError = null;
@@ -561,13 +561,13 @@ namespace VBAi
                 return found;
             }
 
-            /// <summary>Requires window for native solid works macro creation.</summary>
-            /// <param name="w">Native handle that supplies the w for this operation.</param>
+            /// <summary>Requires a live HWND owned by the captured process and native UI thread.</summary>
+            /// <param name="w">Window or control HWND to validate.</param>
             private void RequireWindow(IntPtr w) { uint p; if (WindowThread(w, out p) != thread || p != pid || !IsWindow(w)) throw new InvalidOperationException("Native dialog/control owner changed."); }
 
-            /// <summary>Requires final control for native solid works macro creation.</summary>
-            /// <param name="expected">solid works macro dialog that supplies the expected for this operation.</param>
-            /// <param name="save">Indicates whether save is enabled.</param>
+            /// <summary>Rechecks exact dialog, edit, and Save button classes, IDs, ancestry, visibility, and enabled state.</summary>
+            /// <param name="expected">Frozen dialog identity and filename value.</param>
+            /// <param name="save">When true, also requires the filename text to equal the frozen readback value.</param>
             private void RequireFinalControl(SolidWorksMacroDialog expected, bool save)
             {
                 RequireWindow(expected.Window); RequireWindow(expected.Filename); RequireWindow(expected.SaveButton);
@@ -580,27 +580,27 @@ namespace VBAi
                     throw new InvalidOperationException("Original Save control shape/value changed before delivery.");
             }
 
-            /// <summary>Handles class for native solid works macro creation.</summary>
-            /// <param name="w">Native handle that supplies the w for this operation.</param>
-            /// <returns>Text produced by the operation for class on native solid works macro creation.</returns>
+            /// <summary>Reads the Unicode Win32 class name for a window.</summary>
+            /// <param name="w">HWND whose class is requested.</param>
+            /// <returns>Class name; a failed or empty native read throws.</returns>
             private static string Class(IntPtr w) { var text = new StringBuilder(256); if (GetClass(w, text, text.Capacity) == 0) throw new InvalidOperationException("Native class unavailable."); return text.ToString(); }
 
-            /// <summary>Handles text for native solid works macro creation.</summary>
-            /// <param name="w">Native handle that supplies the w for this operation.</param>
-            /// <returns>Text produced by the operation for text on native solid works macro creation.</returns>
+            /// <summary>Reads bounded Unicode control text using a 250 ms SendMessageTimeout call.</summary>
+            /// <param name="w">Owner-verified HWND whose text is read.</param>
+            /// <returns>Complete text; timeout or a full/truncated buffer throws.</returns>
             private string Text(IntPtr w) { RequireWindow(w); var text = new StringBuilder(32768); UIntPtr length; if (ReadText(w, 13, new UIntPtr((uint)text.Capacity), text, 0x23, 250, out length) == IntPtr.Zero || length.ToUInt64() >= (ulong)text.Capacity - 1) throw new InvalidOperationException("Bounded native text read incomplete."); return text.ToString(); }
 
-            /// <summary>Saves caption for native solid works macro creation.</summary>
-            /// <param name="text">Text that supplies the text value. Use the format required by the calling operation.</param>
-            /// <returns>Boolean indicating the result of the check for save caption on native solid works macro creation.</returns>
+            /// <summary>Recognizes the qualified English and French Save button captions.</summary>
+            /// <param name="text">Captured button caption.</param>
+            /// <returns>True for <c>Save</c>, <c>&amp;Save</c>, <c>Enregistrer</c>, or <c>&amp;Enregistrer</c>.</returns>
             private static bool SaveCaption(string text) => text == "&Save" || text == "Save" || text == "&Enregistrer" || text == "Enregistrer";
 
             /// <summary>Disposes  for native solid works macro creation.</summary>
             public void Dispose() { if (disposed) return; if (NativeThread() != thread || Thread.CurrentThread.GetApartmentState() != ApartmentState.STA) throw new InvalidOperationException("Native reference cleanup requires its original STA."); disposed = true; Marshal.ReleaseComObject(application); }
 
-            /// <summary>Resolves owned solid works application for native solid works macro creation.</summary>
-            /// <param name="pid">int that supplies the pid for this operation.</param>
-            /// <returns>object produced by the operation for resolve owned solid works application on native solid works macro creation.</returns>
+            /// <summary>Resolves the exact in-process SOLIDWORKS automation moniker without activating another host.</summary>
+            /// <param name="pid">Current SOLIDWORKS process ID encoded in the expected ROT display name.</param>
+            /// <returns>Unique COM object for <c>SolidWorks_PID_{pid}</c>; absence or inventory overflow throws.</returns>
             private static object ResolveOwnedSolidWorksApplication(int pid)
             {
                 IRunningObjectTable rot = null; IBindCtx context = null; IEnumMoniker iterator = null;
@@ -621,118 +621,118 @@ namespace VBAi
                 } finally { if (iterator != null) Marshal.ReleaseComObject(iterator); if (context != null) Marshal.ReleaseComObject(context); if (rot != null) Marshal.ReleaseComObject(rot); }
             }
 
-            /// <summary>Defines the native callback callback.</summary>
-            /// <param name="window">Native handle that supplies the window for this operation.</param>
-            /// <param name="state">Native handle that supplies the state for this operation.</param>
-            /// <returns>Boolean indicating the result of the check for operation on native solid works macro creation.</returns>
+            /// <summary>Callback signature used to enumerate desktop and dialog-child HWNDs.</summary>
+            /// <param name="window">Current HWND supplied by the Win32 enumerator.</param>
+            /// <param name="state">Opaque caller context pointer forwarded by Win32.</param>
+            /// <returns>True to continue enumeration; false to stop.</returns>
             private delegate bool NativeCallback(IntPtr window, IntPtr state);
 
-            /// <summary>Handles native thread for native solid works macro creation.</summary>
-            /// <returns>uint produced by the operation for native thread on native solid works macro creation.</returns>
+            /// <summary>Reads the calling native thread ID from Kernel32.</summary>
+            /// <returns>Current Win32 thread ID.</returns>
             [DllImport("kernel32.dll", EntryPoint = "GetCurrentThreadId")] private static extern uint NativeThread();
 
-            /// <summary>Handles window thread for native solid works macro creation.</summary>
-            /// <param name="window">Native handle that supplies the window for this operation.</param>
-            /// <param name="pid">uint that supplies the pid for this operation.</param>
-            /// <returns>uint produced by the operation for window thread on native solid works macro creation.</returns>
+            /// <summary>Reads the owning thread and process IDs for an HWND.</summary>
+            /// <param name="window">Window whose owner identity is queried.</param>
+            /// <param name="pid">Receives the owning process ID.</param>
+            /// <returns>Owning native thread ID, or zero for an invalid window.</returns>
             [DllImport("user32.dll", EntryPoint = "GetWindowThreadProcessId")] private static extern uint WindowThread(IntPtr window, out uint pid);
 
-            /// <summary>Handles native desktop for native solid works macro creation.</summary>
-            /// <param name="thread">uint that supplies the thread for this operation.</param>
-            /// <returns>int ptr produced by the operation for native desktop on native solid works macro creation.</returns>
+            /// <summary>Gets the desktop opened by a native thread.</summary>
+            /// <param name="thread">Native thread ID whose desktop is queried.</param>
+            /// <returns>Desktop HDESK, or zero if the thread has no accessible desktop.</returns>
             [DllImport("user32.dll", EntryPoint = "GetThreadDesktop")] private static extern IntPtr NativeDesktop(uint thread);
 
-            /// <summary>Handles enum desktop for native solid works macro creation.</summary>
-            /// <param name="desktop">Native handle that supplies the desktop for this operation.</param>
-            /// <param name="callback">native callback that supplies the callback for this operation.</param>
-            /// <param name="state">Native handle that supplies the state for this operation.</param>
-            /// <returns>Boolean indicating the result of the check for enum desktop on native solid works macro creation.</returns>
+            /// <summary>Enumerates windows on the captured host desktop.</summary>
+            /// <param name="desktop">Desktop handle returned for the host's native thread.</param>
+            /// <param name="callback">Callback invoked with each enumerated top-level HWND.</param>
+            /// <param name="state">Opaque callback context.</param>
+            /// <returns>True when enumeration completes; false on cancellation or API failure.</returns>
             [DllImport("user32.dll", EntryPoint = "EnumDesktopWindows", SetLastError = true)] private static extern bool EnumDesktop(IntPtr desktop, NativeCallback callback, IntPtr state);
 
-            /// <summary>Handles enum children for native solid works macro creation.</summary>
-            /// <param name="window">Native handle that supplies the window for this operation.</param>
-            /// <param name="callback">native callback that supplies the callback for this operation.</param>
-            /// <param name="state">Native handle that supplies the state for this operation.</param>
-            /// <returns>Boolean indicating the result of the check for enum children on native solid works macro creation.</returns>
+            /// <summary>Enumerates descendants of one captured dialog.</summary>
+            /// <param name="window">Dialog HWND whose child controls are enumerated.</param>
+            /// <param name="callback">Callback invoked for each child HWND.</param>
+            /// <param name="state">Opaque callback context.</param>
+            /// <returns>Win32 enumeration result; caller also enforces a separate child-count bound.</returns>
             [DllImport("user32.dll", EntryPoint = "EnumChildWindows")] private static extern bool EnumChildren(IntPtr window, NativeCallback callback, IntPtr state);
 
-            /// <summary>Returns class for native solid works macro creation.</summary>
-            /// <param name="window">Native handle that supplies the window for this operation.</param>
-            /// <param name="text">string builder that supplies the text for this operation.</param>
-            /// <param name="capacity">int that supplies the capacity for this operation.</param>
-            /// <returns>int produced by the operation for get class on native solid works macro creation.</returns>
+            /// <summary>Copies a Unicode window-class name into a caller-provided buffer.</summary>
+            /// <param name="window">HWND to inspect.</param>
+            /// <param name="text">Destination buffer.</param>
+            /// <param name="capacity">Buffer capacity in characters.</param>
+            /// <returns>Characters copied, excluding the terminator; zero indicates failure.</returns>
             [DllImport("user32.dll", EntryPoint = "GetClassNameW", CharSet = CharSet.Unicode)] private static extern int GetClass(IntPtr window, StringBuilder text, int capacity);
 
-            /// <summary>Handles visible for native solid works macro creation.</summary>
-            /// <param name="window">Native handle that supplies the window for this operation.</param>
-            /// <returns>Boolean indicating the result of the check for visible on native solid works macro creation.</returns>
+            /// <summary>Tests whether an HWND has the WS_VISIBLE state.</summary>
+            /// <param name="window">Window to inspect.</param>
+            /// <returns>True when the window is visible.</returns>
             [DllImport("user32.dll", EntryPoint = "IsWindowVisible")] private static extern bool Visible(IntPtr window);
 
-            /// <summary>Handles enabled for native solid works macro creation.</summary>
-            /// <param name="window">Native handle that supplies the window for this operation.</param>
-            /// <returns>Boolean indicating the result of the check for enabled on native solid works macro creation.</returns>
+            /// <summary>Tests whether an HWND is enabled for interaction.</summary>
+            /// <param name="window">Window to inspect.</param>
+            /// <returns>True when the window is enabled.</returns>
             [DllImport("user32.dll", EntryPoint = "IsWindowEnabled")] private static extern bool Enabled(IntPtr window);
 
-            /// <summary>Determines whether window for native solid works macro creation.</summary>
-            /// <param name="window">Native handle that supplies the window for this operation.</param>
-            /// <returns>Boolean indicating the result of the check for is window on native solid works macro creation.</returns>
+            /// <summary>Tests whether an HWND still identifies a live window.</summary>
+            /// <param name="window">HWND to test.</param>
+            /// <returns>True while the native window exists.</returns>
             [DllImport("user32.dll")] private static extern bool IsWindow(IntPtr window);
 
-            /// <summary>Handles control id for native solid works macro creation.</summary>
-            /// <param name="window">Native handle that supplies the window for this operation.</param>
-            /// <returns>int produced by the operation for control id on native solid works macro creation.</returns>
+            /// <summary>Reads a dialog child control's numeric ID.</summary>
+            /// <param name="window">Child HWND to inspect.</param>
+            /// <returns>Control ID assigned to the child window.</returns>
             [DllImport("user32.dll", EntryPoint = "GetDlgCtrlID")] private static extern int ControlId(IntPtr window);
 
-            /// <summary>Handles parent for native solid works macro creation.</summary>
-            /// <param name="window">Native handle that supplies the window for this operation.</param>
-            /// <returns>int ptr produced by the operation for parent on native solid works macro creation.</returns>
+            /// <summary>Reads the immediate parent HWND of a control.</summary>
+            /// <param name="window">Child HWND whose parent is requested.</param>
+            /// <returns>Parent HWND, or zero when there is no parent.</returns>
             [DllImport("user32.dll", EntryPoint = "GetParent")] private static extern IntPtr Parent(IntPtr window);
 
-            /// <summary>Handles ancestor for native solid works macro creation.</summary>
-            /// <param name="window">Native handle that supplies the window for this operation.</param>
-            /// <param name="flags">uint that supplies the flags for this operation.</param>
-            /// <returns>int ptr produced by the operation for ancestor on native solid works macro creation.</returns>
+            /// <summary>Reads an ancestor HWND using the requested relationship flag.</summary>
+            /// <param name="window">Starting HWND.</param>
+            /// <param name="flags">GetAncestor selector; caller uses GA_ROOT (2) for dialog ancestry.</param>
+            /// <returns>Ancestor HWND, or zero when none exists.</returns>
             [DllImport("user32.dll", EntryPoint = "GetAncestor")] private static extern IntPtr Ancestor(IntPtr window, uint flags);
 
-            /// <summary>Reads text for native solid works macro creation.</summary>
-            /// <param name="window">Native handle that supplies the window for this operation.</param>
-            /// <param name="message">uint that supplies the message for this operation.</param>
-            /// <param name="first">Native handle that supplies the first for this operation.</param>
-            /// <param name="text">string builder that supplies the text for this operation.</param>
-            /// <param name="flags">uint that supplies the flags for this operation.</param>
-            /// <param name="timeout">uint that supplies the timeout for this operation.</param>
-            /// <param name="result">Native handle that supplies the result for this operation.</param>
-            /// <returns>int ptr produced by the operation for read text on native solid works macro creation.</returns>
+            /// <summary>Sends a Unicode message with a bounded wait and writes any message result separately.</summary>
+            /// <param name="window">Target HWND.</param>
+            /// <param name="message">Message ID, such as WM_GETTEXT or LB_GETTEXT.</param>
+            /// <param name="first">Message-specific WPARAM value.</param>
+            /// <param name="text">Managed text buffer passed as LPARAM.</param>
+            /// <param name="flags">SendMessageTimeout behavior flags.</param>
+            /// <param name="timeout">Maximum wait in milliseconds; callers use 250 ms.</param>
+            /// <param name="result">Receives the message-specific LRESULT.</param>
+            /// <returns>Nonzero on successful delivery before timeout; zero on failure or timeout.</returns>
             [DllImport("user32.dll", EntryPoint = "SendMessageTimeoutW", CharSet = CharSet.Unicode, SetLastError = true)] private static extern IntPtr ReadText(IntPtr window, uint message, UIntPtr first, StringBuilder text, uint flags, uint timeout, out UIntPtr result);
 
-            /// <summary>Writes text for native solid works macro creation.</summary>
-            /// <param name="window">Native handle that supplies the window for this operation.</param>
-            /// <param name="message">uint that supplies the message for this operation.</param>
-            /// <param name="first">Native handle that supplies the first for this operation.</param>
-            /// <param name="text">Text that supplies the text value. Use the format required by the calling operation.</param>
-            /// <param name="flags">uint that supplies the flags for this operation.</param>
-            /// <param name="timeout">uint that supplies the timeout for this operation.</param>
-            /// <param name="result">Native handle that supplies the result for this operation.</param>
-            /// <returns>int ptr produced by the operation for write text on native solid works macro creation.</returns>
+            /// <summary>Sends a Unicode text-setting message with a bounded wait.</summary>
+            /// <param name="window">Target edit-control HWND.</param>
+            /// <param name="message">Message ID, WM_SETTEXT in this flow.</param>
+            /// <param name="first">Message-specific WPARAM value.</param>
+            /// <param name="text">Text to write to the filename control.</param>
+            /// <param name="flags">SendMessageTimeout behavior flags.</param>
+            /// <param name="timeout">Maximum wait in milliseconds; caller uses 250 ms.</param>
+            /// <param name="result">Receives the control's message result.</param>
+            /// <returns>Nonzero on successful delivery before timeout; zero on failure or timeout.</returns>
             [DllImport("user32.dll", EntryPoint = "SendMessageTimeoutW", CharSet = CharSet.Unicode, SetLastError = true)] private static extern IntPtr WriteText(IntPtr window, uint message, UIntPtr first, string text, uint flags, uint timeout, out UIntPtr result);
 
-            /// <summary>Handles post for native solid works macro creation.</summary>
-            /// <param name="window">Native handle that supplies the window for this operation.</param>
-            /// <param name="message">uint that supplies the message for this operation.</param>
-            /// <param name="first">Native handle that supplies the first for this operation.</param>
-            /// <param name="second">Native handle that supplies the second for this operation.</param>
-            /// <returns>Boolean indicating the result of the check for post on native solid works macro creation.</returns>
+            /// <summary>Posts a native message asynchronously to the target window queue.</summary>
+            /// <param name="window">Target HWND.</param>
+            /// <param name="message">Win32 message ID, such as BM_CLICK.</param>
+            /// <param name="first">Message-specific WPARAM value.</param>
+            /// <param name="second">Message-specific LPARAM value.</param>
+            /// <returns>True when the message was queued; false does not authorize a retry.</returns>
             [DllImport("user32.dll", EntryPoint = "PostMessageW", SetLastError = true)] private static extern bool Post(IntPtr window, uint message, UIntPtr first, IntPtr second);
 
-            /// <summary>Returns rot for native solid works macro creation.</summary>
-            /// <param name="reserved">int that supplies the reserved for this operation.</param>
-            /// <param name="table">i running object table that supplies the table for this operation.</param>
-            /// <returns>int produced by the operation for get rot on native solid works macro creation.</returns>
+            /// <summary>Gets the COM Running Object Table for exact in-process host resolution.</summary>
+            /// <param name="reserved">Reserved parameter, which must be zero.</param>
+            /// <param name="table">Receives the caller-owned ROT interface on success.</param>
+            /// <returns>HRESULT from GetRunningObjectTable.</returns>
             [DllImport("ole32.dll", EntryPoint = "GetRunningObjectTable")] private static extern int GetRot(int reserved, out IRunningObjectTable table);
 
-            /// <summary>Creates context for native solid works macro creation.</summary>
-            /// <param name="reserved">int that supplies the reserved for this operation.</param>
-            /// <param name="context">i bind ctx that supplies the context for this operation.</param>
+            /// <summary>Creates the COM bind context used to read ROT moniker display names.</summary>
+            /// <param name="reserved">Reserved parameter, which must be zero.</param>
+            /// <param name="context">Receives the caller-owned bind context on success.</param>
             /// <returns>int produced by the operation for create context on native solid works macro creation.</returns>
             [DllImport("ole32.dll", EntryPoint = "CreateBindCtx")] private static extern int CreateContext(int reserved, out IBindCtx context);
         }
