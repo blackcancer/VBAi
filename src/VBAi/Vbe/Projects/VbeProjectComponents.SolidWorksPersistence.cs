@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 namespace VBAi
 {
 
-    /// <summary>Owns the vbe project components state and operations.</summary>
+    /// <summary>Reports persistence state and coordinates existing SOLIDWORKS/Access host-project saves.</summary>
     internal sealed partial class VbeProjectComponents
     {
 
@@ -24,61 +24,61 @@ namespace VBAi
             /// <value>Current process id exposed by i solid works save probe.</value>
             int ProcessId { get; }
 
-            /// <summary>Requires owner for i solid works save probe.</summary>
-            /// <param name="editor">object that supplies the editor for this operation.</param>
+            /// <summary>Requires the native host window, process, and owner-thread identity to remain current.</summary>
+            /// <param name="editor">VBE editor whose native host window is checked.</param>
             void RequireOwner(object editor);
 
-            /// <summary>Compares project for i solid works save probe.</summary>
-            /// <param name="first">object that supplies the first for this operation.</param>
-            /// <param name="second">object that supplies the second for this operation.</param>
-            /// <returns>Boolean indicating the result of the check for same project on i solid works save probe.</returns>
+            /// <summary>Compares canonical COM identity for a project across host transitions.</summary>
+            /// <param name="first">Previously captured project COM object.</param>
+            /// <param name="second">Current project COM object.</param>
+            /// <returns>True when both references identify the same project.</returns>
             bool SameProject(object first, object second);
 
-            /// <summary>Handles select component for i solid works save probe.</summary>
-            /// <param name="editor">object that supplies the editor for this operation.</param>
-            /// <param name="project">object that supplies the project for this operation.</param>
-            /// <returns>object produced by the operation for select component on i solid works save probe.</returns>
+            /// <summary>Selects the component needed to route the VBE Save command to the host project.</summary>
+            /// <param name="editor">VBE editor that owns the active code pane.</param>
+            /// <param name="project">Canonical SOLIDWORKS Type100 project to save.</param>
+            /// <returns>Selected component handle retained for verification and selection restoration.</returns>
             object SelectComponent(object editor, object project);
 
             /// <summary>Gets the selection.</summary>
             /// <value>Current selection exposed by i solid works save probe.</value>
             SolidWorksSaveSelection Selection { get; }
 
-            /// <summary>Handles restore selection for i solid works save probe.</summary>
-            /// <param name="editor">object that supplies the editor for this operation.</param>
-            /// <param name="project">object that supplies the project for this operation.</param>
-            /// <param name="component">object that supplies the component for this operation.</param>
+            /// <summary>Restores the editor's prior code-pane selection after save verification.</summary>
+            /// <param name="editor">VBE editor whose selection was changed by this operation.</param>
+            /// <param name="project">Project containing the selected component.</param>
+            /// <param name="component">Component whose code pane was temporarily selected.</param>
             void RestoreSelection(object editor, object project, object component);
 
-            /// <summary>Handles selection matches for i solid works save probe.</summary>
-            /// <param name="editor">object that supplies the editor for this operation.</param>
-            /// <param name="project">object that supplies the project for this operation.</param>
-            /// <param name="component">object that supplies the component for this operation.</param>
-            /// <returns>Boolean indicating the result of the check for selection matches on i solid works save probe.</returns>
+            /// <summary>Checks that the active code pane still belongs to the selected project component.</summary>
+            /// <param name="editor">VBE editor with the current active code pane.</param>
+            /// <param name="project">Expected project identity.</param>
+            /// <param name="component">Expected selected component identity.</param>
+            /// <returns>True only when pane, project, and component identities all match.</returns>
             bool SelectionMatches(object editor, object project, object component);
 
-            /// <summary>Saves control for i solid works save probe.</summary>
-            /// <param name="editor">object that supplies the editor for this operation.</param>
-            /// <returns>object produced by the operation for save control on i solid works save probe.</returns>
+            /// <summary>Resolves the built-in VBE Save command and requires it to be enabled.</summary>
+            /// <param name="editor">VBE editor whose CommandBars collection is queried.</param>
+            /// <returns>Built-in command control with ID 3.</returns>
             object SaveControl(object editor);
 
-            /// <summary>Saves  for i solid works save probe.</summary>
-            /// <param name="control">object that supplies the control for this operation.</param>
+            /// <summary>Executes the selected native Save command once.</summary>
+            /// <param name="control">Built-in VBE Save command control returned by <see cref="SaveControl"/>.</param>
             void Save(object control);
 
-            /// <summary>Handles file exists for i solid works save probe.</summary>
-            /// <param name="path">Path used for the path being processed.</param>
-            /// <returns>Boolean indicating the result of the check for file exists on i solid works save probe.</returns>
+            /// <summary>Checks whether the host project file currently exists.</summary>
+            /// <param name="path">Absolute SOLIDWORKS macro project path.</param>
+            /// <returns>File existence at the time of the query.</returns>
             bool FileExists(string path);
 
-            /// <summary>Handles file read only for i solid works save probe.</summary>
-            /// <param name="path">Path used for the path being processed.</param>
-            /// <returns>Boolean indicating the result of the check for file read only on i solid works save probe.</returns>
+            /// <summary>Checks the read-only attribute on an existing host project file.</summary>
+            /// <param name="path">Absolute SOLIDWORKS macro project path.</param>
+            /// <returns>Whether the file has the ReadOnly attribute.</returns>
             bool FileReadOnly(string path);
 
-            /// <summary>Handles file length for i solid works save probe.</summary>
-            /// <param name="path">Path used for the path being processed.</param>
-            /// <returns>long produced by the operation for file length on i solid works save probe.</returns>
+            /// <summary>Reads the current byte length of the host project file.</summary>
+            /// <param name="path">Absolute SOLIDWORKS macro project path.</param>
+            /// <returns>File length in bytes.</returns>
             long FileLength(string path);
         }
 
@@ -102,15 +102,15 @@ namespace VBAi
         /// <summary>Creates only an in-process probe; never selects another host from the ROT.</summary>
         internal Func<ISolidWorksSaveProbe> SolidWorksSaveProbe = () => new NativeSolidWorksSaveProbe();
 
-        /// <summary>Maintains the solid works save verification timeout state for vbe project components.</summary>
+        /// <summary>Maximum wait for the host's delayed Saved notification after one SOLIDWORKS Save command.</summary>
         internal TimeSpan SolidWorksSaveVerificationTimeout = TimeSpan.FromSeconds(3);
         // Bridge, editor and chat have separate sessions on the same VBE owner thread.
-        /// <summary>Maintains the solid works save pending state for vbe project components.</summary>
+        /// <summary>Thread-local guard preventing a second SWP save while the current mutation outcome is unsettled.</summary>
         [ThreadStatic] private static bool solidWorksSavePending;
 
         /// <summary>Yields for SOLIDWORKS and Access delayed Saved notifications on their owning VBE thread.</summary>
-        /// <param name="request">request that supplies the request for this operation.</param>
-        /// <returns>task&lt;object&gt; produced by the operation for save host document async on vbe project components.</returns>
+        /// <param name="request">Request carrying the absolute host path previously observed from persistence status.</param>
+        /// <returns>Asynchronous host save result for supported SOLIDWORKS/Access adapters, or a completed ordinary save result.</returns>
         internal Task<object> SaveHostDocumentAsync(Request request)
         {
             if (request == null || string.IsNullOrWhiteSpace(request.ExpectedHostPath) ||
@@ -128,8 +128,8 @@ namespace VBAi
         }
 
         /// <summary>Preserves project metadata/references across Save, allowing only Saved to transition.</summary>
-        /// <param name="selector">Text that supplies the selector value. Use the format required by the calling operation.</param>
-        /// <returns>Text produced by the operation for solid works save revision on vbe project components.</returns>
+        /// <param name="selector">Project selector used by the current project-property reader.</param>
+        /// <returns>Hash of mode, properties except the changing Saved flag, components, and references.</returns>
         private string SolidWorksSaveRevision(string selector)
         {
             dynamic state = ProjectProperties(selector);
@@ -139,28 +139,28 @@ namespace VBAi
                 Components = (object)state.Components, References = (object)state.References }));
         }
 
-        /// <summary>Owns the native solid works save probe state and operations.</summary>
+        /// <summary>Performs existing-project SOLIDWORKS Save checks on the owning VBE thread.</summary>
         private sealed class NativeSolidWorksSaveProbe : ISolidWorksSaveProbe
         {
 
-            /// <summary>Returns current thread id for native solid works save probe.</summary>
-            /// <returns>uint produced by the operation for get current thread id on native solid works save probe.</returns>
+            /// <summary>Reads the native thread ID used to enforce host-window ownership.</summary>
+            /// <returns>Current Win32 thread ID.</returns>
             [DllImport("kernel32.dll")] private static extern uint GetCurrentThreadId();
 
-            /// <summary>Tracks the is solid works state of native solid works save probe.</summary>
+            /// <summary>Whether construction resolved this probe inside a SOLIDWORKS process.</summary>
             private readonly bool isSolidWorks;
 
-            /// <summary>Identifies the process id associated with native solid works save probe.</summary>
+            /// <summary>Host process ID captured by this native probe.</summary>
             private readonly int processId;
 
-            /// <summary>Maintains the previous pane and selected pane state for native solid works save probe.</summary>
+            /// <summary>Prior editor pane and temporary save-target pane retained for restoring user selection.</summary>
             private object previousPane, selectedPane;
 
             /// <summary>Gets the selection.</summary>
             /// <value>Current selection exposed by native solid works save probe.</value>
             public SolidWorksSaveSelection Selection { get; } = new SolidWorksSaveSelection();
 
-            /// <summary>Initializes a NativeSolidWorksSaveProbe instance with the supplied state.</summary>
+            /// <summary>Captures current host process and VBE owner-thread identity for the native save probe.</summary>
             internal NativeSolidWorksSaveProbe()
             {
                 using (var process = Process.GetCurrentProcess())
@@ -175,8 +175,8 @@ namespace VBAi
             /// <value>Current process id exposed by native solid works save probe.</value>
             public int ProcessId => processId;
 
-            /// <summary>Requires owner for native solid works save probe.</summary>
-            /// <param name="editor">object that supplies the editor for this operation.</param>
+            /// <summary>Requires the current process and native VBE window to remain owned by the captured thread.</summary>
+            /// <param name="editor">VBE editor whose main-window identity is checked.</param>
             public void RequireOwner(object editor)
             {
                 if (!IsSolidWorks) throw new InvalidOperationException("This save adapter requires SOLIDWORKS.");
@@ -187,10 +187,10 @@ namespace VBAi
                     throw new InvalidOperationException("The VBE window must belong to this SOLIDWORKS process and owning UI thread.");
             }
 
-            /// <summary>Compares project for native solid works save probe.</summary>
-            /// <param name="first">object that supplies the first for this operation.</param>
-            /// <param name="second">object that supplies the second for this operation.</param>
-            /// <returns>Boolean indicating the result of the check for same project on native solid works save probe.</returns>
+            /// <summary>Compares canonical project COM identity.</summary>
+            /// <param name="first">Previously captured project object.</param>
+            /// <param name="second">Current project object.</param>
+            /// <returns>Whether both objects identify the same project.</returns>
             public bool SameProject(object first, object second)
             {
                 if (first == null || second == null) return false;
@@ -199,10 +199,10 @@ namespace VBAi
                 finally { if (b != IntPtr.Zero) Marshal.Release(b); Marshal.Release(a); }
             }
 
-            /// <summary>Handles select component for native solid works save probe.</summary>
-            /// <param name="editor">object that supplies the editor for this operation.</param>
-            /// <param name="project">object that supplies the project for this operation.</param>
-            /// <returns>object produced by the operation for select component on native solid works save probe.</returns>
+            /// <summary>Selects an existing project component so the VBE Save command targets the host project.</summary>
+            /// <param name="editor">VBE editor whose active code pane is saved and later restored.</param>
+            /// <param name="project">Canonical SOLIDWORKS Type100 project.</param>
+            /// <returns>Selected component object retained for selection verification.</returns>
             public object SelectComponent(object editor, object project)
             {
                 previousPane = (object)((dynamic)editor).ActiveCodePane;
@@ -222,10 +222,10 @@ namespace VBAi
                 throw new InvalidOperationException("The SWP project has no selectable code component.");
             }
 
-            /// <summary>Handles restore selection for native solid works save probe.</summary>
-            /// <param name="editor">object that supplies the editor for this operation.</param>
-            /// <param name="project">object that supplies the project for this operation.</param>
-            /// <param name="component">object that supplies the component for this operation.</param>
+            /// <summary>Restores the prior VBE code-pane selection after verification.</summary>
+            /// <param name="editor">VBE editor whose pane selection changed.</param>
+            /// <param name="project">Project containing the temporary save target.</param>
+            /// <param name="component">Component whose pane was temporarily selected.</param>
             public void RestoreSelection(object editor, object project, object component)
             {
                 if (!Selection.Changed) return;
@@ -243,11 +243,11 @@ namespace VBAi
                 catch (Exception error) { Selection.Reason = "Save selection restoration failed: " + error.Message; }
             }
 
-            /// <summary>Handles selection matches for native solid works save probe.</summary>
-            /// <param name="editor">object that supplies the editor for this operation.</param>
-            /// <param name="project">object that supplies the project for this operation.</param>
-            /// <param name="component">object that supplies the component for this operation.</param>
-            /// <returns>Boolean indicating the result of the check for selection matches on native solid works save probe.</returns>
+            /// <summary>Requires the active code pane, project, and component COM identities to match the save target.</summary>
+            /// <param name="editor">VBE editor with the current active code pane.</param>
+            /// <param name="project">Expected project identity.</param>
+            /// <param name="component">Expected selected component.</param>
+            /// <returns>True only when the current pane and project collection confirm that component.</returns>
             public bool SelectionMatches(object editor, object project, object component)
             {
                 dynamic pane = ((dynamic)editor).ActiveCodePane;
@@ -258,9 +258,9 @@ namespace VBAi
                 return false;
             }
 
-            /// <summary>Saves control for native solid works save probe.</summary>
-            /// <param name="editor">object that supplies the editor for this operation.</param>
-            /// <returns>object produced by the operation for save control on native solid works save probe.</returns>
+            /// <summary>Resolves the enabled built-in VBE Save command control with ID 3.</summary>
+            /// <param name="editor">VBE editor whose CommandBars are queried.</param>
+            /// <returns>The enabled built-in Save control.</returns>
             public object SaveControl(object editor)
             {
                 dynamic control = ((dynamic)editor).CommandBars.FindControl(1, 3);
@@ -269,31 +269,31 @@ namespace VBAi
                 return control;
             }
 
-            /// <summary>Saves  for native solid works save probe.</summary>
-            /// <param name="control">object that supplies the control for this operation.</param>
+            /// <summary>Executes the selected VBE Save control.</summary>
+            /// <param name="control">Built-in Save command control resolved immediately before delivery.</param>
             public void Save(object control) { ((dynamic)control).Execute(); }
 
-            /// <summary>Handles file exists for native solid works save probe.</summary>
-            /// <param name="path">Path used for the path being processed.</param>
-            /// <returns>Boolean indicating the result of the check for file exists on native solid works save probe.</returns>
+            /// <summary>Checks for the host project file at the supplied path.</summary>
+            /// <param name="path">Absolute SWP path.</param>
+            /// <returns>Whether the file currently exists.</returns>
             public bool FileExists(string path) => File.Exists(path);
 
-            /// <summary>Handles file read only for native solid works save probe.</summary>
-            /// <param name="path">Path used for the path being processed.</param>
-            /// <returns>Boolean indicating the result of the check for file read only on native solid works save probe.</returns>
+            /// <summary>Checks the ReadOnly attribute on the existing host project file.</summary>
+            /// <param name="path">Absolute SWP path.</param>
+            /// <returns>Whether the file is marked read-only.</returns>
             public bool FileReadOnly(string path) => (File.GetAttributes(path) & FileAttributes.ReadOnly) != 0;
 
-            /// <summary>Handles file length for native solid works save probe.</summary>
-            /// <param name="path">Path used for the path being processed.</param>
-            /// <returns>long produced by the operation for file length on native solid works save probe.</returns>
+            /// <summary>Reads the current host file size.</summary>
+            /// <param name="path">Absolute SWP path.</param>
+            /// <returns>Current file length in bytes.</returns>
             public long FileLength(string path) => new FileInfo(path).Length;
         }
 
         /// <summary>Reads existing Type100 SWP state without implying that disk reload was tested.</summary>
-        /// <param name="selector">Text that supplies the selector value. Use the format required by the calling operation.</param>
-        /// <param name="projectObject">object that supplies the project object for this operation.</param>
-        /// <param name="native">i solid works save probe that supplies the native for this operation.</param>
-        /// <returns>object produced by the operation for solid works persistence on vbe project components.</returns>
+        /// <param name="selector">Project selector used in the returned persistence report.</param>
+        /// <param name="projectObject">Live Type100 project whose Saved flag and FileName are observed.</param>
+        /// <param name="native">Owner-bound probe used for host path, process, and file-state reads.</param>
+        /// <returns>Host persistence status; native qualification and reopen verification remain explicitly unclaimed.</returns>
         private object SolidWorksPersistence(string selector, object projectObject, ISolidWorksSaveProbe native)
         {
             dynamic project = projectObject;
@@ -316,9 +316,9 @@ namespace VBAi
             }
         }
 
-        /// <summary>Handles solid works macro path for vbe project components.</summary>
-        /// <param name="projectObject">object that supplies the project object for this operation.</param>
-        /// <returns>Text produced by the operation for solid works macro path on vbe project components.</returns>
+        /// <summary>Reads and canonicalizes the existing absolute .swp path of a Type100 host project.</summary>
+        /// <param name="projectObject">Live host project whose Type and FileName are checked.</param>
+        /// <returns>Full host file path; missing, relative, wrong-extension, or non-Type100 paths throw.</returns>
         private static string SolidWorksMacroPath(object projectObject)
         {
             dynamic project = projectObject;
@@ -331,18 +331,18 @@ namespace VBAi
         }
 
         /// <summary>Invokes the selected native Save once, preserving failures after invocation as uncertain.</summary>
-        /// <param name="request">request that supplies the request for this operation.</param>
-        /// <param name="native">i solid works save probe that supplies the native for this operation.</param>
-        /// <returns>task&lt;object&gt; produced by the operation for save solid works macro async on vbe project components.</returns>
+        /// <param name="request">Expected project revision and exact host path approved for this existing-project save.</param>
+        /// <param name="native">Native host probe used for owner checks, selection, Save delivery, and file verification.</param>
+        /// <returns>Task completing with verified or uncertain save status; an uncertain save is never retried.</returns>
         internal Task<object> SaveSolidWorksMacroAsync(Request request, ISolidWorksSaveProbe native)
         {
             return VbeUiTask.Run(() => SaveSolidWorksMacroCoreAsync(request, native));
         }
 
         /// <summary>Saves solid works macro core async for vbe project components.</summary>
-        /// <param name="request">request that supplies the request for this operation.</param>
-        /// <param name="native">i solid works save probe that supplies the native for this operation.</param>
-        /// <returns>task&lt;object&gt; produced by the operation for save solid works macro core async on vbe project components.</returns>
+        /// <param name="request">Design project revision and expected absolute SWP path.</param>
+        /// <param name="native">Owner-thread probe that selects the project, executes one Save, and checks host file state.</param>
+        /// <returns>Save report after delayed Saved/file verification; post-invocation failures are returned as uncertain.</returns>
         private async Task<object> SaveSolidWorksMacroCoreAsync(Request request, ISolidWorksSaveProbe native)
         {
             if (request == null || string.IsNullOrWhiteSpace(request.ExpectedProjectVersion)) throw new ArgumentException("ExpectedProjectVersion is required.");
@@ -418,11 +418,11 @@ namespace VBAi
             }
         }
 
-        /// <summary>Requires solid works save state for vbe project components.</summary>
-        /// <param name="request">request that supplies the request for this operation.</param>
-        /// <param name="projectObject">object that supplies the project object for this operation.</param>
-        /// <param name="path">Path used for the path being processed.</param>
-        /// <param name="native">i solid works save probe that supplies the native for this operation.</param>
+        /// <summary>Revalidates canonical project identity, protection, revision, and existing writable nonempty SWP path.</summary>
+        /// <param name="request">Approved project selector and expected project revision.</param>
+        /// <param name="projectObject">Frozen canonical Type100 project COM object.</param>
+        /// <param name="path">Expected canonical absolute SWP path that must still match the project.</param>
+        /// <param name="native">Owner-bound probe used to verify native ownership and file state.</param>
         private void RequireSolidWorksSaveState(Request request, object projectObject, string path, ISolidWorksSaveProbe native)
         {
             native.RequireOwner((object)vbe);
