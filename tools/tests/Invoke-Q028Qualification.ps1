@@ -68,6 +68,7 @@ if ($Prepare) {
     $files += @($toolExecutables.Path)
     $files += @(Get-ChildItem (Split-Path $product),(Split-Path $tests),(Split-Path $helper) -Recurse -File | Select-Object -ExpandProperty FullName)
     $files += @((Join-Path $repo 'tools/testing-explorer/Set-TestExplorerCandidate.ps1'),(Join-Path $repo 'tools/tests/Invoke-IsolatedDesktopWorker.ps1'))
+    $files += (Join-Path $repo 'tools/tests/Review-Q028Wire.py')
     $reuseManaged=$null
     if ($ManagedEvidenceRoot) {
         $priorPlanPath=Join-Path $ManagedEvidenceRoot 'q028-plan.json';$priorCampaignPath=Join-Path $ManagedEvidenceRoot 'campaign.json'

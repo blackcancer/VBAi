@@ -1425,6 +1425,12 @@ and parent/owner chain. It never rediscovers a replacement container or rereads
 an unavailable parent UIA provider. Combo choices and native button delivery
 remain single actions requiring exact control identities and readback.
 
+After terminal UI proof, the original observer drops its managed UIA references
+before native shutdown. The selected Word bank also uses the owned, settled
+testhost collection diagnostic. This does not prove native RCW release; the
+original host handles must still observe normal exit within the unchanged
+five-second bound. An exit after that deadline remains a failed bank.
+
 `tools/tests/Review-Q028Wire.py --self-test` validates refusal oracles offline.
 Its campaign review binds exact wire arguments/results, the original worker/host
 lifecycle and settings/registration restoration. Later passes do not explain
