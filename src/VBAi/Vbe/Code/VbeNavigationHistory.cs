@@ -36,10 +36,10 @@ namespace VBAi
         private sealed class Location
         {
 
-            /// <summary>Maintains the project and module and sha256 state for location.</summary>
+            /// <summary>Stores the canonical project identity, module name, and source SHA-256 for this position.</summary>
             public string Project, Module, Sha256;
 
-            /// <summary>Maintains the line and column state for location.</summary>
+            /// <summary>Stores the one-based source line and column selected by the VBE.</summary>
             public int Line, Column;
         }
 

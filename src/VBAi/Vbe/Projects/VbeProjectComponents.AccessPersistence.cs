@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 namespace VBAi
 {
 
-    /// <summary>Owns the vbe project components state and operations.</summary>
+    /// <summary>Implements project component operations, including guarded persistence for supported hosts.</summary>
     internal sealed partial class VbeProjectComponents
     {
 
@@ -18,22 +18,24 @@ namespace VBAi
         /// <summary>Injects the dialog boundary in managed tests; production binds the exact native VBE owner.</summary>
         internal Func<IntPtr, int, IEnumerable<AccessSaveApprovedComponent>, IAccessSaveConfirmation> AccessSaveConfirmationFactory = null;
         // Bridge, editor and chat share the same native VBE owner thread, across service instances.
-        /// <summary>Maintains the access save pending state for vbe project components.</summary>
+        /// <summary>Prevents a second Access save while the current VBE thread verifies the first save.</summary>
         [ThreadStatic] private static bool accessSavePending;
 
         /// <summary>Invokes Access Save once and observes delayed completion on its originating VBE STA.</summary>
-        /// <param name="request">request that supplies the request for this operation.</param>
-        /// <param name="native">i other host probe that supplies the native for this operation.</param>
-        /// <returns>task&lt;object&gt; produced by the operation for save access document async on vbe project components.</returns>
+        /// <param name="request">Approved Access project, expected project revision, and save authorization.</param>
+        /// <param name="native">Probe bound to the current host process and its VBE project.</param>
+        /// <returns>A task returning the single-save result, including verified state or an uncertain outcome.</returns>
         internal Task<object> SaveAccessDocumentAsync(Request request, IOtherHostProbe native)
         {
             return VbeUiTask.Run(() => SaveAccessDocumentCoreAsync(request, native));
         }
 
         /// <summary>Keeps every approved identity and revision guard while yielding only for read-only observations.</summary>
-        /// <param name="request">request that supplies the request for this operation.</param>
-        /// <param name="native">i other host probe that supplies the native for this operation.</param>
-        /// <returns>task&lt;object&gt; produced by the operation for save access document core async on vbe project components.</returns>
+        /// <param name="request">Approved Access project, expected revision, and authorization revalidation callback.</param>
+        /// <param name="native">Probe used to recheck host, process, project, selection, path, and file state.</param>
+        /// <returns>A result that distinguishes verified saved state from an uncertain post-invocation outcome.</returns>
+        /// <exception cref="ArgumentException">The request lacks the required project revision or approved path.</exception>
+        /// <exception cref="InvalidOperationException">The host, selection, revision, writable state, or one-save guard is invalid.</exception>
         private async Task<object> SaveAccessDocumentCoreAsync(Request request, IOtherHostProbe native)
         {
             if (native == null || native.HostKind != "Access") throw new InvalidOperationException("Deferred Access saving requires the current Access host.");
@@ -210,17 +212,18 @@ namespace VBAi
         }
 
         /// <summary>Balances one native getter acquisition without invalidating a shared RCW through FinalRelease.</summary>
-        /// <param name="value">object that supplies the value for this operation.</param>
+        /// <param name="value">COM object acquired by a native observation getter; null and non-COM values are ignored.</param>
         private static void ReleaseAccessObservation(object value)
         {
             if (value != null && Marshal.IsComObject(value)) Marshal.ReleaseComObject(value);
         }
 
         /// <summary>Reads exact selection and component ownership without changing focus or native selection.</summary>
-        /// <param name="project">object that supplies the project for this operation.</param>
-        /// <param name="pane">object that supplies the pane for this operation.</param>
-        /// <param name="component">object that supplies the component for this operation.</param>
-        /// <param name="native">i other host probe that supplies the native for this operation.</param>
+        /// <param name="project">Exact VBProject approved for the save.</param>
+        /// <param name="pane">Code pane captured before the save.</param>
+        /// <param name="component">Selected component captured from that pane.</param>
+        /// <param name="native">Host probe whose identity comparison checks COM ownership.</param>
+        /// <exception cref="InvalidOperationException">The active project, pane, component, or project membership changed.</exception>
         private void RequireAccessSaveSelection(object project, object pane, object component, IOtherHostProbe native)
         {
             object activeProject = vbe.ActiveVBProject, activePane = vbe.ActiveCodePane;
