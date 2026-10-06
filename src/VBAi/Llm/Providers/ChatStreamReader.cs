@@ -54,8 +54,8 @@ namespace VBAi
         /// <returns>stream diagnostics produced by the operation for snapshot on stream diagnostics.</returns>
         internal StreamDiagnostics Snapshot() { return (StreamDiagnostics)MemberwiseClone(); }
 
-        /// <summary>Sets terminal reason for stream diagnostics.</summary>
-        /// <param name="reason">Text that supplies the reason value. Use the format required by the calling operation.</param>
+        /// <summary>Stores only recognized provider stop reasons; other values become <c>unknown</c>.</summary>
+        /// <param name="reason">OpenAI- or Claude-style terminal reason received from the stream, or null when absent.</param>
         internal void SetTerminalReason(string reason)
         {
             switch (reason)
@@ -108,13 +108,13 @@ namespace VBAi
             }
         }
 
-        /// <summary>Reads core async for chat stream reader.</summary>
-        /// <param name="stream">stream that supplies the stream for this operation.</param>
-        /// <param name="claude">Indicates whether claude is enabled.</param>
-        /// <param name="progress">action&lt;string&gt; that supplies the progress for this operation.</param>
-        /// <param name="token">Token used to cancel the operation.</param>
-        /// <param name="diagnostics">stream diagnostics that supplies the diagnostics for this operation.</param>
-        /// <returns>task&lt;i dictionary&lt;string, object&gt;&gt; produced by the operation for read core async on chat stream reader.</returns>
+        /// <summary>Parses bounded SSE events, assembles text/tool fragments, and rejects incomplete or filtered turns.</summary>
+        /// <param name="stream">Provider response stream wrapped in a byte-limiting stream.</param>
+        /// <param name="claude">Selects Claude event blocks when true; otherwise parses OpenAI-style choices/deltas.</param>
+        /// <param name="progress">Optional callback for text fragments only; tool arguments are never sent through it.</param>
+        /// <param name="token">Cancellation token; cancellation disposes the stream and prevents partial tool execution.</param>
+        /// <param name="diagnostics">Scalar-only counters updated as events are parsed.</param>
+        /// <returns>Complete assistant message with assembled tool calls only after a valid terminal marker/reason.</returns>
         private static async Task<IDictionary<string, object>> ReadCoreAsync(Stream stream, bool claude, Action<string> progress, CancellationToken token, StreamDiagnostics diagnostics)
         {
             token.ThrowIfCancellationRequested();
@@ -187,9 +187,9 @@ namespace VBAi
         }
 
         /// <summary>Reads a non-streamed provider body under the same byte and cancellation bounds.</summary>
-        /// <param name="stream">stream that supplies the stream for this operation.</param>
+        /// <param name="stream">Provider body stream wrapped in the same byte limit as streaming responses.</param>
         /// <param name="token">Token used to cancel the operation.</param>
-        /// <returns>task&lt;string&gt; produced by the operation for read body async on chat stream reader.</returns>
+        /// <returns>Complete response body text, or cancellation/transport/size failure.</returns>
         internal static async Task<string> ReadBodyAsync(Stream stream, CancellationToken token)
         {
             token.ThrowIfCancellationRequested();
@@ -218,9 +218,9 @@ namespace VBAi
         }
 
         /// <summary>Accumulates token fragments without copying the complete prefix on every delta.</summary>
-        /// <param name="target">i dictionary&lt;string, object&gt; that supplies the target for this operation.</param>
-        /// <param name="key">Text that supplies the key value. Use the format required by the calling operation.</param>
-        /// <param name="text">Text that supplies the text value. Use the format required by the calling operation.</param>
+        /// <param name="target">Message or content-block dictionary receiving the accumulated fragment.</param>
+        /// <param name="key">Protocol field name whose prior text should be extended.</param>
+        /// <param name="text">New fragment appended without reconstructing the accumulated prefix.</param>
         private static void Append(IDictionary<string, object> target, string key, string text)
         {
             target.TryGetValue(key, out var previous);
@@ -230,7 +230,7 @@ namespace VBAi
         }
 
         /// <summary>Publishes ordinary strings only after the provider has completed the message.</summary>
-        /// <param name="value">i dictionary&lt;string, object&gt; that supplies the value for this operation.</param>
+        /// <param name="value">Message tree whose buffered StringBuilder values are converted to ordinary strings in place.</param>
         private static void FinalizeText(IDictionary<string, object> value)
         {
             foreach (var key in value.Keys.ToArray())
@@ -244,17 +244,17 @@ namespace VBAi
         private sealed class BoundedStream : Stream
         {
 
-            /// <summary>Maintains the limit state for bounded stream.</summary>
+            /// <summary>Maximum provider response bytes accepted before an InvalidDataException is raised.</summary>
             private const int Limit = 10 * 1024 * 1024;
 
-            /// <summary>Maintains the inner state for bounded stream.</summary>
+            /// <summary>Provider response stream wrapped by the byte-counting boundary.</summary>
             private readonly Stream inner;
 
-            /// <summary>Maintains the received state for bounded stream.</summary>
+            /// <summary>Total bytes delivered so far, including one extra byte used to detect limit overflow.</summary>
             private int received;
 
-            /// <summary>Initializes a BoundedStream instance with the supplied state.</summary>
-            /// <param name="inner">stream that supplies the inner for this operation.</param>
+            /// <summary>Wraps a response stream and starts its byte count at zero.</summary>
+            /// <param name="inner">Underlying provider stream; disposal of this wrapper also disposes it.</param>
             internal BoundedStream(Stream inner) { this.inner = inner; }
 
             /// <summary>Gets the can read.</summary>
@@ -277,30 +277,30 @@ namespace VBAi
             /// <value>Current position exposed by bounded stream.</value>
             public override long Position { get => throw new NotSupportedException(); set => throw new NotSupportedException(); }
 
-            /// <summary>Reads  for bounded stream.</summary>
-            /// <param name="buffer">byte[] that supplies the buffer for this operation.</param>
-            /// <param name="offset">int that supplies the offset for this operation.</param>
-            /// <param name="count">int that supplies the count for this operation.</param>
-            /// <returns>int produced by the operation for read on bounded stream.</returns>
+            /// <summary>Reads no more than the remaining byte budget plus one overflow-detection byte.</summary>
+            /// <param name="buffer">Destination buffer.</param>
+            /// <param name="offset">Buffer offset where bytes are written.</param>
+            /// <param name="count">Requested maximum bytes for this read.</param>
+            /// <returns>Bytes read, unless the cumulative response exceeds the configured limit.</returns>
             public override int Read(byte[] buffer, int offset, int count)
             {
                 return Count(inner.Read(buffer, offset, Math.Min(count, Limit - received + 1)));
             }
 
-            /// <summary>Reads async for bounded stream.</summary>
-            /// <param name="buffer">byte[] that supplies the buffer for this operation.</param>
-            /// <param name="offset">int that supplies the offset for this operation.</param>
-            /// <param name="count">int that supplies the count for this operation.</param>
-            /// <param name="cancellationToken">Token used to cancel the operation.</param>
-            /// <returns>task&lt;int&gt; produced by the operation for read async on bounded stream.</returns>
+            /// <summary>Asynchronously reads within the remaining byte budget plus one overflow-detection byte.</summary>
+            /// <param name="buffer">Destination buffer.</param>
+            /// <param name="offset">Buffer offset where bytes are written.</param>
+            /// <param name="count">Requested maximum bytes for this read.</param>
+            /// <param name="cancellationToken">Token forwarded to the underlying stream read.</param>
+            /// <returns>Bytes read, unless the cumulative response exceeds the configured limit.</returns>
             public override async Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
             {
                 return Count(await inner.ReadAsync(buffer, offset, Math.Min(count, Limit - received + 1), cancellationToken).ConfigureAwait(false));
             }
 
-            /// <summary>Handles count for bounded stream.</summary>
-            /// <param name="count">int that supplies the count for this operation.</param>
-            /// <returns>int produced by the operation for count on bounded stream.</returns>
+            /// <summary>Adds bytes from one underlying read and rejects cumulative response overflow.</summary>
+            /// <param name="count">Number of bytes returned by the underlying stream.</param>
+            /// <returns>The same count when the total remains within the 10 MiB limit.</returns>
             private int Count(int count)
             {
                 received += count;
@@ -308,27 +308,27 @@ namespace VBAi
                 return count;
             }
 
-            /// <summary>Disposes  for bounded stream.</summary>
-            /// <param name="disposing">Indicates whether disposing is enabled.</param>
+            /// <summary>Disposes the wrapped provider stream when disposing this wrapper.</summary>
+            /// <param name="disposing">True when called by Dispose rather than finalization.</param>
             protected override void Dispose(bool disposing) { if (disposing) inner.Dispose(); base.Dispose(disposing); }
 
-            /// <summary>Handles flush for bounded stream.</summary>
+            /// <summary>Throws because the provider response wrapper is read-only.</summary>
             public override void Flush() => throw new NotSupportedException();
 
-            /// <summary>Handles seek for bounded stream.</summary>
-            /// <param name="offset">long that supplies the offset for this operation.</param>
-            /// <param name="origin">seek origin that supplies the origin for this operation.</param>
-            /// <returns>long produced by the operation for seek on bounded stream.</returns>
+            /// <summary>Throws because provider response streams are consumed forward-only.</summary>
+            /// <param name="offset">Unused requested seek offset.</param>
+            /// <param name="origin">Unused seek origin.</param>
+            /// <returns>No value; this method always throws NotSupportedException.</returns>
             public override long Seek(long offset, SeekOrigin origin) => throw new NotSupportedException();
 
-            /// <summary>Sets length for bounded stream.</summary>
-            /// <param name="value">long that supplies the value for this operation.</param>
+            /// <summary>Throws because the provider response wrapper cannot be resized.</summary>
+            /// <param name="value">Unused requested length.</param>
             public override void SetLength(long value) => throw new NotSupportedException();
 
-            /// <summary>Writes  for bounded stream.</summary>
-            /// <param name="buffer">byte[] that supplies the buffer for this operation.</param>
-            /// <param name="offset">int that supplies the offset for this operation.</param>
-            /// <param name="count">int that supplies the count for this operation.</param>
+            /// <summary>Throws because provider response streams are read-only.</summary>
+            /// <param name="buffer">Unused source buffer.</param>
+            /// <param name="offset">Unused source offset.</param>
+            /// <param name="count">Unused byte count.</param>
             public override void Write(byte[] buffer, int offset, int count) => throw new NotSupportedException();
         }
     }

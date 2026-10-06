@@ -100,24 +100,24 @@ namespace VBAi
         internal sealed class NativeOtherHostProbe : IOtherHostProbe
         {
 
-            /// <summary>Maintains the editor and bound project and bound document and access save control state for native other host probe.</summary>
+            /// <summary>VBE editor, canonical Access/Publisher project and document, and prepared Access Save control.</summary>
             private object editor, boundProject, boundDocument, accessSaveControl;
 
-            /// <summary>Maintains the access expected pane and access expected component state for native other host probe.</summary>
+            /// <summary>Exact code pane and component approved for the one guarded Access save.</summary>
             private object accessExpectedPane, accessExpectedComponent;
 
-            /// <summary>Maintains the read identity state for native other host probe.</summary>
+            /// <summary>COM identity comparer used to re-resolve projects and documents without name-only matching.</summary>
             internal Func<object, object, bool> ReadIdentity = SameComIdentity;
 
             /// <summary>Gets or sets the save invocation started.</summary>
             /// <value>Current save invocation started exposed by native other host probe.</value>
             internal bool SaveInvocationStarted { get; private set; }
             // Bound only by the original owner-thread Access async save; never approves an existing prompt.
-            /// <summary>Maintains the access before save state for native other host probe.</summary>
+            /// <summary>Final Access authority/revision callback invoked before the native Save command.</summary>
             internal Action AccessBeforeSave;
 
             /// <summary>Binds the actual selected VBIDE project, never a host-specific invented VBProject property.</summary>
-            /// <param name="project">object that supplies the project for this operation.</param>
+            /// <param name="project">Selected Access or Publisher VBProject whose VBE must belong to the current process.</param>
             internal void BindProject(object project)
             {
                 if (HostKind != "Access" && HostKind != "Publisher") return;
@@ -129,15 +129,15 @@ namespace VBAi
             }
 
             /// <summary>Retains the exact document identity found during project association.</summary>
-            /// <param name="document">object that supplies the document for this operation.</param>
+            /// <param name="document">Exact host document matched to the selected project during association.</param>
             internal void BindDocument(object document)
             {
                 if (HostKind == "Access" || HostKind == "Publisher") boundDocument = document;
             }
 
             /// <summary>Retains the exact async-approved Access selection for final pre-command revalidation.</summary>
-            /// <param name="pane">object that supplies the pane for this operation.</param>
-            /// <param name="component">object that supplies the component for this operation.</param>
+            /// <param name="pane">Active Access code pane approved for the save operation.</param>
+            /// <param name="component">Component identity that the approved pane must continue to display.</param>
             internal void BindAccessSaveSelection(object pane, object component)
             {
                 if (HostKind != "Access" || pane == null || component == null)
@@ -146,7 +146,7 @@ namespace VBAi
             }
 
             /// <summary>Prepares the existing native Save command without invoking it or compiling VBA.</summary>
-            /// <param name="document">object that supplies the document for this operation.</param>
+            /// <param name="document">Matched Access document whose project must equal the bound VBE project.</param>
             internal void PrepareSave(object document)
             {
                 if (HostKind != "Access") return;
@@ -180,11 +180,11 @@ namespace VBAi
             /// <summary>Reads the native window owner used by all application PID guards.</summary>
             internal Func<IntPtr, uint> ReadOwner = Owner;
 
-            /// <summary>Maintains the read power point window state for native other host probe.</summary>
+            /// <summary>Reads the existing PowerPoint window HWND for current-process ownership checks.</summary>
             internal Func<object, IntPtr> ReadPowerPointWindow = PowerPointWindow.Read;
 
-            /// <summary>Handles current host kind for native other host probe.</summary>
-            /// <returns>Text produced by the operation for current host kind on native other host probe.</returns>
+            /// <summary>Classifies the current executable without attaching to or launching another host.</summary>
+            /// <returns>Canonical host name for a recognized Office process, or null otherwise.</returns>
             private static string CurrentHostKind() => RecognizeOtherHost(Process.GetCurrentProcess().ProcessName);
 
             /// <summary>Recognizes WINWORD, POWERPNT, MSACCESS and MSPUB process names.</summary>
@@ -313,8 +313,8 @@ namespace VBAi
             }
 
             /// <summary>Associates a pathless Publisher project only within one exact native document/VBE pair.</summary>
-            /// <param name="document">object that supplies the document for this operation.</param>
-            /// <returns>object produced by the operation for sole publisher project on native other host probe.</returns>
+            /// <param name="document">Exact open Publisher document associated with the selected project.</param>
+            /// <returns>The single VBIDE project only when one document and one project share the bound COM identities.</returns>
             private object SolePublisherProject(object document)
             {
                 object application = Application();
@@ -342,10 +342,10 @@ namespace VBAi
             /// <returns><see langword="true"/> si les deux références désignent le même projet COM.</returns>
             public bool SameProject(object first, object second) => ReadIdentity(first, second);
 
-            /// <summary>Compares com identity for native other host probe.</summary>
-            /// <param name="first">object that supplies the first for this operation.</param>
-            /// <param name="second">object that supplies the second for this operation.</param>
-            /// <returns>Boolean indicating the result of the check for same com identity on native other host probe.</returns>
+            /// <summary>Compares two COM objects by IUnknown identity and releases only the acquired pointers.</summary>
+            /// <param name="first">First candidate COM object; non-COM or null inputs return false.</param>
+            /// <param name="second">Second candidate COM object; non-COM or null inputs return false.</param>
+            /// <returns>True when both objects expose the same canonical IUnknown pointer.</returns>
             private static bool SameComIdentity(object first, object second)
             {
                 if (first == null || second == null || !Marshal.IsComObject(first) || !Marshal.IsComObject(second)) return false;
@@ -638,10 +638,10 @@ namespace VBAi
         }
 
         /// <summary>Vérifie le chemin VBIDE seulement lorsque ce chemin représente le document hôte.</summary>
-        /// <param name="project">object that supplies the project for this operation.</param>
-        /// <param name="expectedPath">Path used for the expected path being processed.</param>
-        /// <param name="hostKind">Text that supplies the host kind value. Use the format required by the calling operation.</param>
-        /// <returns>Boolean indicating the result of the check for other host project path matches on vbe project components.</returns>
+        /// <param name="project">Matched VBProject whose path is compared for hosts where FileName identifies the document.</param>
+        /// <param name="expectedPath">Identity-matched native document path being verified.</param>
+        /// <param name="hostKind">Canonical host name; Word uses document FullName and Publisher may use its strict sole-project identity rule.</param>
+        /// <returns>True when host-specific path rules confirm the same document; otherwise the canonical paths must match.</returns>
         private static bool OtherHostProjectPathMatches(object project, string expectedPath, string hostKind)
         {
             // MatchOtherHost and the final readback still require the same document/project COM identity,
