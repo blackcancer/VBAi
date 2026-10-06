@@ -81,7 +81,7 @@ namespace VBAi
         }
 
         /// <summary>Rejects invalid marker types before any native import or marker deletion.</summary>
-        /// <param name="attributes">file attributes that supplies the attributes for this operation.</param>
+        /// <param name="attributes">Attributes read from the recovery marker before rollback or deletion.</param>
         private static void RequireRegularRecoveryMarker(FileAttributes attributes)
         {
             if ((attributes & (FileAttributes.Directory | FileAttributes.ReparsePoint)) != 0)

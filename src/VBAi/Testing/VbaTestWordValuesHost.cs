@@ -13,34 +13,34 @@ namespace VBAi
     internal sealed class VbaTestWordValuesHost : VbeDebug.IProcedureValuesHost
     {
 
-        /// <summary>Maintains the read process name state for vba test word values host.</summary>
+        /// <summary>Process-name reader used to require in-process WINWORD dispatch.</summary>
         internal Func<string> ReadProcessName = () => { using (var process = Process.GetCurrentProcess()) return process.ProcessName; };
 
-        /// <summary>Identifies the read process id associated with vba test word values host.</summary>
+        /// <summary>Process-ID reader used to verify that the registered Word window belongs to this process.</summary>
         internal Func<int> ReadProcessId = () => { using (var process = Process.GetCurrentProcess()) return process.Id; };
 
-        /// <summary>Maintains the read active application state for vba test word values host.</summary>
+        /// <summary>Resolver for the registered Word.Application object; replacing it can inject a borrowed instance.</summary>
         internal Func<string, object> ReadActiveApplication;
 
-        /// <summary>Maintains the native application reader state for vba test word values host.</summary>
+        /// <summary>Original stable resolver used to distinguish transport-owned COM references from injected ones.</summary>
         private readonly Func<string, object> nativeApplicationReader;
 
-        /// <summary>Maintains the retained references state for vba test word values host.</summary>
+        /// <summary>Process-lifetime roots for acquired Word COM targets retained after uncertain native completion.</summary>
         private static readonly ConcurrentBag<object> retainedReferences = new ConcurrentBag<object>();
 
-        /// <summary>Maintains the read window owner state for vba test word values host.</summary>
+        /// <summary>Reads the owning process ID for Word's application-window HWND.</summary>
         internal Func<IntPtr, uint> ReadWindowOwner = hwnd => { uint owner; VbeDebugWindows.GetWindowThreadProcessId(hwnd, out owner); return owner; };
 
-        /// <summary>Maintains the same identity state for vba test word values host.</summary>
+        /// <summary>Compares managed identity first, then native COM identity.</summary>
         internal Func<object, object, bool> SameIdentity = (first, second) => ReferenceEquals(first, second) || VbeDebug.NativeProcedureValuesHost.SameComIdentity(first, second);
 
-        /// <summary>Maintains the read document item state for vba test word values host.</summary>
+        /// <summary>Reads a one-based Word Documents collection item.</summary>
         internal Func<object, int, object> ReadDocumentItem = (documents, index) => ((dynamic)documents)[index];
 
-        /// <summary>Maintains the activate document state for vba test word values host.</summary>
+        /// <summary>Activates the exact target document before qualified Word macro dispatch.</summary>
         internal Action<object> ActivateDocument = document => ((dynamic)document).Activate();
 
-        /// <summary>Maintains the run procedure state for vba test word values host.</summary>
+        /// <summary>Single Word Application.Run route; a thrown call is not replayed.</summary>
         internal Func<object, string, object[], object> RunProcedure = NativeRun;
 
         /// <summary>Tracks the is com reference state of vba test word values host.</summary>
@@ -49,7 +49,7 @@ namespace VBAi
         /// <summary>Maintains the release com reference state for vba test word values host.</summary>
         internal static Func<object, int> ReleaseComReference = Marshal.ReleaseComObject;
 
-        /// <summary>Maintains the owner thread state for vba test word values host.</summary>
+        /// <summary>Managed thread ID that owns every Word COM operation performed by this adapter.</summary>
         private readonly int ownerThread = Thread.CurrentThread.ManagedThreadId;
 
         /// <summary>Maintains the identifier state for vba test word values host.</summary>
@@ -60,35 +60,35 @@ namespace VBAi
 
         // The stable native resolver identifies acquisitions owned by this transport.
         // Replacing ReadActiveApplication injects a borrowed application instead.
-        /// <summary>Initializes a VbaTestWordValuesHost instance with the supplied state.</summary>
-        /// <param name="nativeApplicationReader">func&lt;string, object&gt; that supplies the native application reader for this operation.</param>
+        /// <summary>Creates the adapter with an injectable Word application resolver.</summary>
+        /// <param name="nativeApplicationReader">Resolver used for stable production acquisitions and ownership-aware release.</param>
         internal VbaTestWordValuesHost(Func<string, object> nativeApplicationReader)
         {
             this.nativeApplicationReader = nativeApplicationReader;
             ReadActiveApplication = nativeApplicationReader;
         }
 
-        /// <summary>Owns the application lease state and operations.</summary>
+        /// <summary>Tracks whether a Word application COM reference is borrowed, acquired, disposed, or retained.</summary>
         internal sealed class ApplicationLease : IDisposable
         {
 
-            /// <summary>Maintains the owner state for application lease.</summary>
+            /// <summary>Adapter that created and validates this lease.</summary>
             private readonly VbaTestWordValuesHost owner;
 
-            /// <summary>Maintains the acquired state for application lease.</summary>
+            /// <summary>True only when this lease owns a reference acquired through the native resolver.</summary>
             private readonly bool acquired;
 
-            /// <summary>Maintains the disposed and retained state for application lease.</summary>
+            /// <summary>Prevents release after disposal or uncertain-call retention.</summary>
             private bool disposed, retained;
 
-            /// <summary>Gets or sets the application.</summary>
-            /// <value>Current application exposed by application lease.</value>
+            /// <summary>Word.Application COM object held by this lease.</summary>
+            /// <value>Null after successful disposal; retained leases keep the reference rooted.</value>
             internal object Application { get; private set; }
 
-            /// <summary>Initializes a ApplicationLease instance with the supplied state.</summary>
-            /// <param name="owner">vba test word values host that supplies the owner for this operation.</param>
-            /// <param name="application">object that supplies the application for this operation.</param>
-            /// <param name="acquired">Indicates whether acquired is enabled.</param>
+            /// <summary>Creates an application lease with explicit COM-reference ownership.</summary>
+            /// <param name="owner">Adapter responsible for owner-thread validation and release.</param>
+            /// <param name="application">Word.Application reference held for this lease.</param>
+            /// <param name="acquired">Whether this adapter acquired and therefore must release the reference.</param>
             internal ApplicationLease(VbaTestWordValuesHost owner, object application, bool acquired)
             { this.owner = owner; Application = application; this.acquired = acquired; }
 
@@ -113,27 +113,27 @@ namespace VBAi
             }
         }
 
-        /// <summary>Owns the owned target state and operations.</summary>
+        /// <summary>Validated Word application, document, and VBProject identity retained for one run target.</summary>
         internal sealed class OwnedTarget : IDisposable
         {
 
-            /// <summary>Maintains the owner state for owned target.</summary>
+            /// <summary>Adapter that created this target and validates future operations.</summary>
             internal VbaTestWordValuesHost Owner;
 
-            /// <summary>Maintains the application and document and project state for owned target.</summary>
+            /// <summary>Exact application, document, and VBProject COM identities resolved for the target.</summary>
             internal object Application, Document, Project;
 
-            /// <summary>Keeps the path path available to owned target.</summary>
+            /// <summary>Normalized saved document path used to reacquire and validate the target.</summary>
             internal string Path;
 
-            /// <summary>Maintains the application ownership state for owned target.</summary>
+            /// <summary>Lease governing release or retention of the application reference.</summary>
             internal ApplicationLease ApplicationOwnership;
 
             /// <summary>Maintains the disposed state for owned target.</summary>
             private bool disposed;
 
-            /// <summary>Gets or sets the is retained.</summary>
-            /// <value>Current is retained exposed by owned target.</value>
+            /// <summary>Indicates whether this target was rooted after uncertain macro completion.</summary>
+            /// <value>True means the target must not be disposed or reused.</value>
             internal bool IsRetained { get; private set; }
 
             /// <summary>Requires usable for owned target.</summary>
@@ -167,10 +167,10 @@ namespace VBAi
             }
         }
 
-        /// <summary>Resolves target for vba test word values host.</summary>
-        /// <param name="project">object that supplies the project for this operation.</param>
-        /// <param name="expectedHostPath">Path used for the expected host path being processed.</param>
-        /// <returns>object produced by the operation for resolve target on vba test word values host.</returns>
+        /// <summary>Resolves the exact saved Word document that owns the supplied VBProject.</summary>
+        /// <param name="project">Live Word VBProject identity being tested.</param>
+        /// <param name="expectedHostPath">Absolute saved document path that must match the owning document.</param>
+        /// <returns>Owned target retaining the application lease, document, project, and normalized path.</returns>
         public object ResolveTarget(object project, string expectedHostPath)
         {
             RequireOwner(); RequireAbsolutePath(expectedHostPath);
@@ -186,12 +186,13 @@ namespace VBAi
             catch { application.Dispose(); throw; }
         }
 
-        /// <summary>Invokes  for vba test word values host.</summary>
-        /// <param name="target">object that supplies the target for this operation.</param>
-        /// <param name="module">Text that supplies the module value. Use the format required by the calling operation.</param>
-        /// <param name="procedure">Text that supplies the procedure value. Use the format required by the calling operation.</param>
-        /// <param name="arguments">object[] that supplies the arguments for this operation.</param>
-        /// <returns>object produced by the operation for invoke on vba test word values host.</returns>
+        /// <summary>Invokes one module-qualified macro only after validating and activating the exact owned document.</summary>
+        /// <param name="target">Owned target returned by <see cref="ResolveTarget"/>.</param>
+        /// <param name="module">Resolved VBA module identifier.</param>
+        /// <param name="procedure">Resolved procedure identifier.</param>
+        /// <param name="arguments">Zero arguments or the supported two positional arguments; the array is cloned.</param>
+        /// <returns>Value returned by Word Application.Run.</returns>
+        /// <exception cref="VbaTestInvocationException">Activation or dispatch throws; the outcome is marked uncertain and is not retried.</exception>
         public object Invoke(object target, string module, string procedure, object[] arguments)
         {
             var owned = ValidateTarget(target);
