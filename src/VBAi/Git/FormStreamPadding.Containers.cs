@@ -144,7 +144,7 @@ namespace VBAi
         private sealed class TabLinks
         {
 
-            /// <summary>Tab item identifiers and display names in matching ordinal positions.</summary>
+            /// <summary>Persisted tab item IDs and tab captions, each in storage order.</summary>
             internal readonly List<string> Items = new List<string>(), Names = new List<string>();
         }
 
@@ -281,9 +281,9 @@ namespace VBAi
                 Require(StreamClaims.Add(path)); return bytes;
             }
 
-            /// <summary>Validates multi page for storage graph.</summary>
-            /// <param name="node">storage node that supplies the node for this operation.</param>
-            /// <param name="bytes">byte[] that supplies the bytes for this operation.</param>
+        /// <summary>Validates MultiPage page-property records, tab count, and the ordered page-ID map.</summary>
+        /// <param name="node">Validated MultiPage node with its parsed page sites and tab links.</param>
+        /// <param name="bytes">Exact x-stream bytes; a clone is parsed so comparison data remains unchanged.</param>
             private static void ValidateMultiPage(StorageNode node, byte[] bytes)
             {
                 // MS-OFORMS 2.1.2.3 and 2.2.6. The x stream remains exact even for its ignored first PageProperties.
