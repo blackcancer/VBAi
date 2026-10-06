@@ -1,5 +1,7 @@
 # Getting started
 
+[Documentation](README.md)
+
 This guide is for a first controlled session with VBAi. The standalone installer
 will come later; for the current preview, complete the
 [source-build setup](installation.md) first.

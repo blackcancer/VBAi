@@ -1,5 +1,7 @@
 # Privacy and safety
 
+[Documentation](README.md)
+
 VBAi processes live VBA inside the host application. Cloud or CLI-backed AI use
 can transmit code and context to the selected provider. Decide what may leave the
 machine before enabling an integration; follow the rules applicable to your work.

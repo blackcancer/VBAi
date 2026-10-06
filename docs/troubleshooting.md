@@ -1,5 +1,7 @@
 # Troubleshooting
 
+[Documentation](README.md)
+
 Start with the VBAi build/commit, host and VBE versions, process architecture,
 Windows version and the exact failing operation. The About window can copy
 technical details without reading project code or provider credentials. Review

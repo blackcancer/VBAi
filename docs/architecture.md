@@ -1,8 +1,28 @@
 # Architecture
 
+[Documentation](README.md)
+
 VBAi is an in-process COM add-in. It connects a shared VBE automation layer to a
 modern editor, an assistant and source-control workflows. Host-specific behavior
 is an additional compatibility concern, not the definition of the product.
+
+## Request flow
+
+```mermaid
+flowchart LR
+    Chat[Assistant and context] --> Provider[Provider transport]
+    Provider --> Tools[Tool discovery and dispatch]
+    Tools --> Guards[Project, revision, mode and access guards]
+    Guards --> STA[Owning VBE STA]
+    STA --> VBIDE[Shared VBIDE services]
+    STA --> Adapter[Host adapters and native commands]
+    VBIDE --> Result[Verified result or retained uncertainty]
+    Adapter --> Result
+    Result --> Chat
+```
+
+Provider transport does not own native project access. Every dispatch path,
+including catalog gateways and deferred native work, revalidates the live scope.
 
 ## Solution structure
 
@@ -64,19 +84,11 @@ Managed status remains available. Persistence is qualified
 separately by adapter Save and independent reopen. Native host acceptance is
 recorded in the compatibility and qualification pages, not inferred from this design.
 
-UserForm Git qualification has a separate, disabled-by-default diagnostic. The
-host captures `VBAi_TEST_OWNER_GIT_MANIFEST` at connection; an owned fixture then
-publishes one immutable plan bound to its original process, native VBE STA,
-workbook, candidate assembly and disposable evidence directories. The plan allows
-only the ordered checkpoint/interruption/rollback bank, a corrupt checkpoint
-preflight, or one pull from the retained synthetic qualification repository and
-exact commit. The diagnostic is absent from the LLM tool catalog. It accepts no
-new paths, verbs or executable code in a request. Existing bridge admission,
-project access checks, revision checks and the current Automatic edit policy
-apply throughout owner execution. Durable intent, mutation and terminal receipts
-distinguish a proved refusal before writing from an uncertain mutation; uncertain
-outcomes retain the host and recovery evidence without replay. Managed guards
-and receipts do not themselves qualify native persistence or rendering.
+Owned-host qualification diagnostics are disabled by default and excluded from
+the LLM catalog. They bind immutable synthetic plans to the original candidate,
+process, owning STA, project and evidence paths. Admission, revision, access,
+approval and privacy guards still apply. Durable intent/terminal receipts retain
+uncertain state without replay. Setup belongs in the [native testing guide](../tests/native-hosts.md).
 
 A document save, application-level procedure invocation or standalone project
 persistence can require a host-specific path. These adapters must identify the

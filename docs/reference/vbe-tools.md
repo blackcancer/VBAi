@@ -1,5 +1,7 @@
 # Tool reference and discovery
 
+[Documentation](../README.md)
+
 This page documents the tool contract, not a second hand-maintained copy of every
 schema. The authoritative catalog is constructed by `LlmVbeTools.Definitions` and
 its companion definitions in `src/VBAi/Llm/Chat/`.

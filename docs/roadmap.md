@@ -1,5 +1,7 @@
 # Roadmap
 
+[Documentation](README.md)
+
 The roadmap describes direction, not promised delivery dates. Current behavior
 belongs in the guides and [compatibility](compatibility.md); verified results belong
 in [recorded validation](test-coverage.md).
@@ -15,10 +17,9 @@ weakening revision or permission checks.
 
 Continue qualifying the shared VBE layer in additional applications. Add or repair
 host-specific operations where VBIDE is insufficient, especially document identity,
-saving and execution. Qualify the Word/PowerPoint save paths in their hosts,
-including the corrected PowerPoint handle lookup; close the remaining Office
-save-adapter gaps, qualify standalone macro persistence and broaden debugger,
-control, language and DPI evidence.
+saving and execution. Extend the qualified existing-document save and native macro workflows to
+additional document types and operations. Broaden debugger, control, language,
+DPI and real-desktop evidence on the current integrated candidate.
 
 A host matrix should describe observed operations and prerequisites, not restrict
 the intended ecosystem to the first applications used for testing.

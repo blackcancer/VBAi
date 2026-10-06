@@ -1,5 +1,7 @@
 # UserForms and native designer data
 
+[Documentation](../README.md)
+
 VBAi works with the host's native VBA UserForm designer. It can inspect forms and
 containers, add supported controls, change typed properties, adjust geometry,
 work with events and perform bounded duplication/recovery operations. These

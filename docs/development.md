@@ -1,5 +1,7 @@
 # Development guide
 
+[Documentation](README.md)
+
 Start with [source-build setup](installation.md), [architecture](architecture.md)
 and [contributing](../CONTRIBUTING.md). Commands below run from the repository root.
 

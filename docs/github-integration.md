@@ -1,5 +1,7 @@
 # Git and GitHub
 
+[Documentation](README.md)
+
 VBAi versions **exported VBA sources**, not the entire application document. The
 same workflow is available to a compatible VBE project regardless of its host,
 subject to reliable document identity and import/export capabilities.

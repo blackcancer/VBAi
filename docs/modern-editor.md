@@ -1,5 +1,7 @@
 # Modern editor
 
+[Documentation](README.md)
+
 VBAi embeds Monaco in the VBE document area. The native VBA compiler, debugger and
 UserForm designer remain the execution and design back ends; Monaco does not
 replace the VBA runtime.

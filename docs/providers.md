@@ -1,5 +1,7 @@
 # AI providers
 
+[Documentation](README.md)
+
 Provider choice is independent of the application hosting the VBE and independent
 of the GitHub account used for source versioning. VBAi connects to your provider;
 it does not supply an account, an API credit balance or a model-usage entitlement.
@@ -106,8 +108,8 @@ and a complete/empty/error outcome. These metadata exclude prompts, response
 content, tool names and arguments; they do not add a retry or change parsing.
 An empty terminal response remains distinct from a truncated response or a
 tool-only round. The selected Ollama configuration passes its stated live test
-scope; historical intermittent empty responses and embedded-host acceptance
-remain separate items in [qualification](release-qualification.md).
+scope, including the six installed Office assistants. Historical intermittent
+empty responses remain unresolved; see [qualification](release-qualification.md).
 
 OpenAI requests include `store=false`; this is not a universal retention setting
 for every provider or a guarantee of zero retention. Provider-side data handling

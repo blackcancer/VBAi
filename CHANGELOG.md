@@ -37,6 +37,10 @@ investigations and test transcripts belong in Git history and test artifacts.
 
 ### Fixed
 
+- Outlook project identity no longer treats a process-dependent fake filename
+  as persisted storage. The Q028 runner now contains its owned Ollama calculation
+  workers and verifies their shutdown.
+
 - Workspace-hosted editor closure now preserves the embedded editor for native
   WM_CLOSE requests. Detached VBE/ActiveX focus sites no longer interrupt normal
   host shutdown; the corrected candidate is qualified for the recorded Q-014
@@ -50,12 +54,11 @@ investigations and test transcripts belong in Git history and test artifacts.
 
 ### Known limitations
 
-A standalone installer is still planned. Qualification remains operation- and
-host-specific. The recorded Office batch did not qualify VBAi's Word/PowerPoint
-save paths; its PowerPoint handle failure was corrected in code afterward but has
-not been retested in that host. Access and Publisher still lack save adapters.
-The current revision does not have a new instrumented coverage result after the
-latest implementation changes.
+A standalone installer is planned. Qualification is operation-, host- and
+candidate-specific; current results include selected Office persistence,
+UserForm/Git workflows, SOLIDWORKS native macro workflows and embedded Ollama
+assistant scenarios. A new integrated build requires its own applicable checks.
+The latest changes have no new complete instrumented line/branch measurement.
 
 See [compatibility](docs/compatibility.md), [recorded validation](docs/test-coverage.md)
 and [the roadmap](docs/roadmap.md) for the current boundaries.

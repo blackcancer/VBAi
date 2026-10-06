@@ -1,5 +1,7 @@
 # VBA test explorer
 
+[Documentation](README.md)
+
 This implementation is under review. Registered native execution remains blocked
 by code-window focus validation in the latest disposable Excel trial. Production
 acceptance is incomplete; see [recorded validation](test-coverage.md).
@@ -302,4 +304,6 @@ operation-specific gates pass.
 Test navigation currently selects the native VBIDE code pane and test line.
 The visible Monaco document can remain on the previous module. Opening and
 confirming the matching modern document before reporting navigation success is
-still pending. The interrupted asynchronous implementation is not included.
+still pending.
+This is a current navigation limitation; use the native pane to inspect the
+selected test until modern-editor navigation is implemented and verified.

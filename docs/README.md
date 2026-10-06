@@ -1,50 +1,54 @@
 # Documentation
 
-VBAi is a development workspace for applications that host the Visual Basic Editor.
-Start with the task you want to complete; the host compatibility layer is documented
-separately from the shared VBE features.
+Use these guides to set up VBAi, complete a workflow or contribute to the code.
+The product targets the shared VBE environment; host qualification is documented
+per operation and tested candidate.
 
-## Use VBAi
+## Start here
 
-| Guide | What it answers |
+| Your task | Guide |
 | --- | --- |
-| [Getting started](getting-started.md) | How do I complete a first, controlled intervention? |
-| [Compatibility](compatibility.md) | What does the shared VBE layer cover, and what depends on the application? |
-| [Source-build setup](installation.md) | How do developers and early testers build and register the current preview? |
-| [Conversations](chat-ui.md) | How do context, modes, approvals, queues, recovery and session history work? |
-| [Providers](providers.md) | How do I configure authentication, endpoints and models? |
-| [Modern editor](modern-editor.md) | How do editing, synchronization, saving and native debugging interact? |
-| [Git and GitHub](github-integration.md) | How do source versioning, checkpoints and imports work? |
-| [UserForms](reference/designer.md) | How do native forms, controls and resource files behave? |
-| [Privacy and safety](privacy.md) | What is shared, what stays local, and what permissions mean? |
-| [Troubleshooting](troubleshooting.md) | How do I recover from setup, editing, provider or UI problems? |
+| Set up the preview | [Source-build setup](installation.md) |
+| Complete a first intervention | [Getting started](getting-started.md) |
+| Check your application | [Compatibility](compatibility.md) |
+| Connect an AI provider | [Providers](providers.md) |
+| Solve a setup/runtime problem | [Troubleshooting](troubleshooting.md) |
+
+## Work with VBAi
+
+| Guide | Covers |
+| --- | --- |
+| [Conversations](chat-ui.md) | Context, modes, approvals, queues, activities, recovery and history |
+| [Modern editor](modern-editor.md) | Completion, synchronization, drafts, native compilation and debugging |
+| [UserForms](reference/designer.md) | Controls, typed properties, layout, events and FRM/FRX resources |
+| [Git and GitHub](github-integration.md) | Source repositories, checkpoints, imports and remote workflows |
+| [VBA test explorer](vba-testing.md) | Annotations, serial runs, results and procedure-entry coverage |
+| [Privacy and safety](privacy.md) | Project boundaries, local storage, provider transmission and execution |
 
 ## Develop and maintain
 
-| Guide | Scope |
+| Guide | Covers |
 | --- | --- |
-| [Architecture](architecture.md) | Components, host boundaries, threading, local bridge and persistence. |
-| [VBA test explorer](vba-testing.md) | Discover VBA tests, run explicit selections, inspect human/LLM results and understand coverage limits. |
-| [Development](development.md) | Build conventions, UI design, localization and documentation maintenance. |
-| [Testing](../tests/README.md) | Local checks and explicit real-host test opt-ins. |
-| [Recorded validation](test-coverage.md) | Dated evidence, tested revisions and measurement boundaries. |
-| [Version 1.0.0 qualification](release-qualification.md) | Release gates, tracked defects and remaining native acceptance work. |
-| [Tool reference](reference/vbe-tools.md) | Discovery, invocation and authoritative schema locations. |
-| [Updates and release contract](updates.md) | Existing updater foundation and requirements for the future installer. |
-| [Roadmap](roadmap.md) | Planned work without delivery promises. |
+| [Architecture](architecture.md) | Components, COM/threading boundaries and dispatch lifecycle |
+| [Development](development.md) | Toolchain, Designer, localization, XML documentation and source conventions |
+| [Testing](../tests/README.md) | Managed, native-host, provider, JavaScript and renderer checks |
+| [VBA testing contract](vba-testing-design.md) | Callback, instrumentation and native acceptance invariants |
+| [Tool reference](reference/vbe-tools.md) | Discovery/invocation and authoritative schemas |
+| [Recorded validation](test-coverage.md) | Candidate identity, executed results and measurement scope |
+| [Release qualification](release-qualification.md) | Finding register and remaining release boundaries |
+| [Updates](updates.md) | Existing updater behavior and future distribution contract |
+| [Roadmap](roadmap.md) | Planned work and unresolved scope |
 
-Repository policies: [contributing](../CONTRIBUTING.md),
-[security](../SECURITY.md), [support](../SUPPORT.md),
-[conduct](../CODE_OF_CONDUCT.md), [third-party notices](../THIRD_PARTY_NOTICES.md)
-and [changelog](../CHANGELOG.md).
+## Repository policies
 
-## Read status accurately
+[Contributing](../CONTRIBUTING.md) · [Security](../SECURITY.md) ·
+[Support](../SUPPORT.md) · [Conduct](../CODE_OF_CONDUCT.md) ·
+[Third-party notices](../THIRD_PARTY_NOTICES.md) · [Changelog](../CHANGELOG.md)
 
-**Implemented** describes code that exists. **Tested** describes an identified
-scenario on a particular build and environment. **Not run**, **blocked** and
-**not installed** are not successful tests. A coverage percentage measures only
-the instrumented scope.
+## Documentation conventions
 
-Guides describe the maintained behavior. Detailed investigation logs, superseded
-plans and old test counters remain in Git history rather than a parallel archive
-of competing documentation. Non-Markdown reference data is retained where useful.
+Guides describe implemented behavior. Recorded validation describes observed
+results; a target or architecture description is not a successful test.
+Test counts and coverage belong only in the validation page, tied to their source.
+Superseded investigations remain in Git history. Test fixture Markdown and
+third-party/reference data retain their independent purposes.

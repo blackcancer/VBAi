@@ -1,5 +1,7 @@
 # Source-build setup
 
+[Documentation](README.md)
+
 The standalone installer is planned for a later milestone. This page describes
 **developer registration of the current preview**, not an end-user installation
 experience or an installer implementation task.

@@ -1,5 +1,7 @@
 # VBA test explorer implementation contract
 
+[Documentation](README.md)
+
 This page records architectural contracts and acceptance boundaries. The
 [usage guide](vba-testing.md) is authoritative for declarations, UI actions,
 reports and storage. [Recorded validation](test-coverage.md) is authoritative for

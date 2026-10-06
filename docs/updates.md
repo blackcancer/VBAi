@@ -1,5 +1,7 @@
 # Updates and the future installer
 
+[Documentation](README.md)
+
 **The standalone installer is a later deliverable.** VBAi already contains update
 coordination and an external updater foundation, but those components are not a
 completed installation product. Developer registration is described in

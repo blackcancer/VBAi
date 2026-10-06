@@ -1,5 +1,7 @@
 # Conversations and agent workflows
 
+[Documentation](README.md)
+
 A conversation belongs to a selected VBA project. Saved projects use their document
 path as the durable scope; unsaved projects have a temporary scope. Select the
 intended project before attaching context or resuming work.
@@ -94,7 +96,9 @@ is still a message to send; compilation does not run all macros or tests.
 
 ## Sessions and local history
 
-Search, rename, pin, archive, restore or export conversations from the chat history.
+Search, rename, pin, archive, restore, delete or export conversations from the chat history.
+Deletion requires confirmation and waits for pending local writes. It removes the
+local entry; it does not request deletion from the provider.
 Forking a conversation copies relevant context but does not create a second owner
 of earlier rollback actions or reuse another session's Codex thread.
 
@@ -102,6 +106,12 @@ of earlier rollback actions or reuse another session's Codex thread.
 context and recovery snapshots. Provider settings live separately. Project notes
 are local and are attached only when explicitly selected. A storage failure is
 reported; do not assume that an unsaved history will survive a crash.
+
+For a new unsaved document, sessions and project notes stay in memory. Saving the
+exact live project for the first time promotes its history to the canonical saved
+path when storage is available. Abandoning the document does not leave a persisted
+orphan session. Temporary in-memory entries remain manageable while the scope is
+alive; they are not durable across host restarts.
 
 [Privacy](privacy.md) covers permission changes, legacy-session migration and the
 limits of deleting or revoking already transmitted context.
