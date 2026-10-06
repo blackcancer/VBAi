@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 namespace VBAi
 {
 
-    /// <summary>Owns the modern editor window state and operations.</summary>
+    /// <summary>Synchronizes editor buffers and verifies native host persistence after saving VBE-backed modules.</summary>
     internal sealed partial class ModernEditorWindow
     {
         // Native boundary permits testing cancellation without replacing synchronization.
