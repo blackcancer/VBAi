@@ -7,15 +7,15 @@ using System.Web.Script.Serialization;
 namespace VBAi
 {
 
-    /// <summary>Owns the vbe project components state and operations.</summary>
+    /// <summary>Implements project component operations, including post-save publication verification.</summary>
     internal sealed partial class VbeProjectComponents
     {
         // Raw revisions are deliberately unchanged. Only this verified-save content oracle
         // permits the documented edited-since-save flag to settle from false to true.
-        /// <summary>Handles publication post save metadata equals for vbe project components.</summary>
-        /// <param name="before">publication component that supplies the before for this operation.</param>
-        /// <param name="after">publication component that supplies the after for this operation.</param>
-        /// <returns>Boolean indicating the result of the check for publication post save metadata equals on vbe project components.</returns>
+        /// <summary>Checks whether a verified save changed only the allowed Saved flag and volatile version fields.</summary>
+        /// <param name="before">Immutable component snapshot captured before the save.</param>
+        /// <param name="after">Component snapshot read back after the save.</param>
+        /// <returns><see langword="true"/> when all stable descriptors match and Saved changed only from false to true.</returns>
         internal static bool PublicationPostSaveMetadataEquals(PublicationComponent before, PublicationComponent after)
         {
             if (before == null || after == null || before.ComponentSnapshotJson == null || after.ComponentSnapshotJson == null)
@@ -51,9 +51,9 @@ namespace VBAi
             return serializer.Serialize(left) == serializer.Serialize(right);
         }
 
-        /// <summary>Handles publication post save descriptors for vbe project components.</summary>
-        /// <param name="descriptors">object that supplies the descriptors for this operation.</param>
-        /// <returns>sorted dictionary&lt;string, dictionary&lt;string, object&gt;&gt; produced by the operation for publication post save descriptors on vbe project components.</returns>
+        /// <summary>Indexes property descriptors by unique, nonblank name for order-independent comparison.</summary>
+        /// <param name="descriptors">JSON-decoded property list; each item must be a dictionary with a string Name.</param>
+        /// <returns>Ordinally sorted name-to-descriptor map, or <see langword="null"/> for malformed or duplicate entries.</returns>
         private static SortedDictionary<string, Dictionary<string, object>> PublicationPostSaveDescriptors(object descriptors)
         {
             var array = descriptors as IList;

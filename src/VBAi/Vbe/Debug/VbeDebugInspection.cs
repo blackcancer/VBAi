@@ -8,23 +8,24 @@ namespace VBAi
     internal sealed class VbeDebugInspection : IDisposable
     {
 
-        /// <summary>Maintains the depth state for vbe debug inspection.</summary>
+        /// <summary>Per-thread nesting count for active debugger inspections.</summary>
         [ThreadStatic] private static int depth;
 
-        /// <summary>Maintains the owner thread state for vbe debug inspection.</summary>
+        /// <summary>Managed thread that must dispose this inspection scope.</summary>
         private readonly int ownerThread = Thread.CurrentThread.ManagedThreadId;
 
-        /// <summary>Maintains the disposed state for vbe debug inspection.</summary>
+        /// <summary>Prevents repeated disposal from decrementing the thread's nesting count twice.</summary>
         private bool disposed;
 
-        /// <summary>Gets the is active.</summary>
-        /// <value>Current is active exposed by vbe debug inspection.</value>
+        /// <summary>Reports whether automatic navigation is suspended on the current thread.</summary>
+        /// <value><see langword="true"/> while one or more inspection scopes are active on this thread.</value>
         internal static bool IsActive => depth != 0;
 
-        /// <summary>Initializes a VbeDebugInspection instance with the supplied state.</summary>
+        /// <summary>Begins a thread-affine inspection scope and suspends automatic code navigation.</summary>
         internal VbeDebugInspection() { depth++; }
 
-        /// <summary>Disposes  for vbe debug inspection.</summary>
+        /// <summary>Ends this inspection scope once on its creating thread and resumes navigation when nesting reaches zero.</summary>
+        /// <exception cref="InvalidOperationException">Disposal is attempted from a thread other than the creating thread.</exception>
         public void Dispose()
         {
             if (Thread.CurrentThread.ManagedThreadId != ownerThread)

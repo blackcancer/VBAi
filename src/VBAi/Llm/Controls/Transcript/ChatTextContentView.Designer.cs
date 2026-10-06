@@ -14,16 +14,16 @@ namespace VBAi
         /// <summary>Flow layout panel that contains this transcript view&apos;s child controls.</summary>
         private System.Windows.Forms.TableLayoutPanel layout;
 
-        /// <summary>Maintains the content state for chat text content view.</summary>
+        /// <summary>Read-only selectable text surface that hosts rendered transcript content.</summary>
         internal VBAi.UiRichTextBox content;
 
-        /// <summary>Maintains the copy menu state for chat text content view.</summary>
+        /// <summary>Context menu containing the transcript's copy-selection and copy-code commands.</summary>
         internal System.Windows.Forms.ContextMenuStrip copyMenu;
 
-        /// <summary>Maintains the copy selection state for chat text content view.</summary>
+        /// <summary>Menu command that copies the selected transcript text.</summary>
         internal System.Windows.Forms.ToolStripMenuItem copySelection;
 
-        /// <summary>Maintains the copy code state for chat text content view.</summary>
+        /// <summary>Menu command that copies code from the transcript block under the pointer.</summary>
         internal System.Windows.Forms.ToolStripMenuItem copyCode;
 
         /// <summary>Releases the Designer components.</summary>

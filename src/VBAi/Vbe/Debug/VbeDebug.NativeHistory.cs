@@ -94,13 +94,13 @@ namespace VBAi
         private sealed class HistorySnapshot
         {
 
-            /// <summary>Maintains the version state for history snapshot.</summary>
+            /// <summary>Hash of the selected project, ordered module hashes, and available Undo/Redo commands.</summary>
             public string Version;
 
-            /// <summary>Maintains the modules state for history snapshot.</summary>
+            /// <summary>Ordered source snapshots used to identify modules changed by one native history action.</summary>
             public List<HistoryModule> Modules;
 
-            /// <summary>Maintains the commands state for history snapshot.</summary>
+            /// <summary>Undo and Redo command identities, captions, and enabled states observed before mutation.</summary>
             public object[] Commands;
         }
 
