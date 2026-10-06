@@ -22,10 +22,10 @@ namespace VBAi
         public string text { get; set; }
 
         /// <summary>Applies a non-overlapping change batch atomically; malformed batches request a full snapshot.</summary>
-        /// <param name="source">Text that supplies the source value. Use the format required by the calling operation.</param>
-        /// <param name="changes">editor text change[] that supplies the changes for this operation.</param>
-        /// <param name="result">Text that supplies the result value. Use the format required by the calling operation.</param>
-        /// <returns>Boolean indicating the result of the check for try apply on editor text change.</returns>
+        /// <param name="source">Original model text, indexed in UTF-16 code units.</param>
+        /// <param name="changes">Non-overlapping edits expressed as offsets and lengths in the original text.</param>
+        /// <param name="result">Receives the atomically edited text on success; remains the original source when validation fails.</param>
+        /// <returns><see langword="true"/> when every edit is valid and the combined result fits the editor document limit; otherwise <see langword="false"/>.</returns>
         internal static bool TryApply(string source, EditorTextChange[] changes, out string result)
         {
             result = source;

@@ -92,29 +92,29 @@ namespace VBAi
         /// <summary>Indique si la fenêtre de conversation est attachée au cadre VBE.</summary>
         private bool docked;
 
-        /// <summary>Maintains the create modern editor state for add in.</summary>
+        /// <summary>Factory for the modeless Monaco editor; replaceable at the host integration boundary.</summary>
         internal static Func<ModernEditorWindow> CreateModernEditor = CreateModernEditorNative;
 
-        /// <summary>Creates modern editor native for add in.</summary>
-        /// <returns>modern editor window produced by the operation for create modern editor native on add in.</returns>
+        /// <summary>Creates the production Monaco editor window.</summary>
+        /// <returns>A new editor form not yet attached to the VBE workspace.</returns>
         private static ModernEditorWindow CreateModernEditorNative() => new ModernEditorWindow();
 
         /// <summary>Fenêtre d’éditeur moderne réutilisée par les commandes de l’add-in.</summary>
         private ModernEditorWindow modernEditor;
 
-        /// <summary>Maintains the test explorer window state for add in.</summary>
+        /// <summary>Owned modeless test explorer form, reused until it is disposed.</summary>
         private TestExplorerWindow testExplorerWindow;
 
-        /// <summary>Maintains the test explorer service state for add in.</summary>
+        /// <summary>Test discovery and execution service tied to the current VBE session.</summary>
         private VbeTestExplorerService testExplorerService;
 
-        /// <summary>Maintains the native test window state for add in.</summary>
+        /// <summary>Native VBE tool window that owns the embedded test explorer surface.</summary>
         private object nativeTestWindow;
 
-        /// <summary>Maintains the native test control state for add in.</summary>
+        /// <summary>Chat-style child control hosted inside the native test window.</summary>
         private ChatToolWindow nativeTestControl;
 
-        /// <summary>Maintains the editor workspace state for add in.</summary>
+        /// <summary>Reparents and sizes the modern editor within the VBE document MDI workspace.</summary>
         private EditorWorkspaceHost editorWorkspace;
 
         /// <summary>Navigation VBE associée à l’éditeur moderne ouvert.</summary>
@@ -253,8 +253,8 @@ namespace VBAi
             catch (Exception ex) { ReportMenuError(ex); }
         }
 
-        /// <summary>Handles prepare editor action for add in.</summary>
-        /// <param name="command">Text that supplies the command value. Use the format required by the calling operation.</param>
+        /// <summary>Routes editor and test commands to their dedicated windows, or forwards a command to the ready active editor.</summary>
+        /// <param name="command">Slash command received from the chat action surface.</param>
         private async void PrepareEditorAction(string command)
         {
             try
@@ -386,8 +386,8 @@ namespace VBAi
             await VbeUiTask.Run(async () => { await ShowGitHubOnOwnerAsync(); return true; });
         }
 
-        /// <summary>Handles show git hub on owner async for add in.</summary>
-        /// <returns>task produced by the operation for show git hub on owner async on add in.</returns>
+        /// <summary>Validates a saved active project and opens its Git window under the owning VBE modal lease.</summary>
+        /// <returns>A task completed after the Git window closes or the request is declined.</returns>
         private async System.Threading.Tasks.Task ShowGitHubOnOwnerAsync()
         {
             try
@@ -535,8 +535,8 @@ namespace VBAi
         }
 
         /// <summary>A failed diagnostic admission must not prevent the original cleanup.</summary>
-        /// <param name="entryPoint">Text that supplies the entry point value. Use the format required by the calling operation.</param>
-        /// <returns>add in shutdown diagnostic produced by the operation for begin shutdown observation on add in.</returns>
+        /// <param name="entryPoint">Existing shutdown callback name whose cleanup is being observed.</param>
+        /// <returns>An admitted diagnostic, or <see langword="null"/> if diagnostics are disabled or admission fails.</returns>
         private static AddInShutdownDiagnostic BeginShutdownObservation(string entryPoint)
         {
             try { return CreateShutdownDiagnostic?.Invoke(entryPoint); }
@@ -549,8 +549,8 @@ namespace VBAi
             CleanupTemporaryToolbarCommandsObserved(null);
         }
 
-        /// <summary>Handles cleanup temporary toolbar commands observed for add in.</summary>
-        /// <param name="diagnostic">add in shutdown diagnostic that supplies the diagnostic for this operation.</param>
+        /// <summary>Records the existing temporary-toolbar cleanup call while preserving its best-effort exception handling.</summary>
+        /// <param name="diagnostic">Optional observer receiving entry, return, or caught-fault markers.</param>
         private void CleanupTemporaryToolbarCommandsObserved(AddInShutdownDiagnostic diagnostic)
         {
             try
@@ -575,8 +575,8 @@ namespace VBAi
             DisposeObserved(BeginShutdownObservation("Dispose"));
         }
 
-        /// <summary>Observes existing calls and field assignments without asserting COM release.</summary>
-        /// <param name="diagnostic">add in shutdown diagnostic that supplies the diagnostic for this operation.</param>
+        /// <summary>Runs the existing add-in cleanup sequence and records selected calls and managed-reference clearing.</summary>
+        /// <param name="diagnostic">Optional bounded observer; diagnostic failure never changes cleanup propagation.</param>
         private void DisposeObserved(AddInShutdownDiagnostic diagnostic)
         {
             try

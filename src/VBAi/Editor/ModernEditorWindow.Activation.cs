@@ -4,18 +4,18 @@ using System.Threading.Tasks;
 namespace VBAi
 {
 
-    /// <summary>Owns the modern editor window state and operations.</summary>
+    /// <summary>Follows identity-verified VBE module activation into the matching Monaco document.</summary>
     internal sealed partial class ModernEditorWindow
     {
 
         /// <summary>Reads only the identity-matched native code pane currently activated in the owning VBE.</summary>
         internal Func<IEditorModule> ReadActiveModule;
 
-        /// <summary>Maintains the last followed native module state for modern editor window.</summary>
+        /// <summary>Last native module followed, used to distinguish native activation transitions from Monaco tab changes.</summary>
         private IEditorModule lastFollowedNativeModule;
 
         /// <summary>Follows native activation independently of its mouse, accessibility or programmatic origin.</summary>
-        /// <returns>task produced by the operation for follow native activation on modern editor window.</returns>
+        /// <returns>A task that completes after the native activation has been observed and, when needed, its document opened.</returns>
         internal Task FollowNativeActivation()
         {
             if (ReadActiveModule == null || !WorkspaceHosted || !Ready || busy || closing || IsDisposed ||
@@ -23,8 +23,8 @@ namespace VBAi
             return VbeUiTask.Run(FollowNativeActivationCore);
         }
 
-        /// <summary>Handles follow native activation core for modern editor window.</summary>
-        /// <returns>task&lt;bool&gt; produced by the operation for follow native activation core on modern editor window.</returns>
+        /// <summary>Rechecks editor state after dispatch to the owning STA, captures pending drafts, then follows the still-active module.</summary>
+        /// <returns><see langword="true"/> when a different active module was opened; otherwise <see langword="false"/>.</returns>
         private async Task<bool> FollowNativeActivationCore()
         {
             // Posting to the owning STA yields; another operation can acquire the
@@ -59,9 +59,9 @@ namespace VBAi
         }
 
         /// <summary>Compares exact adapter/component identities; mutable display names never identify a document.</summary>
-        /// <param name="first">i editor module that supplies the first for this operation.</param>
-        /// <param name="second">i editor module that supplies the second for this operation.</param>
-        /// <returns>Boolean indicating the result of the check for same editor module on modern editor window.</returns>
+        /// <param name="first">First adapter module identity.</param>
+        /// <param name="second">Second adapter module identity.</param>
+        /// <returns><see langword="true"/> when both references are the same adapter object or wrap the same VBE component.</returns>
         private static bool SameEditorModule(IEditorModule first, IEditorModule second) =>
             first != null && second != null && (ReferenceEquals(first, second) ||
                 (first is EditorVbeModule native && second is EditorVbeModule other && native.IsComponent(other.Component)));

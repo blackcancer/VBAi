@@ -99,10 +99,10 @@ namespace VBAi
             cacheValue = symbols.ToArray(); cacheKey = key; return cacheValue;
         }
 
-        /// <summary>Handles return type for editor reference index.</summary>
-        /// <param name="info">i type info that supplies the info for this operation.</param>
-        /// <param name="description">typedesc that supplies the description for this operation.</param>
-        /// <returns>Text produced by the operation for return type on editor reference index.</returns>
+        /// <summary>Resolves a COM type description to a VBA-facing primitive or qualified user-defined type name.</summary>
+        /// <param name="info">Type information that owns the referenced type descriptor.</param>
+        /// <param name="description">COM descriptor for the return or member type; pointer and SAFEARRAY wrappers are unwrapped recursively.</param>
+        /// <returns>Mapped type name, or <see langword="null"/> when the descriptor has no supported primitive mapping.</returns>
         private static string ReturnType(ITypeInfo info, TYPEDESC description)
         {
             var kind = (VarEnum)description.vt;

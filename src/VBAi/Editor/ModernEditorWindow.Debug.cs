@@ -14,18 +14,18 @@ namespace VBAi
         /// <summary>Dernier mode VBE observé pour le document actif.</summary>
         private int lastDebugMode = -1;
 
-        /// <summary>Maintains the debug commands state for modern editor window.</summary>
+        /// <summary>Serializes native compile, step, breakpoint, and execution-state commands.</summary>
         private readonly SemaphoreSlim debugCommands = new SemaphoreSlim(1, 1);
 
-        /// <summary>Maintains the observing debug state for modern editor window.</summary>
+        /// <summary>Prevents overlapping timer-driven observations of native debug state.</summary>
         private bool observingDebug;
 
-        /// <summary>Maintains the post step observation pending state for modern editor window.</summary>
+        /// <summary>Retains a requested post-command observation until the command gate and busy state are both free.</summary>
         private bool postStepObservationPending;
 
         /// <summary>Orders user/native commands without collapsing repeated toggles or steps.</summary>
-        /// <param name="message">editor message that supplies the message for this operation.</param>
-        /// <returns>task produced by the operation for editor command on modern editor window.</returns>
+        /// <param name="message">Renderer command and request identifier to execute in order.</param>
+        /// <returns>A task completed after native execution, observation scheduling, and any renderer completion reply.</returns>
         private async Task EditorCommand(EditorMessage message)
         {
             var timing = PerformanceSample == null ? null : System.Diagnostics.Stopwatch.StartNew();
@@ -54,10 +54,10 @@ namespace VBAi
         }
 
         /// <summary>Updates all execution decorations in one renderer round trip.</summary>
-        /// <param name="id">Text that supplies the id value. Use the format required by the calling operation.</param>
-        /// <param name="line">int that supplies the line for this operation.</param>
-        /// <param name="reveal">Indicates whether reveal is enabled.</param>
-        /// <returns>task produced by the operation for execution state on modern editor window.</returns>
+        /// <param name="id">Editor document whose execution marker is being updated.</param>
+        /// <param name="line">One-based source line to mark, or the existing protocol value used to clear it.</param>
+        /// <param name="reveal"><see langword="true"/> to scroll the renderer to the execution line.</param>
+        /// <returns>The WebView script task that updates the execution decoration.</returns>
         private Task ExecutionState(string id, int line, bool reveal = true)
         { return Script("executionBatch", id, line, reveal); }
 
@@ -70,12 +70,12 @@ namespace VBAi
         /// <summary>Identifiant du document associé au dernier mode observé.</summary>
         private string lastDebugDocument, lastDebugPosition;
 
-        /// <summary>Maintains the last execution line and last execution version state for modern editor window.</summary>
+        /// <summary>Last execution marker line and renderer revision observed for that marker.</summary>
         private int lastExecutionLine, lastExecutionVersion;
 
-        /// <summary>Handles debug position for modern editor window.</summary>
-        /// <param name="native">editor vbe module that supplies the native for this operation.</param>
-        /// <returns>Text produced by the operation for debug position on modern editor window.</returns>
+        /// <summary>Reads the active native code-pane selection to detect a changed debug position.</summary>
+        /// <param name="native">VBE module whose owning VBE supplies the active pane.</param>
+        /// <returns>Component name and selection coordinates, or an empty string when no active pane exists.</returns>
         private string DebugPosition(EditorVbeModule native)
         {
             dynamic pane = ((dynamic)native.Vbe).ActiveCodePane;

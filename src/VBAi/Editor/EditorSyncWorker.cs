@@ -44,7 +44,7 @@ namespace VBAi
         internal EditorSyncWorker() : this("VBAi editor synchronization") { }
 
         /// <summary>Names isolated queues so profiler traces distinguish language and synchronization.</summary>
-        /// <param name="name">Text that supplies the name value. Use the format required by the calling operation.</param>
+        /// <param name="name">Diagnostic name assigned to the dedicated background thread.</param>
         internal EditorSyncWorker(string name)
         {
             thread = new Thread(Run) { IsBackground = true, Name = name };
