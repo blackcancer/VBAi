@@ -6,6 +6,13 @@ French pages live under `/fr/`; the root is English. Each page has a distinct
 title and description, a canonical URL and reciprocal language alternatives.
 The generated sitemap contains the eight localized product pages.
 
+The homepage presents AI assistance and GitHub integration as the two main product
+capabilities. Its GitHub section follows the opening scene, with the real exported
+source view, benefits for VBA projects and links to the macro-to-repository walkthrough.
+The internal "GitHub for VBA" navigation is separate from the external source-code
+link. Keep the explanation aligned with `docs/github-integration.md`: document
+saving, local commits, remote pushes and reviewed source imports are separate actions.
+
 ## Sources and build
 
 Manual English and French text lives in `content/en.json` and `content/fr.json`.
