@@ -53,6 +53,8 @@ class Website:
         if not self.base.startswith('/') or not self.base.endswith('/'):
             raise ValueError('The configured website URL must have an absolute, trailing-slash path.')
         self.template = Template((SITE / 'template.html').read_text(encoding='utf-8'))
+        self.asset_versions = {name: hashlib.sha256((SITE / file).read_bytes()).hexdigest()[:12]
+                               for name, file in (('style_version', 'styles.css'), ('script_version', 'main.js'))}
         self.captures = {item['file']: item for item in json.loads((SCREENSHOTS / 'manifest.json').read_text(encoding='utf-8'))['captures']}
 
     def relative(self, lang: str, page: str) -> str:
@@ -180,7 +182,7 @@ class Website:
         else:
             content = self.render_home(lang) if page == 'home' else self.render_article(lang, page)
         return self.template.substitute(
-            {**{key: escape(value) for key, value in language['common'].items()},
+            {**{key: escape(value) for key, value in language['common'].items()}, **self.asset_versions,
              'lang': lang, 'base': self.base, 'title': escape(data['title']),
              'description': escape(data.get('description', data.get('text', ''))),
              'canonical': self.url(lang, page if page in PAGES else 'home'),

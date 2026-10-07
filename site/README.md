@@ -40,9 +40,14 @@ generated folder. Update the version and verified download URL together in
 `config.json`, and update the corresponding release wording in both languages.
 
 The website has no analytics, cookies, remote fonts or third-party JavaScript.
-The original graphite/violet logo defines its visual identity. Screenshot tilt,
-the decorative spark and scroll reveals are progressive enhancements; reduced
-motion disables them, and navigation/content remain available without JavaScript.
+The original graphite/violet logo defines its visual identity. The opening copy
+enters in sequence; the two real captures float independently, and the violet
+spark rotates and breathes. Pointer tilt and staggered scroll reveals complete
+the motion. Floating captures pause on hover or keyboard focus; the scene pauses
+off screen and decorative motion pauses in a hidden tab. Reduced motion disables
+all these effects, including when that preference changes while the page is open.
+Navigation/content remain available without JavaScript. CSS and JavaScript URLs
+include content hashes so an update does not keep an older asset in browser cache.
 Its documentation links point to the authoritative repository guides rather
 than maintaining a second copy. Submit the published `sitemap.xml` through a
 verified Google Search Console URL-prefix property to monitor indexing.

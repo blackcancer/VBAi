@@ -168,18 +168,55 @@ strong { font-weight: 650; }
 .dialog-image { width: min(88vw, calc((90vh - 80px) * var(--frame-aspect)), var(--native-width)); margin: auto; }
 
 /* Progressive motion: no script or reduced-motion preference leaves content visible. */
-.motion-ready [data-reveal].revealed { animation: section-reveal .7s cubic-bezier(.2,.7,.3,1); }
+.motion-ready [data-reveal].revealed { animation: section-reveal .85s cubic-bezier(.2,.7,.3,1) var(--reveal-delay, 0ms) backwards; }
 .motion-ready [data-reveal]:focus-within { animation: none; }
 @keyframes section-reveal {
-  from { opacity: .65; transform: translateY(18px); }
+  from { opacity: .35; transform: translateY(32px); }
   to { opacity: 1; transform: translateY(0); }
 }
+@keyframes hero-enter {
+  from { opacity: .2; translate: 0 26px; }
+  to { opacity: 1; translate: 0 0; }
+}
+@keyframes chat-float {
+  0%, 100% { translate: 0 0; }
+  50% { translate: 0 -12px; }
+}
+@keyframes form-float {
+  0%, 100% { translate: 0 0; }
+  50% { translate: 0 -18px; }
+}
+@keyframes identity-spark {
+  0%, 100% { transform: rotate(0) scale(1); }
+  50% { transform: rotate(30deg) scale(1.2); }
+}
 @keyframes spark-drift {
-  0%, 100% { transform: translateY(0) rotate(12deg); opacity: .12; }
-  50% { transform: translateY(-15px) rotate(20deg); opacity: .21; }
+  0%, 100% { transform: translateY(0) rotate(12deg) scale(1); opacity: .16; }
+  50% { transform: translateY(-24px) rotate(32deg) scale(1.08); opacity: .3; }
 }
 @media (prefers-reduced-motion: no-preference) {
-  .hero-spark { animation: spark-drift 12s ease-in-out infinite; }
+  .motion-ready .hero-copy > * { animation: hero-enter .9s cubic-bezier(.2,.7,.3,1) backwards; }
+  .motion-ready .hero-copy > .hero-identity { animation-delay: .1s; }
+  .motion-ready .hero-copy > h1 { animation-delay: .2s; }
+  .motion-ready .hero-copy > .lead { animation-delay: .3s; }
+  .motion-ready .hero-copy > .actions { animation-delay: .4s; }
+  .motion-ready .hero-copy > .hero-note { animation-delay: .5s; }
+  .motion-ready .hero-identity > .icon { animation: identity-spark 5s ease-in-out infinite; }
+  .motion-ready .hero-spark { animation: spark-drift 7s ease-in-out infinite; }
+  .motion-ready .hero-chat { animation: chat-float 7s ease-in-out 1s infinite; }
+  .motion-ready .hero-form { animation: form-float 5.5s ease-in-out .5s infinite; }
+  .motion-ready .hero-visual:hover .hero-chat,
+  .motion-ready .hero-visual:hover .hero-form,
+  .motion-ready .hero-visual:focus-within .hero-chat,
+  .motion-ready .hero-visual:focus-within .hero-form { animation-play-state: paused; }
+  .motion-ready .scene-paused .hero-spark,
+  .motion-ready .scene-paused .hero-chat,
+  .motion-ready .scene-paused .hero-form,
+  .motion-paused .hero-copy > *,
+  .motion-paused .hero-identity > .icon,
+  .motion-paused .hero-spark,
+  .motion-paused .hero-chat,
+  .motion-paused .hero-form { animation-play-state: paused; }
 }
 @media (max-width: 1100px) {
   .hero { gap: 35px; }
@@ -262,6 +299,6 @@ strong { font-weight: 650; }
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto; }
   .button, .hero-chat { transition: none; }
-  .hero-spark { animation: none; }
+  .hero-copy > *, .hero-identity > .icon, .hero-spark, .hero-chat, .hero-form { animation: none !important; }
   .motion-ready [data-reveal] { animation: none; }
 }
