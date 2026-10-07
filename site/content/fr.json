@@ -1,0 +1,100 @@
+{
+  "lang": "fr",
+  "common": {
+    "skip": "Aller au contenu", "navigation": "Navigation principale", "home_label": "Accueil VBAi",
+    "language": "EN", "language_label": "Read this page in English", "other_lang": "en",
+    "tagline": "Votre agent IA pour VBA.", "source": "Explorer le code source", "close": "Fermer",
+    "privacy": "Confidentialité", "support": "Signaler un problème",
+    "licenses": "Code original de VBAi : MPL-2.0. Modèles et runtime VBA pour vos projets : MIT.",
+    "independent": "Projet indépendant, ni publié ni approuvé par Microsoft, OpenAI ou GitHub.",
+    "download": "Télécharger VBAi 1.0.0", "guide": "Guide d’installation", "documentation": "Documentation",
+    "image_hint": "Sélectionnez l’image pour l’agrandir.", "capture_note": "Captures réelles d’un projet Excel jetable, réalisées le 6 octobre 2026. L’interface présentée est en français."
+  },
+  "nav": {"home": "Fonctionnalités", "workflows": "En pratique", "providers": "Providers IA", "installation": "Installer"},
+  "home": {
+    "title": "VBAi — Assistant IA pour VBA dans Excel et SOLIDWORKS",
+    "description": "Un assistant IA, l’éditeur Monaco et des outils Git dans le Visual Basic Editor. Découvrez VBAi, ses exemples réels et son complément pour Windows x64.",
+    "eyebrow": "Windows x64 · Open source · Complément VBE",
+    "heading": "L’IA, dans<br><em>votre éditeur VBA.</em>",
+    "lead": "Comprendre une macro, créer un UserForm ou revoir une modification. VBAi réunit la conversation et les outils dans le Visual Basic Editor, au plus près de votre projet.",
+    "secondary": "Voir un exemple réel", "note": "Windows x64 · .NET Framework 4.8 · Installateur non signé",
+    "visual_label": "Dans VBAi", "visual_status": "Application réelle", "floating_label": "Le UserForm VBA obtenu",
+    "chat_alt": "L’assistant VBAi travaille sur le projet Excel CalculTVA avec Codex, GPT-6-Luna et un raisonnement medium",
+    "chat_caption": "L’agent travaille sur un vrai projet VBA. Cet exemple crée un calculateur de TVA dans Excel.",
+    "form_alt": "Le UserForm VBA calcule un montant TTC de 120.00 pour 100 HT et un taux de TVA de 20 pour cent",
+    "host_label": "Conçu autour du Visual Basic Editor commun aux hôtes",
+    "host_note": "Vérifier la portée pour votre application", "hosts": ["Excel", "Word", "PowerPoint", "SOLIDWORKS"],
+    "features_eyebrow": "Un espace de travail intégré", "features_heading": "Gardez votre projet.<br>Enrichissez votre éditeur.",
+    "features_text": "Échangez avec un agent, inspectez ses modifications et continuez à travailler avec le VBA de votre application.",
+    "features": [
+      {"icon": "chat", "title": "Un agent dans le VBE", "text": "Modes Discussion, Plan et Agent, contexte du projet, historique des conversations, choix du modèle et du raisonnement.", "link": "Découvrir les conversations", "doc": "chat-ui.md"},
+      {"icon": "code", "title": "Un éditeur VBA moderne", "text": "Monaco apporte la complétion VBA et COM, la navigation, la mise en forme, les brouillons et les diagnostics de compilation native.", "link": "Découvrir l’éditeur", "doc": "modern-editor.md"},
+      {"icon": "form", "title": "UserForms et contrôles", "text": "Créez des formulaires, travaillez sur les propriétés et la disposition des contrôles, puis reliez l’interface aux événements VBA.", "link": "Découvrir les outils du concepteur", "doc": "reference/designer.md"},
+      {"icon": "git", "title": "Git, à côté de votre macro", "text": "Versionnez les sources VBA exportées, examinez les différences, utilisez des branches et des checkpoints, et gérez vos échanges avec GitHub.", "link": "Comprendre le passage de la macro au dépôt", "doc": "github-integration.md"},
+      {"icon": "check", "title": "Tests et débogage", "text": "Découvrez les tests VBA annotés, consultez les rapports et utilisez les outils d’exécution et de débogage natifs dans leur portée prise en charge.", "link": "Découvrir l’explorateur de tests", "doc": "vba-testing.md"},
+      {"icon": "shield", "title": "Vous fixez le périmètre", "text": "Choisissez le contexte du projet, le mode de travail et le niveau d’approbation. Examinez les changements et utilisez les outils de récupération disponibles.", "link": "Lire les règles de confidentialité et de contrôle", "doc": "privacy.md"}
+    ],
+    "story_eyebrow": "Un exemple réel", "story_heading": "D’une idée à<br>une macro versionnée.",
+    "story_text": "Pour le guide utilisateur, nous sommes partis d’un classeur Excel jetable et avons demandé à l’agent un petit calculateur de TVA. Des demandes distinctes ont porté sur l’implémentation, les tests et la publication GitHub.",
+    "steps": [
+      ["Décrire le résultat attendu", "Demandez le formulaire et le comportement souhaités, avec vos propres mots."],
+      ["Relire et tester", "Inspectez le code et le formulaire, puis demandez explicitement des tests."],
+      ["Versionner les sources", "Examinez les composants exportés avant de les committer et de les publier."]
+    ],
+    "story_link": "Suivre l’exemple",
+    "git_alt": "La vue des modifications Git de VBAi liste les modules, le formulaire, le support de tests et les références exportés de CalculTVA",
+    "git_caption_title": "La macro devient un ensemble de sources à relire.",
+    "git_caption": "La vue Git liste les composants préparés pour cet exemple jetable. Elle ne transforme pas le classeur lui-même en dépôt Git.",
+    "providers_eyebrow": "Votre choix d’IA", "providers_heading": "Choisissez votre provider.<br>Gardez votre façon de travailler.",
+    "providers_text": "Codex est l’intégration par défaut. Connectez un autre provider ou utilisez un modèle local, puis choisissez le modèle disponible dans la conversation.",
+    "provider_note": "VBAi ne fournit ni abonnement IA ni crédits API. Les capacités des modèles et leur accès aux outils dépendent du provider choisi. Un modèle local nécessite un serveur installé séparément.",
+    "provider_link": "Comparer les modes de connexion",
+    "start_heading": "Un nouveau compagnon pour votre éditeur VBA.",
+    "start_text": "Installez le complément, connectez votre provider et commencez sur une copie de projet. Le guide illustré est inclus pour une consultation hors ligne."
+  },
+  "installation": {
+    "title": "Installer VBAi — Complément VBE pour Windows x64",
+    "description": "Installez VBAi 1.0.0, configurez votre provider IA et ouvrez l’assistant dans votre éditeur VBA. Prérequis, version non signée et désinstallation.",
+    "eyebrow": "Premiers pas", "heading": "Quelques étapes.<br>Votre éditeur habituel.",
+    "lead": "VBAi s’installe pour votre utilisateur Windows. Votre application reste propriétaire du projet VBA et de son document.",
+    "aside_title": "Liens utiles", "aside_note": "Utilisez une copie jetable de votre projet pour vos premiers essais.",
+    "links": [["Télécharger l’installateur", "{download}"], ["Release et empreinte de contrôle", "{repo}/releases/tag/v1.0.0"], ["Résoudre un problème", "{docs}troubleshooting.md"], ["Compatibilité des hôtes", "{docs}compatibility.md"]],
+    "sections": [
+      {"id": "requirements", "title": "1. Vérifier les prérequis", "paragraphs": ["Il vous faut Windows x64, .NET Framework 4.8 et une application 64 bits compatible qui héberge le Visual Basic Editor. Monaco nécessite le runtime Microsoft WebView2. Les fonctions Git nécessitent aussi Git pour Windows.", "Les providers IA ont leurs propres exigences de compte, de CLI ou de serveur. VBAi n’installe pas de comptes provider et ne modifie pas les paramètres de sécurité des macros de votre application."], "links": [["Vérifier la compatibilité par opération", "{docs}compatibility.md"]]},
+      {"id": "download", "title": "2. Installer le complément", "paragraphs": ["Téléchargez VBAi-Setup-win-x64.exe depuis la release 1.0.0. Enregistrez votre travail et fermez les applications qui hébergent le VBE avant de lancer l’installation.", "L’installation place VBAi dans %LOCALAPPDATA%\\Programs\\VBAi, enregistre le complément et fournit les guides hors ligne. Une demande UAC peut être nécessaire une fois pour l’association du contrôle de conversation partagé ; utilisez le même compte Windows."], "notice": ["La version 1.0.0 n’est pas signée", "L’installateur et le désinstallateur n’ont pas de signature Authenticode. Windows peut afficher un avertissement de provenance inconnue ou SmartScreen. L’empreinte publiée aide à vérifier l’intégrité du fichier ; elle n’authentifie pas l’éditeur. La mise à jour automatique exige une signature : cette version s’installe donc manuellement."], "links": [["Télécharger VBAi 1.0.0", "{download}"], ["Lire la politique de signature", "{docs}code-signing.md"]]},
+      {"id": "connect", "title": "3. Connecter un provider IA", "paragraphs": ["Redémarrez votre application et ouvrez son Visual Basic Editor. Dans les paramètres VBAi, sélectionnez et configurez un provider. Les champs d’authentification, de clé API et d’adresse du service dépendent de ce choix.", "Codex utilise la connexion ChatGPT gérée par sa CLI : cette intégration n’exige pas de clé OpenAI API. Votre compte doit néanmoins disposer des droits d’utilisation nécessaires auprès du provider. Le modèle et le niveau de raisonnement se choisissent dans le chat, pas dans les paramètres."], "image": "settings-codex.png", "image_alt": "Les vrais paramètres VBAi avec Codex sélectionné et un compte ChatGPT connecté", "caption": "Le formulaire de paramètres réel, avec la connexion Codex sélectionnée.", "links": [["Comparer les providers IA", "{local}providers/"]]},
+      {"id": "first-project", "title": "4. Commencer sur une copie de projet", "paragraphs": ["Sélectionnez le projet VBA voulu et commencez en mode Discussion. Demandez à l’assistant d’expliquer une procédure avant de lui demander des modifications. Passez en mode Agent lorsqu’il doit agir, avec un niveau d’approbation adapté au travail.", "Relisez les changements, compilez et testez dans l’application, puis enregistrez le document depuis celle-ci. Les commits Git versionnent séparément les sources exportées. Le guide hors ligne se trouve dans Aide / ? → VBAi · Guide utilisateur."], "links": [["Suivre le parcours illustré", "{local}workflows/"]]},
+      {"id": "uninstall", "title": "Désinstaller sans supprimer vos projets", "paragraphs": ["Enregistrez votre travail et fermez les hôtes VBE. Dans Paramètres Windows → Applications → Applications installées, sélectionnez VBAi puis Désinstaller. Une entrée de désinstallation est également disponible dans le menu Démarrer.", "La suppression conserve la configuration, les conversations, les données de récupération et les dépôts utilisateurs. Elle vérifie que le déploiement possède toujours son enregistrement avant de le retirer. Le guide d’installation précise les associations partagées conservées et les emplacements des journaux."], "links": [["Guide complet d’installation et de suppression", "{docs}installation.md"]]}
+    ]
+  },
+  "workflows": {
+    "title": "VBAi en pratique — Créer un UserForm et versionner une macro VBA",
+    "description": "Un parcours VBAi réel dans un projet Excel jetable : demander un calculateur de TVA à l’agent, ajouter des tests et examiner les sources VBA exportées pour GitHub.",
+    "eyebrow": "En pratique", "heading": "Une idée. Une conversation.<br>Un vrai projet VBA.",
+    "lead": "Ces captures proviennent de l’application utilisée pour le guide, pas d’interfaces fictives. Le projet jetable CalculTVA a été créé dans Excel.",
+    "aside_title": "Aller plus loin", "aside_note": "Les captures montrent une version de développement en français. Certains détails varient selon la version, la langue et l’hôte.",
+    "links": [["Conversations et approbations", "{docs}chat-ui.md"], ["Outils UserForm", "{docs}reference/designer.md"], ["Guide des tests", "{docs}vba-testing.md"], ["Guide Git et GitHub", "{docs}github-integration.md"]],
+    "sections": [
+      {"id": "ask", "title": "1. Demander le résultat dont vous avez besoin", "paragraphs": ["Partez d’une copie de projet et sélectionnez-la dans VBAi. Décrivez le résultat attendu avec vos mots. Vous n’avez pas à imposer chaque nom de contrôle ni chaque détail d’implémentation.", "Pour cet exemple, l’agent a construit le formulaire et sa logique VBA avec Codex et GPT-6-Luna, en raisonnement medium. Relisez le code produit : une réponse terminée ne prouve pas à elle seule que le résultat est correct."], "quote": "J’aimerais une petite fenêtre pour saisir un montant hors taxes et un taux de TVA, puis calculer le total TTC. Il faut expliquer quand une saisie est invalide.", "image": "chat-first-implementation.png", "image_alt": "Conversation réelle avec VBAi pendant l’implémentation du UserForm CalculTVA", "caption": "La conversation d’implémentation. Le provider, le modèle, le raisonnement et les approbations restent accessibles dans le chat.", "narrow": true},
+      {"id": "inspect", "title": "2. Vérifier le formulaire et son comportement", "paragraphs": ["Inspectez le UserForm et le code qui gère ses événements. Dans cet exemple, un montant de 100 avec un taux de 20 % donne 120.00. Vérifiez aussi les saisies invalides et les cas limites.", "L’assistant peut travailler sur les contrôles et leurs propriétés, mais le comportement natif disponible dépend de votre hôte et de ses références. Testez le résultat dans cet environnement."], "image": "form-runtime.png", "image_alt": "Le vrai UserForm CalculTVA affiche un montant TTC de 120.00", "caption": "Le UserForm obtenu dans l’exemple Excel jetable.", "form": true},
+      {"id": "tests", "title": "3. Demander explicitement des tests", "paragraphs": ["Ne supposez pas que l’agent écrira des tests simplement parce qu’il a implémenté la fonctionnalité. Demandez des tests du calcul, des valeurs invalides et des cas importants pour votre macro. Relisez-les avant leur exécution sur la copie sélectionnée.", "L’explorateur découvre les tests VBA annotés et présente chaque résultat. Un résultat inconnu ou bloqué demande une investigation ; ce n’est pas un test réussi. L’exemple comprend un premier lot réussi et une relance ultérieure incertaine : il ne constitue donc pas une garantie générale de fiabilité."], "quote": "Maintenant, ajoute des tests pour le calcul et les saisies invalides, exécute-les sur ce projet de test et explique les échecs ou résultats incertains.", "links": [["Comprendre les résultats et leur portée", "{docs}vba-testing.md"], ["Validation enregistrée", "{docs}test-coverage.md"]]},
+      {"id": "git", "title": "4. Passer de la macro aux sources versionnées", "paragraphs": ["Un classeur ou une macro SOLIDWORKS est un document de l’hôte, pas un arbre de sources Git. VBAi exporte les composants dans un dépôt distinct : modules standard en .bas, classes en .cls, UserForms en .frm accompagnés de leurs ressources .frx lorsqu’elles existent.", "Examinez les changements exportés avant un commit, puis publiez-les dans le dépôt GitHub choisi. Un commit Git n’enregistre pas le document ouvert dans l’hôte : enregistrez-le aussi dans l’application. Pour réimporter les sources ensuite, relisez le plan et conservez une sauvegarde avant de modifier le projet vivant.", "La capture liste le formulaire, les modules, le support de tests et les références sélectionnés pour l’exemple jetable CalculTVA. Le guide détaille les liaisons au dépôt, le cache local, les branches distantes et les imports relus."], "image": "git-changes.png", "image_alt": "La vue des modifications Git de VBAi présente les composants VBA exportés de CalculTVA", "caption": "Les composants exportés avant le premier commit. Les pixels de l’application d’origine n’ont pas été modifiés.", "links": [["Comprendre le parcours complet macro ↔ dépôt", "{docs}github-integration.md"]]}
+    ]
+  },
+  "providers": {
+    "title": "Providers IA de VBAi — Codex, API et modèles locaux",
+    "description": "Choisissez la connexion IA de VBAi : Codex, GitHub Copilot, OpenAI, Claude, Gemini ou Ollama en local. Authentification, coûts et capacités des modèles.",
+    "eyebrow": "Providers IA", "heading": "Votre connexion.<br>Votre modèle.",
+    "lead": "VBAi relie le provider choisi à votre travail dans le VBE. Son authentification reste distincte du compte GitHub utilisé pour versionner les sources.",
+    "aside_title": "Avant la connexion", "aside_note": "Ne collez jamais de clé API ou de token dans une conversation ou une issue GitHub.",
+    "links": [["Référence des providers", "{docs}providers.md"], ["Confidentialité et données", "{docs}privacy.md"], ["Installer VBAi", "{local}installation/"]],
+    "table_head": ["Connexion", "Ce que vous fournissez"],
+    "table": [["Codex · par défaut", "La CLI native Codex et sa connexion ChatGPT. Cette intégration ne nécessite pas de clé OpenAI API."], ["GitHub Copilot", "La CLI native Copilot et sa propre authentification, distincte de celle du contrôle de sources."], ["OpenAI API, Claude, Gemini et autres API", "Les identifiants et le compte du provider choisi. L’utilisation et la facturation restent gérées par ce provider."], ["Ollama ou LM Studio", "Un serveur local installé séparément et un modèle capable de réaliser les opérations demandées."], ["Personnalisé, Azure OpenAI ou Amazon Bedrock", "L’adresse du service, l’authentification prise en charge et les identifiants de modèles précisés dans la référence."]],
+    "sections": [
+      {"id": "choose", "title": "Configurer la connexion dans les paramètres", "paragraphs": ["Sélectionnez le provider dans les paramètres VBAi. Les contrôles d’authentification et d’adresse du service dépendent de ce choix. Les clés enregistrées sont protégées avec Windows DPAPI pour l’utilisateur courant.", "Codex et Copilot utilisent des répertoires provider isolés pour VBAi. Une connexion établie dans le répertoire CLI d’une autre application n’ouvre pas automatiquement cette connexion."], "image": "settings-codex.png", "image_alt": "Le vrai formulaire de paramètres provider de VBAi configuré pour Codex", "caption": "Des paramètres adaptés au provider : la connexion Codex utilise l’authentification ChatGPT, sans champ de clé API."},
+      {"id": "models", "title": "Choisir le modèle dans la conversation", "paragraphs": ["Sélectionnez le modèle et, lorsqu’il est proposé, le niveau de raisonnement dans le chat. Les choix dépendent du catalogue du provider ; les connexions personnalisées, Azure et Bedrock utilisent les identifiants configurés.", "Un modèle présent dans la liste peut ne pas prendre en charge les outils. Commencez par une explication et une inspection sans modification avant de lui demander d’agir. En local, la qualité, la latence et l’accès aux outils dépendent du modèle et du serveur."], "links": [["Limites détaillées des transports et modèles", "{docs}providers.md"]]},
+      {"id": "data", "title": "Comprendre les coûts et les échanges de données", "paragraphs": ["Le complément est open source, mais il ne fournit ni abonnement IA, ni crédits API, ni droits d’utilisation. Le provider peut facturer le compte ou les requêtes employés.", "Un provider distant reçoit la conversation et le contexte autorisé. Le stockage local et la conservation chez le provider sont deux sujets distincts. Choisissez le contexte volontairement et respectez les règles de votre organisation avant de partager du code professionnel."], "links": [["Lire le guide de confidentialité", "{docs}privacy.md"]]}
+    ]
+  },
+  "not_found": {"title": "Page introuvable — VBAi", "heading": "Cette page n’est pas ici.", "text": "Revenez à l’accueil VBAi ou ouvrez la documentation pour retrouver ce que vous cherchez.", "link": "Retour à VBAi"}
+}

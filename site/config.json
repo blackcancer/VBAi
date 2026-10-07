@@ -1,0 +1,12 @@
+{
+  "url": "https://blackcancer.github.io/VBAi/",
+  "repository": "https://github.com/blackcancer/VBAi",
+  "version": "1.0.0",
+  "download": "https://github.com/blackcancer/VBAi/releases/download/v1.0.0/VBAi-Setup-win-x64.exe",
+  "screenshots": ["chat-first-implementation.png", "form-runtime.png", "git-changes.png", "settings-codex.png"],
+  "framing": {
+    "form-runtime.png": [8, 0, 312, 232],
+    "git-changes.png": [8, 0, 968, 811],
+    "settings-codex.png": [8, 0, 728, 309]
+  }
+}

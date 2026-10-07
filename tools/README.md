@@ -13,6 +13,7 @@ candidate, original-process exit and restoration requirements.
 | Send an explicit bridge request to a selected host | [Invoke-VBAi.ps1](Invoke-VBAi.ps1) |
 | Build editor assets, icons or native renderer | [Build-MonacoAssets.ps1](Build-MonacoAssets.ps1), [Build-WindowIcons.ps1](Build-WindowIcons.ps1), [Build-NativeRenderer.ps1](build/Build-NativeRenderer.ps1) |
 | Check documentation | [check_docs.py](docs/check_docs.py) |
+| Build the public GitHub Pages website | [build_site.py](docs/build_site.py); see [website maintenance](../site/README.md) |
 | Export a collected coverage inventory | [Export-CoverageInventory.ps1](coverage/Export-CoverageInventory.ps1) |
 | Run a prepared test script on an isolated desktop | [Invoke-IsolatedTests.ps1](tests/Invoke-IsolatedTests.ps1) |
 | Inspect native VBE windows | [Inspect-VbeNativeWindows.ps1](probes/Inspect-VbeNativeWindows.ps1), selecting `Tree`, `Windows` or `Children` |

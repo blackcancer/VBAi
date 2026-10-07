@@ -9,13 +9,14 @@ Git workflows into applications that host the Visual Basic Editor. Work directly
 with the open VBA project: understand code, review changes, design UserForms and
 investigate native execution behavior.
 
-[Getting started](docs/getting-started.md) · [Documentation](docs/README.md) ·
+[Website](https://blackcancer.github.io/VBAi/) · [Getting started](docs/getting-started.md) · [Documentation](docs/README.md) ·
 [Compatibility](docs/compatibility.md) · [Contributing](CONTRIBUTING.md)
 
 > **1.0.0 distribution:** the Windows x64 installer and uninstaller are unsigned.
 > Windows may display an unknown-publisher warning. Native qualification is recorded
-> for specific operations, host versions and candidate binaries; the new installer
-> has been compiled but its installation lifecycle has not been qualified.
+> for specific operations, host versions and candidate binaries. The final installer
+> passed installation, repair, removal and reinstallation checks; see the exact
+> [validation scope](docs/test-coverage.md#installer-lifecycle).
 
 ## Features
 

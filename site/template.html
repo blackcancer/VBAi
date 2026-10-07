@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="$lang">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>$title</title>
+  <meta name="description" content="$description">
+  <meta name="theme-color" content="#111827">
+  <link rel="canonical" href="$canonical">
+  <link rel="alternate" hreflang="en" href="$english">
+  <link rel="alternate" hreflang="fr" href="$french">
+  <link rel="alternate" hreflang="x-default" href="$english">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="VBAi">
+  <meta property="og:title" content="$title">
+  <meta property="og:description" content="$description">
+  <meta property="og:url" content="$canonical">
+  <meta property="og:image" content="$social_image">
+  <meta property="og:image:alt" content="$social_alt">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="icon" href="${base}assets/assistant.png" type="image/png">
+  <link rel="stylesheet" href="${base}assets/styles.css">
+  <script src="${base}assets/main.js" defer></script>
+  $schema
+</head>
+<body>
+  <a class="skip-link" href="#main">$skip</a>
+  <header class="site-header"><div class="header-inner">
+    <a class="brand" href="$home" aria-label="$home_label"><img src="${base}assets/assistant.png" width="48" height="48" alt=""><span>VBA<span class="brand-ai">i</span></span></a>
+    <nav aria-label="$navigation">$nav</nav>
+    <div class="header-links"><a class="language" href="$other" lang="$other_lang" hreflang="$other_lang" aria-label="$language_label">$language</a><a class="github-link" href="$repository">GitHub $arrow</a></div>
+  </div></header>
+  <main id="main">$content</main>
+  <footer class="site-footer"><div class="container footer-top"><a class="brand" href="$home"><img src="${base}assets/assistant.png" width="64" height="64" alt=""><span>VBA<span class="brand-ai">i</span></span></a><p>$tagline</p><a href="$repository">$source $arrow</a></div><div class="container footer-bottom"><p>$licenses</p><p>$independent</p><p><a href="$repository/blob/main/docs/privacy.md">$privacy</a> · <a href="$repository/issues">$support</a></p></div></footer>
+  <dialog class="image-dialog" aria-labelledby="image-dialog-title"><div class="dialog-toolbar"><p id="image-dialog-title"></p><button type="button" class="dialog-close" aria-label="$close">$close <span aria-hidden="true">×</span></button></div><div class="screenshot-viewport dialog-image"><img alt=""></div></dialog>
+</body>
+</html>

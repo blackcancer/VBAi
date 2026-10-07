@@ -1,0 +1,100 @@
+{
+  "lang": "en",
+  "common": {
+    "skip": "Skip to content", "navigation": "Main navigation", "home_label": "VBAi home",
+    "language": "FR", "language_label": "Lire cette page en français", "other_lang": "fr",
+    "tagline": "Your AI agent for VBA.", "source": "Explore the source", "close": "Close",
+    "privacy": "Privacy", "support": "Report an issue",
+    "licenses": "Original VBAi code: MPL-2.0. VBA templates and runtime for your projects: MIT.",
+    "independent": "Independent project. Not published or endorsed by Microsoft, OpenAI or GitHub.",
+    "download": "Download VBAi 1.0.0", "guide": "Installation guide", "documentation": "Documentation",
+    "image_hint": "Select the image to enlarge it.", "capture_note": "Real screenshots from a disposable Excel project, captured on 6 October 2026. The application interface shown is in French."
+  },
+  "nav": {"home": "Features", "workflows": "In practice", "providers": "AI providers", "installation": "Install"},
+  "home": {
+    "title": "VBAi — AI assistant for VBA in Excel and SOLIDWORKS",
+    "description": "Bring an AI assistant, Monaco editing and Git workflows into the Visual Basic Editor. Explore VBAi, see real examples and download the Windows x64 add-in.",
+    "eyebrow": "Windows x64 · Open source · VBE add-in",
+    "heading": "AI, inside<br><em>your VBA editor.</em>",
+    "lead": "Understand a macro, build a UserForm or review a change. VBAi brings the conversation and the tools into the Visual Basic Editor, alongside your actual project.",
+    "secondary": "See it in practice", "note": "Windows x64 · .NET Framework 4.8 · Unsigned installer",
+    "visual_label": "Inside VBAi", "visual_status": "Actual application", "floating_label": "The resulting VBA UserForm",
+    "chat_alt": "VBAi assistant working on the CalculTVA Excel project, with Codex, GPT-6-Luna and medium reasoning selected",
+    "chat_caption": "The agent works on a real VBA project. This example builds a VAT calculator in Excel.",
+    "form_alt": "VBA UserForm calculating 120.00 including VAT from an amount of 100 and a 20 percent rate",
+    "host_label": "Built around the shared Visual Basic Editor",
+    "host_note": "Check the scope for your host", "hosts": ["Excel", "Word", "PowerPoint", "SOLIDWORKS"],
+    "features_eyebrow": "An integrated workspace", "features_heading": "Keep your project.<br>Extend your editor.",
+    "features_text": "Talk to an agent, inspect its changes and keep using your host application's VBA workflow.",
+    "features": [
+      {"icon": "chat", "title": "An agent in the VBE", "text": "Discussion, Plan and Agent modes, project context, conversation history, and model and reasoning selection.", "link": "Explore conversations", "doc": "chat-ui.md"},
+      {"icon": "code", "title": "A modern VBA editor", "text": "Monaco editing with VBA and COM completion, navigation, formatting, drafts and native compilation diagnostics.", "link": "Explore the editor", "doc": "modern-editor.md"},
+      {"icon": "form", "title": "UserForms and controls", "text": "Create forms, work on control properties and layout, and connect the interface to your VBA event code.", "link": "Explore the designer tools", "doc": "reference/designer.md"},
+      {"icon": "git", "title": "Git, beside your macro", "text": "Version exported VBA sources, review differences, use branches and checkpoints, and manage GitHub workflows.", "link": "Understand macro-to-repository workflows", "doc": "github-integration.md"},
+      {"icon": "check", "title": "Tests and debugging", "text": "Discover annotated VBA tests, inspect run reports and work with native execution and debugging tools within their supported scope.", "link": "Explore the test explorer", "doc": "vba-testing.md"},
+      {"icon": "shield", "title": "You set the scope", "text": "Choose the project context, operating mode and approval policy. Review changes and use recovery tools when available.", "link": "Read about privacy and safeguards", "doc": "privacy.md"}
+    ],
+    "story_eyebrow": "A real example", "story_heading": "From an idea to<br>a versioned macro.",
+    "story_text": "For the user guide, we started with a disposable Excel workbook and asked the agent to build a small VAT calculator. Separate requests covered implementation, tests and GitHub publication.",
+    "steps": [
+      ["Describe the outcome", "Ask for the form and behaviour you need, in ordinary language."],
+      ["Review and test", "Inspect the code and form, then explicitly ask for tests."],
+      ["Version the sources", "Review the exported components before committing and publishing them."]
+    ],
+    "story_link": "Follow the example",
+    "git_alt": "VBAi Git changes view listing the exported CalculTVA modules, form, test support and references",
+    "git_caption_title": "The macro becomes a reviewable source tree.",
+    "git_caption": "The Git view lists the components prepared for the disposable example. It does not turn the workbook itself into a Git repository.",
+    "providers_eyebrow": "Your choice of AI", "providers_heading": "Choose your provider.<br>Keep your workflow.",
+    "providers_text": "Codex is the default integration. Connect another provider or use a local model, then choose the available model in the conversation.",
+    "provider_note": "VBAi does not include provider subscriptions or API credits. Model features and tool support depend on the selected provider. Local models need a separately installed server.",
+    "provider_link": "Compare connection options",
+    "start_heading": "Give your VBA editor a new companion.",
+    "start_text": "Install the add-in, connect your provider and begin with a copy of a project. The illustrated user guide is included for offline use."
+  },
+  "installation": {
+    "title": "Install VBAi — Windows x64 VBE add-in",
+    "description": "Install VBAi 1.0.0, configure your AI provider and open the assistant in your VBA editor. Requirements, unsigned release information and uninstall instructions.",
+    "eyebrow": "Get started", "heading": "A few steps.<br>Your familiar editor.",
+    "lead": "VBAi installs for your Windows user. Your application continues to own the VBA project and its document.",
+    "aside_title": "Useful links", "aside_note": "Use a disposable project copy for your first interaction.",
+    "links": [["Download the installer", "{download}"], ["Release and checksum", "{repo}/releases/tag/v1.0.0"], ["Troubleshooting", "{docs}troubleshooting.md"], ["Host compatibility", "{docs}compatibility.md"]],
+    "sections": [
+      {"id": "requirements", "title": "1. Check the prerequisites", "paragraphs": ["You need Windows x64, .NET Framework 4.8 and a compatible 64-bit application hosting the Visual Basic Editor. Monaco needs the Microsoft WebView2 Runtime. Git workflows also need Git for Windows.", "AI providers have their own account, CLI or server requirements. VBAi does not install provider accounts or change your application's macro-security settings."], "links": [["Check operation-specific compatibility", "{docs}compatibility.md"]]},
+      {"id": "download", "title": "2. Install the add-in", "paragraphs": ["Download VBAi-Setup-win-x64.exe from the 1.0.0 release. Save your work and close applications hosting the VBE before running Setup.", "Setup installs under %LOCALAPPDATA%\\Programs\\VBAi, registers the add-in and includes the offline manuals. A one-time UAC prompt may be needed for the shared chat-control mapping; use the same Windows account."], "notice": ["Version 1.0.0 is unsigned", "The installer and uninstaller have no Authenticode signature. Windows may show an unknown-publisher or SmartScreen warning. The published checksum helps check file integrity; it does not authenticate the publisher. The automatic updater requires a signature, so install this version manually."], "links": [["Download VBAi 1.0.0", "{download}"], ["Read the signing policy", "{docs}code-signing.md"]]},
+      {"id": "connect", "title": "3. Connect an AI provider", "paragraphs": ["Restart your host application and open its Visual Basic Editor. Open VBAi settings to select and configure a provider. Authentication, API-key and endpoint fields depend on that selection.", "Codex uses its CLI-managed ChatGPT connection; an OpenAI API key is not required for that integration. Your account still needs the appropriate provider entitlement. Model and reasoning choices belong in the chat, rather than the settings form."], "image": "settings-codex.png", "image_alt": "VBAi settings with Codex selected and a connected ChatGPT account", "caption": "The actual settings form with the Codex connection selected. French interface.", "links": [["Compare AI providers", "{local}providers/"]]},
+      {"id": "first-project", "title": "4. Start with a project copy", "paragraphs": ["Select the intended VBA project and begin in Discussion mode. Ask the assistant to explain a procedure before requesting edits. Use Agent mode when you want it to act, with an approval policy appropriate to the work.", "Review the changes, compile and test in the host, and save the document through the application. Git commits version exported sources separately. The offline manual is available from Help / ? → VBAi · User guide."], "links": [["Follow the illustrated workflow", "{local}workflows/"]]},
+      {"id": "uninstall", "title": "Uninstall without deleting your projects", "paragraphs": ["Save your work and close VBE hosts. In Windows Settings → Apps → Installed apps, select VBAi and Uninstall. A Start menu uninstall entry is also available.", "Removal preserves configuration, conversations, recovery data and user repositories. It checks deployment ownership before removing product registration. The installation guide explains retained shared registration and log locations."], "links": [["Complete installation and removal guide", "{docs}installation.md"]]}
+    ]
+  },
+  "workflows": {
+    "title": "VBAi in practice — create a UserForm and version a VBA macro",
+    "description": "See a real VBAi workflow in a disposable Excel project: ask an agent to build a VAT calculator, request tests and review exported VBA sources for GitHub.",
+    "eyebrow": "In practice", "heading": "An idea. A conversation.<br>A working VBA project.",
+    "lead": "These are actual application captures from the user-guide example, not mock interfaces. The disposable CalculTVA project was created in Excel.",
+    "aside_title": "Go further", "aside_note": "Screenshots show a French development build. Details can differ with version, language and host.",
+    "links": [["Conversations and approvals", "{docs}chat-ui.md"], ["UserForm tools", "{docs}reference/designer.md"], ["Testing guide", "{docs}vba-testing.md"], ["Git and GitHub guide", "{docs}github-integration.md"]],
+    "sections": [
+      {"id": "ask", "title": "1. Ask for the result you need", "paragraphs": ["Start with a copy of a project and select it in VBAi. Explain the desired outcome in your own words. You do not need to prescribe every control name or implementation detail.", "For this example, the agent built the form and its VBA logic with Codex and GPT-6-Luna, using medium reasoning. Review the generated code rather than treating a finished response as proof of correctness."], "quote": "I'd like a small window where I can enter an amount before tax and a VAT rate, then calculate the total including tax. It should explain when an input is invalid.", "image": "chat-first-implementation.png", "image_alt": "Real VBAi conversation during implementation of the CalculTVA UserForm", "caption": "The implementation conversation. Provider, model, reasoning and approval controls remain in the chat.", "narrow": true},
+      {"id": "inspect", "title": "2. Check the form and its behaviour", "paragraphs": ["Inspect the UserForm and the code that handles its events. In this example, entering 100 and a 20% rate produces 120.00. Check invalid inputs and boundary cases as well as the happy path.", "The assistant can work on controls and properties, but the available native behaviour depends on your host and its references. Test the result in that environment."], "image": "form-runtime.png", "image_alt": "The real CalculTVA UserForm displaying 120.00 including tax", "caption": "The resulting UserForm in the disposable Excel example.", "form": true},
+      {"id": "tests", "title": "3. Request tests explicitly", "paragraphs": ["Do not assume the agent will write tests simply because it implemented the feature. Ask for tests covering the calculation, invalid values and the cases that matter for your macro. Review them before running them on the selected project copy.", "The test explorer discovers annotated VBA tests and reports each outcome. An unknown or blocked result needs investigation; it is not a passing test. The worked example includes an earlier successful run and a later uncertain rerun, so it is not a blanket reliability guarantee."], "quote": "Now add tests for the calculation and invalid inputs, run them on this test project, and explain any failures or uncertain results.", "links": [["Read test outcomes and scope", "{docs}vba-testing.md"], ["Recorded validation", "{docs}test-coverage.md"]]},
+      {"id": "git", "title": "4. Turn the macro into versioned sources", "paragraphs": ["A workbook or SOLIDWORKS macro is a host document, not a Git source tree. VBAi exports components into a separate repository: standard modules as .bas, classes as .cls, and UserForms as .frm with their .frx resources when present.", "Review the exported changes before a commit, then publish them to your chosen GitHub repository. A Git commit does not save the open host document. Save in the host as well. When importing sources later, review the plan and retain a backup before changing the live project.", "The screenshot lists the form, modules, test support and references selected for the disposable CalculTVA example. The guide explains repository bindings, local cache, remote branches and reviewed import workflows."], "image": "git-changes.png", "image_alt": "VBAi Git changes view showing exported VBA components for CalculTVA", "caption": "The exported components before the initial commit. The original application pixels are unchanged.", "links": [["Understand the complete macro ↔ repository workflow", "{docs}github-integration.md"]]}
+    ]
+  },
+  "providers": {
+    "title": "VBAi AI providers — Codex, APIs and local models",
+    "description": "Choose how VBAi connects to AI: Codex, GitHub Copilot, OpenAI, Claude, Gemini or a local Ollama model. Understand authentication, costs and model capabilities.",
+    "eyebrow": "AI providers", "heading": "Your connection.<br>Your model.",
+    "lead": "VBAi connects the provider you choose to your VBE workflow. Provider authentication is separate from the GitHub account used to version your sources.",
+    "aside_title": "Before connecting", "aside_note": "Never paste an API key or token into a conversation or GitHub issue.",
+    "links": [["Provider reference", "{docs}providers.md"], ["Privacy and data handling", "{docs}privacy.md"], ["Install VBAi", "{local}installation/"]],
+    "table_head": ["Connection", "What you provide"],
+    "table": [["Codex · default", "Native Codex CLI and its ChatGPT sign-in. This integration does not require an OpenAI API key."], ["GitHub Copilot", "Native Copilot CLI and its own sign-in flow; separate from source-control authentication."], ["OpenAI API, Claude, Gemini and other APIs", "The selected provider's credentials and account. Service usage and billing remain with that provider."], ["Ollama or LM Studio", "A separately installed local server and a model that supports the required operations."], ["Custom, Azure OpenAI or Amazon Bedrock", "Endpoint, supported authentication and explicit model identifiers as described in the provider reference."]],
+    "sections": [
+      {"id": "choose", "title": "Configure the connection in settings", "paragraphs": ["Choose the provider in VBAi settings. The relevant authentication and endpoint controls depend on that choice. Saved keys are protected with Windows DPAPI for the current user.", "Codex and Copilot use isolated VBAi provider directories. Being signed in through another application's CLI directory does not establish this connection automatically."], "image": "settings-codex.png", "image_alt": "The real VBAi provider settings form configured for Codex", "caption": "Provider-specific settings: the Codex connection uses ChatGPT authentication, not an API-key field."},
+      {"id": "models", "title": "Choose the model in the conversation", "paragraphs": ["Select a model and any supported reasoning effort in the chat. Available choices depend on the provider catalog; custom, Azure and Bedrock connections use configured identifiers.", "A listed model may not support tools. Start with an explanation and a harmless inspection before asking it to change the project. Local quality, latency and tool support depend on your model and server."], "links": [["Detailed transport and model limits", "{docs}providers.md"]]},
+      {"id": "data", "title": "Understand cost and data boundaries", "paragraphs": ["The add-in is open source, but it does not supply an AI subscription, API credits or a usage entitlement. A provider may charge for the account or requests you use.", "Remote providers receive the conversation and permitted context. Local storage and provider-side retention are separate concerns. Choose the context deliberately, and follow your organisation's rules before sharing professional code."], "links": [["Read the privacy guide", "{docs}privacy.md"]]}
+    ]
+  },
+  "not_found": {"title": "Page not found — VBAi", "heading": "This page isn't here.", "text": "Return to the VBAi home page or open the documentation to find what you need.", "link": "Back to VBAi"}
+}
