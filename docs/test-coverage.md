@@ -58,8 +58,10 @@ machine-readable Q020/Q030 candidate references.
 ## Installer lifecycle
 
 The maintainer stopped the general campaign and separately authorized installer
-qualification on 2026-10-07. The unsigned 1.0.0 setup with SHA-256
-`6170e080eb4b1b4142f844f7ee5f741af471997b6532bb1de8f144019ee13fb6`
+qualification on 2026-10-07. After both reviewed documentation branches were
+merged, the unsigned 1.0.0 setup was rebuilt from source
+`e88528dc81668bb6b7270da262c64bfde25695e4`. That final setup, with SHA-256
+`3cb9e1fade176f701fbdae39a0c96f02f6fd11e5e2149457630c1b91ff112c4a`,
 passed four real current-user scenarios: fresh installation, same-version repair
 with preserved installation identity, uninstallation with preserved user data,
 and reinstallation with a new identity. The installed payload hashes, COM paths,

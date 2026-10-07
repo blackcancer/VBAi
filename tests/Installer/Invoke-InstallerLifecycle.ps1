@@ -33,6 +33,13 @@ function Run-Setup([string]$Name, [string]$Executable) {
         if (-not $child.WaitForExit(120000)) { throw ('Installer outcome uncertain: PID ' + $child.Id + '. No retry or termination.') }
         if ($child.ExitCode -ne 0) { throw ('Installer returned ' + $child.ExitCode + '; inspect ' + $log) }
     } finally { $child.Dispose() }
+    if ($Name -eq 'uninstall') {
+        # Inno can finish its self-removal helper just after the initial process exits.
+        # Observe cleanup; never dispatch another uninstall or delete its files ourselves.
+        $deadline = [DateTime]::UtcNow.AddSeconds(30)
+        while ([IO.Directory]::Exists($installation) -and [DateTime]::UtcNow -lt $deadline) { Start-Sleep -Milliseconds 100 }
+        if ([IO.Directory]::Exists($installation)) { throw 'Owned installation cleanup is incomplete; do not reinstall automatically.' }
+    }
 }
 function Read-Marker { Get-Content -LiteralPath (Join-Path $installation 'vbai-installation.json') -Raw | ConvertFrom-Json }
 function Assert-Installed {
