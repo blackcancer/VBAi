@@ -1,9 +1,9 @@
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using System.Web.Script.Serialization;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace VBAi.Tests.Unit
 {
@@ -160,13 +160,28 @@ namespace VBAi.Tests.Unit
         {
             var plan = new VbaCoveragePlan { Original = "original", Revision = "revision", EligibleProcedureCount = 16000 };
             for (int index = 0; index < 16000; index++)
-                plan.Probes.Add(new VbaCoverageProbe { Id = "p" + index, Index1Based = index + 1,
-                    Module = "Production", Procedure = "Method" + index, OriginalLine = index + 1 });
+                plan.Probes.Add(new VbaCoverageProbe
+                {
+                    Id = "p" + index,
+                    Index1Based = index + 1,
+                    Module = "Production",
+                    Procedure = "Method" + index,
+                    OriginalLine = index + 1
+                });
             plan.Exclusions.Add(new VbaCoverageExclusion { Module = "Excluded", Reason = "Unsupported syntax" });
-            var coverage = new VbaCoverageReport { Available = true, Complete = true, Original = plan.Original,
-                Revision = plan.Revision, DenominatorKnown = true, Eligible = 16000, Hit = 8000, Percent = 50,
+            var coverage = new VbaCoverageReport
+            {
+                Available = true,
+                Complete = true,
+                Original = plan.Original,
+                Revision = plan.Revision,
+                DenominatorKnown = true,
+                Eligible = 16000,
+                Hit = 8000,
+                Percent = 50,
                 Hits = plan.Probes.Select(probe => new VbaCoverageHit { Probe = probe, Entered = probe.Index1Based <= 8000 }).ToList(),
-                Exclusions = plan.Exclusions };
+                Exclusions = plan.Exclusions
+            };
             var json = new JavaScriptSerializer();
             var seen = new HashSet<string>();
             for (int offset = 0; offset < 16000; offset += 100)
@@ -242,7 +257,9 @@ namespace VBAi.Tests.Unit
                 run.Results.Add(new VbaTestResult
                 {
                     Test = new VbaTestDescriptor { Id = "test" + index, Module = "TestsMath", Procedure = "Method" + index },
-                    Outcome = outcomes[index], Phase = "Test", Duration = TimeSpan.FromMilliseconds(index + 1)
+                    Outcome = outcomes[index],
+                    Phase = "Test",
+                    Duration = TimeSpan.FromMilliseconds(index + 1)
                 });
             return run;
         }
@@ -273,10 +290,10 @@ namespace VBAi.Tests.Unit
         [TestMethod]
         public void SerializerFailureKeepsCanonicalResultsAndExplainsPagedRecovery()
         {
-            var run = Run(VbaTestOutcome.Failed); run.Results[0].Message = new string('x',1024);
+            var run = Run(VbaTestOutcome.Failed); run.Results[0].Message = new string('x', 1024);
             var error = Assert.ThrowsException<InvalidOperationException>(() => VbaTestReports.Compact(run, 100));
             StringAssert.Contains(error.Message, "Use paged run status"); Assert.IsNotNull(error.InnerException);
-            Assert.AreEqual(new string('x',1024), run.Results[0].Message);
+            Assert.AreEqual(new string('x', 1024), run.Results[0].Message);
             Assert.AreEqual(run.Results[0].Message, ((Dictionary<string, object>)((object[])Read(VbaTestReports.CompactPage(run))["tests"])[0])["message"]);
         }
     }

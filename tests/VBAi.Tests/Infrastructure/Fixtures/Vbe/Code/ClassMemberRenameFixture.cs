@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
-using VBAi;
 
 namespace VBAi.Tests.Unit
 {
@@ -25,8 +24,18 @@ namespace VBAi.Tests.Unit
         internal Action BeforeCatalogue;
         internal ClassMemberRenameFixture() { Service = new VbeCodeEdits(Execute); }
         internal ClassMemberRenameFixture(Func<string> exportPath) { Service = new VbeCodeEdits(Execute, exportPath); }
-        internal static Request Request(string source = Target) => new Request { Project = "P", Module = "CalcClass", Query = "Calculate", NewName = "Compute",
-            StartLine = 2, StartColumn = 18, ProcKind = 0, ExpectedMode = 2, ExpectedSha256 = VbaProcedureRename.Digest(source) };
+        internal static Request Request(string source = Target) => new Request
+        {
+            Project = "P",
+            Module = "CalcClass",
+            Query = "Calculate",
+            NewName = "Compute",
+            StartLine = 2,
+            StartColumn = 18,
+            ProcKind = 0,
+            ExpectedMode = 2,
+            ExpectedSha256 = VbaProcedureRename.Digest(source)
+        };
         internal static string Export(string module, string source) => "VERSION 1.0 CLASS\r\nBEGIN\r\n  MultiUse = -1  'True\r\nEND\r\nAttribute VB_Name = \"" + module + "\"\r\n" +
             "Attribute VB_GlobalNameSpace = False\r\nAttribute VB_Creatable = False\r\nAttribute VB_PredeclaredId = False\r\nAttribute VB_Exposed = False\r\n" + source + "\r\n";
         private string ComponentVersion() => VbaProcedureRename.Digest(Sources["CalcClass"] + HiddenAttributes + HeaderOverride);

@@ -1,14 +1,13 @@
+using Microsoft.VisualStudio.TestTools.UnitTesting;
+using Microsoft.Win32;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
 using System.Web.Script.Serialization;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
-using Microsoft.Win32;
 
 namespace VBAi.Tests.Integration
 {
@@ -34,9 +33,17 @@ namespace VBAi.Tests.Integration
             {
                 Console.WriteLine("Registered Outlook qualification=" + fixture.Root);
                 var status = fixture.Data("status");
-                Save(fixture, "identity.json", new { CurrentSourceRevision = sourceRevision, SourceStatus = sourceStatus,
-                    Host = host, fixture.ProcessId, fixture.OtmPath, fixture.Project, LoadedAssembly = status,
-                    ExecutionBoundary = "Registered in-process add-in with registered VBAi.TestRuntime callback" });
+                Save(fixture, "identity.json", new
+                {
+                    CurrentSourceRevision = sourceRevision,
+                    SourceStatus = sourceStatus,
+                    Host = host,
+                    fixture.ProcessId,
+                    fixture.OtmPath,
+                    fixture.Project,
+                    LoadedAssembly = status,
+                    ExecutionBoundary = "Registered in-process add-in with registered VBAi.TestRuntime callback"
+                });
                 Assert.AreEqual(typeof(VbeSession).Module.ModuleVersionId.ToString("D"), status["AssemblyModuleVersionId"]);
                 Assert.AreEqual(fixture.ProcessId, Convert.ToInt32(status["HostProcessId"]));
                 Save(fixture, "callback-registration.json", RequireCallback((string)status["AssemblyPath"]));
@@ -172,10 +179,16 @@ namespace VBAi.Tests.Integration
         {
             var review = new VbaTestCatalog { Project = new VbaTestProjectSnapshot() };
             foreach (var item in ((object[])catalog["Modules"]).Select(VbeBridgeClient.Object))
-                review.Modules.Add(new VbaTestModule { Name = (string)item["Name"], Diagnostic = item["Diagnostic"] as string,
+                review.Modules.Add(new VbaTestModule
+                {
+                    Name = (string)item["Name"],
+                    Diagnostic = item["Diagnostic"] as string,
                     Tests = ((object[])item["Tests"]).Select(Descriptor).ToList(),
-                    ModuleInitialize = Descriptor(item["ModuleInitialize"]), ModuleCleanup = Descriptor(item["ModuleCleanup"]),
-                    TestInitialize = Descriptor(item["TestInitialize"]), TestCleanup = Descriptor(item["TestCleanup"]) });
+                    ModuleInitialize = Descriptor(item["ModuleInitialize"]),
+                    ModuleCleanup = Descriptor(item["ModuleCleanup"]),
+                    TestInitialize = Descriptor(item["TestInitialize"]),
+                    TestCleanup = Descriptor(item["TestCleanup"])
+                });
             return review;
         }
 
@@ -183,9 +196,16 @@ namespace VBAi.Tests.Integration
         {
             if (value == null) return null;
             var item = VbeBridgeClient.Object(value);
-            return new VbaTestDescriptor { Id = (string)item["Id"], Module = (string)item["Module"],
-                Procedure = (string)item["Procedure"], Kind = (string)item["Kind"], Line = Convert.ToInt32(item["Line"]),
-                Diagnostic = item["Diagnostic"] as string, IgnoreReason = item["IgnoreReason"] as string };
+            return new VbaTestDescriptor
+            {
+                Id = (string)item["Id"],
+                Module = (string)item["Module"],
+                Procedure = (string)item["Procedure"],
+                Kind = (string)item["Kind"],
+                Line = Convert.ToInt32(item["Line"]),
+                Diagnostic = item["Diagnostic"] as string,
+                IgnoreReason = item["IgnoreReason"] as string
+            };
         }
 
         private static void AssertSource(OutlookVbaTestFixture fixture, IDictionary<string, object> expected, string module = ModuleName)
@@ -213,8 +233,15 @@ namespace VBAi.Tests.Integration
                 Assert.AreEqual("v4.0.30319", server.GetValue("RuntimeVersion"));
                 Assert.AreEqual("Both", Convert.ToString(server.GetValue("ThreadingModel")), true);
                 Assert.AreEqual("mscoree.dll", Convert.ToString(server.GetValue("")), true);
-                return new { CodeBase = codeBase, Class = server.GetValue("Class"), Assembly = server.GetValue("Assembly"),
-                    ProgId = "VBAi.TestRuntime", Clsid = RuntimeClsid, VerifiedLoadedAssembly = loadedAssembly };
+                return new
+                {
+                    CodeBase = codeBase,
+                    Class = server.GetValue("Class"),
+                    Assembly = server.GetValue("Assembly"),
+                    ProgId = "VBAi.TestRuntime",
+                    Clsid = RuntimeClsid,
+                    VerifiedLoadedAssembly = loadedAssembly
+                };
             }
         }
 
@@ -225,8 +252,14 @@ namespace VBAi.Tests.Integration
 
         private static string Git(string arguments)
         {
-            var start = new ProcessStartInfo("git", arguments) { WorkingDirectory = Environment.CurrentDirectory,
-                UseShellExecute = false, CreateNoWindow = true, RedirectStandardOutput = true, RedirectStandardError = true };
+            var start = new ProcessStartInfo("git", arguments)
+            {
+                WorkingDirectory = Environment.CurrentDirectory,
+                UseShellExecute = false,
+                CreateNoWindow = true,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true
+            };
             using (var process = Process.Start(start))
             {
                 string output = process.StandardOutput.ReadToEnd();

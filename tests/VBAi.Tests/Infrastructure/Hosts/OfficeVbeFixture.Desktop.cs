@@ -1,3 +1,5 @@
+using Microsoft.VisualStudio.TestTools.UnitTesting;
+using Microsoft.Win32;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -6,14 +8,13 @@ using System.Linq;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Threading;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
-using Microsoft.Win32;
 
 namespace VBAi.Tests.Integration
 {
     internal sealed partial class OfficeVbeFixture
     {
         private string privateDesktop, privateExecutable;
+        private bool mainPublisherDesktop;
         private IsolatedTestDesktop.NativeChild privateDesktopChild;
         private Action showPrivateAccess;
 
@@ -39,6 +40,73 @@ namespace VBAi.Tests.Integration
                 !string.Equals(Path.GetFileName(executable), expectedName, StringComparison.OrdinalIgnoreCase))
                 throw new ArgumentException("A reviewed absolute local installed Office executable is required before a private host launch.");
             return Path.GetFullPath(executable);
+        }
+
+        internal static bool SelectMainPublisherDesktop(string kind, string serializedSeed, string optIn,
+            string required, string configured, Action requireMain)
+        {
+            if (kind != "Publisher" || serializedSeed == null || optIn != "1") return false;
+            if (!string.IsNullOrEmpty(required) || !string.IsNullOrEmpty(configured))
+                throw new InvalidOperationException("Main Publisher requires both private desktop descriptors empty.");
+            if (requireMain == null) throw new ArgumentNullException(nameof(requireMain));
+            requireMain();
+            return true;
+        }
+
+        /// <summary>Validates the same reviewed Publisher image without admitting Default to the private API.</summary>
+        internal static string RequireMainPublisherExecutable(string executable)
+        {
+            if (string.IsNullOrWhiteSpace(executable) || executable.Length < 4 || !char.IsLetter(executable[0]) ||
+                executable[1] != ':' || (executable[2] != '\\' && executable[2] != '/') ||
+                !Path.IsPathRooted(executable) ||
+                !string.Equals(Path.GetFileName(executable), "MSPUB.EXE", StringComparison.OrdinalIgnoreCase))
+                throw new ArgumentException("A reviewed absolute local Publisher executable is required before a Main launch.");
+            return Path.GetFullPath(executable);
+        }
+
+        internal static void RequireSelectedOfficeDesktop(string desktop, bool mainPublisher)
+        {
+            if (mainPublisher)
+            {
+                if (desktop != "Default") throw new InvalidOperationException("Main Publisher requires Default.");
+                NativeTestDesktop.RequireCurrent("Default");
+            }
+            else IsolatedTestDesktop.RequireCurrent(desktop);
+        }
+
+        internal static void RequireSelectedOfficeWindow(string desktop, bool mainPublisher, uint pid,
+            bool requireWindow, IntPtr window)
+        {
+            if (!mainPublisher)
+            {
+                IsolatedTestDesktop.RequireOfficeWindowInventory(desktop, pid, requireWindow, window);
+                return;
+            }
+            RequireSelectedOfficeDesktop(desktop, true);
+            var inventory = IsolatedTestDesktop.ReadMainWindows(pid);
+            if (window != IntPtr.Zero)
+            {
+                IntPtr root = GetAncestor(window, 2);
+                uint actualPid, rootPid;
+                uint thread = GetWindowThreadProcessId(window, out actualPid);
+                uint rootThread = GetWindowThreadProcessId(root, out rootPid);
+                RequireMainPublisherPlacement(inventory, pid, requireWindow, window, root,
+                    actualPid, rootPid, thread, rootThread);
+            }
+            else RequireMainPublisherPlacement(inventory, pid, requireWindow, IntPtr.Zero, IntPtr.Zero, 0, 0, 0, 0);
+            RequireSelectedOfficeDesktop(desktop, true);
+        }
+
+        internal static void RequireMainPublisherPlacement(IsolatedTestDesktop.MainInventory inventory, uint pid,
+            bool requireWindow, IntPtr window, IntPtr root, uint windowPid, uint rootPid, uint windowThread, uint rootThread)
+        {
+            IsolatedTestDesktop.RequireMainInventory(inventory, pid, IntPtr.Zero, false, false);
+            if (requireWindow && inventory.Windows.Length == 0)
+                throw new InvalidOperationException("The original Publisher has no owned window on Default.");
+            if (window == IntPtr.Zero) return;
+            if (root == IntPtr.Zero || windowPid != pid || rootPid != pid || windowThread == 0 || rootThread == 0)
+                throw new InvalidOperationException("The Publisher window/root is not owned by the original Main process.");
+            IsolatedTestDesktop.RequireMainInventory(inventory, pid, root, false, false);
         }
 
         /// <summary>Uses an owned normal GUI process; manual embedding mode did not initialize Publisher publication operations.</summary>
@@ -83,11 +151,18 @@ namespace VBAi.Tests.Integration
                 {
                     string command = server?.GetValue(null, null, RegistryValueOptions.DoNotExpandEnvironmentNames) as string;
                     string registeredArguments = RegisteredPublisherServerArguments(executable, command);
-                    steps.Add(new { PublisherPrivateLaunchMode = "NormalGUIExplicitCreateProcess",
-                        ObservedRegisteredServerCommand = command, ObservedRegisteredServerArguments = registeredArguments,
-                        RegistryView = "Registry64", SelectedArguments = selectedArguments,
+                    steps.Add(new
+                    {
+                        PublisherPrivateLaunchMode = "NormalGUIExplicitCreateProcess",
+                        ObservedRegisteredServerCommand = command,
+                        ObservedRegisteredServerArguments = registeredArguments,
+                        RegistryView = "Registry64",
+                        SelectedArguments = selectedArguments,
                         HistoricalManualEmbeddingArguments = new[] { "/Automation", "-Embedding" },
-                        ComActivationCalled = false, ComActivationFallbackAllowed = false, RegisteredServerCommandExecuted = false });
+                        ComActivationCalled = false,
+                        ComActivationFallbackAllowed = false,
+                        RegisteredServerCommandExecuted = false
+                    });
                     FlushAdapterEvidence();
                 }
             }
@@ -99,9 +174,14 @@ namespace VBAi.Tests.Integration
             if (property != "UserControl" && property != "Visible")
                 throw new ArgumentException("Only Access automation-state getters are permitted.", nameof(property));
             if (read == null || record == null) throw new ArgumentNullException(read == null ? nameof(read) : nameof(record));
-            record(new Dictionary<string, object> { ["PrivateAccessAutomationGetter"] = property,
-                ["State"] = "PENDING", ["MaximumReadEntries"] = 1, ["MutationInvoked"] = false,
-                ["Utc"] = DateTime.UtcNow.ToString("o") });
+            record(new Dictionary<string, object>
+            {
+                ["PrivateAccessAutomationGetter"] = property,
+                ["State"] = "PENDING",
+                ["MaximumReadEntries"] = 1,
+                ["MutationInvoked"] = false,
+                ["Utc"] = DateTime.UtcNow.ToString("o")
+            });
             object value;
             try
             {
@@ -113,10 +193,16 @@ namespace VBAi.Tests.Integration
             {
                 try
                 {
-                    record(new Dictionary<string, object> { ["PrivateAccessAutomationGetter"] = property,
-                        ["State"] = "FAILED", ["Error"] = error.ToString(),
+                    record(new Dictionary<string, object>
+                    {
+                        ["PrivateAccessAutomationGetter"] = property,
+                        ["State"] = "FAILED",
+                        ["Error"] = error.ToString(),
                         ["HResult"] = "0x" + unchecked((uint)error.HResult).ToString("X8"),
-                        ["AutomaticRetry"] = false, ["MutationInvoked"] = false, ["Utc"] = DateTime.UtcNow.ToString("o") });
+                        ["AutomaticRetry"] = false,
+                        ["MutationInvoked"] = false,
+                        ["Utc"] = DateTime.UtcNow.ToString("o")
+                    });
                 }
                 catch (Exception evidence)
                 {
@@ -124,9 +210,15 @@ namespace VBAi.Tests.Integration
                 }
                 throw;
             }
-            record(new Dictionary<string, object> { ["PrivateAccessAutomationGetter"] = property,
-                ["State"] = "RETURNED", ["Value"] = value, ["ReadEntries"] = 1, ["MutationInvoked"] = false,
-                ["Utc"] = DateTime.UtcNow.ToString("o") });
+            record(new Dictionary<string, object>
+            {
+                ["PrivateAccessAutomationGetter"] = property,
+                ["State"] = "RETURNED",
+                ["Value"] = value,
+                ["ReadEntries"] = 1,
+                ["MutationInvoked"] = false,
+                ["Utc"] = DateTime.UtcNow.ToString("o")
+            });
             return (bool)value;
         }
 
@@ -153,17 +245,27 @@ namespace VBAi.Tests.Integration
                 if (consumed) throw new InvalidOperationException("The private Access visibility decision is already consumed; no replay is permitted.");
                 consumed = true;
                 requireOwner();
-                record(new Dictionary<string, object> {
+                record(new Dictionary<string, object>
+                {
                     ["PrivateAccessVisibility"] = visible ? "ExistingOwnedVisibleState" : "SetVisibleOnce",
-                    ["State"] = "PENDING", ["UserControl"] = userControl, ["ObservedVisible"] = visible,
-                    ["SetterRequired"] = !visible, ["MaximumSetterEntries"] = visible ? 0 : 1,
-                    ["AutomaticRetry"] = false, ["Utc"] = DateTime.UtcNow.ToString("o")
+                    ["State"] = "PENDING",
+                    ["UserControl"] = userControl,
+                    ["ObservedVisible"] = visible,
+                    ["SetterRequired"] = !visible,
+                    ["MaximumSetterEntries"] = visible ? 0 : 1,
+                    ["AutomaticRetry"] = false,
+                    ["Utc"] = DateTime.UtcNow.ToString("o")
                 });
                 if (visible)
                 {
-                    record(new Dictionary<string, object> { ["PrivateAccessVisibility"] = "ExistingOwnedVisibleState",
-                        ["State"] = "NO_OP", ["SetterEntries"] = 0, ["MutationInvoked"] = false,
-                        ["Utc"] = DateTime.UtcNow.ToString("o") });
+                    record(new Dictionary<string, object>
+                    {
+                        ["PrivateAccessVisibility"] = "ExistingOwnedVisibleState",
+                        ["State"] = "NO_OP",
+                        ["SetterEntries"] = 0,
+                        ["MutationInvoked"] = false,
+                        ["Utc"] = DateTime.UtcNow.ToString("o")
+                    });
                     return;
                 }
                 try { setVisible(); }
@@ -171,11 +273,18 @@ namespace VBAi.Tests.Integration
                 {
                     try
                     {
-                        record(new Dictionary<string, object> { ["PrivateAccessVisibility"] = "SetVisibleOnce",
-                            ["State"] = "FAILED", ["Error"] = error.ToString(),
+                        record(new Dictionary<string, object>
+                        {
+                            ["PrivateAccessVisibility"] = "SetVisibleOnce",
+                            ["State"] = "FAILED",
+                            ["Error"] = error.ToString(),
                             ["HResult"] = "0x" + unchecked((uint)error.HResult).ToString("X8"),
-                            ["SetterEntries"] = 1, ["MutationInvoked"] = true, ["SetterOutcomeUncertain"] = true,
-                            ["AutomaticRetry"] = false, ["Utc"] = DateTime.UtcNow.ToString("o") });
+                            ["SetterEntries"] = 1,
+                            ["MutationInvoked"] = true,
+                            ["SetterOutcomeUncertain"] = true,
+                            ["AutomaticRetry"] = false,
+                            ["Utc"] = DateTime.UtcNow.ToString("o")
+                        });
                     }
                     catch (Exception evidence)
                     {
@@ -183,15 +292,21 @@ namespace VBAi.Tests.Integration
                     }
                     throw;
                 }
-                record(new Dictionary<string, object> { ["PrivateAccessVisibility"] = "SetVisibleOnce",
-                    ["State"] = "RETURNED", ["SetterEntries"] = 1, ["MutationInvoked"] = true,
-                    ["Utc"] = DateTime.UtcNow.ToString("o") });
+                record(new Dictionary<string, object>
+                {
+                    ["PrivateAccessVisibility"] = "SetVisibleOnce",
+                    ["State"] = "RETURNED",
+                    ["SetterEntries"] = 1,
+                    ["MutationInvoked"] = true,
+                    ["Utc"] = DateTime.UtcNow.ToString("o")
+                });
             }
         }
 
         private void RecordPrivateAccessAutomationState()
         {
-            Action<IDictionary<string, object>> record = row => {
+            Action<IDictionary<string, object>> record = row =>
+            {
                 row["ProcessId"] = ProcessId; row["Desktop"] = privateDesktop;
                 steps.Add(row); FlushAdapterEvidence();
             };
@@ -199,21 +314,29 @@ namespace VBAi.Tests.Integration
             bool visible = ObservePrivateAccessAutomationGetter("Visible", () => ((dynamic)application).Visible, record);
             RequireApplicationOwner();
             RequirePrivateHostDesktop(true);
-            steps.Add(new { PrivateAccessAutomationContract = true, ProcessId, UserControl = userControl,
-                Visible = visible, VisibilityAction = visible ? "ExistingOwnedVisibleState" : userControl ? "RefuseUnsupportedState" : "SetVisibleOnce",
-                NativeMutations = 0 });
+            steps.Add(new
+            {
+                PrivateAccessAutomationContract = true,
+                ProcessId,
+                UserControl = userControl,
+                Visible = visible,
+                VisibilityAction = visible ? "ExistingOwnedVisibleState" : userControl ? "RefuseUnsupportedState" : "SetVisibleOnce",
+                NativeMutations = 0
+            });
             FlushAdapterEvidence();
             var decision = new PrivateAccessVisibilityDecision(userControl, visible);
             var observedChild = privateDesktopChild;
             var observedApplication = application;
             int observedPid = ProcessId;
-            Action requireOwner = () => {
+            Action requireOwner = () =>
+            {
                 if (!ReferenceEquals(privateDesktopChild, observedChild) || !ReferenceEquals(application, observedApplication) || ProcessId != observedPid)
                     throw new InvalidOperationException("The Access visibility observation belongs to another original host; no native operation is permitted.");
                 RequireApplicationOwner();
                 RequirePrivateHostDesktop(true);
             };
-            showPrivateAccess = () => {
+            showPrivateAccess = () =>
+            {
                 decision.Apply(requireOwner, () => ((dynamic)observedApplication).Visible = true, record);
                 // Revalidate the same original host immediately before the caller creates or opens its database.
                 requireOwner();
@@ -231,12 +354,13 @@ namespace VBAi.Tests.Integration
         /// <summary>Explicitly launches once on the exact desktop, then discovers an existing ROT object without activation.</summary>
         private void StartPrivateOfficeHost(string desktop)
         {
-            IsolatedTestDesktop.RequireCurrent(desktop);
+            RequireSelectedOfficeDesktop(desktop, mainPublisherDesktop);
             if (publisherOwnership != null || publisherOwnershipUnknown != IntPtr.Zero || publisherBootstrap != null || publisherBootstrapUnknown != IntPtr.Zero)
                 throw new InvalidOperationException("A retained Publisher ownership probe refuses a new native launch before observed original exit.");
             showPrivateAccess = null;
-            string executable = RequirePrivateOfficeExecutable(Kind, desktop,
-                privateExecutable ?? Environment.GetEnvironmentVariable("VBAi_TEST_" + Kind.ToUpperInvariant() + "_EXE"));
+            string selectedExecutable = privateExecutable ?? Environment.GetEnvironmentVariable("VBAi_TEST_" + Kind.ToUpperInvariant() + "_EXE");
+            string executable = mainPublisherDesktop ? RequireMainPublisherExecutable(selectedExecutable) :
+                RequirePrivateOfficeExecutable(Kind, desktop, selectedExecutable);
             if (!File.Exists(executable)) throw new FileNotFoundException("The reviewed installed Office executable does not exist.", executable);
             string expectedProcess = Kind == "Access" ? "MSACCESS" : Kind == "PowerPoint" ? "POWERPNT" : "MSPUB";
             if (Kind == "Publisher")
@@ -256,22 +380,40 @@ namespace VBAi.Tests.Integration
             using (var file = File.OpenRead(executable)) executableHash = BitConverter.ToString(sha.ComputeHash(file)).Replace("-", "");
             string[] arguments = PrivateOfficeArguments(Kind);
             RecordPrivatePublisherLaunchMode(executable, arguments);
-            steps.Add(new { PrivateDesktopLaunchIntent = true, Desktop = desktop, Executable = executable,
-                ExecutableSha256 = executableHash, Arguments = arguments, StartAttempts = 1, ComActivationAllowed = false });
+            steps.Add(new
+            {
+                PrivateDesktopLaunchIntent = true,
+                SelectedDesktopMode = mainPublisherDesktop ? "MainWinSta0Default" : "InactivePrivate",
+                Desktop = desktop,
+                Executable = executable,
+                ExecutableSha256 = executableHash,
+                Arguments = arguments,
+                StartAttempts = 1,
+                ComActivationAllowed = false
+            });
             FlushAdapterEvidence();
-            privateDesktopChild = IsolatedTestDesktop.Launch(executable, arguments, Root, desktop);
+            privateDesktopChild = mainPublisherDesktop ? IsolatedTestDesktop.LaunchMain(executable, arguments, Root) :
+                IsolatedTestDesktop.Launch(executable, arguments, Root, desktop);
             ProcessId = privateDesktopChild.ProcessId;
             publisherStartupRecovery = Kind == "Publisher" ? new PublisherStartupRecoveryGate((uint)ProcessId,
                 privateDesktopChild.ProcessHandle.ToInt64()) : null;
             owned = true; CaptureOwnedProcess();
             // Shutdown observations use the original CreateProcess handle, never a PID reacquisition.
-            WaitForOwnedExit = (process, timeout) => {
+            WaitForOwnedExit = (process, timeout) =>
+            {
                 Assert.AreSame(ownedProcess, process);
                 return privateDesktopChild.Wait(timeout);
             };
             ReadOwnedExitCode = process => { Assert.AreSame(ownedProcess, process); return unchecked((int)privateDesktopChild.ExitCode()); };
-            steps.Add(new { PrivateDesktopLaunchObserved = true, ProcessId, ThreadId = privateDesktopChild.ThreadId,
-                OriginalHandle = privateDesktopChild.ProcessHandle.ToInt64(), Desktop = desktop });
+            steps.Add(new
+            {
+                PrivateDesktopLaunchObserved = true,
+                SelectedDesktopMode = mainPublisherDesktop ? "MainWinSta0Default" : "InactivePrivate",
+                ProcessId,
+                ThreadId = privateDesktopChild.ThreadId,
+                OriginalHandle = privateDesktopChild.ProcessHandle.ToInt64(),
+                Desktop = desktop
+            });
             FlushAdapterEvidence();
             RequirePrivateHostDesktop(false);
             var watch = Stopwatch.StartNew();
@@ -290,8 +432,16 @@ namespace VBAi.Tests.Integration
                         if (Kind == "Publisher") BindPrivatePublisherBootstrap();
                         else RequireApplicationOwner();
                         RequirePrivateHostDesktop(true);
-                        steps.Add(new { PrivateDesktopApplicationAttached = true, ProcessId, Desktop = desktop,
-                            Attachment = "ExistingROT", ProgId = progId, ElapsedMilliseconds = watch.ElapsedMilliseconds });
+                        steps.Add(new
+                        {
+                            PrivateDesktopApplicationAttached = true,
+                            SelectedDesktopMode = mainPublisherDesktop ? "MainWinSta0Default" : "InactivePrivate",
+                            ProcessId,
+                            Desktop = desktop,
+                            Attachment = "ExistingROT",
+                            ProgId = progId,
+                            ElapsedMilliseconds = watch.ElapsedMilliseconds
+                        });
                         FlushAdapterEvidence();
                         attached = true;
                     }
@@ -318,13 +468,13 @@ namespace VBAi.Tests.Integration
         {
             if (mainWordDesktop) { ObserveMainWord(IntPtr.Zero, requireWindow, false); return; }
             if (privateDesktop == null) return;
-            IsolatedTestDesktop.RequireCurrent(privateDesktop);
+            RequireSelectedOfficeDesktop(privateDesktop, mainPublisherDesktop);
             if (privateDesktopChild == null || privateDesktopChild.Wait(0) || ownedProcess == null || ownedProcess.HasExited ||
                 !string.Equals(ExcelOwnedProcessImage.Read(privateDesktopChild.ProcessHandle), privateExecutable, StringComparison.OrdinalIgnoreCase))
                 throw new InvalidOperationException("The originally launched private Office process/image is unavailable; no native action or relaunch is allowed.");
             // Foreign GetThreadDesktop returned stable access denied in the native v1 campaign;
             // non-GUI threads can also have no USER desktop handle. Explicit HWND membership is the proof.
-            IsolatedTestDesktop.RequireOfficeWindowInventory(privateDesktop, (uint)ProcessId, requireWindow, IntPtr.Zero);
+            RequireSelectedOfficeWindow(privateDesktop, mainPublisherDesktop, (uint)ProcessId, requireWindow, IntPtr.Zero);
         }
 
         private void ReleasePrivateExitedProcess()

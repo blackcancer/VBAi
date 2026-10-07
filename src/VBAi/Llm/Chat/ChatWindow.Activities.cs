@@ -1,7 +1,6 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Windows;
-using System.Windows.Controls;
 
 namespace VBAi
 {
@@ -66,10 +65,15 @@ namespace VBAi
                 entry.Activity = new CodexAgentActivity { Id = activity.Id, Kind = activity.Kind };
             }
             var previous = entry.Activity;
-            entry.Activity = new CodexAgentActivity { Id = activity.Id, Kind = activity.Kind,
+            entry.Activity = new CodexAgentActivity
+            {
+                Id = activity.Id,
+                Kind = activity.Kind,
                 Title = string.IsNullOrWhiteSpace(activity.Title) ? previous?.Title : activity.Title,
                 Detail = activity.Append ? CodexAgentActivity.Limit((previous?.Detail ?? "") + activity.Detail) : CodexAgentActivity.Limit(activity.Detail),
-                Status = activity.Append && previous != null && previous.Status != "inProgress" ? previous.Status : activity.Status, DurationMs = activity.DurationMs ?? previous?.DurationMs };
+                Status = activity.Append && previous != null && previous.Status != "inProgress" ? previous.Status : activity.Status,
+                DurationMs = activity.DurationMs ?? previous?.DurationMs
+            };
             entry.Text = entry.Activity.Title + "\n" + entry.Activity.Detail;
             if (activity.Status != "inProgress") completedStreams.Add(activity.Id);
             // Publish a complete first snapshot; adding to a group already refreshes its view.
@@ -142,12 +146,13 @@ namespace VBAi
             var state = new ActivityGroupViewState();
             card.Tag = state;
             UpdateActivityGroup(card, owner, entries);
-            card.section.ExpansionChanged += (sender, args) => {
+            card.section.ExpansionChanged += (sender, args) =>
+            {
                 if (state.Updating) return;
                 if (card.section.Expanded) { expandedActivityGroups.Add(owner); collapsedActivityGroups.Remove(owner); }
                 else { expandedActivityGroups.Remove(owner); collapsedActivityGroups.Add(owner); }
             };
-            return new ChatDesignerHost(card) { Margin = new Thickness(0,4,0,14) };
+            return new ChatDesignerHost(card) { Margin = new Thickness(0, 4, 0, 14) };
         }
 
         /// <summary>Updates a realized group's rows in place when their types and controls remain valid.</summary>
@@ -157,8 +162,7 @@ namespace VBAi
         /// <returns>True after in-place update; false when the caller must use its full rebuild path.</returns>
         private bool UpdateActivityGroup(ChatActivityGroupView card, ChatEntry owner, List<ChatEntry> entries)
         {
-            var state = card.Tag as ActivityGroupViewState;
-            if (state == null || entries.Count == 0) return false;
+            if (!(card.Tag is ActivityGroupViewState state) || entries.Count == 0) return false;
             // A changed row type or damaged control requires the existing full rebuild path.
             if (state.Rows.Count > entries.Count) return false;
             int retainedRows = 0;
@@ -194,7 +198,7 @@ namespace VBAi
                 }
                 var latest = entries.LastOrDefault(entry => entry.Activity?.Status == "inProgress") ?? entries.Last();
                 string preview = string.IsNullOrWhiteSpace(latest.Activity?.Title) ? "" : " · " + CodexAgentActivity.Limit(latest.Activity.Title);
-                if (preview.Length > 90) preview = preview.Substring(0,87) + "…";
+                if (preview.Length > 90) preview = preview.Substring(0, 87) + "…";
                 string title = UiText.Get(entries.All(e => e.Speaker == "Réflexion") ? "Reasoning" : "Agent activity") + " · " + entries.Count + preview;
                 if (card.section.Title != title) card.section.Title = title;
                 bool running = entries.Any(e => e.Activity?.Status == "inProgress" || (busy && e.Activity == null && e.StreamId != null && !completedStreams.Contains(e.StreamId)));
@@ -221,7 +225,8 @@ namespace VBAi
         {
             var card = new ChatActivityStepView { Tag = new ActivityStepViewState() };
             UpdateActivityStep(card, entry);
-            card.section.ExpansionChanged += (sender, args) => {
+            card.section.ExpansionChanged += (sender, args) =>
+            {
                 if (((ActivityStepViewState)card.Tag).Updating) return;
                 if (card.section.Expanded) { expandedActivitySteps.Add(entry); collapsedActivitySteps.Remove(entry); }
                 else { expandedActivitySteps.Remove(entry); collapsedActivitySteps.Add(entry); }

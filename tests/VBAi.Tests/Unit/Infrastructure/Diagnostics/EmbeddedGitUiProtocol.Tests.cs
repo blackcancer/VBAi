@@ -1,7 +1,7 @@
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Collections.Generic;
 using System.IO;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 using VBAi.Tests.Integration;
 
 namespace VBAi.Tests.Unit
@@ -14,16 +14,16 @@ namespace VBAi.Tests.Unit
         {
             const string nonce = "EMBEDDED_owned";
             foreach (bool idle in new[] { false, true })
-            foreach (bool selected in new[] { false, true })
-            {
-                Assert.AreEqual(idle && selected, EmbeddedGitAutomation.HasProvenSelection(idle, selected, true,
-                    "Reviewing checkpoint · " + nonce, nonce));
-                Assert.AreEqual(idle && selected, EmbeddedGitAutomation.HasProvenSelection(idle, selected, false,
-                    "Operation complete: checkpoint_create", nonce));
-                foreach (string text in new[] { null, "", "Operation in progress…", "Operation complete: checkpoint_create",
+                foreach (bool selected in new[] { false, true })
+                {
+                    Assert.AreEqual(idle && selected, EmbeddedGitAutomation.HasProvenSelection(idle, selected, true,
+                        "Reviewing checkpoint · " + nonce, nonce));
+                    Assert.AreEqual(idle && selected, EmbeddedGitAutomation.HasProvenSelection(idle, selected, false,
+                        "Operation complete: checkpoint_create", nonce));
+                    foreach (string text in new[] { null, "", "Operation in progress…", "Operation complete: checkpoint_create",
                     "Reviewing checkpoint · OTHER", "Reviewing checkpoint · prefix" + nonce })
-                    Assert.IsFalse(EmbeddedGitAutomation.HasProvenSelection(idle, selected, true, text, nonce));
-            }
+                        Assert.IsFalse(EmbeddedGitAutomation.HasProvenSelection(idle, selected, true, text, nonce));
+                }
             Assert.IsFalse(EmbeddedGitAutomation.HasProvenSelection(true, true, true, "Reviewing checkpoint · ", ""));
             Assert.IsFalse(EmbeddedGitAutomation.HasProvenSelection(true, true, true, "Reviewing checkpoint · " + nonce, null));
         }

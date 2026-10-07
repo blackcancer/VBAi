@@ -1,18 +1,15 @@
 namespace VBAi.Tests.Unit
 {
+    using Microsoft.VisualStudio.TestTools.UnitTesting;
     using System;
-    using System.Collections;
     using System.Collections.Generic;
-    using System.IO;
     using System.Net;
     using System.Net.Http;
     using System.Reflection;
     using System.Threading;
     using System.Threading.Tasks;
-    using System.Web.Script.Serialization;
     using System.Windows.Forms;
     using VBAi;
-    using Microsoft.VisualStudio.TestTools.UnitTesting;
 
     /// <summary>Fournit les constructeurs de fenêtres et aides réflexives partagés par les tests de discussion.</summary>
     public sealed partial class ChatWindowStateTests
@@ -114,7 +111,7 @@ namespace VBAi.Tests.Unit
             var window = Surfaces();
             var settings = new LlmSettings();
             Set(window, "settings", settings);
-            Set(window, "tools", new LlmVbeTools(new VbeSession(new object ()), window, settings));
+            Set(window, "tools", new LlmVbeTools(new VbeSession(new object()), window, settings));
             Set(window, "currentSession", session);
             var providers = Get<ComboBox>(window, "providerPicker");
             providers.Items.Add(LlmProvider.All[2]);

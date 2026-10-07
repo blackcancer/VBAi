@@ -1,15 +1,9 @@
 namespace VBAi.Tests.Unit
 {
     using System;
-    using System.Collections.Generic;
-    using System.Linq;
-    using System.Net;
     using System.Net.Http;
     using System.Threading;
     using System.Threading.Tasks;
-    using System.Web.Script.Serialization;
-    using VBAi;
-    using Microsoft.VisualStudio.TestTools.UnitTesting;
 
     /// <summary>Contient les doubles HTTP utilisés par les tests de revue GitHub.</summary>
     public sealed partial class GitReviewTests

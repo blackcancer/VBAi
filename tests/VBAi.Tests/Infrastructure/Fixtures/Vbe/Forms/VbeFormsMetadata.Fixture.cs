@@ -1,9 +1,9 @@
 namespace VBAi.Tests.Unit
 {
     using System;
+    using System.Collections.Generic;
     using System.ComponentModel;
     using System.Reflection;
-    using System.Collections.Generic;
     using VBAi;
 
     public sealed partial class VbeFormsCoverageTests

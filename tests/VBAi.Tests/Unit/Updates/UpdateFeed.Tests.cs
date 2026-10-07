@@ -1,18 +1,15 @@
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Text;
-using System.Collections.Generic;
-using System.Diagnostics;
 using System.Net;
 using System.Net.Http;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Web.Script.Serialization;
-using System.Windows.Forms;
-using VBAi;
 using VBAi.Tests.Infrastructure;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 namespace VBAi.Tests.Unit
 {
     [TestClass, TestCategory("Unit")]
@@ -67,12 +64,12 @@ namespace VBAi.Tests.Unit
         public async Task InvalidRedirectsChecksumsSizesAndCancellationNeverProduceAnInstaller()
         {
             foreach (string url in new[] { "https://evil.example/asset", "http://release-assets.githubusercontent.com/asset", "https://user@release-assets.githubusercontent.com/asset" })
-            using (var scope = new UpdateScope())
-            {
-                var handler = new Handler(); handler.Redirect(url);
-                using (var feed = new UpdateFeed(handler)) await Assert.ThrowsExceptionAsync<InvalidDataException>(() => feed.Download(Asset("fixture"), scope.Root, null, CancellationToken.None));
-                Assert.AreEqual(1, handler.Uris.Count); Assert.AreEqual(0, Directory.GetFiles(scope.Root, "*.part", SearchOption.AllDirectories).Length);
-            }
+                using (var scope = new UpdateScope())
+                {
+                    var handler = new Handler(); handler.Redirect(url);
+                    using (var feed = new UpdateFeed(handler)) await Assert.ThrowsExceptionAsync<InvalidDataException>(() => feed.Download(Asset("fixture"), scope.Root, null, CancellationToken.None));
+                    Assert.AreEqual(1, handler.Uris.Count); Assert.AreEqual(0, Directory.GetFiles(scope.Root, "*.part", SearchOption.AllDirectories).Length);
+                }
             using (var scope = new UpdateScope())
             using (var feed = new UpdateFeed(new Handler("changed", "short")))
             {
@@ -128,17 +125,17 @@ namespace VBAi.Tests.Unit
                 using (var cancelled = new CancellationTokenSource()) { cancelled.Cancel(); await Assert.ThrowsExceptionAsync<OperationCanceledException>(() => feed.Download(Asset("owned"), scope.Root, null, cancelled.Token)); }
             }
             foreach (string location in new[] { null, "https://objects.githubusercontent.com:444/file", "/relative", "https://objects.githubusercontent.com/file" })
-            using (var scope = new UpdateScope())
-            {
-                var handler = new Handler(); var redirect = new HttpResponseMessage(HttpStatusCode.Found);
-                if (location != null) redirect.Headers.Location = new Uri(location, UriKind.RelativeOrAbsolute);
-                handler.Replies.Enqueue(redirect); handler.Add("owned");
-                using (var feed = new UpdateFeed(handler))
+                using (var scope = new UpdateScope())
                 {
-                    if (location == "https://objects.githubusercontent.com/file") Assert.AreEqual(Asset("owned").Hash, UpdatePaths.Hash(await feed.Download(Asset("owned"), scope.Root, null, CancellationToken.None)));
-                    else await Assert.ThrowsExceptionAsync<InvalidDataException>(() => feed.Download(Asset("owned"), scope.Root, null, CancellationToken.None));
+                    var handler = new Handler(); var redirect = new HttpResponseMessage(HttpStatusCode.Found);
+                    if (location != null) redirect.Headers.Location = new Uri(location, UriKind.RelativeOrAbsolute);
+                    handler.Replies.Enqueue(redirect); handler.Add("owned");
+                    using (var feed = new UpdateFeed(handler))
+                    {
+                        if (location == "https://objects.githubusercontent.com/file") Assert.AreEqual(Asset("owned").Hash, UpdatePaths.Hash(await feed.Download(Asset("owned"), scope.Root, null, CancellationToken.None)));
+                        else await Assert.ThrowsExceptionAsync<InvalidDataException>(() => feed.Download(Asset("owned"), scope.Root, null, CancellationToken.None));
+                    }
                 }
-            }
             using (var scope = new UpdateScope())
             {
                 var handler = new Handler(); for (int i = 0; i < 6; i++) handler.Redirect("https://release-assets.githubusercontent.com/redirect" + i);
@@ -150,20 +147,20 @@ namespace VBAi.Tests.Unit
         public async Task HeaderlessOwnedStreamsVerifySizeHashCacheReplacementAndCancellationCleanup()
         {
             foreach (string bytes in new[] { "toolong", "x", "wrong", "owned" })
-            using (var scope = new UpdateScope())
-            {
-                var handler = new Handler(); handler.Replies.Enqueue(new HttpResponseMessage(HttpStatusCode.OK) { Content = new OwnedUpdateContent(bytes) });
-                using (var feed = new UpdateFeed(handler))
+                using (var scope = new UpdateScope())
                 {
-                    var asset = Asset("owned");
-                    string path = UpdatePaths.AssetPath(scope.Root, asset.Hash, asset.name); Directory.CreateDirectory(Path.GetDirectoryName(path)); File.WriteAllText(path, "xxxxx");
-                    int reported = 0;
-                    var progress = new OwnedUpdateProgress(value => { reported = value; });
-                    if (bytes == "owned") { Assert.AreEqual(path, await feed.Download(asset, scope.Root, progress, CancellationToken.None)); Assert.AreEqual(100, reported); Assert.AreEqual(asset.Hash, UpdatePaths.Hash(path)); }
-                    else { await Assert.ThrowsExceptionAsync<InvalidDataException>(() => feed.Download(asset, scope.Root, progress, CancellationToken.None)); Assert.AreEqual("xxxxx", File.ReadAllText(path)); }
+                    var handler = new Handler(); handler.Replies.Enqueue(new HttpResponseMessage(HttpStatusCode.OK) { Content = new OwnedUpdateContent(bytes) });
+                    using (var feed = new UpdateFeed(handler))
+                    {
+                        var asset = Asset("owned");
+                        string path = UpdatePaths.AssetPath(scope.Root, asset.Hash, asset.name); Directory.CreateDirectory(Path.GetDirectoryName(path)); File.WriteAllText(path, "xxxxx");
+                        int reported = 0;
+                        var progress = new OwnedUpdateProgress(value => { reported = value; });
+                        if (bytes == "owned") { Assert.AreEqual(path, await feed.Download(asset, scope.Root, progress, CancellationToken.None)); Assert.AreEqual(100, reported); Assert.AreEqual(asset.Hash, UpdatePaths.Hash(path)); }
+                        else { await Assert.ThrowsExceptionAsync<InvalidDataException>(() => feed.Download(asset, scope.Root, progress, CancellationToken.None)); Assert.AreEqual("xxxxx", File.ReadAllText(path)); }
+                    }
+                    Assert.AreEqual(0, Directory.GetFiles(scope.Root, "*.part", SearchOption.AllDirectories).Length);
                 }
-                Assert.AreEqual(0, Directory.GetFiles(scope.Root, "*.part", SearchOption.AllDirectories).Length);
-            }
             using (var scope = new UpdateScope())
             using (var cancel = new CancellationTokenSource())
             using (var feed = new UpdateFeed(new Handler("owned")))

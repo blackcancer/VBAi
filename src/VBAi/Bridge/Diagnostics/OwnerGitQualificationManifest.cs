@@ -1,12 +1,10 @@
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Text;
-using System.Threading;
 using System.Web.Script.Serialization;
 
 namespace VBAi
@@ -116,8 +114,7 @@ namespace VBAi
                 raw["RemoteUrl"] != null && !(raw["RemoteUrl"] is string) ||
                 raw["RemoteCommit"] != null && !(raw["RemoteCommit"] is string))
                 throw new ArgumentException("Owner Git manifest has noncanonical field types.");
-            var steps = raw["Steps"] as object[];
-            if (steps == null || steps.Length < 1 || steps.Length > 4)
+            if (!(raw["Steps"] is object[] steps) || steps.Length < 1 || steps.Length > 4)
                 throw new ArgumentException("One to four fixed owner Git steps are required.");
             foreach (var item in steps)
             {
@@ -134,8 +131,7 @@ namespace VBAi
             if (manifest.Version != 1 || manifest.OwnerPid <= 0 || manifest.OwnerBirthUtcTicks <= 0 ||
                 manifest.OwnerNativeTid == 0 || manifest.VbeHandle == 0 || manifest.Steps == null || manifest.Steps.Length != steps.Length)
                 throw new ArgumentException("Invalid owner Git identity or version.");
-            Guid mvid;
-            if (!Guid.TryParseExact(manifest.AssemblyMvid, "D", out mvid) || !Sha(manifest.AssemblySha256))
+            if (!Guid.TryParseExact(manifest.AssemblyMvid, "D", out Guid mvid) || !Sha(manifest.AssemblySha256))
                 throw new ArgumentException("Exact candidate identity required.");
             if (string.IsNullOrWhiteSpace(manifest.Project) || manifest.Project.Length > 1024 ||
                 !string.Equals(manifest.Project, manifest.WorkbookPath, StringComparison.OrdinalIgnoreCase) ||
@@ -170,8 +166,7 @@ namespace VBAi
             var ids = new HashSet<string>(StringComparer.Ordinal);
             foreach (var step in manifest.Steps)
             {
-                Guid id;
-                if (!Guid.TryParseExact(step.Id, "N", out id) || !ids.Add(step.Id) ||
+                if (!Guid.TryParseExact(step.Id, "N", out Guid id) || !ids.Add(step.Id) ||
                     !new[] { "checkpoint_restore", "controlled_interruption", "rollback", "pull" }.Contains(step.Verb))
                     throw new ArgumentException("Unknown or repeated owner Git step.");
                 RequireChild(manifest.EvidenceRoot, step.ExpectedSnapshotDirectory, true);
@@ -225,9 +220,8 @@ namespace VBAi
         {
             var value = new JavaScriptSerializer().DeserializeObject(json) as IDictionary<string, object>;
             RequireKeys(value, new[] { "Command", "Action", "ExpectedSha256" });
-            Guid id;
             if (!string.Equals(value["Command"] as string, CommandName, StringComparison.Ordinal) ||
-                !Guid.TryParseExact(value["Action"] as string, "N", out id) || !Sha(value["ExpectedSha256"] as string))
+                !Guid.TryParseExact(value["Action"] as string, "N", out _) || !Sha(value["ExpectedSha256"] as string))
                 throw new ArgumentException("Exact diagnostic command, step id and coordinator revision required.");
         }
 
@@ -338,8 +332,7 @@ namespace VBAi
         internal static void RequireReceiptPaths(string evidenceRoot, string stepId)
         {
             RequireEvidenceRootBudget(evidenceRoot);
-            Guid id;
-            if (!Guid.TryParseExact(stepId, "N", out id)) throw new ArgumentException("Exact owner Git receipt id required.");
+            if (!Guid.TryParseExact(stepId, "N", out _)) throw new ArgumentException("Exact owner Git receipt id required.");
             string prefix = Path.Combine(evidenceRoot, "owner-git-" + stepId);
             foreach (string suffix in new[] { ".intent.json", ".mutation.json", ".terminal.json" })
                 RequireClassicFilePath(prefix + suffix);

@@ -1,8 +1,7 @@
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.IO;
-using VBAi;
 using VBAi.Tests.Infrastructure;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace VBAi.Tests.Unit
 {
@@ -70,7 +69,8 @@ namespace VBAi.Tests.Unit
                 foreach (uint context in new[] { 0U, 12U, uint.MaxValue })
                 {
                     project.HelpContextID = context; int calls = 0;
-                    VbeProjectComponents.NativeHelp = (owner, path, command, data) => {
+                    VbeProjectComponents.NativeHelp = (owner, path, command, data) =>
+                    {
                         calls++;
                         Microsoft.VisualStudio.TestTools.UnitTesting.Assert.AreEqual(System.IntPtr.Zero, owner);
                         Microsoft.VisualStudio.TestTools.UnitTesting.Assert.AreEqual(file, path);

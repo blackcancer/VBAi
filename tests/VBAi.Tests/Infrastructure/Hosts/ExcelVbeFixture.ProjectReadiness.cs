@@ -23,13 +23,16 @@ namespace VBAi.Tests.Integration
                 !string.IsNullOrEmpty(Convert.ToString(((dynamic)workbook).Path)))
                 throw new InvalidOperationException("Exact sole unsaved workbook required.");
             object currentWorkbook = null; IntPtr retainedWorkbookIdentity = IntPtr.Zero, currentWorkbookIdentity = IntPtr.Zero;
-            try {
+            try
+            {
                 currentWorkbook = ((dynamic)workbooks).Item(1);
                 retainedWorkbookIdentity = Marshal.GetIUnknownForObject(workbook);
                 currentWorkbookIdentity = Marshal.GetIUnknownForObject(currentWorkbook);
                 if (retainedWorkbookIdentity != currentWorkbookIdentity)
                     throw new InvalidOperationException("The retained workbook is not the sole native document.");
-            } finally {
+            }
+            finally
+            {
                 if (currentWorkbookIdentity != IntPtr.Zero) Marshal.Release(currentWorkbookIdentity);
                 if (retainedWorkbookIdentity != IntPtr.Zero) Marshal.Release(retainedWorkbookIdentity);
                 if (!ReferenceEquals(currentWorkbook, workbook)) Release(currentWorkbook);
@@ -48,23 +51,33 @@ namespace VBAi.Tests.Integration
                 for (int index = 1; index <= count; index++)
                 {
                     object project = null; IntPtr identity = IntPtr.Zero;
-                    try {
+                    try
+                    {
                         project = ((dynamic)projects).Item(index);
                         identity = Marshal.GetIUnknownForObject(project);
                         if (identity == ownedIdentity) matches++;
-                    } finally {
+                    }
+                    finally
+                    {
                         if (identity != IntPtr.Zero) Marshal.Release(identity);
                         if (!ReferenceEquals(project, ownedProject)) Release(project);
                     }
                 }
-                return new Dictionary<string, object> {
-                    ["ProjectName"] = name, ["NativeProjectCount"] = count, ["OwnedIdentityMatches"] = matches,
-                    ["WorkbookName"] = Convert.ToString(((dynamic)workbook).Name), ["WorkbookPath"] = "",
-                    ["ProcessId"] = ProcessId, ["Desktop"] = OllamaOfficeDesktop.MainEnabled ? "Default" : desktop,
-                    ["ReadOnly"] = true, ["OwnedWorkbookIdentityMatches"] = true
+                return new Dictionary<string, object>
+                {
+                    ["ProjectName"] = name,
+                    ["NativeProjectCount"] = count,
+                    ["OwnedIdentityMatches"] = matches,
+                    ["WorkbookName"] = Convert.ToString(((dynamic)workbook).Name),
+                    ["WorkbookPath"] = "",
+                    ["ProcessId"] = ProcessId,
+                    ["Desktop"] = OllamaOfficeDesktop.MainEnabled ? "Default" : desktop,
+                    ["ReadOnly"] = true,
+                    ["OwnedWorkbookIdentityMatches"] = true
                 };
             }
-            finally {
+            finally
+            {
                 if (ownedIdentity != IntPtr.Zero) Marshal.Release(ownedIdentity);
                 Release(ownedProject); Release(projects); Release(vbe);
             }

@@ -1,5 +1,4 @@
 using System;
-using System.Collections;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -189,10 +188,18 @@ namespace VBAi
                     if (message.name == "toggle_breakpoint" && !VbaBreakpointLocation.CanRequest(source, message.line)) return;
                     native.ShowNative(Math.Max(1, message.line), 1);
                     ((dynamic)native.Vbe).ActiveCodePane.Window.SetFocus();
-                    object control = debugger.FindEditorCommand(message.name, mode);
-                    if (control == null) throw new InvalidOperationException("The native debug command is unavailable in the current mode.");
-                    debugger.InvokeCommand(new Request { Project = native.ProjectName, Module = native.ModuleName, ExpectedMode = mode,
-                        ExpectedSha256 = EditorDocument.Hash(source), StartLine = Math.Max(1, message.line), Action = message.name, ControlId = (int)((dynamic)control).Id, ControlCaption = (string)((dynamic)control).Caption });
+                    object control = debugger.FindEditorCommand(message.name, mode) ?? throw new InvalidOperationException("The native debug command is unavailable in the current mode.");
+                    debugger.InvokeCommand(new Request
+                    {
+                        Project = native.ProjectName,
+                        Module = native.ModuleName,
+                        ExpectedMode = mode,
+                        ExpectedSha256 = EditorDocument.Hash(source),
+                        StartLine = Math.Max(1, message.line),
+                        Action = message.name,
+                        ControlId = (int)((dynamic)control).Id,
+                        ControlCaption = (string)((dynamic)control).Caption
+                    });
                     // VBIDE cannot enumerate breakpoints. This is deliberately a hollow request marker.
                     if (message.name == "toggle_breakpoint") await Script("breakpointRequested", document.Id, message.line);
                     else

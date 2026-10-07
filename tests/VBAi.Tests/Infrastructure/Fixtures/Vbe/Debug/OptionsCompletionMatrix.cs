@@ -2,7 +2,6 @@ namespace VBAi.Tests.Unit
 {
     using System;
     using System.Collections.Generic;
-    using VBAi;
 
     /// <summary>Contrat de scénarios établi avant exécution: options documentées FR/EN et refus de mutations non vérifiables.</summary>
     internal static class OptionsCompletionMatrix

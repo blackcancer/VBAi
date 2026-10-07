@@ -23,7 +23,8 @@ namespace VBAi.Tests.Infrastructure
         internal BridgeClientPipeFixture(string reply, bool disconnect = false, bool hold = false, int startDelay = 0, string pipeName = null)
         {
             if (pipeName != null) Name = pipeName;
-            worker = new Thread(() => {
+            worker = new Thread(() =>
+            {
                 try
                 {
                     if (startDelay > 0 && release.Wait(startDelay)) return;
@@ -42,7 +43,8 @@ namespace VBAi.Tests.Infrastructure
                 }
                 catch (Exception ex) { if (!closing) Failure = ex; }
                 finally { Ready.Set(); }
-            }) { IsBackground = true, Name = "OwnedBridgeClientPipe" };
+            })
+            { IsBackground = true, Name = "OwnedBridgeClientPipe" };
             worker.Start();
         }
 

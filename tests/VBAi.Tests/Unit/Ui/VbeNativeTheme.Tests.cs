@@ -1,9 +1,8 @@
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Windows.Forms;
-using VBAi;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace VBAi.Tests.Unit
 {
@@ -276,9 +275,12 @@ namespace VBAi.Tests.Unit
                     var previous = fixture.Palette;
                     Assert.IsFalse((bool)NativeThemeFixture.PaletteField(previous, "requested"));
                     Assert.AreEqual(IntPtr.Zero, fixture.Read("immediateWindow"));
-                    var vbe = new NativeThemeVbe { Windows = new object[] {
+                    var vbe = new NativeThemeVbe
+                    {
+                        Windows = new object[] {
                         new NativeThemePane { Type = 1 }, new NativeThemePane { Type = 5, HWnd = 99, Caption = "Synthetic immediate" },
-                        new NativeThemePane { Type = 5, HWnd = 100, Caption = "Ignored immediate" } } };
+                        new NativeThemePane { Type = 5, HWnd = 100, Caption = "Ignored immediate" } }
+                    };
                     VbeNativeTheme.Initialize(fixture.Handle, true, vbe);
                     Assert.IsTrue((bool)NativeThemeFixture.PaletteField(previous, "disposed"));
                     Assert.AreEqual(new IntPtr(99), fixture.Read("immediateWindow"));
@@ -606,7 +608,8 @@ namespace VBAi.Tests.Unit
                 fixture.State.Add("subclassedWindows", toolbar);
                 var original = VbeNativeTheme.ReadClassName;
                 int senderReads = 0, toolbarReads = 0;
-                VbeNativeTheme.ReadClassName = (window, text, capacity) => {
+                VbeNativeTheme.ReadClassName = (window, text, capacity) =>
+                {
                     if (window == sender) senderReads++;
                     if (window == toolbar) toolbarReads++;
                     return original(window, text, capacity);
@@ -748,9 +751,14 @@ namespace VBAi.Tests.Unit
                 {
                     foreach (int guard in new[] { 0, 1, 2, 3, 4, 5 })
                     {
-                        var item = new VbeNativeTheme.NativeDrawItem { ControlType = guard == 0 ? 1u : 2u,
-                            Window = guard == 1 ? other : list, DeviceContext = guard == 2 ? IntPtr.Zero : dc,
-                            Action = guard == 3 ? 0u : 1u, Bounds = new VbeNativeTheme.NativeRect { Right = 4, Bottom = 4 } };
+                        var item = new VbeNativeTheme.NativeDrawItem
+                        {
+                            ControlType = guard == 0 ? 1u : 2u,
+                            Window = guard == 1 ? other : list,
+                            DeviceContext = guard == 2 ? IntPtr.Zero : dc,
+                            Action = guard == 3 ? 0u : 1u,
+                            Bounds = new VbeNativeTheme.NativeRect { Right = 4, Bottom = 4 }
+                        };
                         IntPtr memory = Marshal.AllocHGlobal(Marshal.SizeOf(typeof(VbeNativeTheme.NativeDrawItem)));
                         try
                         {

@@ -1,10 +1,10 @@
-using System;
-using System.IO;
-using System.Collections.Generic;
-using System.IO.MemoryMappedFiles;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
-using Fixture = VBAi.Tests.Unit.VbaTestWordValuesHostTests.Fixture;
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.IO.MemoryMappedFiles;
 using Document = VBAi.Tests.Unit.VbaTestWordValuesHostTests.Document;
+using Fixture = VBAi.Tests.Unit.VbaTestWordValuesHostTests.Fixture;
 
 namespace VBAi.Tests.Unit
 {
@@ -19,12 +19,14 @@ namespace VBAi.Tests.Unit
             {
                 var acquired = new Dictionary<object, int>();
                 var read = fixture.Host.ReadDocumentItem;
-                fixture.Host.ReadDocumentItem = (documents, index) => {
+                fixture.Host.ReadDocumentItem = (documents, index) =>
+                {
                     object value = read(documents, index);
                     Increment(acquired, value); return value;
                 };
                 Document copy = null;
-                fixture.Application.Documents.OnOpen = path => {
+                fixture.Application.Documents.OnOpen = path =>
+                {
                     copy = new Document { FullName = path, Application = fixture.Application };
                     Increment(acquired, copy); // Documents.Open transfers its own acquisition.
                     return copy;
@@ -65,39 +67,40 @@ namespace VBAi.Tests.Unit
         public void UnverifiedOpenAndCloseKeepLongLivedAcquisitionsWithoutRetry()
         {
             foreach (bool failOpen in new[] { false, true })
-            using (var fixture = new Fixture(ownsApplication: true))
-            using (var releases = new WordReleaseRecorder())
-            {
-                Document copy = null;
-                fixture.Application.Documents.OnOpen = path => {
-                    if (failOpen) throw new InvalidOperationException("Native open uncertain");
-                    return copy = new Document { FullName = path, Application = fixture.Application, CancelClose = true };
-                };
-                var acquired = new Dictionary<object, int>();
-                var read = fixture.Host.ReadDocumentItem;
-                fixture.Host.ReadDocumentItem = (documents, index) => { var value = read(documents, index); Increment(acquired, value); return value; };
-                var provider = new VbaTestWordCoverageClone { Host = fixture.Host };
-                string folder = Path.Combine(fixture.Folder, "Copy");
-                if (failOpen)
+                using (var fixture = new Fixture(ownsApplication: true))
+                using (var releases = new WordReleaseRecorder())
                 {
-                    Assert.IsTrue(Assert.ThrowsException<VbaTestInvocationException>(() => provider.Create(fixture.Source.VBProject, fixture.Source.FullName, folder)).Uncertain);
-                    Assert.AreEqual(acquired[fixture.Source] - 1, releases.Count(fixture.Source));
-                    Assert.AreEqual(fixture.Reads - 1, releases.Count(fixture.Application));
+                    Document copy = null;
+                    fixture.Application.Documents.OnOpen = path =>
+                    {
+                        if (failOpen) throw new InvalidOperationException("Native open uncertain");
+                        return copy = new Document { FullName = path, Application = fixture.Application, CancelClose = true };
+                    };
+                    var acquired = new Dictionary<object, int>();
+                    var read = fixture.Host.ReadDocumentItem;
+                    fixture.Host.ReadDocumentItem = (documents, index) => { var value = read(documents, index); Increment(acquired, value); return value; };
+                    var provider = new VbaTestWordCoverageClone { Host = fixture.Host };
+                    string folder = Path.Combine(fixture.Folder, "Copy");
+                    if (failOpen)
+                    {
+                        Assert.IsTrue(Assert.ThrowsException<VbaTestInvocationException>(() => provider.Create(fixture.Source.VBProject, fixture.Source.FullName, folder)).Uncertain);
+                        Assert.AreEqual(acquired[fixture.Source] - 1, releases.Count(fixture.Source));
+                        Assert.AreEqual(fixture.Reads - 1, releases.Count(fixture.Application));
+                    }
+                    else
+                    {
+                        var clone = provider.Create(fixture.Source.VBProject, fixture.Source.FullName, folder);
+                        Assert.IsTrue(Assert.ThrowsException<VbaTestInvocationException>(() => clone.Dispose()).Uncertain);
+                        int released = releases.Total;
+                        clone.Dispose();
+                        Assert.AreEqual(released, releases.Total);
+                        Assert.AreEqual(1, copy.CloseCalls);
+                        Assert.IsTrue(releases.Count(copy) < acquired[copy], "Open, target and failed absence-probe acquisitions must remain leased.");
+                        Assert.IsTrue(releases.Count(fixture.Application) < fixture.Reads);
+                    }
+                    Assert.AreEqual(1, fixture.Application.Documents.OpenCalls);
+                    Assert.AreEqual(0, fixture.Source.CloseCalls);
                 }
-                else
-                {
-                    var clone = provider.Create(fixture.Source.VBProject, fixture.Source.FullName, folder);
-                    Assert.IsTrue(Assert.ThrowsException<VbaTestInvocationException>(() => clone.Dispose()).Uncertain);
-                    int released = releases.Total;
-                    clone.Dispose();
-                    Assert.AreEqual(released, releases.Total);
-                    Assert.AreEqual(1, copy.CloseCalls);
-                    Assert.IsTrue(releases.Count(copy) < acquired[copy], "Open, target and failed absence-probe acquisitions must remain leased.");
-                    Assert.IsTrue(releases.Count(fixture.Application) < fixture.Reads);
-                }
-                Assert.AreEqual(1, fixture.Application.Documents.OpenCalls);
-                Assert.AreEqual(0, fixture.Source.CloseCalls);
-            }
         }
 
         [TestMethod]
@@ -125,33 +128,33 @@ namespace VBAi.Tests.Unit
         public void ProbeOrOpenCollectionReleaseFailureRetainsReferencesWithoutMutationRetry()
         {
             foreach (bool failOpenRelease in new[] { false, true })
-            using (var fixture = new Fixture(ownsApplication: true))
-            using (var releases = new WordReleaseRecorder())
-            {
-                Document copy = null;
-                fixture.Application.Documents.OnOpen = path => copy = new Document { FullName = path, Application = fixture.Application };
-                releases.ThrowReference = fixture.Application.Documents;
-                // Resolve source, initial path probe, two validations, then Documents.Open.
-                releases.ThrowNth = failOpenRelease ? 5 : 2;
-                var provider = new VbaTestWordCoverageClone { Host = fixture.Host };
-                string folder = Path.Combine(fixture.Folder, "Copy");
-                if (failOpenRelease)
+                using (var fixture = new Fixture(ownsApplication: true))
+                using (var releases = new WordReleaseRecorder())
                 {
-                    Assert.IsTrue(Assert.ThrowsException<VbaTestInvocationException>(() => provider.Create(fixture.Source.VBProject, fixture.Source.FullName, folder)).Uncertain);
-                    Assert.AreEqual(0, releases.Count(copy));
-                    Assert.IsTrue(fixture.Application.Documents.Contains(copy));
-                    Assert.AreEqual(1, fixture.Application.Documents.OpenCalls);
-                    Assert.AreEqual(0, copy.CloseCalls);
+                    Document copy = null;
+                    fixture.Application.Documents.OnOpen = path => copy = new Document { FullName = path, Application = fixture.Application };
+                    releases.ThrowReference = fixture.Application.Documents;
+                    // Resolve source, initial path probe, two validations, then Documents.Open.
+                    releases.ThrowNth = failOpenRelease ? 5 : 2;
+                    var provider = new VbaTestWordCoverageClone { Host = fixture.Host };
+                    string folder = Path.Combine(fixture.Folder, "Copy");
+                    if (failOpenRelease)
+                    {
+                        Assert.IsTrue(Assert.ThrowsException<VbaTestInvocationException>(() => provider.Create(fixture.Source.VBProject, fixture.Source.FullName, folder)).Uncertain);
+                        Assert.AreEqual(0, releases.Count(copy));
+                        Assert.IsTrue(fixture.Application.Documents.Contains(copy));
+                        Assert.AreEqual(1, fixture.Application.Documents.OpenCalls);
+                        Assert.AreEqual(0, copy.CloseCalls);
+                    }
+                    else
+                    {
+                        Assert.ThrowsException<InvalidOperationException>(() => provider.Create(fixture.Source.VBProject, fixture.Source.FullName, folder));
+                        Assert.AreEqual(0, fixture.Application.Documents.OpenCalls);
+                        Assert.IsFalse(Directory.Exists(folder));
+                        Assert.AreEqual(fixture.Reads, releases.Count(fixture.Application));
+                    }
+                    Assert.AreEqual(0, fixture.Source.CloseCalls);
                 }
-                else
-                {
-                    Assert.ThrowsException<InvalidOperationException>(() => provider.Create(fixture.Source.VBProject, fixture.Source.FullName, folder));
-                    Assert.AreEqual(0, fixture.Application.Documents.OpenCalls);
-                    Assert.IsFalse(Directory.Exists(folder));
-                    Assert.AreEqual(fixture.Reads, releases.Count(fixture.Application));
-                }
-                Assert.AreEqual(0, fixture.Source.CloseCalls);
-            }
         }
         [TestMethod]
         public void NegativeDocumentCountAfterCloseIsUncertainAndDoesNotRetry()
@@ -160,9 +163,14 @@ namespace VBAi.Tests.Unit
             {
                 Document copy = null;
                 fixture.Application.Documents.OnOpen = path => copy = new Document { FullName = path, Application = fixture.Application };
-                var provider = new VbaTestWordCoverageClone { Host = fixture.Host, CloseCopy = document => {
-                    ((Document)document).Close(0); fixture.Application.Documents.CountOverride = -1;
-                } };
+                var provider = new VbaTestWordCoverageClone
+                {
+                    Host = fixture.Host,
+                    CloseCopy = document =>
+                    {
+                        ((Document)document).Close(0); fixture.Application.Documents.CountOverride = -1;
+                    }
+                };
                 var clone = provider.Create(fixture.Source.VBProject, fixture.Source.FullName, Path.Combine(fixture.Folder, "Copy"));
                 var error = Assert.ThrowsException<VbaTestInvocationException>(() => clone.Dispose());
                 Assert.IsTrue(error.Uncertain);
@@ -194,30 +202,30 @@ namespace VBAi.Tests.Unit
         public void DefaultFileCopyAndOpenPreserveAllFourSavedFormatsAndOriginalBytes()
         {
             foreach (string extension in new[] { ".docm", ".dotm", ".doc", ".dot" })
-            using (var fixture = new Fixture(extension))
-            {
-                fixture.Application.Documents.OnOpen = path => new Document { FullName = path, Application = fixture.Application };
-                var provider = new VbaTestWordCoverageClone { Host = fixture.Host };
-                string original = fixture.Source.FullName, bytes = File.ReadAllText(original);
-                var clone = provider.Create(fixture.Source.VBProject, original, Path.Combine(fixture.Folder, "Copy"));
-                Assert.AreEqual(extension, Path.GetExtension(clone.Path));
-                Assert.AreEqual(bytes, File.ReadAllText(clone.Path));
-                Assert.AreEqual(bytes, File.ReadAllText(original));
-                Assert.AreEqual(original, fixture.Source.FullName);
-                Assert.AreEqual(0, fixture.Source.SaveCalls + fixture.Source.SaveAsCalls);
-                Assert.IsFalse(fixture.Application.Documents.LastRecent);
-                Assert.IsFalse(fixture.Application.Documents.LastReadOnly);
-                Assert.IsFalse(fixture.Application.Documents.LastVisible);
-                Assert.IsFalse(fixture.Application.Documents.LastConversions);
-                Assert.IsFalse(fixture.Application.Documents.LastRevert);
-                Assert.IsFalse(fixture.Application.Documents.LastRepair);
-                var copy = fixture.Application.Documents[1];
-                clone.Dispose(); clone.Dispose();
-                Assert.AreEqual(1, copy.CloseCalls);
-                Assert.AreEqual(0, copy.LastSaveChanges);
-                Assert.AreEqual(1, fixture.Application.Documents.Count);
-                Assert.AreEqual(0, fixture.Source.CloseCalls);
-            }
+                using (var fixture = new Fixture(extension))
+                {
+                    fixture.Application.Documents.OnOpen = path => new Document { FullName = path, Application = fixture.Application };
+                    var provider = new VbaTestWordCoverageClone { Host = fixture.Host };
+                    string original = fixture.Source.FullName, bytes = File.ReadAllText(original);
+                    var clone = provider.Create(fixture.Source.VBProject, original, Path.Combine(fixture.Folder, "Copy"));
+                    Assert.AreEqual(extension, Path.GetExtension(clone.Path));
+                    Assert.AreEqual(bytes, File.ReadAllText(clone.Path));
+                    Assert.AreEqual(bytes, File.ReadAllText(original));
+                    Assert.AreEqual(original, fixture.Source.FullName);
+                    Assert.AreEqual(0, fixture.Source.SaveCalls + fixture.Source.SaveAsCalls);
+                    Assert.IsFalse(fixture.Application.Documents.LastRecent);
+                    Assert.IsFalse(fixture.Application.Documents.LastReadOnly);
+                    Assert.IsFalse(fixture.Application.Documents.LastVisible);
+                    Assert.IsFalse(fixture.Application.Documents.LastConversions);
+                    Assert.IsFalse(fixture.Application.Documents.LastRevert);
+                    Assert.IsFalse(fixture.Application.Documents.LastRepair);
+                    var copy = fixture.Application.Documents[1];
+                    clone.Dispose(); clone.Dispose();
+                    Assert.AreEqual(1, copy.CloseCalls);
+                    Assert.AreEqual(0, copy.LastSaveChanges);
+                    Assert.AreEqual(1, fixture.Application.Documents.Count);
+                    Assert.AreEqual(0, fixture.Source.CloseCalls);
+                }
         }
 
         [TestMethod]
@@ -244,45 +252,53 @@ namespace VBAi.Tests.Unit
         public void ReturnedOriginalSharedProjectOrWrongPathIsNeverClosed()
         {
             foreach (string fault in new[] { "null", "original", "project", "path" })
-            using (var fixture = new Fixture())
-            {
-                Document returned = null;
-                fixture.Application.Documents.OnOpen = path => returned = fault == "null" ? null : fault == "original" ? fixture.Source : new Document {
-                    FullName = fault == "path" ? fixture.Source.FullName : path, Application = fixture.Application,
-                    VBProject = fault == "project" ? fixture.Source.VBProject : new object() };
-                var provider = new VbaTestWordCoverageClone { Host = fixture.Host };
-                var error = Assert.ThrowsException<VbaTestInvocationException>(() => provider.Create(fixture.Source.VBProject, fixture.Source.FullName, Path.Combine(fixture.Folder, "Copy")));
-                Assert.IsTrue(error.Uncertain, fault);
-                Assert.AreEqual(1, fixture.Application.Documents.OpenCalls, fault);
-                Assert.AreEqual(0, returned?.CloseCalls ?? 0, fault);
-                Assert.AreEqual(0, fixture.Source.CloseCalls);
-            }
+                using (var fixture = new Fixture())
+                {
+                    Document returned = null;
+                    fixture.Application.Documents.OnOpen = path => returned = fault == "null" ? null : fault == "original" ? fixture.Source : new Document
+                    {
+                        FullName = fault == "path" ? fixture.Source.FullName : path,
+                        Application = fixture.Application,
+                        VBProject = fault == "project" ? fixture.Source.VBProject : new object()
+                    };
+                    var provider = new VbaTestWordCoverageClone { Host = fixture.Host };
+                    var error = Assert.ThrowsException<VbaTestInvocationException>(() => provider.Create(fixture.Source.VBProject, fixture.Source.FullName, Path.Combine(fixture.Folder, "Copy")));
+                    Assert.IsTrue(error.Uncertain, fault);
+                    Assert.AreEqual(1, fixture.Application.Documents.OpenCalls, fault);
+                    Assert.AreEqual(0, returned?.CloseCalls ?? 0, fault);
+                    Assert.AreEqual(0, fixture.Source.CloseCalls);
+                }
         }
 
         [TestMethod]
         public void PostOpenHostSourceAndCollectionFailuresAreUncertainAndRetainTheCopy()
         {
             foreach (string fault in new[] { "pid", "source", "collection" })
-            using (var fixture = new Fixture())
-            {
-                Document copy = null;
-                fixture.Application.Documents.OnOpen = path => copy = new Document { FullName = path, Application = fixture.Application };
-                var provider = new VbaTestWordCoverageClone { Host = fixture.Host, OpenCopy = (application, path) => {
-                    var returned = fixture.Application.Documents.Open(path, false, false, false, false, false, false);
-                    if (fault == "pid") fixture.Host.ReadWindowOwner = hwnd => 999;
-                    if (fault == "source") fixture.Source.FullName = Path.Combine(fixture.Folder, "Changed.docm");
-                    if (fault == "collection") fixture.Application.Documents.Remove(returned);
-                    return returned;
-                } };
-                string folder = Path.Combine(fixture.Folder, "Copy");
-                var error = Assert.ThrowsException<VbaTestInvocationException>(() => provider.Create(fixture.Source.VBProject, fixture.Source.FullName, folder));
-                Assert.IsTrue(error.Uncertain, fault);
-                Assert.AreEqual(1, fixture.Application.Documents.OpenCalls, fault);
-                Assert.AreEqual(0, copy.CloseCalls, fault);
-                Assert.AreEqual(0, fixture.Source.CloseCalls, fault);
-                Assert.IsTrue(File.Exists(Path.Combine(folder, "coverage.docm")), fault);
-                StringAssert.Contains(error.Message, "Retained copy:");
-            }
+                using (var fixture = new Fixture())
+                {
+                    Document copy = null;
+                    fixture.Application.Documents.OnOpen = path => copy = new Document { FullName = path, Application = fixture.Application };
+                    var provider = new VbaTestWordCoverageClone
+                    {
+                        Host = fixture.Host,
+                        OpenCopy = (application, path) =>
+                        {
+                            var returned = fixture.Application.Documents.Open(path, false, false, false, false, false, false);
+                            if (fault == "pid") fixture.Host.ReadWindowOwner = hwnd => 999;
+                            if (fault == "source") fixture.Source.FullName = Path.Combine(fixture.Folder, "Changed.docm");
+                            if (fault == "collection") fixture.Application.Documents.Remove(returned);
+                            return returned;
+                        }
+                    };
+                    string folder = Path.Combine(fixture.Folder, "Copy");
+                    var error = Assert.ThrowsException<VbaTestInvocationException>(() => provider.Create(fixture.Source.VBProject, fixture.Source.FullName, folder));
+                    Assert.IsTrue(error.Uncertain, fault);
+                    Assert.AreEqual(1, fixture.Application.Documents.OpenCalls, fault);
+                    Assert.AreEqual(0, copy.CloseCalls, fault);
+                    Assert.AreEqual(0, fixture.Source.CloseCalls, fault);
+                    Assert.IsTrue(File.Exists(Path.Combine(folder, "coverage.docm")), fault);
+                    StringAssert.Contains(error.Message, "Retained copy:");
+                }
         }
 
         [TestMethod]
@@ -443,25 +459,27 @@ namespace VBAi.Tests.Unit
         public void UnsavedContentAfterCopyOrOpenIsUncertainAndNeverDispatchesOrCloses()
         {
             foreach (string phase in new[] { "copy", "open" })
-            using (var fixture = new Fixture())
-            {
-                var provider = new VbaTestWordCoverageClone { Host = fixture.Host };
-                Document copy = null;
-                if (phase == "copy") provider.CopySavedFile = (source, destination) => {
-                    File.Copy(source, destination); fixture.Source.Saved = false;
-                };
-                fixture.Application.Documents.OnOpen = path => {
-                    fixture.Source.Saved = false;
-                    return copy = new Document { FullName = path, Application = fixture.Application };
-                };
-                string folder = Path.Combine(fixture.Folder, "Copy");
-                var error = Assert.ThrowsException<VbaTestInvocationException>(() => provider.Create(fixture.Source.VBProject, fixture.Source.FullName, folder));
-                Assert.IsTrue(error.Uncertain, phase);
-                Assert.AreEqual(phase == "copy" ? 0 : 1, fixture.Application.Documents.OpenCalls);
-                Assert.IsTrue(File.Exists(Path.Combine(folder, "coverage.docm")));
-                Assert.AreEqual(0, copy?.CloseCalls ?? 0);
-                Assert.AreEqual(0, fixture.Source.SaveCalls + fixture.Source.SaveAsCalls + fixture.Source.CloseCalls);
-            }
+                using (var fixture = new Fixture())
+                {
+                    var provider = new VbaTestWordCoverageClone { Host = fixture.Host };
+                    Document copy = null;
+                    if (phase == "copy") provider.CopySavedFile = (source, destination) =>
+                    {
+                        File.Copy(source, destination); fixture.Source.Saved = false;
+                    };
+                    fixture.Application.Documents.OnOpen = path =>
+                    {
+                        fixture.Source.Saved = false;
+                        return copy = new Document { FullName = path, Application = fixture.Application };
+                    };
+                    string folder = Path.Combine(fixture.Folder, "Copy");
+                    var error = Assert.ThrowsException<VbaTestInvocationException>(() => provider.Create(fixture.Source.VBProject, fixture.Source.FullName, folder));
+                    Assert.IsTrue(error.Uncertain, phase);
+                    Assert.AreEqual(phase == "copy" ? 0 : 1, fixture.Application.Documents.OpenCalls);
+                    Assert.IsTrue(File.Exists(Path.Combine(folder, "coverage.docm")));
+                    Assert.AreEqual(0, copy?.CloseCalls ?? 0);
+                    Assert.AreEqual(0, fixture.Source.SaveCalls + fixture.Source.SaveAsCalls + fixture.Source.CloseCalls);
+                }
         }
         [TestMethod]
         public void ExistingDirectoryAndOpenCopyPathAreRejectedBeforeCopying()
@@ -483,42 +501,47 @@ namespace VBAi.Tests.Unit
         public void InconsistentCopyIdentityCannotBeAcceptedOrCloseTheOriginal()
         {
             foreach (string fault in new[] { "verify", "close" })
-            using (var f = new Fixture())
-            {
-                Document copy = null;
-                f.Application.Documents.OnOpen = path => copy = new Document { FullName = path, Application = f.Application };
-                var provider = new VbaTestWordCoverageClone { Host = f.Host };
-                if (fault == "verify")
+                using (var f = new Fixture())
                 {
-                    f.Host.SameIdentity = (a, b) => !(ReferenceEquals(a, copy) && ReferenceEquals(b, copy) && copy != null) && ReferenceEquals(a, b);
-                    Assert.IsTrue(Assert.ThrowsException<VbaTestInvocationException>(() => provider.Create(f.Source.VBProject, f.Source.FullName, Path.Combine(f.Folder, "Copy"))).Uncertain);
+                    Document copy = null;
+                    f.Application.Documents.OnOpen = path => copy = new Document { FullName = path, Application = f.Application };
+                    var provider = new VbaTestWordCoverageClone { Host = f.Host };
+                    if (fault == "verify")
+                    {
+                        f.Host.SameIdentity = (a, b) => !(ReferenceEquals(a, copy) && ReferenceEquals(b, copy) && copy != null) && ReferenceEquals(a, b);
+                        Assert.IsTrue(Assert.ThrowsException<VbaTestInvocationException>(() => provider.Create(f.Source.VBProject, f.Source.FullName, Path.Combine(f.Folder, "Copy"))).Uncertain);
+                    }
+                    else
+                    {
+                        var clone = provider.Create(f.Source.VBProject, f.Source.FullName, Path.Combine(f.Folder, "Copy"));
+                        f.Host.SameIdentity = (a, b) => ReferenceEquals(a, b) || (ReferenceEquals(a, copy) && ReferenceEquals(b, f.Source));
+                        Assert.ThrowsException<InvalidOperationException>(() => clone.Dispose());
+                    }
+                    Assert.AreEqual(0, f.Source.CloseCalls); Assert.AreEqual(0, copy.CloseCalls);
                 }
-                else
-                {
-                    var clone = provider.Create(f.Source.VBProject, f.Source.FullName, Path.Combine(f.Folder, "Copy"));
-                    f.Host.SameIdentity = (a, b) => ReferenceEquals(a, b) || (ReferenceEquals(a, copy) && ReferenceEquals(b, f.Source));
-                    Assert.ThrowsException<InvalidOperationException>(() => clone.Dispose());
-                }
-                Assert.AreEqual(0, f.Source.CloseCalls); Assert.AreEqual(0, copy.CloseCalls);
-            }
         }
 
         [TestMethod]
         public void CloseRechecksApplicationAndBoundsRemainingDocuments()
         {
             foreach (bool replaced in new[] { false, true })
-            using (var f = new Fixture())
-            {
-                f.Application.Documents.OnOpen = path => new Document { FullName = path, Application = f.Application };
-                var provider = new VbaTestWordCoverageClone { Host = f.Host, CloseCopy = copy => {
-                    f.Application.Documents.Remove((Document)copy);
-                    if (replaced) f.Host.ReadActiveApplication = _ => new VbaTestWordValuesHostTests.Application();
-                    else for (int i = 0; i < 1000; i++) f.Application.Documents.Add(new Document());
-                } };
-                var clone = provider.Create(f.Source.VBProject, f.Source.FullName, Path.Combine(f.Folder, "Copy"));
-                Assert.IsTrue(Assert.ThrowsException<VbaTestInvocationException>(() => clone.Dispose()).Uncertain);
-                Assert.AreEqual(0, f.Source.CloseCalls);
-            }
+                using (var f = new Fixture())
+                {
+                    f.Application.Documents.OnOpen = path => new Document { FullName = path, Application = f.Application };
+                    var provider = new VbaTestWordCoverageClone
+                    {
+                        Host = f.Host,
+                        CloseCopy = copy =>
+                        {
+                            f.Application.Documents.Remove((Document)copy);
+                            if (replaced) f.Host.ReadActiveApplication = _ => new VbaTestWordValuesHostTests.Application();
+                            else for (int i = 0; i < 1000; i++) f.Application.Documents.Add(new Document());
+                        }
+                    };
+                    var clone = provider.Create(f.Source.VBProject, f.Source.FullName, Path.Combine(f.Folder, "Copy"));
+                    Assert.IsTrue(Assert.ThrowsException<VbaTestInvocationException>(() => clone.Dispose()).Uncertain);
+                    Assert.AreEqual(0, f.Source.CloseCalls);
+                }
         }
 
     }

@@ -317,8 +317,17 @@ namespace VBAi
                 ulong size = major == 3 ? U32(position + 120) : U64(position + 120);
                 if ((kind == 2 || kind == 5) && size > (ulong)length) throw Invalid();
                 var metadata = new byte[20]; Buffer.BlockCopy(bytes, origin + position + 80, metadata, 0, metadata.Length);
-                return new Entry { Kind = kind, Name = name, Metadata = metadata, Left = U32(position + 68), Right = U32(position + 72),
-                    Child = U32(position + 76), Start = U32(position + 116), Size = (long)size };
+                return new Entry
+                {
+                    Kind = kind,
+                    Name = name,
+                    Metadata = metadata,
+                    Left = U32(position + 68),
+                    Right = U32(position + 72),
+                    Child = U32(position + 76),
+                    Start = U32(position + 116),
+                    Size = (long)size
+                };
             }
 
             /// <summary>Follows a FAT chain, claiming each sector and enforcing its expected length when known.</summary>

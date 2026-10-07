@@ -1,9 +1,7 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Windows;
-using System.Windows.Controls;
 using System.Windows.Threading;
 
 namespace VBAi
@@ -231,10 +229,12 @@ namespace VBAi
             {
                 sessionStore = OpenHistory(HistoryPath());
                 var dispatcher = Dispatcher.CurrentDispatcher;
-                persistenceWorker = new ChatPersistenceWorker(sessionStore.DatabasePath, (snapshot, version, error) => {
+                persistenceWorker = new ChatPersistenceWorker(sessionStore.DatabasePath, (snapshot, version, error) =>
+                {
                     if (error != null) LoadLog.Write("Chat history persistence failed: " + error.GetType().Name);
                     if (dispatcher.HasShutdownStarted) return;
-                    dispatcher.BeginInvoke(new Action(() => {
+                    dispatcher.BeginInvoke(new Action(() =>
+                    {
                         if (runtimeDisposed || IsDisposed) return;
                         if (error != null)
                         {
@@ -258,9 +258,9 @@ namespace VBAi
             catch (Exception ex) { storageFailed = true; SetStatus(UiText.Get("History not saved: ") + ex.Message); }
             var projects = PopulateProjectScopes(session);
             scopePicker.SelectedIndexChanged += (s, e) => ChangeScope();
-            sessionList.SelectedIndexChanged += (s, e) => {
-                var selected = sessionList.SelectedItem as ChatSessionState;
-                if (!loadingSession && selected != null && selected != currentSession && !busy) ActivateSession(selected);
+            sessionList.SelectedIndexChanged += (s, e) =>
+            {
+                if (!loadingSession && sessionList.SelectedItem is ChatSessionState selected && selected != currentSession && !busy) ActivateSession(selected);
                 UpdateDeleteSessionButton();
             };
             historySearch.TextChanged += (s, e) => ScheduleHistorySearch();
@@ -271,9 +271,7 @@ namespace VBAi
                 var state = ReadHost(session, new Request { Command = "debug_state", Project = first.Project });
                 if (state.Ok)
                 {
-                    var data = json.DeserializeObject(json.Serialize(state.Data)) as IDictionary<string, object>;
-                    object active;
-                    if (data != null && data.TryGetValue("SelectedProject", out active))
+                    if (json.DeserializeObject(json.Serialize(state.Data)) is IDictionary<string, object> data && data.TryGetValue("SelectedProject", out object active))
                         for (int i = 0; i < scopePicker.Items.Count; i++)
                         {
                             var candidate = (MacroScope)scopePicker.Items[i];
@@ -291,7 +289,8 @@ namespace VBAi
                 send.Enabled = false;
                 SetStatus(projects.Ok ? UiText.Get("Open a VBA project to start a conversation.") : projects.Error);
                 projectRetryTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(2) };
-                projectRetryTimer.Tick += (s, e) => {
+                projectRetryTimer.Tick += (s, e) =>
+                {
                     if (IsDisposed) { projectRetryTimer.Stop(); return; }
                     try { if (scopePicker.Items.Count == 0) PopulateProjectScopes(session); }
                     catch (Exception ex) { LoadLog.Write("Chat project discovery retry failed: " + ex.Message); return; }
@@ -311,16 +310,15 @@ namespace VBAi
         {
             var projects = ReadHost(session, new Request { Command = "list_projects" });
             if (!projects.Ok) return projects;
-            var values = json.DeserializeObject(json.Serialize(projects.Data)) as object[];
-            if (values == null) return projects;
+            if (!(json.DeserializeObject(json.Serialize(projects.Data)) is object[] values)) return projects;
             foreach (var raw in values)
             {
-                var project = raw as IDictionary<string, object>;
-                if (project == null) continue;
+                if (!(raw is IDictionary<string, object> project)) continue;
                 string name = Convert.ToString(project["Name"]);
                 string path = VbeProjectHostPath.FromFields(project);
                 bool saved = !string.IsNullOrWhiteSpace(path) && Path.IsPathRooted(path);
-                var scope = new MacroScope {
+                var scope = new MacroScope
+                {
                     Project = saved ? Path.GetFullPath(path) : name,
                     Name = name,
                     Key = saved ? Path.GetFullPath(path).ToUpperInvariant() : "temporary:" + Guid.NewGuid().ToString("N"),
@@ -344,8 +342,7 @@ namespace VBAi
         private async System.Threading.Tasks.Task ChangeScopeAsync()
         {
             if (busy || loadingSession || runtimeDisposed || IsDisposed) return;
-            var scope = scopePicker.SelectedItem as MacroScope;
-            if (scope == null) return;
+            if (!(scopePicker.SelectedItem is MacroScope scope)) return;
             SaveCurrentSession();
             if (currentSession != null) cachedScopes[currentSession.Scope] = scopeSessions.ToList();
             cachedScopes.TryGetValue(scope.Key, out var cached);
@@ -492,7 +489,7 @@ namespace VBAi
         /// <returns>task produced by the operation for delete selected session async on chat window.</returns>
         private async System.Threading.Tasks.Task DeleteSelectedSessionAsync()
         {
-            var selected = sessionList.SelectedItem as ChatSessionState;
+            if (!(sessionList.SelectedItem is ChatSessionState selected)) return;
             if (busy || loadingSession || loadingScope || runtimeDisposed || IsDisposed || selected == null ||
                 (!ChatSessionStore.IsTransientScope(selected.Scope) && sessionStore == null)) return;
             if (ShowNotice(this, string.Format(UiText.Get("Delete conversation \"{0}\" from local history? This cannot be undone."), selected.DisplayTitle),
@@ -579,7 +576,8 @@ namespace VBAi
             if (runtimeDisposed || IsDisposed) return;
             if (historySearchTimer == null)
             {
-                historySearchTimer = new DispatcherTimer(DispatcherPriority.Background) {
+                historySearchTimer = new DispatcherTimer(DispatcherPriority.Background)
+                {
                     Interval = TimeSpan.FromMilliseconds(200)
                 };
                 historySearchTimer.Tick += (sender, args) => RefreshHistory();
@@ -625,9 +623,12 @@ namespace VBAi
                 if (ChatSessionStore.IsTransientScope(currentSession.Scope))
                 {
                     LoadLog.Write("Temporary conversation snapshot failed without creating disk recovery: " + ex.GetType().Name);
-                    try { SetStatus(UiText.Get((scopePicker.SelectedItem as MacroScope)?.FirstSavedPath == null
+                    try
+                    {
+                        SetStatus(UiText.Get((scopePicker.SelectedItem as MacroScope)?.FirstSavedPath == null
                         ? "Temporary document: VBAi history and project notes stay in memory until the document is saved."
-                        : "Local history is kept in memory because storage is unavailable.")); }
+                        : "Local history is kept in memory because storage is unavailable."));
+                    }
                     catch { }
                     return;
                 }
@@ -638,8 +639,15 @@ namespace VBAi
                     string recovery = (sessionStore?.DatabasePath ?? HistoryPath()) + ".recovery";
                     // Preserve plain text even when an activity/card cannot be serialized. No tool replay.
                     string payload = new System.Web.Script.Serialization.JavaScriptSerializer { MaxJsonLength = 64 * 1024 * 1024 }
-                        .Serialize(new { FormatVersion = 1, RecoveryKind = "draft-text", currentSession.Id, currentSession.Scope,
-                            Draft = prompt.Text, Entries = transcriptEntries.Select(entry => new { entry.Speaker, entry.Text }).ToArray() });
+                        .Serialize(new
+                        {
+                            FormatVersion = 1,
+                            RecoveryKind = "draft-text",
+                            currentSession.Id,
+                            currentSession.Scope,
+                            Draft = prompt.Text,
+                            Entries = transcriptEntries.Select(entry => new { entry.Speaker, entry.Text }).ToArray()
+                        });
                     UpdatePaths.WriteAtomic(Path.Combine(recovery, "capture-" + Guid.NewGuid().ToString("N") + ".json"), payload);
                 }
                 catch (Exception recoveryError) { LoadLog.Write("Chat emergency recovery failed: " + recoveryError.GetType().Name); }
@@ -654,8 +662,7 @@ namespace VBAi
         private void NewSession(string provider = null)
         {
             if (busy || loadingScope || settings == null) return;
-            var scope = scopePicker.SelectedItem as MacroScope;
-            if (scope == null) return;
+            if (!(scopePicker.SelectedItem is MacroScope scope)) return;
             SaveCurrentSession();
             var session = new ChatSessionState { Scope = scope.Key, Provider = provider ?? settings.ProviderName };
             scopeSessions.Insert(0, session);
@@ -698,7 +705,7 @@ namespace VBAi
         /// <summary>Enregistre localement le texte de mémoire de la portée courante et actualise le contexte affiché.</summary>
         private void SaveProjectMemory()
         {
-            var scope = scopePicker.SelectedItem as MacroScope;
+            if (!(scopePicker.SelectedItem is MacroScope scope)) return;
             if (scope == null || busy || loadingScope) return;
             if (ChatSessionStore.IsTransientScope(scope.Key))
             {
@@ -770,16 +777,14 @@ namespace VBAi
             var pending = new HashSet<string>();
             for (int i = 0; i < messages.Count; i++)
             {
-                var item = messages[i] as IDictionary<string, object>;
-                if (item == null || !item.ContainsKey("role")) continue;
+                if (!(messages[i] is IDictionary<string, object> item)) continue;
+                if (!item.ContainsKey("role")) continue;
                 string role = Convert.ToString(item["role"]);
                 if (role == "user") { userIndex = i; pending.Clear(); }
-                object raw;
-                if (role == "assistant" && item.TryGetValue("tool_calls", out raw) && raw is object[])
-                    foreach (var value in (object[])raw)
+                if (role == "assistant" && item.TryGetValue("tool_calls", out object raw) && raw is object[] v)
+                    foreach (var value in v)
                     {
-                        var call = value as IDictionary<string, object>;
-                        if (call != null && call.ContainsKey("id")) pending.Add(Convert.ToString(call["id"]));
+                        if (value is IDictionary<string, object> call && call.ContainsKey("id")) pending.Add(Convert.ToString(call["id"]));
                     }
                 if (role == "tool" && item.ContainsKey("tool_call_id")) pending.Remove(Convert.ToString(item["tool_call_id"]));
             }

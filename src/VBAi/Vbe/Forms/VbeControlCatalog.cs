@@ -1,7 +1,7 @@
+using Microsoft.Win32;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using Microsoft.Win32;
 
 namespace VBAi
 {
@@ -26,8 +26,12 @@ namespace VBAi
                 result.Add(new { ProgId = progId, Source = "MSForms native", Hosting = "Built in" });
             foreach (string progId in InstalledControls().OrderBy(value => value, StringComparer.OrdinalIgnoreCase))
                 if (!nativeProgIds.Contains(progId, StringComparer.OrdinalIgnoreCase))
-                    result.Add(new { ProgId = progId, Source = "COM CATID_Control x64",
-                        Hosting = "Unverified until Controls.Add succeeds" });
+                    result.Add(new
+                    {
+                        ProgId = progId,
+                        Source = "COM CATID_Control x64",
+                        Hosting = "Unverified until Controls.Add succeeds"
+                    });
             return result;
         }
 

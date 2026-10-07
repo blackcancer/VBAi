@@ -1,12 +1,11 @@
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
-using VBAi;
 using VBAi.Tests.Infrastructure;
 using VBAi.Tests.Unit.Editor;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace VBAi.Tests.Scenarios.Editor
 {
@@ -49,14 +48,16 @@ namespace VBAi.Tests.Scenarios.Editor
                 f.Ready(true); f.Native.Project.Mode = 1;
                 var snapshots = new TaskCompletionSource<string>();
                 int snapshotCount = 0;
-                f.Window.ScriptExecution = (method, values) => {
+                f.Window.ScriptExecution = (method, values) =>
+                {
                     f.Scripts.Add(Tuple.Create(method, values));
                     return method == "snapshots" && ++snapshotCount == 2 ? snapshots.Task : Task.FromResult("null");
                 };
                 Task queued = null;
                 var toggle = f.Command(51, "Toggle Breakpoint");
                 var observation = f.Command(1813, "Show Next Statement");
-                var step = f.Command(188, "Step Into", () => {
+                var step = f.Command(188, "Step Into", () =>
+                {
                     f.Native.Original.CodeModule.CodePane.SetSelection(4, 1, 4, 1);
                     var type = typeof(ModernEditorWindow).GetNestedType("EditorMessage", BindingFlags.NonPublic);
                     var message = Activator.CreateInstance(type, true);

@@ -78,10 +78,15 @@ namespace VBAi
         /// <exception cref="OperationCanceledException">L’annulation est demandée.</exception>
         private Task<string> Execute(string arguments, CancellationToken cancellation)
         {
-            return Task.Run(async () => {
+            return Task.Run(async () =>
+            {
                 cancellation.ThrowIfCancellationRequested();
-                var start = new ProcessStartInfo("git.exe", arguments) {
-                    UseShellExecute = false, CreateNoWindow = true, RedirectStandardOutput = true, RedirectStandardError = true
+                var start = new ProcessStartInfo("git.exe", arguments)
+                {
+                    UseShellExecute = false,
+                    CreateNoWindow = true,
+                    RedirectStandardOutput = true,
+                    RedirectStandardError = true
                 };
                 using (var process = new Process { StartInfo = start })
                 {

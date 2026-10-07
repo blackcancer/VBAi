@@ -1,9 +1,9 @@
 namespace VBAi.Tests.Unit
 {
+    using Microsoft.VisualStudio.TestTools.UnitTesting;
     using System;
     using System.Threading;
     using System.Windows.Forms;
-    using Microsoft.VisualStudio.TestTools.UnitTesting;
 
     /// <summary>Exécute le scénario avec une boucle de messages WinForms sur son propre thread STA.</summary>
     internal sealed class WinFormsTestMethodAttribute : TestMethodAttribute
@@ -15,18 +15,21 @@ namespace VBAi.Tests.Unit
         {
             TestResult[] results = null;
             Exception failure = null;
-            var thread = new Thread(() => {
+            var thread = new Thread(() =>
+            {
                 using (var dispatcher = new Control())
                 {
                     dispatcher.CreateControl();
-                    dispatcher.BeginInvoke(new Action(() => {
+                    dispatcher.BeginInvoke(new Action(() =>
+                    {
                         try { results = base.Execute(testMethod); }
                         catch (Exception ex) { failure = ex; }
                         finally { Application.ExitThread(); }
                     }));
                     Application.Run();
                 }
-            }) { IsBackground = true };
+            })
+            { IsBackground = true };
             thread.SetApartmentState(ApartmentState.STA);
             thread.Start();
             if (!thread.Join(TimeSpan.FromMinutes(2))) throw new TimeoutException("Disposable WinForms test thread timed out.");

@@ -54,7 +54,8 @@ namespace VBAi
             bool write = name == "set_project_general";
             string originalBinding = BoundProject;
             string[] originalReadGrants = readProjectGrants.ToArray();
-            request.RevalidateProjectPropertyAuthorization = live => {
+            request.RevalidateProjectPropertyAuthorization = live =>
+            {
                 if (live) ValidateScope?.Invoke(); else ValidateCachedScope?.Invoke();
                 GuardModeLocal(name);
                 if (!string.Equals(originalBinding, BoundProject, StringComparison.OrdinalIgnoreCase))
@@ -78,11 +79,16 @@ namespace VBAi
                 {
                     if (!write) return Response.Failure("Project access changed during native General inspection.");
                     var fields = Fields(result);
-                    bool invoked = fields != null && fields.TryGetValue("MutationInvoked", out object mutation) && mutation is bool && (bool)mutation;
-                    bool uncertain = invoked || (fields != null && fields.TryGetValue("Uncertain", out object pending) && pending is bool && (bool)pending);
-                    return Response.Success(new { Available = false, MutationInvoked = invoked,
-                        Uncertain = uncertain, RetryAllowed = false,
-                        Reason = "Project access changed during native General configuration. Inspect locally before another operation." });
+                    bool invoked = fields != null && fields.TryGetValue("MutationInvoked", out object mutation) && mutation is bool v && v;
+                    bool uncertain = invoked || (fields != null && fields.TryGetValue("Uncertain", out object pending) && pending is bool v1 && v1);
+                    return Response.Success(new
+                    {
+                        Available = false,
+                        MutationInvoked = invoked,
+                        Uncertain = uncertain,
+                        RetryAllowed = false,
+                        Reason = "Project access changed during native General configuration. Inspect locally before another operation."
+                    });
                 }
                 return Response.Success(result);
             }

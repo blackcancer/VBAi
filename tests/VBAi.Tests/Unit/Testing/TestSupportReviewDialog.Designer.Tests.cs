@@ -1,6 +1,6 @@
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System.Reflection;
 using System.Windows.Forms;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace VBAi.Tests.Unit
 {

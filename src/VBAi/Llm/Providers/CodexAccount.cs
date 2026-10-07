@@ -57,9 +57,13 @@ namespace VBAi
         /// <returns>Tâche qui fournit le statut de connexion ; elle échoue si la commande dépasse dix secondes.</returns>
         public static Task<CodexAccountStatus> ReadStatusAsync()
         {
-            return Task.Run(() => {
-                var info = new ProcessStartInfo(Executable, "login status") {
-                    UseShellExecute = false, CreateNoWindow = true, RedirectStandardOutput = true,
+            return Task.Run(() =>
+            {
+                var info = new ProcessStartInfo(Executable, "login status")
+                {
+                    UseShellExecute = false,
+                    CreateNoWindow = true,
+                    RedirectStandardOutput = true,
                     RedirectStandardError = true
                 };
                 ProviderSessionStorage.ConfigureCodex(info);

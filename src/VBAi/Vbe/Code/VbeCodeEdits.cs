@@ -24,10 +24,12 @@ namespace VBAi
         private bool replaying;
 
         /// <summary>Transition de source conservée dans l’historique local à la session.</summary>
-        private sealed class Entry {
+        private sealed class Entry
+        {
 
             /// <summary>Stores the project and module identity with complete source snapshots before and after the edit.</summary>
-            internal string Project, Module, Before, After; }
+            internal string Project, Module, Before, After;
+        }
 
         /// <summary>Crée l’éditeur transactionnel avec un exécuteur de commandes VBE.</summary>
         /// <param name="execute">Transport des commandes VBE.</param>
@@ -56,9 +58,16 @@ namespace VBAi
             string before = Read(request.Project, request.Module);
             Check(before, request.ExpectedSha256);
             string after = VbaTextEdits.Transform(before, request);
-            if (preview) return new { request.Project, request.Module, Before = before, After = after,
-                ExpectedSha256 = Hash(before), Changed = before != after,
-                Scope = "Explicit module line range; identifier replacements are lexical, not semantic refactoring." };
+            if (preview) return new
+            {
+                request.Project,
+                request.Module,
+                Before = before,
+                After = after,
+                ExpectedSha256 = Hash(before),
+                Changed = before != after,
+                Scope = "Explicit module line range; identifier replacements are lexical, not semantic refactoring."
+            };
             return Write(request.Project, request.Module, before, after);
         }
 
@@ -81,9 +90,17 @@ namespace VBAi
                 { if (selected != null) throw new InvalidOperationException("The procedure is ambiguous."); selected = procedure; }
             if (selected == null) throw new InvalidOperationException("The exact procedure is absent.");
             string after = VbaLocalRename.Transform(before, request, (int)selected.BodyLine, (int)selected.EndLine);
-            if (preview) return new { request.Project, request.Module, request.Procedure, Before = before, After = after,
-                ExpectedSha256 = Hash(before), Changed = before != after,
-                Scope = "One explicit local variable/constant in its VBIDE procedure range; members/types/labels/named arguments are excluded. Parameters, conditional code and project-wide refactoring are refused." };
+            if (preview) return new
+            {
+                request.Project,
+                request.Module,
+                request.Procedure,
+                Before = before,
+                After = after,
+                ExpectedSha256 = Hash(before),
+                Changed = before != after,
+                Scope = "One explicit local variable/constant in its VBIDE procedure range; members/types/labels/named arguments are excluded. Parameters, conditional code and project-wide refactoring are refused."
+            };
             if (request.ExpectedMode != 2) throw new ArgumentException("ExpectedMode=2 is required to rename a local declaration.");
             Response state = execute(new Request { Command = "debug_state", Project = request.Project });
             if (!state.Ok || (int)((dynamic)state.Data).Mode != 2) throw new InvalidOperationException("Renaming requires design mode.");
@@ -98,16 +115,17 @@ namespace VBAi
         internal object Replay(Request request, bool forward)
         {
             var source = forward ? redo : undo; var destination = forward ? undo : redo;
-            var entry = source.LastOrDefault(x => string.Equals(x.Project, request.Project, StringComparison.OrdinalIgnoreCase) && string.Equals(x.Module, request.Module, StringComparison.OrdinalIgnoreCase));
-            if (entry == null) throw new InvalidOperationException("No VBAi code edit is available for this module in this session.");
+            var entry = source.LastOrDefault(x => string.Equals(x.Project, request.Project, StringComparison.OrdinalIgnoreCase) && string.Equals(x.Module, request.Module, StringComparison.OrdinalIgnoreCase)) ?? throw new InvalidOperationException("No VBAi code edit is available for this module in this session.");
             string current = Read(request.Project, request.Module);
             Check(current, request.ExpectedSha256);
             Check(current, Hash(forward ? entry.Before : entry.After));
             replaying = true;
-            try {
+            try
+            {
                 object result = Write(request.Project, request.Module, current, forward ? entry.After : entry.Before);
                 source.Remove(entry); destination.Add(entry); return result;
-            } finally { replaying = false; }
+            }
+            finally { replaying = false; }
         }
 
         /// <summary>Remplace tout le code avec l’empreinte attendue, puis exige une relecture identique.</summary>
@@ -119,8 +137,16 @@ namespace VBAi
         /// <exception cref="InvalidOperationException">L’écriture échoue ou la source relue diffère du texte demandé.</exception>
         private object Write(string project, string module, string before, string after)
         {
-            Response result = execute(new Request { Command = "replace_lines", Project = project, Module = module,
-                ExpectedSha256 = Hash(before), StartLine = 1, Count = CodeRollback.Lines(before).Length, Text = after });
+            Response result = execute(new Request
+            {
+                Command = "replace_lines",
+                Project = project,
+                Module = module,
+                ExpectedSha256 = Hash(before),
+                StartLine = 1,
+                Count = CodeRollback.Lines(before).Length,
+                Text = after
+            });
             if (!result.Ok) throw new InvalidOperationException(result.Error);
             string readback = Read(project, module);
             if (!string.Equals(readback, after, StringComparison.Ordinal))

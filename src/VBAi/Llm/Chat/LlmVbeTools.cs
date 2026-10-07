@@ -150,9 +150,9 @@ namespace VBAi
             CanRecoverDesignerCut = request => session.CanRecoverFormCut(request);
             PersistSignature = project => session.PersistProjectSignature(project);
             this.owner = owner;
-            ImmediateOwnerDispatch = action => {
-                var control = owner as Control;
-                if (control == null || control.IsDisposed || !control.IsHandleCreated)
+            ImmediateOwnerDispatch = action =>
+            {
+                if (!(owner is Control control) || control.IsDisposed || !control.IsHandleCreated)
                     throw new InvalidOperationException("The VBE UI owner is unavailable; Immediate Enter was not sent.");
                 if (control.InvokeRequired) control.Invoke(action); else action();
             };
@@ -169,8 +169,11 @@ namespace VBAi
         {
             var properties = new Dictionary<string, object>();
             foreach (string field in fields)
-                properties[field] = field == "Temporary" ? (object)new { type = "boolean" } : field == "Value" ? (object)new { anyOf = new object[] {
-                    new { type = "string" }, new { type = "number" }, new { type = "boolean" } } } :
+                properties[field] = field == "Temporary" ? (object)new { type = "boolean" } : field == "Value" ? (object)new
+                {
+                    anyOf = new object[] {
+                    new { type = "string" }, new { type = "number" }, new { type = "boolean" } }
+                } :
                     field == "Arguments" && name == "run_procedure_values" ? ProcedureValuesArgumentSchema() :
                     field == "Arguments" ? (object)new { type = "array", maxItems = 30, items = new { anyOf = new object[] { new { type = "string" }, new { type = "number" }, new { type = "boolean" }, new { type = "null" } } } } :
                     field == "PathSegments" ? (object)new { type = "array", items = new { type = "string" }, minItems = 1, maxItems = 16 } :
@@ -179,20 +182,33 @@ namespace VBAi
                     field == "Items" && name == "run_vba_tests" ? (object)new { type = "array", items = new { type = "string", maxLength = 64 }, minItems = 1, maxItems = 10000, uniqueItems = true } :
                     field == "Items" && name == "navigate_vba_test" ? (object)new { type = "array", items = new { type = "string", maxLength = 64 }, minItems = 1, maxItems = 1 } :
                     field == "Items" ? (object)new { type = "array", items = new { type = "string", maxLength = 256 }, minItems = 0, maxItems = 64 } :
-                    new { type = field == "ExpectedVersion" || field == "StartLine" || field == "StartColumn" || field == "EndLine" || field == "EndColumn" || field == "Count" || field == "ExpectedMode" || field == "ControlId" || field == "WindowType" || field == "TargetWindowType" || field == "ProcKind" || field == "InsertIndex" ||
+                    new
+                    {
+                        type = field == "ExpectedVersion" || field == "StartLine" || field == "StartColumn" || field == "EndLine" || field == "EndColumn" || field == "Count" || field == "ExpectedMode" || field == "ControlId" || field == "WindowType" || field == "TargetWindowType" || field == "ProcKind" || field == "InsertIndex" ||
                         field == "ToolbarLeft" || field == "ToolbarTop" || field == "Offset" || field == "Limit" || field == "RowIndex" || field == "TypeIndex" || field == "ZPosition" ||
                         field == "Major" || field == "Minor" ? "integer" :
                     field == "Left" || field == "Top" || field == "Width" || field == "Height" || field == "FontSize" ? "number" :
-                    field == "FontBold" || field == "WholeWord" || field == "MatchCase" || field == "PatternSearch" || field == "IncludeCallStack" ? "boolean" : "string" };
-            return new { type = "function", function = new {
-                name, description,
-                parameters = new { type = "object", properties, required, additionalProperties = false }
-            } };
+                    field == "FontBold" || field == "WholeWord" || field == "MatchCase" || field == "PatternSearch" || field == "IncludeCallStack" ? "boolean" : "string"
+                    };
+            return new
+            {
+                type = "function",
+                function = new
+                {
+                    name,
+                    description,
+                    parameters = new { type = "object", properties, required, additionalProperties = false }
+                }
+            };
         }
 
         /// <summary>Obtient l’ensemble des définitions d’outils proposées aux fournisseurs compatibles.</summary>
         /// <value>Définitions JSON des opérations autorisées.</value>
-        public static object[] Definitions { get { return new object[] {
+        public static object[] Definitions
+        {
+            get
+            {
+                return new object[] {
             Definition("status", "Read the live host process and currently open VBA projects; call before acting on VBE.", new string[0]),
             Definition("read_user_file", "Request separate user approval before reading and transmitting up to 64 KiB of a text file at a path explicitly supplied by the user.",
                 new[] { "Path" }, "Path"),
@@ -426,7 +442,9 @@ namespace VBAi
             Definition("set_form_control_geometry", "Place and size a UserForm control; requires form revision and VBE edit policy.",
                 new[] { "Project", "Form", "ExpectedFormVersion", "Control", "Left", "Top", "Width", "Height" },
                 "Project", "Form", "ExpectedFormVersion", "Control", "Left", "Top", "Width", "Height")
-        }.Concat(GitDefinitions).Concat(EditorDefinitions).Concat(MonacoDefinitions).Concat(TestingDefinitions).Concat(CatalogDefinitions).ToArray(); } }
+        }.Concat(GitDefinitions).Concat(EditorDefinitions).Concat(MonacoDefinitions).Concat(TestingDefinitions).Concat(CatalogDefinitions).ToArray();
+            }
+        }
 
         /// <summary>Valide les gardes puis exécute synchroniquement un outil et sérialise sa réponse.</summary>
         /// <param name="name">Nom de l’outil demandé.</param>
@@ -460,14 +478,13 @@ namespace VBAi
             if (definition == null) return json.Serialize(Response.Failure("Unknown tool: " + name));
             try
             {
-                var values = json.DeserializeObject(arguments) as IDictionary<string, object>;
-                if (values == null) throw new ArgumentException("Tool arguments must be an object.");
+                if (!(json.DeserializeObject(arguments) is IDictionary<string, object> values)) throw new ArgumentException("Tool arguments must be an object.");
                 var required = (string[])definition.function.parameters.required;
                 var fields = (Dictionary<string, object>)definition.function.parameters.properties;
                 foreach (string field in required)
                     if (!values.ContainsKey(field) || values[field] == null ||
-                        (field != "Text" && field != "Caption" && field != "Value" && values[field] is string &&
-                            string.IsNullOrWhiteSpace((string)values[field])))
+                        (field != "Text" && field != "Caption" && field != "Value" && values[field] is string v &&
+                            string.IsNullOrWhiteSpace(v)))
                         throw new ArgumentException(field + " is required.");
                 foreach (string field in values.Keys)
                 {
@@ -482,38 +499,34 @@ namespace VBAi
                     }
                     if (field == "Arguments")
                     {
-                        var scalars = value as object[];
-                        if (scalars == null || scalars.Length > 30) throw new ArgumentException("Arguments must contain at most 30 scalar values.");
+                        if (!(value is object[] scalars) || scalars.Length > 30) throw new ArgumentException("Arguments must contain at most 30 scalar values.");
                         if (name == "run_procedure_values") VbaProcedureValues.Capture(scalars);
                         else foreach (object scalar in scalars) VbeDebug.ProcedureLiteral(scalar);
                         continue;
                     }
                     if (field == "ArgumentNames")
                     {
-                        var names = value as object[];
-                        if (names == null || names.Length > 30 || names.Any(item => !(item is string) ||
-                            ((string)item).Length > 255 || ((string)item).Any(char.IsControl)))
+                        if (!(value is object[] names) || names.Length > 30 || names.Any(item => !(item is string v) ||
+                            v.Length > 255 || v.Any(char.IsControl)))
                             throw new ArgumentException("ArgumentNames must contain at most 30 single-line parameter names of at most 255 characters.");
                         continue;
                     }
                     if (field == "Items")
                     {
-                        var items = value as object[];
                         int maximum = name == "run_vba_tests" ? 10000 : name == "navigate_vba_test" ? 1 : 64;
                         int length = IsTestingTool(name) ? 64 : 256;
-                        if (items == null || items.Length > maximum || items.Any(item => !(item is string) ||
-                            ((string)item).Length > length || ((string)item).Any(char.IsControl)))
+                        if (!(value is object[] items) || items.Length > maximum || items.Any(item => !(item is string v) ||
+                            v.Length > length || v.Any(char.IsControl)))
                             throw new ArgumentException("Items must contain at most " + maximum + " single-line strings of at most " + length + " characters.");
                         continue;
                     }
                     if (field == "Rows")
                     {
-                        var rows = value as object[];
-                        if (rows == null || rows.Length > 64 || rows.Any(row =>
+                        if (!(value is object[] rows) || rows.Length > 64 || rows.Any(row =>
                         {
-                            var cells = row as object[];
+                            if (!(row is object[] cells)) return true;
                             return cells == null || cells.Length < 1 || cells.Length > 10 ||
-                                cells.Any(cell => !(cell is string) || ((string)cell).Length > 256 || ((string)cell).Any(char.IsControl));
+                                cells.Any(cell => !(cell is string v) || v.Length > 256 || v.Any(char.IsControl));
                         }) || (rows.Length > 0 && rows.Any(row => ((object[])row).Length != ((object[])rows[0]).Length)))
                             throw new ArgumentException("Rows must be a rectangular matrix of at most 64 rows, 1-10 columns and single-line strings of at most 256 characters.");
                         continue;
@@ -586,7 +599,8 @@ namespace VBAi
                     {
                         // Save can yield before a host-native confirmation. Preserve the original
                         // approval and binding, but revalidate current permissions at every mutation.
-                        request.RevalidateSaveAuthorization = () => {
+                        request.RevalidateSaveAuthorization = () =>
+                        {
                             ValidateScope?.Invoke();
                             GuardMode(name);
                             if (!string.Equals(saveBoundProject, BoundProject, StringComparison.OrdinalIgnoreCase))
@@ -612,7 +626,8 @@ namespace VBAi
                     else if (name == "set_project_property")
                     {
                         string metadataBoundProject = BoundProject;
-                        request.RevalidateProjectPropertyAuthorization = validateScope => {
+                        request.RevalidateProjectPropertyAuthorization = validateScope =>
+                        {
                             if (validateScope) ValidateScope?.Invoke();
                             else ValidateCachedScope?.Invoke();
                             GuardModeLocal(name);
@@ -640,8 +655,13 @@ namespace VBAi
                         }
                         catch (Exception)
                         {
-                            return edit ? json.Serialize(Response.Success(new { MutationInvoked = true, Verified = false,
-                                OutcomeUnknown = true, Reason = "Project access changed during the test operation. Inspect locally; do not retry automatically." }))
+                            return edit ? json.Serialize(Response.Success(new
+                            {
+                                MutationInvoked = true,
+                                Verified = false,
+                                OutcomeUnknown = true,
+                                Reason = "Project access changed during the test operation. Inspect locally; do not retry automatically."
+                            }))
                                 : json.Serialize(Response.Failure("Project access changed during the test inspection."));
                         }
                     }
@@ -657,9 +677,15 @@ namespace VBAi
                         catch (Exception)
                         {
                             // Do not disclose a result after the conversation loses its project scope.
-                            return json.Serialize(Response.Success(new { SaveInvoked = true, MutationInvoked = true,
-                                Verified = false, Uncertain = true, Reason = "Project access changed while Save was pending.",
-                                Next = "Inspect the saved project locally; do not retry automatically." }));
+                            return json.Serialize(Response.Success(new
+                            {
+                                SaveInvoked = true,
+                                MutationInvoked = true,
+                                Verified = false,
+                                Uncertain = true,
+                                Reason = "Project access changed while Save was pending.",
+                                Next = "Inspect the saved project locally; do not retry automatically."
+                            }));
                         }
                     }
                     result = FilterProjectResponse(name, result, request.Project);
@@ -675,8 +701,15 @@ namespace VBAi
                 {
                     dynamic cut = result.Data;
                     if (!string.IsNullOrEmpty((string)cut.DesignerClipboardRecoveryId) && (bool)cut.DesignerChangeObserved)
-                        FormCut?.Invoke(new FormCutChange { Project = request.Project, Form = request.Form, ParentPath = request.ParentPath,
-                            RecoveryId = (string)cut.DesignerClipboardRecoveryId, ControlCount = ((System.Collections.ICollection)cut.Before.Selected).Count, Owner = this });
+                        FormCut?.Invoke(new FormCutChange
+                        {
+                            Project = request.Project,
+                            Form = request.Form,
+                            ParentPath = request.ParentPath,
+                            RecoveryId = (string)cut.DesignerClipboardRecoveryId,
+                            ControlCount = ((System.Collections.ICollection)cut.Before.Selected).Count,
+                            Owner = this
+                        });
                 }
                 if (result.Ok && name == "native_code_history" && !restoring)
                 {
@@ -719,8 +752,12 @@ namespace VBAi
         /// <returns>Code et empreinte lus.</returns>
         private CodeSnapshot ReadCode(string project, string module)
         {
-            Response response = Execute(new Request { Command = "read_module",
-                Project = project, Module = module });
+            Response response = Execute(new Request
+            {
+                Command = "read_module",
+                Project = project,
+                Module = module
+            });
             if (!response.Ok) throw new InvalidOperationException(response.Error);
             dynamic data = response.Data;
             return new CodeSnapshot { Code = (string)data.Code, Sha256 = (string)data.Sha256 };
@@ -759,8 +796,15 @@ namespace VBAi
                 foreach (var group in pending.GroupBy(x => x.Project + "\0" + x.Module))
                 {
                     var change = group.First(); var snapshot = snapshots[group.Key];
-                    var arguments = new { Project = change.Project, Module = change.Module, ExpectedSha256 = snapshot.Sha256,
-                        StartLine = 1, Count = CodeRollback.Lines(snapshot.Code).Length, Text = planned[group.Key] };
+                    var arguments = new
+                    {
+                        change.Project,
+                        change.Module,
+                        ExpectedSha256 = snapshot.Sha256,
+                        StartLine = 1,
+                        Count = CodeRollback.Lines(snapshot.Code).Length,
+                        Text = planned[group.Key]
+                    };
                     var result = ReadToolResponse(Invoke("replace_lines", json.Serialize(arguments)));
                     if (!result.Ok) return Response.Failure(UiText.Get("Undo stopped after ") + applied + " module(s). " + result.Error);
                     foreach (var item in group)
@@ -808,8 +852,7 @@ namespace VBAi
                     Response initial = ReadToolResponse(scheduled);
                     if (!initial.Ok) return scheduled;
                     var values = json.DeserializeObject(arguments) as IDictionary<string, object>;
-                    var scheduledData = initial.Data as IDictionary<string, object>;
-                    if (scheduledData == null || !scheduledData.ContainsKey("CertificateName"))
+                    if (!(initial.Data is IDictionary<string, object> scheduledData) || !scheduledData.ContainsKey("CertificateName"))
                         throw new InvalidOperationException("The certificate name was not returned by the VBE.");
                     string certificateName = (string)scheduledData["CertificateName"];
                     bool unsignedVerified = (bool)scheduledData["UnsignedVerified"];
@@ -834,13 +877,20 @@ namespace VBAi
                             await Task.Delay(250);
                         }
                     }
-                    Response status = Execute(new Request { Command = "project_signature_status",
-                        Project = (string)values["Project"] });
-                    return json.Serialize(Response.Success(new { Signature = signed,
-                        Persistence = persistence, PersistenceError = persistenceError,
+                    Response status = Execute(new Request
+                    {
+                        Command = "project_signature_status",
+                        Project = (string)values["Project"]
+                    });
+                    return json.Serialize(Response.Success(new
+                    {
+                        Signature = signed,
+                        Persistence = persistence,
+                        PersistenceError = persistenceError,
                         SaveRequired = persistence == null || !((bool)((dynamic)persistence).Saved),
                         HostStatus = status.Ok ? status.Data : null,
-                        HostStatusError = status.Ok ? null : status.Error }));
+                        HostStatusError = status.Ok ? null : status.Error
+                    }));
                 }
                 catch (Exception ex) { return json.Serialize(Response.Failure(ex.Message)); }
             }
@@ -895,8 +945,7 @@ namespace VBAi
                 {
                     if (settings.VbeEditApproval != "Automatic")
                         return json.Serialize(Response.Failure("Automatic VBE edit policy is required for Quick Watch evaluation."));
-                    var values = json.DeserializeObject(arguments) as IDictionary<string, object>;
-                    if (values == null) throw new ArgumentException("Tool arguments must be an object.");
+                    if (!(json.DeserializeObject(arguments) is IDictionary<string, object> values)) throw new ArgumentException("Tool arguments must be an object.");
                     var requestValues = new Dictionary<string, object>(values) { ["Command"] = name };
                     Request request = json.Deserialize<Request>(json.Serialize(requestValues));
                     string scheduled = Invoke(name, arguments);
@@ -912,8 +961,7 @@ namespace VBAi
                 {
                     if (settings.VbeEditApproval != "Automatic")
                         return json.Serialize(Response.Failure("Automatic VBE edit policy is required for native watch editing."));
-                    var values = json.DeserializeObject(arguments) as IDictionary<string, object>;
-                    if (values == null) throw new ArgumentException("Tool arguments must be an object.");
+                    if (!(json.DeserializeObject(arguments) is IDictionary<string, object> values)) throw new ArgumentException("Tool arguments must be an object.");
                     var requestValues = new Dictionary<string, object>(values) { ["Command"] = name };
                     Request request = json.Deserialize<Request>(json.Serialize(requestValues));
                     await Task.Run(() => Native.SelectWatch(request));
@@ -928,9 +976,8 @@ namespace VBAi
             {
                 try
                 {
-                    var values = json.DeserializeObject(arguments) as IDictionary<string, object>;
                     string[] allowed = name == "read_navigation_surface" ? new[] { "Pane", "Query", "Offset", "Limit" } : new[] { "Pane", "Control", "Action", "ExpectedWindowVersion" };
-                    if (values == null || !values.ContainsKey("Pane") || values.Keys.Any(k => !allowed.Contains(k)) ||
+                    if (!(json.DeserializeObject(arguments) is IDictionary<string, object> values) || !values.ContainsKey("Pane") || values.Keys.Any(k => !allowed.Contains(k)) ||
                         values.Any(pair => pair.Key == "Offset" || pair.Key == "Limit" ? !(pair.Value is int) : !(pair.Value is string)))
                         throw new ArgumentException("Invalid native navigation arguments.");
                     var request = json.Deserialize<Request>(arguments);
@@ -943,8 +990,7 @@ namespace VBAi
             {
                 try
                 {
-                    var values = json.DeserializeObject(arguments) as IDictionary<string, object>;
-                    if (values == null || (values.Count != 3 && values.Count != 4) || !values.ContainsKey("Pane") ||
+                    if (!(json.DeserializeObject(arguments) is IDictionary<string, object> values) || (values.Count != 3 && values.Count != 4) || !values.ContainsKey("Pane") ||
                         !values.ContainsKey("Action") || !values.ContainsKey("PathSegments"))
                         throw new ArgumentException("Pane, Action and PathSegments are required.");
                     if (values.Keys.Any(key => key != "Pane" && key != "Action" &&
@@ -962,12 +1008,11 @@ namespace VBAi
                 {
                     if (settings.VbeEditApproval != "Automatic")
                         return json.Serialize(Response.Failure("Automatic VBE edit policy is required for Immediate execution."));
-                    var values = json.DeserializeObject(arguments) as IDictionary<string, object>;
-                    if (values == null || values.Count != 3 || !values.ContainsKey("Project") ||
+                    if (!(json.DeserializeObject(arguments) is IDictionary<string, object> values) || values.Count != 3 || !values.ContainsKey("Project") ||
                         !values.ContainsKey("ExpectedMode") || !values.ContainsKey("Text") ||
-                        !(values["Project"] is string) || !(values["ExpectedMode"] is int) ||
+                        !(values["Project"] is string) || !(values["ExpectedMode"] is int v) ||
                         !(values["Text"] is string) ||
-                        ((int)values["ExpectedMode"] != 1 && (int)values["ExpectedMode"] != 2))
+                        (v != 1 && v != 2))
                         throw new ArgumentException("Project, ExpectedMode and Text are required.");
                     var state = Execute(new Request { Command = "debug_state", Project = (string)values["Project"] });
                     if (!state.Ok) return json.Serialize(state);
@@ -975,7 +1020,8 @@ namespace VBAi
                         return json.Serialize(Response.Failure("Project mode changed before Immediate execution."));
                     VbeImmediateContext.RequireProject((string)values["Project"], state.Data);
                     return json.Serialize(Response.Success(await Task.Run(() =>
-                        Native.ExecuteImmediate((string)values["Text"], enter => ImmediateOwnerDispatch(() => {
+                        Native.ExecuteImmediate((string)values["Text"], enter => ImmediateOwnerDispatch(() =>
+                        {
                             GuardMode(name);
                             GuardProject(name, arguments);
                             if (settings.VbeEditApproval != "Automatic")
@@ -992,11 +1038,10 @@ namespace VBAi
                 {
                     if (settings.VbeEditApproval != "Automatic")
                         return json.Serialize(Response.Failure("Automatic VBE edit policy is required for Immediate reading."));
-                    var values = json.DeserializeObject(arguments) as IDictionary<string, object>;
-                    if (values == null || !values.TryGetValue("Project", out var project) ||
-                        !(project is string) || string.IsNullOrWhiteSpace((string)project) ||
-                        !values.TryGetValue("ExpectedMode", out var expectedMode) || !(expectedMode is int) ||
-                        ((int)expectedMode != 1 && (int)expectedMode != 2) ||
+                    if (!(json.DeserializeObject(arguments) is IDictionary<string, object> values) || !values.TryGetValue("Project", out var project) ||
+                        !(project is string v) || string.IsNullOrWhiteSpace(v) ||
+                        !values.TryGetValue("ExpectedMode", out var expectedMode) || !(expectedMode is int v1) ||
+                        (v1 != 1 && v1 != 2) ||
                         values.Keys.Any(key => key != "Project" && key != "ExpectedMode"))
                         throw new ArgumentException("Project and ExpectedMode (1 or 2) are required; no other arguments are accepted.");
                     var request = new Request { Command = name, Project = (string)project, ExpectedMode = (int)expectedMode };
@@ -1014,20 +1059,26 @@ namespace VBAi
                 {
                     if (settings.VbeEditApproval != "Automatic")
                         return json.Serialize(Response.Failure("Automatic VBE edit policy is required for local inspection."));
-                    var values = json.DeserializeObject(arguments) as IDictionary<string, object>;
-                    if (values == null || !values.TryGetValue("Project", out var project) || !(project is string) || string.IsNullOrWhiteSpace((string)project) ||
-                        !values.TryGetValue("Module", out var module) || !(module is string) || string.IsNullOrWhiteSpace((string)module) ||
-                        !values.TryGetValue("Procedure", out var procedure) || !(procedure is string) || string.IsNullOrWhiteSpace((string)procedure) ||
-                        !values.TryGetValue("ExpectedSha256", out var sha) || !(sha is string) || !Regex.IsMatch((string)sha, @"\A[0-9a-fA-F]{64}\z") ||
-                        !values.TryGetValue("ExpectedMode", out var mode) || !(mode is int) || (int)mode != 1 ||
+                    if (!(json.DeserializeObject(arguments) is IDictionary<string, object> values) || !values.TryGetValue("Project", out var project) || !(project is string v) || string.IsNullOrWhiteSpace(v) ||
+                        !values.TryGetValue("Module", out var module) || !(module is string v1) || string.IsNullOrWhiteSpace(v1) ||
+                        !values.TryGetValue("Procedure", out var procedure) || !(procedure is string v2) || string.IsNullOrWhiteSpace(v2) ||
+                        !values.TryGetValue("ExpectedSha256", out var sha) || !(sha is string v3) || !Regex.IsMatch(v3, @"\A[0-9a-fA-F]{64}\z") ||
+                        !values.TryGetValue("ExpectedMode", out var mode) || !(mode is int v4) || v4 != 1 ||
                         values.Keys.Any(key => key != "Project" && key != "Module" && key != "Procedure" && key != "ExpectedSha256" && key != "ExpectedMode" && key != "Offset" && key != "Limit") ||
-                        (values.TryGetValue("Offset", out var offset) && (!(offset is int) || (int)offset < 0)) ||
-                        (values.TryGetValue("Limit", out var limit) && (!(limit is int) || (int)limit < 0 || (int)limit > 16)))
+                        (values.TryGetValue("Offset", out var offset) && (!(offset is int v5) || v5 < 0)) ||
+                        (values.TryGetValue("Limit", out var limit) && (!(limit is int v6) || v6 < 0 || v6 > 16)))
                         throw new ArgumentException("Project, Module, Procedure, 64-character ExpectedSha256 and ExpectedMode=1 are required; Offset must be nonnegative, Limit 0..16, with no other arguments.");
-                    var request = new Request { Command = name, Project = (string)project, Module = (string)module,
-                        Procedure = (string)procedure, ExpectedSha256 = (string)sha, ExpectedMode = 1,
+                    var request = new Request
+                    {
+                        Command = name,
+                        Project = (string)project,
+                        Module = (string)module,
+                        Procedure = (string)procedure,
+                        ExpectedSha256 = (string)sha,
+                        ExpectedMode = 1,
                         Offset = values.TryGetValue("Offset", out var selectedOffset) ? (int)selectedOffset : 0,
-                        Limit = values.TryGetValue("Limit", out var selectedLimit) ? (int)selectedLimit : 0 };
+                        Limit = values.TryGetValue("Limit", out var selectedLimit) ? (int)selectedLimit : 0
+                    };
                     var state = Execute(new Request { Command = "debug_state", Project = request.Project });
                     if (!state.Ok) return json.Serialize(state);
                     if ((int)((dynamic)state.Data).Mode != 1)
@@ -1040,8 +1091,7 @@ namespace VBAi
             {
                 try
                 {
-                    var values = json.DeserializeObject(arguments) as IDictionary<string, object>;
-                    if (values == null) throw new ArgumentException("Tool arguments must be an object.");
+                    if (!(json.DeserializeObject(arguments) is IDictionary<string, object> values)) throw new ArgumentException("Tool arguments must be an object.");
                     if (name == "debug_dialog")
                     {
                         if (values.Count != 0) throw new ArgumentException("debug_dialog has no arguments.");
@@ -1062,20 +1112,20 @@ namespace VBAi
             {
                 try
                 {
-                    var values = json.DeserializeObject(arguments) as IDictionary<string, object>;
-                    if (values == null || values.Count != 2 || !values.ContainsKey("Project") ||
-                        !values.ContainsKey("ExpectedMode") || !(values["Project"] is string) ||
-                        string.IsNullOrWhiteSpace((string)values["Project"]) ||
-                        !(values["ExpectedMode"] is int) || (int)values["ExpectedMode"] != 2)
+                    if (!(json.DeserializeObject(arguments) is IDictionary<string, object> values)) throw new ArgumentException("Tool arguments must be an object.");
+                    if (values.Count != 2 || !values.ContainsKey("Project") ||
+                        !values.ContainsKey("ExpectedMode") || !(values["Project"] is string v) ||
+                        string.IsNullOrWhiteSpace(v) ||
+                        !(values["ExpectedMode"] is int v1) || v1 != 2)
                         throw new ArgumentException("Project and ExpectedMode=2 are required.");
                     var requestValues = new Dictionary<string, object>(values) { ["Command"] = name };
                     Request request = json.Deserialize<Request>(json.Serialize(requestValues));
-                    SynchronizationContext context = SynchronizationContext.Current;
-                    if (context == null) throw new InvalidOperationException("The VBE UI context is unavailable.");
+                    SynchronizationContext context = SynchronizationContext.Current ?? throw new InvalidOperationException("The VBE UI context is unavailable.");
                     Native.EnsureNoCompileDialog();
                     Response compileResponse = null;
                     var completed = new System.Threading.ManualResetEventSlim(false);
-                    context.Post(_ => {
+                    context.Post(_ =>
+                    {
                         try { compileResponse = Execute(request); }
                         catch (Exception ex) { compileResponse = Response.Failure(ex.Message); }
                         finally { completed.Set(); }
@@ -1083,8 +1133,11 @@ namespace VBAi
                     string diagnostic = await Task.Run(() => Native.AwaitCompileDialog(completed));
                     if (compileResponse == null) return json.Serialize(Response.Failure("The native Compile command did not return a result."));
                     if (!compileResponse.Ok) return json.Serialize(compileResponse);
-                    return json.Serialize(Response.Success(new {
-                        Project = request.Project, Compiled = diagnostic == null, Diagnostic = diagnostic,
+                    return json.Serialize(Response.Success(new
+                    {
+                        request.Project,
+                        Compiled = diagnostic == null,
+                        Diagnostic = diagnostic,
                         Verification = diagnostic == null ? "NoNativeDiagnosticObserved" : "NativeDiagnosticCaptured",
                         Command = compileResponse.Data,
                         NextRead = diagnostic == null ? null : "Read debug_state to locate the selected token."
@@ -1096,8 +1149,7 @@ namespace VBAi
             {
                 try
                 {
-                    var values = json.DeserializeObject(arguments) as IDictionary<string, object>;
-                    if (values == null) throw new ArgumentException("Tool arguments must be an object.");
+                    if (!(json.DeserializeObject(arguments) is IDictionary<string, object> values)) throw new ArgumentException("Tool arguments must be an object.");
                     if (settings.VbeEditApproval != "Automatic")
                         return json.Serialize(Response.Failure("Automatic VBE edit policy is required for native watch removal."));
                     var requestValues = new Dictionary<string, object>(values) { ["Command"] = name };
@@ -1130,8 +1182,7 @@ namespace VBAi
             {
                 try
                 {
-                    var values = json.DeserializeObject(arguments) as IDictionary<string, object>;
-                    if (values == null || !values.ContainsKey("Pane") || values.Keys.Any(key => key != "Pane" && key != "Query" && key != "Offset" && key != "Limit") ||
+                    if (!(json.DeserializeObject(arguments) is IDictionary<string, object> values) || !values.ContainsKey("Pane") || values.Keys.Any(key => key != "Pane" && key != "Query" && key != "Offset" && key != "Limit") ||
                         values.Any(pair => (pair.Key == "Pane" || pair.Key == "Query") ? !(pair.Value is string) : !(pair.Value is int)))
                         throw new ArgumentException("Pane is required; Query is an optional string; Offset and Limit must be integers.");
                     return json.Serialize(Response.Success(await Task.Run(() => Native.ListObjectBrowser(json.Deserialize<Request>(arguments)))));
@@ -1142,8 +1193,7 @@ namespace VBAi
             {
                 try
                 {
-                    var values = json.DeserializeObject(arguments) as IDictionary<string, object>;
-                    if (values == null || (!values.ContainsKey("ObjectName") && !values.ContainsKey("Context")) || values.Keys.Any(key => key != "ObjectName" && key != "Procedure" && key != "Context") || values.Values.Any(value => !(value is string)))
+                    if (!(json.DeserializeObject(arguments) is IDictionary<string, object> values) || (!values.ContainsKey("ObjectName") && !values.ContainsKey("Context")) || values.Keys.Any(key => key != "ObjectName" && key != "Procedure" && key != "Context") || values.Values.Any(value => !(value is string)))
                         throw new ArgumentException("ObjectName or library Context is required; Procedure requires ObjectName. All values must be strings.");
                     var request = json.Deserialize<Request>(arguments);
                     return json.Serialize(Response.Success(await Task.Run(() => Native.SelectObjectBrowser(request))));
@@ -1154,8 +1204,7 @@ namespace VBAi
             {
                 try
                 {
-                    var values = json.DeserializeObject(arguments) as IDictionary<string, object>;
-                    if (values == null || values.Count != 0) throw new ArgumentException("This tool takes an empty argument object.");
+                    if (!(json.DeserializeObject(arguments) is IDictionary<string, object> values) || values.Count != 0) throw new ArgumentException("This tool takes an empty argument object.");
                     return json.Serialize(Response.Success(await Task.Run(() => name == "read_runtime_forms" ? Native.ReadRuntimeForms() : Native.ReadObjectBrowser())));
                 }
                 catch (Exception ex) { return json.Serialize(Response.Failure(ex.Message)); }
@@ -1163,12 +1212,10 @@ namespace VBAi
             if (name != "debug_windows") return await InvokeCoreAsync(name, arguments, true);
             try
             {
-                var values = json.DeserializeObject(arguments) as IDictionary<string, object>;
-                if (values == null) throw new ArgumentException("Tool arguments must be an object.");
+                if (!(json.DeserializeObject(arguments) is IDictionary<string, object> values)) throw new ArgumentException("Tool arguments must be an object.");
                 foreach (string field in values.Keys)
                     if (field != "IncludeCallStack") throw new ArgumentException("Unexpected argument: " + field);
-                object raw;
-                bool stack = values.TryGetValue("IncludeCallStack", out raw) && raw is bool && (bool)raw;
+                bool stack = values.TryGetValue("IncludeCallStack", out object raw) && raw is bool v && v;
                 if (values.ContainsKey("IncludeCallStack") && !(raw is bool))
                     throw new ArgumentException("IncludeCallStack must be a boolean.");
                 object result = await Task.Run(() => Native.Capture(stack));
@@ -1232,8 +1279,13 @@ namespace VBAi
                     string content = reader.ReadToEnd();
                     if (content.IndexOf('\0') >= 0)
                         return Response.Failure(UiText.Get("The file appears to be binary; text reading refused."));
-                    return Response.Success(new { Path = fullPath, Text = content,
-                        Truncated = count > limit, ByteLength = stream.Length });
+                    return Response.Success(new
+                    {
+                        Path = fullPath,
+                        Text = content,
+                        Truncated = count > limit,
+                        ByteLength = stream.Length
+                    });
                 }
             }
         }

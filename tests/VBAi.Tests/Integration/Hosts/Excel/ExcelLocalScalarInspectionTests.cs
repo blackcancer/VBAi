@@ -1,3 +1,4 @@
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -5,7 +6,6 @@ using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Web.Script.Serialization;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 using VBAi.Tests.Infrastructure;
 
 namespace VBAi.Tests.Integration
@@ -100,10 +100,12 @@ namespace VBAi.Tests.Integration
             }
             var json = new JavaScriptSerializer();
             bool bridgeAvailable = true, inspectionPending = false, executionPending = false, canClose = true;
-            Func<object, IDictionary<string, object>> send = request => {
+            Func<object, IDictionary<string, object>> send = request =>
+            {
                 try
                 {
-                    var response = evidence.Send(request, () => VbeBridgeClient.Read("VBAi." + host.ProcessId, request, 20000), value => {
+                    var response = evidence.Send(request, () => VbeBridgeClient.Read("VBAi." + host.ProcessId, request, 20000), value =>
+                    {
                         Assert.IsNotNull(value, "The owned bridge did not return; preserve host and evidence.");
                         Assert.AreEqual(true, value["Ok"], json.Serialize(value));
                     });
@@ -146,8 +148,17 @@ namespace VBAi.Tests.Integration
                 Assert.AreEqual(module, before["ActiveModule"]);
                 inspectionPending = true;
                 // Exactly one attempt. Even a client timeout never authorizes a second inspection.
-                var inspected = VbeBridgeClient.Object(send(new { Command = "inspect_local_scalars", Project = projectPath,
-                    Module = module, Procedure = procedure, ExpectedMode = 1, ExpectedSha256 = original["Sha256"], Offset = offset, Limit = limit })["Data"]);
+                var inspected = VbeBridgeClient.Object(send(new
+                {
+                    Command = "inspect_local_scalars",
+                    Project = projectPath,
+                    Module = module,
+                    Procedure = procedure,
+                    ExpectedMode = 1,
+                    ExpectedSha256 = original["Sha256"],
+                    Offset = offset,
+                    Limit = limit
+                })["Data"]);
                 Assert.IsNotNull(inspected);
                 Assert.IsTrue(inspected.ContainsKey("Aborted"), "A malformed response is not terminal native evidence.");
                 inspectionPending = false;
@@ -316,10 +327,12 @@ namespace VBAi.Tests.Integration
             bool bridgeAvailable = true;
             const string module = "ScalarAudit";
             var json = new JavaScriptSerializer();
-            Func<object, IDictionary<string, object>> send = request => {
+            Func<object, IDictionary<string, object>> send = request =>
+            {
                 try
                 {
-                    var result = evidence.Send(request, () => VbeBridgeClient.Read("VBAi." + host.ProcessId, request, 20000), response => {
+                    var result = evidence.Send(request, () => VbeBridgeClient.Read("VBAi." + host.ProcessId, request, 20000), response =>
+                    {
                         Assert.IsNotNull(response, "The owned host bridge did not respond.");
                         Assert.AreEqual(true, response["Ok"], json.Serialize(response));
                     });
@@ -345,13 +358,27 @@ namespace VBAi.Tests.Integration
                     "    auditValues(1) = 7\r\n    auditUnknown = Empty\r\n    Stop\r\nEnd Sub";
                 send(new { Command = "create_module", Project = projectPath, Module = module, ExpectedMode = 2 });
                 var empty = VbeBridgeClient.Object(send(new { Command = "read_module", Project = projectPath, Module = module })["Data"]);
-                send(new { Command = "replace_lines", Project = projectPath, Module = module,
-                    ExpectedSha256 = empty["Sha256"], StartLine = 1, Count = 0, Text = source });
+                send(new
+                {
+                    Command = "replace_lines",
+                    Project = projectPath,
+                    Module = module,
+                    ExpectedSha256 = empty["Sha256"],
+                    StartLine = 1,
+                    Count = 0,
+                    Text = source
+                });
                 var original = VbeBridgeClient.Object(send(new { Command = "read_module", Project = projectPath, Module = module })["Data"]);
                 // Let native navigation settle before the single execution request.
                 // A refused cold-start Run Sub remains a separate qualification gap.
-                send(new { Command = "select_code", Project = projectPath, Module = module,
-                    StartLine = 2, ExpectedSha256 = original["Sha256"] });
+                send(new
+                {
+                    Command = "select_code",
+                    Project = projectPath,
+                    Module = module,
+                    StartLine = 2,
+                    ExpectedSha256 = original["Sha256"]
+                });
                 var navigation = Stopwatch.StartNew();
                 while (!string.Equals(Convert.ToString(state()["ActiveModule"]), module, StringComparison.Ordinal))
                 {
@@ -360,12 +387,27 @@ namespace VBAi.Tests.Integration
                     Thread.Sleep(50);
                 }
                 canClose = false;
-                send(new { Command = "run_sub", Project = projectPath, Module = module, Procedure = "AuditLocals",
-                    ExpectedMode = 2, ExpectedSha256 = original["Sha256"] });
+                send(new
+                {
+                    Command = "run_sub",
+                    Project = projectPath,
+                    Module = module,
+                    Procedure = "AuditLocals",
+                    ExpectedMode = 2,
+                    ExpectedSha256 = original["Sha256"]
+                });
                 WaitMode(state, 1);
                 send(new { Command = "open_debug_pane", Action = "locals" });
-                var inspected = VbeBridgeClient.Object(send(new { Command = "inspect_local_scalars", Project = projectPath,
-                    Module = module, Procedure = "AuditLocals", ExpectedMode = 1, ExpectedSha256 = original["Sha256"], Limit = 8 })["Data"]);
+                var inspected = VbeBridgeClient.Object(send(new
+                {
+                    Command = "inspect_local_scalars",
+                    Project = projectPath,
+                    Module = module,
+                    Procedure = "AuditLocals",
+                    ExpectedMode = 1,
+                    ExpectedSha256 = original["Sha256"],
+                    Limit = 8
+                })["Data"]);
                 Assert.AreEqual(false, inspected["Aborted"], json.Serialize(inspected));
                 Assert.AreEqual(false, inspected["RuntimeInventoryComplete"]);
                 Assert.AreEqual(projectName + "." + module + ".AuditLocals", inspected["Context"]);

@@ -1,13 +1,8 @@
 namespace VBAi.Tests.Unit
 {
-    using System;
+    using Microsoft.VisualStudio.TestTools.UnitTesting;
     using System.Collections.Generic;
     using System.Reflection;
-    using System.Runtime.InteropServices;
-    using System.Runtime.Serialization;
-    using System.Windows.Forms;
-    using VBAi;
-    using Microsoft.VisualStudio.TestTools.UnitTesting;
 
     /// <summary>Fournit des accès aux contrôles privés et des menus simulés pour les tests de fenêtre.</summary>
     public sealed partial class HostSettingsWindowTests

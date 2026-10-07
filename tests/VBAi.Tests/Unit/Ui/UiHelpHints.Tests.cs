@@ -1,10 +1,10 @@
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.ComponentModel;
 using System.ComponentModel.Design;
 using System.Linq;
 using System.Reflection;
 using System.Windows.Forms;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 using VBAi.Tests.Infrastructure;
 
 namespace VBAi.Tests.Unit
@@ -56,19 +56,19 @@ namespace VBAi.Tests.Unit
                     && type.GetConstructor(flags, null, Type.EmptyTypes, null) != null).ToArray();
                 Assert.IsTrue(types.Length >= 48, "The inventory must cover product views, not a hand-picked subset.");
                 foreach (var type in types)
-                using (var root = (Control)Activator.CreateInstance(type, true))
-                {
-                    foreach (var control in Descendants(root).Where(IsInteractive))
+                    using (var root = (Control)Activator.CreateInstance(type, true))
                     {
-                        if (!string.IsNullOrEmpty(UiHelpHints.ForControl(control))) continue;
-                        bool found = false;
-                        for (var owner = control; owner != null; owner = owner.Parent)
-                            foreach (var field in owner.GetType().GetFields(flags))
-                                if (typeof(ToolTip).IsAssignableFrom(field.FieldType)
-                                    && field.GetValue(owner) is ToolTip tips && !string.IsNullOrWhiteSpace(tips.GetToolTip(control))) found = true;
-                        if (!found) missing.Add(type.Name + "." + control.Name + " (" + control.GetType().Name + ")");
+                        foreach (var control in Descendants(root).Where(IsInteractive))
+                        {
+                            if (!string.IsNullOrEmpty(UiHelpHints.ForControl(control))) continue;
+                            bool found = false;
+                            for (var owner = control; owner != null; owner = owner.Parent)
+                                foreach (var field in owner.GetType().GetFields(flags))
+                                    if (typeof(ToolTip).IsAssignableFrom(field.FieldType)
+                                        && field.GetValue(owner) is ToolTip tips && !string.IsNullOrWhiteSpace(tips.GetToolTip(control))) found = true;
+                            if (!found) missing.Add(type.Name + "." + control.Name + " (" + control.GetType().Name + ")");
+                        }
                     }
-                }
             }
             finally { LicenseManager.CurrentContext = context; }
             Assert.AreEqual(0, missing.Count, string.Join(Environment.NewLine, missing.Distinct()));

@@ -11,10 +11,13 @@ namespace VBAi
     {
 
         /// <summary>Rectangle Win32 obtenu pour une fenêtre ou un contrôle natif.</summary>
-        [StructLayout(LayoutKind.Sequential)] internal struct ViewRect {
+        [StructLayout(LayoutKind.Sequential)]
+        internal struct ViewRect
+        {
 
             /// <summary>Screen-space edges returned by GetWindowRect; Right and Bottom are exclusive bounds.</summary>
-            public int Left, Top, Right, Bottom; }
+            public int Left, Top, Right, Bottom;
+        }
 
         /// <summary>Lit les limites d’une fenêtre Win32.</summary>
         /// <param name="hwnd">Handle de la fenêtre à mesurer.</param>
@@ -49,8 +52,8 @@ namespace VBAi
             {
                 if (!IsWindowVisible(child) || !ViewBounds(child, out ViewRect bounds)) return true;
                 string kind = ClassName(child);
-                if (kind == "ScrollBar" && bounds.Right-bounds.Left > bounds.Bottom-bounds.Top) bars.Add(bounds);
-                if (kind == "ObtbarWndClass") buttons.Add(Tuple.Create(child,bounds));
+                if (kind == "ScrollBar" && bounds.Right - bounds.Left > bounds.Bottom - bounds.Top) bars.Add(bounds);
+                if (kind == "ObtbarWndClass") buttons.Add(Tuple.Create(child, bounds));
                 return true;
             }, IntPtr.Zero);
             if (bars.Count != 1) throw new InvalidOperationException("The code window must expose exactly one shared horizontal scrollbar.");
@@ -58,10 +61,10 @@ namespace VBAi
             var matches = buttons.Where(item => item.Item2.Right == bar.Left && item.Item2.Top == bar.Top && item.Item2.Bottom == bar.Bottom).ToArray();
             if (matches.Length != 1) throw new InvalidOperationException("The native procedure/module view toolbar was not uniquely identified.");
             var target = matches[0];
-            int width = target.Item2.Right-target.Item2.Left, height = target.Item2.Bottom-target.Item2.Top;
-            if (height < 10 || height > 64 || width < height*1.5 || width > height*3 || !ObjectBrowserEnabled(target.Item1))
+            int width = target.Item2.Right - target.Item2.Left, height = target.Item2.Bottom - target.Item2.Top;
+            if (height < 10 || height > 64 || width < height * 1.5 || width > height * 3 || !ObjectBrowserEnabled(target.Item1))
                 throw new InvalidOperationException("Unrecognized native view-button geometry or disabled control.");
-            int x = procedure ? width/4 : 3*width/4, y = height/2;
+            int x = procedure ? width / 4 : 3 * width / 4, y = height / 2;
             IntPtr point = new IntPtr((y << 16) | x);
             // These owner-drawn buttons expose no UIA/MSAA action. Send mouse
             // messages only to their verified HWND using its local dimensions.

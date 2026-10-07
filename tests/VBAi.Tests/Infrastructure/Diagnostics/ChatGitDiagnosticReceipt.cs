@@ -18,7 +18,8 @@ namespace VBAi.Tests.Integration
             return WaitCore(() => watch.ElapsedMilliseconds,
                 () => File.Exists(Path.Combine(root, "PostHandlerCallbackObserved.json.ready")),
                 () => File.Exists(Path.Combine(root, "Failed.json.ready")),
-                () => ChatGitModalDiagnostic.Phases.Select(phase => {
+                () => ChatGitModalDiagnostic.Phases.Select(phase =>
+                {
                     string path = Path.Combine(root, phase + ".json");
                     if (!File.Exists(path + ".ready") || new FileInfo(path).Length > 32768) throw new InvalidOperationException("The complete bounded diagnostic chain is required.");
                     return serializer.DeserializeObject(File.ReadAllText(path, new System.Text.UTF8Encoding(false, true)));

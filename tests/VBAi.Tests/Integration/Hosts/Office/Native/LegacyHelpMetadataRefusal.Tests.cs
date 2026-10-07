@@ -1,8 +1,8 @@
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.IO;
 using System.Linq;
 using System.Runtime.ExceptionServices;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace VBAi.Tests.Integration
 {
@@ -20,9 +20,7 @@ namespace VBAi.Tests.Integration
         {
             if (Environment.GetEnvironmentVariable("VBAi_RUN_OFFICE_TESTS") != "1")
                 Assert.Inconclusive("Set VBAi_RUN_OFFICE_TESTS=1 for disposable host qualification.");
-            string desktop = Environment.GetEnvironmentVariable("VBAi_TEST_DESKTOP_NAME");
-            Assert.IsFalse(string.IsNullOrWhiteSpace(desktop), "A guarded inactive Windows desktop is required.");
-            IsolatedTestDesktop.RequireCurrent(desktop);
+            NativeTestDesktop.Current();
             OfficeVbeFixture fixture = null; Exception failure = null;
             try
             {
@@ -45,10 +43,19 @@ namespace VBAi.Tests.Integration
                 string marker = Path.Combine(fixture.Root, "OwnedLegacyRefusal.chm");
                 if (property == "HelpFile") File.WriteAllText(marker, "Inert owned path marker; no help content is executed.");
                 object value = property == "HelpFile" ? (object)marker : 322;
-                fixture.RecordAdapterStage("SingleLegacyHelpMetadataRequestStarting", new { Host = host, Property = property,
-                    ExpectedProjectVersion = before["Version"], ProcessId = fixture.ProcessId,
-                    ExpectedMvid = status["AssemblyModuleVersionId"], LegacyRequestLimit = 1,
-                    ExpectedSetterEntries = 0, SaveAllowed = false, ReopenAllowed = false, RetryAllowed = false });
+                fixture.RecordAdapterStage("SingleLegacyHelpMetadataRequestStarting", new
+                {
+                    Host = host,
+                    Property = property,
+                    ExpectedProjectVersion = before["Version"],
+                    ProcessId = fixture.ProcessId,
+                    ExpectedMvid = status["AssemblyModuleVersionId"],
+                    LegacyRequestLimit = 1,
+                    ExpectedSetterEntries = 0,
+                    SaveAllowed = false,
+                    ReopenAllowed = false,
+                    RetryAllowed = false
+                });
                 fixture.NativeExecutionUnsettled = true;
                 var response = fixture.Response("set_project_property", "Property", property, "Value", value,
                     "ExpectedProjectVersion", before["Version"], "ExpectedMode", 2);
@@ -69,11 +76,24 @@ namespace VBAi.Tests.Integration
                 var finalOwner = fixture.RecordAdapterObservation("AfterLegacyHelpMetadataRefusal");
                 Assert.AreEqual(fixture.ProcessId, Convert.ToInt32(finalOwner["ProcessId"]));
                 Assert.AreEqual(fixture.DocumentPath, finalOwner["DocumentPath"]);
-                fixture.RecordAdapterStage("LegacyHelpMetadataRefusalVerified", new { Host = host, Property = property,
-                    OriginalResponse = response, ProjectVersionUnchanged = true, SourceUnchanged = true, ReferencesUnchanged = true,
-                    SavedStateUnchanged = true, ExpectedSetterEntries = 0, PreSetterRefusalVerified = true,
-                    SetterEntryObservation = "NotInstrumented", SaveEntries = 0, FreshReopenEntries = 0,
-                    AlternativeInvoked = false, NormalOriginalExitRequired = true, RetryAllowed = false });
+                fixture.RecordAdapterStage("LegacyHelpMetadataRefusalVerified", new
+                {
+                    Host = host,
+                    Property = property,
+                    OriginalResponse = response,
+                    ProjectVersionUnchanged = true,
+                    SourceUnchanged = true,
+                    ReferencesUnchanged = true,
+                    SavedStateUnchanged = true,
+                    ExpectedSetterEntries = 0,
+                    PreSetterRefusalVerified = true,
+                    SetterEntryObservation = "NotInstrumented",
+                    SaveEntries = 0,
+                    FreshReopenEntries = 0,
+                    AlternativeInvoked = false,
+                    NormalOriginalExitRequired = true,
+                    RetryAllowed = false
+                });
                 fixture.NativeExecutionUnsettled = false;
             }
             catch (Exception error)

@@ -1,3 +1,5 @@
+using Microsoft.VisualStudio.TestTools.UnitTesting;
+using Microsoft.Win32;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -10,8 +12,6 @@ using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Web.Script.Serialization;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
-using Microsoft.Win32;
 
 namespace VBAi.Tests.Integration
 {
@@ -59,9 +59,21 @@ namespace VBAi.Tests.Integration
                 {
                     try { fixture.RestoreOwnedModules(); }
                     catch (Exception error) { cleanup = error; }
-                    try { fixture.Save("lifecycle.json", new { PID = pid, Macro = path, PrimaryError = primary?.ToString(), CleanupError = cleanup?.ToString(),
-                        fixture.Unsettled, ProcessRetained = !process.HasExited, MacroLeftOpen = true,
-                        OtherProjectSourcesInspected = false, CoverageQualification = "Not requested; prerequisites require a separate decision" }); }
+                    try
+                    {
+                        fixture.Save("lifecycle.json", new
+                        {
+                            PID = pid,
+                            Macro = path,
+                            PrimaryError = primary?.ToString(),
+                            CleanupError = cleanup?.ToString(),
+                            fixture.Unsettled,
+                            ProcessRetained = !process.HasExited,
+                            MacroLeftOpen = true,
+                            OtherProjectSourcesInspected = false,
+                            CoverageQualification = "Not requested; prerequisites require a separate decision"
+                        });
+                    }
                     catch (Exception error) { cleanup = cleanup == null ? error : new AggregateException(cleanup, error); }
                     Console.WriteLine("SOLIDWORKS qualification evidence=" + root);
                 }
@@ -123,9 +135,16 @@ namespace VBAi.Tests.Integration
                 Assert.AreEqual(typeof(VbeSession).Module.ModuleVersionId.ToString("D"), status["AssemblyModuleVersionId"]);
                 string loaded = (string)status["AssemblyPath"];
                 Assert.AreEqual(HashFile(typeof(VbeSession).Assembly.Location), HashFile(loaded), "Loaded candidate bytes differ from the test assembly reference.");
-                Save("identity.json", new { CurrentSourceRevision = revision, SourceStatus = sourceStatus, LoadedAssembly = status,
-                    PID = process.Id, HostFileVersion = process.MainModule.FileVersionInfo.FileVersion, Macro = path,
-                    Boundary = "registered in-process VBE callback; preloaded SOLIDWORKS retained" });
+                Save("identity.json", new
+                {
+                    CurrentSourceRevision = revision,
+                    SourceStatus = sourceStatus,
+                    LoadedAssembly = status,
+                    PID = process.Id,
+                    HostFileVersion = process.MainModule.FileVersionInfo.FileVersion,
+                    Macro = path,
+                    Boundary = "registered in-process VBE callback; preloaded SOLIDWORKS retained"
+                });
                 Save("callback-registration.json", RequireCallback(loaded));
                 // Exact path resolution excludes other projects even if their VBA names collide.
                 var properties = Data("project_properties");
@@ -156,10 +175,16 @@ namespace VBAi.Tests.Integration
                 Assert.AreEqual(diskHash, HashFile(path), "The macro file changed during backup; qualification was refused.");
                 baselineVerified = true;
             }
-            private IDictionary<string, object>[] ReadSources() => Items("list_modules").Select(module => {
+            private IDictionary<string, object>[] ReadSources() => Items("list_modules").Select(module =>
+            {
                 var source = Data("read_module", "Module", module["Name"]);
-                return (IDictionary<string, object>)new Dictionary<string, object> { ["Name"] = module["Name"], ["Type"] = module["Type"],
-                    ["Code"] = source["Code"], ["Sha256"] = source["Sha256"] };
+                return (IDictionary<string, object>)new Dictionary<string, object>
+                {
+                    ["Name"] = module["Name"],
+                    ["Type"] = module["Type"],
+                    ["Code"] = source["Code"],
+                    ["Sha256"] = source["Sha256"]
+                };
             }).OrderBy(module => (string)module["Name"], StringComparer.Ordinal).ToArray();
 
             internal void Run()
@@ -281,8 +306,16 @@ namespace VBAi.Tests.Integration
                     Assert.AreEqual(module["Sha256"], after.Single(item => Equals(item["Name"], module["Name"]))["Sha256"]);
                 Assert.AreEqual(referencesVersion, Data("list_references")["Version"]);
                 Assert.AreEqual(diskHash, HashFile(path), "The selected disk macro changed outside the fixture; its backup was retained without overwriting it.");
-                Save("restoration.json", new { Verified = true, Macro = path, DiskSha256 = diskHash, SavedAutomatically = false,
-                    HostRetained = true, MacroLeftOpen = true, OtherProjectsInspected = false });
+                Save("restoration.json", new
+                {
+                    Verified = true,
+                    Macro = path,
+                    DiskSha256 = diskHash,
+                    SavedAutomatically = false,
+                    HostRetained = true,
+                    MacroLeftOpen = true,
+                    OtherProjectsInspected = false
+                });
             }
         }
 
@@ -319,17 +352,32 @@ namespace VBAi.Tests.Integration
         {
             var review = new VbaTestCatalog { Project = new VbaTestProjectSnapshot() };
             foreach (var module in ((object[])catalog["Modules"]).Select(VbeBridgeClient.Object))
-                review.Modules.Add(new VbaTestModule { Name = (string)module["Name"], Diagnostic = module["Diagnostic"] as string,
-                    Tests = ((object[])module["Tests"]).Select(Descriptor).ToList(), ModuleInitialize = Descriptor(module["ModuleInitialize"]),
-                    ModuleCleanup = Descriptor(module["ModuleCleanup"]), TestInitialize = Descriptor(module["TestInitialize"]), TestCleanup = Descriptor(module["TestCleanup"]) });
+                review.Modules.Add(new VbaTestModule
+                {
+                    Name = (string)module["Name"],
+                    Diagnostic = module["Diagnostic"] as string,
+                    Tests = ((object[])module["Tests"]).Select(Descriptor).ToList(),
+                    ModuleInitialize = Descriptor(module["ModuleInitialize"]),
+                    ModuleCleanup = Descriptor(module["ModuleCleanup"]),
+                    TestInitialize = Descriptor(module["TestInitialize"]),
+                    TestCleanup = Descriptor(module["TestCleanup"])
+                });
             return review;
         }
         private static VbaTestDescriptor Descriptor(object value)
         {
             if (value == null) return null;
             var item = VbeBridgeClient.Object(value);
-            return new VbaTestDescriptor { Id = (string)item["Id"], Module = (string)item["Module"], Procedure = (string)item["Procedure"],
-                Kind = (string)item["Kind"], Line = Convert.ToInt32(item["Line"]), Diagnostic = item["Diagnostic"] as string, IgnoreReason = item["IgnoreReason"] as string };
+            return new VbaTestDescriptor
+            {
+                Id = (string)item["Id"],
+                Module = (string)item["Module"],
+                Procedure = (string)item["Procedure"],
+                Kind = (string)item["Kind"],
+                Line = Convert.ToInt32(item["Line"]),
+                Diagnostic = item["Diagnostic"] as string,
+                IgnoreReason = item["IgnoreReason"] as string
+            };
         }
         private static string Canonical(string source) => source.Replace("\r\n", "\n").TrimEnd('\n');
         private static string HashFile(string path) { using (var file = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite)) using (var sha = SHA256.Create()) return BitConverter.ToString(sha.ComputeHash(file)).Replace("-", ""); }
@@ -352,8 +400,14 @@ namespace VBAi.Tests.Integration
         }
         private static string Git(string arguments)
         {
-            using (var process = Process.Start(new ProcessStartInfo("git", arguments) { WorkingDirectory = Environment.CurrentDirectory,
-                UseShellExecute = false, CreateNoWindow = true, RedirectStandardOutput = true, RedirectStandardError = true }))
+            using (var process = Process.Start(new ProcessStartInfo("git", arguments)
+            {
+                WorkingDirectory = Environment.CurrentDirectory,
+                UseShellExecute = false,
+                CreateNoWindow = true,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true
+            }))
             {
                 var output = process.StandardOutput.ReadToEndAsync(); var error = process.StandardError.ReadToEndAsync();
                 Assert.IsTrue(process.WaitForExit(10000), "Source revision unavailable; no native mutation was started.");

@@ -2,14 +2,9 @@ using System;
 
 namespace VBAi.Tests.Unit
 {
-    using System;
-    using System.Collections;
-    using System.Collections.Generic;
-    using System.ComponentModel;
-    using System.Linq;
-    using System.Reflection;
-    using VBAi;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
+    using System;
+    using VBAi;
 
     [TestClass]
     [TestCategory("Unit")]

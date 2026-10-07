@@ -1,6 +1,6 @@
 using System;
-using System.Collections.Generic;
 using System.Collections;
+using System.Collections.Generic;
 using System.IO;
 using System.Security.Cryptography;
 using System.Text;
@@ -76,9 +76,17 @@ namespace VBAi
             if (bodyLine < 1 || string.Equals(after, before, StringComparison.Ordinal) || kind != 0 ||
                 !string.Equals(actual, procedureName, StringComparison.OrdinalIgnoreCase))
                 throw new InvalidOperationException("The created event procedure could not be verified in the code module.");
-            return new { Project = request.Project, Form = request.Form,
-                request.ObjectName, request.EventName, Procedure = actual,
-                BodyLine = bodyLine, Sha256 = Hash(after), Code = after };
+            return new
+            {
+                request.Project,
+                request.Form,
+                request.ObjectName,
+                request.EventName,
+                Procedure = actual,
+                BodyLine = bodyLine,
+                Sha256 = Hash(after),
+                Code = after
+            };
         }
 
         /// <summary>Insère une procédure validée dans un module standard ou de classe en mode conception.</summary>
@@ -119,10 +127,18 @@ namespace VBAi
                 string after = Code(module, countAfter);
                 if (string.Equals(before, after, StringComparison.Ordinal))
                     throw new InvalidOperationException("VBIDE did not change the code module.");
-                return new { Project = request.Project, Module = request.Module,
-                    Procedure = actual, ProcKind = actualKind, BodyLine = bodyLine,
-                    CountOfLines = countAfter, Sha256 = Hash(after), Code = after,
-                    CompilationVerified = false };
+                return new
+                {
+                    request.Project,
+                    request.Module,
+                    Procedure = actual,
+                    ProcKind = actualKind,
+                    BodyLine = bodyLine,
+                    CountOfLines = countAfter,
+                    Sha256 = Hash(after),
+                    Code = after,
+                    CompilationVerified = false
+                };
             }
             catch
             {
@@ -168,10 +184,18 @@ namespace VBAi
             if (end < body) throw new InvalidOperationException("The procedure's End statement could not be located safely.");
             string original = (string)module.Lines[body, end - body + 1];
             if (string.Equals(original.Replace("\r\n", "\n"), text, StringComparison.Ordinal))
-                return new { Project = request.Project, Module = request.Module,
-                    Procedure = request.Procedure, ProcKind = request.ProcKind,
-                    BodyLine = body, CountOfLines = total, Sha256 = Hash(before),
-                    Changed = false, CompilationVerified = false };
+                return new
+                {
+                    request.Project,
+                    request.Module,
+                    request.Procedure,
+                    request.ProcKind,
+                    BodyLine = body,
+                    CountOfLines = total,
+                    Sha256 = Hash(before),
+                    Changed = false,
+                    CompilationVerified = false
+                };
             int removed = end - body + 1;
             bool deleted = false;
             try
@@ -186,10 +210,18 @@ namespace VBAi
                     !string.Equals(actual, request.Procedure, StringComparison.OrdinalIgnoreCase))
                     throw new InvalidOperationException("VBIDE did not recognize the replacement procedure.");
                 string after = Code(module, (int)module.CountOfLines);
-                return new { Project = request.Project, Module = request.Module,
-                    Procedure = actual, ProcKind = actualKind, BodyLine = newBody,
-                    CountOfLines = (int)module.CountOfLines, Sha256 = Hash(after),
-                    Changed = true, CompilationVerified = false };
+                return new
+                {
+                    request.Project,
+                    request.Module,
+                    Procedure = actual,
+                    ProcKind = actualKind,
+                    BodyLine = newBody,
+                    CountOfLines = (int)module.CountOfLines,
+                    Sha256 = Hash(after),
+                    Changed = true,
+                    CompilationVerified = false
+                };
             }
             catch (Exception error)
             {
@@ -270,10 +302,19 @@ namespace VBAi
                 string after = Code(module, (int)module.CountOfLines);
                 if (string.Equals(before, after, StringComparison.Ordinal))
                     throw new InvalidOperationException("VBIDE did not change the code module.");
-                return new { Project = request.Project, Module = request.Module,
-                    Procedure = actual, ProcKind = actualKind, RemovedStartLine = body,
-                    RemovedLineCount = removed, CountOfLines = (int)module.CountOfLines,
-                    Sha256 = Hash(after), Code = after, CompilationVerified = false };
+                return new
+                {
+                    request.Project,
+                    request.Module,
+                    Procedure = actual,
+                    ProcKind = actualKind,
+                    RemovedStartLine = body,
+                    RemovedLineCount = removed,
+                    CountOfLines = (int)module.CountOfLines,
+                    Sha256 = Hash(after),
+                    Code = after,
+                    CompilationVerified = false
+                };
             }
             catch (Exception error)
             {
@@ -316,8 +357,7 @@ namespace VBAi
             string sourceHash;
             using (var sha = SHA256.Create())
                 sourceHash = BitConverter.ToString(sha.ComputeHash(bytes)).Replace("-", "").ToLowerInvariant();
-            string encoding;
-            string source = DecodeCodeFile(bytes, request.SourceEncoding, out encoding);
+            string source = DecodeCodeFile(bytes, request.SourceEncoding, out string encoding);
             if (source.IndexOf('\0') >= 0 || string.IsNullOrWhiteSpace(source))
                 throw new ArgumentException("The selected file is not non-empty VBA source text.");
             dynamic project = GetProject(request.Project);
@@ -342,11 +382,19 @@ namespace VBAi
                 string insertedText = (string)module.Lines[request.StartLine, insertedCount];
                 if (!string.Equals(NonAsciiCharacters(source), NonAsciiCharacters(insertedText), StringComparison.Ordinal))
                     throw new InvalidOperationException("VBE changed non-ASCII source characters while inserting the file.");
-                return new { Project = request.Project, Module = request.Module,
-                    Path = path, SourceByteCount = bytes.Length, SourceSha256 = sourceHash,
-                    SourceEncoding = encoding, StartLine = request.StartLine,
-                    InsertedLineCount = insertedCount, Sha256 = Hash(after),
-                    CompilationVerified = false };
+                return new
+                {
+                    request.Project,
+                    request.Module,
+                    Path = path,
+                    SourceByteCount = bytes.Length,
+                    SourceSha256 = sourceHash,
+                    SourceEncoding = encoding,
+                    request.StartLine,
+                    InsertedLineCount = insertedCount,
+                    Sha256 = Hash(after),
+                    CompilationVerified = false
+                };
             }
             catch (Exception error)
             {
@@ -414,14 +462,21 @@ namespace VBAi
             string sha;
             using (var hash = SHA256.Create())
                 sha = BitConverter.ToString(hash.ComputeHash(bytes)).Replace("-", "").ToLowerInvariant();
-            return new { Path = path, ByteCount = bytes.Length, Sha256 = sha, Bom = bom,
-                StrictUtf8Valid = utf8Valid, ContainsNonAscii = containsNonAscii,
+            return new
+            {
+                Path = path,
+                ByteCount = bytes.Length,
+                Sha256 = sha,
+                Bom = bom,
+                StrictUtf8Valid = utf8Valid,
+                ContainsNonAscii = containsNonAscii,
                 ContainsNulByte = containsNul,
                 ExplicitEncodingRequired = bom == null && (containsNonAscii || containsNul),
                 DefaultEncoding = bom ?? (!containsNonAscii && !containsNul ? "utf-8" : null),
                 SystemAnsiCodePage = Encoding.Default.CodePage,
                 SupportedSourceEncodings = new[] { "utf-8", "utf-16le", "utf-16be", "windows-1252", "system-ansi" },
-                ContentIncluded = false };
+                ContentIncluded = false
+            };
         }
 
         /// <summary>Décode les octets selon le BOM ou l’encodage demandé, en refusant les séquences invalides.</summary>
@@ -556,14 +611,27 @@ namespace VBAi
                 int count = (int)module.ProcCountLines[name, kind];
                 if (count < 1 || start < 1 || body < start || start + count - 1 > total)
                     throw new InvalidOperationException("VBIDE returned an invalid procedure range for " + name + ".");
-                result.Add(new { Name = name, Kind = kind, StartLine = start,
-                    BodyLine = body, CountLines = count, EndLine = start + count - 1,
-                    Declaration = (string)module.Lines[body, 1] });
+                result.Add(new
+                {
+                    Name = name,
+                    Kind = kind,
+                    StartLine = start,
+                    BodyLine = body,
+                    CountLines = count,
+                    EndLine = start + count - 1,
+                    Declaration = (string)module.Lines[body, 1]
+                });
                 line = Math.Max(line + 1, start + count);
             }
-            return new { Project = projectName, Module = moduleName, Sha256 = Hash(code),
-                CountOfLines = total, CountOfDeclarationLines = declarations,
-                Procedures = result };
+            return new
+            {
+                Project = projectName,
+                Module = moduleName,
+                Sha256 = Hash(code),
+                CountOfLines = total,
+                CountOfDeclarationLines = declarations,
+                Procedures = result
+            };
         }
 
         /// <summary>Recherche du texte ou un motif dans les modules d’un projet et retourne les correspondances paginées.</summary>
@@ -623,9 +691,16 @@ namespace VBAi
                                 ((match.Index == 0 || !IdentifierChar(sourceLine[match.Index - 1])) &&
                                  (afterMatch == sourceLine.Length || !IdentifierChar(sourceLine[afterMatch])));
                             if (!wholeMatch) continue;
-                            results.Add(new { Module = name, StartLine = line + 1,
-                                StartColumn = match.Index + 1, EndLine = line + 1,
-                                EndColumn = afterMatch, Text = sourceLine, Sha256 = sha });
+                            results.Add(new
+                            {
+                                Module = name,
+                                StartLine = line + 1,
+                                StartColumn = match.Index + 1,
+                                EndLine = line + 1,
+                                EndColumn = afterMatch,
+                                Text = sourceLine,
+                                Sha256 = sha
+                            });
                             if (results.Count > 200) break;
                         }
                         continue;
@@ -641,9 +716,16 @@ namespace VBAi
                             ((match == 0 || !IdentifierChar(sourceLine[match - 1])) &&
                              (after == sourceLine.Length || !IdentifierChar(sourceLine[after])));
                         if (word)
-                            results.Add(new { Module = name, StartLine = line + 1,
-                                StartColumn = match + 1, EndLine = line + 1, EndColumn = after,
-                                Text = sourceLine, Sha256 = sha });
+                            results.Add(new
+                            {
+                                Module = name,
+                                StartLine = line + 1,
+                                StartColumn = match + 1,
+                                EndLine = line + 1,
+                                EndColumn = after,
+                                Text = sourceLine,
+                                Sha256 = sha
+                            });
                         offset = match + 1;
                     }
                 }
@@ -651,10 +733,17 @@ namespace VBAi
             }
             bool truncated = results.Count > 200;
             if (truncated) results.RemoveAt(200);
-            return new { Project = request.Project, Query = request.Query,
-                request.PatternSearch, request.WholeWord, request.MatchCase,
-                Matches = results, SourceVersions = sourceVersions,
-                Truncated = truncated };
+            return new
+            {
+                request.Project,
+                request.Query,
+                request.PatternSearch,
+                request.WholeWord,
+                request.MatchCase,
+                Matches = results,
+                SourceVersions = sourceVersions,
+                Truncated = truncated
+            };
         }
 
         /// <summary>Indique si un caractère peut appartenir à un identifiant VBA.</summary>

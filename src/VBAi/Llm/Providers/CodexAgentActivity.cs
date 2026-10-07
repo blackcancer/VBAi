@@ -56,8 +56,15 @@ namespace VBAi
             if (complete && kind == "commandExecution" && item.TryGetValue("exitCode", out var exit) && exit != null && Convert.ToInt32(exit) != 0) status = "failed";
             long? duration = null;
             if (item.TryGetValue("durationMs", out var raw) && raw != null && long.TryParse(Convert.ToString(raw), out var milliseconds) && milliseconds >= 0) duration = milliseconds;
-            return new CodexAgentActivity { Id = Text(item, "id"), Kind = kind, Title = Limit(title), Detail = Limit(detail),
-                Status = string.IsNullOrEmpty(status) ? (complete ? "completed" : "inProgress") : status, DurationMs = duration };
+            return new CodexAgentActivity
+            {
+                Id = Text(item, "id"),
+                Kind = kind,
+                Title = Limit(title),
+                Detail = Limit(detail),
+                Status = string.IsNullOrEmpty(status) ? (complete ? "completed" : "inProgress") : status,
+                DurationMs = duration
+            };
         }
 
         /// <summary>Ne reprend que les identités publiques de la cible d'un outil, sans ses arguments secrets ou son code.</summary>

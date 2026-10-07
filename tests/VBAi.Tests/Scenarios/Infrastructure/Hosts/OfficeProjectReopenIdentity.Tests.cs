@@ -1,7 +1,7 @@
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Collections.Generic;
 using System.IO;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 using VBAi.Tests.Integration;
 
 namespace VBAi.Tests.Unit
@@ -134,14 +134,29 @@ namespace VBAi.Tests.Unit
         private static void Require(OfficeProjectReopenIdentity.Evidence value, string previous) =>
             OfficeProjectReopenIdentity.Require("Publisher", FilePath, previous, 100, Metadata, Candidate, value);
 
-        private static OfficeProjectReopenIdentity.Evidence Create() => new OfficeProjectReopenIdentity.Evidence {
-            Host = "Publisher", DocumentPath = FilePath, Selector = FilePath, ProcessId = 200,
+        private static OfficeProjectReopenIdentity.Evidence Create() => new OfficeProjectReopenIdentity.Evidence
+        {
+            Host = "Publisher",
+            DocumentPath = FilePath,
+            Selector = FilePath,
+            ProcessId = 200,
             Metadata = (string[])Metadata.Clone(),
             Status = new Dictionary<string, object> { ["AssemblyModuleVersionId"] = Candidate.ToString("D"), ["HostProcessId"] = 200 },
-            Observation = new Dictionary<string, object> { ["ProcessId"] = 200, ["DocumentPath"] = FilePath,
-                ["ApplicationOwnerPid"] = (uint)200, ["Persistence"] = new Dictionary<string, object> {
-                    ["Project"] = FilePath, ["Host"] = "Publisher", ["HostAvailable"] = true,
-                    ["IdentityVerified"] = true, ["OwnerProcessId"] = 200, ["HostPath"] = FilePath } }
+            Observation = new Dictionary<string, object>
+            {
+                ["ProcessId"] = 200,
+                ["DocumentPath"] = FilePath,
+                ["ApplicationOwnerPid"] = (uint)200,
+                ["Persistence"] = new Dictionary<string, object>
+                {
+                    ["Project"] = FilePath,
+                    ["Host"] = "Publisher",
+                    ["HostAvailable"] = true,
+                    ["IdentityVerified"] = true,
+                    ["OwnerProcessId"] = 200,
+                    ["HostPath"] = FilePath
+                }
+            }
         };
 
         private static IDictionary<string, object> Persistence(OfficeProjectReopenIdentity.Evidence value) =>

@@ -1,6 +1,6 @@
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Collections.Generic;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 using VBAi.Tests.Integration;
 
 namespace VBAi.Tests.Unit
@@ -24,9 +24,15 @@ namespace VBAi.Tests.Unit
         [TestMethod]
         public void ChangedDefaultStyleCharsetOrWeightCannotPass()
         {
-            foreach (var change in new Dictionary<string, object> {
-                ["Italic"] = true, ["Bold"] = true, ["Underline"] = true,
-                ["Strikethrough"] = true, ["Charset"] = 1, ["Weight"] = 700 })
+            foreach (var change in new Dictionary<string, object>
+            {
+                ["Italic"] = true,
+                ["Bold"] = true,
+                ["Underline"] = true,
+                ["Strikethrough"] = true,
+                ["Charset"] = 1,
+                ["Weight"] = 700
+            })
             {
                 var values = Fonts(); values["Form.Font." + change.Key] = change.Value;
                 Assert.ThrowsException<AssertFailedException>(() => UserFormQualificationFonts.RequireNative(values, "LabelButton"));

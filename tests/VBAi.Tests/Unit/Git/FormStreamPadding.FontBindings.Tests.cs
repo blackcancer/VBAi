@@ -1,7 +1,7 @@
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace VBAi.Tests.Unit
 {
@@ -71,7 +71,8 @@ namespace VBAi.Tests.Unit
         [TestMethod]
         public void TextPropsFontRemainsComparableButDoesNotProduceAStandardFontRestorationPlan()
         {
-            var streams = new Dictionary<string, byte[]> {
+            var streams = new Dictionary<string, byte[]>
+            {
                 ["/f"] = RichForm(RichLeaf(true).Length, RichLeaf(false).Length),
                 ["/o"] = Join(RichLeaf(true), RichLeaf(false))
             };

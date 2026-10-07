@@ -38,17 +38,23 @@ namespace VBAi
                 string.IsNullOrWhiteSpace(source.ExpectedOptionsVersion)))
                 throw new ArgumentException("Only HelpContextID or rooted CHM HelpFile with non-null Value and ExpectedOptionsVersion is supported.");
             // Capture request values/delegate now; do not consult a mutable caller request during the modal.
-            var request = new Request { Project = source.Project, ExpectedProjectVersion = source.ExpectedProjectVersion, ExpectedMode = 2,
-                ControlCaption = source.ControlCaption, ExpectedOptionsVersion = source.ExpectedOptionsVersion };
+            var request = new Request
+            {
+                Project = source.Project,
+                ExpectedProjectVersion = source.ExpectedProjectVersion,
+                ExpectedMode = 2,
+                ControlCaption = source.ControlCaption,
+                ExpectedOptionsVersion = source.ExpectedOptionsVersion
+            };
             int? value = write && source.Property == "HelpContextID" ? (int?)RequireGeneralInt32(source.Value) : null;
             string helpFile = write && source.Property == "HelpFile" ? RequireGeneralHelpFile(source.Value) : null;
-            Action<bool> authorization = source.RevalidateProjectPropertyAuthorization;
-            if (authorization == null) throw new InvalidOperationException("The async General route requires an original request authorization callback for reads and writes.");
+            Action<bool> authorization = source.RevalidateProjectPropertyAuthorization ?? throw new InvalidOperationException("The async General route requires an original request authorization callback for reads and writes.");
             object original = (object)GetDesignProject(request.Project);
             string name = (string)((dynamic)original).Name;
             IntPtr root = new IntPtr(Convert.ToInt64(vbe.MainWindow.HWnd));
             var native = GeneralNativeFactory(root, requireNativeContext);
-            Action live = () => {
+            void live()
+            {
                 native.RequireOwner(); authorization(true);
                 if (!GeneralProjectIdentity(original, (object)GetDesignProject(request.Project)) || (int)((dynamic)original).Protection != 0 ||
                     !GeneralProjectIdentity(original, (object)vbe.ActiveVBProject) || (string)((dynamic)original).Name != name ||
@@ -63,8 +69,8 @@ namespace VBAi
                 if (!GeneralProjectIdentity(original, (object)GetDesignProject(request.Project)) || !GeneralProjectIdentity(original, (object)vbe.ActiveVBProject))
                     throw new InvalidOperationException("General last revision read resolved a different project.");
                 authorization(false); native.RequireOwner();
-            };
-            Action pure = () => { authorization(false); native.RequireOwner(); };
+            }
+            void pure() { authorization(false); native.RequireOwner(); }
             live(); Action<Action> open = captureExactCommand(request, live);
             var operation = GeneralOperationFactory(native);
             // Caller retains the async authorization delegate until await settles. No COM RCW is passed to a worker.
@@ -150,9 +156,17 @@ namespace VBAi
             {
                 switch (Type.GetTypeCode(value.GetType()))
                 {
-                    case TypeCode.SByte: case TypeCode.Byte: case TypeCode.Int16: case TypeCode.UInt16:
-                    case TypeCode.Int32: case TypeCode.UInt32: case TypeCode.Int64: case TypeCode.UInt64:
-                    case TypeCode.Single: case TypeCode.Double: case TypeCode.Decimal:
+                    case TypeCode.SByte:
+                    case TypeCode.Byte:
+                    case TypeCode.Int16:
+                    case TypeCode.UInt16:
+                    case TypeCode.Int32:
+                    case TypeCode.UInt32:
+                    case TypeCode.Int64:
+                    case TypeCode.UInt64:
+                    case TypeCode.Single:
+                    case TypeCode.Double:
+                    case TypeCode.Decimal:
                         number = Convert.ToDecimal(value, CultureInfo.InvariantCulture); break;
                     default: throw new ArgumentException("General HelpContextID requires an exact numeric Int32 value.");
                 }

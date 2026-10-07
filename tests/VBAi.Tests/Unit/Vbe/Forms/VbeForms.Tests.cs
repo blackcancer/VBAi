@@ -1,10 +1,10 @@
 namespace VBAi.Tests.Unit
 {
+    using Microsoft.VisualStudio.TestTools.UnitTesting;
     using System;
     using System.Collections.Generic;
     using System.Linq;
     using VBAi;
-    using Microsoft.VisualStudio.TestTools.UnitTesting;
 
     [TestClass]
     [TestCategory("Unit")]
@@ -703,10 +703,9 @@ namespace VBAi.Tests.Unit
 
 namespace VBAi.Tests.Unit
 {
+    using Microsoft.VisualStudio.TestTools.UnitTesting;
     using System;
     using System.Linq;
-    using VBAi;
-    using Microsoft.VisualStudio.TestTools.UnitTesting;
 
     [TestClass]
     [TestCategory("Unit")]
@@ -847,13 +846,10 @@ namespace VBAi.Tests.Unit
 
 namespace VBAi.Tests.Unit
 {
+    using Microsoft.VisualStudio.TestTools.UnitTesting;
     using System;
     using System.Collections;
-    using System.Collections.Generic;
-    using System.ComponentModel;
     using System.Linq;
-    using System.Runtime.CompilerServices;
-    using Microsoft.VisualStudio.TestTools.UnitTesting;
     using VBAi;
 
     public sealed partial class VbeFormsTests

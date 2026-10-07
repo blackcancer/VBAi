@@ -1,9 +1,9 @@
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Threading;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 using VBAi.Tests.Integration;
 
 namespace VBAi.Tests.Unit
@@ -20,7 +20,8 @@ namespace VBAi.Tests.Unit
             var rows = new List<IDictionary<string, object>>();
             int reads = 0, setters = 0, guards = 0;
             bool connected = initial;
-            gate.Run("VBAi.AddIn", () => guards++, () => { reads++; return connected; }, () => {
+            gate.Run("VBAi.AddIn", () => guards++, () => { reads++; return connected; }, () =>
+            {
                 Assert.IsTrue(rows.Any(row => State(row) == "SETTER_CLAIMED"), "A durable mutation claim must precede the sole setter.");
                 setters++; connected = true;
             }, () => Registration, rows.Add);
@@ -41,7 +42,8 @@ namespace VBAi.Tests.Unit
             var gate = new OfficeVbeFixture.PrivateAccessAddInConnectionGate();
             int guards = 0, setters = 0, reads = 0;
             var original = new InvalidOperationException("synthetic changed original owner/window/desktop");
-            var error = Assert.ThrowsException<InvalidOperationException>(() => gate.Run("VBAi.AddIn", () => {
+            var error = Assert.ThrowsException<InvalidOperationException>(() => gate.Run("VBAi.AddIn", () =>
+            {
                 if (++guards == failedGuard) throw original;
             }, () => { reads++; return setters != 0; }, () => setters++, () => Registration, row => { }));
             Assert.AreSame(original, error);
@@ -104,7 +106,8 @@ namespace VBAi.Tests.Unit
             Assert.AreEqual(1, reads); Assert.AreEqual(0, setters);
             reads = 0;
             var readbackGate = new OfficeVbeFixture.PrivateAccessAddInConnectionGate();
-            Assert.AreSame(original, Assert.ThrowsException<COMException>(() => readbackGate.Run("VBAi.AddIn", () => { }, () => {
+            Assert.AreSame(original, Assert.ThrowsException<COMException>(() => readbackGate.Run("VBAi.AddIn", () => { }, () =>
+            {
                 if (++reads == 1) return false; throw original;
             }, () => setters++, () => Registration, row => { })));
             Assert.AreEqual(2, reads); Assert.AreEqual(1, setters); Assert.IsTrue(readbackGate.DeliveryUncertain);

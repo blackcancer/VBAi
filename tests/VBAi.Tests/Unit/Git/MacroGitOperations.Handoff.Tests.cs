@@ -1,5 +1,5 @@
-using System;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+using System;
 
 namespace VBAi.Tests.Unit
 {
@@ -14,7 +14,8 @@ namespace VBAi.Tests.Unit
                 object component = f.Host.VBComponents.Item("Module1");
                 if (rollback) f.Repository.PrepareRecovery(target);
                 var original = new InvalidOperationException("exact owner is disabled"); int checks = 0;
-                f.Operations.ImportOwnerPreflight = () => {
+                f.Operations.ImportOwnerPreflight = () =>
+                {
                     checks++; Assert.IsTrue(f.Repository.RecoveryPending);
                     Assert.AreEqual(0, f.Host.VBComponents.ImportAttempts); throw original;
                 };
@@ -32,7 +33,8 @@ namespace VBAi.Tests.Unit
             {
                 f.Seed(); var before = f.Project.Capture(); var target = f.Snapshot("2"); int checks = 0;
                 f.Host.VBComponents.ThrowAfterImport = uncertain;
-                f.Operations.ImportOwnerPreflight = () => {
+                f.Operations.ImportOwnerPreflight = () =>
+                {
                     checks++; Assert.AreEqual(0, f.Host.VBComponents.ImportAttempts); Assert.IsTrue(f.Repository.RecoveryPending);
                 };
                 if (uncertain) StringAssert.Contains(Assert.ThrowsException<Exception>(() => f.Import(target, before)).Message, "Simulated failure after applied import");

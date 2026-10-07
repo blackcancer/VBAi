@@ -61,7 +61,7 @@ namespace VBAi
 
         /// <summary>Nom de la variable d’environnement qui configure le point de terminaison.</summary>
         /// <value>Nom dérivé de la variable du modèle, ou null si elle est absente.</value>
-        public string EndpointVariable { get { return ModelVariable == null ? null : ModelVariable.Replace("_MODEL", "_ENDPOINT"); } }
+        public string EndpointVariable { get { return ModelVariable?.Replace("_MODEL", "_ENDPOINT"); } }
 
         /// <summary>Adresse de requête du fournisseur, si elle est fixe.</summary>
         /// <value>Adresse de requête fixe, ou null pour les fournisseurs qui la composent.</value>

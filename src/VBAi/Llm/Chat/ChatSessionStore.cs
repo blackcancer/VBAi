@@ -351,7 +351,8 @@ namespace VBAi
             /// <param name="rollback">Rollback failure, when rollback could not restore a known state.</param>
             internal PromotionOutcomeUnverifiedException(Exception error, Exception rollback) : base(
                 "History promotion failed and its database outcome is unverified. Reopen the conversation before saving again.",
-                rollback == null ? error : new AggregateException(error, rollback)) { }
+                rollback == null ? error : new AggregateException(error, rollback))
+            { }
         }
 
         /// <summary>Claims an empty saved scope and writes its initial conversations and notes atomically.</summary>
@@ -418,9 +419,11 @@ namespace VBAi
         internal static System.Threading.Tasks.Task<ScopeSnapshot> ReadScopeAsync(string path, string scope, bool includeSessions)
         {
             if (IsTransientScope(scope)) return System.Threading.Tasks.Task.FromResult(new ScopeSnapshot { Sessions = new List<ChatSessionState>(), Memory = "" });
-            return System.Threading.Tasks.Task.Run(() => {
+            return System.Threading.Tasks.Task.Run(() =>
+            {
                 using (var store = new ChatSessionStore(path, true))
-                    return new ScopeSnapshot {
+                    return new ScopeSnapshot
+                    {
                         Sessions = includeSessions ? store.List(scope) : null,
                         Memory = store.ReadMemory(scope)
                     };
@@ -433,8 +436,7 @@ namespace VBAi
         internal static ChatSessionState DecodeSession(string payload)
         {
             var serializer = new JavaScriptSerializer { MaxJsonLength = 32 * 1024 * 1024 };
-            var fields = serializer.DeserializeObject(payload) as Dictionary<string, object>;
-            if (fields == null) return null;
+            if (!(serializer.DeserializeObject(payload) is Dictionary<string, object> fields)) return null;
             var session = serializer.ConvertToType<ChatSessionState>(fields);
             if (!fields.ContainsKey(nameof(ChatSessionState.ReadAccessPolicyVersion))) session.ReadAccessPolicyVersion = 0;
             return session;
@@ -473,8 +475,7 @@ namespace VBAi
         /// <returns>État natif prêt à être exécuté et libéré par <see cref="Statement.Dispose()"/>.</returns>
         private Statement Prepare(string sql, params string[] values)
         {
-            IntPtr handle;
-            Check(Native.sqlite3_prepare_v2(database, Utf8(sql), -1, out handle, IntPtr.Zero));
+            Check(Native.sqlite3_prepare_v2(database, Utf8(sql), -1, out IntPtr handle, IntPtr.Zero));
             var statement = new Statement(this, handle);
             try
             {

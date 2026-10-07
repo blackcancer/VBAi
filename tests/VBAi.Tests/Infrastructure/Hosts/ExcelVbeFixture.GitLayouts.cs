@@ -1,3 +1,4 @@
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -5,7 +6,6 @@ using System.Drawing;
 using System.Drawing.Imaging;
 using System.Linq;
 using System.Runtime.InteropServices;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace VBAi.Tests.Integration
 {
@@ -21,7 +21,8 @@ namespace VBAi.Tests.Integration
             ((dynamic)application).AutomationSecurity = 3;
             PrepareGitForm(form, "Local Git " + layout, "LOCAL_GIT_LAYOUT_" + layout, path, rootFontSeedProfile);
             if (layout != "LabelButton")
-                WithGitLayoutDesigner(form, (component, designer) => {
+                WithGitLayoutDesigner(form, (component, designer) =>
+                {
                     SetGitFormProperty(component, "Width", 350d);
                     SetGitFormProperty(component, "Height", 350d);
                     object controls = null, control = null;
@@ -112,15 +113,27 @@ namespace VBAi.Tests.Integration
             System.IO.Directory.CreateDirectory(afterDirectory);
             foreach (var item in after.Serialize())
                 System.IO.File.WriteAllBytes(System.IO.Path.Combine(afterDirectory, item.Key), item.Value);
-            WriteEvidence("font-seed-" + phase + ".json", new {
-                Phase = phase, ProcessId, AssemblyMvid = typeof(VbeSession).Module.ModuleVersionId.ToString("D"),
-                Layout = layout, Form = form, ProjectPath = path, ExpectedFrameSize = 8.27m,
-                NativeFonts = native, BeforeNativeRead = directory, AfterNativeRead = afterDirectory,
-                NativeReadPreservedSnapshot = before.SameAs(after), Changes = after.Changes(before),
+            WriteEvidence("font-seed-" + phase + ".json", new
+            {
+                Phase = phase,
+                ProcessId,
+                AssemblyMvid = typeof(VbeSession).Module.ModuleVersionId.ToString("D"),
+                Layout = layout,
+                Form = form,
+                ProjectPath = path,
+                ExpectedFrameSize = 8.27m,
+                NativeFonts = native,
+                BeforeNativeRead = directory,
+                AfterNativeRead = afterDirectory,
+                NativeReadPreservedSnapshot = before.SameAs(after),
+                Changes = after.Changes(before),
                 BeforeBindings = DescribeGitFontBindings(before, form),
                 AfterBindings = DescribeGitFontBindings(after, form),
-                FrameFontAssignments = 0, Construction = "NativeInheritedFontRenderedBeforeSave",
-                FontRepairs = 0, GitImports = 0, MacroExecutions = 0
+                FrameFontAssignments = 0,
+                Construction = "NativeInheritedFontRenderedBeforeSave",
+                FontRepairs = 0,
+                GitImports = 0,
+                MacroExecutions = 0
             });
         }
 
@@ -128,8 +141,10 @@ namespace VBAi.Tests.Integration
         internal static object[] DescribeGitFontBindings(VbaGitSnapshot snapshot, string form)
         {
             var bindings = snapshot.FormFonts(snapshot.Manifest.Components.Single(item => item.Name == form));
-            return bindings == null ? null : bindings.Select(binding => (object)new {
-                binding.OwnerPath, binding.Type,
+            return bindings == null ? null : bindings.Select(binding => (object)new
+            {
+                binding.OwnerPath,
+                binding.Type,
                 DescriptorHex = BitConverter.ToString(binding.Descriptor).Replace("-", "")
             }).ToArray();
         }
@@ -148,8 +163,16 @@ namespace VBAi.Tests.Integration
             var image = ((object[])tree["Controls"]).Select(VbeBridgeClient.Object)
                 .Single(node => Convert.ToString(node["Name"]) == "QualificationExtra");
             Assert.AreEqual("Control", image["Kind"]);
-            var installed = GitLayoutCommandData(Command(new { Command = "set_form_node_picture", Project = projectPath,
-                Form = form, ControlPath = image["Path"], ExpectedTreeVersion = tree["TreeVersion"], Property = "Picture", Path = imagePath }));
+            var installed = GitLayoutCommandData(Command(new
+            {
+                Command = "set_form_node_picture",
+                Project = projectPath,
+                Form = form,
+                ControlPath = image["Path"],
+                ExpectedTreeVersion = tree["TreeVersion"],
+                Property = "Picture",
+                Path = imagePath
+            }));
             Assert.AreEqual(image["Path"], installed["ControlPath"]);
             Assert.AreEqual("Picture", installed["Property"]);
             Assert.IsNotNull(installed["Tree"]);
@@ -211,7 +234,8 @@ namespace VBAi.Tests.Integration
         /// <summary>Changes a native persisted value appropriate to the selected control layout.</summary>
         internal void MutateGitLayout(string form, string layout, bool persistedBaseline = false)
         {
-            WithGitLayoutControl(form, layout, control => {
+            WithGitLayoutControl(form, layout, control =>
+            {
                 switch (layout)
                 {
                     case "LabelButton": ((dynamic)control).Caption = "Changed synthetic label"; break;
@@ -239,7 +263,8 @@ namespace VBAi.Tests.Integration
         {
             var result = new SortedDictionary<string, object>(ReadGitForm(form), StringComparer.Ordinal);
             result["Layout"] = layout;
-            WithGitLayoutDesigner(form, (component, designer) => {
+            WithGitLayoutDesigner(form, (component, designer) =>
+            {
                 result["ComponentCaption"] = ReadGitFormProperty(component, "Caption");
                 object controls = null;
                 try
@@ -262,7 +287,8 @@ namespace VBAi.Tests.Integration
                 finally { Release(controls); }
                 if (layout == "FrameMultiPage") ReadNestedGitLayout(designer, form, result);
             });
-            WithGitLayoutControl(form, layout, control => {
+            WithGitLayoutControl(form, layout, control =>
+            {
                 ReadGitLayoutGeometry(control, "Control", result);
                 result["Control.Tag"] = ((dynamic)control).Tag;
                 switch (layout)
@@ -368,7 +394,8 @@ namespace VBAi.Tests.Integration
 
         private void WithGitLayoutControl(string form, string layout, Action<object> action)
         {
-            WithGitLayoutDesigner(form, (component, designer) => {
+            WithGitLayoutDesigner(form, (component, designer) =>
+            {
                 object controls = null, control = null, nestedControls = null, multi = null, pages = null, page = null, pageControls = null, leaf = null;
                 try
                 {

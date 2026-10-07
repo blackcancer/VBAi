@@ -1,9 +1,9 @@
 namespace VBAi.Tests.Unit
 {
+    using Microsoft.VisualStudio.TestTools.UnitTesting;
     using System;
     using System.ComponentModel;
     using System.Linq;
-    using Microsoft.VisualStudio.TestTools.UnitTesting;
     using VBAi;
 
     // Matrix before execution: preview root/frame, inside-versus-outer decoration, scroll extents,
@@ -61,7 +61,8 @@ namespace VBAi.Tests.Unit
                     int descriptorWrites = 0;
                     f.Target.Metadata = new PropertyDescriptorCollection(f.Target.Metadata.Cast<PropertyDescriptor>().Select(property =>
                         property.Name == "ScrollWidth" || property.Name == "ScrollHeight"
-                        ? new VbeFormsCoverageTests.LiveProperty(property.Name, typeof(double), () => property.GetValue(f.Target), value => {
+                        ? new VbeFormsCoverageTests.LiveProperty(property.Name, typeof(double), () => property.GetValue(f.Target), value =>
+                        {
                             descriptorWrites++;
                             throw new InvalidOperationException("Unsafe COM descriptor setter must never run.");
                         }) : property).ToArray());
@@ -260,7 +261,9 @@ namespace VBAi.Tests.Unit
             foreach (string fault in new[] { "ignored-height", "inside-small-y", "inside-large-x", "inside-large-y", "scroll-large-x", "scroll-large-y" })
             {
                 var f = Create(); var request = f.Request(fault.StartsWith("scroll") ? "fit_scroll_extent" : "fit_container");
-                f.AfterWrite = () => { if (f.Writes != 2) return;
+                f.AfterWrite = () =>
+                {
+                    if (f.Writes != 2) return;
                     if (fault == "ignored-height") f.Height = 200;
                     if (fault == "inside-small-y") f.BorderY += 1;
                     if (fault == "inside-large-x") f.BorderX -= 1;

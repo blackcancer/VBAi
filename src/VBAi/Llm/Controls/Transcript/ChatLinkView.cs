@@ -1,5 +1,3 @@
-using System;
-using System.Windows.Forms;
 namespace VBAi
 {
 
@@ -8,7 +6,7 @@ namespace VBAi
     {
 
         /// <summary>Creates the fixed controls from the WinForms Designer.</summary>
-        public ChatLinkView() { InitializeComponent(); UiText.Apply(this, components); UiTheme.Apply(this);  }
+        public ChatLinkView() { InitializeComponent(); UiText.Apply(this, components); UiTheme.Apply(this); }
 
         /// <summary>Provides the token width to horizontal reference lists without a host-imposed width.</summary>
         /// <param name="proposedSize">Available space.</param>

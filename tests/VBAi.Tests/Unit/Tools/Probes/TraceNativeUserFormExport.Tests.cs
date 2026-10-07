@@ -1,3 +1,4 @@
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -5,7 +6,6 @@ using System.IO;
 using System.Security.Cryptography;
 using System.Text;
 using System.Web.Script.Serialization;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace VBAi.Tests
 {
@@ -47,9 +47,14 @@ namespace VBAi.Tests
                     " -CdbPath " + Quote(assembly);
                 string powershell = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.System), "WindowsPowerShell", "v1.0", "powershell.exe");
                 var info = new ProcessStartInfo(powershell, "-NoLogo -NoProfile -NonInteractive -EncodedCommand " +
-                    Convert.ToBase64String(Encoding.Unicode.GetBytes(command))) {
-                    UseShellExecute = false, CreateNoWindow = true, RedirectStandardOutput = true, RedirectStandardError = true,
-                    StandardOutputEncoding = Encoding.UTF8, StandardErrorEncoding = Encoding.UTF8
+                    Convert.ToBase64String(Encoding.Unicode.GetBytes(command)))
+                {
+                    UseShellExecute = false,
+                    CreateNoWindow = true,
+                    RedirectStandardOutput = true,
+                    RedirectStandardError = true,
+                    StandardOutputEncoding = Encoding.UTF8,
+                    StandardErrorEncoding = Encoding.UTF8
                 };
                 // A PS7-launched testhost can inherit only PS7 module roots.
                 // Scope this override to the new owned PS5 child; never alter

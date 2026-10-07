@@ -1,16 +1,21 @@
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace VBAi.Tests.Unit
 {
     public sealed partial class FormStreamPaddingTests
     {
         [DataTestMethod]
-        [DataRow(23)] [DataRow(24)] [DataRow(25)] [DataRow(26)] [DataRow(27)] [DataRow(28)]
+        [DataRow(23)]
+        [DataRow(24)]
+        [DataRow(25)]
+        [DataRow(26)]
+        [DataRow(27)]
+        [DataRow(28)]
         public void MorphMinimalAndAllApplicableFieldsKeepExactValuesAndNormalizeOnlyPadding(int type)
         {
             foreach (bool rich in new[] { false, true })
@@ -33,7 +38,12 @@ namespace VBAi.Tests.Unit
         }
 
         [DataTestMethod]
-        [DataRow(23)] [DataRow(24)] [DataRow(25)] [DataRow(26)] [DataRow(27)] [DataRow(28)]
+        [DataRow(23)]
+        [DataRow(24)]
+        [DataRow(25)]
+        [DataRow(26)]
+        [DataRow(27)]
+        [DataRow(28)]
         public void EveryMorphPropertyAndFontByteRemainsSignificant(int type)
         {
             MorphSample sample = MakeMorph(type, true, unicode: true);
@@ -50,7 +60,12 @@ namespace VBAi.Tests.Unit
         }
 
         [DataTestMethod]
-        [DataRow(23)] [DataRow(24)] [DataRow(25)] [DataRow(26)] [DataRow(27)] [DataRow(28)]
+        [DataRow(23)]
+        [DataRow(24)]
+        [DataRow(25)]
+        [DataRow(26)]
+        [DataRow(27)]
+        [DataRow(28)]
         public void EachOptionalMorphPropertyUsesNaturalAlignmentOnlyWhenPresent(int type)
         {
             foreach (int bit in MorphFieldBits(type))
@@ -71,31 +86,41 @@ namespace VBAi.Tests.Unit
         }
 
         [DataTestMethod]
-        [DataRow(23)] [DataRow(24)] [DataRow(25)] [DataRow(26)] [DataRow(27)] [DataRow(28)]
+        [DataRow(23)]
+        [DataRow(24)]
+        [DataRow(25)]
+        [DataRow(26)]
+        [DataRow(27)]
+        [DataRow(28)]
         public void MorphExtraDataUsesSizeThenValueCaptionGroupAndExactStringLengths(int type)
         {
             foreach (bool unicode in new[] { false, true })
-            foreach (bool empty in new[] { false, true })
-            {
-                MorphSample sample = MakeMorph(type, true, unicode: unicode, empty: empty);
-                byte[] form = MorphForm(new[] { type }, new[] { sample.Bytes.Length });
-                byte[][] result = FormStreamPadding.Normalize(form, sample.Bytes);
-                Assert.AreNotSame(sample.Bytes, result[1]);
-                for (int i = sample.SizeOffset; i < sample.SizeOffset + 8; i++) Assert.AreEqual(sample.Bytes[i], result[1][i]);
-                foreach (int bit in new[] { 22, 23, 32 })
+                foreach (bool empty in new[] { false, true })
                 {
-                    if (!sample.Fields.ContainsKey(bit)) continue;
-                    foreach (uint invalid in new[] { 1u, 3u, 0x7fffffffu, 0xffffffffu })
+                    MorphSample sample = MakeMorph(type, true, unicode: unicode, empty: empty);
+                    byte[] form = MorphForm(new[] { type }, new[] { sample.Bytes.Length });
+                    byte[][] result = FormStreamPadding.Normalize(form, sample.Bytes);
+                    Assert.AreNotSame(sample.Bytes, result[1]);
+                    for (int i = sample.SizeOffset; i < sample.SizeOffset + 8; i++) Assert.AreEqual(sample.Bytes[i], result[1][i]);
+                    foreach (int bit in new[] { 22, 23, 32 })
                     {
-                        byte[] changed = (byte[])sample.Bytes.Clone(); Write32(changed, sample.Fields[bit], invalid);
-                        AssertFallback(form, changed);
+                        if (!sample.Fields.ContainsKey(bit)) continue;
+                        foreach (uint invalid in new[] { 1u, 3u, 0x7fffffffu, 0xffffffffu })
+                        {
+                            byte[] changed = (byte[])sample.Bytes.Clone(); Write32(changed, sample.Fields[bit], invalid);
+                            AssertFallback(form, changed);
+                        }
                     }
                 }
-            }
         }
 
         [DataTestMethod]
-        [DataRow(23)] [DataRow(24)] [DataRow(25)] [DataRow(26)] [DataRow(27)] [DataRow(28)]
+        [DataRow(23)]
+        [DataRow(24)]
+        [DataRow(25)]
+        [DataRow(26)]
+        [DataRow(27)]
+        [DataRow(28)]
         public void MorphUnknownMasksMissingRequiredBitsAndInapplicableFieldsRefuseBothStreams(int type)
         {
             MorphSample sample = MakeMorph(type, true);
@@ -130,7 +155,12 @@ namespace VBAi.Tests.Unit
         }
 
         [DataTestMethod]
-        [DataRow(23)] [DataRow(24)] [DataRow(25)] [DataRow(26)] [DataRow(27)] [DataRow(28)]
+        [DataRow(23)]
+        [DataRow(24)]
+        [DataRow(25)]
+        [DataRow(26)]
+        [DataRow(27)]
+        [DataRow(28)]
         public void MorphCachedTypeDisplayStyleAndMandatoryValuesCannotDisagree(int type)
         {
             MorphSample sample = MakeMorph(type, true);
@@ -207,7 +237,8 @@ namespace VBAi.Tests.Unit
         }
 
         [DataTestMethod]
-        [DataRow(24)] [DataRow(25)]
+        [DataRow(24)]
+        [DataRow(25)]
         public void MorphColumnsFollowTextPropertiesAndPreserveEverySignedWidth(int type)
         {
             MorphSample sample = MakeMorph(type, true, widths: new int?[] { null, -1, 0, 1900, int.MinValue, int.MaxValue });
@@ -233,7 +264,12 @@ namespace VBAi.Tests.Unit
         }
 
         [DataTestMethod]
-        [DataRow(23)] [DataRow(24)] [DataRow(25)] [DataRow(26)] [DataRow(27)] [DataRow(28)]
+        [DataRow(23)]
+        [DataRow(24)]
+        [DataRow(25)]
+        [DataRow(26)]
+        [DataRow(27)]
+        [DataRow(28)]
         public void EveryMorphTruncationHeaderAndTrailingExtensionReturnsOriginalPair(int type)
         {
             MorphSample sample = MakeMorph(type, true, unicode: true);
@@ -309,12 +345,12 @@ namespace VBAi.Tests.Unit
                 foreach (int offset in new[] { 23, 26, 27, 31 }) sample.Padding.Add(sample.FontStart + offset);
                 writer.Write(font); sample.ColumnStart = (int)stream.Length;
                 if (widths != null)
-                foreach (int? width in widths)
-                {
-                    sample.ColumnOffsets.Add((int)stream.Length);
-                    writer.Write((ushort)0x0200); writer.Write((ushort)(width.HasValue ? 8 : 4));
-                    writer.Write(width.HasValue ? 1u : 0u); if (width.HasValue) writer.Write(width.Value);
-                }
+                    foreach (int? width in widths)
+                    {
+                        sample.ColumnOffsets.Add((int)stream.Length);
+                        writer.Write((ushort)0x0200); writer.Write((ushort)(width.HasValue ? 8 : 4));
+                        writer.Write(width.HasValue ? 1u : 0u); if (width.HasValue) writer.Write(width.Value);
+                    }
                 sample.Bytes = stream.ToArray();
                 Array.Copy(BitConverter.GetBytes((ushort)(sample.FontStart - 4)), 0, sample.Bytes, 2, 2);
                 return sample;

@@ -1,9 +1,8 @@
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.ComTypes;
-using VBAi;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 namespace VBAi.Tests.Unit
 {
     [TestClass, TestCategory("Unit"), DoNotParallelize]
@@ -83,7 +82,8 @@ namespace VBAi.Tests.Unit
             var original = VbeCollectionEvents.CombineNative; int combined = 0, removed = 0;
             try
             {
-                VbeCollectionEvents.CombineNative = (target, id, member, callback) => {
+                VbeCollectionEvents.CombineNative = (target, id, member, callback) =>
+                {
                     Assert.AreSame(source, target); Assert.AreEqual(point.Id, id); Assert.IsNotNull(callback); combined++;
                 };
                 using (var events = new VbeCollectionEvents(() => { }, true, remove: (s, id, member, callback) => removed++)) events.Observe(source);
@@ -111,7 +111,7 @@ namespace VBAi.Tests.Unit
         public void ProjectEventFailureRemovesAllSuccessfulSubscriptionsAndAllowsRetry()
         {
             var active = new HashSet<int>(); bool fail = true;
-            using (var events = new VbeCollectionEvents(() => {}, false,
+            using (var events = new VbeCollectionEvents(() => { }, false,
                 (s, g, id, h) => { Assert.AreEqual(new Guid("0002E103-0000-0000-C000-000000000046"), g); if (id == 4 && fail) throw new InvalidOperationException(); active.Add(id); },
                 (s, g, id, h) => active.Remove(id)))
             {

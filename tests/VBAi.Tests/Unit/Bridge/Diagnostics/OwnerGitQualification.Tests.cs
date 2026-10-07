@@ -1,7 +1,6 @@
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Threading.Tasks;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
-using VBAi;
 
 namespace VBAi.Tests.Unit
 {
@@ -34,8 +33,12 @@ namespace VBAi.Tests.Unit
                 var disabled = new OwnerGitQualification(null, 42);
                 Environment.SetEnvironmentVariable(OwnerGitQualificationManifest.EnvironmentName,
                     @"C:\Evidence\0123456789abcdef0123456789abcdef.owner-git.json");
-                var request = new Request { Command = OwnerGitQualificationManifest.CommandName,
-                    Action = "0123456789abcdef0123456789abcdef", ExpectedSha256 = new string('a', 64) };
+                var request = new Request
+                {
+                    Command = OwnerGitQualificationManifest.CommandName,
+                    Action = "0123456789abcdef0123456789abcdef",
+                    ExpectedSha256 = new string('a', 64)
+                };
                 string json = "{\"Command\":\"diagnostic_userform_git\",\"Action\":\"" + request.Action +
                     "\",\"ExpectedSha256\":\"" + request.ExpectedSha256 + "\"}";
                 var error = await Assert.ThrowsExceptionAsync<InvalidOperationException>(() => disabled.ExecuteAsync(request, json));

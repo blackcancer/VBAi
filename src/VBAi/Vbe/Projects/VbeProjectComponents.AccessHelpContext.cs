@@ -1,3 +1,4 @@
+using Microsoft.Vbe.Interop;
 using System;
 using System.ComponentModel;
 using System.Diagnostics;
@@ -5,7 +6,6 @@ using System.Globalization;
 using System.Runtime.ExceptionServices;
 using System.Runtime.InteropServices;
 using System.Threading;
-using Microsoft.Vbe.Interop;
 
 namespace VBAi
 {
@@ -52,7 +52,8 @@ namespace VBAi
                 throw new InvalidOperationException("The Access VBProject HelpContextID must expose a writable Int32 scalar.");
             int converted = (int)Convert.ChangeType(request.Value, typeof(int), CultureInfo.InvariantCulture);
             IntPtr window = new IntPtr(Convert.ToInt64(vbe.MainWindow.HWnd));
-            Action<bool> requireTarget = revision => {
+            void requireTarget(bool revision)
+            {
                 request.RevalidateProjectPropertyAuthorization?.Invoke(true); // Scope validation may read/pump the host; perform it before target/version reads.
                 if (!AccessHelpContextHost() || !AccessHelpContextNativeProject(project) ||
                     !AccessHelpContextIdentity(project, (object)GetDesignProject(request.Project)) ||
@@ -70,7 +71,7 @@ namespace VBAi
                 if (!AccessHelpContextIdentity(project, (object)GetDesignProject(request.Project)))
                     throw new InvalidOperationException("The final metadata revision read resolved a different Access project.");
                 request.RevalidateProjectPropertyAuthorization?.Invoke(false); // Cached authorization only, after all project COM reads.
-            };
+            }
             AccessHelpContextDispatch dispatch = null;
             try
             {
@@ -219,9 +220,8 @@ namespace VBAi
             /// <summary>Requires the captured x64 process and VBE UI STA; after preparation the PIA interface must retain COM identity.</summary>
             public void RequireOwner()
             {
-                uint owner;
                 if (disposed || IntPtr.Size != 8 || window == IntPtr.Zero || GetCurrentProcessId() != pid || GetCurrentThreadId() != thread ||
-                    Thread.CurrentThread.GetApartmentState() != ApartmentState.STA || GetWindowThreadProcessId(window, out owner) != thread || owner != pid)
+                    Thread.CurrentThread.GetApartmentState() != ApartmentState.STA || GetWindowThreadProcessId(window, out uint owner) != thread || owner != pid)
                     throw new InvalidOperationException("HelpContextID must stay on its original current-process x64 VBE UI STA.");
                 if (prepared && (typedProject == null || originalIdentity == IntPtr.Zero || typedIdentity != originalIdentity))
                     throw new InvalidOperationException("The original held VBProject and its typed canonical identity differ.");

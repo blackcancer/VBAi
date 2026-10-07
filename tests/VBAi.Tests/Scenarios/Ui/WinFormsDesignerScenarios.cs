@@ -1,9 +1,8 @@
 namespace VBAi.Tests.Unit
 {
-    using System;
+    using Microsoft.VisualStudio.TestTools.UnitTesting;
     using System.Windows.Forms;
     using VBAi;
-    using Microsoft.VisualStudio.TestTools.UnitTesting;
 
     /// <summary>Vérifie que les fenêtres fixes restent instanciables hors session IDE.</summary>
     [TestClass]

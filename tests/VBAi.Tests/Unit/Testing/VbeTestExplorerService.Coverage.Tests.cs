@@ -1,9 +1,9 @@
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace VBAi.Tests.Unit
 {
@@ -13,54 +13,63 @@ namespace VBAi.Tests.Unit
         public void CoverageRuntimeWordLeasesReleaseKnownAndRetainUncertainCompletion()
         {
             foreach (string outcome in new[] { "passed", "predispatch", "unknown" })
-            using (var fixture = new Fixture())
-            using (var leases = new ServiceWordLeaseRecorder())
-            {
-                fixture.Host.TargetFactory = leases.Acquire;
-                var catalog = fixture.Catalog();
-                var method = typeof(VbeTestExplorerService).GetMethod("InvokeCoverageFunction", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-                int checks = 0;
-                Action guard = () => { if (outcome == "predispatch" && ++checks == 2) throw new InvalidOperationException("Pre-dispatch authority revoked"); };
-                if (outcome == "passed")
+                using (var fixture = new Fixture())
+                using (var leases = new ServiceWordLeaseRecorder())
                 {
-                    // The fake transport rejects the runtime module: use an explicit returned-value host.
-                    fixture.Service.Host = new CoverageLeaseHost(leases, false);
-                    Assert.AreEqual(true, method.Invoke(fixture.Service, new object[] { fixture.Service, catalog, VbaCoverageInstrumentation.ResetProcedure, guard }));
-                    Assert.AreEqual(1, leases.Released);
+                    fixture.Host.TargetFactory = leases.Acquire;
+                    var catalog = fixture.Catalog();
+                    var method = typeof(VbeTestExplorerService).GetMethod("InvokeCoverageFunction", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+                    int checks = 0;
+                    Action guard = () => { if (outcome == "predispatch" && ++checks == 2) throw new InvalidOperationException("Pre-dispatch authority revoked"); };
+                    if (outcome == "passed")
+                    {
+                        // The fake transport rejects the runtime module: use an explicit returned-value host.
+                        fixture.Service.Host = new CoverageLeaseHost(leases, false);
+                        Assert.AreEqual(true, method.Invoke(fixture.Service, new object[] { fixture.Service, catalog, VbaCoverageInstrumentation.ResetProcedure, guard }));
+                        Assert.AreEqual(1, leases.Released);
+                    }
+                    else
+                    {
+                        fixture.Service.Host = new CoverageLeaseHost(leases, true);
+                        var failure = Assert.ThrowsException<System.Reflection.TargetInvocationException>(() => method.Invoke(fixture.Service,
+                            new object[] { fixture.Service, catalog, VbaCoverageInstrumentation.ResetProcedure, guard }));
+                        Assert.AreEqual(outcome == "unknown", failure.InnerException is VbaTestInvocationException error && error.Uncertain);
+                        Assert.AreEqual(outcome == "unknown" ? 0 : 1, leases.Released);
+                        Assert.AreEqual(outcome == "unknown", leases.Targets.Single().IsRetained);
+                    }
                 }
-                else
-                {
-                    fixture.Service.Host = new CoverageLeaseHost(leases, true);
-                    var failure = Assert.ThrowsException<System.Reflection.TargetInvocationException>(() => method.Invoke(fixture.Service,
-                        new object[] { fixture.Service, catalog, VbaCoverageInstrumentation.ResetProcedure, guard }));
-                    Assert.AreEqual(outcome == "unknown", failure.InnerException is VbaTestInvocationException error && error.Uncertain);
-                    Assert.AreEqual(outcome == "unknown" ? 0 : 1, leases.Released);
-                    Assert.AreEqual(outcome == "unknown", leases.Targets.Single().IsRetained);
-                }
-            }
         }
 
         [STATestMethod]
         public void WordCoverageAvailabilityDisposesItsDocumentForSavedRefusedAndInvalidState()
         {
             foreach (object saved in new object[] { true, false, "invalid" })
-            using (var fixture = new Fixture())
-            using (var leases = new ServiceWordLeaseRecorder())
-            {
-                fixture.Project.FileName = @"C:\Temp\Original.docm";
-                var application = new VbaTestWordValuesHostTests.Application();
-                var document = new VbaTestWordValuesHostTests.Document { Application = application,
-                    FullName = fixture.Project.FileName, VBProject = fixture.Project, Saved = saved };
-                application.Documents.Add(document); leases.RegisterDocument(document);
-                fixture.Service.Host = new VbaTestWordValuesHost {
-                    ReadProcessName = () => "WINWORD", ReadProcessId = () => 123,
-                    ReadActiveApplication = _ => application, ReadWindowOwner = _ => 123,
-                    ReadDocumentItem = (documents, index) => ((VbaTestWordValuesHostTests.Documents)documents)[index - 1] };
-                string reason = fixture.Service.CoverageUnavailableReason(fixture.Catalog());
-                Assert.AreEqual(saved is bool value && value, reason == null);
-                Assert.AreEqual(1, leases.Released, "The availability target must be disposed even for an early return or Saved conversion failure.");
-                Assert.AreEqual(0, fixture.Host.Invocations);
-            }
+                using (var fixture = new Fixture())
+                using (var leases = new ServiceWordLeaseRecorder())
+                {
+                    fixture.Project.FileName = @"C:\Temp\Original.docm";
+                    var application = new VbaTestWordValuesHostTests.Application();
+                    var document = new VbaTestWordValuesHostTests.Document
+                    {
+                        Application = application,
+                        FullName = fixture.Project.FileName,
+                        VBProject = fixture.Project,
+                        Saved = saved
+                    };
+                    application.Documents.Add(document); leases.RegisterDocument(document);
+                    fixture.Service.Host = new VbaTestWordValuesHost
+                    {
+                        ReadProcessName = () => "WINWORD",
+                        ReadProcessId = () => 123,
+                        ReadActiveApplication = _ => application,
+                        ReadWindowOwner = _ => 123,
+                        ReadDocumentItem = (documents, index) => ((VbaTestWordValuesHostTests.Documents)documents)[index - 1]
+                    };
+                    string reason = fixture.Service.CoverageUnavailableReason(fixture.Catalog());
+                    Assert.AreEqual(saved is bool value && value, reason == null);
+                    Assert.AreEqual(1, leases.Released, "The availability target must be disposed even for an early return or Saved conversion failure.");
+                    Assert.AreEqual(0, fixture.Host.Invocations);
+                }
         }
         [STATestMethod]
         public void UncertainWordRuntimeRetainsTheOwnedCoverageCopyAndItsTargets()
@@ -71,31 +80,54 @@ namespace VBAi.Tests.Unit
                 var handle = dispatcher.Handle;
                 var application = new VbaTestWordValuesHostTests.Application();
                 var source = new WordCoverageProject { Name = "Original", FileName = Path.Combine(folder, "Original.docm") };
-                source.VBComponents.Add(new FakeComponent { Name = "TestsOne", Type = 1, CodeModule = new FakeCode {
-                    Source = "'@TestModule\n'@TestMethod\nPublic Sub Alpha()\nEnd Sub" } });
+                source.VBComponents.Add(new FakeComponent
+                {
+                    Name = "TestsOne",
+                    Type = 1,
+                    CodeModule = new FakeCode
+                    {
+                        Source = "'@TestModule\n'@TestMethod\nPublic Sub Alpha()\nEnd Sub"
+                    }
+                });
                 var originalDocument = new VbaTestWordValuesHostTests.Document { Application = application, FullName = source.FileName, VBProject = source };
                 application.Documents.Add(originalDocument); application.VBE.VBProjects.Add(source);
                 VbaTestWordValuesHost.OwnedTarget runtimeTarget = null;
                 int calls = 0, closes = 0;
-                var wordHost = new VbaTestWordValuesHost { ReadProcessName = () => "WINWORD", ReadProcessId = () => 123,
-                    ReadActiveApplication = _ => application, ReadWindowOwner = _ => 123,
+                var wordHost = new VbaTestWordValuesHost
+                {
+                    ReadProcessName = () => "WINWORD",
+                    ReadProcessId = () => 123,
+                    ReadActiveApplication = _ => application,
+                    ReadWindowOwner = _ => 123,
                     ReadDocumentItem = (documents, index) => ((VbaTestWordValuesHostTests.Documents)documents)[index - 1],
-                    RunProcedure = (_, macro, arguments) => {
+                    RunProcedure = (_, macro, arguments) =>
+                    {
                         Assert.AreEqual(VbaCoverageInstrumentation.ModuleName + "." + VbaCoverageInstrumentation.ResetProcedure, macro);
                         calls++; throw new InvalidOperationException("Word runtime completion was lost");
-                    } };
+                    }
+                };
                 try
                 {
-                    using (var service = new VbeTestExplorerService(application.VBE, dispatcher) { Host = wordHost, IsExecutionHost = () => true,
-                        CoverageRoot = () => folder, CompileCoverageProject = _ => { } })
+                    using (var service = new VbeTestExplorerService(application.VBE, dispatcher)
+                    {
+                        Host = wordHost,
+                        IsExecutionHost = () => true,
+                        CoverageRoot = () => folder,
+                        CompileCoverageProject = _ => { }
+                    })
                     {
                         var catalog = service.Discover(service.ReadProjects().Single().Id);
                         VbaTestWordValuesHostTests.Document copyDocument = null;
-                        service.CreateCoverageClone = (_, __, destination) => {
+                        service.CreateCoverageClone = (_, __, destination) =>
+                        {
                             var copy = new WordCoverageProject { Name = "Copy", FileName = Path.Combine(destination, "coverage.docm") };
                             foreach (var component in source.VBComponents)
-                                copy.VBComponents.Add(new FakeComponent { Name = component.Name, Type = component.Type,
-                                    CodeModule = new FakeCode { Source = component.CodeModule.Source } });
+                                copy.VBComponents.Add(new FakeComponent
+                                {
+                                    Name = component.Name,
+                                    Type = component.Type,
+                                    CodeModule = new FakeCode { Source = component.CodeModule.Source }
+                                });
                             copyDocument = new VbaTestWordValuesHostTests.Document { Application = application, FullName = copy.FileName, VBProject = copy };
                             application.Documents.Add(copyDocument); application.VBE.VBProjects.Add(copy);
                             runtimeTarget = (VbaTestWordValuesHost.OwnedTarget)wordHost.ResolveTarget(copy, copy.FileName);
@@ -189,43 +221,43 @@ namespace VBAi.Tests.Unit
         public void CoverageRejectsOriginalIdentityAndPathWithoutCallingTheirCloseOrWritingCode()
         {
             foreach (bool originalIdentity in new[] { false, true })
-            using (var fixture = new Fixture())
-            using (var coverage = new CoverageFixture(fixture))
-            {
-                fixture.Service.CreateCoverageClone = (project, path, folder) => new VbaTestCoverageClone
+                using (var fixture = new Fixture())
+                using (var coverage = new CoverageFixture(fixture))
                 {
-                    Project = originalIdentity ? fixture.Project : coverage.MakeCopy(folder),
-                    Path = fixture.Project.FileName,
-                    Close = () => coverage.Events.Add("UnsafeClose")
-                };
-                var catalog = fixture.Catalog();
-                var run = Pump(fixture.Service.RunCoverageAsync(catalog, catalog.Tests.ToArray(), null, CancellationToken.None));
-                Assert.IsFalse(run.Coverage.Available);
-                Assert.IsFalse(coverage.Events.Contains("UnsafeClose"));
-                Assert.IsFalse(coverage.Events.Contains("Reset"));
-                Assert.IsTrue(fixture.Project.VBComponents.All(component => component.CodeModule.Insertions == 0));
-            }
+                    fixture.Service.CreateCoverageClone = (project, path, folder) => new VbaTestCoverageClone
+                    {
+                        Project = originalIdentity ? fixture.Project : coverage.MakeCopy(folder),
+                        Path = fixture.Project.FileName,
+                        Close = () => coverage.Events.Add("UnsafeClose")
+                    };
+                    var catalog = fixture.Catalog();
+                    var run = Pump(fixture.Service.RunCoverageAsync(catalog, catalog.Tests.ToArray(), null, CancellationToken.None));
+                    Assert.IsFalse(run.Coverage.Available);
+                    Assert.IsFalse(coverage.Events.Contains("UnsafeClose"));
+                    Assert.IsFalse(coverage.Events.Contains("Reset"));
+                    Assert.IsTrue(fixture.Project.VBComponents.All(component => component.CodeModule.Insertions == 0));
+                }
         }
 
         [STATestMethod]
         public void CoverageRejectsChangedCopiedTestsAndReferencesBeforeAnyInstrumentationOrNativeCall()
         {
             foreach (bool reference in new[] { false, true })
-            using (var fixture = new Fixture())
-            using (var coverage = new CoverageFixture(fixture))
-            {
-                coverage.AfterCopy = copy =>
+                using (var fixture = new Fixture())
+                using (var coverage = new CoverageFixture(fixture))
                 {
-                    if (reference) copy.References[0].Minor++;
-                    else copy.VBComponents.Single(component => component.Name == "TestsOne").CodeModule.Source += "\n' wrong test revision";
-                };
-                var catalog = fixture.Catalog();
-                var run = Pump(fixture.Service.RunCoverageAsync(catalog, catalog.Tests.ToArray(), null, CancellationToken.None));
-                Assert.IsFalse(run.Coverage.Available);
-                Assert.IsFalse(coverage.Events.Contains("Reset"));
-                Assert.IsTrue(coverage.Clone.VBComponents.All(component => component.CodeModule.Insertions == 0));
-                Assert.AreEqual(1, coverage.Events.Count(item => item == "Close"));
-            }
+                    coverage.AfterCopy = copy =>
+                    {
+                        if (reference) copy.References[0].Minor++;
+                        else copy.VBComponents.Single(component => component.Name == "TestsOne").CodeModule.Source += "\n' wrong test revision";
+                    };
+                    var catalog = fixture.Catalog();
+                    var run = Pump(fixture.Service.RunCoverageAsync(catalog, catalog.Tests.ToArray(), null, CancellationToken.None));
+                    Assert.IsFalse(run.Coverage.Available);
+                    Assert.IsFalse(coverage.Events.Contains("Reset"));
+                    Assert.IsTrue(coverage.Clone.VBComponents.All(component => component.CodeModule.Insertions == 0));
+                    Assert.AreEqual(1, coverage.Events.Count(item => item == "Close"));
+                }
         }
 
         [STATestMethod]
@@ -363,21 +395,21 @@ namespace VBAi.Tests.Unit
         public void SourceChangesDuringTheLastCoverageSnapshotInvalidateItsMeasurementAndRetainTheCopy()
         {
             foreach (bool originalChanged in new[] { true, false })
-            using (var fixture = new Fixture())
-            using (var coverage = new CoverageFixture(fixture))
-            {
-                coverage.BeforeSnapshotReturn = () =>
-                    (originalChanged ? fixture.Project : coverage.Clone).VBComponents[0].CodeModule.Source += "\n' changed during snapshot";
-                var catalog = fixture.Catalog();
-                var run = Pump(fixture.Service.RunCoverageAsync(catalog, catalog.Tests.ToArray(), null, CancellationToken.None));
-                Assert.IsTrue(run.OutcomeUnknown);
-                Assert.IsFalse(run.Coverage.Available);
-                Assert.IsFalse(run.Coverage.Complete);
-                Assert.IsNull(run.Coverage.Percent);
-                Assert.IsFalse(coverage.Events.Contains("Close"));
-                Assert.AreEqual(1, coverage.Events.Count(item => item == "Snapshot"));
-                Assert.IsTrue(fixture.Vbe.VBProjects.Contains(coverage.Clone));
-            }
+                using (var fixture = new Fixture())
+                using (var coverage = new CoverageFixture(fixture))
+                {
+                    coverage.BeforeSnapshotReturn = () =>
+                        (originalChanged ? fixture.Project : coverage.Clone).VBComponents[0].CodeModule.Source += "\n' changed during snapshot";
+                    var catalog = fixture.Catalog();
+                    var run = Pump(fixture.Service.RunCoverageAsync(catalog, catalog.Tests.ToArray(), null, CancellationToken.None));
+                    Assert.IsTrue(run.OutcomeUnknown);
+                    Assert.IsFalse(run.Coverage.Available);
+                    Assert.IsFalse(run.Coverage.Complete);
+                    Assert.IsNull(run.Coverage.Percent);
+                    Assert.IsFalse(coverage.Events.Contains("Close"));
+                    Assert.AreEqual(1, coverage.Events.Count(item => item == "Snapshot"));
+                    Assert.IsTrue(fixture.Vbe.VBProjects.Contains(coverage.Clone));
+                }
         }
 
         [STATestMethod]
@@ -399,9 +431,15 @@ namespace VBAi.Tests.Unit
                 var app = new VbaTestWordValuesHostTests.Application();
                 var document = new VbaTestWordValuesHostTests.Document { Application = app, FullName = fixture.Project.FileName, VBProject = fixture.Project, Saved = false };
                 app.Documents.Add(document);
-                fixture.Service.Host = new VbaTestWordValuesHost { ReadProcessName = () => "WINWORD", ReadProcessId = () => 123,
-                    ReadActiveApplication = _ => app, ReadWindowOwner = _ => 123, SameIdentity = ReferenceEquals,
-                    ReadDocumentItem = (documents, index) => ((VbaTestWordValuesHostTests.Documents)documents)[index - 1] };
+                fixture.Service.Host = new VbaTestWordValuesHost
+                {
+                    ReadProcessName = () => "WINWORD",
+                    ReadProcessId = () => 123,
+                    ReadActiveApplication = _ => app,
+                    ReadWindowOwner = _ => 123,
+                    SameIdentity = ReferenceEquals,
+                    ReadDocumentItem = (documents, index) => ((VbaTestWordValuesHostTests.Documents)documents)[index - 1]
+                };
                 StringAssert.Contains(fixture.Service.CoverageUnavailableReason(fixture.Catalog()), "Word document changes");
                 document.Saved = true; Assert.IsNull(fixture.Service.CoverageUnavailableReason(fixture.Catalog()));
                 fixture.Service.Host = new VbaTestPowerPointValuesHost(); fixture.Project.FileName = "C:\\Temp\\Fixture.xlsx";
@@ -413,30 +451,35 @@ namespace VBAi.Tests.Unit
         public void CoverageRejectsMissingEscapedOrMismatchedCloneBeforeWritingAndRetainsUnownedCopies()
         {
             foreach (string fault in new[] { "null", "project", "path", "outside", "projectPath", "moduleCount", "moduleName", "moduleType", "compile", "resetType" })
-            using (var fixture = new Fixture())
-            using (var coverage = new CoverageFixture(fixture))
-            {
-                fixture.Service.CreateCoverageClone = (project, path, folder) => {
-                    if (fault == "null") return null;
-                    var copy = coverage.MakeCopy(folder);
-                    if (fault == "moduleCount") copy.VBComponents.RemoveAt(0);
-                    if (fault == "moduleName") copy.VBComponents[0].Name = "Renamed";
-                    if (fault == "moduleType") copy.VBComponents[0].Type = 2;
-                    string target = copy.FileName;
-                    if (fault == "projectPath") copy.FileName = System.IO.Path.Combine(folder, "Other.xlsm");
-                    if (fault == "outside") target = System.IO.Path.Combine(System.IO.Path.GetTempPath(), "Unowned.xlsm");
-                    return new VbaTestCoverageClone { Project = fault == "project" ? null : copy,
-                        Path = fault == "path" ? null : target, Close = () => coverage.Events.Add("Close") };
-                };
-                if (fault == "compile") fixture.Service.CompileCoverageProject = null;
-                if (fault == "resetType") coverage.ResetResult = new object();
-                var catalog = fixture.Catalog();
-                var run = Pump(fixture.Service.RunCoverageAsync(catalog, catalog.Tests.ToArray(), null, CancellationToken.None));
-                Assert.IsFalse(run.Coverage.Available, fault); Assert.IsFalse(run.OutcomeUnknown, fault);
-                Assert.IsTrue(run.Results.All(result => result.Outcome == VbaTestOutcome.Blocked), fault);
-                Assert.IsFalse(coverage.Events.Any(item => item.StartsWith("Test:", StringComparison.Ordinal)), fault);
-                Assert.AreEqual(new[] { "moduleCount", "moduleName", "moduleType", "compile", "resetType" }.Contains(fault), coverage.Events.Contains("Close"), fault);
-            }
+                using (var fixture = new Fixture())
+                using (var coverage = new CoverageFixture(fixture))
+                {
+                    fixture.Service.CreateCoverageClone = (project, path, folder) =>
+                    {
+                        if (fault == "null") return null;
+                        var copy = coverage.MakeCopy(folder);
+                        if (fault == "moduleCount") copy.VBComponents.RemoveAt(0);
+                        if (fault == "moduleName") copy.VBComponents[0].Name = "Renamed";
+                        if (fault == "moduleType") copy.VBComponents[0].Type = 2;
+                        string target = copy.FileName;
+                        if (fault == "projectPath") copy.FileName = System.IO.Path.Combine(folder, "Other.xlsm");
+                        if (fault == "outside") target = System.IO.Path.Combine(System.IO.Path.GetTempPath(), "Unowned.xlsm");
+                        return new VbaTestCoverageClone
+                        {
+                            Project = fault == "project" ? null : copy,
+                            Path = fault == "path" ? null : target,
+                            Close = () => coverage.Events.Add("Close")
+                        };
+                    };
+                    if (fault == "compile") fixture.Service.CompileCoverageProject = null;
+                    if (fault == "resetType") coverage.ResetResult = new object();
+                    var catalog = fixture.Catalog();
+                    var run = Pump(fixture.Service.RunCoverageAsync(catalog, catalog.Tests.ToArray(), null, CancellationToken.None));
+                    Assert.IsFalse(run.Coverage.Available, fault); Assert.IsFalse(run.OutcomeUnknown, fault);
+                    Assert.IsTrue(run.Results.All(result => result.Outcome == VbaTestOutcome.Blocked), fault);
+                    Assert.IsFalse(coverage.Events.Any(item => item.StartsWith("Test:", StringComparison.Ordinal)), fault);
+                    Assert.AreEqual(new[] { "moduleCount", "moduleName", "moduleType", "compile", "resetType" }.Contains(fault), coverage.Events.Contains("Close"), fault);
+                }
         }
 
         [STATestMethod]
@@ -478,8 +521,12 @@ namespace VBAi.Tests.Unit
         {
             using (var fixture = new Fixture())
             {
-                fixture.Project.VBComponents.Add(new FakeComponent { Name = "TestsTwo", Type = 1,
-                    CodeModule = new FakeCode { Source = "'@TestModule\n'@TestMethod\nPublic Sub OtherModuleTest()\nEnd Sub" } });
+                fixture.Project.VBComponents.Add(new FakeComponent
+                {
+                    Name = "TestsTwo",
+                    Type = 1,
+                    CodeModule = new FakeCode { Source = "'@TestModule\n'@TestMethod\nPublic Sub OtherModuleTest()\nEnd Sub" }
+                });
                 using (var coverage = new CoverageFixture(fixture))
                 {
                     var catalog = fixture.Catalog(); var progress = new List<VbaTestResult>();
@@ -498,27 +545,27 @@ namespace VBAi.Tests.Unit
         public void NativeCompilerBoundaryIsObservedOnOwnerBeforeResetAndCancellationRefusesDispatch()
         {
             foreach (bool cancelDuringCompile in new[] { false, true })
-            using (var fixture = new Fixture())
-            using (var coverage = new CoverageFixture(fixture))
-            using (var cancellation = new CancellationTokenSource())
-            {
-                var command = new VbeTestExplorerServiceCompilationTests.CompileControl();
-                fixture.Vbe.CommandBars.Control = command;
-                coverage.AfterCopy = copy => fixture.Vbe.ActiveVBProject = copy;
-                command.OnExecute = () => { coverage.Events.Add("Compile"); command.State = false; if (cancelDuringCompile) cancellation.Cancel(); };
-                fixture.Service.CompileCoverageProject = (Action<object>)typeof(VbeTestExplorerService)
-                    .GetField("defaultCompileCoverageDelegate", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic).GetValue(fixture.Service);
-                var catalog = fixture.Catalog();
-                var progress = new List<VbaTestResult>();
-                var run = Pump(fixture.Service.RunCoverageAsync(catalog, catalog.Tests.ToArray(), progress.Add, cancellation.Token));
-                Assert.AreEqual(1, command.Executions, "Neither observing compilation nor cancellation may retry the native command. " + run.Error);
-                Assert.AreEqual(!cancelDuringCompile, run.Coverage.Available);
-                Assert.AreEqual(!cancelDuringCompile, coverage.Events.Contains("Reset"));
-                Assert.AreEqual(catalog.Tests.Count(), progress.Count);
-                if (cancelDuringCompile) Assert.IsTrue(run.Results.All(result => result.Outcome == VbaTestOutcome.Cancelled));
-                else Assert.IsTrue(run.Results.All(result => result.Outcome == VbaTestOutcome.Passed));
-                Assert.IsTrue(coverage.Events.Contains("Close"));
-            }
+                using (var fixture = new Fixture())
+                using (var coverage = new CoverageFixture(fixture))
+                using (var cancellation = new CancellationTokenSource())
+                {
+                    var command = new VbeTestExplorerServiceCompilationTests.CompileControl();
+                    fixture.Vbe.CommandBars.Control = command;
+                    coverage.AfterCopy = copy => fixture.Vbe.ActiveVBProject = copy;
+                    command.OnExecute = () => { coverage.Events.Add("Compile"); command.State = false; if (cancelDuringCompile) cancellation.Cancel(); };
+                    fixture.Service.CompileCoverageProject = (Action<object>)typeof(VbeTestExplorerService)
+                        .GetField("defaultCompileCoverageDelegate", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic).GetValue(fixture.Service);
+                    var catalog = fixture.Catalog();
+                    var progress = new List<VbaTestResult>();
+                    var run = Pump(fixture.Service.RunCoverageAsync(catalog, catalog.Tests.ToArray(), progress.Add, cancellation.Token));
+                    Assert.AreEqual(1, command.Executions, "Neither observing compilation nor cancellation may retry the native command. " + run.Error);
+                    Assert.AreEqual(!cancelDuringCompile, run.Coverage.Available);
+                    Assert.AreEqual(!cancelDuringCompile, coverage.Events.Contains("Reset"));
+                    Assert.AreEqual(catalog.Tests.Count(), progress.Count);
+                    if (cancelDuringCompile) Assert.IsTrue(run.Results.All(result => result.Outcome == VbaTestOutcome.Cancelled));
+                    else Assert.IsTrue(run.Results.All(result => result.Outcome == VbaTestOutcome.Passed));
+                    Assert.IsTrue(coverage.Events.Contains("Close"));
+                }
         }
 
         [STATestMethod]
@@ -566,20 +613,20 @@ namespace VBAi.Tests.Unit
         public void CloseFailuresAppendPreparationErrorAndPreserveKnownOrUncertainCompletion()
         {
             foreach (bool uncertain in new[] { false, true })
-            using (var fixture = new Fixture())
-            using (var coverage = new CoverageFixture(fixture))
-            {
-                fixture.Service.CompileCoverageProject = _ => { throw new InvalidOperationException("Preparation refused"); };
-                coverage.CloseError = new VbaTestInvocationException("Copy close lost completion", uncertain);
-                var catalog = fixture.Catalog(); var progress = new List<VbaTestResult>();
-                var run = Pump(fixture.Service.RunCoverageAsync(catalog, catalog.Tests.ToArray(), progress.Add, CancellationToken.None));
-                StringAssert.Contains(run.Error, "Preparation refused"); StringAssert.Contains(run.Error, "Copy close lost completion");
-                Assert.AreEqual(uncertain, run.OutcomeUnknown);
-                Assert.AreEqual(1, coverage.Events.Count(item => item == "Close"));
-                Assert.IsNull(run.Coverage.Percent);
-                Assert.IsTrue(fixture.Vbe.VBProjects.Contains(coverage.Clone));
-                Assert.AreEqual(2, progress.Count);
-            }
+                using (var fixture = new Fixture())
+                using (var coverage = new CoverageFixture(fixture))
+                {
+                    fixture.Service.CompileCoverageProject = _ => { throw new InvalidOperationException("Preparation refused"); };
+                    coverage.CloseError = new VbaTestInvocationException("Copy close lost completion", uncertain);
+                    var catalog = fixture.Catalog(); var progress = new List<VbaTestResult>();
+                    var run = Pump(fixture.Service.RunCoverageAsync(catalog, catalog.Tests.ToArray(), progress.Add, CancellationToken.None));
+                    StringAssert.Contains(run.Error, "Preparation refused"); StringAssert.Contains(run.Error, "Copy close lost completion");
+                    Assert.AreEqual(uncertain, run.OutcomeUnknown);
+                    Assert.AreEqual(1, coverage.Events.Count(item => item == "Close"));
+                    Assert.IsNull(run.Coverage.Percent);
+                    Assert.IsTrue(fixture.Vbe.VBProjects.Contains(coverage.Clone));
+                    Assert.AreEqual(2, progress.Count);
+                }
         }
 
         [STATestMethod]
@@ -615,21 +662,21 @@ namespace VBAi.Tests.Unit
         public void CoverageHelperAcceptsAbsentProgressForSuccessfulAndRefusedCopyPreparation()
         {
             foreach (bool copyRefused in new[] { false, true })
-            using (var fixture = new Fixture())
-            using (var coverage = new CoverageFixture(fixture))
-            {
-                if (copyRefused) fixture.Service.CreateCoverageClone = (_, __, ___) => { throw new InvalidOperationException("Copy preparation refused"); };
-                var catalog = fixture.Catalog();
-                var helper = typeof(VbeTestExplorerService).GetMethod("ExecuteCoverageAsync", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic);
-                var task = (System.Threading.Tasks.Task<VbaTestRun>)helper.Invoke(fixture.Service,
-                    new object[] { catalog, catalog.Tests.ToArray(), null, CancellationToken.None, null });
-                var run = Pump(task);
-                Assert.AreEqual(2, run.Results.Count);
-                Assert.AreEqual(!copyRefused, run.Coverage.Available);
-                Assert.IsFalse(run.OutcomeUnknown);
-                if (copyRefused) Assert.IsTrue(run.Results.All(result => result.Outcome == VbaTestOutcome.Blocked));
-                else Assert.IsTrue(run.Results.All(result => result.Outcome == VbaTestOutcome.Passed));
-            }
+                using (var fixture = new Fixture())
+                using (var coverage = new CoverageFixture(fixture))
+                {
+                    if (copyRefused) fixture.Service.CreateCoverageClone = (_, __, ___) => { throw new InvalidOperationException("Copy preparation refused"); };
+                    var catalog = fixture.Catalog();
+                    var helper = typeof(VbeTestExplorerService).GetMethod("ExecuteCoverageAsync", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic);
+                    var task = (System.Threading.Tasks.Task<VbaTestRun>)helper.Invoke(fixture.Service,
+                        new object[] { catalog, catalog.Tests.ToArray(), null, CancellationToken.None, null });
+                    var run = Pump(task);
+                    Assert.AreEqual(2, run.Results.Count);
+                    Assert.AreEqual(!copyRefused, run.Coverage.Available);
+                    Assert.IsFalse(run.OutcomeUnknown);
+                    if (copyRefused) Assert.IsTrue(run.Results.All(result => result.Outcome == VbaTestOutcome.Blocked));
+                    else Assert.IsTrue(run.Results.All(result => result.Outcome == VbaTestOutcome.Passed));
+                }
         }
 
         [STATestMethod]
@@ -669,8 +716,12 @@ namespace VBAi.Tests.Unit
             internal CoverageFixture(Fixture original)
             {
                 this.original = original;
-                original.Project.VBComponents.Add(new FakeComponent { Name = "Production", Type = 1,
-                    CodeModule = new FakeCode { Source = "Public Sub One()\nEnd Sub\nPublic Sub Two()\nEnd Sub" } });
+                original.Project.VBComponents.Add(new FakeComponent
+                {
+                    Name = "Production",
+                    Type = 1,
+                    CodeModule = new FakeCode { Source = "Public Sub One()\nEnd Sub\nPublic Sub Two()\nEnd Sub" }
+                });
                 original.InstallFixtureSupport();
                 original.Service.Host = this;
                 original.Service.CompileCoverageProject = project => { Assert.AreSame(Clone, project); Events.Add("Compile"); };
@@ -679,19 +730,33 @@ namespace VBAi.Tests.Unit
                 {
                     var copy = MakeCopy(destination);
                     AfterCopy?.Invoke(copy);
-                    return new VbaTestCoverageClone { Project = copy, Path = copy.FileName,
-                        Close = () => { Events.Add("Close"); if (CloseError != null) throw CloseError; if (CloseFails) throw new InvalidOperationException("Simulated close failure"); original.Vbe.VBProjects.Remove(copy); } };
+                    return new VbaTestCoverageClone
+                    {
+                        Project = copy,
+                        Path = copy.FileName,
+                        Close = () => { Events.Add("Close"); if (CloseError != null) throw CloseError; if (CloseFails) throw new InvalidOperationException("Simulated close failure"); original.Vbe.VBProjects.Remove(copy); }
+                    };
                 };
             }
             internal FakeProject MakeCopy(string destination)
             {
                 Clone = new FakeProject { Name = original.Project.Name, FileName = System.IO.Path.Combine(destination, "coverage.xlsm") };
                 foreach (var component in original.Project.VBComponents)
-                    Clone.VBComponents.Add(new FakeComponent { Name = component.Name, Type = component.Type,
-                        CodeModule = new FakeCode { Source = component.CodeModule.Source } });
+                    Clone.VBComponents.Add(new FakeComponent
+                    {
+                        Name = component.Name,
+                        Type = component.Type,
+                        CodeModule = new FakeCode { Source = component.CodeModule.Source }
+                    });
                 foreach (var reference in original.Project.References)
-                    Clone.References.Add(new FakeReference { Name = reference.Name, Guid = reference.Guid,
-                        Major = reference.Major, Minor = reference.Minor, IsBroken = reference.IsBroken });
+                    Clone.References.Add(new FakeReference
+                    {
+                        Name = reference.Name,
+                        Guid = reference.Guid,
+                        Major = reference.Major,
+                        Minor = reference.Minor,
+                        IsBroken = reference.IsBroken
+                    });
                 original.Vbe.VBProjects.Add(Clone);
                 return Clone;
             }

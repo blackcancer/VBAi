@@ -1,6 +1,6 @@
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Collections.Generic;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 using VBAi.Tests.Integration;
 
 namespace VBAi.Tests.Unit
@@ -10,11 +10,22 @@ namespace VBAi.Tests.Unit
     {
         private static OfficeVbeFixture.PublisherRecoverySnapshot Exact()
         {
-            return new OfficeVbeFixture.PublisherRecoverySnapshot {
-                Dialog = new IntPtr(11), Button = new IntPtr(12), ButtonRoot = new IntPtr(11),
-                DialogPid = 100, ButtonPid = 100, DialogThread = 200, ButtonThread = 200, ButtonId = 7,
-                DialogClass = "#32770", ButtonClass = "Button", Caption = "Microsoft Publisher",
-                Message = OfficeVbeFixture.FrenchPublisherRecoveryMessage, ButtonText = "&Non" };
+            return new OfficeVbeFixture.PublisherRecoverySnapshot
+            {
+                Dialog = new IntPtr(11),
+                Button = new IntPtr(12),
+                ButtonRoot = new IntPtr(11),
+                DialogPid = 100,
+                ButtonPid = 100,
+                DialogThread = 200,
+                ButtonThread = 200,
+                ButtonId = 7,
+                DialogClass = "#32770",
+                ButtonClass = "Button",
+                Caption = "Microsoft Publisher",
+                Message = OfficeVbeFixture.FrenchPublisherRecoveryMessage,
+                ButtonText = "&Non"
+            };
         }
 
         [TestMethod]

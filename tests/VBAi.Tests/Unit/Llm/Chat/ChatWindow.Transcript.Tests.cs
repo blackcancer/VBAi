@@ -1,18 +1,8 @@
 namespace VBAi.Tests.Unit
 {
-    using System;
-    using System.Collections;
-    using System.Collections.Generic;
-    using System.IO;
-    using System.Net;
-    using System.Net.Http;
-    using System.Reflection;
-    using System.Threading;
-    using System.Threading.Tasks;
-    using System.Web.Script.Serialization;
-    using System.Windows.Forms;
-    using VBAi;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
+    using System.Collections.Generic;
+    using VBAi;
 
     /// <summary>Vérifie la mise à jour incrémentale et le rendu des entrées du transcript.</summary>
     public sealed partial class ChatWindowStateTests
@@ -64,21 +54,19 @@ namespace VBAi.Tests.Unit
 }
 namespace VBAi.Tests.Unit
 {
+    using Microsoft.VisualStudio.TestTools.UnitTesting;
     using System;
     using System.Collections.Generic;
     using System.Linq;
     using System.Windows;
     using System.Windows.Controls;
-    using System.Windows.Documents;
-    using System.Windows.Media;
     using VBAi;
     using VBAi.Tests.Infrastructure;
-    using Microsoft.VisualStudio.TestTools.UnitTesting;
     /// <summary>Vérifie le rendu de chaque type d’entrée et la réutilisation des vues du transcript.</summary>
     public sealed partial class ChatWindowStateTests
     {
-                /// <summary>Rend les différents types d’entrées, recycle leurs vues et préserve les actions de chaque carte.</summary>
-[STATestMethod, TestCategory("Unit")]
+        /// <summary>Rend les différents types d’entrées, recycle leurs vues et préserve les actions de chaque carte.</summary>
+        [STATestMethod, TestCategory("Unit")]
         public void TranscriptRendersEveryEntryKindAndRecyclesViewsWithoutLosingState()
         {
             using (var runtime = new RuntimeScope())
@@ -108,7 +96,7 @@ namespace VBAi.Tests.Unit
             }
         }
         /// <summary>Vérifie la pagination, les mises à jour en flux et la conservation de l’historique lors des changements de thème.</summary>
-[STATestMethod, TestCategory("Unit")]
+        [STATestMethod, TestCategory("Unit")]
         public void TranscriptPagingStreamingWelcomeAndThemeChangesPreserveVisibleHistory()
         {
             using (var runtime = new RuntimeScope())
@@ -128,21 +116,19 @@ namespace VBAi.Tests.Unit
 }
 namespace VBAi.Tests.Unit
 {
+    using Microsoft.VisualStudio.TestTools.UnitTesting;
     using System;
     using System.Collections.Generic;
     using System.Linq;
     using System.Windows;
     using System.Windows.Controls;
-    using System.Windows.Media;
-    using System.Threading.Tasks;
     using VBAi;
     using VBAi.Tests.Infrastructure;
-    using Microsoft.VisualStudio.TestTools.UnitTesting;
     /// <summary>Vérifie le routage des vues recyclées et les actions de suivi du transcript.</summary>
     public sealed partial class ChatWindowStateTests
     {
         /// <summary>Exerce le chargement et le déchargement des vues, les événements de défilement et le suivi différé.</summary>
-[STATestMethod, TestCategory("Unit")]
+        [STATestMethod, TestCategory("Unit")]
         public void TranscriptReleaseRoutingAndPendingFollowActionsHandleEveryLifecycle()
         {
             using (var runtime = new RuntimeScope())
@@ -178,13 +164,12 @@ namespace VBAi.Tests.Unit
 
 namespace VBAi.Tests.Unit
 {
-using System;
-using System.Collections.Generic;
-using System.Reflection;
-using System.Windows;
-using System.Windows.Controls;
-using VBAi;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
+    using Microsoft.VisualStudio.TestTools.UnitTesting;
+    using System.Collections.Generic;
+    using System.Reflection;
+    using System.Windows;
+    using System.Windows.Controls;
+    using VBAi;
 
     [TestClass, TestCategory("Unit")]
     public sealed class ChatTranscriptNativeViewsTests
@@ -209,37 +194,40 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace VBAi.Tests.Unit
 {
+    using Microsoft.VisualStudio.TestTools.UnitTesting;
     using System.Collections.Generic;
     using System.Windows.Controls;
     using VBAi;
-    using Microsoft.VisualStudio.TestTools.UnitTesting;
     public sealed partial class ChatWindowStateTests
     {
         [STATestMethod, TestCategory("Unit")]
         public void RecursiveViewDisposalReleasesBothNativeHostsAndIgnoresOrdinaryLeaves()
         {
-            using(var window=Surfaces()) {
-                var card=new ChatMessageView(); var native=new ChatDesignerHost(card);
-                var diff=new ChatDiffView("before","after"); var diffChild=diff.Child;
-                var nested=new StackPanel(); nested.Children.Add(native); nested.Children.Add(diff); nested.Children.Add(new TextBlock { Text="ordinary" });
-                var body=new StackPanel(); body.Children.Add(nested);
-                Call(window,"DisposeEntryView",body);
+            using (var window = Surfaces())
+            {
+                var card = new ChatMessageView(); var native = new ChatDesignerHost(card);
+                var diff = new ChatDiffView("before", "after"); var diffChild = diff.Child;
+                var nested = new StackPanel(); nested.Children.Add(native); nested.Children.Add(diff); nested.Children.Add(new TextBlock { Text = "ordinary" });
+                var body = new StackPanel(); body.Children.Add(nested);
+                Call(window, "DisposeEntryView", body);
                 Assert.IsTrue(card.IsDisposed); Assert.IsTrue(card.message.content.IsDisposed); Assert.IsTrue(diffChild.IsDisposed);
-                Assert.AreEqual(1,body.Children.Count); Assert.AreEqual(3,nested.Children.Count);
+                Assert.AreEqual(1, body.Children.Count); Assert.AreEqual(3, nested.Children.Count);
             }
         }
         [STATestMethod, TestCategory("Unit")]
         public void InterventionUndoCallbackHandlesEmptyTargetsAndRetainsUnrestoredTargetsWhileBusy()
         {
-            using(var window=Surfaces()) {
-                var changes=Get<List<CodeChange>>(window,"codeChanges");
-                var change=new CodeChange("P","M","old","oldsha","new","newsha",1) { TurnId="assigned" }; changes.Add(change);
-                Set(window,"busy",true);
-                foreach(var turn in new[]{"unrelated","assigned"})
-                using(var host=(ChatDesignerHost)Call(window,"RenderEntry",new ChatEntry { Speaker="Intervention",TurnId=turn,Text="result" })) {
-                    var card=(ChatMessageView)host.View; Assert.AreEqual(turn=="assigned"?1:0,card.targets.Controls.Count);
-                    Click(card.undoTurn); Assert.IsFalse(change.Restored); Assert.AreEqual(1,changes.Count);
-                }
+            using (var window = Surfaces())
+            {
+                var changes = Get<List<CodeChange>>(window, "codeChanges");
+                var change = new CodeChange("P", "M", "old", "oldsha", "new", "newsha", 1) { TurnId = "assigned" }; changes.Add(change);
+                Set(window, "busy", true);
+                foreach (var turn in new[] { "unrelated", "assigned" })
+                    using (var host = (ChatDesignerHost)Call(window, "RenderEntry", new ChatEntry { Speaker = "Intervention", TurnId = turn, Text = "result" }))
+                    {
+                        var card = (ChatMessageView)host.View; Assert.AreEqual(turn == "assigned" ? 1 : 0, card.targets.Controls.Count);
+                        Click(card.undoTurn); Assert.IsFalse(change.Restored); Assert.AreEqual(1, changes.Count);
+                    }
             }
         }
     }

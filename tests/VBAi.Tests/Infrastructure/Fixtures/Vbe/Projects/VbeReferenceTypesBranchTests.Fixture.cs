@@ -1,20 +1,20 @@
 namespace VBAi.Tests.Unit
 {
+    using Microsoft.VisualStudio.TestTools.UnitTesting;
     using System;
     using System.IO;
     using System.Runtime.InteropServices;
     using System.Runtime.InteropServices.ComTypes;
-    using TYPEKIND = System.Runtime.InteropServices.ComTypes.TYPEKIND;
-    using TYPEATTR = System.Runtime.InteropServices.ComTypes.TYPEATTR;
-    using TYPELIBATTR = System.Runtime.InteropServices.ComTypes.TYPELIBATTR;
+    using VBAi;
+    using DISPPARAMS = System.Runtime.InteropServices.ComTypes.DISPPARAMS;
     using FUNCDESC = System.Runtime.InteropServices.ComTypes.FUNCDESC;
-    using VARDESC = System.Runtime.InteropServices.ComTypes.VARDESC;
-    using VARKIND = System.Runtime.InteropServices.ComTypes.VARKIND;
     using IMPLTYPEFLAGS = System.Runtime.InteropServices.ComTypes.IMPLTYPEFLAGS;
     using INVOKEKIND = System.Runtime.InteropServices.ComTypes.INVOKEKIND;
-    using DISPPARAMS = System.Runtime.InteropServices.ComTypes.DISPPARAMS;
-    using VBAi;
-    using Microsoft.VisualStudio.TestTools.UnitTesting;
+    using TYPEATTR = System.Runtime.InteropServices.ComTypes.TYPEATTR;
+    using TYPEKIND = System.Runtime.InteropServices.ComTypes.TYPEKIND;
+    using TYPELIBATTR = System.Runtime.InteropServices.ComTypes.TYPELIBATTR;
+    using VARDESC = System.Runtime.InteropServices.ComTypes.VARDESC;
+    using VARKIND = System.Runtime.InteropServices.ComTypes.VARKIND;
 
     public sealed partial class VbeReferenceTypesBranchTests
     {

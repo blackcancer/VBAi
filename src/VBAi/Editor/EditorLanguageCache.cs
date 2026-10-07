@@ -76,8 +76,11 @@ namespace VBAi
                 signature.Append(key);
                 if (!modules.TryGetValue(key, out var entry))
                 {
-                    entry = new Entry { Symbols = EditorLanguageIndex.Build(new[] { source }),
-                        Receivers = Regex.Matches(source.Text, @"\b([\p{L}_][\p{L}\p{N}_]*)\s*\.").Cast<Match>().Select(m => m.Groups[1].Value).Distinct(StringComparer.OrdinalIgnoreCase).ToArray() };
+                    entry = new Entry
+                    {
+                        Symbols = EditorLanguageIndex.Build(new[] { source }),
+                        Receivers = Regex.Matches(source.Text, @"\b([\p{L}_][\p{L}\p{N}_]*)\s*\.").Cast<Match>().Select(m => m.Groups[1].Value).Distinct(StringComparer.OrdinalIgnoreCase).ToArray()
+                    };
                     ParsedModules++;
                     if (modules.Count >= 256 || retainedCharacters + source.Text.Length > 8 * 1024 * 1024) { modules.Clear(); retainedCharacters = 0; }
                     if (source.Text.Length <= 8 * 1024 * 1024) { modules[key] = entry; retainedCharacters += source.Text.Length; }

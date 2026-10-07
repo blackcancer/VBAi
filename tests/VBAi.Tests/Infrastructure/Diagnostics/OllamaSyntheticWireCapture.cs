@@ -76,7 +76,8 @@ namespace VBAi.Tests.Infrastructure.Diagnostics
             this.wrapResponse = wrapResponse ?? ((content, prefix, write) => new Content(content, prefix, write));
             if (save == null) Directory.CreateDirectory(this.root);
             try { setFactory(() => CreateHandler(previous())); }
-            catch (Exception primary) {
+            catch (Exception primary)
+            {
                 try { setFactory(previous); }
                 catch (Exception restoration) { throw new AggregateException("Synthetic capture factory installation and restoration both failed.", primary, restoration); }
                 throw;
@@ -107,12 +108,20 @@ namespace VBAi.Tests.Infrastructure.Diagnostics
             {
                 var dictionary = parsedArguments as IDictionary<string, object>;
                 object marker = dictionary != null && dictionary.TryGetValue("marker", out var found) ? found : null;
-                var value = new {
-                    ScopeId = scopeId, Fixture = fixture, Stage = stage, Utc = DateTime.UtcNow.ToString("o"),
-                    RawArgumentType = rawArguments?.GetType().FullName, RawArgumentJson = rawArguments,
-                    ParsedArgumentType = parsedArguments?.GetType().FullName, ParsedArgumentJson = parsedArguments,
-                    MarkerType = marker?.GetType().FullName, MarkerJson = marker,
-                    NativeToolsExecuted = 0, Scope = "Fixture-owned synthetic arguments only; no coercion or historical causal claim"
+                var value = new
+                {
+                    ScopeId = scopeId,
+                    Fixture = fixture,
+                    Stage = stage,
+                    Utc = DateTime.UtcNow.ToString("o"),
+                    RawArgumentType = rawArguments?.GetType().FullName,
+                    RawArgumentJson = rawArguments,
+                    ParsedArgumentType = parsedArguments?.GetType().FullName,
+                    ParsedArgumentJson = parsedArguments,
+                    MarkerType = marker?.GetType().FullName,
+                    MarkerJson = marker,
+                    NativeToolsExecuted = 0,
+                    Scope = "Fixture-owned synthetic arguments only; no coercion or historical causal claim"
                 };
                 byte[] bytes = Json(value);
                 string prefix = Prefix("arguments");
@@ -125,22 +134,35 @@ namespace VBAi.Tests.Infrastructure.Diagnostics
         internal void RecordCompletion(string stage, LlmChatClient client, Exception error = null)
         {
             if (!Enabled) return;
-            try { Save(Prefix("completion") + ".json", Json(new {
-                ScopeId = scopeId, Fixture = fixture, Stage = stage, Utc = DateTime.UtcNow.ToString("o"),
-                Mvid = typeof(LlmChatClient).Module.ModuleVersionId.ToString("D"),
-                StreamDiagnostics = client?.LastStreamDiagnostics?.Snapshot(),
-                ErrorType = error?.GetType().FullName, ErrorHResult = error?.HResult, NativeToolsExecuted = 0
-            })); } catch (Exception diagnostic) { Notice(diagnostic); }
+            try
+            {
+                Save(Prefix("completion") + ".json", Json(new
+                {
+                    ScopeId = scopeId,
+                    Fixture = fixture,
+                    Stage = stage,
+                    Utc = DateTime.UtcNow.ToString("o"),
+                    Mvid = typeof(LlmChatClient).Module.ModuleVersionId.ToString("D"),
+                    StreamDiagnostics = client?.LastStreamDiagnostics?.Snapshot(),
+                    ErrorType = error?.GetType().FullName,
+                    ErrorHResult = error?.HResult,
+                    NativeToolsExecuted = 0
+                }));
+            }
+            catch (Exception diagnostic) { Notice(diagnostic); }
         }
 
         internal async Task<IDictionary<string, object>> CompleteAsync(string stage, LlmChatClient client, IList<object> messages, object[] tools)
         {
             SetPhase(stage);
-            try {
+            try
+            {
                 var result = await client.CompleteAsync(messages, tools).ConfigureAwait(false);
                 RecordCompletion(stage + " returned", client);
                 return result;
-            } catch (Exception error) {
+            }
+            catch (Exception error)
+            {
                 RecordCompletion(stage + " threw", client, error);
                 throw;
             }
@@ -156,36 +178,55 @@ namespace VBAi.Tests.Infrastructure.Diagnostics
             if (request.Content != null && !(request.Content is StringContent))
                 throw new InvalidOperationException("Synthetic requests must have buffered StringContent, never an arbitrary source stream.");
             string prefix = Prefix("wire");
-            try {
+            try
+            {
                 byte[] bytes = request.Content == null ? new byte[0] : await request.Content.ReadAsByteArrayAsync().ConfigureAwait(false);
                 if (request.Content != null) Save(prefix + "-request.json", bytes.Take(Limit).ToArray());
-                Save(prefix + "-intent.json", Json(new {
-                ScopeId = scopeId, Fixture = fixture, Phase = phase, Utc = DateTime.UtcNow.ToString("o"),
-                Method = request.Method.Method, Path = request.RequestUri.AbsolutePath, LoopbackPort = endpoint.Port,
-                RequestBytes = bytes.Length, CapturedRequestBytes = Math.Min(bytes.Length, Limit), RequestTruncated = bytes.Length > Limit,
-                CaptureByteLimit = Limit, Mvid = typeof(LlmChatClient).Module.ModuleVersionId.ToString("D"),
-                Scope = "Synthetic fixture bodies only; no headers, credentials or user history recorded"
+                Save(prefix + "-intent.json", Json(new
+                {
+                    ScopeId = scopeId,
+                    Fixture = fixture,
+                    Phase = phase,
+                    Utc = DateTime.UtcNow.ToString("o"),
+                    Method = request.Method.Method,
+                    Path = request.RequestUri.AbsolutePath,
+                    LoopbackPort = endpoint.Port,
+                    RequestBytes = bytes.Length,
+                    CapturedRequestBytes = Math.Min(bytes.Length, Limit),
+                    RequestTruncated = bytes.Length > Limit,
+                    CaptureByteLimit = Limit,
+                    Mvid = typeof(LlmChatClient).Module.ModuleVersionId.ToString("D"),
+                    Scope = "Synthetic fixture bodies only; no headers, credentials or user history recorded"
                 }));
-            } catch (Exception diagnostic) { Notice(diagnostic); }
+            }
+            catch (Exception diagnostic) { Notice(diagnostic); }
             return prefix;
         }
 
         internal void ObserveResponse(HttpResponseMessage response, string prefix)
         {
-            try {
-                Save(prefix + "-metadata.json", Json(new {
-                ScopeId = scopeId, Utc = DateTime.UtcNow.ToString("o"), Status = (int)response.StatusCode,
-                LoopbackPort = endpoint.Port, ContentType = response.Content?.Headers.ContentType?.MediaType,
-                Mvid = typeof(LlmChatClient).Module.ModuleVersionId.ToString("D"), CaptureByteLimit = Limit,
-                ContentPresent = response.Content != null,
-                Scope = "Synthetic fixture bodies only; no headers, credentials or user history recorded"
+            try
+            {
+                Save(prefix + "-metadata.json", Json(new
+                {
+                    ScopeId = scopeId,
+                    Utc = DateTime.UtcNow.ToString("o"),
+                    Status = (int)response.StatusCode,
+                    LoopbackPort = endpoint.Port,
+                    ContentType = response.Content?.Headers.ContentType?.MediaType,
+                    Mvid = typeof(LlmChatClient).Module.ModuleVersionId.ToString("D"),
+                    CaptureByteLimit = Limit,
+                    ContentPresent = response.Content != null,
+                    Scope = "Synthetic fixture bodies only; no headers, credentials or user history recorded"
                 }));
-                if (response.Content != null) {
+                if (response.Content != null)
+                {
                     var replacement = wrapResponse(response.Content, prefix, Save);
                     if (replacement == null) throw new InvalidOperationException("A passive response wrapper may not remove the original body.");
                     response.Content = replacement;
                 }
-            } catch (Exception diagnostic) { Notice(diagnostic); }
+            }
+            catch (Exception diagnostic) { Notice(diagnostic); }
         }
 
         private string Prefix(string kind) => Path.Combine(root, kind + "-" + Guid.NewGuid().ToString("N"));
@@ -211,11 +252,14 @@ namespace VBAi.Tests.Infrastructure.Diagnostics
             protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken token)
             {
                 string prefix = await owner.ObserveRequestAsync(request).ConfigureAwait(false);
-                try {
+                try
+                {
                     var response = await base.SendAsync(request, token).ConfigureAwait(false);
                     owner.ObserveResponse(response, prefix);
                     return response;
-                } catch (Exception error) {
+                }
+                catch (Exception error)
+                {
                     owner.RecordDeliveryError(prefix, error);
                     throw;
                 }
@@ -243,14 +287,25 @@ namespace VBAi.Tests.Infrastructure.Diagnostics
             {
                 if (!disposing || disposed) return;
                 disposed = true;
-                try {
+                try
+                {
                     if (stream != null) stream.Dispose();
-                    else {
+                    else
+                    {
                         try { save(prefix + "-response.bin", new byte[0]); } catch (Exception error) { Notice(error); }
-                        try { save(prefix + "-read-summary.json", Json(new {
-                            ObservedBytes = 0, CapturedBytes = 0, Truncated = false, EndOfStreamObserved = false,
-                            ResponseReadStarted = false, ReadInFlightAtDispose = false
-                        })); } catch (Exception error) { Notice(error); }
+                        try
+                        {
+                            save(prefix + "-read-summary.json", Json(new
+                            {
+                                ObservedBytes = 0,
+                                CapturedBytes = 0,
+                                Truncated = false,
+                                EndOfStreamObserved = false,
+                                ResponseReadStarted = false,
+                                ReadInFlightAtDispose = false
+                            }));
+                        }
+                        catch (Exception error) { Notice(error); }
                     }
                 }
                 finally { try { original.Dispose(); } finally { base.Dispose(disposing); } }
@@ -275,8 +330,10 @@ namespace VBAi.Tests.Infrastructure.Diagnostics
             private void BeginRead() { lock (gate) { if (disposed) throw new ObjectDisposedException(nameof(TeeStream)); pending++; readCalls++; } }
             private int Observe(byte[] buffer, int offset, int count, int requested)
             {
-                lock (gate) {
-                    if (!disposed) {
+                lock (gate)
+                {
+                    if (!disposed)
+                    {
                         observed += count; ended |= count == 0 && requested > 0;
                         int keep = Math.Min(count, Limit - (int)captured.Length);
                         // Capturing an already delivered read may not replace its transport outcome.
@@ -305,16 +362,26 @@ namespace VBAi.Tests.Infrastructure.Diagnostics
             protected override void Dispose(bool disposing)
             {
                 if (!disposing) return;
-                lock (gate) {
+                lock (gate)
+                {
                     if (disposed) return;
                     disposed = true;
                     try { save(prefix + "-response.bin", captured.ToArray()); } catch (Exception error) { Notice(error); }
-                    try { save(prefix + "-read-summary.json", Json(new {
-                        ObservedBytes = observed, CapturedBytes = captured.Length, Truncated = observed > Limit,
-                        EndOfStreamObserved = ended, ReadInFlightAtDispose = pending > 0,
-                        ResponseReadStarted = readCalls > 0,
-                        ReadErrorType = readError?.GetType().FullName, ReadErrorHResult = readError?.HResult
-                    })); } catch (Exception error) { Notice(error); }
+                    try
+                    {
+                        save(prefix + "-read-summary.json", Json(new
+                        {
+                            ObservedBytes = observed,
+                            CapturedBytes = captured.Length,
+                            Truncated = observed > Limit,
+                            EndOfStreamObserved = ended,
+                            ReadInFlightAtDispose = pending > 0,
+                            ResponseReadStarted = readCalls > 0,
+                            ReadErrorType = readError?.GetType().FullName,
+                            ReadErrorHResult = readError?.HResult
+                        }));
+                    }
+                    catch (Exception error) { Notice(error); }
                     captured.Dispose();
                 }
                 try { if (!leaveOpen) inner.Dispose(); } finally { base.Dispose(disposing); }

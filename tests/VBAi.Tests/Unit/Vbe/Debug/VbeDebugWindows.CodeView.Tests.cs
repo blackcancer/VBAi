@@ -1,8 +1,8 @@
 namespace VBAi.Tests.Unit
 {
+    using Microsoft.VisualStudio.TestTools.UnitTesting;
     using System;
     using VBAi;
-    using Microsoft.VisualStudio.TestTools.UnitTesting;
 
     [TestClass, TestCategory("Unit"), DoNotParallelize]
     public sealed class VbeCodeViewTests
@@ -65,7 +65,7 @@ namespace VBAi.Tests.Unit
                 second = scene.Add("ObtbarWndClass", parent: code);
                 Assert.ThrowsException<InvalidOperationException>(() => VbeDebugWindows.ChangeCodeView(code.Caption, true));
                 scene.Windows.Remove(second);
-                foreach (var dimensions in new[] { Tuple.Create(40,9), Tuple.Create(140,65), Tuple.Create(20,20), Tuple.Create(80,20) })
+                foreach (var dimensions in new[] { Tuple.Create(40, 9), Tuple.Create(140, 65), Tuple.Create(20, 20), Tuple.Create(80, 20) })
                 {
                     toolbar.Bounds.Right = dimensions.Item1; toolbar.Bounds.Bottom = dimensions.Item2;
                     scrollbar.Bounds.Top = toolbar.Bounds.Top; scrollbar.Bounds.Bottom = toolbar.Bounds.Bottom;

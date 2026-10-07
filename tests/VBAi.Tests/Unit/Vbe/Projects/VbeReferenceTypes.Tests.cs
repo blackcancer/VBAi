@@ -1,20 +1,11 @@
 namespace VBAi.Tests.Unit
 {
-    using System;
-    using System.IO;
-    using System.Runtime.InteropServices;
-    using System.Runtime.InteropServices.ComTypes;
-    using TYPEKIND = System.Runtime.InteropServices.ComTypes.TYPEKIND;
-    using TYPEATTR = System.Runtime.InteropServices.ComTypes.TYPEATTR;
-    using TYPELIBATTR = System.Runtime.InteropServices.ComTypes.TYPELIBATTR;
-    using FUNCDESC = System.Runtime.InteropServices.ComTypes.FUNCDESC;
-    using VARDESC = System.Runtime.InteropServices.ComTypes.VARDESC;
-    using VARKIND = System.Runtime.InteropServices.ComTypes.VARKIND;
-    using IMPLTYPEFLAGS = System.Runtime.InteropServices.ComTypes.IMPLTYPEFLAGS;
-    using INVOKEKIND = System.Runtime.InteropServices.ComTypes.INVOKEKIND;
-    using DISPPARAMS = System.Runtime.InteropServices.ComTypes.DISPPARAMS;
-    using VBAi;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
+    using System;
+    using System.Runtime.InteropServices;
+    using VBAi;
+    using IMPLTYPEFLAGS = System.Runtime.InteropServices.ComTypes.IMPLTYPEFLAGS;
+    using TYPEKIND = System.Runtime.InteropServices.ComTypes.TYPEKIND;
 
     [TestClass]
     [TestCategory("Unit")]
@@ -235,23 +226,19 @@ namespace VBAi.Tests.Unit
         [TestMethod]
         public void RequiresBothLibraryLoaders()
         {
-            Assert.ThrowsException<ArgumentNullException>(() => new VbeReferenceTypes(new object (), null, (id, major, minor) => null));
-            Assert.ThrowsException<ArgumentNullException>(() => new VbeReferenceTypes(new object (), file => null, null));
+            Assert.ThrowsException<ArgumentNullException>(() => new VbeReferenceTypes(new object(), null, (id, major, minor) => null));
+            Assert.ThrowsException<ArgumentNullException>(() => new VbeReferenceTypes(new object(), file => null, null));
         }
     }
 }
 
 namespace VBAi.Tests.Unit
 {
+    using Microsoft.VisualStudio.TestTools.UnitTesting;
     using System;
-    using System.Collections.Generic;
     using System.Collections;
     using System.IO;
-    using System.Runtime.InteropServices;
-    using System.Runtime.InteropServices.ComTypes;
-    using TYPELIBATTR = System.Runtime.InteropServices.ComTypes.TYPELIBATTR;
     using VBAi;
-    using Microsoft.VisualStudio.TestTools.UnitTesting;
 
     [TestClass]
     [TestCategory("Unit")]
@@ -488,12 +475,12 @@ namespace VBAi.Tests.Unit
             File.WriteAllText(reference.FullPath, "Not a type library.");
             try
             {
-            var project = new FakeProject { Name = "RegisteredMetadata" }; project.References.Add(reference);
-            var host = new FakeVbe(); host.VBProjects.Add(project);
-            var request = new Request { Project = project.Name, Guid = reference.GUID, Major = reference.Major, Minor = reference.Minor, Limit = 1 };
-            var page = new VbeReferenceTypes(host).ListTypes(request);
-            Assert.AreEqual("RegisteredTypeLibrary: LoadRegTypeLib", Prop(page, "Source"));
-            Assert.IsNotNull(Prop(page, "FallbackError")); Assert.IsTrue(Convert.ToInt32(Prop(page, "TotalTypes")) > 0);
+                var project = new FakeProject { Name = "RegisteredMetadata" }; project.References.Add(reference);
+                var host = new FakeVbe(); host.VBProjects.Add(project);
+                var request = new Request { Project = project.Name, Guid = reference.GUID, Major = reference.Major, Minor = reference.Minor, Limit = 1 };
+                var page = new VbeReferenceTypes(host).ListTypes(request);
+                Assert.AreEqual("RegisteredTypeLibrary: LoadRegTypeLib", Prop(page, "Source"));
+                Assert.IsNotNull(Prop(page, "FallbackError")); Assert.IsTrue(Convert.ToInt32(Prop(page, "TotalTypes")) > 0);
             }
             finally { File.Delete(reference.FullPath); }
         }

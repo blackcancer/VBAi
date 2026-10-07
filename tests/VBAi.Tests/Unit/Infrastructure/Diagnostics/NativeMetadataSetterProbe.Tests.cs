@@ -1,8 +1,8 @@
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Runtime.InteropServices;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 using VBAi.Tests.Integration;
 
 namespace VBAi.Tests.Unit
@@ -15,7 +15,8 @@ namespace VBAi.Tests.Unit
         public void I4PutUsesOneNamedArgumentFullBuffersInvariantLocaleAndOneInvoke()
         {
             int entries = 0;
-            var row = NativeMetadataSetterProbe.PutRawCore("HelpContextID", 321, (parameters, result) => {
+            var row = NativeMetadataSetterProbe.PutRawCore("HelpContextID", 321, (parameters, result) =>
+            {
                 entries++;
                 Assert.AreEqual(1, parameters.cArgs); Assert.AreEqual(1, parameters.cNamedArgs);
                 Assert.AreEqual(-3, Marshal.ReadInt32(parameters.rgdispidNamedArgs));
@@ -41,7 +42,8 @@ namespace VBAi.Tests.Unit
         {
             int entries = 0;
             string expected = "E:\\D\u00e9veloppement\\OwnedMetadataHelp.chm";
-            var row = NativeMetadataSetterProbe.PutRawCore("HelpFile", expected, (parameters, result) => {
+            var row = NativeMetadataSetterProbe.PutRawCore("HelpFile", expected, (parameters, result) =>
+            {
                 entries++; Assert.AreEqual(expected, Marshal.GetObjectForNativeVariant(parameters.rgvarg));
                 return unchecked((int)0xD09072B8); // Preserve the observed failure class; do not interpret its apparent pointer bits.
             });

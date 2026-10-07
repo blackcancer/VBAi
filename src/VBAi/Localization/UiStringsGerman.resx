@@ -2184,4 +2184,628 @@ Anmeldung über Git Credential Manager; die Commit-Identität wird in Git festge
   <data name="User guide" xml:space="preserve"><value>Benutzerhandbuch</value></data>
   <data name="Open the local VBAi user guide in the interface language" xml:space="preserve"><value>Das lokale VBAi-Handbuch in der Sprache der Oberfläche öffnen</value></data>
   <data name="Local help is not included in this build. Place the VBAi help files in the Help folder beside the application." xml:space="preserve"><value>Diese Version enthält keine lokale Hilfe. Legen Sie die VBAi-Hilfedateien im Ordner Help neben der Anwendung ab.</value></data>
+  <data name="Close this window without starting another operation." xml:space="preserve">
+    <value>Dieses Fenster schließen, ohne einen weiteren Vorgang zu starten.</value>
+  </data>
+  <data name="Save the settings edited in this window." xml:space="preserve">
+    <value>Die in diesem Fenster bearbeiteten Einstellungen speichern.</value>
+  </data>
+  <data name="Choose the provider; authentication fields and available models depend on this selection." xml:space="preserve">
+    <value>Provider auswählen; Authentifizierungsfelder und verfügbare Modelle hängen davon ab.</value>
+  </data>
+  <data name="Choose an available model for this conversation after the provider catalogue has loaded." xml:space="preserve">
+    <value>Nach dem Laden des Providerkatalogs ein verfügbares Modell für dieses Gespräch wählen.</value>
+  </data>
+  <data name="Choose the reasoning level supported by this model for the current conversation." xml:space="preserve">
+    <value>Die vom Modell unterstützte Reasoning-Stufe für das aktuelle Gespräch wählen.</value>
+  </data>
+  <data name="Select the project bound to this conversation and its VBE operations." xml:space="preserve">
+    <value>Das mit diesem Gespräch und seinen VBE-Vorgängen verbundene Projekt auswählen.</value>
+  </data>
+  <data name="Choose when VBA edits need confirmation; project identity, privacy and revision checks still apply." xml:space="preserve">
+    <value>Festlegen, wann VBA-Bearbeitungen eine Bestätigung benötigen; Projektidentitäts-, Datenschutz- und Revisionsprüfungen gelten weiterhin.</value>
+  </data>
+  <data name="Choose the agent's work mode for the next request." xml:space="preserve">
+    <value>Den Arbeitsmodus des Agenten für die nächste Anfrage wählen.</value>
+  </data>
+  <data name="Start account authentication for the selected provider." xml:space="preserve">
+    <value>Kontoauthentifizierung für den ausgewählten Provider starten.</value>
+  </data>
+  <data name="Read the selected provider's account status again without starting login." xml:space="preserve">
+    <value>Kontostatus des ausgewählten Providers erneut lesen, ohne eine Anmeldung zu starten.</value>
+  </data>
+  <data name="Connection status for the selected account-based provider." xml:space="preserve">
+    <value>Verbindungsstatus des ausgewählten Providers mit Kontoanmeldung.</value>
+  </data>
+  <data name="Set this provider's API address; an incorrect URL can prevent models or requests from loading." xml:space="preserve">
+    <value>API-Adresse dieses Providers festlegen; eine falsche URL kann das Laden von Modellen oder Anfragen verhindern.</value>
+  </data>
+  <data name="Enter a new key for this provider; leave it empty to keep the saved key." xml:space="preserve">
+    <value>Einen neuen Schlüssel für diesen Provider eingeben; leer lassen, um den gespeicherten Schlüssel zu behalten.</value>
+  </data>
+  <data name="Remove the saved key when settings are saved; an environment fallback may remain active." xml:space="preserve">
+    <value>Den gespeicherten Schlüssel beim Speichern der Einstellungen entfernen; ein Ersatz aus der Umgebung kann aktiv bleiben.</value>
+  </data>
+  <data name="Enter the model or deployment identifiers required by this provider, one per line." xml:space="preserve">
+    <value>Die von diesem Provider benötigten Modell- oder Bereitstellungskennungen eingeben, eine pro Zeile.</value>
+  </data>
+  <data name="Name this custom provider so it can be recognized in the chat picker." xml:space="preserve">
+    <value>Diesen benutzerdefinierten Provider zur Erkennung in der Chatauswahl benennen.</value>
+  </data>
+  <data name="Use an Entra bearer token for Azure; renew the token after it expires." xml:space="preserve">
+    <value>Ein Entra-Bearer-Token für Azure verwenden; das Token nach Ablauf erneuern.</value>
+  </data>
+  <data name="Set Ollama sampling temperature from 0 to 2; a lower value reduces variation." xml:space="preserve">
+    <value>Ollama-Samplingtemperatur zwischen 0 und 2 einstellen; niedrigere Werte verringern die Variation.</value>
+  </data>
+  <data name="Set Ollama nucleus sampling above 0 and at most 1." xml:space="preserve">
+    <value>Ollama-Nucleus-Sampling größer als 0 und höchstens 1 einstellen.</value>
+  </data>
+  <data name="Choose the GitHub account for repositories; this is separate from Copilot authentication." xml:space="preserve">
+    <value>GitHub-Konto für Repositorys wählen; dies ist von der Copilot-Authentifizierung getrennt.</value>
+  </data>
+  <data name="Connect a GitHub account through Git Credential Manager." xml:space="preserve">
+    <value>Ein GitHub-Konto über Git Credential Manager verbinden.</value>
+  </data>
+  <data name="Reload the GitHub accounts available in Git Credential Manager." xml:space="preserve">
+    <value>Die in Git Credential Manager verfügbaren GitHub-Konten neu laden.</value>
+  </data>
+  <data name="Status of GitHub repository authentication, separate from the chat provider." xml:space="preserve">
+    <value>Status der GitHub-Repositoryauthentifizierung, getrennt vom Chatprovider.</value>
+  </data>
+  <data name="Choose light, dark or Windows-following appearance for VBAi." xml:space="preserve">
+    <value>Helle, dunkle oder Windows folgende Darstellung für VBAi wählen.</value>
+  </data>
+  <data name="Apply experimental dark styling to native VBE surfaces; original editor colors are retained for restoration." xml:space="preserve">
+    <value>Experimentelle dunkle Darstellung auf native VBE-Oberflächen anwenden; ursprüngliche Editorfarben bleiben zur Wiederherstellung erhalten.</value>
+  </data>
+  <data name="Start a separate conversation for the selected project." xml:space="preserve">
+    <value>Ein eigenes Gespräch für das ausgewählte Projekt starten.</value>
+  </data>
+  <data name="Open conversation settings and additional actions." xml:space="preserve">
+    <value>Gesprächseinstellungen und weitere Aktionen öffnen.</value>
+  </data>
+  <data name="Show the conversations associated with the current document." xml:space="preserve">
+    <value>Die dem aktuellen Dokument zugeordneten Gespräche anzeigen.</value>
+  </data>
+  <data name="Filter this document's conversation history by text." xml:space="preserve">
+    <value>Den Gesprächsverlauf dieses Dokuments nach Text filtern.</value>
+  </data>
+  <data name="Select a stored or temporary conversation to reopen." xml:space="preserve">
+    <value>Ein gespeichertes oder temporäres Gespräch zum erneuten Öffnen auswählen.</value>
+  </data>
+  <data name="Include archived conversations so they can be reopened or restored." xml:space="preserve">
+    <value>Archivierte Gespräche einschließen, um sie erneut zu öffnen oder wiederherzustellen.</value>
+  </data>
+  <data name="Edit the selected conversation's title before renaming it." xml:space="preserve">
+    <value>Den Titel des ausgewählten Gesprächs vor dem Umbenennen bearbeiten.</value>
+  </data>
+  <data name="Rename the selected conversation using the title entered above." xml:space="preserve">
+    <value>Das ausgewählte Gespräch mit dem oben eingegebenen Titel umbenennen.</value>
+  </data>
+  <data name="Archive the selected conversation, or restore it if already archived." xml:space="preserve">
+    <value>Das ausgewählte Gespräch archivieren oder wiederherstellen, falls es bereits archiviert ist.</value>
+  </data>
+  <data name="Pin or unpin the selected conversation in the history list." xml:space="preserve">
+    <value>Das ausgewählte Gespräch in der Verlaufsliste anheften oder lösen.</value>
+  </data>
+  <data name="Permanently remove the selected conversation from VBAi local history." xml:space="preserve">
+    <value>Das ausgewählte Gespräch dauerhaft aus dem lokalen VBAi-Verlauf entfernen.</value>
+  </data>
+  <data name="Export the selected conversation as Markdown; review its contents before sharing." xml:space="preserve">
+    <value>Das ausgewählte Gespräch als Markdown exportieren; Inhalt vor dem Teilen prüfen.</value>
+  </data>
+  <data name="Show the local notes associated with this document." xml:space="preserve">
+    <value>Die diesem Dokument zugeordneten lokalen Notizen anzeigen.</value>
+  </data>
+  <data name="Edit local project notes; they are transmitted only when attached to outgoing context." xml:space="preserve">
+    <value>Lokale Projektnotizen bearbeiten; sie werden nur als Teil des ausgehenden Kontexts übertragen.</value>
+  </data>
+  <data name="Save the edited notes locally for this document." xml:space="preserve">
+    <value>Die bearbeiteten Notizen lokal für dieses Dokument speichern.</value>
+  </data>
+  <data name="Include these notes in the next message sent to the selected provider." xml:space="preserve">
+    <value>Diese Notizen in die nächste Nachricht an den ausgewählten Provider aufnehmen.</value>
+  </data>
+  <data name="Attach the currently selected VBA code to the message being prepared." xml:space="preserve">
+    <value>Den aktuell ausgewählten VBA-Code an die vorbereitete Nachricht anhängen.</value>
+  </data>
+  <data name="Compile the selected VBA project and read the compiler result." xml:space="preserve">
+    <value>Das ausgewählte VBA-Projekt kompilieren und das Compilerergebnis lesen.</value>
+  </data>
+  <data name="Request compilation after agent code changes when supported by the current workflow." xml:space="preserve">
+    <value>Nach Codeänderungen des Agenten eine Kompilierung anfordern, sofern der aktuelle Ablauf dies unterstützt.</value>
+  </data>
+  <data name="Choose a module reference to add to the outgoing message." xml:space="preserve">
+    <value>Eine Modulreferenz zum Hinzufügen zur ausgehenden Nachricht wählen.</value>
+  </data>
+  <data name="Choose a procedure reference to add to the outgoing message." xml:space="preserve">
+    <value>Eine Prozedurreferenz zum Hinzufügen zur ausgehenden Nachricht wählen.</value>
+  </data>
+  <data name="Send the prepared message and its selected context to the provider." xml:space="preserve">
+    <value>Die vorbereitete Nachricht und ihren ausgewählten Kontext an den Provider senden.</value>
+  </data>
+  <data name="Inspect and refresh the project data and attachments that will be sent." xml:space="preserve">
+    <value>Die zu sendenden Projektdaten und Anhänge prüfen und aktualisieren.</value>
+  </data>
+  <data name="Scroll back to the most recent message without changing the conversation." xml:space="preserve">
+    <value>Zur neuesten Nachricht scrollen, ohne das Gespräch zu ändern.</value>
+  </data>
+  <data name="Inspect code changes and the available revision-checked undo actions." xml:space="preserve">
+    <value>Codeänderungen und verfügbare, revisionsgeprüfte Rückgängigaktionen prüfen.</value>
+  </data>
+  <data name="Open this referenced module or procedure if its target is still available." xml:space="preserve">
+    <value>Dieses referenzierte Modul oder diese Prozedur öffnen, wenn das Ziel noch verfügbar ist.</value>
+  </data>
+  <data name="Remove this reference from the message being prepared." xml:space="preserve">
+    <value>Diese Referenz aus der vorbereiteten Nachricht entfernen.</value>
+  </data>
+  <data name="Open the attached code's target in the VBE when available." xml:space="preserve">
+    <value>Das Ziel des angehängten Codes im VBE öffnen, sofern verfügbar.</value>
+  </data>
+  <data name="Open the displayed external link through the safe-link handler." xml:space="preserve">
+    <value>Den angezeigten externen Link über die sichere Linkverarbeitung öffnen.</value>
+  </data>
+  <data name="Copy this message's content to the system clipboard." xml:space="preserve">
+    <value>Den Inhalt dieser Nachricht in die Systemzwischenablage kopieren.</value>
+  </data>
+  <data name="Start a separate conversation from this message." xml:space="preserve">
+    <value>Ein eigenes Gespräch aus dieser Nachricht starten.</value>
+  </data>
+  <data name="Prepare a correction request from the issue shown in this message." xml:space="preserve">
+    <value>Eine Korrekturanfrage anhand des in dieser Nachricht gezeigten Problems vorbereiten.</value>
+  </data>
+  <data name="Undo this code change if the current revision still allows it." xml:space="preserve">
+    <value>Diese Codeänderung rückgängig machen, wenn die aktuelle Revision es noch erlaubt.</value>
+  </data>
+  <data name="Undo the code changes of this agent turn subject to revision checks." xml:space="preserve">
+    <value>Die Codeänderungen dieses Agentendurchgangs unter Revisionsprüfung rückgängig machen.</value>
+  </data>
+  <data name="Choose a changed code block to undo rather than the whole change." xml:space="preserve">
+    <value>Einen geänderten Codeblock zum Rückgängigmachen wählen statt der gesamten Änderung.</value>
+  </data>
+  <data name="Open the module affected by this code change." xml:space="preserve">
+    <value>Das von dieser Codeänderung betroffene Modul öffnen.</value>
+  </data>
+  <data name="Expand or collapse this section to read its details." xml:space="preserve">
+    <value>Diesen Bereich zum Lesen der Details auf- oder zuklappen.</value>
+  </data>
+  <data name="Restore the cut form controls when the saved recovery state is still usable." xml:space="preserve">
+    <value>Ausgeschnittene Formularsteuerelemente wiederherstellen, wenn der gespeicherte Wiederherstellungszustand noch verwendbar ist.</value>
+  </data>
+  <data name="Request sending this queued message according to the current turn state." xml:space="preserve">
+    <value>Das Senden dieser wartenden Nachricht gemäß dem aktuellen Durchgangszustand anfordern.</value>
+  </data>
+  <data name="Edit this queued message before it is sent." xml:space="preserve">
+    <value>Diese wartende Nachricht vor dem Senden bearbeiten.</value>
+  </data>
+  <data name="Remove this unsent message from the queue." xml:space="preserve">
+    <value>Diese noch nicht gesendete Nachricht aus der Warteschlange entfernen.</value>
+  </data>
+  <data name="Prepare a request to explain a VBA procedure." xml:space="preserve">
+    <value>Eine Anfrage zur Erklärung einer VBA-Prozedur vorbereiten.</value>
+  </data>
+  <data name="Prepare a request to improve the current VBA code." xml:space="preserve">
+    <value>Eine Anfrage zur Verbesserung des aktuellen VBA-Codes vorbereiten.</value>
+  </data>
+  <data name="Prepare a request to diagnose and fix a VBA error." xml:space="preserve">
+    <value>Eine Anfrage zur Diagnose und Behebung eines VBA-Fehlers vorbereiten.</value>
+  </data>
+  <data name="Choose one of the matching VBA targets for this reference." xml:space="preserve">
+    <value>Eines der passenden VBA-Ziele für diese Referenz wählen.</value>
+  </data>
+  <data name="Type a message; add module or procedure references before sending." xml:space="preserve">
+    <value>Eine Nachricht eingeben; vor dem Senden Modul- oder Prozedurreferenzen hinzufügen.</value>
+  </data>
+  <data name="Show deletions and additions together instead of side by side." xml:space="preserve">
+    <value>Löschungen und Ergänzungen gemeinsam statt nebeneinander anzeigen.</value>
+  </data>
+  <data name="Fold unchanged lines to concentrate on the changed code." xml:space="preserve">
+    <value>Unveränderte Zeilen einklappen, um sich auf den geänderten Code zu konzentrieren.</value>
+  </data>
+  <data name="Move to the previous changed block in this comparison." xml:space="preserve">
+    <value>Zum vorherigen geänderten Block in diesem Vergleich wechseln.</value>
+  </data>
+  <data name="Move to the next changed block in this comparison." xml:space="preserve">
+    <value>Zum nächsten geänderten Block in diesem Vergleich wechseln.</value>
+  </data>
+  <data name="Enter text to find within this code comparison." xml:space="preserve">
+    <value>Suchtext für diesen Codevergleich eingeben.</value>
+  </data>
+  <data name="Find the entered text in this comparison." xml:space="preserve">
+    <value>Den eingegebenen Text in diesem Vergleich suchen.</value>
+  </data>
+  <data name="Read the before and after source with highlighted additions and deletions." xml:space="preserve">
+    <value>Quelltext vor und nach der Änderung mit markierten Ergänzungen und Löschungen lesen.</value>
+  </data>
+  <data name="Choose the projects included in this view's read or discovery scope." xml:space="preserve">
+    <value>Projekte im Lese- oder Erkennungsumfang dieser Ansicht wählen.</value>
+  </data>
+  <data name="Allow read access to shared debugger, native inventory and clipboard data; no additional project write permission is granted." xml:space="preserve">
+    <value>Lesezugriff auf gemeinsame Debugger-, native Bestands- und Zwischenablagedaten erlauben; keine zusätzlichen Projektschreibrechte werden gewährt.</value>
+  </data>
+  <data name="Apply the selected project read scope to a new conversation." xml:space="preserve">
+    <value>Den ausgewählten Projektleseumfang auf ein neues Gespräch anwenden.</value>
+  </data>
+  <data name="Allow the specific VBE action described in this dialog." xml:space="preserve">
+    <value>Die in diesem Dialog beschriebene konkrete VBE-Aktion erlauben.</value>
+  </data>
+  <data name="Deny the specific VBE action described in this dialog." xml:space="preserve">
+    <value>Die in diesem Dialog beschriebene konkrete VBE-Aktion ablehnen.</value>
+  </data>
+  <data name="Review the proposed action and its project before allowing or denying it." xml:space="preserve">
+    <value>Die vorgeschlagene Aktion und ihr Projekt vor Erlaubnis oder Ablehnung prüfen.</value>
+  </data>
+  <data name="Apply the edited Monaco version after the conflict has been reviewed and the project revalidated." xml:space="preserve">
+    <value>Die bearbeitete Monaco-Version nach Konfliktprüfung und erneuter Projektvalidierung anwenden.</value>
+  </data>
+  <data name="Compare the Monaco text with the current native VBA text." xml:space="preserve">
+    <value>Monaco-Text mit dem aktuellen nativen VBA-Text vergleichen.</value>
+  </data>
+  <data name="Reload the current VBA version instead of the conflicting local edit." xml:space="preserve">
+    <value>Die aktuelle VBA-Version statt der widersprüchlichen lokalen Bearbeitung neu laden.</value>
+  </data>
+  <data name="Review and restore an available local editor draft." xml:space="preserve">
+    <value>Einen verfügbaren lokalen Editorentwurf prüfen und wiederherstellen.</value>
+  </data>
+  <data name="Return to the editable code surface from the comparison." xml:space="preserve">
+    <value>Vom Vergleich zur bearbeitbaren Codeoberfläche zurückkehren.</value>
+  </data>
+  <data name="Choose the section to display; changing tabs alone does not submit an operation." xml:space="preserve">
+    <value>Den anzuzeigenden Bereich wählen; ein Tabwechsel allein führt keinen Vorgang aus.</value>
+  </data>
+  <data name="Enter the GitHub repository to link to this VBA project." xml:space="preserve">
+    <value>Das mit diesem VBA-Projekt zu verbindende GitHub-Repository eingeben.</value>
+  </data>
+  <data name="Enter the repository branch used for this VBA project." xml:space="preserve">
+    <value>Den für dieses VBA-Projekt verwendeten Repositorybranch eingeben.</value>
+  </data>
+  <data name="Link the selected repository and branch to the current VBA project." xml:space="preserve">
+    <value>Ausgewähltes Repository und Branch mit dem aktuellen VBA-Projekt verbinden.</value>
+  </data>
+  <data name="Compare current VBA sources with their repository baseline." xml:space="preserve">
+    <value>Aktuelle VBA-Quellen mit ihrer Repositorybasis vergleichen.</value>
+  </data>
+  <data name="Fetch remote references without treating that alone as a VBA import." xml:space="preserve">
+    <value>Remotereferenzen abrufen, ohne dies allein als VBA-Import zu behandeln.</value>
+  </data>
+  <data name="Publish local commits to the selected remote branch." xml:space="preserve">
+    <value>Lokale Commits auf dem ausgewählten Remote-Branch veröffentlichen.</value>
+  </data>
+  <data name="Pull sources and run the guarded VBA import; inspect the result and save the document." xml:space="preserve">
+    <value>Quellen per Pull abrufen und den abgesicherten VBA-Import ausführen; Ergebnis prüfen und Dokument speichern.</value>
+  </data>
+  <data name="Restore VBA from the available backup and inspect the recovery result." xml:space="preserve">
+    <value>VBA aus der verfügbaren Sicherung wiederherstellen und das Wiederherstellungsergebnis prüfen.</value>
+  </data>
+  <data name="Preview the source changes that an import would apply before changing VBA." xml:space="preserve">
+    <value>Quelländerungen eines Imports vorab anzeigen, bevor VBA verändert wird.</value>
+  </data>
+  <data name="Request cancellation of the current operation; a native mutation already in progress may still finish." xml:space="preserve">
+    <value>Abbruch des aktuellen Vorgangs anfordern; eine bereits laufende native Änderung kann dennoch enden.</value>
+  </data>
+  <data name="Describe the selected source changes in the commit message." xml:space="preserve">
+    <value>Die ausgewählten Quelländerungen in der Commitnachricht beschreiben.</value>
+  </data>
+  <data name="Create a local commit from the selected source changes; Push publishes it separately." xml:space="preserve">
+    <value>Einen lokalen Commit aus den ausgewählten Quelländerungen erstellen; Push veröffentlicht ihn gesondert.</value>
+  </data>
+  <data name="Select the VBA source changes to review and include in a commit." xml:space="preserve">
+    <value>VBA-Quelländerungen zur Prüfung und Aufnahme in einen Commit wählen.</value>
+  </data>
+  <data name="Open the selected module in the VBE without restoring its source." xml:space="preserve">
+    <value>Das ausgewählte Modul im VBE öffnen, ohne seine Quelle wiederherzustellen.</value>
+  </data>
+  <data name="Replace the selected module using the available repository version; review before applying." xml:space="preserve">
+    <value>Das ausgewählte Modul durch die verfügbare Repositoryversion ersetzen; vor Anwendung prüfen.</value>
+  </data>
+  <data name="Select a commit to inspect its details or compare revisions." xml:space="preserve">
+    <value>Einen Commit zum Prüfen seiner Details oder zum Revisionsvergleich wählen.</value>
+  </data>
+  <data name="Compare the chosen repository revisions without applying them to VBA." xml:space="preserve">
+    <value>Die gewählten Repositoryrevisionen vergleichen, ohne sie auf VBA anzuwenden.</value>
+  </data>
+  <data name="Select a local or remote branch for the branch actions." xml:space="preserve">
+    <value>Einen lokalen oder entfernten Branch für Branchaktionen wählen.</value>
+  </data>
+  <data name="Enter the new local branch name." xml:space="preserve">
+    <value>Den Namen des neuen lokalen Branchs eingeben.</value>
+  </data>
+  <data name="Include remote branch references in the branch list." xml:space="preserve">
+    <value>Remotebranchreferenzen in die Branchliste aufnehmen.</value>
+  </data>
+  <data name="Create the named local branch." xml:space="preserve">
+    <value>Den benannten lokalen Branch erstellen.</value>
+  </data>
+  <data name="Create local tracking for the selected remote branch." xml:space="preserve">
+    <value>Lokales Tracking für den ausgewählten Remote-Branch erstellen.</value>
+  </data>
+  <data name="Switch to the selected branch subject to the current Git and VBA state checks." xml:space="preserve">
+    <value>Zum ausgewählten Branch unter Prüfung des aktuellen Git- und VBA-Zustands wechseln.</value>
+  </data>
+  <data name="Merge the selected branch into the current branch; review the direction first." xml:space="preserve">
+    <value>Den ausgewählten Branch in den aktuellen zusammenführen; zuerst die Richtung prüfen.</value>
+  </data>
+  <data name="Select a stored checkpoint to inspect or restore." xml:space="preserve">
+    <value>Einen gespeicherten Checkpoint zum Prüfen oder Wiederherstellen wählen.</value>
+  </data>
+  <data name="Name the checkpoint so its purpose is recognizable later." xml:space="preserve">
+    <value>Den Checkpoint so benennen, dass sein Zweck später erkennbar ist.</value>
+  </data>
+  <data name="Create a checkpoint of the current VBA source state." xml:space="preserve">
+    <value>Einen Checkpoint des aktuellen VBA-Quellzustands erstellen.</value>
+  </data>
+  <data name="Restore the selected checkpoint through the guarded recovery workflow." xml:space="preserve">
+    <value>Den ausgewählten Checkpoint über den abgesicherten Wiederherstellungsablauf wiederherstellen.</value>
+  </data>
+  <data name="Choose the source file whose merge conflict you want to resolve." xml:space="preserve">
+    <value>Die Quelldatei wählen, deren Zusammenführungskonflikt Sie lösen möchten.</value>
+  </data>
+  <data name="Enter the complete resolved file content, not only the changed lines." xml:space="preserve">
+    <value>Den vollständigen aufgelösten Dateiinhalt eingeben, nicht nur geänderte Zeilen.</value>
+  </data>
+  <data name="Use the local side as the resolution for this selected file." xml:space="preserve">
+    <value>Die lokale Seite als Auflösung für diese ausgewählte Datei verwenden.</value>
+  </data>
+  <data name="Use the incoming side as the resolution for this selected file." xml:space="preserve">
+    <value>Die eingehende Seite als Auflösung für diese ausgewählte Datei verwenden.</value>
+  </data>
+  <data name="Use the complete text in the resolution editor for this selected file." xml:space="preserve">
+    <value>Den vollständigen Text des Auflösungseditors für diese ausgewählte Datei verwenden.</value>
+  </data>
+  <data name="Complete the prepared merge after all conflicts have been resolved." xml:space="preserve">
+    <value>Die vorbereitete Zusammenführung nach Auflösung aller Konflikte abschließen.</value>
+  </data>
+  <data name="Abort the prepared merge through the repository recovery workflow." xml:space="preserve">
+    <value>Die vorbereitete Zusammenführung über den Wiederherstellungsablauf des Repositorys abbrechen.</value>
+  </data>
+  <data name="Read the common ancestor to understand how the conflicting edits diverged." xml:space="preserve">
+    <value>Den gemeinsamen Vorfahren lesen, um die auseinanderlaufenden Änderungen zu verstehen.</value>
+  </data>
+  <data name="Filter repositories available to the connected GitHub account." xml:space="preserve">
+    <value>Für das verbundene GitHub-Konto verfügbare Repositorys filtern.</value>
+  </data>
+  <data name="Select a GitHub repository before choosing its branch or using it." xml:space="preserve">
+    <value>Ein GitHub-Repository auswählen, bevor Sie seinen Branch wählen oder es verwenden.</value>
+  </data>
+  <data name="Choose the branch of the selected GitHub repository." xml:space="preserve">
+    <value>Den Branch des ausgewählten GitHub-Repositorys wählen.</value>
+  </data>
+  <data name="Choose the account or organization that will own the new repository." xml:space="preserve">
+    <value>Das Konto oder die Organisation wählen, dem bzw. der das neue Repository gehören wird.</value>
+  </data>
+  <data name="Enter the new GitHub repository name." xml:space="preserve">
+    <value>Den Namen des neuen GitHub-Repositorys eingeben.</value>
+  </data>
+  <data name="Choose private visibility for the new repository before creating it." xml:space="preserve">
+    <value>Vor Erstellung private Sichtbarkeit für das neue Repository wählen.</value>
+  </data>
+  <data name="Load repositories accessible to the connected GitHub account." xml:space="preserve">
+    <value>Für das verbundene GitHub-Konto zugängliche Repositorys laden.</value>
+  </data>
+  <data name="Use the selected repository and branch for this VBA project's connection." xml:space="preserve">
+    <value>Ausgewähltes Repository und Branch für die Verbindung dieses VBA-Projekts verwenden.</value>
+  </data>
+  <data name="Create a GitHub repository with the entered owner, name and visibility." xml:space="preserve">
+    <value>Ein GitHub-Repository mit eingegebenem Eigentümer, Namen und Sichtbarkeit erstellen.</value>
+  </data>
+  <data name="Choose a pull request to inspect its details, files, comments and checks." xml:space="preserve">
+    <value>Einen Pull Request zur Prüfung von Details, Dateien, Kommentaren und Checks wählen.</value>
+  </data>
+  <data name="Load pull requests from the selected repository." xml:space="preserve">
+    <value>Pull Requests aus dem ausgewählten Repository laden.</value>
+  </data>
+  <data name="Open the selected pull request on GitHub." xml:space="preserve">
+    <value>Den ausgewählten Pull Request auf GitHub öffnen.</value>
+  </data>
+  <data name="Load the prepared pull request draft and review it before publication." xml:space="preserve">
+    <value>Den vorbereiteten Pull-Request-Entwurf laden und vor Veröffentlichung prüfen.</value>
+  </data>
+  <data name="Choose the destination branch for the new pull request." xml:space="preserve">
+    <value>Den Zielbranch des neuen Pull Requests wählen.</value>
+  </data>
+  <data name="Describe the proposed change in the pull request title." xml:space="preserve">
+    <value>Die vorgeschlagene Änderung im Pull-Request-Titel beschreiben.</value>
+  </data>
+  <data name="Explain the change, validation and remaining limits before creating the pull request." xml:space="preserve">
+    <value>Änderung, Validierung und verbleibende Grenzen vor Erstellung des Pull Requests erläutern.</value>
+  </data>
+  <data name="Create the pull request as a draft when it is not ready for final review." xml:space="preserve">
+    <value>Den Pull Request als Entwurf erstellen, wenn er noch nicht zur abschließenden Prüfung bereit ist.</value>
+  </data>
+  <data name="Publish the prepared pull request using the selected source and target branches." xml:space="preserve">
+    <value>Den vorbereiteten Pull Request mit den ausgewählten Quell- und Zielbranches veröffentlichen.</value>
+  </data>
+  <data name="Read the selected pull request's title, state and description." xml:space="preserve">
+    <value>Titel, Status und Beschreibung des ausgewählten Pull Requests lesen.</value>
+  </data>
+  <data name="Inspect the files changed by the selected pull request." xml:space="preserve">
+    <value>Die vom ausgewählten Pull Request geänderten Dateien prüfen.</value>
+  </data>
+  <data name="Read the comments of the selected pull request." xml:space="preserve">
+    <value>Die Kommentare des ausgewählten Pull Requests lesen.</value>
+  </data>
+  <data name="Read the content of the selected review comment." xml:space="preserve">
+    <value>Den Inhalt des ausgewählten Reviewkommentars lesen.</value>
+  </data>
+  <data name="Inspect the status checks reported by GitHub for this pull request." xml:space="preserve">
+    <value>Die von GitHub für diesen Pull Request gemeldeten Statusprüfungen untersuchen.</value>
+  </data>
+  <data name="Filter discovered VBA tests by name or category." xml:space="preserve">
+    <value>Gefundene VBA-Tests nach Name oder Kategorie filtern.</value>
+  </data>
+  <data name="Filter tests by their last reported outcome." xml:space="preserve">
+    <value>Tests nach ihrem zuletzt gemeldeten Ergebnis filtern.</value>
+  </data>
+  <data name="Choose how discovered tests are grouped in the tree." xml:space="preserve">
+    <value>Die Gruppierung gefundener Tests im Baum wählen.</value>
+  </data>
+  <data name="Select tests or check them to define the next execution scope." xml:space="preserve">
+    <value>Tests auswählen oder markieren, um den nächsten Ausführungsumfang festzulegen.</value>
+  </data>
+  <data name="Read the selected test's source identity, outcome and failure details." xml:space="preserve">
+    <value>Quellidentität, Ergebnis und Fehlerdetails des ausgewählten Tests lesen.</value>
+  </data>
+  <data name="Read the human-readable report for the current VBA test run." xml:space="preserve">
+    <value>Den menschenlesbaren Bericht des aktuellen VBA-Testlaufs lesen.</value>
+  </data>
+  <data name="Read the structured JSON report for the current VBA test run." xml:space="preserve">
+    <value>Den strukturierten JSON-Bericht des aktuellen VBA-Testlaufs lesen.</value>
+  </data>
+  <data name="Copy the current VBA test result report to the clipboard." xml:space="preserve">
+    <value>Den aktuellen VBA-Testergebnisbericht in die Zwischenablage kopieren.</value>
+  </data>
+  <data name="Export the current VBA test result report to a chosen file." xml:space="preserve">
+    <value>Den aktuellen VBA-Testergebnisbericht in eine gewählte Datei exportieren.</value>
+  </data>
+  <data name="Discover the tests currently present in the selected projects." xml:space="preserve">
+    <value>Die derzeit in ausgewählten Projekten vorhandenen Tests erkennen.</value>
+  </data>
+  <data name="Run the selected or checked VBA tests." xml:space="preserve">
+    <value>Ausgewählte oder markierte VBA-Tests ausführen.</value>
+  </data>
+  <data name="Run the tests in the current visible scope." xml:space="preserve">
+    <value>Die Tests des aktuellen sichtbaren Umfangs ausführen.</value>
+  </data>
+  <data name="Run the selected tests with the supported VBA procedure coverage workflow." xml:space="preserve">
+    <value>Ausgewählte Tests mit dem unterstützten Ablauf zur VBA-Prozedurabdeckung ausführen.</value>
+  </data>
+  <data name="Run the visible scope with the supported VBA procedure coverage workflow." xml:space="preserve">
+    <value>Den sichtbaren Umfang mit dem unterstützten Ablauf zur VBA-Prozedurabdeckung ausführen.</value>
+  </data>
+  <data name="Run again the tests whose current recorded result is a failure." xml:space="preserve">
+    <value>Tests erneut ausführen, deren aktuell gespeichertes Ergebnis ein Fehlschlag ist.</value>
+  </data>
+  <data name="Request stopping between tests after the current VBA test finishes." xml:space="preserve">
+    <value>Nach Abschluss des aktuellen VBA-Tests eine Unterbrechung zwischen Tests anfordern.</value>
+  </data>
+  <data name="Open the selected test's source in the VBE." xml:space="preserve">
+    <value>Die Quelle des ausgewählten Tests im VBE öffnen.</value>
+  </data>
+  <data name="Review the test support module and its source backup before applying it." xml:space="preserve">
+    <value>Das Testunterstützungsmodul und seine Quellsicherung vor Anwendung prüfen.</value>
+  </data>
+  <data name="Apply the reviewed test support after project revalidation and backup." xml:space="preserve">
+    <value>Die geprüfte Testunterstützung nach erneuter Projektvalidierung und Sicherung anwenden.</value>
+  </data>
+  <data name="Give the issue a concise title that describes the observed symptom." xml:space="preserve">
+    <value>Dem Problem einen kurzen Titel geben, der das beobachtete Symptom beschreibt.</value>
+  </data>
+  <data name="Describe reproduction steps, expected behavior and observed behavior; remove sensitive details." xml:space="preserve">
+    <value>Reproduktionsschritte sowie erwartetes und beobachtetes Verhalten beschreiben; sensible Details entfernen.</value>
+  </data>
+  <data name="Review the complete report that will be copied, saved or sent." xml:space="preserve">
+    <value>Den vollständigen zu kopierenden, speichernden oder sendenden Bericht prüfen.</value>
+  </data>
+  <data name="Send the reviewed issue report through the GitHub-first reporting workflow." xml:space="preserve">
+    <value>Den geprüften Fehlerbericht über den vorrangigen GitHub-Meldeablauf senden.</value>
+  </data>
+  <data name="Prepare the reviewed issue report for the available email workflow." xml:space="preserve">
+    <value>Den geprüften Fehlerbericht für den verfügbaren E-Mail-Ablauf vorbereiten.</value>
+  </data>
+  <data name="Copy the reviewed issue report to the clipboard." xml:space="preserve">
+    <value>Den geprüften Fehlerbericht in die Zwischenablage kopieren.</value>
+  </data>
+  <data name="Save the reviewed report to a chosen local file." xml:space="preserve">
+    <value>Den geprüften Bericht in eine gewählte lokale Datei speichern.</value>
+  </data>
+  <data name="Open the created GitHub issue when its link is available." xml:space="preserve">
+    <value>Das erstellte GitHub-Issue öffnen, sobald sein Link verfügbar ist.</value>
+  </data>
+  <data name="Open the VBAi source repository on GitHub." xml:space="preserve">
+    <value>Das VBAi-Quellrepository auf GitHub öffnen.</value>
+  </data>
+  <data name="Open the maintained VBAi documentation on GitHub." xml:space="preserve">
+    <value>Die gepflegte VBAi-Dokumentation auf GitHub öffnen.</value>
+  </data>
+  <data name="Open the GitHub issue form to report a VBAi problem." xml:space="preserve">
+    <value>Das GitHub-Issueformular zum Melden eines VBAi-Problems öffnen.</value>
+  </data>
+  <data name="Copy version and environment metadata for support without project source or personal paths." xml:space="preserve">
+    <value>Versions- und Umgebungsmetadaten für Support kopieren, ohne Projektquellen oder persönliche Pfade.</value>
+  </data>
+  <data name="Check the configured release feed and display the available version." xml:space="preserve">
+    <value>Den konfigurierten Releasefeed prüfen und die verfügbare Version anzeigen.</value>
+  </data>
+  <data name="Allow the scheduled daily check for an eligible update." xml:space="preserve">
+    <value>Die geplante tägliche Prüfung auf eine zulässige Aktualisierung erlauben.</value>
+  </data>
+  <data name="Download eligible updates automatically when their package is available." xml:space="preserve">
+    <value>Zulässige Aktualisierungen automatisch herunterladen, wenn ihr Paket verfügbar ist.</value>
+  </data>
+  <data name="Schedule installation after VBA hosts close when package trust and installation policy allow it." xml:space="preserve">
+    <value>Installation nach Schließen der VBA-Hosts planen, sofern Paketvertrauen und Installationsrichtlinie es erlauben.</value>
+  </data>
+  <data name="Include prerelease versions when checking for updates." xml:space="preserve">
+    <value>Bei der Aktualisierungsprüfung Vorabversionen einschließen.</value>
+  </data>
+  <data name="Download the selected update package and verify its identity." xml:space="preserve">
+    <value>Das ausgewählte Aktualisierungspaket herunterladen und seine Identität prüfen.</value>
+  </data>
+  <data name="Install the verified update only when the host and publisher policy permit it." xml:space="preserve">
+    <value>Die geprüfte Aktualisierung nur installieren, wenn Host- und Herausgeberrichtlinie es erlauben.</value>
+  </data>
+  <data name="Ignore this proposed update version." xml:space="preserve">
+    <value>Diese angebotene Aktualisierungsversion ignorieren.</value>
+  </data>
+  <data name="Save the automatic-update and prerelease preferences." xml:space="preserve">
+    <value>Einstellungen für automatische Aktualisierungen und Vorabversionen speichern.</value>
+  </data>
+  <data name="Cancel the scheduled update before its installation starts." xml:space="preserve">
+    <value>Die geplante Aktualisierung vor Installationsbeginn abbrechen.</value>
+  </data>
+  <data name="Read the notes of the proposed update before downloading or installing it." xml:space="preserve">
+    <value>Die Hinweise der angebotenen Aktualisierung vor Download oder Installation lesen.</value>
+  </data>
+  <data name="Open the local French user guide." xml:space="preserve">
+    <value>Das lokale französische Benutzerhandbuch öffnen.</value>
+  </data>
+  <data name="Local help is not included in this build. Build or obtain VBAi.fr-FR.chm and place it in the Help folder beside VBAi.dll." xml:space="preserve">
+    <value>Die lokale Hilfe ist in diesem Build nicht enthalten. Erstellen oder beschaffen Sie VBAi.fr-FR.chm und legen Sie es im Ordner Help neben VBAi.dll ab.</value>
+  </data>
+  <data name="Write your request. Enter sends it; Shift+Enter adds a line. Use # or @ to reference VBA code and / to see chat commands." xml:space="preserve">
+    <value>Ihre Anfrage eingeben. Eingabe sendet; Umschalt+Eingabe ergänzt eine Zeile. Mit # oder @ VBA-Code referenzieren und mit / Chatbefehle anzeigen.</value>
+  </data>
+  <data name="Open the modified module" xml:space="preserve">
+    <value>Das geänderte Modul öffnen</value>
+  </data>
+  <data name="Read the exact context prepared for the next message; refresh it after changing referenced code." xml:space="preserve">
+    <value>Den genauen für die nächste Nachricht vorbereiteten Kontext lesen; nach Änderungen an referenziertem Code aktualisieren.</value>
+  </data>
+  <data name="Select response text to copy it; use the context menu to copy a complete code block." xml:space="preserve">
+    <value>Antworttext zum Kopieren auswählen; einen vollständigen Codeblock über das Kontextmenü kopieren.</value>
+  </data>
+  <data name="Open the provider, model and reasoning choices for this conversation." xml:space="preserve">
+    <value>Die Auswahl für Provider, Modell und Reasoning dieses Gesprächs öffnen.</value>
+  </data>
+  <data name="Compare the current and incoming versions of the selected conflict before choosing a complete resolution." xml:space="preserve">
+    <value>Aktuelle und eingehende Versionen des ausgewählten Konflikts vor Wahl einer vollständigen Auflösung vergleichen.</value>
+  </data>
+  <data name="Read the selected commit and its changed sources without importing that revision." xml:space="preserve">
+    <value>Den ausgewählten Commit und seine geänderten Quellen lesen, ohne diese Revision zu importieren.</value>
+  </data>
+  <data name="Review the incoming VBA components and changes before importing them into the current project." xml:space="preserve">
+    <value>Eingehende VBA-Komponenten und Änderungen vor dem Import ins aktuelle Projekt prüfen.</value>
+  </data>
+  <data name="Configure provider authentication, editing approvals and the repository account." xml:space="preserve">
+    <value>Providerauthentifizierung, Bearbeitungsgenehmigungen und Repositorykonto konfigurieren.</value>
+  </data>
+  <data name="Reload the model catalogue from the selected provider without sending a chat message." xml:space="preserve">
+    <value>Modellkatalog des ausgewählten Providers neu laden, ohne eine Chatnachricht zu senden.</value>
+  </data>
+  <data name="Switch the chat between a VBE docked pane and a floating window." xml:space="preserve">
+    <value>Den Chat zwischen angedocktem VBE-Panel und frei schwebendem Fenster umschalten.</value>
+  </data>
+  <data name="Choose whether to compile the project automatically after agent code edits." xml:space="preserve">
+    <value>Wählen, ob das Projekt nach Codebearbeitungen des Agenten automatisch kompiliert wird.</value>
+  </data>
+  <data name="Copy the selected response text to the clipboard." xml:space="preserve">
+    <value>Den ausgewählten Antworttext in die Zwischenablage kopieren.</value>
+  </data>
+  <data name="Copy the complete code block under the pointer without its surrounding explanation." xml:space="preserve">
+    <value>Den vollständigen Codeblock unter dem Zeiger ohne umgebende Erläuterung kopieren.</value>
+  </data>
+  <data name="Back to conversation" xml:space="preserve">
+    <value>Zurück zum Gespräch</value>
+  </data>
 </root>

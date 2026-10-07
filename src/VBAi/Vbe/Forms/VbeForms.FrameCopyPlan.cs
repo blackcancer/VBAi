@@ -2,7 +2,6 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.ComponentModel;
-using System.Linq;
 
 namespace VBAi
 {
@@ -87,26 +86,40 @@ namespace VBAi
                     reason = "Proposed child name already exists in the UserForm.";
                 if (reason != null) issues.Add(childName + ": " + reason);
                 names.Add(proposedName);
-                children.Add(new { SourcePath = request.ControlPath + "/Controls/" + childName,
-                    SourceName = childName, Type = type, ProposedName = proposedName,
+                children.Add(new
+                {
+                    SourcePath = request.ControlPath + "/Controls/" + childName,
+                    SourceName = childName,
+                    Type = type,
+                    ProposedName = proposedName,
                     ProposedPath = request.ControlPath.Substring(0,
                         request.ControlPath.LastIndexOf('/')) + "/" + request.NewName +
                         "/Controls/" + proposedName,
                     Profile = label ? "Label positive profile" :
                         textBox ? "TextBox text-value positive profile" : null,
-                    Eligible = reason == null, Issue = reason });
+                    Eligible = reason == null,
+                    Issue = reason
+                });
             }
             int collectionCount = Convert.ToInt32(original.Controls.Count);
-            return new { Project = request.Project, Form = request.Form,
-                SourcePath = request.ControlPath, ProposedFrameName = request.NewName,
-                ExpectedTreeVersion = request.ExpectedTreeVersion,
-                CollectionCount = collectionCount, DirectChildCount = directCount,
-                Children = children, Issues = issues,
+            return new
+            {
+                request.Project,
+                request.Form,
+                SourcePath = request.ControlPath,
+                ProposedFrameName = request.NewName,
+                request.ExpectedTreeVersion,
+                CollectionCount = collectionCount,
+                DirectChildCount = directCount,
+                Children = children,
+                Issues = issues,
                 EligibleForLimitedProbe = issues.Count == 0,
-                MutationVerified = false, ReadOnly = true,
+                MutationVerified = false,
+                ReadOnly = true,
                 Scope = allowTextBox
                     ? "Frame with direct Label/TextBox children only; all other properties and descendants are excluded."
-                    : "Frame with direct Label children only; all other properties and descendants are excluded." };
+                    : "Frame with direct Label children only; all other properties and descendants are excluded."
+            };
         }
     }
 }

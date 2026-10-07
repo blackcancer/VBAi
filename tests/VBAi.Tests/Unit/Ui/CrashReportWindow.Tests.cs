@@ -1,13 +1,11 @@
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.IO;
-using System.Net;
 using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
-using VBAi;
 using VBAi.Tests.Infrastructure;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 namespace VBAi.Tests.Unit
 {
     [TestClass, TestCategory("Unit"), DoNotParallelize]
@@ -74,16 +72,16 @@ namespace VBAi.Tests.Unit
         public void WindowIsLocalizedAndOpensFromTheVbeWithoutChat()
         {
             foreach (var language in UiLanguages.All)
-            using (var scope = new LocalizationScope(language.CultureName))
-            using (var window = new CrashReportWindow())
-            {
-                Assert.AreEqual(UiText.Get("VBAi · Report an issue"), window.Text);
-                Assert.AreEqual(RightToLeft.No, UiInvoke.Field<TextBox>(window, "preview").RightToLeft);
-                Assert.IsTrue(UiInvoke.Field<TextBox>(window, "preview").ReadOnly);
-                Assert.AreEqual(language.CultureName == "ar-SA" ? System.Drawing.ContentAlignment.TopRight : System.Drawing.ContentAlignment.TopLeft,
-                    UiInvoke.Field<Label>(window, "destination").TextAlign);
-                StringAssert.Contains(UiInvoke.Field<Label>(window, "destination").Text, CrashReport.Recipient);
-            }
+                using (var scope = new LocalizationScope(language.CultureName))
+                using (var window = new CrashReportWindow())
+                {
+                    Assert.AreEqual(UiText.Get("VBAi · Report an issue"), window.Text);
+                    Assert.AreEqual(RightToLeft.No, UiInvoke.Field<TextBox>(window, "preview").RightToLeft);
+                    Assert.IsTrue(UiInvoke.Field<TextBox>(window, "preview").ReadOnly);
+                    Assert.AreEqual(language.CultureName == "ar-SA" ? System.Drawing.ContentAlignment.TopRight : System.Drawing.ContentAlignment.TopLeft,
+                        UiInvoke.Field<Label>(window, "destination").TextAlign);
+                    StringAssert.Contains(UiInvoke.Field<Label>(window, "destination").Text, CrashReport.Recipient);
+                }
             var original = AddIn.ShowModal; int shown = 0;
             try
             {
@@ -142,13 +140,13 @@ namespace VBAi.Tests.Unit
                 {
                     IntPtr owned = window.Handle;
                     foreach (bool contrast in new[] { false, true })
-                    foreach (bool dark in new[] { false, true })
-                    {
-                        UiTheme.HighContrast = () => contrast; ThemeScope.SetChoice(dark ? ThemeChoice.Dark : ThemeChoice.Light);
-                        LlmBoundaryScope.Call(window, "ApplyAppearance");
-                        Assert.AreEqual(contrast ? System.Drawing.SystemColors.Highlight : System.Drawing.Color.FromArgb(37, 99, 235), UiInvoke.Field<Button>(window, "sendButton").BackColor);
-                        Assert.AreEqual(contrast ? System.Drawing.SystemColors.HotTrack : dark ? System.Drawing.Color.FromArgb(147, 197, 253) : System.Drawing.Color.FromArgb(29, 78, 216), UiInvoke.Field<LinkLabel>(window, "issueLink").LinkColor);
-                    }
+                        foreach (bool dark in new[] { false, true })
+                        {
+                            UiTheme.HighContrast = () => contrast; ThemeScope.SetChoice(dark ? ThemeChoice.Dark : ThemeChoice.Light);
+                            LlmBoundaryScope.Call(window, "ApplyAppearance");
+                            Assert.AreEqual(contrast ? System.Drawing.SystemColors.Highlight : System.Drawing.Color.FromArgb(37, 99, 235), UiInvoke.Field<Button>(window, "sendButton").BackColor);
+                            Assert.AreEqual(contrast ? System.Drawing.SystemColors.HotTrack : dark ? System.Drawing.Color.FromArgb(147, 197, 253) : System.Drawing.Color.FromArgb(29, 78, 216), UiInvoke.Field<LinkLabel>(window, "issueLink").LinkColor);
+                        }
                     UiTheme.HighContrast = () => false; ThemeScope.SetChoice(ThemeChoice.Light);
                     var worker = new Thread(() => LlmBoundaryScope.Call(window, "ApplyAppearance")); worker.Start(); Assert.IsTrue(worker.Join(3000));
                     Pump(() => UiInvoke.Field<LinkLabel>(window, "issueLink").LinkColor == System.Drawing.Color.FromArgb(29, 78, 216));
@@ -185,42 +183,42 @@ namespace VBAi.Tests.Unit
         public void EmailSuccessUncertaintyAndFailurePreventDuplicateTransport()
         {
             foreach (int outcome in new[] { 0, 1, 2, 3 })
-            using (var theme = new ThemeScope())
-            using (var window = new CrashReportWindow())
-            {
-                int sends = 0, drafts = 0;
-                window.Store = (report, body) => "owned.md";
-                window.Delivery.OpenDraft = url => { StringAssert.StartsWith(url, "mailto:"); drafts++; };
-                window.Delivery.SendOutlook = (title, body) =>
+                using (var theme = new ThemeScope())
+                using (var window = new CrashReportWindow())
                 {
-                    sends++;
-                    if (outcome == 2) throw new CrashMailUncertain();
-                    if (outcome == 3) throw new IOException("owned error");
-                    return outcome == 0;
-                };
-                Invoke(window, "Email_Click");
-                Assert.AreEqual(1, sends); Assert.AreEqual(outcome == 1 ? 1 : 0, drafts);
-                Assert.AreEqual(UiText.Get(outcome == 0 ? "Report handed to Outlook for sending." : outcome == 1 ? "Email draft opened. Attach the saved report, then send it." : outcome == 2 ? "Delivery is uncertain. Check GitHub or Outlook before trying again." : "Unable to send the report. The local copy is available."), Status(window));
-                if (outcome < 3) { Invoke(window, "Email_Click"); Invoke(window, "Send_Click"); Assert.AreEqual(1, sends); }
-            }
+                    int sends = 0, drafts = 0;
+                    window.Store = (report, body) => "owned.md";
+                    window.Delivery.OpenDraft = url => { StringAssert.StartsWith(url, "mailto:"); drafts++; };
+                    window.Delivery.SendOutlook = (title, body) =>
+                    {
+                        sends++;
+                        if (outcome == 2) throw new CrashMailUncertain();
+                        if (outcome == 3) throw new IOException("owned error");
+                        return outcome == 0;
+                    };
+                    Invoke(window, "Email_Click");
+                    Assert.AreEqual(1, sends); Assert.AreEqual(outcome == 1 ? 1 : 0, drafts);
+                    Assert.AreEqual(UiText.Get(outcome == 0 ? "Report handed to Outlook for sending." : outcome == 1 ? "Email draft opened. Attach the saved report, then send it." : outcome == 2 ? "Delivery is uncertain. Check GitHub or Outlook before trying again." : "Unable to send the report. The local copy is available."), Status(window));
+                    if (outcome < 3) { Invoke(window, "Email_Click"); Invoke(window, "Send_Click"); Assert.AreEqual(1, sends); }
+                }
         }
 
         [STATestMethod]
         public void BusyAndDisposedContinuationsCannotCloseOrMutateTheOwnedWindow()
         {
             foreach (bool refused in new[] { false, true })
-            using (var theme = new ThemeScope())
-            {
-                var window = new CrashReportWindow(); var completion = new TaskCompletionSource<string>(); int calls = 0;
-                window.Store = (report, body) => "owned.md";
-                window.Delivery.Publish = (title, body, token) => { calls++; return completion.Task; };
-                Invoke(window, "Send_Click"); Invoke(window, "Send_Click"); Invoke(window, "Email_Click"); Assert.AreEqual(1, calls);
-                var closing = new FormClosingEventArgs(CloseReason.ApplicationExitCall, false);
-                LlmBoundaryScope.Call(window, "WindowClosing", null, closing); Assert.IsFalse(closing.Cancel);
-                window.Dispose();
-                if (refused) completion.SetException(new CrashCredentialUnavailable()); else completion.SetResult(CrashReport.Repository + "/issues/9");
-                Application.DoEvents(); Application.DoEvents(); Assert.IsTrue(window.IsDisposed);
-            }
+                using (var theme = new ThemeScope())
+                {
+                    var window = new CrashReportWindow(); var completion = new TaskCompletionSource<string>(); int calls = 0;
+                    window.Store = (report, body) => "owned.md";
+                    window.Delivery.Publish = (title, body, token) => { calls++; return completion.Task; };
+                    Invoke(window, "Send_Click"); Invoke(window, "Send_Click"); Invoke(window, "Email_Click"); Assert.AreEqual(1, calls);
+                    var closing = new FormClosingEventArgs(CloseReason.ApplicationExitCall, false);
+                    LlmBoundaryScope.Call(window, "WindowClosing", null, closing); Assert.IsFalse(closing.Cancel);
+                    window.Dispose();
+                    if (refused) completion.SetException(new CrashCredentialUnavailable()); else completion.SetResult(CrashReport.Repository + "/issues/9");
+                    Application.DoEvents(); Application.DoEvents(); Assert.IsTrue(window.IsDisposed);
+                }
             using (var window = new CrashReportWindow())
             {
                 var closing = new FormClosingEventArgs(CloseReason.UserClosing, false);

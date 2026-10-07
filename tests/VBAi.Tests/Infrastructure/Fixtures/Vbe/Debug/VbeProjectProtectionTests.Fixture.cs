@@ -17,8 +17,14 @@ namespace VBAi.Tests.Unit
             public VbeDebugWindows.ProjectProtectionState Capture(IntPtr dialog, string projectName)
             {
                 if (FailCapture) throw new InvalidOperationException(Secret);
-                return new VbeDebugWindows.ProjectProtectionState { Identity = ChangeIdentity && Writes > 0 ? "other" : "exact",
-                    NativeIdentity = ChangeNativeIdentity && Writes > 0 ? "changed" : "native", Locked = Locked, PasswordLength = PasswordLength, ConfirmationLength = MismatchConfirmation && Writes > 0 ? ConfirmationLength + 1 : ConfirmationLength };
+                return new VbeDebugWindows.ProjectProtectionState
+                {
+                    Identity = ChangeIdentity && Writes > 0 ? "other" : "exact",
+                    NativeIdentity = ChangeNativeIdentity && Writes > 0 ? "changed" : "native",
+                    Locked = Locked,
+                    PasswordLength = PasswordLength,
+                    ConfirmationLength = MismatchConfirmation && Writes > 0 ? ConfirmationLength + 1 : ConfirmationLength
+                };
             }
             public void Write(IntPtr dialog, string projectName, bool locked, string password)
             {
@@ -40,8 +46,13 @@ namespace VBAi.Tests.Unit
         {
             dynamic read = VbeDebugWindows.ReadProjectProtection(new Request { Project = @"C:\fixture\macro.swp", Caption = "ExactProject" }, native);
             native.Open = true; native.Cancels = 0;
-            return new Request { Project = @"C:\fixture\macro.swp", Caption = "ExactProject",
-                Action = "clear", ExpectedOptionsVersion = read.OptionsVersion };
+            return new Request
+            {
+                Project = @"C:\fixture\macro.swp",
+                Caption = "ExactProject",
+                Action = "clear",
+                ExpectedOptionsVersion = read.OptionsVersion
+            };
         }
 
         public sealed class Project

@@ -1,7 +1,6 @@
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Threading;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
-using VBAi;
 
 namespace VBAi.Tests.Unit
 {
@@ -36,7 +35,8 @@ namespace VBAi.Tests.Unit
             try
             {
                 Exception failure = null;
-                var worker = new Thread(() => {
+                var worker = new Thread(() =>
+                {
                     try { lease.Dispose(); }
                     catch (Exception error) { failure = error; }
                 });

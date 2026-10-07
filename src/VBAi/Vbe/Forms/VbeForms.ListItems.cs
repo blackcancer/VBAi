@@ -68,7 +68,7 @@ namespace VBAi
                             null, control, new object[] { row, column }, CultureInfo.InvariantCulture);
                         object value = NormalizeScalar(raw);
                         if (raw != null && !(raw is string) && !(raw is IConvertible)) versionable = false;
-                        if (value is string && ((string)value).Length > 4096) versionable = false;
+                        if (value is string v && v.Length > 4096) versionable = false;
                         values.Add(value);
                         cells.Add(new { Column = column, Value = value, Error = (string)null });
                     }
@@ -92,13 +92,23 @@ namespace VBAi
                 try { listVersion = ComputeListVersion(controlType, request.ControlPath, rowCount, columnCount, values); }
                 catch (Exception ex) { listVersionError = "ListVersion could not be calculated: " + ex.Message; }
             }
-            return new { Project = request.Project, Form = request.Form,
-                ControlPath = request.ControlPath, ControlType = controlType,
-                TreeVersion = (string)tree.TreeVersion, TotalRows = rowCount,
-                ColumnCount = columnCount, ListVersion = listVersion,
-                ListVersionError = listVersionError, Offset = request.Offset,
-                ReturnedRows = rows.Count, HasMore = end < rowCount, Rows = rows,
-                Scope = "Read-only design-time MSForms.List. TreeVersion may reflect ListCount but does not fingerprint indexed item values." };
+            return new
+            {
+                request.Project,
+                request.Form,
+                request.ControlPath,
+                ControlType = controlType,
+                TreeVersion = (string)tree.TreeVersion,
+                TotalRows = rowCount,
+                ColumnCount = columnCount,
+                ListVersion = listVersion,
+                ListVersionError = listVersionError,
+                request.Offset,
+                ReturnedRows = rows.Count,
+                HasMore = end < rowCount,
+                Rows = rows,
+                Scope = "Read-only design-time MSForms.List. TreeVersion may reflect ListCount but does not fingerprint indexed item values."
+            };
         }
 
         /// <summary>Calcule le SHA-256 des métadonnées du contrôle et des valeurs scalaires de la liste complète.</summary>
@@ -111,9 +121,14 @@ namespace VBAi
         private static string ComputeListVersion(string type, string path, int rowCount,
             int columnCount, List<object> values)
         {
-            string json = new JavaScriptSerializer { MaxJsonLength = 1024 * 1024 }.Serialize(new {
-                Type = type, ControlPath = path, ListCount = rowCount,
-                ColumnCount = columnCount, Values = values });
+            string json = new JavaScriptSerializer { MaxJsonLength = 1024 * 1024 }.Serialize(new
+            {
+                Type = type,
+                ControlPath = path,
+                ListCount = rowCount,
+                ColumnCount = columnCount,
+                Values = values
+            });
             using (var sha = SHA256.Create())
                 return BitConverter.ToString(sha.ComputeHash(Encoding.UTF8.GetBytes(json)))
                     .Replace("-", "").ToLowerInvariant();

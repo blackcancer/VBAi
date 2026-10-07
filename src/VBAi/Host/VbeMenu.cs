@@ -265,10 +265,10 @@ namespace VBAi
             /// <summary>Expose la conversion d’une image WinForms vers IPictureDisp.</summary>
             private MenuPicture() : base("") { }
 
-        /// <summary>Convertit une image .NET en représentation OLE IPictureDisp.</summary>
-        /// <param name="image">Image .NET à convertir en image OLE.</param>
-        /// <returns>Objet IPictureDisp utilisable par CommandBarButton.</returns>
-        internal static object ToOle(System.Drawing.Image image) { return GetIPictureDispFromPicture(image); }
+            /// <summary>Convertit une image .NET en représentation OLE IPictureDisp.</summary>
+            /// <param name="image">Image .NET à convertir en image OLE.</param>
+            /// <returns>Objet IPictureDisp utilisable par CommandBarButton.</returns>
+            internal static object ToOle(System.Drawing.Image image) { return GetIPictureDispFromPicture(image); }
         }
 
         /// <summary>Recherche le menu VBE View ou Tools en tenant compte de la langue de l’hôte.</summary>

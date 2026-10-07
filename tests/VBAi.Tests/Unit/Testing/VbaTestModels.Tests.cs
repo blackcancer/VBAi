@@ -1,6 +1,6 @@
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Linq;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace VBAi.Tests.Unit
 {
@@ -27,8 +27,12 @@ namespace VBAi.Tests.Unit
             var run = new VbaTestRun { Id = "run", Revision = "previous-source", OutcomeUnknown = true, Error = "Host closed" };
             run.Results.Add(new VbaTestResult
             {
-                Test = new VbaTestDescriptor { Id = "test" }, Outcome = VbaTestOutcome.OutcomeUnknown,
-                Message = "Completion was not verified", Phase = "Test", ErrorNumber = 5, Duration = TimeSpan.FromSeconds(2)
+                Test = new VbaTestDescriptor { Id = "test" },
+                Outcome = VbaTestOutcome.OutcomeUnknown,
+                Message = "Completion was not verified",
+                Phase = "Test",
+                ErrorNumber = 5,
+                Duration = TimeSpan.FromSeconds(2)
             });
             Assert.AreEqual("previous-source", run.Revision);
             Assert.AreEqual(VbaTestOutcome.OutcomeUnknown, run.Results.Single().Outcome);
@@ -40,8 +44,8 @@ namespace VBAi.Tests.Unit
         public void ProjectSnapshotRetainsHostPathAndReferencesIndependentlyFromSourceRevision()
         {
             var snapshot = new VbaTestProjectSnapshot { HostPath = @"C:\fixture\book.xlsm", ReferencesHash = "references", Revision = "source" };
-            Assert.AreEqual(@"C:\fixture\book.xlsm",snapshot.HostPath); Assert.AreEqual("references",snapshot.ReferencesHash);
-            Assert.AreEqual("source",snapshot.Revision);
+            Assert.AreEqual(@"C:\fixture\book.xlsm", snapshot.HostPath); Assert.AreEqual("references", snapshot.ReferencesHash);
+            Assert.AreEqual("source", snapshot.Revision);
         }
     }
 }

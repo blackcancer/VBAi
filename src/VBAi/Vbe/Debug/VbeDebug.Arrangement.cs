@@ -115,18 +115,27 @@ namespace VBAi
             if (before.Length < 2 || before.Length > 64) throw new InvalidOperationException("Arrangement requires 2-64 visible document windows.");
             if (string.IsNullOrWhiteSpace(request.ExpectedWindowVersion) || !string.Equals(request.ExpectedWindowVersion, LayoutHash(before), StringComparison.OrdinalIgnoreCase))
                 throw new InvalidOperationException("The document layout changed. Read editor_layout again.");
-            var command = EnumerateCommands().FirstOrDefault(x => x.Id == id && x.Enabled && string.Equals(x.Caption, request.ControlCaption, StringComparison.Ordinal));
-            if (command == null) throw new InvalidOperationException("The exact native arrangement command is absent or disabled. Read list_commands again.");
+            var command = EnumerateCommands().FirstOrDefault(x => x.Id == id && x.Enabled && string.Equals(x.Caption, request.ControlCaption, StringComparison.Ordinal)) ?? throw new InvalidOperationException("The exact native arrangement command is absent or disabled. Read list_commands again.");
             string error = null;
             try { ((dynamic)command.Control).Execute(); } catch (Exception ex) { error = ex.Message; }
             EditorWindowBounds[] after = null;
             try { after = ReadEditorBounds(); } catch (Exception ex) { error = error ?? ex.Message; }
             bool sameWindows = after != null && before.Select(WindowKey).SequenceEqual(after.Select(WindowKey));
             bool verified = error == null && sameWindows && VerifyArrangement(request.Action, after);
-            return new { request.Action, CommandId = id, Applied = error == null ? (bool?)true : null,
-                Verified = verified, VerificationPending = !verified, Before = before, After = after,
-                WindowVersion = after == null ? null : LayoutHash(after), NativeError = error,
-                Scope = "All visible VBE document windows, across projects", PersistenceVerified = false };
+            return new
+            {
+                request.Action,
+                CommandId = id,
+                Applied = error == null ? (bool?)true : null,
+                Verified = verified,
+                VerificationPending = !verified,
+                Before = before,
+                After = after,
+                WindowVersion = after == null ? null : LayoutHash(after),
+                NativeError = error,
+                Scope = "All visible VBE document windows, across projects",
+                PersistenceVerified = false
+            };
         }
 
         /// <summary>Lit les fenêtres de document visibles en excluant les cadres liés et les types hors périmètre.</summary>
@@ -138,8 +147,17 @@ namespace VBAi
             {
                 int type = (int)window.Type;
                 if (type < 0 || type > 2 || !(bool)window.Visible || window.LinkedWindowFrame != null) continue;
-                rows.Add(new EditorWindowBounds { Caption = (string)window.Caption, Identity = DocumentIdentity(window, type), Type = type, State = (int)window.WindowState,
-                    Left = (int)window.Left, Top = (int)window.Top, Width = (int)window.Width, Height = (int)window.Height });
+                rows.Add(new EditorWindowBounds
+                {
+                    Caption = (string)window.Caption,
+                    Identity = DocumentIdentity(window, type),
+                    Type = type,
+                    State = (int)window.WindowState,
+                    Left = (int)window.Left,
+                    Top = (int)window.Top,
+                    Width = (int)window.Width,
+                    Height = (int)window.Height
+                });
             }
             if (rows.Select(WindowKey).Distinct(StringComparer.Ordinal).Count() != rows.Count)
                 throw new InvalidOperationException("Visible document identities are ambiguous.");

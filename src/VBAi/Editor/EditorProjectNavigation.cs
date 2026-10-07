@@ -48,8 +48,7 @@ namespace VBAi
                     if ((int)window.Type != 6) continue; // vbext_wt_ProjectWindow
                     foreach (IntPtr handle in FindProjectTrees(System.Diagnostics.Process.GetCurrentProcess().Id, (string)window.Caption))
                     {
-                        uint process;
-                        if (GetWindowThreadProcessId(handle, out process) == GetCurrentThreadId() &&
+                        if (GetWindowThreadProcessId(handle, out uint process) == GetCurrentThreadId() &&
                             !hooks.Any(h => h.Handle == handle)) hooks.Add(new TreeHook(handle, Route));
                     }
                 }
@@ -146,16 +145,19 @@ namespace VBAi
         }
 
         /// <summary>Coordonnées et nœud renvoyés par le message TreeView TVM_HITTEST.</summary>
-        [StructLayout(LayoutKind.Sequential)] private struct HitTest {
+        [StructLayout(LayoutKind.Sequential)]
+        private struct HitTest
+        {
 
-/// <summary>Coordonnée horizontale du point testé.</summary>
-public int X, Y;
+            /// <summary>Coordonnée horizontale du point testé.</summary>
+            public int X, Y;
 
-/// <summary>Indicateurs de la zone du nœud touchée.</summary>
-public uint Flags;
+            /// <summary>Indicateurs de la zone du nœud touchée.</summary>
+            public uint Flags;
 
-/// <summary>Handle du nœud sous le point testé.</summary>
-public IntPtr Item; }
+            /// <summary>Handle du nœud sous le point testé.</summary>
+            public IntPtr Item;
+        }
 
         /// <summary>Rappel Win32 appelé pour chaque fenêtre parcourue.</summary>
         /// <param name="handle">Fenêtre visitée.</param>

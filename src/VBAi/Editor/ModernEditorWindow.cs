@@ -1,3 +1,5 @@
+using Microsoft.Web.WebView2.Core;
+using Microsoft.Web.WebView2.WinForms;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -6,8 +8,6 @@ using System.Linq;
 using System.Threading.Tasks;
 using System.Web.Script.Serialization;
 using System.Windows.Forms;
-using Microsoft.Web.WebView2.Core;
-using Microsoft.Web.WebView2.WinForms;
 
 namespace VBAi
 {
@@ -109,8 +109,8 @@ namespace VBAi
         /// <summary>Generation captured by the queued status callback; older callbacks are ignored.</summary>
         private int pendingStatusGeneration;
 
-                /// <summary>Notifies subscribers when assistant action occurs.</summary>
-                internal event Action<string, ChatAttachment> AssistantAction;
+        /// <summary>Notifies subscribers when assistant action occurs.</summary>
+        internal event Action<string, ChatAttachment> AssistantAction;
 
         /// <summary>Gets or sets the workspace hosted.</summary>
         /// <value>Current workspace hosted exposed by modern editor window.</value>
@@ -324,9 +324,16 @@ namespace VBAi
                     if (message.version < versions[actionDoc.Id]) throw new InvalidOperationException("The editor selection changed. Select it again.");
                     actionDoc.Edit(message.text); versions[actionDoc.Id] = message.version;
                     await Task.Yield();
-                    AssistantAction?.Invoke(message.name, new ChatAttachment { Label = actionModule.Name + " · Monaco L" + message.line,
-                        Project = actionModule.ProjectName, Module = actionModule.ModuleName, Text = message.selectedText,
-                        StartLine = message.line, EditorDocumentId = actionDoc.Id, Sha256 = EditorDocument.Hash(message.text) });
+                    AssistantAction?.Invoke(message.name, new ChatAttachment
+                    {
+                        Label = actionModule.Name + " · Monaco L" + message.line,
+                        Project = actionModule.ProjectName,
+                        Module = actionModule.ModuleName,
+                        Text = message.selectedText,
+                        StartLine = message.line,
+                        EditorDocumentId = actionDoc.Id,
+                        Sha256 = EditorDocument.Hash(message.text)
+                    });
                 }
                 else if (message.type == "editorCommand") await EditorCommand(message);
             }
@@ -334,71 +341,73 @@ namespace VBAi
         }
 
         /// <summary>Message typé échangé entre l’interface Monaco et la fenêtre hôte.</summary>
-        private sealed class EditorMessage {
+        private sealed class EditorMessage
+        {
 
-/// <summary>Type d’opération demandée.</summary>
-/// <value>Message de changement, commande, navigation ou réponse.</value>
-public string type { get; set; }
+            /// <summary>Type d’opération demandée.</summary>
+            /// <value>Message de changement, commande, navigation ou réponse.</value>
+            public string type { get; set; }
 
-/// <summary>Identifiant du document concerné.</summary>
-/// <value>Identifiant de session du document Monaco.</value>
-public string id { get; set; }
+            /// <summary>Identifiant du document concerné.</summary>
+            /// <value>Identifiant de session du document Monaco.</value>
+            public string id { get; set; }
 
-/// <summary>Texte transmis avec un changement de brouillon.</summary>
-/// <value>Contenu source envoyé par Monaco.</value>
-public string text { get; set; }
+            /// <summary>Texte transmis avec un changement de brouillon.</summary>
+            /// <value>Contenu source envoyé par Monaco.</value>
+            public string text { get; set; }
 
-/// <summary>Revision against which streamed changes were produced.</summary>
-/// <value>Current base version exposed by editor message.</value>
-public int baseVersion { get; set; }
+            /// <summary>Revision against which streamed changes were produced.</summary>
+            /// <value>Current base version exposed by editor message.</value>
+            public int baseVersion { get; set; }
 
-/// <summary>Optional streamed changes; full text remains a recovery format.</summary>
-/// <value>Current changes exposed by editor message.</value>
-public EditorTextChange[] changes { get; set; }
+            /// <summary>Optional streamed changes; full text remains a recovery format.</summary>
+            /// <value>Current changes exposed by editor message.</value>
+            public EditorTextChange[] changes { get; set; }
 
-/// <summary>Gets or sets the selected text.</summary>
-/// <value>Current selected text exposed by editor message.</value>
-public string selectedText { get; set; }
+            /// <summary>Gets or sets the selected text.</summary>
+            /// <value>Current selected text exposed by editor message.</value>
+            public string selectedText { get; set; }
 
-/// <summary>Révision Monaco associée au message.</summary>
-/// <value>Numéro de version du document.</value>
-public int version { get; set; }
+            /// <summary>Révision Monaco associée au message.</summary>
+            /// <value>Numéro de version du document.</value>
+            public int version { get; set; }
 
-/// <summary>Nom de commande d’éditeur ou de débogage.</summary>
-/// <value>Commande interne, par exemple compile ou step_into.</value>
-public string name { get; set; }
+            /// <summary>Nom de commande d’éditeur ou de débogage.</summary>
+            /// <value>Commande interne, par exemple compile ou step_into.</value>
+            public string name { get; set; }
 
-/// <summary>Identifiant de la requête de langage à laquelle répondre.</summary>
-/// <value>Numéro de requête généré par Monaco.</value>
-public int request { get; set; }
+            /// <summary>Identifiant de la requête de langage à laquelle répondre.</summary>
+            /// <value>Numéro de requête généré par Monaco.</value>
+            public int request { get; set; }
 
-/// <summary>Previously received language snapshot identifier.</summary>
-/// <value>Current known language exposed by editor message.</value>
-public string knownLanguage { get; set; }
+            /// <summary>Previously received language snapshot identifier.</summary>
+            /// <value>Current known language exposed by editor message.</value>
+            public string knownLanguage { get; set; }
 
-/// <summary>Client-owned symbol bucket revisions for incremental replies.</summary>
-/// <value>Current known parts exposed by editor message.</value>
-public Dictionary<string, string> knownParts { get; set; }
+            /// <summary>Client-owned symbol bucket revisions for incremental replies.</summary>
+            /// <value>Current known parts exposed by editor message.</value>
+            public Dictionary<string, string> knownParts { get; set; }
 
-/// <summary>Requests the compact language wire format.</summary>
-/// <value>Current compact exposed by editor message.</value>
-public bool compact { get; set; }
+            /// <summary>Requests the compact language wire format.</summary>
+            /// <value>Current compact exposed by editor message.</value>
+            public bool compact { get; set; }
 
-/// <summary>Includes sources only for navigation/definition requests.</summary>
-/// <value>Current include sources exposed by editor message.</value>
-public bool includeSources { get; set; }
+            /// <summary>Includes sources only for navigation/definition requests.</summary>
+            /// <value>Current include sources exposed by editor message.</value>
+            public bool includeSources { get; set; }
 
-/// <summary>Nom du module cible d’une navigation vers définition.</summary>
-/// <value>Nom du composant cible.</value>
-public string module { get; set; }
+            /// <summary>Nom du module cible d’une navigation vers définition.</summary>
+            /// <value>Nom du composant cible.</value>
+            public string module { get; set; }
 
-/// <summary>Ligne de navigation ou de sélection.</summary>
-/// <value>Numéro de ligne indexé à partir de un.</value>
-public int line { get; set; }
+            /// <summary>Ligne de navigation ou de sélection.</summary>
+            /// <value>Numéro de ligne indexé à partir de un.</value>
+            public int line { get; set; }
 
-/// <summary>Colonne de navigation ou de sélection.</summary>
-/// <value>Numéro de colonne indexé à partir de un.</value>
-public int column { get; set; } }
+            /// <summary>Colonne de navigation ou de sélection.</summary>
+            /// <value>Numéro de colonne indexé à partir de un.</value>
+            public int column { get; set; }
+        }
 
         /// <summary>Appelle une méthode de l’interface Monaco avec des arguments sérialisés en données JSON.</summary>
         /// <param name="method">Nom de méthode interne exposée par l’application Web.</param>
@@ -608,7 +617,8 @@ public int column { get; set; } }
             if (!IsHandleCreated) { UpdateStatus(); return; }
             if (statusUpdatePending) return;
             statusUpdatePending = true;
-            BeginInvoke(new Action(() => {
+            BeginInvoke(new Action(() =>
+            {
                 statusUpdatePending = false;
                 if (pendingStatusGeneration == statusGeneration && !IsDisposed && !Disposing && !closing) UpdateStatus();
             }));
@@ -625,33 +635,33 @@ public int column { get; set; } }
             activeStatusLayouts++;
             try
             {
-            bool showToolbar = showingDiff || (Current != null && (Current.Conflict || recovered.ContainsKey(Current.Id)));
-            toolbar.Visible = showToolbar;
-            compare.Visible = Current != null && Current.Conflict;
-            edit.Visible = showingDiff; reload.Visible = Current != null && Current.Conflict;
-            resolve.Visible = Current != null && Current.Conflict;
-            restore.Visible = Current != null && recovered.ContainsKey(Current.Id);
-            resolve.Enabled = Current != null && Current.Conflict && reviewed.ContainsKey(Current.Id);
-            restore.Enabled = Current != null && recovered.ContainsKey(Current.Id);
-            int toolbarHeight = 0;
-            if (showToolbar)
-            {
-                var preferred = toolbar.GetPreferredSize(new System.Drawing.Size(layout.ClientSize.Width, 0));
-                int commandHeight = toolbar.Controls.Cast<Control>().Max(control => Math.Max(control.Height, control.GetPreferredSize(System.Drawing.Size.Empty).Height) + control.Margin.Vertical);
-                toolbarHeight = Math.Max(preferred.Height, commandHeight + toolbar.Padding.Vertical)
-                    + toolbar.Margin.Vertical + (preferred.Width > layout.ClientSize.Width ? System.Windows.Forms.SystemInformation.HorizontalScrollBarHeight : 0);
-            }
-            if (layout.RowStyles[0].Height != toolbarHeight) layout.RowStyles[0].Height = toolbarHeight;
-            foreach (TabPage tab in tabs.TabPages)
-            {
-                string id = (string)tab.Tag;
-                if (!documents.TryGetValue(id, out var doc) || !displayNames.TryGetValue(id, out var name)) continue;
-                string title = name + (doc.Dirty ? " *" : "");
-                if (tab.Text != title) tab.Text = title;
-            }
-            string synchronizationError = null;
-            if (Current != null) documentSynchronizationErrors.TryGetValue(Current.Id, out synchronizationError);
-            status.Text = UiText.Get(lastSaveError ?? synchronizationError ?? (Current == null ? "Open a VBA module to start editing." : Current.Conflict ? "The module changed in VBA. Resolve the conflict first." : Current.Dirty ? "Changes pending synchronization with VBA." : "Synchronized with VBA. Save the macro in its host application."));
+                bool showToolbar = showingDiff || (Current != null && (Current.Conflict || recovered.ContainsKey(Current.Id)));
+                toolbar.Visible = showToolbar;
+                compare.Visible = Current != null && Current.Conflict;
+                edit.Visible = showingDiff; reload.Visible = Current != null && Current.Conflict;
+                resolve.Visible = Current != null && Current.Conflict;
+                restore.Visible = Current != null && recovered.ContainsKey(Current.Id);
+                resolve.Enabled = Current != null && Current.Conflict && reviewed.ContainsKey(Current.Id);
+                restore.Enabled = Current != null && recovered.ContainsKey(Current.Id);
+                int toolbarHeight = 0;
+                if (showToolbar)
+                {
+                    var preferred = toolbar.GetPreferredSize(new System.Drawing.Size(layout.ClientSize.Width, 0));
+                    int commandHeight = toolbar.Controls.Cast<Control>().Max(control => Math.Max(control.Height, control.GetPreferredSize(System.Drawing.Size.Empty).Height) + control.Margin.Vertical);
+                    toolbarHeight = Math.Max(preferred.Height, commandHeight + toolbar.Padding.Vertical)
+                        + toolbar.Margin.Vertical + (preferred.Width > layout.ClientSize.Width ? System.Windows.Forms.SystemInformation.HorizontalScrollBarHeight : 0);
+                }
+                if (layout.RowStyles[0].Height != toolbarHeight) layout.RowStyles[0].Height = toolbarHeight;
+                foreach (TabPage tab in tabs.TabPages)
+                {
+                    string id = (string)tab.Tag;
+                    if (!documents.TryGetValue(id, out var doc) || !displayNames.TryGetValue(id, out var name)) continue;
+                    string title = name + (doc.Dirty ? " *" : "");
+                    if (tab.Text != title) tab.Text = title;
+                }
+                string synchronizationError = null;
+                if (Current != null) documentSynchronizationErrors.TryGetValue(Current.Id, out synchronizationError);
+                status.Text = UiText.Get(lastSaveError ?? synchronizationError ?? (Current == null ? "Open a VBA module to start editing." : Current.Conflict ? "The module changed in VBA. Resolve the conflict first." : Current.Dirty ? "Changes pending synchronization with VBA." : "Synchronized with VBA. Save the macro in its host application."));
             }
             finally { activeStatusLayouts--; }
         }
@@ -690,7 +700,8 @@ public int column { get; set; } }
         /// <param name="e">Données de l’événement.</param>
         private async void DiffClick(object sender, EventArgs e)
         {
-            await StartUiAction(async () => {
+            await StartUiAction(async () =>
+            {
                 try
                 {
                     await ProcessDocuments(false);
@@ -714,7 +725,8 @@ public int column { get; set; } }
             if (busy || Current == null || !reviewed.TryGetValue(Current.Id, out var revision)) return;
             var doc = Current;
             busy = true;
-            await StartUiAction(async () => {
+            await StartUiAction(async () =>
+            {
                 try
                 {
                     await CaptureDocuments(); Drafts.Save(doc);
@@ -738,7 +750,8 @@ public int column { get; set; } }
             if (busy || Current == null) return;
             var doc = Current;
             busy = true;
-            await StartUiAction(async () => {
+            await StartUiAction(async () =>
+            {
                 try
                 {
                     await CaptureDocuments(); Drafts.Save(doc);
@@ -780,7 +793,8 @@ public int column { get; set; } }
             if (busy || Current == null) return;
             var doc = Current;
             busy = true;
-            await StartUiAction(async () => {
+            await StartUiAction(async () =>
+            {
                 try
                 {
                     await CaptureDocuments();
@@ -808,7 +822,8 @@ public int column { get; set; } }
             if (busy || Current == null || !recovered.TryGetValue(Current.Id, out var draft)) return;
             var doc = Current;
             busy = true;
-            await StartUiAction(async () => {
+            await StartUiAction(async () =>
+            {
                 try
                 {
                     await CaptureDocuments(); Drafts.Save(doc); int applied;

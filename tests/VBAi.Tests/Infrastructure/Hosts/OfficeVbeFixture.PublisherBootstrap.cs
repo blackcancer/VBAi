@@ -1,8 +1,8 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Linq;
 using System.IO;
+using System.Linq;
 using System.Runtime.InteropServices;
 using System.Threading;
 
@@ -22,18 +22,20 @@ namespace VBAi.Tests.Integration
             internal int ProcessId, SessionId, OwnerThread;
             internal long Handle;
             internal string StartedUtc, Image;
-            internal bool Alive, PrivateWindowsVerified, NoVisibleModal, Sta;
+            internal bool Alive, PrivateWindowsVerified, MainWindowsVerified, MainPublisher, NoVisibleModal, Sta;
             internal int[] PublisherProcessIds;
             internal void Require()
             {
                 if (ProcessId <= 0 || Handle == 0 || string.IsNullOrWhiteSpace(StartedUtc) || string.IsNullOrWhiteSpace(Image) ||
-                    OwnerThread <= 0 || SessionId < 0 || !Alive || !PrivateWindowsVerified || !NoVisibleModal || !Sta ||
+                    OwnerThread <= 0 || SessionId < 0 || !Alive ||
+                    (MainPublisher ? !MainWindowsVerified || PrivateWindowsVerified : !PrivateWindowsVerified || MainWindowsVerified) ||
+                    !NoVisibleModal || !Sta ||
                     PublisherProcessIds == null || PublisherProcessIds.Length != 1 || PublisherProcessIds[0] != ProcessId)
                     throw new InvalidOperationException("Publisher bootstrap requires one unchanged original private process; no publication mutation is permitted.");
             }
             internal bool Same(PublisherBootstrapSnapshot other) => other != null && ProcessId == other.ProcessId &&
                 Handle == other.Handle && StartedUtc == other.StartedUtc && SessionId == other.SessionId && OwnerThread == other.OwnerThread &&
-                string.Equals(Image, other.Image, StringComparison.OrdinalIgnoreCase);
+                string.Equals(Image, other.Image, StringComparison.OrdinalIgnoreCase) && MainPublisher == other.MainPublisher;
         }
 
         /// <summary>One original-process preparation strengthens programmatic Open security; no restoration or replay.</summary>
@@ -82,10 +84,18 @@ namespace VBAi.Tests.Integration
                 verified = true;
             }
             private static IDictionary<string, object> Row(string state, bool mutation, int? value = null) =>
-                new Dictionary<string, object> { ["PublisherOpenSecurity"] = state, ["AutomationSecurity"] = value,
-                    ["MutationInvoked"] = mutation, ["Scope"] = "ExactOriginalOwnedPublisherProcess",
-                    ["PropertyDispId"] = 76, ["AutomaticRetry"] = false, ["RestoreDefault"] = false,
-                    ["GlobalTrustChanges"] = false, ["Utc"] = DateTime.UtcNow.ToString("o") };
+                new Dictionary<string, object>
+                {
+                    ["PublisherOpenSecurity"] = state,
+                    ["AutomationSecurity"] = value,
+                    ["MutationInvoked"] = mutation,
+                    ["Scope"] = "ExactOriginalOwnedPublisherProcess",
+                    ["PropertyDispId"] = 76,
+                    ["AutomaticRetry"] = false,
+                    ["RestoreDefault"] = false,
+                    ["GlobalTrustChanges"] = false,
+                    ["Utc"] = DateTime.UtcNow.ToString("o")
+                };
         }
 
         /// <summary>Provisional sole-process inference permits one empty publication/open only; final native proof is mandatory.</summary>
@@ -99,8 +109,16 @@ namespace VBAi.Tests.Integration
             {
                 if (!emptyBefore) throw new InvalidOperationException("A complete empty Publisher prelaunch inventory is required.");
                 snapshot.Require();
-                original = new PublisherBootstrapSnapshot { ProcessId = snapshot.ProcessId, Handle = snapshot.Handle,
-                    StartedUtc = snapshot.StartedUtc, Image = snapshot.Image, SessionId = snapshot.SessionId, OwnerThread = snapshot.OwnerThread };
+                original = new PublisherBootstrapSnapshot
+                {
+                    ProcessId = snapshot.ProcessId,
+                    Handle = snapshot.Handle,
+                    StartedUtc = snapshot.StartedUtc,
+                    Image = snapshot.Image,
+                    SessionId = snapshot.SessionId,
+                    OwnerThread = snapshot.OwnerThread,
+                    MainPublisher = snapshot.MainPublisher
+                };
             }
             private void RequireSnapshot(Func<PublisherBootstrapSnapshot> read)
             {
@@ -170,10 +188,18 @@ namespace VBAi.Tests.Integration
                 if (closed) throw new InvalidOperationException("Publisher bootstrap references are already closed; no release replay.");
                 closed = true; bound = verified = false; release();
             }
-            private IDictionary<string, object> Row(string state, bool invoked) => new Dictionary<string, object> {
-                ["PublisherBootstrap"] = state, ["ProcessId"] = original.ProcessId, ["OriginalHandle"] = original.Handle,
-                ["Association"] = "ProvisionalEmptyInventoryAndExactOriginalProcess", ["NativeWindowAssociationVerified"] = false,
-                ["ApplicationIUnknown"] = identity, ["MutationInvoked"] = invoked, ["AutomaticRetry"] = false, ["Utc"] = DateTime.UtcNow.ToString("o") };
+            private IDictionary<string, object> Row(string state, bool invoked) => new Dictionary<string, object>
+            {
+                ["PublisherBootstrap"] = state,
+                ["ProcessId"] = original.ProcessId,
+                ["OriginalHandle"] = original.Handle,
+                ["Association"] = "ProvisionalEmptyInventoryAndExactOriginalProcess",
+                ["NativeWindowAssociationVerified"] = false,
+                ["ApplicationIUnknown"] = identity,
+                ["MutationInvoked"] = invoked,
+                ["AutomaticRetry"] = false,
+                ["Utc"] = DateTime.UtcNow.ToString("o")
+            };
         }
 
         // Complete bounded system process snapshot; no PID adoption and no content/metadata reads of other applications.
@@ -202,7 +228,8 @@ namespace VBAi.Tests.Integration
         private void RequireNoVisiblePublisherBootstrapModal()
         {
             bool complete = true; int visited = 0; var watch = Stopwatch.StartNew(); var dialogs = new List<object>(); Exception failure = null;
-            bool enumerated = EnumWindows((window, state) => {
+            bool enumerated = EnumWindows((window, state) =>
+            {
                 try
                 {
                     if (++visited > 8192 || watch.ElapsedMilliseconds > 5000) { complete = false; return false; }
@@ -219,8 +246,13 @@ namespace VBAi.Tests.Integration
             }, IntPtr.Zero);
             if (!enumerated || !complete || watch.ElapsedMilliseconds > 5000 || dialogs.Count != 0)
             {
-                RecordPublisherStartup(new Dictionary<string, object> { ["PublisherBootstrapModalInventory"] = "REFUSED", ["Dialogs"] = dialogs.ToArray(),
-                    ["Complete"] = enumerated && complete, ["VisitedWindows"] = visited });
+                RecordPublisherStartup(new Dictionary<string, object>
+                {
+                    ["PublisherBootstrapModalInventory"] = "REFUSED",
+                    ["Dialogs"] = dialogs.ToArray(),
+                    ["Complete"] = enumerated && complete,
+                    ["VisitedWindows"] = visited
+                });
                 throw new InvalidOperationException("An unknown visible Publisher dialog or incomplete inventory refuses bootstrap; no native mutation is permitted.", failure);
             }
         }
@@ -234,11 +266,22 @@ namespace VBAi.Tests.Integration
             int session;
             using (var current = Process.GetCurrentProcess()) session = current.SessionId;
             if (ownedProcess.SessionId != session) throw new InvalidOperationException("Publisher bootstrap child belongs to another user session.");
-            return new PublisherBootstrapSnapshot { ProcessId = ProcessId, Handle = privateDesktopChild.ProcessHandle.ToInt64(),
-                StartedUtc = ownedProcess.StartTime.ToUniversalTime().ToString("o"), Image = ExcelOwnedProcessImage.Read(privateDesktopChild.ProcessHandle),
-                SessionId = session, OwnerThread = Thread.CurrentThread.ManagedThreadId, Sta = Thread.CurrentThread.GetApartmentState() == ApartmentState.STA,
-                Alive = !privateDesktopChild.Wait(0), PrivateWindowsVerified = true, NoVisibleModal = true,
-                PublisherProcessIds = ReadCompletePublisherProcessIds() };
+            return new PublisherBootstrapSnapshot
+            {
+                ProcessId = ProcessId,
+                Handle = privateDesktopChild.ProcessHandle.ToInt64(),
+                StartedUtc = ownedProcess.StartTime.ToUniversalTime().ToString("o"),
+                Image = ExcelOwnedProcessImage.Read(privateDesktopChild.ProcessHandle),
+                SessionId = session,
+                OwnerThread = Thread.CurrentThread.ManagedThreadId,
+                Sta = Thread.CurrentThread.GetApartmentState() == ApartmentState.STA,
+                Alive = !privateDesktopChild.Wait(0),
+                PrivateWindowsVerified = !mainPublisherDesktop,
+                MainWindowsVerified = mainPublisherDesktop,
+                MainPublisher = mainPublisherDesktop,
+                NoVisibleModal = true,
+                PublisherProcessIds = ReadCompletePublisherProcessIds()
+            };
         }
 
         private long ReadPrivatePublisherBootstrapIdentity()
@@ -258,14 +301,20 @@ namespace VBAi.Tests.Integration
             publisherBootstrap = new PublisherBootstrapGate(publisherBootstrapEmptyBefore, ReadPrivatePublisherBootstrapSnapshot());
             publisherOpenSecurity = new PublisherOpenSecurityGate();
             publisherBootstrapUnknown = Marshal.GetIUnknownForObject(application);
-            publisherBootstrap.Bind(ReadPrivatePublisherBootstrapSnapshot, ReadPrivatePublisherBootstrapIdentity, () => {
+            publisherBootstrap.Bind(ReadPrivatePublisherBootstrapSnapshot, ReadPrivatePublisherBootstrapIdentity, () =>
+            {
                 // Installed Publisher _Application IID; no IOleWindow/CommandBar capability assumptions.
                 Guid iid = new Guid("0002123e-0000-0000-c000-000000000046"); IntPtr typed = IntPtr.Zero, canonical = IntPtr.Zero;
                 try
                 {
                     int hr = Marshal.QueryInterface(publisherBootstrapUnknown, ref iid, out typed);
-                    RecordPublisherStartup(new Dictionary<string, object> { ["PublisherBootstrapApplicationQI"] = "RETURNED", ["InterfaceId"] = iid.ToString("D"),
-                        ["HResult"] = "0x" + unchecked((uint)hr).ToString("X8"), ["Pointer"] = typed.ToInt64() });
+                    RecordPublisherStartup(new Dictionary<string, object>
+                    {
+                        ["PublisherBootstrapApplicationQI"] = "RETURNED",
+                        ["InterfaceId"] = iid.ToString("D"),
+                        ["HResult"] = "0x" + unchecked((uint)hr).ToString("X8"),
+                        ["Pointer"] = typed.ToInt64()
+                    });
                     if (hr != 0 || typed == IntPtr.Zero) throw new COMException("Publisher _Application interface query did not return an exact supported pointer.", hr == 0 ? unchecked((int)0x80004005) : hr);
                     Guid unknown = new Guid("00000000-0000-0000-C000-000000000046");
                     int identityResult = Marshal.QueryInterface(typed, ref unknown, out canonical);
@@ -290,7 +339,8 @@ namespace VBAi.Tests.Integration
                 if (publisherOpenSecurity == null) throw new InvalidOperationException("Original Publisher generation has no Open security gate.");
                 var originalBootstrap = publisherBootstrap;
                 var originalSecurity = publisherOpenSecurity;
-                Action requireOriginalGeneration = () => {
+                Action requireOriginalGeneration = () =>
+                {
                     if (!ReferenceEquals(originalBootstrap, publisherBootstrap) || !ReferenceEquals(originalSecurity, publisherOpenSecurity))
                         throw new InvalidOperationException("The original Publisher Open security generation changed; no adoption or retry.");
                     originalBootstrap.Recheck(ReadPrivatePublisherBootstrapSnapshot, ReadPrivatePublisherBootstrapIdentity);
@@ -329,8 +379,11 @@ namespace VBAi.Tests.Integration
         private void ReleasePrivatePublisherBootstrapReference()
         {
             RecordPublisherStartup(new Dictionary<string, object> { ["PublisherBootstrapReferenceRelease"] = "PENDING", ["ReleaseAttempts"] = 1 });
-            publisherBootstrap.Close(() => { IntPtr held = publisherBootstrapUnknown; publisherBootstrapUnknown = IntPtr.Zero;
-                publisherBootstrapApplication = null; if (held != IntPtr.Zero) Marshal.Release(held); });
+            publisherBootstrap.Close(() =>
+            {
+                IntPtr held = publisherBootstrapUnknown; publisherBootstrapUnknown = IntPtr.Zero;
+                publisherBootstrapApplication = null; if (held != IntPtr.Zero) Marshal.Release(held);
+            });
             RecordPublisherStartup(new Dictionary<string, object> { ["PublisherBootstrapReferenceRelease"] = "RETURNED", ["ReleaseAttempts"] = 1 });
         }
         private void ReleaseExitedPrivatePublisherBootstrap()

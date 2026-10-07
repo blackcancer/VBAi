@@ -2,7 +2,6 @@ using System;
 using System.IO;
 using System.Threading;
 using System.Windows.Forms;
-using VBAi;
 namespace VBAi.Tests.Infrastructure
 {
     internal sealed class EditorFixture : IEditorModule, IDisposable

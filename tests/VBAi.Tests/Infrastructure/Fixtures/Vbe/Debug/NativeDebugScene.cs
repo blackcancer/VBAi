@@ -2,7 +2,6 @@ namespace VBAi.Tests.Unit
 {
     using System;
     using System.Collections.Generic;
-    using System.Diagnostics;
     using System.Linq;
     using System.Reflection;
     using VBAi;
@@ -30,12 +29,14 @@ namespace VBAi.Tests.Unit
                 FieldInfo field = typeof(VbeDebugWindows).GetField(name, BindingFlags.NonPublic | BindingFlags.Static);
                 saved.Add(field, field.GetValue(null));
             }
-            VbeDebugWindows.EnumWindows = (callback, parameter) => {
+            VbeDebugWindows.EnumWindows = (callback, parameter) =>
+            {
                 foreach (Window window in Windows.Where(w => w.Parent == IntPtr.Zero).ToArray())
                     if (!callback(window.Handle, parameter)) break;
                 return EnumerationSucceeded;
             };
-            VbeDebugWindows.EnumChildWindows = (parent, callback, parameter) => {
+            VbeDebugWindows.EnumChildWindows = (parent, callback, parameter) =>
+            {
                 foreach (Window window in Windows.Where(w => Below(w, parent)).ToArray())
                     if (!callback(window.Handle, parameter)) break;
                 return true;
@@ -44,7 +45,8 @@ namespace VBAi.Tests.Unit
             VbeDebugWindows.GetClassName = (handle, value, capacity) => { value.Append(Find(handle)?.Kind); return value.Length; };
             VbeDebugWindows.GetWindowText = (handle, value, capacity) => { value.Append(Find(handle)?.Caption); return value.Length; };
             VbeDebugWindows.ReadObserverTextMessage = (IntPtr handle, uint message, IntPtr capacity, System.Text.StringBuilder value,
-                uint flags, uint milliseconds, out UIntPtr result) => {
+                uint flags, uint milliseconds, out UIntPtr result) =>
+            {
                 value.Append(Find(handle)?.Caption);
                 result = new UIntPtr((uint)value.Length);
                 return new IntPtr(1);
@@ -53,12 +55,14 @@ namespace VBAi.Tests.Unit
             VbeDebugWindows.ObjectBrowserEnabled = handle => Find(handle)?.Enabled ?? false;
             VbeDebugWindows.ObjectBrowserParent = handle => Find(handle)?.Parent ?? IntPtr.Zero;
             VbeDebugWindows.RuntimeWindowOwner = (handle, command) => Find(handle)?.Owner ?? IntPtr.Zero;
-            VbeDebugWindows.ViewBounds = (IntPtr handle, out VbeDebugWindows.ViewRect bounds) => {
+            VbeDebugWindows.ViewBounds = (IntPtr handle, out VbeDebugWindows.ViewRect bounds) =>
+            {
                 Window window = Find(handle);
                 if (window.FailBounds) throw new InvalidOperationException("bounds unavailable");
                 bounds = window.Bounds; return window.BoundsAvailable;
             };
-            VbeDebugWindows.SendMessageInt = (handle, message, w, l) => {
+            VbeDebugWindows.SendMessageInt = (handle, message, w, l) =>
+            {
                 Messages.Add(Tuple.Create(handle, message, w, l));
                 if (message == 0x202) OnClick?.Invoke();
                 return IntPtr.Zero;
@@ -73,9 +77,14 @@ namespace VBAi.Tests.Unit
         internal Window Find(IntPtr handle) { return Windows.FirstOrDefault(w => w.Handle == handle); }
         internal Window Add(string kind, string caption = "", Window parent = null, int left = 0, int top = 0, int width = 40, int height = 20)
         {
-            var window = new Window { Handle = new IntPtr(5000 + Windows.Count), Kind = kind, Caption = caption,
+            var window = new Window
+            {
+                Handle = new IntPtr(5000 + Windows.Count),
+                Kind = kind,
+                Caption = caption,
                 Parent = parent?.Handle ?? IntPtr.Zero,
-                Bounds = new VbeDebugWindows.ViewRect { Left = left, Top = top, Right = left + width, Bottom = top + height } };
+                Bounds = new VbeDebugWindows.ViewRect { Left = left, Top = top, Right = left + width, Bottom = top + height }
+            };
             Windows.Add(window); return window;
         }
         internal Window CodeWindow()

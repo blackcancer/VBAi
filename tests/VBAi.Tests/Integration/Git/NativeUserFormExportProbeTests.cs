@@ -1,3 +1,4 @@
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -8,7 +9,6 @@ using System.Security.AccessControl;
 using System.Security.Cryptography;
 using System.Security.Principal;
 using System.Web.Script.Serialization;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace VBAi.Tests.Integration
 {
@@ -84,12 +84,18 @@ namespace VBAi.Tests.Integration
             string output = Path.Combine(root, controlledEfs ? "efs-" + trial : dispatch + "-" + location + "-" + trial);
             Assert.IsFalse(Directory.Exists(output)); Directory.CreateDirectory(output);
             string reportPath = Path.Combine(output, "native-export.json");
-            var report = new Dictionary<string, object> {
-                ["Stage"] = "STARTED", ["Dispatch"] = dispatch, ["Location"] = location, ["ControlledEfs"] = controlledEfs,
+            var report = new Dictionary<string, object>
+            {
+                ["Stage"] = "STARTED",
+                ["Dispatch"] = dispatch,
+                ["Location"] = location,
+                ["ControlledEfs"] = controlledEfs,
                 ["ControlledVolume"] = volume,
                 ["DaclSource"] = daclSource,
                 ["AssemblyMvid"] = typeof(VbeSession).Module.ModuleVersionId.ToString("D"),
-                ["NativeExportRequests"] = 0, ["MacroExecutions"] = 0, ["RemoteOperations"] = 0,
+                ["NativeExportRequests"] = 0,
+                ["MacroExecutions"] = 0,
+                ["RemoteOperations"] = 0,
                 ["EvidenceRootExisted"] = rootExisted,
                 ["Scope"] = "One native UserForm Export per owned Excel process; dispatch/path diagnosis only. No Git import, capture comparison or recovery acceptance."
             };
@@ -97,7 +103,8 @@ namespace VBAi.Tests.Integration
             ExcelVbeFixture observedHost = null;
             try
             {
-                ExcelVbeFixture.Run(host => {
+                ExcelVbeFixture.Run(host =>
+                {
                     observedHost = host;
                     const string form = "QualificationForm";
                     string workbook = host.File("native-export-probe.xlsm");
@@ -180,8 +187,11 @@ namespace VBAi.Tests.Integration
                     if (probeAncestor)
                     {
                         using (var testProcess = Process.GetCurrentProcess())
-                            report["ProcessTokens"] = new { TestHost = NativeProcessTokenObservation.Read(testProcess.Id),
-                                ExactOwnedExcel = NativeProcessTokenObservation.Read(host.ProcessId) };
+                            report["ProcessTokens"] = new
+                            {
+                                TestHost = NativeProcessTokenObservation.Read(testProcess.Id),
+                                ExactOwnedExcel = NativeProcessTokenObservation.Read(host.ProcessId)
+                            };
                         string accessFile = Path.Combine(destinationDirectory, "probe-access.txt");
                         const string synthetic = "VBAi disposable inherited-storage probe. No macro or credentials.";
                         Assert.IsFalse(System.IO.File.Exists(accessFile));
@@ -203,8 +213,14 @@ namespace VBAi.Tests.Integration
                             NativeExportTraceGate.WaitArmed(host.ProcessId, destination, output, loaded, report);
                             report["NativeExportRequests"] = 1; report["Stage"] = "ONE_NATIVE_EXPORT_PENDING";
                             System.IO.File.WriteAllText(reportPath, json.Serialize(report));
-                            var response = host.Command(new { Command = "export_component", Project = before["ProjectName"], Module = form,
-                                ExpectedComponentVersion = state["Version"], Path = destination });
+                            var response = host.Command(new
+                            {
+                                Command = "export_component",
+                                Project = before["ProjectName"],
+                                Module = form,
+                                ExpectedComponentVersion = state["Version"],
+                                Path = destination
+                            });
                             report["ExportResponse"] = response;
                             Data(response);
                         }
@@ -239,11 +255,16 @@ namespace VBAi.Tests.Integration
                         // export that failed, switch destinations or repair it.
                         try
                         {
-                            report["RawFiles"] = Directory.GetFiles(destinationDirectory).Select(file => {
+                            report["RawFiles"] = Directory.GetFiles(destinationDirectory).Select(file =>
+                            {
                                 byte[] bytes = System.IO.File.ReadAllBytes(file);
                                 System.IO.File.WriteAllBytes(Path.Combine(output, "raw-" + Path.GetFileName(file)), bytes);
-                                using (var sha = SHA256.Create()) return (object)new { Path = file, Bytes = bytes.Length,
-                                    Sha256 = BitConverter.ToString(sha.ComputeHash(bytes)).Replace("-", "") };
+                                using (var sha = SHA256.Create()) return (object)new
+                                {
+                                    Path = file,
+                                    Bytes = bytes.Length,
+                                    Sha256 = BitConverter.ToString(sha.ComputeHash(bytes)).Replace("-", "")
+                                };
                             }).ToArray();
                         }
                         catch (Exception evidenceFailure)
@@ -269,7 +290,8 @@ namespace VBAi.Tests.Integration
                         if (diagnosticFailure != null) throw new AggregateException("Diagnostic detachment was not proven; any original native error is retained separately and host cleanup is suspended.",
                             new[] { exportFailure, diagnosticFailure }.Where(error => error != null));
                     }
-                }, host => {
+                }, host =>
+                {
                     report["ShutdownDiagnostics"] = host.ShutdownDiagnostics;
                     Assert.AreEqual(host.ProcessId, Convert.ToInt32(host.ShutdownDiagnostics["ProcessId"]));
                     Assert.AreEqual(true, host.ShutdownDiagnostics["Exited"]);
@@ -372,9 +394,13 @@ namespace VBAi.Tests.Integration
         private static object DescribeProbeDirectory(string path)
         {
             var acl = Directory.GetAccessControl(path, AccessControlSections.Owner | AccessControlSections.Access);
-            return new { Path = Path.GetFullPath(path), Attributes = System.IO.File.GetAttributes(path).ToString(),
+            return new
+            {
+                Path = Path.GetFullPath(path),
+                Attributes = System.IO.File.GetAttributes(path).ToString(),
                 Sddl = acl.GetSecurityDescriptorSddlForm(AccessControlSections.Owner | AccessControlSections.Access),
-                acl.AreAccessRulesProtected };
+                acl.AreAccessRulesProtected
+            };
         }
 
         [StructLayout(LayoutKind.Sequential)] private struct EfsHashList { internal uint Count; internal IntPtr Users; }

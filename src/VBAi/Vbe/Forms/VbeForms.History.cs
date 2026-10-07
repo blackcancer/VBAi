@@ -29,12 +29,23 @@ namespace VBAi
             try { after = Tree(request.Project, request.Form); }
             catch (Exception ex) { error = error ?? ex.Message; }
             var changes = after == null ? new FormHistoryDiff.Change[0] : FormHistoryDiff.Compare((object)before, after);
-            return new { request.Project, request.Form, request.Action, Executed = error == null,
-                Verified = error == null && changes.Length > 0, VerificationPending = changes.Length == 0,
-                DesignerChanges = changes, ReadErrorsBefore = FormHistoryDiff.ReadErrorCount((object)before),
-                ReadErrorsAfter = after == null ? (int?)null : FormHistoryDiff.ReadErrorCount(after), Tree = after, NativeError = error, Saved = false,
+            return new
+            {
+                request.Project,
+                request.Form,
+                request.Action,
+                Executed = error == null,
+                Verified = error == null && changes.Length > 0,
+                VerificationPending = changes.Length == 0,
+                DesignerChanges = changes,
+                ReadErrorsBefore = FormHistoryDiff.ReadErrorCount((object)before),
+                ReadErrorsAfter = after == null ? (int?)null : FormHistoryDiff.ReadErrorCount(after),
+                Tree = after,
+                NativeError = error,
+                Saved = false,
                 NextRead = "form_tree",
-                Limit = "Targets this Designer via UndoAction/RedoAction; does not enumerate its history. Availability flags alone do not prove a Designer change. Properties with read errors are excluded from differences; nonzero read-error counts mean incomplete inspection. Do not retry automatically if the result is pending." };
+                Limit = "Targets this Designer via UndoAction/RedoAction; does not enumerate its history. Availability flags alone do not prove a Designer change. Properties with read errors are excluded from differences; nonzero read-error counts mean incomplete inspection. Do not retry automatically if the result is pending."
+            };
         }
     }
 }

@@ -96,9 +96,20 @@ namespace VBAi
                     throw new ArgumentException("An exact bounded callback plan is required.");
                 var bytes = new byte[32];
                 using (var random = RandomNumberGenerator.Create()) random.GetBytes(bytes);
-                active = new Attempt { Project = project, Path = path, Version = supportVersion,
-                    Signature = supportSignature, Revision = revision, RunId = runId, TestId = test.Id, Module = test.Module,
-                    Procedure = test.Procedure, Phase = phase, Nonce = BitConverter.ToString(bytes).Replace("-", "") };
+                active = new Attempt
+                {
+                    Project = project,
+                    Path = path,
+                    Version = supportVersion,
+                    Signature = supportSignature,
+                    Revision = revision,
+                    RunId = runId,
+                    TestId = test.Id,
+                    Module = test.Module,
+                    Procedure = test.Procedure,
+                    Phase = phase,
+                    Nonce = BitConverter.ToString(bytes).Replace("-", "")
+                };
             }
         }
 

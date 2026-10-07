@@ -28,22 +28,35 @@ namespace VBAi
         public object RunProcedure(Request request)
         {
             if (request == null) throw new ArgumentNullException(nameof(request));
-            var context = SynchronizationContext.Current;
-            if (context == null) throw new InvalidOperationException("The VBE UI context is unavailable.");
+            var context = SynchronizationContext.Current ?? throw new InvalidOperationException("The VBE UI context is unavailable.");
             if (procedureOperations.Any(x => x.State == "Queued" || x.State == "Delivering"))
                 throw new InvalidOperationException("A procedure call is still pending; inspect its status instead of retrying.");
-            var captured = new Request { Project = request.Project, Module = request.Module, Procedure = request.Procedure,
-                ExpectedSha256 = request.ExpectedSha256, ExpectedMode = request.ExpectedMode,
+            var captured = new Request
+            {
+                Project = request.Project,
+                Module = request.Module,
+                Procedure = request.Procedure,
+                ExpectedSha256 = request.ExpectedSha256,
+                ExpectedMode = request.ExpectedMode,
                 Arguments = request.Arguments == null ? null : (object[])request.Arguments.Clone(),
-                ArgumentNames = request.ArgumentNames == null ? null : (string[])request.ArgumentNames.Clone() };
+                ArgumentNames = request.ArgumentNames == null ? null : (string[])request.ArgumentNames.Clone()
+            };
             string command = PrepareProcedureCall(captured);
-            var operation = new ProcedureOperation { Id = Guid.NewGuid().ToString("N"), Project = captured.Project,
-                Module = captured.Module, Procedure = captured.Procedure, State = "Queued", Command = command };
+            var operation = new ProcedureOperation
+            {
+                Id = Guid.NewGuid().ToString("N"),
+                Project = captured.Project,
+                Module = captured.Module,
+                Procedure = captured.Procedure,
+                State = "Queued",
+                Command = command
+            };
             procedureOperations.Add(operation);
             if (procedureOperations.Count > 20) procedureOperations.RemoveAt(0);
             try
             {
-                context.Post(async _ => {
+                context.Post(async _ =>
+                {
                     try
                     {
                         if (PrepareProcedureCall(captured) != command)
@@ -68,8 +81,7 @@ namespace VBAi
         public object ProcedureRunStatus(Request request)
         {
             var operation = procedureOperations.FirstOrDefault(x => x.Id == request.Query &&
-                string.Equals(x.Project, request.Project, StringComparison.OrdinalIgnoreCase));
-            if (operation == null) throw new InvalidOperationException("Unknown procedure operation in this project/session.");
+                string.Equals(x.Project, request.Project, StringComparison.OrdinalIgnoreCase)) ?? throw new InvalidOperationException("Unknown procedure operation in this project/session.");
             return ProcedureResult(operation);
         }
 
@@ -122,8 +134,7 @@ namespace VBAi
                 for (int i = 0; i < literals.Length; i++)
                 {
                     ValidateProcedureIdentifier(request.ArgumentNames[i]);
-                    var parameter = declared.SingleOrDefault(d => string.Equals(d.Name, request.ArgumentNames[i], StringComparison.OrdinalIgnoreCase));
-                    if (parameter == null) throw new ArgumentException("Unknown parameter in the live signature: " + request.ArgumentNames[i]);
+                    var parameter = declared.SingleOrDefault(d => string.Equals(d.Name, request.ArgumentNames[i], StringComparison.OrdinalIgnoreCase)) ?? throw new ArgumentException("Unknown parameter in the live signature: " + request.ArgumentNames[i]);
                     literals[i] = parameter.Name + ":=" + literals[i];
                 }
             }
@@ -166,11 +177,21 @@ namespace VBAi
         /// <summary>Sérialise le suivi sans assimiler transmission et succès runtime.</summary>
         /// <param name="operation">Opération d’appel enregistrée en mémoire.</param>
         /// <returns>État de transmission, sortie observée et limites de vérification runtime.</returns>
-        private static object ProcedureResult(ProcedureOperation operation) => new { operation.Project, operation.Module,
-            operation.Procedure, Query = operation.Id, operation.State, operation.Command, operation.Output, operation.Error,
-            Pending = operation.State == "Queued" || operation.State == "Delivering", RuntimeSuccessVerified = false,
+        private static object ProcedureResult(ProcedureOperation operation) => new
+        {
+            operation.Project,
+            operation.Module,
+            operation.Procedure,
+            Query = operation.Id,
+            operation.State,
+            operation.Command,
+            operation.Output,
+            operation.Error,
+            Pending = operation.State == "Queued" || operation.State == "Delivering",
+            RuntimeSuccessVerified = false,
             NextRead = "procedure_run_status, debug_state, debug_dialog",
-            Limit = "Scalar arguments only; optional ArgumentNames must match the inspected live signature. No named ParamArray/conditional calls, object/array arguments or returned COM values. Runtime errors and modal code can outlive delivery; do not retry automatically." };
+            Limit = "Scalar arguments only; optional ArgumentNames must match the inspected live signature. No named ParamArray/conditional calls, object/array arguments or returned COM values. Runtime errors and modal code can outlive delivery; do not retry automatically."
+        };
 
         /// <summary>État borné en mémoire d’une seule tentative d’appel.</summary>
         private sealed class ProcedureOperation

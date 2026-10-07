@@ -1,5 +1,6 @@
 namespace VBAi.Tests.Unit
 {
+    using Microsoft.VisualStudio.TestTools.UnitTesting;
     using System;
     using System.Collections.Generic;
     using System.ComponentModel;
@@ -8,7 +9,6 @@ namespace VBAi.Tests.Unit
     using System.Reflection;
     using System.Runtime.InteropServices.ComTypes;
     using System.Web.Script.Serialization;
-    using Microsoft.VisualStudio.TestTools.UnitTesting;
     using VBAi;
 
     [TestClass]
@@ -22,16 +22,28 @@ namespace VBAi.Tests.Unit
             using (var typeInfo = new ComTypeInfoFixture())
             using (var font = new Font("Tahoma", 8.25f))
             {
-                typeInfo.Functions.Add(new ComTypeInfoFixture.Function {
-                    Name = "_Font_Reserved", MemberId = 0x7ffffdff,
-                    Kind = INVOKEKIND.INVOKE_PROPERTYPUT, Parameters = 1 });
+                typeInfo.Functions.Add(new ComTypeInfoFixture.Function
+                {
+                    Name = "_Font_Reserved",
+                    MemberId = 0x7ffffdff,
+                    Kind = INVOKEKIND.INVOKE_PROPERTYPUT,
+                    Parameters = 1
+                });
                 var alias = new CountingDescriptor("_Font_Reserved", typeof(Font)) { Fail = true };
                 var ordinary = new CountingDescriptor("Font", typeof(Font)) { Value = font };
-                var owner = new MetadataOwner { Info = typeInfo, Font = font,
-                    Metadata = new PropertyDescriptorCollection(new PropertyDescriptor[] { alias, ordinary }) };
+                var owner = new MetadataOwner
+                {
+                    Info = typeInfo,
+                    Font = font,
+                    Metadata = new PropertyDescriptorCollection(new PropertyDescriptor[] { alias, ordinary })
+                };
                 var reservedProperty = new NativeProperty { Name = "_Font_Reserved", Fail = true };
-                var form = new NativeForm { Designer = owner, Properties = new[] {
-                    reservedProperty, new NativeProperty { Name = "Font", Stored = font } } };
+                var form = new NativeForm
+                {
+                    Designer = owner,
+                    Properties = new[] {
+                    reservedProperty, new NativeProperty { Name = "Font", Stored = font } }
+                };
                 var properties = (List<VbePropertyInfo>)Read("DescribeProperties", form);
                 var controls = (List<VbePropertyInfo>)Read("ReadObjectProperties", owner);
                 foreach (var rows in new[] { properties, controls })
@@ -59,27 +71,38 @@ namespace VBAi.Tests.Unit
         public void MissingAmbiguousOrReadableMetadataDoesNotSuppressGetterErrors()
         {
             foreach (int mode in Enumerable.Range(0, 7))
-            using (var typeInfo = new ComTypeInfoFixture())
-            {
-                var function = new ComTypeInfoFixture.Function { Name = "_Font_Reserved",
-                    MemberId = 0x7ffffdff, Kind = INVOKEKIND.INVOKE_PROPERTYPUT };
-                typeInfo.Functions.Add(function);
-                if (mode == 0) function.MemberId = 42;
-                if (mode == 1) function.Kind = INVOKEKIND.INVOKE_PROPERTYGET;
-                if (mode == 2) function.Kind = INVOKEKIND.INVOKE_FUNC;
-                if (mode == 3) typeInfo.Functions.Add(new ComTypeInfoFixture.Function {
-                    Name = "_Font_Reserved", MemberId = 0x7ffffdff,
-                    Kind = INVOKEKIND.INVOKE_PROPERTYGET });
-                if (mode == 4) function.NamesFailure = true;
-                var descriptor = new CountingDescriptor("_Font_Reserved",
-                    mode == 5 ? typeof(object) : typeof(Font)) { Fail = true };
-                var owner = new MetadataOwner { Info = mode == 6 ? null : typeInfo,
-                    Metadata = new PropertyDescriptorCollection(new PropertyDescriptor[] { descriptor }) };
-                var rows = (List<VbePropertyInfo>)Read("ReadObjectProperties", owner);
-                Assert.AreEqual(1, descriptor.Reads, "Mode " + mode);
-                Assert.IsNotNull(rows.Single().Error, "Mode " + mode);
-                Assert.AreNotEqual("writeOnly", rows.Single().Kind);
-            }
+                using (var typeInfo = new ComTypeInfoFixture())
+                {
+                    var function = new ComTypeInfoFixture.Function
+                    {
+                        Name = "_Font_Reserved",
+                        MemberId = 0x7ffffdff,
+                        Kind = INVOKEKIND.INVOKE_PROPERTYPUT
+                    };
+                    typeInfo.Functions.Add(function);
+                    if (mode == 0) function.MemberId = 42;
+                    if (mode == 1) function.Kind = INVOKEKIND.INVOKE_PROPERTYGET;
+                    if (mode == 2) function.Kind = INVOKEKIND.INVOKE_FUNC;
+                    if (mode == 3) typeInfo.Functions.Add(new ComTypeInfoFixture.Function
+                    {
+                        Name = "_Font_Reserved",
+                        MemberId = 0x7ffffdff,
+                        Kind = INVOKEKIND.INVOKE_PROPERTYGET
+                    });
+                    if (mode == 4) function.NamesFailure = true;
+                    var descriptor = new CountingDescriptor("_Font_Reserved",
+                        mode == 5 ? typeof(object) : typeof(Font))
+                    { Fail = true };
+                    var owner = new MetadataOwner
+                    {
+                        Info = mode == 6 ? null : typeInfo,
+                        Metadata = new PropertyDescriptorCollection(new PropertyDescriptor[] { descriptor })
+                    };
+                    var rows = (List<VbePropertyInfo>)Read("ReadObjectProperties", owner);
+                    Assert.AreEqual(1, descriptor.Reads, "Mode " + mode);
+                    Assert.IsNotNull(rows.Single().Error, "Mode " + mode);
+                    Assert.AreNotEqual("writeOnly", rows.Single().Kind);
+                }
         }
 
         [TestMethod]

@@ -1,6 +1,6 @@
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using VBAi.Tests.Integration;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace VBAi.Tests.Scenarios
 {
@@ -62,10 +62,18 @@ namespace VBAi.Tests.Scenarios
 
         private static ExcelVbeFixture.GitDesignerCaptureState State()
         {
-            return new ExcelVbeFixture.GitDesignerCaptureState {
-                DesignerHandle = 44, MainHandle = 88, DesignerCaption = "QualificationForm", ActiveCaption = "QualificationForm",
-                DesignerType = 1, ActiveType = 1, DesignerVisible = true, MainVisible = true,
-                ProjectIdentityMatches = true, DesignerIdentityMatches = true
+            return new ExcelVbeFixture.GitDesignerCaptureState
+            {
+                DesignerHandle = 44,
+                MainHandle = 88,
+                DesignerCaption = "QualificationForm",
+                ActiveCaption = "QualificationForm",
+                DesignerType = 1,
+                ActiveType = 1,
+                DesignerVisible = true,
+                MainVisible = true,
+                ProjectIdentityMatches = true,
+                DesignerIdentityMatches = true
             };
         }
     }

@@ -1,19 +1,22 @@
 namespace VBAi.Tests.Unit
 {
+    using Microsoft.VisualStudio.TestTools.UnitTesting;
     using System;
     using VBAi;
-    using Microsoft.VisualStudio.TestTools.UnitTesting;
     public sealed partial class LlmVbeToolsBoundaryTests
     {
         [DataTestMethod]
-        [DataRow("policy")][DataRow("binding")][DataRow("mode")]
+        [DataRow("policy")]
+        [DataRow("binding")]
+        [DataRow("mode")]
         public void FinalMetadataAuthorizationUsesOnlyCachedGuardsAfterHostScopeRead(string changed)
         {
             var fixture = new ToolFixture(); fixture.Tools.BoundProject = "P"; int scopeReads = 0, writes = 0, cachedReads = 0, beforeFinal = -1; Request captured = null;
             string actualSelection = "P";
             fixture.Tools.ValidateScope = () => scopeReads++;
             fixture.Tools.ValidateCachedScope = () => { cachedReads++; fixture.Tools.BoundProject = actualSelection; };
-            fixture.Tools.Execute = request => {
+            fixture.Tools.Execute = request =>
+            {
                 if (request.Command != "set_project_property") return VBAi.Tests.Infrastructure.VbeToolBoundaryFixture.Execute(request);
                 captured = request;
                 request.RevalidateProjectPropertyAuthorization(true);
@@ -32,13 +35,18 @@ namespace VBAi.Tests.Unit
         }
 
         [DataTestMethod]
-        [DataRow("policy", false)][DataRow("binding", false)][DataRow("mode", false)][DataRow("scope", false)]
-        [DataRow("policy", true)][DataRow("binding", true)]
+        [DataRow("policy", false)]
+        [DataRow("binding", false)]
+        [DataRow("mode", false)]
+        [DataRow("scope", false)]
+        [DataRow("policy", true)]
+        [DataRow("binding", true)]
         public void ProjectMetadataAuthorizationRefusesRevokedDirectAndCatalogWrites(string changed, bool catalog)
         {
             var fixture = new ToolFixture(); fixture.Tools.BoundProject = "P"; int writes = 0; bool scope = true, callbackSeen = false; Request captured = null;
             fixture.Tools.ValidateScope = () => { if (!scope) throw new InvalidOperationException("Scope revoked"); };
-            fixture.Tools.Execute = request => {
+            fixture.Tools.Execute = request =>
+            {
                 if (request.Command != "set_project_property") return VBAi.Tests.Infrastructure.VbeToolBoundaryFixture.Execute(request);
                 captured = request; Assert.IsNotNull(request.RevalidateProjectPropertyAuthorization);
                 callbackSeen = request.RevalidateProjectPropertyAuthorization != null;
@@ -56,13 +64,16 @@ namespace VBAi.Tests.Unit
         }
 
         [DataTestMethod]
-        [DataRow("Automatic", false)][DataRow("AskEachTime", false)][DataRow("Automatic", true)]
+        [DataRow("Automatic", false)]
+        [DataRow("AskEachTime", false)]
+        [DataRow("Automatic", true)]
         public void ProjectMetadataAuthorizationReusesApprovalAndClearsAfterOriginalDispatch(string policy, bool failed)
         {
             var fixture = new ToolFixture(); fixture.Tools.BoundProject = "P"; fixture.Settings.VbeEditApproval = policy;
             int approvals = 0, writes = 0; Request captured = null;
             fixture.Tools.ShowApproval = (dialog, owner) => { approvals++; return System.Windows.Forms.DialogResult.Yes; };
-            fixture.Tools.Execute = request => {
+            fixture.Tools.Execute = request =>
+            {
                 if (request.Command != "set_project_property") return VBAi.Tests.Infrastructure.VbeToolBoundaryFixture.Execute(request);
                 captured = request; Assert.IsNotNull(request.RevalidateProjectPropertyAuthorization);
                 request.RevalidateProjectPropertyAuthorization(true); request.RevalidateProjectPropertyAuthorization(false); writes++;
@@ -86,7 +97,10 @@ namespace VBAi.Tests.Unit
         }
 
         [DataTestMethod]
-        [DataRow(false, false)][DataRow(true, false)][DataRow(false, true)][DataRow(true, true)]
+        [DataRow(false, false)]
+        [DataRow(true, false)]
+        [DataRow(false, true)]
+        [DataRow(true, true)]
         public void ScalarFailurePhaseSurvivesDirectAndCatalogResponsesWithoutRetry(bool catalog, bool readback)
         {
             var fixture = new ToolFixture();
@@ -94,7 +108,8 @@ namespace VBAi.Tests.Unit
             var error = new System.Runtime.InteropServices.COMException("synthetic original COM error", unchecked((int)0x9CFD3148));
             VbeScalarProperty.AnnotateFailure(error, readback ? VbeScalarProperty.FailurePhase.RetentionReadback : VbeScalarProperty.FailurePhase.SetterInvocation);
             int writes = 0;
-            fixture.Tools.Execute = request => {
+            fixture.Tools.Execute = request =>
+            {
                 if (request.Command != "set_project_property") return VBAi.Tests.Infrastructure.VbeToolBoundaryFixture.Execute(request);
                 writes++;
                 throw error;
@@ -133,7 +148,8 @@ namespace VBAi.Tests.Unit
             finally { System.Threading.SynchronizationContext.SetSynchronizationContext(previous); }
         }
         [DataTestMethod]
-        [DataRow(false)][DataRow(true)]
+        [DataRow(false)]
+        [DataRow(true)]
         public void SaveHostDocumentDefersDirectAndCatalogDispatchThenRechecksApproval(bool catalog)
         {
             var previous = System.Threading.SynchronizationContext.Current;
@@ -163,7 +179,8 @@ namespace VBAi.Tests.Unit
         }
 
         [DataTestMethod]
-        [DataRow(false)][DataRow(true)]
+        [DataRow(false)]
+        [DataRow(true)]
         public void SaveWaitsForNativeCompletionWithoutRepeatingDispatch(bool catalog)
         {
             var previous = System.Threading.SynchronizationContext.Current;
@@ -192,7 +209,9 @@ namespace VBAi.Tests.Unit
         }
 
         [DataTestMethod]
-        [DataRow("project")][DataRow("mode")][DataRow("policy")]
+        [DataRow("project")]
+        [DataRow("mode")]
+        [DataRow("policy")]
         public void SaveRechecksGuardsAfterApprovalDialog(string changed)
         {
             var previous = System.Threading.SynchronizationContext.Current;
@@ -205,14 +224,19 @@ namespace VBAi.Tests.Unit
                 fixture.Tools.BoundProject = "P";
                 int saves = 0;
                 fixture.Tools.SaveHostDocumentNative = request => { saves++; return System.Threading.Tasks.Task.FromResult<object>(new { Saved = true }); };
-                fixture.Tools.ShowApproval = (dialog, owner) => {
+                fixture.Tools.ShowApproval = (dialog, owner) =>
+                {
                     if (changed == "project") fixture.Tools.BoundProject = "Other";
                     if (changed == "mode") fixture.Tools.Mode = ChatMode.Plan;
                     if (changed == "policy") fixture.Settings.VbeEditApproval = "ReadOnly";
                     return System.Windows.Forms.DialogResult.Yes;
                 };
-                var pending = fixture.Tools.InvokeAsync("save_host_document", Json.Serialize(new {
-                    Project = "P", ExpectedProjectVersion = "version", ExpectedHostPath = @"C:\fixture\Owned.swp" }));
+                var pending = fixture.Tools.InvokeAsync("save_host_document", Json.Serialize(new
+                {
+                    Project = "P",
+                    ExpectedProjectVersion = "version",
+                    ExpectedHostPath = @"C:\fixture\Owned.swp"
+                }));
                 context.Drain();
                 Failed(pending.GetAwaiter().GetResult(), "changed after approval: " + changed);
                 Assert.AreEqual(0, saves);
@@ -221,7 +245,9 @@ namespace VBAi.Tests.Unit
         }
 
         [DataTestMethod]
-        [DataRow("Other")][DataRow("")][DataRow(null)]
+        [DataRow("Other")]
+        [DataRow("")]
+        [DataRow(null)]
         public void SaveDoesNotExposeResultAfterProjectScopeChangesWhilePending(string newBinding)
         {
             var previous = System.Threading.SynchronizationContext.Current;
@@ -234,8 +260,12 @@ namespace VBAi.Tests.Unit
                 int saves = 0;
                 var completion = new System.Threading.Tasks.TaskCompletionSource<object>();
                 fixture.Tools.SaveHostDocumentNative = request => { saves++; return completion.Task; };
-                var pending = fixture.Tools.InvokeAsync("save_host_document", Json.Serialize(new {
-                    Project = "P", ExpectedProjectVersion = "version", ExpectedHostPath = @"C:\fixture\Owned.swp" }));
+                var pending = fixture.Tools.InvokeAsync("save_host_document", Json.Serialize(new
+                {
+                    Project = "P",
+                    ExpectedProjectVersion = "version",
+                    ExpectedHostPath = @"C:\fixture\Owned.swp"
+                }));
                 context.Drain(); Assert.AreEqual(1, saves);
                 fixture.Tools.BoundProject = newBinding;
                 completion.SetResult(new { SaveInvoked = true, Verified = true, HostPath = "private-path" });
@@ -250,10 +280,14 @@ namespace VBAi.Tests.Unit
         }
 
         [DataTestMethod]
-        [DataRow("readOnly", false)][DataRow("readOnly", true)]
-        [DataRow("binding", false)][DataRow("binding", true)]
-        [DataRow("askEachTime", false)][DataRow("unknownPolicy", false)]
-        [DataRow("scope", false)][DataRow("mode", false)]
+        [DataRow("readOnly", false)]
+        [DataRow("readOnly", true)]
+        [DataRow("binding", false)]
+        [DataRow("binding", true)]
+        [DataRow("askEachTime", false)]
+        [DataRow("unknownPolicy", false)]
+        [DataRow("scope", false)]
+        [DataRow("mode", false)]
         public void DeferredSaveAuthorizationBlocksConfirmationAfterRevocation(string revoked, bool catalog)
         {
             var previous = System.Threading.SynchronizationContext.Current;
@@ -267,15 +301,21 @@ namespace VBAi.Tests.Unit
                 fixture.Tools.ShowApproval = (dialog, owner) => { dialogs++; return System.Windows.Forms.DialogResult.Yes; };
                 Request captured = null;
                 var ready = new System.Threading.Tasks.TaskCompletionSource<object>();
-                fixture.Tools.SaveHostDocumentNative = async request => {
+                fixture.Tools.SaveHostDocumentNative = async request =>
+                {
                     captured = request; Assert.IsNotNull(request.RevalidateSaveAuthorization);
                     request.RevalidateSaveAuthorization(); saves++; // Simulates the original ID3 mutation.
                     await ready.Task;
                     try { request.RevalidateSaveAuthorization(); }
                     catch (InvalidOperationException)
                     {
-                        return new { SaveInvoked = true, Verified = false, Uncertain = true,
-                            Reason = "Authorization was revoked before native confirmation; no replay." };
+                        return new
+                        {
+                            SaveInvoked = true,
+                            Verified = false,
+                            Uncertain = true,
+                            Reason = "Authorization was revoked before native confirmation; no replay."
+                        };
                     }
                     confirmations++;
                     return new { SaveInvoked = true, Verified = true, Uncertain = false };
@@ -301,21 +341,27 @@ namespace VBAi.Tests.Unit
         }
 
         [DataTestMethod]
-        [DataRow("Automatic")][DataRow("AskEachTime")]
+        [DataRow("Automatic")]
+        [DataRow("AskEachTime")]
         public void DeferredSaveConfirmationReusesOriginalApprovalWithoutAnotherDialog(string policy)
         {
             var fixture = new ToolFixture(); fixture.Tools.BoundProject = "P"; fixture.Settings.VbeEditApproval = policy;
             int approvals = 0, checks = 0, confirmations = 0;
             Request captured = null;
             fixture.Tools.ShowApproval = (dialog, owner) => { approvals++; return System.Windows.Forms.DialogResult.Yes; };
-            fixture.Tools.SaveHostDocumentNative = request => {
+            fixture.Tools.SaveHostDocumentNative = request =>
+            {
                 captured = request; Assert.IsNotNull(request.RevalidateSaveAuthorization);
                 request.RevalidateSaveAuthorization(); checks++;
                 request.RevalidateSaveAuthorization(); checks++; confirmations++;
                 return System.Threading.Tasks.Task.FromResult<object>(new { SaveInvoked = true, Verified = true });
             };
-            Success(InvokeSaveContract(fixture, Json.Serialize(new { Project = "P", ExpectedProjectVersion = "version",
-                ExpectedHostPath = @"C:\fixture\Owned.accdb" })), "authorized native confirmation");
+            Success(InvokeSaveContract(fixture, Json.Serialize(new
+            {
+                Project = "P",
+                ExpectedProjectVersion = "version",
+                ExpectedHostPath = @"C:\fixture\Owned.accdb"
+            })), "authorized native confirmation");
             Assert.AreEqual(policy == "AskEachTime" ? 1 : 0, approvals);
             Assert.AreEqual(2, checks); Assert.AreEqual(1, confirmations); Assert.IsNull(captured.RevalidateSaveAuthorization);
         }
@@ -324,13 +370,18 @@ namespace VBAi.Tests.Unit
         public void DeferredSaveAuthorizationClearsOnNativeFailure()
         {
             var fixture = new ToolFixture(); fixture.Tools.BoundProject = "P"; Request captured = null; int saves = 0;
-            fixture.Tools.SaveHostDocumentNative = request => {
+            fixture.Tools.SaveHostDocumentNative = request =>
+            {
                 captured = request; Assert.IsNotNull(request.RevalidateSaveAuthorization);
                 request.RevalidateSaveAuthorization(); saves++;
                 return System.Threading.Tasks.Task.FromException<object>(new InvalidOperationException("Original native failure"));
             };
-            Failed(InvokeSaveContract(fixture, Json.Serialize(new { Project = "P", ExpectedProjectVersion = "version",
-                ExpectedHostPath = @"C:\fixture\Owned.accdb" })), "native failure");
+            Failed(InvokeSaveContract(fixture, Json.Serialize(new
+            {
+                Project = "P",
+                ExpectedProjectVersion = "version",
+                ExpectedHostPath = @"C:\fixture\Owned.accdb"
+            })), "native failure");
             Assert.AreEqual(1, saves); Assert.IsNull(captured.RevalidateSaveAuthorization);
         }
 
@@ -348,13 +399,19 @@ namespace VBAi.Tests.Unit
         }
 
         [DataTestMethod]
-        [DataRow(false)][DataRow(true)]
+        [DataRow(false)]
+        [DataRow(true)]
         public void SaveRuntimeAuthorizationCannotBeSuppliedAsToolArgument(bool catalog)
         {
             var fixture = new ToolFixture(); fixture.Tools.BoundProject = "P"; int saves = 0;
             fixture.Tools.SaveHostDocumentNative = request => { saves++; return System.Threading.Tasks.Task.FromResult<object>(new { Saved = true }); };
-            string arguments = Json.Serialize(new { Project = "P", ExpectedProjectVersion = "version",
-                ExpectedHostPath = @"C:\fixture\Owned.accdb", RevalidateSaveAuthorization = true });
+            string arguments = Json.Serialize(new
+            {
+                Project = "P",
+                ExpectedProjectVersion = "version",
+                ExpectedHostPath = @"C:\fixture\Owned.accdb",
+                RevalidateSaveAuthorization = true
+            });
             var previous = System.Threading.SynchronizationContext.Current;
             var context = new SaveQueueContext(); System.Threading.SynchronizationContext.SetSynchronizationContext(context);
             try
@@ -378,7 +435,8 @@ namespace VBAi.Tests.Unit
             var state = new VBAi.Tests.Infrastructure.VbeToolMode { Mode = 2 };
             int enters = 0;
             tools.Execute = request => Response.Success(state);
-            tools.Native.ExecuteImmediate = (text, submit) => {
+            tools.Native.ExecuteImmediate = (text, submit) =>
+            {
                 if (change == "project") state.SelectedProject = "Other";
                 if (change == "mode") state.Mode = 1;
                 if (change == "policy") fixture.Settings.VbeEditApproval = "Ask";
@@ -397,9 +455,14 @@ namespace VBAi.Tests.Unit
             tools.SetReadAccess(new string[0], true);
             int executions = 0;
             tools.Native.ExecuteImmediate = (text, submit) => { submit(() => executions++); return new { Executed = true }; };
-            var state = new VBAi.Tests.Infrastructure.VbeToolMode {
-                Mode = 2, Project = "SameName", SelectedProject = "SameName",
-                SelectedProjectPath = @"C:\Temp\B.xlsm", ActiveModule = "Module1" };
+            var state = new VBAi.Tests.Infrastructure.VbeToolMode
+            {
+                Mode = 2,
+                Project = "SameName",
+                SelectedProject = "SameName",
+                SelectedProjectPath = @"C:\Temp\B.xlsm",
+                ActiveModule = "Module1"
+            };
             tools.Execute = request => Response.Success(state);
             string arguments = Json.Serialize(new { Project = tools.BoundProject, ExpectedMode = 2, Text = "Debug.Print 1" });
             Failed(await tools.InvokeAsync("immediate_execute", arguments), "other active project");
@@ -448,22 +511,21 @@ namespace VBAi.Tests.Unit
 
 namespace VBAi.Tests.Unit
 {
-using System;
+    using Microsoft.VisualStudio.TestTools.UnitTesting;
+    using System;
     using System.Collections.Generic;
     using System.Threading;
-    using System.Web.Script.Serialization;
     using System.Threading.Tasks;
     using VBAi;
-    using Microsoft.VisualStudio.TestTools.UnitTesting;
 
     /// <summary>Vérifie les validations asynchrones des outils de débogage VBE.</summary>
-[TestClass]
+    [TestClass]
     [TestCategory("Unit")]
     public sealed partial class LlmVbeAsyncValidationTests
     {
         /// <summary>Refuse les arguments mal formés des outils natifs avant tout accès à l’interface.</summary>
         /// <returns>Tâche terminée lorsque les arguments invalides sont refusés.</returns>
-[TestMethod]
+        [TestMethod]
         public async Task NativeDebuggerToolsRejectMalformedArgumentsBeforeUiAccess()
         {
             var settings = new LlmSettings
@@ -493,7 +555,7 @@ using System;
 
         /// <summary>Exige une politique automatique pour les évaluations et mutations de débogage.</summary>
         /// <returns>Tâche terminée lorsque les outils refusent la politique insuffisante.</returns>
-[TestMethod]
+        [TestMethod]
         public async Task NativeEvaluationAndMutationRequireAutomaticPolicy()
         {
             var settings = new LlmSettings
@@ -511,7 +573,7 @@ using System;
 
         /// <summary>Valide le scope et le projet lié avant l’accès à l’hôte pendant un appel asynchrone.</summary>
         /// <returns>Tâche terminée lorsque les limites de scope sont vérifiées.</returns>
-[TestMethod]
+        [TestMethod]
         public async Task ScopeAndProjectBindingApplyToAsyncInvocationBeforeHostAccess()
         {
             var tools = new LlmVbeTools(null, null, new LlmSettings { VbeEditApproval = "Automatic" })
@@ -528,7 +590,7 @@ using System;
 
         /// <summary>Retourne le statut en lecture seule depuis une session VBE en mémoire.</summary>
         /// <returns>Tâche terminée après la vérification du statut.</returns>
-[TestMethod]
+        [TestMethod]
         public async Task AsyncDispatchReturnsReadOnlyStatusFromInMemorySession()
         {
             var tools = new LlmVbeTools(new VbeSession(new VbeSessionTests.FakeVbe()), null, new LlmSettings());
@@ -539,7 +601,7 @@ using System;
 
         /// <summary>Refuse les formes de requête natives invalides sans ouvrir de dialogue.</summary>
         /// <returns>Tâche terminée après le contrôle des requêtes.</returns>
-[TestMethod]
+        [TestMethod]
         public async Task AsyncNativePreflightRejectsWrongShapesWithoutOpeningDialogs()
         {
             var tools = new LlmVbeTools(null, null, new LlmSettings { VbeEditApproval = "Automatic" });
@@ -555,7 +617,7 @@ using System;
 
         /// <summary>Exige un contexte UI avant d’inspecter le dialogue de compilation natif.</summary>
         /// <returns>Tâche terminée lorsque l’absence de contexte UI est refusée.</returns>
-[TestMethod]
+        [TestMethod]
         public async Task CompileRequiresUiContextBeforeNativeDialogInspection()
         {
             var tools = new LlmVbeTools(null, null, new LlmSettings());
@@ -573,7 +635,7 @@ using System;
 
         /// <summary>Refuse l’exécution immédiate si le mode du projet a changé avant l’appel natif.</summary>
         /// <returns>Tâche terminée lorsque l’appel natif n’est pas exécuté.</returns>
-[TestMethod]
+        [TestMethod]
         public async Task ImmediateExecuteRejectsModeChangedBeforeNativeExecution()
         {
             var host = new VbeSessionTests.FakeVbe();
@@ -624,13 +686,15 @@ using System;
         {
             var tools = new LlmVbeTools(null, null, new LlmSettings { VbeEditApproval = "Automatic" });
             int calls = 0;
-            tools.Execute = request => {
+            tools.Execute = request =>
+            {
                 Assert.AreEqual("debug_state", request.Command);
                 var state = new System.Dynamic.ExpandoObject();
                 ((IDictionary<string, object>)state)["Mode"] = 1;
                 return Response.Success(state);
             };
-            tools.InspectLocalScalarsNative = async request => {
+            tools.InspectLocalScalarsNative = async request =>
+            {
                 calls++;
                 Assert.AreEqual("P", request.Project);
                 Assert.AreEqual("M", request.Module);
@@ -655,15 +719,14 @@ using System;
 
 namespace VBAi.Tests.Unit
 {
+    using Microsoft.VisualStudio.TestTools.UnitTesting;
     using System;
     using System.Collections.Generic;
     using System.Linq;
-    using System.Web.Script.Serialization;
     using VBAi;
-    using Microsoft.VisualStudio.TestTools.UnitTesting;
 
     /// <summary>Vérifie les schémas publiés et les règles de validation des outils VBE.</summary>
-[TestClass]
+    [TestClass]
     [TestCategory("Unit")]
     public sealed partial class LlmVbeToolContractTests
     {
@@ -727,7 +790,7 @@ namespace VBAi.Tests.Unit
         }
 
         /// <summary>Refuse les arguments JSON mal formés ou inattendus avant tout accès à l’hôte.</summary>
-[TestMethod]
+        [TestMethod]
         public void InvocationRejectsMalformedAndUnexpectedArgumentsBeforeHostAccess()
         {
             var tools = new LlmVbeTools(null, null, new LlmSettings());
@@ -741,7 +804,7 @@ namespace VBAi.Tests.Unit
         }
 
         /// <summary>Vérifie que les modes et politiques incompatibles empêchent toute modification hôte.</summary>
-[TestMethod]
+        [TestMethod]
         public void EditingModesAndPoliciesRejectChangesBeforeHostAccess()
         {
             var settings = new LlmSettings
@@ -774,7 +837,7 @@ namespace VBAi.Tests.Unit
         }
 
         /// <summary>Valide le projet lié et le chemin de fichier avant les commandes hôte.</summary>
-[TestMethod]
+        [TestMethod]
         public void BoundProjectAndFilePathAreCheckedBeforeHostAccess()
         {
             var tools = new LlmVbeTools(null, null, new LlmSettings())
@@ -787,7 +850,7 @@ namespace VBAi.Tests.Unit
         }
 
         /// <summary>Permet la découverte des projets via le même protocole en modes Plan et lecture seule.</summary>
-[TestMethod]
+        [TestMethod]
         public void PlanAndReadOnlyModesCanDiscoverLiveProjectsThroughTheSameToolProtocol()
         {
             var host = new VbeSessionTests.FakeVbe();
@@ -807,7 +870,7 @@ namespace VBAi.Tests.Unit
         }
 
         /// <summary>Exige le chemin absolu exact fourni par l’utilisateur avant de demander l’approbation de lecture.</summary>
-[TestMethod]
+        [TestMethod]
         public void FileReadRequiresTheExactUserProvidedAbsolutePathBeforeShowingApproval()
         {
             var tools = new LlmVbeTools(null, null, new LlmSettings());
@@ -819,7 +882,7 @@ namespace VBAi.Tests.Unit
         }
 
         /// <summary>Publie une modification VBA vérifiée et permet de la restaurer.</summary>
-[TestMethod]
+        [TestMethod]
         public void AutomaticCodeEditPublishesVerifiedChangeAndCanRestoreIt()
         {
             var module = new VbeSessionTests.FakeModule("Alpha\r\nBeta");
@@ -850,7 +913,7 @@ namespace VBAi.Tests.Unit
         }
 
         /// <summary>Vérifie tous les conflits d’annulation avant d’écrire dans un module quelconque.</summary>
-[TestMethod]
+        [TestMethod]
         public void MultiModuleUndoPreflightsEveryConflictBeforeWritingAnyModule()
         {
             var project = new VbeSessionTests.FakeProject
@@ -896,25 +959,24 @@ namespace VBAi.Tests.Unit
 
 namespace VBAi.Tests.Unit
 {
+    using Microsoft.VisualStudio.TestTools.UnitTesting;
     using System;
     using System.Collections.Generic;
     using System.IO;
     using System.Linq;
     using System.Threading;
     using System.Threading.Tasks;
-    using System.Web.Script.Serialization;
     using System.Windows.Forms;
     using VBAi;
     using VBAi.Tests.Infrastructure;
-    using Microsoft.VisualStudio.TestTools.UnitTesting;
 
     /// <summary>Vérifie les frontières injectables des outils VBE et leurs matrices de validation.</summary>
-[TestClass]
+    [TestClass]
     [TestCategory("Unit")]
     public sealed partial class LlmVbeToolsBoundaryTests
     {
         /// <summary>Vérifie les types, champs requis, valeurs blanches et dispatch hôte du contrat.</summary>
-[TestMethod]
+        [TestMethod]
         [STATestMethod]
         public void ContractMatrixChecksRequiredTypesWhitespaceOptionalFieldsAndHostDispatch()
         {
@@ -1005,7 +1067,7 @@ namespace VBAi.Tests.Unit
         }
 
         /// <summary>Vérifie les longueurs limites des éléments et refuse les types erronés, débordements et retours à la ligne.</summary>
-[TestMethod]
+        [TestMethod]
         public void ItemsMatrixAcceptsBoundaryLengthsAndRejectsMultilineWrongTypesAndOverflow()
         {
             var tools = Create();
@@ -1014,7 +1076,7 @@ namespace VBAi.Tests.Unit
             var values = Arguments(name);
             foreach (object items in new object[] { new string[0], new[] { "", new string('x', 256) }, Enumerable.Repeat("x", 64).ToArray() })
             { values["Items"] = items; Success(tools.Invoke(name, Json.Serialize(values)), "valid items"); }
-            foreach (object items in new object[] { "x", Enumerable.Repeat("x", 65).ToArray(), new object[] { 2 }, new[] { new string('x',257) }, new[] { "line\nline" } })
+            foreach (object items in new object[] { "x", Enumerable.Repeat("x", 65).ToArray(), new object[] { 2 }, new[] { new string('x', 257) }, new[] { "line\nline" } })
             { values["Items"] = items; Failed(tools.Invoke(name, Json.Serialize(values)), "invalid items"); }
         }
 
@@ -1033,7 +1095,7 @@ namespace VBAi.Tests.Unit
         }
 
         /// <summary>Vérifie le chemin absolu littéral, la confirmation et la limite de taille des lectures de fichier.</summary>
-[TestMethod]
+        [TestMethod]
         public void FileReadMatrixRequiresLiteralAbsolutePathConfirmationAndTextSizeLimit()
         {
             using (var scope = new LlmBoundaryScope())
@@ -1042,26 +1104,26 @@ namespace VBAi.Tests.Unit
                 string file = Path.Combine(scope.Root, "document.txt");
                 File.WriteAllText(file, "étè", new System.Text.UTF8Encoding(false));
                 tools.NoteUserRequest("Read " + file);
-                tools.ConfirmFile = (owner,text,title) => { StringAssert.Contains(text,file); return DialogResult.No; };
+                tools.ConfirmFile = (owner, text, title) => { StringAssert.Contains(text, file); return DialogResult.No; };
                 Failed(tools.Invoke("read_user_file", Json.Serialize(new { Path = file })), "declined");
-                tools.ConfirmFile = (owner,text,title) => DialogResult.Yes;
+                tools.ConfirmFile = (owner, text, title) => DialogResult.Yes;
                 var data = Data(tools.Invoke("read_user_file", Json.Serialize(new { Path = file })));
-                Assert.AreEqual("étè", data["Text"]); Assert.AreEqual(false,data["Truncated"]);
+                Assert.AreEqual("étè", data["Text"]); Assert.AreEqual(false, data["Truncated"]);
                 tools.CurrentProviderName = "FixtureProvider";
-                tools.ConfirmFile = (owner,text,title) => { StringAssert.Contains(text,"FixtureProvider"); return DialogResult.Yes; };
+                tools.ConfirmFile = (owner, text, title) => { StringAssert.Contains(text, "FixtureProvider"); return DialogResult.Yes; };
                 File.WriteAllBytes(file, new byte[] { 65, 0, 66 });
                 Failed(tools.Invoke("read_user_file", Json.Serialize(new { Path = file })), "binary");
-                File.WriteAllText(file, new string('a',65537), new System.Text.UTF8Encoding(false));
+                File.WriteAllText(file, new string('a', 65537), new System.Text.UTF8Encoding(false));
                 data = Data(tools.Invoke("read_user_file", Json.Serialize(new { Path = file })));
-                Assert.AreEqual(65536, ((string)data["Text"]).Length); Assert.AreEqual(true,data["Truncated"]);
-                Assert.AreEqual(65537,Convert.ToInt32(data["ByteLength"]));
+                Assert.AreEqual(65536, ((string)data["Text"]).Length); Assert.AreEqual(true, data["Truncated"]);
+                Assert.AreEqual(65537, Convert.ToInt32(data["ByteLength"]));
                 Failed(tools.Invoke("inspect_code_file", Json.Serialize(new { Path = "relative.bas" })), "relative path");
             }
         }
 
         /// <summary>Exécute les frontières natives injectées et transmet les échecs retournés par l’hôte.</summary>
         /// <returns>Tâche terminée lorsque les chemins natifs et les erreurs hôte sont vérifiés.</returns>
-[TestMethod]
+        [TestMethod]
         public async Task AsyncDispatchMatrixExecutesNativeBoundariesAndReturnsHostFailures()
         {
             var tools = Create();
@@ -1070,19 +1132,19 @@ namespace VBAi.Tests.Unit
                 "remove_watch", "add_watch", "debug_windows" })
             {
                 var values = AsyncArguments(name);
-                Success(await tools.InvokeAsync(name, Json.Serialize(values)),name);
+                Success(await tools.InvokeAsync(name, Json.Serialize(values)), name);
                 tools.Execute = request => Response.Failure("host declined");
                 if (name != "debug_windows" && name != "debug_item" && name != "debug_dialog" && name != "respond_debug_dialog")
                     Failed(await tools.InvokeAsync(name, Json.Serialize(values)), name + ":host");
                 tools.Execute = VbeToolBoundaryFixture.Execute;
             }
-            Failed(await tools.InvokeAsync("debug_dialog","[]"),"dialog array");
+            Failed(await tools.InvokeAsync("debug_dialog", "[]"), "dialog array");
             tools.Native.ReadSignatureDialog = p => { throw new InvalidOperationException("signature dialog unavailable"); };
-            Failed(await tools.InvokeAsync("read_project_signature_dialog",Json.Serialize(Arguments("read_project_signature_dialog"))),"signature native exception");
+            Failed(await tools.InvokeAsync("read_project_signature_dialog", Json.Serialize(Arguments("read_project_signature_dialog"))), "signature native exception");
             tools.Native.ReadDebugOptions = () => { throw new InvalidOperationException("options unavailable"); };
-            Failed(await tools.InvokeAsync("read_debug_options","{}"),"options native exception");
+            Failed(await tools.InvokeAsync("read_debug_options", "{}"), "options native exception");
             tools.Native.VerifyWatchRemoved = r => { throw new InvalidOperationException("watch native unavailable"); };
-            Failed(await tools.InvokeAsync("remove_watch",Json.Serialize(Arguments("remove_watch"))),"remove native exception");
+            Failed(await tools.InvokeAsync("remove_watch", Json.Serialize(Arguments("remove_watch"))), "remove native exception");
             tools.Native.ReadDebugDialog = () => { throw new InvalidOperationException("native declined"); };
             Failed(await tools.InvokeAsync("debug_dialog", "{}"), "native exception");
             tools.Native.CompleteAddWatch = r => { throw new InvalidOperationException("native add declined"); };
@@ -1096,59 +1158,59 @@ namespace VBAi.Tests.Unit
                 Failed(await tools.InvokeAsync("respond_debug_dialog", args), args);
             foreach (string args in new[] { "[]", "{}", "{\"Action\":\"expand\",\"PathSegments\":[\"x\"]}", "{\"Pane\":\"locals\",\"PathSegments\":[\"x\"]}", "{\"Pane\":\"locals\",\"Action\":\"expand\"}", "{\"Pane\":\"locals\",\"Action\":\"expand\",\"PathSegments\":[\"x\"],\"Context\":\"p\"}" })
             {
-                if (args.Contains("Context")) Success(await tools.InvokeAsync("debug_item",args),args);
-                else Failed(await tools.InvokeAsync("debug_item",args),args);
+                if (args.Contains("Context")) Success(await tools.InvokeAsync("debug_item", args), args);
+                else Failed(await tools.InvokeAsync("debug_item", args), args);
             }
             var immediate = AsyncArguments("immediate_execute");
             foreach (string field in immediate.Keys.ToArray())
             {
                 object original = immediate[field]; immediate.Remove(field);
-                Failed(await tools.InvokeAsync("immediate_execute",Json.Serialize(immediate)), "missing "+field);
+                Failed(await tools.InvokeAsync("immediate_execute", Json.Serialize(immediate)), "missing " + field);
                 immediate[field] = original is string ? (object)true : "2";
-                Failed(await tools.InvokeAsync("immediate_execute",Json.Serialize(immediate)), "type "+field);
+                Failed(await tools.InvokeAsync("immediate_execute", Json.Serialize(immediate)), "type " + field);
                 immediate[field] = original;
             }
             immediate["ExpectedMode"] = 1;
-            Failed(await tools.InvokeAsync("immediate_execute",Json.Serialize(immediate)),"changed mode");
+            Failed(await tools.InvokeAsync("immediate_execute", Json.Serialize(immediate)), "changed mode");
             immediate["ExpectedMode"] = 3;
-            Failed(await tools.InvokeAsync("immediate_execute",Json.Serialize(immediate)),"invalid mode");
-            Failed(await tools.InvokeAsync("immediate_execute","[]"),"immediate array");
+            Failed(await tools.InvokeAsync("immediate_execute", Json.Serialize(immediate)), "invalid mode");
+            Failed(await tools.InvokeAsync("immediate_execute", "[]"), "immediate array");
             tools.Settings.VbeEditApproval = "ReadOnly";
-            Failed(await tools.InvokeAsync("remove_watch",Json.Serialize(Arguments("remove_watch"))),"remove policy");
+            Failed(await tools.InvokeAsync("remove_watch", Json.Serialize(Arguments("remove_watch"))), "remove policy");
         }
 
         /// <summary>Vérifie la persistance de signature sans certificat et les nouvelles tentatives de sauvegarde.</summary>
         /// <returns>Tâche terminée lorsque les différentes réponses de signature sont vérifiées.</returns>
-[TestMethod]
+        [TestMethod]
         public async Task SignaturePersistenceMatrixHandlesMissingCertificateAndSaveRetries()
         {
             var tools = Create(); string args = Json.Serialize(Arguments("sign_project"));
             tools.Execute = r => Response.Success(new { Missing = true });
-            Failed(await tools.InvokeAsync("sign_project",args),"missing certificate");
+            Failed(await tools.InvokeAsync("sign_project", args), "missing certificate");
             tools.Execute = r => Response.Success("unexpected host shape");
-            Failed(await tools.InvokeAsync("sign_project",args),"host shape");
+            Failed(await tools.InvokeAsync("sign_project", args), "host shape");
             tools.Execute = VbeToolBoundaryFixture.Execute;
             foreach (bool saved in new[] { false, true })
             {
                 tools.PersistSignature = p => new VBAi.Tests.Infrastructure.VbeToolPersistence { Saved = saved };
-                Assert.AreEqual(!saved,Data(await tools.InvokeAsync("sign_project",args))["SaveRequired"]);
+                Assert.AreEqual(!saved, Data(await tools.InvokeAsync("sign_project", args))["SaveRequired"]);
             }
             tools.PersistSignature = p => null;
-            Assert.AreEqual(true,Data(await tools.InvokeAsync("sign_project",args))["SaveRequired"]);
+            Assert.AreEqual(true, Data(await tools.InvokeAsync("sign_project", args))["SaveRequired"]);
             tools.PersistSignature = p => { throw new InvalidOperationException("save declined"); };
             tools.Execute = r => r.Command == "project_signature_status" ? Response.Failure("status declined") : VbeToolBoundaryFixture.Execute(r);
-            var data = Data(await tools.InvokeAsync("sign_project",args));
-            Assert.AreEqual("save declined",data["PersistenceError"]); Assert.AreEqual("status declined",data["HostStatusError"]);
+            var data = Data(await tools.InvokeAsync("sign_project", args));
+            Assert.AreEqual("save declined", data["PersistenceError"]); Assert.AreEqual("status declined", data["HostStatusError"]);
             int attempts = 0;
             tools.PersistSignature = p => { if (++attempts == 2) return new VBAi.Tests.Infrastructure.VbeToolPersistence { Saved = true }; throw new InvalidOperationException("0x800AC472 busy"); };
-            Assert.AreEqual(false,Data(await tools.InvokeAsync("sign_project",args))["SaveRequired"]); Assert.AreEqual(2,attempts);
+            Assert.AreEqual(false, Data(await tools.InvokeAsync("sign_project", args))["SaveRequired"]); Assert.AreEqual(2, attempts);
             attempts = 0; tools.PersistSignature = p => { attempts++; throw new InvalidOperationException("0x800AC472 busy"); };
-            data = Data(await tools.InvokeAsync("sign_project",args)); Assert.AreEqual(12,attempts);
-            StringAssert.Contains((string)data["PersistenceError"],"busy");
+            data = Data(await tools.InvokeAsync("sign_project", args)); Assert.AreEqual(12, attempts);
+            StringAssert.Contains((string)data["PersistenceError"], "busy");
         }
 
         /// <summary>Vérifie le travail UI différé de compilation et distingue délais, diagnostics et erreurs.</summary>
-[TestMethod]
+        [TestMethod]
         [STATestMethod]
         public void CompileMatrixUsesPostedUiWorkAndDistinguishesTimeoutDiagnosisAndErrors()
         {
@@ -1158,99 +1220,99 @@ namespace VBAi.Tests.Unit
                 var tools = Create();
                 SynchronizationContext.SetSynchronizationContext(new ImmediateContext());
                 const string args = "{\"Project\":\"P\",\"ExpectedMode\":2}";
-                Assert.AreEqual(true,Data(tools.InvokeAsync("compile_project",args).GetAwaiter().GetResult())["Compiled"]);
+                Assert.AreEqual(true, Data(tools.InvokeAsync("compile_project", args).GetAwaiter().GetResult())["Compiled"]);
                 tools.Native.AwaitCompileDialog = completed => { Assert.IsTrue(completed.Wait(5000)); return "compile diagnostic"; };
-                var data = Data(tools.InvokeAsync("compile_project",args).GetAwaiter().GetResult());
-                Assert.AreEqual(false,data["Compiled"]); Assert.AreEqual("NativeDiagnosticCaptured",data["Verification"]);
-                tools.Execute = r => Response.Failure("compile failure"); Failed(tools.InvokeAsync("compile_project",args).GetAwaiter().GetResult(),"compile failure");
+                var data = Data(tools.InvokeAsync("compile_project", args).GetAwaiter().GetResult());
+                Assert.AreEqual(false, data["Compiled"]); Assert.AreEqual("NativeDiagnosticCaptured", data["Verification"]);
+                tools.Execute = r => Response.Failure("compile failure"); Failed(tools.InvokeAsync("compile_project", args).GetAwaiter().GetResult(), "compile failure");
                 tools.Execute = r => { throw new InvalidOperationException("compile exception"); };
-                Failed(tools.InvokeAsync("compile_project",args).GetAwaiter().GetResult(),"compile exception");
+                Failed(tools.InvokeAsync("compile_project", args).GetAwaiter().GetResult(), "compile exception");
                 SynchronizationContext.SetSynchronizationContext(new DeferredContext());
                 tools.Native.AwaitCompileDialog = completed => null;
-                Failed(tools.InvokeAsync("compile_project",args).GetAwaiter().GetResult(),"timeout");
+                Failed(tools.InvokeAsync("compile_project", args).GetAwaiter().GetResult(), "timeout");
                 SynchronizationContext.SetSynchronizationContext(new ImmediateContext());
                 foreach (string invalid in new[] { "[]", "{}", "{\"ExpectedMode\":2}", "{\"Project\":\"P\"}", "{\"Project\":1,\"ExpectedMode\":2}", "{\"Project\":\" \",\"ExpectedMode\":2}", "{\"Project\":\"P\",\"ExpectedMode\":\"2\"}", "{\"Project\":\"P\",\"ExpectedMode\":1}" })
-                    Failed(tools.InvokeAsync("compile_project",invalid).GetAwaiter().GetResult(),invalid);
+                    Failed(tools.InvokeAsync("compile_project", invalid).GetAwaiter().GetResult(), invalid);
             }
             finally { SynchronizationContext.SetSynchronizationContext(prior); }
         }
         /// <summary>Refuse les lectures obsolètes et couvre le code inchangé ainsi que les erreurs d’abonné.</summary>
-[TestMethod]
+        [TestMethod]
         public void CodeEditReadbackMatrixRejectsStaleReadsAndHandlesUnchangedCodeOrSubscriberErrors()
         {
-            var host=new VbeSessionTests.FakeVbe();
-            var module=new VbeSessionTests.FakeModule("A\r\nB");
-            var project=new VbeSessionTests.FakeProject {Name="P",FileName=@"C:\Temp\fixture.xlsm",Mode=2};
-            project.VBComponents.Items.Add(new VbeSessionTests.FakeComponent {Name="M",Type=1,CodeModule=module});host.VBProjects.Add(project);
-            var session=new VbeSession(host);
-            var tools=new LlmVbeTools(session,null,new LlmSettings { VbeEditApproval="Automatic" });
-            var logs=new List<string>(); tools.WriteLog=logs.Add;
-            Func<string,string> arguments=text=>Json.Serialize(new {Project="P",Module="M",ExpectedSha256=(string)((dynamic)session.Execute(new Request {Command="read_module",Project="P",Module="M"}).Data).Sha256,StartLine=1,Count=2,Text=text});
-            string args=arguments("A\r\nC");
-            module.DeleteLines(1,module.CountOfLines); module.InsertLines(1,"stale");
-            Failed(tools.Invoke("replace_lines",args),"stale code");
-            module.DeleteLines(1,module.CountOfLines); module.InsertLines(1,"A\r\nB");
-            tools.Execute=r=>Response.Failure("read unavailable");
-            Failed(tools.Invoke("replace_lines",args),"read unavailable");
-            tools.Execute=session.Execute;
-            Success(tools.Invoke("replace_lines",arguments("A\r\nB")),"unchanged code");
-            Success(tools.Invoke("replace_lines",arguments("A\r\nC")),"edit without subscriber");
-            tools.CodeEdited+=change=> { throw new InvalidOperationException("subscriber failed"); };
-            Success(tools.Invoke("replace_lines",arguments("A\r\nD")),"subscriber error is contained");
-            int reads=0;
-            tools.Execute=r=> r.Command=="read_module" && ++reads==2 ? Response.Failure("readback failed") : session.Execute(r);
-            Success(tools.Invoke("replace_lines",arguments("A\r\nE")),"readback error is contained");
-            Assert.AreEqual(2,logs.Count);
-            StringAssert.Contains(logs[0],"subscriber failed");
-            StringAssert.Contains(logs[1],"readback failed");
-            tools.Execute=r=>r.Command=="replace_lines" ? Response.Failure("write refused") : session.Execute(r);
-            Failed(tools.Invoke("replace_lines",arguments("A\r\nF")),"write refusal");
+            var host = new VbeSessionTests.FakeVbe();
+            var module = new VbeSessionTests.FakeModule("A\r\nB");
+            var project = new VbeSessionTests.FakeProject { Name = "P", FileName = @"C:\Temp\fixture.xlsm", Mode = 2 };
+            project.VBComponents.Items.Add(new VbeSessionTests.FakeComponent { Name = "M", Type = 1, CodeModule = module }); host.VBProjects.Add(project);
+            var session = new VbeSession(host);
+            var tools = new LlmVbeTools(session, null, new LlmSettings { VbeEditApproval = "Automatic" });
+            var logs = new List<string>(); tools.WriteLog = logs.Add;
+            Func<string, string> arguments = text => Json.Serialize(new { Project = "P", Module = "M", ExpectedSha256 = (string)((dynamic)session.Execute(new Request { Command = "read_module", Project = "P", Module = "M" }).Data).Sha256, StartLine = 1, Count = 2, Text = text });
+            string args = arguments("A\r\nC");
+            module.DeleteLines(1, module.CountOfLines); module.InsertLines(1, "stale");
+            Failed(tools.Invoke("replace_lines", args), "stale code");
+            module.DeleteLines(1, module.CountOfLines); module.InsertLines(1, "A\r\nB");
+            tools.Execute = r => Response.Failure("read unavailable");
+            Failed(tools.Invoke("replace_lines", args), "read unavailable");
+            tools.Execute = session.Execute;
+            Success(tools.Invoke("replace_lines", arguments("A\r\nB")), "unchanged code");
+            Success(tools.Invoke("replace_lines", arguments("A\r\nC")), "edit without subscriber");
+            tools.CodeEdited += change => { throw new InvalidOperationException("subscriber failed"); };
+            Success(tools.Invoke("replace_lines", arguments("A\r\nD")), "subscriber error is contained");
+            int reads = 0;
+            tools.Execute = r => r.Command == "read_module" && ++reads == 2 ? Response.Failure("readback failed") : session.Execute(r);
+            Success(tools.Invoke("replace_lines", arguments("A\r\nE")), "readback error is contained");
+            Assert.AreEqual(2, logs.Count);
+            StringAssert.Contains(logs[0], "subscriber failed");
+            StringAssert.Contains(logs[1], "readback failed");
+            tools.Execute = r => r.Command == "replace_lines" ? Response.Failure("write refused") : session.Execute(r);
+            Failed(tools.Invoke("replace_lines", arguments("A\r\nF")), "write refusal");
         }
 
         /// <summary>Vérifie la restauration avec entrées nulles, blocs partagés et échec d’écriture.</summary>
-[TestMethod]
+        [TestMethod]
         public void RestorationMatrixHandlesNullEntriesSharedModuleHunksAndWriteFailure()
         {
-            var host=new VbeSessionTests.FakeVbe();
-            var module=new VbeSessionTests.FakeModule("A2\r\nKeep\r\nB2");
-            var project=new VbeSessionTests.FakeProject {Name="P",FileName=@"C:\Temp\fixture.xlsm",Mode=2};
-            project.VBComponents.Items.Add(new VbeSessionTests.FakeComponent {Name="M",Type=1,CodeModule=module});host.VBProjects.Add(project);
-            var session=new VbeSession(host);
-            var settings=new LlmSettings {VbeEditApproval="Automatic"};
-            var tools=new LlmVbeTools(session,null,settings) {Mode=ChatMode.Plan};
-            Assert.IsFalse(tools.RestoreChanges(new CodeChange[] {null},null).Ok);
-            var change=new CodeChange("P","M","A\r\nKeep\r\nB","","A2\r\nKeep\r\nB2","",3);
-            tools.Execute=r=>r.Command=="replace_lines" ? Response.Failure("write refused") : session.Execute(r);
-            var failure=tools.RestoreChanges(new[] {change},null);
-            Assert.IsFalse(failure.Ok);StringAssert.Contains(failure.Error,"write refused");Assert.IsFalse(change.Restored);
-            tools.Execute=session.Execute;
-            Assert.IsTrue(tools.RestoreChanges(new[] {change},0).Ok);
-            Assert.AreEqual("A\r\nKeep\r\nB2",module.Code);Assert.IsFalse(change.Restored);
-            Assert.IsFalse(tools.RestoreChanges(new[] {change},0).Ok);
-            Assert.IsTrue(tools.RestoreChanges(new[] {change},null).Ok);Assert.IsTrue(change.Restored);
-            Assert.AreEqual("A\r\nKeep\r\nB",module.Code);
-            var first=new CodeChange("P","M","initial","","middle","",1);
-            var second=new CodeChange("P","M","middle","","last","",1);
-            module.DeleteLines(1,module.CountOfLines); module.InsertLines(1,"last");
-            Assert.IsTrue(tools.RestoreChanges(new[] {first,second},null).Ok);
-            Assert.AreEqual("initial",module.Code);Assert.IsTrue(first.Restored);Assert.IsTrue(second.Restored);
-            tools.ValidateScope=()=> {throw new InvalidOperationException("stale scope");};
-            Assert.AreEqual("stale scope",tools.RestoreChanges(new[] {first},null).Error);
+            var host = new VbeSessionTests.FakeVbe();
+            var module = new VbeSessionTests.FakeModule("A2\r\nKeep\r\nB2");
+            var project = new VbeSessionTests.FakeProject { Name = "P", FileName = @"C:\Temp\fixture.xlsm", Mode = 2 };
+            project.VBComponents.Items.Add(new VbeSessionTests.FakeComponent { Name = "M", Type = 1, CodeModule = module }); host.VBProjects.Add(project);
+            var session = new VbeSession(host);
+            var settings = new LlmSettings { VbeEditApproval = "Automatic" };
+            var tools = new LlmVbeTools(session, null, settings) { Mode = ChatMode.Plan };
+            Assert.IsFalse(tools.RestoreChanges(new CodeChange[] { null }, null).Ok);
+            var change = new CodeChange("P", "M", "A\r\nKeep\r\nB", "", "A2\r\nKeep\r\nB2", "", 3);
+            tools.Execute = r => r.Command == "replace_lines" ? Response.Failure("write refused") : session.Execute(r);
+            var failure = tools.RestoreChanges(new[] { change }, null);
+            Assert.IsFalse(failure.Ok); StringAssert.Contains(failure.Error, "write refused"); Assert.IsFalse(change.Restored);
+            tools.Execute = session.Execute;
+            Assert.IsTrue(tools.RestoreChanges(new[] { change }, 0).Ok);
+            Assert.AreEqual("A\r\nKeep\r\nB2", module.Code); Assert.IsFalse(change.Restored);
+            Assert.IsFalse(tools.RestoreChanges(new[] { change }, 0).Ok);
+            Assert.IsTrue(tools.RestoreChanges(new[] { change }, null).Ok); Assert.IsTrue(change.Restored);
+            Assert.AreEqual("A\r\nKeep\r\nB", module.Code);
+            var first = new CodeChange("P", "M", "initial", "", "middle", "", 1);
+            var second = new CodeChange("P", "M", "middle", "", "last", "", 1);
+            module.DeleteLines(1, module.CountOfLines); module.InsertLines(1, "last");
+            Assert.IsTrue(tools.RestoreChanges(new[] { first, second }, null).Ok);
+            Assert.AreEqual("initial", module.Code); Assert.IsTrue(first.Restored); Assert.IsTrue(second.Restored);
+            tools.ValidateScope = () => { throw new InvalidOperationException("stale scope"); };
+            Assert.AreEqual("stale scope", tools.RestoreChanges(new[] { first }, null).Error);
             Assert.ThrowsException<InvalidOperationException>(() => tools.LiveContextJson());
         }
 
         /// <summary>Conserve les contrats de réponse pour réussite, échec, null et JSON invalide.</summary>
-[TestMethod]
+        [TestMethod]
         public void ToolResponseParserKeepsSuccessFailureNullAndInvalidJsonContracts()
         {
-            var tools = new LlmVbeTools(null,null,new LlmSettings());
+            var tools = new LlmVbeTools(null, null, new LlmSettings());
             var missing = tools.ReadToolResponse("null");
             Assert.IsNotNull(missing); Assert.IsFalse(missing.Ok); Assert.IsNull(missing.Error);
-            var success = tools.ReadToolResponse(Json.Serialize(Response.Success(new {Value="fixture"})));
-            Assert.IsTrue(success.Ok); Assert.AreEqual("fixture",Dict(success.Data)["Value"]);
+            var success = tools.ReadToolResponse(Json.Serialize(Response.Success(new { Value = "fixture" })));
+            Assert.IsTrue(success.Ok); Assert.AreEqual("fixture", Dict(success.Data)["Value"]);
             var failure = tools.ReadToolResponse(Json.Serialize(Response.Failure("declined")));
-            Assert.IsFalse(failure.Ok); Assert.AreEqual("declined",failure.Error);
-            Assert.ThrowsException<ArgumentException>(()=>tools.ReadToolResponse("{invalid}"));
+            Assert.IsFalse(failure.Ok); Assert.AreEqual("declined", failure.Error);
+            Assert.ThrowsException<ArgumentException>(() => tools.ReadToolResponse("{invalid}"));
         }
 
 
@@ -1286,10 +1348,10 @@ namespace VBAi.Tests.Unit
 
 namespace VBAi.Tests.Unit
 {
+    using Microsoft.VisualStudio.TestTools.UnitTesting;
     using System;
     using System.Web.Script.Serialization;
     using VBAi;
-    using Microsoft.VisualStudio.TestTools.UnitTesting;
 
     public sealed partial class VbeProcedureMutationTests
     {
@@ -1304,12 +1366,36 @@ namespace VBAi.Tests.Unit
             var json = new JavaScriptSerializer();
             var request = fixture.Request(null); request.Query = "value"; request.NewName = "amount";
             request.StartLine = 1; request.StartColumn = original.IndexOf("value", StringComparison.Ordinal) + 1; request.ExpectedMode = 2;
-            var arguments = json.Serialize(new { request.Project, request.Module, request.Procedure, request.ProcKind,
-                request.Query, request.NewName, request.StartLine, request.StartColumn, request.ExpectedMode, request.ExpectedSha256 });
-            var tools = new LlmVbeTools(session, null, new LlmSettings { VbeEditApproval = "Automatic" }) {
-                Mode = ChatMode.Plan, BoundProject = fixture.Project.Name };
-            string previewArguments = json.Serialize(new { request.Project, request.Module, request.Procedure, request.ProcKind,
-                request.Query, request.NewName, request.StartLine, request.StartColumn, request.ExpectedSha256 });
+            var arguments = json.Serialize(new
+            {
+                request.Project,
+                request.Module,
+                request.Procedure,
+                request.ProcKind,
+                request.Query,
+                request.NewName,
+                request.StartLine,
+                request.StartColumn,
+                request.ExpectedMode,
+                request.ExpectedSha256
+            });
+            var tools = new LlmVbeTools(session, null, new LlmSettings { VbeEditApproval = "Automatic" })
+            {
+                Mode = ChatMode.Plan,
+                BoundProject = fixture.Project.Name
+            };
+            string previewArguments = json.Serialize(new
+            {
+                request.Project,
+                request.Module,
+                request.Procedure,
+                request.ProcKind,
+                request.Query,
+                request.NewName,
+                request.StartLine,
+                request.StartColumn,
+                request.ExpectedSha256
+            });
             var preview = json.Deserialize<Response>(tools.Invoke("preview_parameter_rename", previewArguments));
             Assert.IsTrue(preview.Ok, preview.Error); Assert.AreEqual(original, fixture.Module.Code);
             var forbidden = json.Deserialize<Response>(tools.Invoke("apply_parameter_rename", arguments));

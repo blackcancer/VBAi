@@ -1,7 +1,6 @@
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Collections.Generic;
-using VBAi;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 namespace VBAi.Tests.Unit
 {
     [TestClass, TestCategory("Unit")]
@@ -39,7 +38,7 @@ namespace VBAi.Tests.Unit
         public void PartialSubscriptionFailureDetachesFirstEventAndCanRetry()
         {
             int detached = 0; bool fail = true;
-            using (var events = new VbeReferenceEvents(() => {},
+            using (var events = new VbeReferenceEvents(() => { },
                 (s, g, id, h) => { if (id == 2 && fail) throw new InvalidOperationException(); },
                 (s, g, id, h) => detached++))
             {

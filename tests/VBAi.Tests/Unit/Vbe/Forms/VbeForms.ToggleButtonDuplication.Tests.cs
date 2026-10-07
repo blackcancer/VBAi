@@ -1,10 +1,8 @@
 namespace VBAi.Tests.Unit
 {
-    using System;
-    using System.Collections;
-    using System.Linq;
-    using VBAi;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
+    using System;
+    using System.Linq;
 
     public sealed partial class VbeFormsValueDuplicationTests
     {

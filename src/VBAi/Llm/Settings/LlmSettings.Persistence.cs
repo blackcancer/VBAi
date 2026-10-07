@@ -30,9 +30,8 @@ namespace VBAi
         private static LlmSettings DecodeSettings(string content)
         {
             var serializer = new JavaScriptSerializer();
-            var fields = serializer.DeserializeObject(content) as IDictionary<string, object>;
             var result = serializer.Deserialize<LlmSettings>(content) ?? new LlmSettings();
-            if (fields == null || !fields.ContainsKey(nameof(VbeEditApproval))) result.VbeEditApproval = "AskEachTime";
+            if (!(serializer.DeserializeObject(content) is IDictionary<string, object> fields) || !fields.ContainsKey(nameof(VbeEditApproval))) result.VbeEditApproval = "AskEachTime";
             return result;
         }
 
@@ -108,10 +107,7 @@ namespace VBAi
         {
             if (ValuesEqual(before, desired)) return stored;
             if (ValuesEqual(before, stored) || ValuesEqual(desired, stored)) return desired;
-            var oldMap = before as IDictionary<string, object>;
-            var newMap = desired as IDictionary<string, object>;
-            var diskMap = stored as IDictionary<string, object>;
-            if (oldMap != null && newMap != null && diskMap != null)
+            if (before is IDictionary<string, object> oldMap && desired is IDictionary<string, object> newMap && stored is IDictionary<string, object> diskMap)
             {
                 var result = new Dictionary<string, object>(diskMap);
                 foreach (string key in oldMap.Keys.Union(newMap.Keys))
@@ -138,9 +134,7 @@ namespace VBAi
         /// <returns>True when scalar equality or all nested dictionary keys and values match.</returns>
         private static bool ValuesEqual(object left, object right)
         {
-            var a = left as IDictionary<string, object>;
-            var b = right as IDictionary<string, object>;
-            if (a != null && b != null)
+            if (left is IDictionary<string, object> a && right is IDictionary<string, object> b)
                 return a.Count == b.Count && a.All(pair => b.TryGetValue(pair.Key, out var value) && ValuesEqual(pair.Value, value));
             return Equals(left, right);
         }

@@ -40,8 +40,14 @@ namespace VBAi
                 inspectedPaneVersions.Add(token, PaneVersion(snapshot));
                 results.Add(new { Pane = token, State = snapshot, WindowVersion = PaneVersion(snapshot) });
             }
-            return new { request.Project, request.Module, Panes = results, UnavailablePanes = unavailable,
-                Scope = "Open panes only. Tokens expire at the next code_pane_layout call in this session." };
+            return new
+            {
+                request.Project,
+                request.Module,
+                Panes = results,
+                UnavailablePanes = unavailable,
+                Scope = "Open panes only. Tokens expire at the next code_pane_layout call in this session."
+            };
         }
 
         /// <summary>Défile le volet relu vers une ligne après vérification de son identité et de sa version.</summary>
@@ -49,8 +55,7 @@ namespace VBAi
         /// <returns>États du volet avant et après l’opération avec résultats de lecture.</returns>
         public object ScrollCodePane(Request request)
         {
-            object raw;
-            if (string.IsNullOrWhiteSpace(request.Pane) || !inspectedPanes.TryGetValue(request.Pane, out raw))
+            if (string.IsNullOrWhiteSpace(request.Pane) || !inspectedPanes.TryGetValue(request.Pane, out object raw))
                 throw new InvalidOperationException("Read code_pane_layout and use its current Pane token.");
             dynamic pane = raw;
             dynamic project = GetProject(request.Project);
@@ -75,9 +80,18 @@ namespace VBAi
             dynamic oldState = before, newState = after;
             bool verified = error == null && readError == null && (int)newState.TopLine == request.StartLine &&
                 oldState.Selection == newState.Selection && oldState.Sha256 == newState.Sha256;
-            return new { Applied = error == null ? (bool?)true : null, Verified = verified, VerificationPending = !verified,
-                Before = before, After = after, NativeError = error, ReadbackError = readError,
-                WindowVersion = after == null ? null : PaneVersion(after), PersistenceVerified = false };
+            return new
+            {
+                Applied = error == null ? (bool?)true : null,
+                Verified = verified,
+                VerificationPending = !verified,
+                Before = before,
+                After = after,
+                NativeError = error,
+                ReadbackError = readError,
+                WindowVersion = after == null ? null : PaneVersion(after),
+                PersistenceVerified = false
+            };
         }
 
         /// <summary>Change en procédure ou en module la vue de toute la fenêtre de code.</summary>
@@ -127,9 +141,21 @@ namespace VBAi
             object[] afterPanes = windowPanes.Select(candidate => (object)CodePaneState((dynamic)candidate)).ToArray();
             bool verified = afterPanes.All(state => (int)((dynamic)state).View == target &&
                 (string)((dynamic)state).Sha256 == (string)((dynamic)before).Sha256);
-            return new { Verified = verified, Changed = true, Scope = "Entire code window, including both split panes", BeforePanes = beforePanes, AfterPanes = afterPanes, VerificationPending = !verified, Before = before, After = after,
-                Native = native, WindowVersion = PaneVersion(after), PersistenceVerified = false,
-                NextRead = "code_pane_layout; native view changes can also change the visible range or selection." };
+            return new
+            {
+                Verified = verified,
+                Changed = true,
+                Scope = "Entire code window, including both split panes",
+                BeforePanes = beforePanes,
+                AfterPanes = afterPanes,
+                VerificationPending = !verified,
+                Before = before,
+                After = after,
+                Native = native,
+                WindowVersion = PaneVersion(after),
+                PersistenceVerified = false,
+                NextRead = "code_pane_layout; native view changes can also change the visible range or selection."
+            };
         }
 
         /// <summary>Essaie de lire le module d’un volet, en conservant l’erreur COM des volets détruits.</summary>
@@ -158,9 +184,15 @@ namespace VBAi
             dynamic module = pane.CodeModule;
             int count = (int)module.CountOfLines;
             string code = count == 0 ? "" : (string)module.Lines[1, count];
-            return new { TopLine = (int)pane.TopLine, VisibleLines = (int)pane.CountOfVisibleLines,
-                View = (int)pane.CodePaneView, Selection = start + ":" + column + ":" + end + ":" + endColumn,
-                Sha256 = Hash(code), LineCount = count };
+            return new
+            {
+                TopLine = (int)pane.TopLine,
+                VisibleLines = (int)pane.CountOfVisibleLines,
+                View = (int)pane.CodePaneView,
+                Selection = start + ":" + column + ":" + end + ":" + endColumn,
+                Sha256 = Hash(code),
+                LineCount = count
+            };
         }
 
         /// <summary>Calcule la version SHA-256 d’un état de volet sérialisé.</summary>

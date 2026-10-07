@@ -1,9 +1,8 @@
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Dynamic;
-using VBAi;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace VBAi.Tests.Unit
 {
@@ -49,8 +48,19 @@ namespace VBAi.Tests.Unit
         private static string Version(VbeEditorWindows editor, NativeWindow window)
         { return (string)((dynamic)editor.WindowLayout((string)window.Values["Caption"], (int)window.Values["Type"])).WindowVersion; }
         private static Request Request(VbeEditorWindows editor, NativeWindow window, string action = "restore")
-        { return new Request { WindowCaption = (string)window.Values["Caption"], WindowType = (int)window.Values["Type"], Action = action,
-            ExpectedWindowVersion = Version(editor, window), Left = 10, Top = 20, Width = 400, Height = 300 }; }
+        {
+            return new Request
+            {
+                WindowCaption = (string)window.Values["Caption"],
+                WindowType = (int)window.Values["Type"],
+                Action = action,
+                ExpectedWindowVersion = Version(editor, window),
+                Left = 10,
+                Top = 20,
+                Width = 400,
+                Height = 300
+            };
+        }
 
         [TestMethod]
         public void NativeWindowLayoutsExposeUnreadableFramesAndRequireCompleteRevisions()
@@ -130,25 +140,25 @@ namespace VBAi.Tests.Unit
                 Assert.ThrowsException<ArgumentException>(() => new VbeEditorWindows(new Host()).LinkWindow(new Request { Action = "link", WindowType = type }));
             Assert.ThrowsException<ArgumentException>(() => new VbeEditorWindows(new Host()).LinkWindow(new Request { Action = "invalid" }));
             foreach (int paneType in new[] { 2, 7, 10, 15 })
-            foreach (int frameType in new[] { 11, 12, 4, 10 })
-            {
-                var host = new Host(); var pane = new NativeWindow("Pane", paneType); var frame = new NativeWindow("Frame", frameType);
-                var actualFrame = frameType == 4 || frameType == 10 ? new NativeWindow("Container", 11) : frame;
-                if (frameType == 4 || frameType == 10) frame.Values["LinkedWindowFrame"] = actualFrame;
-                host.Windows.Add(pane); host.Windows.Add(frame); var editor = new VbeEditorWindows(host);
-                var r = Request(editor, pane, "link"); r.TargetWindowCaption = "Pane"; r.TargetWindowType = paneType;
-                Assert.ThrowsException<ArgumentException>(() => editor.LinkWindow(r));
-                r.TargetWindowCaption = "Frame"; r.TargetWindowType = frameType; r.ExpectedTargetWindowVersion = Version(editor, frame);
-                if (frameType == 4)
+                foreach (int frameType in new[] { 11, 12, 4, 10 })
                 {
-                    frame.Values["LinkedWindowFrame"] = null; r.ExpectedTargetWindowVersion = Version(editor, frame);
-                    Assert.ThrowsException<InvalidOperationException>(() => editor.LinkWindow(r));
-                    frame.Values["LinkedWindowFrame"] = actualFrame; r.ExpectedTargetWindowVersion = Version(editor, frame);
+                    var host = new Host(); var pane = new NativeWindow("Pane", paneType); var frame = new NativeWindow("Frame", frameType);
+                    var actualFrame = frameType == 4 || frameType == 10 ? new NativeWindow("Container", 11) : frame;
+                    if (frameType == 4 || frameType == 10) frame.Values["LinkedWindowFrame"] = actualFrame;
+                    host.Windows.Add(pane); host.Windows.Add(frame); var editor = new VbeEditorWindows(host);
+                    var r = Request(editor, pane, "link"); r.TargetWindowCaption = "Pane"; r.TargetWindowType = paneType;
+                    Assert.ThrowsException<ArgumentException>(() => editor.LinkWindow(r));
+                    r.TargetWindowCaption = "Frame"; r.TargetWindowType = frameType; r.ExpectedTargetWindowVersion = Version(editor, frame);
+                    if (frameType == 4)
+                    {
+                        frame.Values["LinkedWindowFrame"] = null; r.ExpectedTargetWindowVersion = Version(editor, frame);
+                        Assert.ThrowsException<InvalidOperationException>(() => editor.LinkWindow(r));
+                        frame.Values["LinkedWindowFrame"] = actualFrame; r.ExpectedTargetWindowVersion = Version(editor, frame);
+                    }
+                    Assert.IsTrue((bool)((dynamic)editor.LinkWindow(r)).Verified);
+                    r = Request(editor, pane, "unlink"); Assert.IsTrue((bool)((dynamic)editor.LinkWindow(r)).Verified);
+                    r = Request(editor, pane, "unlink"); Assert.IsFalse((bool)((dynamic)editor.LinkWindow(r)).Applied);
                 }
-                Assert.IsTrue((bool)((dynamic)editor.LinkWindow(r)).Verified);
-                r = Request(editor, pane, "unlink"); Assert.IsTrue((bool)((dynamic)editor.LinkWindow(r)).Verified);
-                r = Request(editor, pane, "unlink"); Assert.IsFalse((bool)((dynamic)editor.LinkWindow(r)).Applied);
-            }
         }
 
         [TestMethod]
@@ -160,7 +170,8 @@ namespace VBAi.Tests.Unit
                 host.Windows.Add(pane); host.Windows.Add(frame); var editor = new VbeEditorWindows(host);
                 var members = (Members)frame.Values["LinkedWindows"];
                 var r = Request(editor, pane, "link"); r.TargetWindowCaption = "Frame"; r.TargetWindowType = 11; r.ExpectedTargetWindowVersion = Version(editor, frame);
-                members.AddNative = item => {
+                members.AddNative = item =>
+                {
                     if (outcome == 0) return;
                     item.Values["LinkedWindowFrame"] = outcome == 1 ? new NativeWindow("Other", 11) : frame;
                     members.Items.Add(new NativeWindow("OtherCaption", 4)); members.Items.Add(new NativeWindow("Pane", 3));
@@ -178,7 +189,8 @@ namespace VBAi.Tests.Unit
                 var host = new Host(); var pane = new NativeWindow("Pane", 4); var frame = new NativeWindow("Frame", 11);
                 host.Windows.Add(pane); var members = (Members)frame.Values["LinkedWindows"]; members.Items.Add(pane); pane.Values["LinkedWindowFrame"] = frame;
                 var editor = new VbeEditorWindows(host); var r = Request(editor, pane, "unlink");
-                members.RemoveNative = item => {
+                members.RemoveNative = item =>
+                {
                     if (outcome == 0) return;
                     var floating = new NativeWindow("Floating", 11); item.Values["LinkedWindowFrame"] = floating;
                     var items = (Members)floating.Values["LinkedWindows"];

@@ -43,12 +43,24 @@ namespace VBAi
             bool pathPreserved = string.Equals((string)project.FileName, originalPath, StringComparison.OrdinalIgnoreCase);
             bool nameVerified = string.Equals((string)project.Name, name, StringComparison.Ordinal);
             dynamic snapshot = ProjectProperties(originalPath);
-            return new { Project = (string)snapshot.Project, Mode = (int)snapshot.Mode, Version = (string)snapshot.Version,
-                Properties = (object)snapshot.Properties, Components = (object)snapshot.Components, References = (object)snapshot.References,
-                BeforeName = oldName, AfterName = (string)project.Name, Verified = nameVerified && pathPreserved && sourcePreserved,
-                SourcePreserved = sourcePreserved, HostPathPreserved = pathPreserved, CompilationVerified = false, PersistenceVerified = false,
+            return new
+            {
+                Project = (string)snapshot.Project,
+                Mode = (int)snapshot.Mode,
+                Version = (string)snapshot.Version,
+                Properties = (object)snapshot.Properties,
+                Components = (object)snapshot.Components,
+                References = (object)snapshot.References,
+                BeforeName = oldName,
+                AfterName = (string)project.Name,
+                Verified = nameVerified && pathPreserved && sourcePreserved,
+                SourcePreserved = sourcePreserved,
+                HostPathPreserved = pathPreserved,
+                CompilationVerified = false,
+                PersistenceVerified = false,
                 NextRead = "project_properties, project_persistence_status",
-                Limit = "Project metadata only; qualified source references and external callers are not refactored. Save/reopen separately. Protected, unsaved and other-host projects remain refused." };
+                Limit = "Project metadata only; qualified source references and external callers are not refactored. Save/reopen separately. Protected, unsaved and other-host projects remain refused."
+            };
         }
 
         /// <summary>Empreintes des modules utilisées pour détecter une mutation inattendue du code durant le renommage.</summary>

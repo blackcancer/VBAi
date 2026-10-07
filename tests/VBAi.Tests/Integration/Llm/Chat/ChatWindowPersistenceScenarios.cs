@@ -1,18 +1,12 @@
 namespace VBAi.Tests.Unit
 {
+    using Microsoft.VisualStudio.TestTools.UnitTesting;
     using System;
-    using System.Collections;
     using System.Collections.Generic;
     using System.IO;
-    using System.Net;
-    using System.Net.Http;
-    using System.Reflection;
-    using System.Threading;
     using System.Threading.Tasks;
-    using System.Web.Script.Serialization;
     using System.Windows.Forms;
     using VBAi;
-    using Microsoft.VisualStudio.TestTools.UnitTesting;
 
     /// <summary>Vérifie la persistance des conversations, brouillons et mémoires par portée.</summary>
     [TestClass]

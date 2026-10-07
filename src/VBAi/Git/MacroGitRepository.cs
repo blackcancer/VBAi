@@ -355,9 +355,14 @@ namespace VBAi
             // explicit absolute GIT_DIR over PATH_MAX - 40 even when core.longpaths is enabled.
             if (useRepository) all.Add("--git-dir=.");
             all.AddRange(args);
-            var start = new ProcessStartInfo("git.exe", string.Join(" ", all.Select(Quote))) {
-                UseShellExecute = false, CreateNoWindow = true, RedirectStandardOutput = true,
-                RedirectStandardError = true, RedirectStandardInput = true, WorkingDirectory = directory
+            var start = new ProcessStartInfo("git.exe", string.Join(" ", all.Select(Quote)))
+            {
+                UseShellExecute = false,
+                CreateNoWindow = true,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                RedirectStandardInput = true,
+                WorkingDirectory = directory
             };
             foreach (string key in start.EnvironmentVariables.Keys.Cast<string>().Where(x => x.StartsWith("GIT_", StringComparison.OrdinalIgnoreCase)).ToArray())
                 start.EnvironmentVariables.Remove(key);
@@ -368,8 +373,11 @@ namespace VBAi
                 if (!StartProcess(process)) throw new InvalidOperationException(UiText.Get("Unable to start Git."));
                 Task read = process.StandardOutput.BaseStream.CopyToAsync(output);
                 Task<string> error = process.StandardError.ReadToEndAsync();
-                Task write = Task.Run(() => { try { if (input != null) process.StandardInput.BaseStream.Write(input, 0, input.Length); }
-                    finally { process.StandardInput.Close(); } });
+                Task write = Task.Run(() =>
+                {
+                    try { if (input != null) process.StandardInput.BaseStream.Write(input, 0, input.Length); }
+                    finally { process.StandardInput.Close(); }
+                });
                 using (Cancellation.Register(() => { try { if (!process.HasExited) StopProcess(process); } catch (InvalidOperationException) { } }))
                     if (!WaitForExit(process, 120000)) { try { StopProcess(process); } catch { } throw new TimeoutException(UiText.Get("Git did not respond within 120 seconds. Check the connection and GitHub authentication.")); }
                 try { Task.WaitAll(read, error, write); }

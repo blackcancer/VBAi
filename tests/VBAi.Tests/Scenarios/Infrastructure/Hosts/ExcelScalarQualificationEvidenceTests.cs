@@ -1,8 +1,8 @@
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Web.Script.Serialization;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 using VBAi.Tests.Integration;
 
 namespace VBAi.Tests.Unit
@@ -15,10 +15,12 @@ namespace VBAi.Tests.Unit
         [TestMethod]
         public void PendingRequestIsPersistedBeforeTheOnlySendAndItsTimeoutIsRetained()
         {
-            WithEvidence((evidence, path) => {
+            WithEvidence((evidence, path) =>
+            {
                 int sends = 0;
                 var timeout = new TimeoutException("Synthetic uncertain bridge delivery.");
-                var observed = Assert.ThrowsException<TimeoutException>(() => evidence.Send(new { Command = "inspect_local_scalars" }, () => {
+                var observed = Assert.ThrowsException<TimeoutException>(() => evidence.Send(new { Command = "inspect_local_scalars" }, () =>
+                {
                     sends++;
                     var prepared = Entry(path, 0);
                     Assert.AreEqual("inspect_local_scalars", ((IDictionary<string, object>)prepared["Request"])["Command"]);
@@ -40,12 +42,15 @@ namespace VBAi.Tests.Unit
         [TestMethod]
         public void CleanupNullResponseDoesNotMaskInspectionTimeoutOrPermitClosure()
         {
-            WithEvidence((evidence, path) => {
+            WithEvidence((evidence, path) =>
+            {
                 var timeout = new TimeoutException("Inspection timed out after emission.");
                 int sends = 0, closes = 0, attachments = 0;
-                var failure = Assert.ThrowsException<AggregateException>(() => evidence.Run(() => {
+                var failure = Assert.ThrowsException<AggregateException>(() => evidence.Run(() =>
+                {
                     evidence.Send(new { Command = "inspect_local_scalars" }, () => { sends++; throw timeout; }, _ => { });
-                }, () => {
+                }, () =>
+                {
                     evidence.Send(new { Command = "debug_state" }, () => { sends++; return null; }, response => Assert.IsNotNull(response, "Owned bridge unavailable; retain host."));
                     closes++;
                 }, () => attachments++));
@@ -67,13 +72,15 @@ namespace VBAi.Tests.Unit
         [TestMethod]
         public void LockedResultWritePreservesDeliveryErrorAndPreparedEvidenceWithoutRetry()
         {
-            WithEvidence((evidence, path) => {
+            WithEvidence((evidence, path) =>
+            {
                 var timeout = new TimeoutException("Synthetic mutation response deadline.");
                 FileStream locked = null;
                 int sends = 0;
                 try
                 {
-                    var failure = Assert.ThrowsException<AggregateException>(() => evidence.Send(new { Command = "run_sub" }, () => {
+                    var failure = Assert.ThrowsException<AggregateException>(() => evidence.Send(new { Command = "run_sub" }, () =>
+                    {
                         sends++;
                         locked = new FileStream(path, FileMode.Open, FileAccess.ReadWrite, FileShare.None);
                         throw timeout;
@@ -91,7 +98,8 @@ namespace VBAi.Tests.Unit
         [TestMethod]
         public void CleanupAndAttachmentErrorsPreservePrimaryFailureAndFinalReport()
         {
-            WithEvidence((evidence, path) => {
+            WithEvidence((evidence, path) =>
+            {
                 var primary = new TimeoutException("Original inspection failure.");
                 var cleanup = new IOException("Synthetic cleanup failure.");
                 var attachment = new InvalidOperationException("Synthetic attachment failure.");
@@ -107,7 +115,8 @@ namespace VBAi.Tests.Unit
         [TestMethod]
         public void SuccessfulResponseAndShutdownAreDurableWithoutInventingHostAcceptance()
         {
-            WithEvidence((evidence, path) => {
+            WithEvidence((evidence, path) =>
+            {
                 int sends = 0, validations = 0, attachments = 0;
                 var reply = new Dictionary<string, object> { ["Ok"] = true };
                 evidence.Run(() => Assert.AreSame(reply, evidence.Send(new { Command = "debug_state" },

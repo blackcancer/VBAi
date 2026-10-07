@@ -18,7 +18,8 @@ namespace VBAi.Tests.Integration
         internal static OllamaQualificationProfile Resolve(Func<string, string> read)
         {
             if (read == null) throw new ArgumentNullException(nameof(read));
-            return new OllamaQualificationProfile {
+            return new OllamaQualificationProfile
+            {
                 Model = OllamaQualificationModel.Resolve(read),
                 Endpoint = OllamaQualificationEndpoint.Parse(read(OllamaQualificationEndpoint.EnvironmentName)),
                 Temperature = ParseSampling(read(TemperatureEnvironmentName), 0, 2, false, 0, TemperatureEnvironmentName),

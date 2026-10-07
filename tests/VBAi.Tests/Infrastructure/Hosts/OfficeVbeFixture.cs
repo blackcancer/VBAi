@@ -1,15 +1,15 @@
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using System.Text;
-using System.Runtime.InteropServices;
 using System.Runtime.ExceptionServices;
-using System.Web.Script.Serialization;
+using System.Runtime.InteropServices;
+using System.Text;
 using System.Threading;
+using System.Web.Script.Serialization;
 using System.Windows.Automation;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace VBAi.Tests.Integration
 {
@@ -44,6 +44,7 @@ namespace VBAi.Tests.Integration
             internal readonly Process HostProcess;
             internal readonly string Kind;
             internal string Desktop;
+            internal bool MainPublisherDesktop;
             internal volatile bool StopRequested;
             internal volatile bool ReviewedSupportSaveAllowed;
             internal Thread Thread;
@@ -83,11 +84,20 @@ namespace VBAi.Tests.Integration
         {
             if (Environment.GetEnvironmentVariable("VBAi_RUN_OFFICE_TESTS") != "1")
                 Assert.Inconclusive("Set VBAi_RUN_OFFICE_TESTS=1 to qualify installed Office hosts.");
-            bool mainWord = SelectMainWordDesktop(kind, Environment.GetEnvironmentVariable(MainWordEnvironment),
+            bool genericMain = Environment.GetEnvironmentVariable(NativeTestDesktop.MainEnvironment) == "1";
+            if (genericMain) NativeTestDesktop.Current(); // Refuse a changed Default/input desktop before launch or activation.
+            string wordOptIn = OfficeMainWordOptIn(kind, Environment.GetEnvironmentVariable(NativeTestDesktop.MainEnvironment),
+                Environment.GetEnvironmentVariable(MainWordEnvironment));
+            bool mainWord = SelectMainWordDesktop(kind, wordOptIn,
                 Environment.GetEnvironmentVariable("VBAi_QUALIFICATION_DESKTOP"), Environment.GetEnvironmentVariable("VBAi_TEST_DESKTOP_NAME"),
                 IsolatedTestDesktop.RequireMainCurrent);
             string desktop = RequireOfficeDesktopPair(Environment.GetEnvironmentVariable("VBAi_QUALIFICATION_DESKTOP"),
                 Environment.GetEnvironmentVariable("VBAi_TEST_DESKTOP_NAME"));
+            bool mainPublisher = SelectMainPublisherDesktop(kind, serializedPublisherSeed,
+                Environment.GetEnvironmentVariable(NativeTestDesktop.MainEnvironment),
+                Environment.GetEnvironmentVariable("VBAi_QUALIFICATION_DESKTOP"), Environment.GetEnvironmentVariable("VBAi_TEST_DESKTOP_NAME"),
+                IsolatedTestDesktop.RequireMainCurrent);
+            string publisherDesktop = mainPublisher ? "Default" : desktop;
             bool privateWord = kind == "Word" && desktop != null;
             if (privateWord)
                 RequirePrivateWordDesktop(kind, desktop, desktop, IsolatedTestDesktop.RequireCurrent);
@@ -96,6 +106,7 @@ namespace VBAi.Tests.Integration
                 RequirePrivateOfficeExecutable(kind, desktop, Environment.GetEnvironmentVariable("VBAi_TEST_" + kind.ToUpperInvariant() + "_EXE"));
                 IsolatedTestDesktop.RequireCurrent(desktop);
             }
+            if (mainPublisher) RequireMainPublisherExecutable(Environment.GetEnvironmentVariable("VBAi_TEST_PUBLISHER_EXE"));
             if (desktop != null) allowExistingHost = false;
             string executable = kind == "Word" ? "WINWORD" : kind == "PowerPoint" ? "POWERPNT" : kind == "Access" ? "MSACCESS" : "MSPUB";
             var processes = Process.GetProcessesByName(executable);
@@ -107,7 +118,8 @@ namespace VBAi.Tests.Integration
             string progId = ResolveHostProgId(kind, requestedProgId);
             var type = Type.GetTypeFromProgID(progId);
             if (type == null) Assert.Inconclusive(kind + " is not installed.");
-            var result = new OfficeVbeFixture { Kind = kind, hostProgId = progId, mainWordDesktop = mainWord };
+            var result = new OfficeVbeFixture { Kind = kind, hostProgId = progId, mainWordDesktop = mainWord,
+                mainPublisherDesktop = mainPublisher };
             string output = Environment.GetEnvironmentVariable("VBAi_OFFICE_RESULTS") ?? Path.Combine(Path.GetTempPath(), "VBAi-Office-tests");
             result.Root = Path.Combine(Path.GetFullPath(output), kind, Guid.NewGuid().ToString("N"));
             Directory.CreateDirectory(result.Root);
@@ -117,7 +129,7 @@ namespace VBAi.Tests.Integration
                 if (privateWord || mainWord) result.BootstrapPrivateWordDesktop(mainWord ? "Default" : desktop);
                 else
                 {
-                    if (desktop != null) result.StartPrivateOfficeHost(desktop);
+                    if (publisherDesktop != null) result.StartPrivateOfficeHost(publisherDesktop);
                     else result.application = Activator.CreateInstance(type);
                     var launched = Process.GetProcessesByName(executable);
                     try
@@ -129,9 +141,15 @@ namespace VBAi.Tests.Integration
                         {
                             // The empty initial inventory and sole new process establish ownership without app.VBE.
                             Assert.AreEqual(1, launched.Length, "Word ownership requires an empty initial inventory and exactly one process after activation.");
-                            result.steps.Add(new { ApplicationOwnershipVerifiedBeforeMutation = true, Method = "SoleWordProcessInventory",
-                                BeforeProcessIds = existing, AfterProcessIds = launched.Select(p => p.Id).ToArray(), result.ProcessId,
-                                StartedUtc = candidates[0].StartTime.ToUniversalTime() });
+                            result.steps.Add(new
+                            {
+                                ApplicationOwnershipVerifiedBeforeMutation = true,
+                                Method = "SoleWordProcessInventory",
+                                BeforeProcessIds = existing,
+                                AfterProcessIds = launched.Select(p => p.Id).ToArray(),
+                                result.ProcessId,
+                                StartedUtc = candidates[0].StartTime.ToUniversalTime()
+                            });
                         }
                         else result.RequireApplicationOwner();
                         result.owned = true;
@@ -168,7 +186,7 @@ namespace VBAi.Tests.Integration
                 else
                 {
                     result.RecordPublisherActivationCanary();
-                    if (desktop != null) result.RequireApplicationOwner();
+                    if (publisherDesktop != null) result.RequireApplicationOwner();
                     if (serializedPublisherSeed == null)
                     {
                         result.document = result.InvokePrivatePublisherBootstrap("NewDocument", () => (object)app.NewDocument());
@@ -284,8 +302,14 @@ namespace VBAi.Tests.Integration
                             "Only the exact reviewed support module may have its Access save dialog accepted.");
                         installedSupportHash = (string)source["Sha256"];
                         SetReviewedSupportSaveAllowed(true);
-                        steps.Add(new { AccessSavePromptAuthorized = VbaTestRuntimeSource.ModuleName, Sha256 = installedSupportHash,
-                            ProcessId, Project, DocumentPath });
+                        steps.Add(new
+                        {
+                            AccessSavePromptAuthorized = VbaTestRuntimeSource.ModuleName,
+                            Sha256 = installedSupportHash,
+                            ProcessId,
+                            Project,
+                            DocumentPath
+                        });
                     }
                 }
             }
@@ -323,8 +347,12 @@ namespace VBAi.Tests.Integration
                 try { steps.Add(new { NativeProjectFileName = (string)((dynamic)project).FileName }); }
                 catch (Exception error)
                 {
-                    steps.Add(new { NativeProjectFileNameError = error.Message,
-                        ExceptionType = error.GetType().FullName, HResult = "0x" + unchecked((uint)error.HResult).ToString("X8") });
+                    steps.Add(new
+                    {
+                        NativeProjectFileNameError = error.Message,
+                        ExceptionType = error.GetType().FullName,
+                        HResult = "0x" + unchecked((uint)error.HResult).ToString("X8")
+                    });
                 }
             }
             finally { Release(project); }
@@ -491,14 +519,16 @@ namespace VBAi.Tests.Integration
         private void StartOwnedDialogHandler()
         {
             StopOwnedDialogHandler();
-            var worker = new OwnedDialogWorker(ownedProcess, Kind) { Desktop = privateDesktop };
+            var worker = new OwnedDialogWorker(ownedProcess, Kind) { Desktop = privateDesktop,
+                MainPublisherDesktop = mainPublisherDesktop };
             dialogWorker = worker;
-            worker.Thread = new Thread(() => {
+            worker.Thread = new Thread(() =>
+            {
                 while (!worker.StopRequested && worker.HostAlive)
                 {
                     try
                     {
-                        if (privateDesktop != null) IsolatedTestDesktop.RequireCurrent(privateDesktop);
+                        if (privateDesktop != null) RequireSelectedOfficeDesktop(privateDesktop, worker.MainPublisherDesktop);
                         if (worker.Kind == "Access")
                         {
                             HandleAccessSaveDialogs(worker);
@@ -522,7 +552,8 @@ namespace VBAi.Tests.Integration
                     catch (InvalidOperationException error) { if (worker.Desktop != null) { worker.Failure = error; worker.StopRequested = true; } }
                     if (!worker.StopRequested) Thread.Sleep(250);
                 }
-            }) { IsBackground = true };
+            })
+            { IsBackground = true };
             worker.Thread.SetApartmentState(ApartmentState.STA); worker.Thread.Start();
         }
 
@@ -530,7 +561,8 @@ namespace VBAi.Tests.Integration
         private static void HandleAccessSaveDialogs(OwnedDialogWorker worker)
         {
             var scan = Stopwatch.StartNew();
-            EnumWindows((window, parameter) => {
+            EnumWindows((window, parameter) =>
+            {
                 if (worker.StopRequested || scan.ElapsedMilliseconds >= 1000) return false;
                 if (!OwnedDialogControl(worker, window, "#32770", null) || !IsWindowVisible(window) || worker.InvokedDialogs.Contains(window)) return true;
                 IntPtr edit = GetDlgItem(window, 2020), button = GetDlgItem(window, 1);
@@ -563,7 +595,7 @@ namespace VBAi.Tests.Integration
             var name = new StringBuilder(64); GetClassName(window, name, name.Capacity);
             if (name.ToString() != expectedClass || (id.HasValue && GetDlgCtrlID(window) != id.Value)) return false;
             if (worker.Desktop != null)
-                IsolatedTestDesktop.RequireOfficeWindowInventory(worker.Desktop, (uint)worker.ProcessId, true, window);
+                RequireSelectedOfficeWindow(worker.Desktop, worker.MainPublisherDesktop, (uint)worker.ProcessId, true, window);
             return true;
         }
 
@@ -580,7 +612,7 @@ namespace VBAi.Tests.Integration
             if (window.Current.ProcessId != worker.ProcessId || button.Current.ProcessId != worker.ProcessId) return;
             if (worker.Desktop != null)
             {
-                IsolatedTestDesktop.RequireCurrent(worker.Desktop);
+                RequireSelectedOfficeDesktop(worker.Desktop, worker.MainPublisherDesktop);
                 IntPtr dialog = new IntPtr(window.Current.NativeWindowHandle), control = new IntPtr(button.Current.NativeWindowHandle);
                 int id = GetDlgCtrlID(control);
                 uint dialogPid, controlPid;
@@ -593,7 +625,7 @@ namespace VBAi.Tests.Integration
                     BoundedDialogText(control) != "Désactiver les macros")
                     throw new InvalidOperationException("Private Publisher dialog button lacks exact native owner/desktop/control identity; no input or UIA invocation fallback is permitted.");
                 if (worker.StopRequested || !worker.HostAlive || worker.InvokedDialogs.Contains(dialog)) return;
-                IsolatedTestDesktop.RequireOfficeWindowInventory(worker.Desktop, (uint)worker.ProcessId, true, dialog);
+                RequireSelectedOfficeWindow(worker.Desktop, worker.MainPublisherDesktop, (uint)worker.ProcessId, true, dialog);
                 // The exact native child button belongs to this verified dialog, PID and ID.
                 if (GetDlgItem(dialog, id) != control || !OwnedDialogControl(worker, control, "Button", id))
                     throw new InvalidOperationException("The private Publisher button changed before its single native click.");
@@ -655,11 +687,22 @@ namespace VBAi.Tests.Integration
             }
             try
             {
-                if (Root != null) File.WriteAllText(Path.Combine(Root, "qualification.json"), new JavaScriptSerializer { MaxJsonLength = 20 * 1024 * 1024 }.Serialize(new { Host = Kind, HostProgId = hostProgId, ProcessId, DocumentPath, Project,
-                    NativeExecutionUnsettled, StartupFailure = startupFailure?.ToString(),
+                if (Root != null) File.WriteAllText(Path.Combine(Root, "qualification.json"), new JavaScriptSerializer { MaxJsonLength = 20 * 1024 * 1024 }.Serialize(new
+                {
+                    Host = Kind,
+                    HostProgId = hostProgId,
+                    ProcessId,
+                    DocumentPath,
+                    Project,
+                    NativeExecutionUnsettled,
+                    StartupFailure = startupFailure?.ToString(),
                     ShutdownLifecycle = shutdownEvidence?.Record,
-                    PendingCommand = commandContainment.Command, CommandPending = commandContainment.Pending,
-                    DeliveryUncertain = commandContainment.Uncertain, Failures, Steps = steps }));
+                    PendingCommand = commandContainment.Command,
+                    CommandPending = commandContainment.Pending,
+                    DeliveryUncertain = commandContainment.Uncertain,
+                    Failures,
+                    Steps = steps
+                }));
             }
             catch (Exception evidence)
             {
@@ -769,10 +812,17 @@ namespace VBAi.Tests.Integration
                 Assert.AreNotEqual(0u, thread);
                 Assert.AreEqual((uint)ProcessId, pid, "The returned application belongs to another PID; no document mutation or Quit is permitted.");
                 if (privateDesktop != null)
-                    IsolatedTestDesktop.RequireOfficeWindowInventory(privateDesktop, (uint)ProcessId, true, new IntPtr(handle));
-                steps.Add(new { ApplicationOwnershipVerifiedBeforeMutation = true, Hwnd = handle, ProcessId = pid,
-                    NativeThreadId = thread, ActualDesktop = privateDesktop, ExpectedDesktop = privateDesktop,
-                    DesktopProof = privateDesktop == null ? null : "SuccessfulExplicitPrivateAndInputWindowInventories" });
+                    RequireSelectedOfficeWindow(privateDesktop, mainPublisherDesktop, (uint)ProcessId, true, new IntPtr(handle));
+                steps.Add(new
+                {
+                    ApplicationOwnershipVerifiedBeforeMutation = true,
+                    Hwnd = handle,
+                    ProcessId = pid,
+                    NativeThreadId = thread,
+                    ActualDesktop = privateDesktop,
+                    ExpectedDesktop = privateDesktop,
+                    DesktopProof = privateDesktop == null ? null : "SuccessfulExplicitPrivateAndInputWindowInventories"
+                });
             }
             finally { Release(window); }
         }
@@ -810,8 +860,15 @@ namespace VBAi.Tests.Integration
             {
                 RetainUncertainOffice();
                 RecordCleanupFailure("Native test execution remains pending or uncertain; Close, Quit and release were skipped. Inspect retained PID=" + ProcessId);
-                steps.Add(new { RetainedProcessId = ProcessId, NativeExecutionUnsettled, CloseAttempted = false,
-                    QuitAttempted = false, ForcedTermination = false, DocumentPath });
+                steps.Add(new
+                {
+                    RetainedProcessId = ProcessId,
+                    NativeExecutionUnsettled,
+                    CloseAttempted = false,
+                    QuitAttempted = false,
+                    ForcedTermination = false,
+                    DocumentPath
+                });
                 return;
             }
             bool nativeIdentityVerified = Kind != "Access" && Kind != "Publisher";
@@ -870,30 +927,30 @@ namespace VBAi.Tests.Integration
             var process = ownedProcess;
             if (process != null)
                 try
+                {
+                    int exitCode = 0;
+                    bool exited = shutdownEvidence.ObserveExit(() => WaitForShutdownExit(process, Convert.ToInt32(shutdownEvidence.Record["WaitBoundMilliseconds"]), externalReferencesReleased),
+                        () => { exitCode = ReadOwnedExitCode(process); return exitCode; }, process.Dispose, FlushShutdownEvidence);
+                    if (!exited)
                     {
-                        int exitCode = 0;
-                        bool exited = shutdownEvidence.ObserveExit(() => WaitForShutdownExit(process, Convert.ToInt32(shutdownEvidence.Record["WaitBoundMilliseconds"]), externalReferencesReleased),
-                            () => { exitCode = ReadOwnedExitCode(process); return exitCode; }, process.Dispose, FlushShutdownEvidence);
-                        if (!exited)
-                        {
-                            RetainUncertainOffice();
-                            RecordCleanupFailure("The owned host did not exit after Quit and COM release; it was retained without forced termination. PID=" + ProcessId);
-                            return;
-                        }
-                        else
-                        {
-                            ReleasePrivateExitedProcess();
-                            ownedProcess = null;
-                            steps.Add(new { ShutdownProcessId = ProcessId, ExitCode = exitCode, ForcedTermination = false, AdapterOnlyClose = adapterOnly });
-                            if (exitCode != 0) RecordCleanupFailure("Abnormal exit code 0x" + unchecked((uint)exitCode).ToString("X8") + ". PID=" + ProcessId);
-                        }
+                        RetainUncertainOffice();
+                        RecordCleanupFailure("The owned host did not exit after Quit and COM release; it was retained without forced termination. PID=" + ProcessId);
+                        return;
                     }
-                    catch (Exception error)
+                    else
                     {
-                        if (Equals(shutdownEvidence.Record["ProcessHandleRetained"], false)) { ownedProcess = null; owned = false; }
-                        else RetainUncertainOffice();
-                        RecordCleanupFailure(error.ToString()); return;
+                        ReleasePrivateExitedProcess();
+                        ownedProcess = null;
+                        steps.Add(new { ShutdownProcessId = ProcessId, ExitCode = exitCode, ForcedTermination = false, AdapterOnlyClose = adapterOnly });
+                        if (exitCode != 0) RecordCleanupFailure("Abnormal exit code 0x" + unchecked((uint)exitCode).ToString("X8") + ". PID=" + ProcessId);
                     }
+                }
+                catch (Exception error)
+                {
+                    if (Equals(shutdownEvidence.Record["ProcessHandleRetained"], false)) { ownedProcess = null; owned = false; }
+                    else RetainUncertainOffice();
+                    RecordCleanupFailure(error.ToString()); return;
+                }
             else if (owned) { RetainUncertainOffice(); RecordCleanupFailure("No retained process handle was available to verify host shutdown. PID=" + ProcessId); return; }
             owned = false;
             privateWordChild?.Dispose();

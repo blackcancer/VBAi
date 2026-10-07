@@ -105,10 +105,12 @@ namespace VBAi
             }
             catch (Exception error)
             {
-                try {
+                try
+                {
                     foreach (var item in oldOrder.Reverse()) ((dynamic)item.Value).TabIndex = 0;
                     foreach (var item in oldOrder) if ((int)((dynamic)item.Value).TabIndex != item.Key) throw new InvalidOperationException("Tab order rollback readback mismatch.");
-                } catch (Exception rollback) { throw new InvalidOperationException(error.Message + " Rollback failed: " + rollback.Message, error); }
+                }
+                catch (Exception rollback) { throw new InvalidOperationException(error.Message + " Rollback failed: " + rollback.Message, error); }
                 throw new InvalidOperationException(error.Message + " Original tab order restored.", error);
             }
             return new { Applied = true, Verified = true, Saved = false, Tree = Tree(request.Project, request.Form) };

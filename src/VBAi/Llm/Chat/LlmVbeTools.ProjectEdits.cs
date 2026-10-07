@@ -18,8 +18,7 @@ namespace VBAi
             previewRequest.Command = request.Command == "apply_class_member_rename" ? "preview_class_member_rename" : "preview_procedure_rename";
             var response = Execute(previewRequest);
             if (!response.Ok) throw new InvalidOperationException(response.Error);
-            var data = json.DeserializeObject(json.Serialize(response.Data)) as IDictionary<string, object>;
-            if (data == null || !data.ContainsKey("ExpectedProjectVersion") ||
+            if (!(json.DeserializeObject(json.Serialize(response.Data)) is IDictionary<string, object> data) || !data.ContainsKey("ExpectedProjectVersion") ||
                 !string.Equals(Convert.ToString(data["ExpectedProjectVersion"]), request.ExpectedProjectVersion, StringComparison.OrdinalIgnoreCase))
                 throw new InvalidOperationException("The project changed since the rename preview.");
             var before = new Dictionary<string, CodeSnapshot>(StringComparer.OrdinalIgnoreCase);

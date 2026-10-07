@@ -42,13 +42,15 @@ namespace VBAi
         internal Func<IDataObject> ReadData = Clipboard.GetDataObject;
 
         /// <summary>Restores the captured format set, clearing the clipboard only when the snapshot was empty.</summary>
-        internal Action<DataObject> WriteData = data => {
+        internal Action<DataObject> WriteData = data =>
+        {
             if (data == null) Clipboard.Clear();
             else Clipboard.SetDataObject(data, true, 3, 20);
         };
 
         /// <summary>Checks whether the current clipboard owner HWND belongs to the VBAi host process.</summary>
-        internal Func<bool> IsHostOwner = () => {
+        internal Func<bool> IsHostOwner = () =>
+        {
             GetWindowThreadProcessId(GetClipboardOwner(), out uint processId);
             return processId == (uint)Process.GetCurrentProcess().Id;
         };
@@ -76,10 +78,11 @@ namespace VBAi
         private async Task<string> ReadCoreAsync(Action prepareSelection, Action copy, Action validateTarget)
         {
             int ownerThread = Thread.CurrentThread.ManagedThreadId;
-            Action verifyThread = () => {
+            void verifyThread()
+            {
                 if (Thread.CurrentThread.ManagedThreadId != ownerThread || Thread.CurrentThread.GetApartmentState() != ApartmentState.STA)
                     throw new InvalidOperationException("Native clipboard capture left the owning STA thread.");
-            };
+            }
             uint before = Sequence();
             var backup = Snapshot.Capture(ReadData());
             if (Sequence() != before)

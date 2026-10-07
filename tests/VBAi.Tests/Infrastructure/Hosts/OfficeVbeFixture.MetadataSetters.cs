@@ -1,3 +1,4 @@
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -7,7 +8,6 @@ using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
 using System.Web.Script.Serialization;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace VBAi.Tests.Integration
 {
@@ -23,15 +23,25 @@ namespace VBAi.Tests.Integration
             Assert.IsTrue(property == "HelpFile" && value is string || property == "HelpContextID" && value is int);
             commandContainment.RequireTerminal(); RequireOwnedDocument();
             var objects = new List<object>();
-            var row = new Dictionary<string, object> {
-                ["State"] = "PREPARED", ["Property"] = property, ["ExpectedValue"] = value,
+            var row = new Dictionary<string, object>
+            {
+                ["State"] = "PREPARED",
+                ["Property"] = property,
+                ["ExpectedValue"] = value,
                 ["Path"] = rawDispatch ? "ExternalSta.RawDispatchPut" : "ExternalSta.ProductionClrSetNative",
                 ["ExecutionScope"] = "External fixture STA on mapped RCW; compare these paths in the same proxy context, not as in-process bridge dispatch.",
-                ["HostProcessId"] = ProcessId, ["HostStartedUtc"] = ownedProcess.StartTime.ToUniversalTime().ToString("o"),
-                ["DocumentPath"] = DocumentPath, ["DocumentExtension"] = Path.GetExtension(DocumentPath), ["ProjectSelector"] = Project,
+                ["HostProcessId"] = ProcessId,
+                ["HostStartedUtc"] = ownedProcess.StartTime.ToUniversalTime().ToString("o"),
+                ["DocumentPath"] = DocumentPath,
+                ["DocumentExtension"] = Path.GetExtension(DocumentPath),
+                ["ProjectSelector"] = Project,
                 ["ExpectedMvid"] = typeof(VbeSession).Module.ModuleVersionId.ToString("D"),
-                ["MutationRetryAllowed"] = false, ["MaximumMetadataSetterEntries"] = 1,
-                ["AdditionalSaveInvocations"] = 0, ["HelpFileCreated"] = false, ["HelpInvoked"] = false };
+                ["MutationRetryAllowed"] = false,
+                ["MaximumMetadataSetterEntries"] = 1,
+                ["AdditionalSaveInvocations"] = 0,
+                ["HelpFileCreated"] = false,
+                ["HelpInvoked"] = false
+            };
             string path = Path.Combine(Root, "metadata-setter.json");
             var serializer = new JavaScriptSerializer { MaxJsonLength = 1024 * 1024 };
             Action persist = () => File.WriteAllText(path, serializer.Serialize(row));

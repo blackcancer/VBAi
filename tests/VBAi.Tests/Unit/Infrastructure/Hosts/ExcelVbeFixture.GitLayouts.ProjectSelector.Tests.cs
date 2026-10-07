@@ -1,8 +1,7 @@
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Collections.Generic;
 using System.IO;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
-using VBAi;
 using VBAi.Tests.Integration;
 
 namespace VBAi.Tests.Unit

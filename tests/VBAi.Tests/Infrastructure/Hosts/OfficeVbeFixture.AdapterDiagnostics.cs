@@ -21,14 +21,23 @@ namespace VBAi.Tests.Integration
             string claim = ProcessId + ":" + phase;
             if (!accessAdapterDiagnosticClaims.Add(claim))
                 throw new InvalidOperationException("The exact Access adapter diagnostic phase is already claimed; no read replay is permitted.");
-            var diagnostic = new Dictionary<string, object> {
-                ["Phase"] = phase, ["State"] = "PENDING", ["ProcessId"] = ProcessId,
-                ["Desktop"] = privateDesktop, ["DocumentPath"] = DocumentPath, ["Project"] = Project,
-                ["ReadOnly"] = true, ["NativeMutations"] = 0, ["ActivationAttempts"] = 0,
+            var diagnostic = new Dictionary<string, object>
+            {
+                ["Phase"] = phase,
+                ["State"] = "PENDING",
+                ["ProcessId"] = ProcessId,
+                ["Desktop"] = privateDesktop,
+                ["DocumentPath"] = DocumentPath,
+                ["Project"] = Project,
+                ["ReadOnly"] = true,
+                ["NativeMutations"] = 0,
+                ["ActivationAttempts"] = 0,
                 ["NativeSnapshotBoundMilliseconds"] = AccessAdapterNativeSnapshotBoundMilliseconds,
                 ["TextReadBoundMilliseconds"] = AccessAdapterTextReadBoundMilliseconds,
-                ["BridgeResponseBoundMilliseconds"] = 5000, ["BridgeConnectionAttempts"] = 1,
-                ["ReadReplayAllowed"] = false, ["OriginalAdapterResponseChanged"] = false,
+                ["BridgeResponseBoundMilliseconds"] = 5000,
+                ["BridgeConnectionAttempts"] = 1,
+                ["ReadReplayAllowed"] = false,
+                ["OriginalAdapterResponseChanged"] = false,
                 ["Utc"] = DateTime.UtcNow.ToString("o")
             };
             observation["AccessAdapterDiagnostic"] = diagnostic;
@@ -128,7 +137,8 @@ namespace VBAi.Tests.Integration
             var windows = new List<IntPtr>();
             bool withinBound = true;
             // RequireCurrent above binds EnumWindows to this exact inactive desktop.
-            bool complete = EnumWindows((window, state) => {
+            bool complete = EnumWindows((window, state) =>
+            {
                 uint pid;
                 uint thread = GetWindowThreadProcessId(window, out pid);
                 if (pid != (uint)ProcessId) return true; // Never read another process's class or UI text.
@@ -150,7 +160,8 @@ namespace VBAi.Tests.Integration
                 if (!Equals(row["Class"], "#32770")) continue;
                 var children = new List<IntPtr>();
                 bool childBound = true;
-                EnumChildWindows(window, (child, state) => {
+                EnumChildWindows(window, (child, state) =>
+                {
                     uint pid;
                     uint thread = GetWindowThreadProcessId(child, out pid);
                     if (pid != (uint)ProcessId) return true;
@@ -199,10 +210,17 @@ namespace VBAi.Tests.Integration
                 throw new InvalidOperationException("The owned Access native window class is unavailable or truncated.");
             string kind = className.ToString();
             bool visible = IsWindowVisible(window);
-            var row = new Dictionary<string, object> {
-                ["Window"] = window.ToInt64(), ["RootWindow"] = expectedRoot.ToInt64(), ["ProcessId"] = pid,
-                ["ThreadId"] = thread, ["RootThreadId"] = rootThread, ["Class"] = kind,
-                ["Visible"] = visible, ["Enabled"] = IsWindowEnabled(window), ["Child"] = child,
+            var row = new Dictionary<string, object>
+            {
+                ["Window"] = window.ToInt64(),
+                ["RootWindow"] = expectedRoot.ToInt64(),
+                ["ProcessId"] = pid,
+                ["ThreadId"] = thread,
+                ["RootThreadId"] = rootThread,
+                ["Class"] = kind,
+                ["Visible"] = visible,
+                ["Enabled"] = IsWindowEnabled(window),
+                ["Child"] = child,
                 ["ControlId"] = child ? GetDlgCtrlID(window) : 0
             };
             // Native dialog captions, Static labels and Button labels disambiguate Save

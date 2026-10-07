@@ -1,10 +1,10 @@
 using System;
-using System.ComponentModel;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Globalization;
 using System.IO;
-using System.Runtime.InteropServices;
 using System.Runtime.ExceptionServices;
+using System.Runtime.InteropServices;
 using System.Text;
 
 namespace VBAi.Tests.Integration
@@ -130,7 +130,8 @@ namespace VBAi.Tests.Integration
             WindowEnumeration result = null;
             try
             {
-                result = enumerate(window => {
+                result = enumerate(window =>
+                {
                     if (++count > 8192) return false;
                     try { return visit(window); }
                     catch (Exception error) { failure = error; return false; }
@@ -163,7 +164,8 @@ namespace VBAi.Tests.Integration
             if (handle == IntPtr.Zero) throw new Win32Exception(Marshal.GetLastWin32Error());
             try
             {
-                InventoryNamedWindows(name, () => ObjectName(handle), callback => {
+                InventoryNamedWindows(name, () => ObjectName(handle), callback =>
+                {
                     WindowVisitor visitor = (window, state) => callback(window);
                     SetLastError(0);
                     bool completed = EnumDesktopWindows(handle, visitor, IntPtr.Zero);
@@ -231,7 +233,8 @@ namespace VBAi.Tests.Integration
             try
             {
                 int count = 0, other = 0; bool sentinelSeen = false;
-                WindowVisitor visitor = (window, state) => {
+                WindowVisitor visitor = (window, state) =>
+                {
                     if (++count > 8192) return false;
                     if (window == sentinel) sentinelSeen = true;
                     else other++;
@@ -327,7 +330,8 @@ namespace VBAi.Tests.Integration
             var windows = new List<WindowIdentity>(); bool identityComplete = true;
             string callbackStop = "None"; IntPtr failedWindow = IntPtr.Zero;
             uint failedProcess = 0, failedThread = 0; int identityError = 0;
-            WindowVisitor visitor = (window, state) => {
+            WindowVisitor visitor = (window, state) =>
+            {
                 uint process = 0;
                 SetLastError(0);
                 uint thread = GetWindowThreadProcessId(window, out process);
@@ -460,8 +464,12 @@ namespace VBAi.Tests.Integration
                 throw new ArgumentException("An existing absolute executable and working directory are required.");
             if (string.Equals(InputDesktopName(), desktopName, StringComparison.OrdinalIgnoreCase))
                 throw new InvalidOperationException("The qualification desktop became interactive; no process is started.");
-            var startup = new StartupInfo { Size = (uint)Marshal.SizeOf(typeof(StartupInfo)),
-                Desktop = "WinSta0\\" + desktopName, Flags = 0x00000080 }; // STARTF_FORCEOFFFEEDBACK
+            var startup = new StartupInfo
+            {
+                Size = (uint)Marshal.SizeOf(typeof(StartupInfo)),
+                Desktop = "WinSta0\\" + desktopName,
+                Flags = 0x00000080
+            }; // STARTF_FORCEOFFFEEDBACK
             ProcessInformation child;
             if (!CreateProcessW(executable, new StringBuilder(CommandLine(executable, arguments)), IntPtr.Zero,
                 IntPtr.Zero, false, 0x08000000, IntPtr.Zero, workingDir, ref startup, out child)) // CREATE_NO_WINDOW

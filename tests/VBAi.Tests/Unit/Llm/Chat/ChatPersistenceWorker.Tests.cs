@@ -1,15 +1,14 @@
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
-using System.Collections.Generic;
 using System.Collections.Concurrent;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Threading;
 using System.Web.Script.Serialization;
-using VBAi;
 using VBAi.Tests.Infrastructure;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace VBAi.Tests.Unit
 {
@@ -57,7 +56,8 @@ namespace VBAi.Tests.Unit
             {
                 string path = Path.Combine(scope.Root, "delete.db");
                 var session = new ChatSessionState { Scope = "fixture", Draft = "first" };
-                using (var worker = new ChatPersistenceWorker(path, (snapshot, version, error) => {
+                using (var worker = new ChatPersistenceWorker(path, (snapshot, version, error) =>
+                {
                     Assert.IsNull(error); firstCompleted.Set(); release.Wait(5000);
                 }))
                 {

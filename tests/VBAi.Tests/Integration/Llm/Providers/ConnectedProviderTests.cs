@@ -1,16 +1,15 @@
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
-using System.Security.Cryptography;
-using System.Text.RegularExpressions;
-using System.Web.Script.Serialization;
 using System.Linq;
 using System.Net.Http;
+using System.Security.Cryptography;
+using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
-using VBAi;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
+using System.Web.Script.Serialization;
 
 namespace VBAi.Tests.Integration
 {
@@ -118,9 +117,14 @@ namespace VBAi.Tests.Integration
             Assert.IsFalse(AllowsDisposableRead("read_module", "owned", "OtherModule", "owned", "Module1"));
             Assert.IsFalse(AllowsDisposableRead("execute_immediate", "owned", "Module1", "owned", "Module1"));
             Assert.IsTrue(AllowsDisposableRead("read_module", "owned", "Module1", "owned", "Module1"));
-            Assert.ThrowsException<InvalidOperationException>(() => SyntheticRepository(new Dictionary<string, object> {
-                ["repositoryUrl"] = "https://github.com/owner/production", ["privateVerified"] = true,
-                ["remoteCreated"] = true, ["repositoryId"] = "1", ["mainCommit"] = new string('a',40) }));
+            Assert.ThrowsException<InvalidOperationException>(() => SyntheticRepository(new Dictionary<string, object>
+            {
+                ["repositoryUrl"] = "https://github.com/owner/production",
+                ["privateVerified"] = true,
+                ["remoteCreated"] = true,
+                ["repositoryId"] = "1",
+                ["mainCommit"] = new string('a', 40)
+            }));
             Assert.ThrowsException<InvalidOperationException>(() => DisposableProject(new Dictionary<string, object> { ["OwnedDisposable"] = false }));
         }
 
@@ -168,7 +172,7 @@ namespace VBAi.Tests.Integration
             string path = Convert.ToString(fixture["Path"]);
             if (Path.IsPathRooted(path)) path = Path.GetFullPath(path);
             if (!Path.IsPathRooted(path) || !string.Equals(Path.GetExtension(path), ".swp", StringComparison.OrdinalIgnoreCase) ||
-                path.Replace('\\','/').IndexOf("/artifacts/qualification-v1/", StringComparison.OrdinalIgnoreCase) < 0 ||
+                path.Replace('\\', '/').IndexOf("/artifacts/qualification-v1/", StringComparison.OrdinalIgnoreCase) < 0 ||
                 string.IsNullOrWhiteSpace(Convert.ToString(fixture["Module"])) || string.IsNullOrWhiteSpace(Convert.ToString(fixture["Marker"])) ||
                 !Regex.IsMatch(Convert.ToString(fixture["FileSha256"]), @"^[a-fA-F0-9]{64}$") ||
                 !Regex.IsMatch(Convert.ToString(fixture["ModuleSha256"]), @"^[a-fA-F0-9]{64}$"))

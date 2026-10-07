@@ -1,10 +1,10 @@
 namespace VBAi.Tests.Unit
 {
+    using Microsoft.VisualStudio.TestTools.UnitTesting;
     using System;
     using System.Collections;
     using System.Collections.Generic;
     using VBAi;
-    using Microsoft.VisualStudio.TestTools.UnitTesting;
 
     [TestClass]
     [TestCategory("Unit")]
@@ -114,8 +114,16 @@ namespace VBAi.Tests.Unit
             var host = new Host(); var pane = new Window("Locals", 4); var frame = new Window("Target", 11);
             host.Windows.Add(pane); host.Windows.Add(frame);
             var editor = new VbeEditorWindows(host);
-            var request = new Request { WindowCaption = pane.Caption, WindowType = pane.Type, ExpectedWindowVersion = Version(editor, pane),
-                Action = "link", TargetWindowCaption = frame.Caption, TargetWindowType = frame.Type, ExpectedTargetWindowVersion = Version(editor, frame) };
+            var request = new Request
+            {
+                WindowCaption = pane.Caption,
+                WindowType = pane.Type,
+                ExpectedWindowVersion = Version(editor, pane),
+                Action = "link",
+                TargetWindowCaption = frame.Caption,
+                TargetWindowType = frame.Type,
+                ExpectedTargetWindowVersion = Version(editor, frame)
+            };
             dynamic linked = editor.LinkWindow(request);
             Assert.IsTrue((bool)linked.Verified); Assert.AreSame(frame, pane.LinkedWindowFrame);
             request.Action = "unlink"; request.ExpectedWindowVersion = Version(editor, pane);
@@ -130,8 +138,16 @@ namespace VBAi.Tests.Unit
             var host = new Host(); var pane = new Window("Locals", 4); var frame = new Window("Target", 11);
             host.Windows.Add(pane); host.Windows.Add(frame);
             var editor = new VbeEditorWindows(host);
-            var request = new Request { WindowCaption = pane.Caption, WindowType = pane.Type, ExpectedWindowVersion = Version(editor, pane),
-                Action = "link", TargetWindowCaption = frame.Caption, TargetWindowType = frame.Type, ExpectedTargetWindowVersion = Version(editor, frame) };
+            var request = new Request
+            {
+                WindowCaption = pane.Caption,
+                WindowType = pane.Type,
+                ExpectedWindowVersion = Version(editor, pane),
+                Action = "link",
+                TargetWindowCaption = frame.Caption,
+                TargetWindowType = frame.Type,
+                ExpectedTargetWindowVersion = Version(editor, frame)
+            };
             frame.Width++;
             Assert.ThrowsException<InvalidOperationException>(() => editor.LinkWindow(request));
             Assert.AreEqual(0, frame.LinkedWindows.AddCalls);
@@ -148,9 +164,16 @@ namespace VBAi.Tests.Unit
             var host = new Host(); var pane = new Window("Locals", 4); var frame = new Window("Target", 11);
             host.Windows.Add(pane); host.Windows.Add(frame); frame.LinkedWindows.FailAfterAdd = true;
             var editor = new VbeEditorWindows(host);
-            dynamic result = editor.LinkWindow(new Request { WindowCaption = pane.Caption, WindowType = pane.Type,
-                ExpectedWindowVersion = Version(editor, pane), Action = "link", TargetWindowCaption = frame.Caption,
-                TargetWindowType = frame.Type, ExpectedTargetWindowVersion = Version(editor, frame) });
+            dynamic result = editor.LinkWindow(new Request
+            {
+                WindowCaption = pane.Caption,
+                WindowType = pane.Type,
+                ExpectedWindowVersion = Version(editor, pane),
+                Action = "link",
+                TargetWindowCaption = frame.Caption,
+                TargetWindowType = frame.Type,
+                ExpectedTargetWindowVersion = Version(editor, frame)
+            });
             Assert.IsNull((bool?)result.Applied); Assert.IsFalse((bool)result.Verified);
             Assert.IsTrue((bool)result.VerificationPending); Assert.AreSame(frame, pane.LinkedWindowFrame);
             StringAssert.Contains((string)result.NativeError, "Partial native failure");

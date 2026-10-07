@@ -30,7 +30,9 @@ namespace VBAi
         /// <summary>Accède à une fenêtre par l’index accepté par la collection COM.</summary>
         /// <param name="index">Index ou clé de la fenêtre.</param>
         /// <returns>Fenêtre COM correspondante.</returns>
-        [DispId(0)] [return: MarshalAs(UnmanagedType.Interface)] object Item(
+        [DispId(0)]
+        [return: MarshalAs(UnmanagedType.Interface)]
+        object Item(
             [In, MarshalAs(UnmanagedType.Struct)] object index);
 
         /// <summary>Retourne le nombre de fenêtres de la collection.</summary>

@@ -36,8 +36,11 @@ namespace VBAi
         /// <value>Statut dérivé du descripteur, sauf si une valeur explicite est enregistrée.</value>
         public string SetterStatus
         {
-            get { return setterStatus ?? (ReadOnly == true ? "DescriptorReadOnly" :
-                ReadOnly == false ? "DescriptorCandidateUnverified" : "Unknown"); }
+            get
+            {
+                return setterStatus ?? (ReadOnly == true ? "DescriptorReadOnly" :
+                ReadOnly == false ? "DescriptorCandidateUnverified" : "Unknown");
+            }
             set { setterStatus = value; }
         }
 

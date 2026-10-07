@@ -1,8 +1,7 @@
 namespace VBAi.Tests.Unit
 {
-    using System;
-    using VBAi;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
+    using System;
 
     public sealed partial class MacroGitRepositoryTests
     {

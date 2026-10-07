@@ -62,8 +62,7 @@ namespace VBAi
         /// <remarks>A present HostPath wins even when null; legacy FileName fallback is never used in Word.</remarks>
         internal static string FromFields(IDictionary<string, object> fields)
         {
-            object path;
-            return fields.TryGetValue("HostPath", out path) ||
+            return fields.TryGetValue("HostPath", out object path) ||
                 (AllowsLegacyPath && fields.TryGetValue("FileName", out path))
                 ? Convert.ToString(path) : null;
         }

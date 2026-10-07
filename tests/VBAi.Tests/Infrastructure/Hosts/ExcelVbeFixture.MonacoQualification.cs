@@ -1,3 +1,4 @@
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Collections.Generic;
 using System.Drawing;
@@ -9,7 +10,6 @@ using System.Resources;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Windows.Automation;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace VBAi.Tests.Integration
 {
@@ -203,7 +203,8 @@ namespace VBAi.Tests.Integration
                 Assert.AreEqual(ProcessId, result.VbeProcessId);
                 IntPtr candidate = IntPtr.Zero; int candidates = 0;
                 string caption = MonacoLocalized("VBAi editor", culture);
-                EnumChildWindows(vbe, (window, unused) => {
+                EnumChildWindows(vbe, (window, unused) =>
+                {
                     var title = new StringBuilder(512); var className = new StringBuilder(256);
                     GetWindowText(window, title, title.Capacity); GetClassName(window, className, className.Capacity);
                     if (title.ToString() != caption || !className.ToString().StartsWith("WindowsForms", StringComparison.Ordinal)) return true;
@@ -301,11 +302,19 @@ namespace VBAi.Tests.Integration
 
         internal void CaptureInstalledMonaco(MonacoNativeObservation observed, string path)
         {
-            var evidence = new Dictionary<string, object> { ["Scope"] = "Actual installed embedded editor; no detached ModernEditorWindow",
-                ["ProcessId"] = ProcessId, ["AssemblyMvid"] = typeof(VbeSession).Module.ModuleVersionId.ToString("D"),
-                ["Observation"] = observed, ["State"] = "PENDING", ["Path"] = path, ["Method"] = "PrintWindow, flags=2",
-                ["VisualReview"] = "NOT_RUN", ["AccessibilitySource"] = MonacoAccessibleSourceStatus(observed),
-                ["RenderedCodeVerified"] = false };
+            var evidence = new Dictionary<string, object>
+            {
+                ["Scope"] = "Actual installed embedded editor; no detached ModernEditorWindow",
+                ["ProcessId"] = ProcessId,
+                ["AssemblyMvid"] = typeof(VbeSession).Module.ModuleVersionId.ToString("D"),
+                ["Observation"] = observed,
+                ["State"] = "PENDING",
+                ["Path"] = path,
+                ["Method"] = "PrintWindow, flags=2",
+                ["VisualReview"] = "NOT_RUN",
+                ["AccessibilitySource"] = MonacoAccessibleSourceStatus(observed),
+                ["RenderedCodeVerified"] = false
+            };
             try
             {
                 RequireMonacoOwner(); IntPtr handle = new IntPtr(observed.EditorHandle);

@@ -1,3 +1,4 @@
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -8,7 +9,6 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Web.Script.Serialization;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 using VBAi.Tests.Infrastructure.Diagnostics;
 using VBAi.Tests.Integration;
 
@@ -26,7 +26,8 @@ namespace VBAi.Tests.Unit
         {
             int calls = 0;
             using (var scope = new OllamaSyntheticWireCapture(false, false, null, null, null,
-                () => { calls++; throw new Exception(); }, value => calls++)) {
+                () => { calls++; throw new Exception(); }, value => calls++))
+            {
                 scope.SetPhase("ignored"); scope.RecordArguments("ignored", new object(), new object());
                 scope.RecordCompletion("ignored", null); scope.Dispose();
                 Assert.IsFalse(scope.Enabled);
@@ -50,13 +51,15 @@ namespace VBAi.Tests.Unit
             var sink = new Sink();
             Func<HttpMessageHandler> original = () => new HttpClientHandler { AllowAutoRedirect = false };
             Func<HttpMessageHandler> current = original;
-            var values = new Dictionary<string, string> {
+            var values = new Dictionary<string, string>
+            {
                 [ui ? OllamaSyntheticWireCapture.UiFlag : OllamaSyntheticWireCapture.HeadlessFlag] = "1",
                 [ui ? OllamaSyntheticWireCapture.UiResults : OllamaSyntheticWireCapture.HeadlessResults] = Root,
                 [OllamaQualificationEndpoint.EnvironmentName] = Endpoint.AbsoluteUri
             };
             using (var scope = OllamaSyntheticWireCapture.FromEnvironment(ui, ui ? "detached-ui" : "synthetic-tool-roundtrip",
-                name => values.TryGetValue(name, out var value) ? value : null, () => current, value => current = value, sink.Write)) {
+                name => values.TryGetValue(name, out var value) ? value : null, () => current, value => current = value, sink.Write))
+            {
                 Assert.IsTrue(scope.Enabled); Assert.AreNotSame(original, current);
                 scope.RecordArguments("synthetic", "{}", new Dictionary<string, object>());
             }
@@ -99,12 +102,15 @@ namespace VBAi.Tests.Unit
             Func<HttpMessageHandler> original = () => new HttpClientHandler { AllowAutoRedirect = false };
             Func<HttpMessageHandler> current = original; int sets = 0;
             var primary = new InvalidOperationException("synthetic assertion");
-            try {
+            try
+            {
                 using (var scope = new OllamaSyntheticWireCapture(true, true, Root, Endpoint, "synthetic-tool-roundtrip",
-                    () => current, value => { sets++; current = value; }, new Sink().Write)) {
+                    () => current, value => { sets++; current = value; }, new Sink().Write))
+                {
                     scope.Dispose(); scope.Dispose(); throw primary;
                 }
-            } catch (Exception observed) { Assert.AreSame(primary, observed); }
+            }
+            catch (Exception observed) { Assert.AreSame(primary, observed); }
             Assert.AreSame(original, current); Assert.AreEqual(2, sets);
         }
 
@@ -123,11 +129,13 @@ namespace VBAi.Tests.Unit
             Func<HttpMessageHandler> original = () => new HttpClientHandler();
             Func<HttpMessageHandler> current = original; int sets = 0;
             var primary = new IOException("synthetic factory installation");
-            try {
+            try
+            {
                 new OllamaSyntheticWireCapture(true, true, Root, Endpoint, "synthetic-tool-roundtrip", () => current,
                     value => { current = value; if (++sets == 1) throw primary; }, new Sink().Write);
                 Assert.Fail();
-            } catch (Exception observed) { Assert.AreSame(primary, observed); }
+            }
+            catch (Exception observed) { Assert.AreSame(primary, observed); }
             Assert.AreSame(original, current); Assert.AreEqual(2, sets);
         }
 
@@ -144,8 +152,9 @@ namespace VBAi.Tests.Unit
         public async Task RealWrappedHandlerRefusesForeignUriBeforeAnyHttpDispatch()
         {
             using (var fixture = new Fixture())
-            using (var invoker = new HttpMessageInvoker(fixture.Scope.CreateHandler(new HttpClientHandler { AllowAutoRedirect=false })))
-            using (var request = new HttpRequestMessage(HttpMethod.Post, "http://fixture.invalid/v1/chat/completions") { Content=new StringContent("synthetic") }) {
+            using (var invoker = new HttpMessageInvoker(fixture.Scope.CreateHandler(new HttpClientHandler { AllowAutoRedirect = false })))
+            using (var request = new HttpRequestMessage(HttpMethod.Post, "http://fixture.invalid/v1/chat/completions") { Content = new StringContent("synthetic") })
+            {
                 await Assert.ThrowsExceptionAsync<InvalidOperationException>(() => invoker.SendAsync(request, CancellationToken.None));
                 Assert.AreEqual(0, fixture.Sink.Files.Count);
             }
@@ -154,7 +163,8 @@ namespace VBAi.Tests.Unit
         [DataTestMethod, DataRow(false), DataRow(true)]
         public void CaptureRejectsMockOrRedirectingTransportAndDisposesIt(bool redirects)
         {
-            using (var fixture = new Fixture()) {
+            using (var fixture = new Fixture())
+            {
                 var real = new TrackingTransport { AllowAutoRedirect = true };
                 var fake = new FakeHandler();
                 HttpMessageHandler inner = redirects ? (HttpMessageHandler)real : fake;
@@ -167,7 +177,8 @@ namespace VBAi.Tests.Unit
         [TestMethod]
         public void RealRedirectDisabledTransportRemainsWrappedAndOwnedWithoutDispatch()
         {
-            using (var fixture = new Fixture()) {
+            using (var fixture = new Fixture())
+            {
                 var real = new TrackingTransport { AllowAutoRedirect = false };
                 using (var wrapper = fixture.Scope.CreateHandler(real)) Assert.AreEqual(0, real.Disposals);
                 Assert.AreEqual(1, real.Disposals);
@@ -180,7 +191,8 @@ namespace VBAi.Tests.Unit
         public async Task ForeignPortHostRouteAndQueryRefuseBeforeBodyCapture(string raw)
         {
             using (var fixture = new Fixture())
-            using (var request = new HttpRequestMessage(HttpMethod.Post, raw) { Content = new StringContent("synthetic") }) {
+            using (var request = new HttpRequestMessage(HttpMethod.Post, raw) { Content = new StringContent("synthetic") })
+            {
                 await Assert.ThrowsExceptionAsync<InvalidOperationException>(() => fixture.Scope.ObserveRequestAsync(request));
                 Assert.AreEqual(0, fixture.Sink.Files.Count);
             }
@@ -190,7 +202,8 @@ namespace VBAi.Tests.Unit
         public async Task WrongMethodRefusesBeforeCapture(string method, string path)
         {
             using (var fixture = new Fixture())
-            using (var request = new HttpRequestMessage(new HttpMethod(method), "http://127.0.0.1:52541" + path)) {
+            using (var request = new HttpRequestMessage(new HttpMethod(method), "http://127.0.0.1:52541" + path))
+            {
                 await Assert.ThrowsExceptionAsync<InvalidOperationException>(() => fixture.Scope.ObserveRequestAsync(request));
                 Assert.AreEqual(0, fixture.Sink.Files.Count);
             }
@@ -199,7 +212,8 @@ namespace VBAi.Tests.Unit
         [TestMethod]
         public async Task UnbufferedRequestAndCatalogueBodyCannotBeCaptured()
         {
-            using (var fixture = new Fixture()) {
+            using (var fixture = new Fixture())
+            {
                 var stream = new CountingStream(Encoding.UTF8.GetBytes("synthetic"));
                 using (var request = new HttpRequestMessage(HttpMethod.Post, Endpoint) { Content = new StreamContent(stream) })
                     await Assert.ThrowsExceptionAsync<InvalidOperationException>(() => fixture.Scope.ObserveRequestAsync(request));
@@ -214,7 +228,8 @@ namespace VBAi.Tests.Unit
         public async Task RequestEvidenceKeepsExactUtf8AndPhaseButNeverCopiesCredentialHeaders()
         {
             using (var fixture = new Fixture())
-            using (var request = new HttpRequestMessage(HttpMethod.Post, Endpoint) { Content = new StringContent("{\"synthetic\":\"été\"}", Encoding.UTF8) }) {
+            using (var request = new HttpRequestMessage(HttpMethod.Post, Endpoint) { Content = new StringContent("{\"synthetic\":\"été\"}", Encoding.UTF8) })
+            {
                 request.Headers.TryAddWithoutValidation("Authorization", "Bearer private-header-not-for-evidence");
                 request.Content.Headers.TryAddWithoutValidation("X-Private", "private-content-header-not-for-evidence");
                 fixture.Scope.SetPhase("before-marker-assertion");
@@ -231,7 +246,8 @@ namespace VBAi.Tests.Unit
         public async Task OversizedRequestEvidenceIsBoundedWithoutChangingTheRequestBody()
         {
             using (var fixture = new Fixture())
-            using (var request = new HttpRequestMessage(HttpMethod.Post, Endpoint) { Content = new StringContent(new string('x', OllamaSyntheticWireCapture.Limit + 7)) }) {
+            using (var request = new HttpRequestMessage(HttpMethod.Post, Endpoint) { Content = new StringContent(new string('x', OllamaSyntheticWireCapture.Limit + 7)) })
+            {
                 await fixture.Scope.ObserveRequestAsync(request);
                 Assert.AreEqual(OllamaSyntheticWireCapture.Limit + 7, (await request.Content.ReadAsByteArrayAsync()).Length);
                 Assert.AreEqual(OllamaSyntheticWireCapture.Limit, fixture.Sink.Single("-request.json").Length);
@@ -243,7 +259,8 @@ namespace VBAi.Tests.Unit
         public async Task CatalogueIntentContainsNoInventedRequestBody()
         {
             using (var fixture = new Fixture())
-            using (var request = new HttpRequestMessage(HttpMethod.Get, "http://127.0.0.1:52541/api/tags")) {
+            using (var request = new HttpRequestMessage(HttpMethod.Get, "http://127.0.0.1:52541/api/tags"))
+            {
                 await fixture.Scope.ObserveRequestAsync(request);
                 Assert.AreEqual(1, fixture.Sink.Files.Count);
                 Assert.AreEqual("GET", fixture.Sink.Object("-intent.json")["Method"]);
@@ -253,33 +270,37 @@ namespace VBAi.Tests.Unit
         [TestMethod]
         public async Task RequestDiagnosticIoFailureDoesNotEscapeOrReplaceBufferedContent()
         {
-            using(var fixture=new Fixture(save:(path,bytes)=>{throw new IOException("synthetic diagnostic");}))
-            using(var request=new HttpRequestMessage(HttpMethod.Post,Endpoint){Content=new StringContent("synthetic unchanged")}) {
-                string prefix=await fixture.Scope.ObserveRequestAsync(request);
+            using (var fixture = new Fixture(save: (path, bytes) => { throw new IOException("synthetic diagnostic"); }))
+            using (var request = new HttpRequestMessage(HttpMethod.Post, Endpoint) { Content = new StringContent("synthetic unchanged") })
+            {
+                string prefix = await fixture.Scope.ObserveRequestAsync(request);
                 Assert.IsTrue(Path.GetFileName(prefix).StartsWith("wire-"));
-                Assert.AreEqual("synthetic unchanged",await request.Content.ReadAsStringAsync());
-                fixture.Scope.RecordDeliveryError(prefix,new IOException("synthetic original delivery"));
+                Assert.AreEqual("synthetic unchanged", await request.Content.ReadAsStringAsync());
+                fixture.Scope.RecordDeliveryError(prefix, new IOException("synthetic original delivery"));
             }
         }
 
         [TestMethod]
         public async Task RequestObservationErrorDoesNotThrowBeforeTheOriginalTransportWouldSeeTheRequest()
         {
-            using(var fixture=new Fixture())
-            using(var request=new HttpRequestMessage(HttpMethod.Post,Endpoint){Content=new StringContent("synthetic")}) {
+            using (var fixture = new Fixture())
+            using (var request = new HttpRequestMessage(HttpMethod.Post, Endpoint) { Content = new StringContent("synthetic") })
+            {
                 request.Content.Dispose();
                 Assert.IsNotNull(await fixture.Scope.ObserveRequestAsync(request));
-                Assert.AreEqual(0,fixture.Sink.Files.Count);
+                Assert.AreEqual(0, fixture.Sink.Files.Count);
             }
         }
 
         [DataTestMethod, DataRow(false), DataRow(true)]
         public async Task PassiveResponseWrapperFailureLeavesOriginalHttpOutcomeAndBodyUnchanged(bool returnNull)
         {
-            using (var fixture = new Fixture(wrap: (content, prefix, save) => {
+            using (var fixture = new Fixture(wrap: (content, prefix, save) =>
+            {
                 if (returnNull) return null; throw new IOException("synthetic evidence error");
             }))
-            using (var response = new HttpResponseMessage(HttpStatusCode.Accepted) { Content = new StringContent("synthetic original body") }) {
+            using (var response = new HttpResponseMessage(HttpStatusCode.Accepted) { Content = new StringContent("synthetic original body") })
+            {
                 var original = response.Content;
                 fixture.Scope.ObserveResponse(response, "synthetic");
                 Assert.AreSame(original, response.Content); Assert.AreEqual(HttpStatusCode.Accepted, response.StatusCode);
@@ -291,7 +312,8 @@ namespace VBAi.Tests.Unit
         public void MissingResponseBodyOnlyRecordsMetadata()
         {
             using (var fixture = new Fixture())
-            using (var response = new HttpResponseMessage(HttpStatusCode.NoContent)) {
+            using (var response = new HttpResponseMessage(HttpStatusCode.NoContent))
+            {
                 fixture.Scope.ObserveResponse(response, "synthetic");
                 Assert.IsNull(response.Content); Assert.AreEqual(false, fixture.Sink.Object("-metadata.json")["ContentPresent"]);
             }
@@ -302,9 +324,11 @@ namespace VBAi.Tests.Unit
         {
             var sink = new Sink(); byte[] expected = Encoding.UTF8.GetBytes("synthetic été\nsecond");
             using (var inner = new CountingStream(expected))
-            using (var tee = new OllamaSyntheticWireCapture.TeeStream(inner, "synthetic", sink.Write)) {
+            using (var tee = new OllamaSyntheticWireCapture.TeeStream(inner, "synthetic", sink.Write))
+            {
                 var actual = new MemoryStream(); var buffer = new byte[9]; int count;
-                do {
+                do
+                {
                     count = asynchronous ? await tee.ReadAsync(buffer, 2, 5, CancellationToken.None) : tee.Read(buffer, 2, 5);
                     actual.Write(buffer, 2, count);
                 } while (count > 0);
@@ -333,7 +357,8 @@ namespace VBAi.Tests.Unit
         public void TeeLimitDoesNotTruncateBytesDeliveredToTheProductionReader()
         {
             var sink = new Sink(); byte[] all = Enumerable.Repeat((byte)42, OllamaSyntheticWireCapture.Limit + 13).ToArray();
-            using (var tee = new OllamaSyntheticWireCapture.TeeStream(new MemoryStream(all), "synthetic", sink.Write)) {
+            using (var tee = new OllamaSyntheticWireCapture.TeeStream(new MemoryStream(all), "synthetic", sink.Write))
+            {
                 using (var received = new MemoryStream()) { tee.CopyTo(received); CollectionAssert.AreEqual(all, received.ToArray()); }
             }
             Assert.AreEqual(OllamaSyntheticWireCapture.Limit, sink.Single("-response.bin").Length);
@@ -345,7 +370,8 @@ namespace VBAi.Tests.Unit
         public async Task ReadExceptionsRemainTheOriginalInstanceAndDoNotBecomeEof(bool cancellation)
         {
             var sink = new Sink(); Exception primary = cancellation ? (Exception)new OperationCanceledException("synthetic") : new IOException("synthetic");
-            using (var tee = new OllamaSyntheticWireCapture.TeeStream(new FailingReadStream(primary), "synthetic", sink.Write)) {
+            using (var tee = new OllamaSyntheticWireCapture.TeeStream(new FailingReadStream(primary), "synthetic", sink.Write))
+            {
                 try { await tee.ReadAsync(new byte[3], 0, 3, CancellationToken.None); Assert.Fail(); }
                 catch (Exception observed) { Assert.AreSame(primary, observed); }
             }
@@ -380,7 +406,8 @@ namespace VBAi.Tests.Unit
         {
             var sink = new Sink(); var stream = new CountingStream(Encoding.UTF8.GetBytes("synthetic"));
             var original = new StreamContent(stream); original.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue("text/event-stream");
-            using (var wrapped = new OllamaSyntheticWireCapture.Content(original, "synthetic", sink.Write)) {
+            using (var wrapped = new OllamaSyntheticWireCapture.Content(original, "synthetic", sink.Write))
+            {
                 Assert.AreEqual(0, stream.Reads); Assert.AreEqual("text/event-stream", wrapped.Headers.ContentType.MediaType);
                 var available = await wrapped.ReadAsStreamAsync(); Assert.AreEqual(0, stream.Reads);
                 Assert.IsTrue(available.CanRead);
@@ -418,7 +445,8 @@ namespace VBAi.Tests.Unit
         public void TeeUnsupportedOperationsStayUnsupportedAndFlushStillDelegates()
         {
             using (var inner = new CountingStream(new byte[] { 1 }))
-            using (var tee = new OllamaSyntheticWireCapture.TeeStream(inner, "synthetic", new Sink().Write)) {
+            using (var tee = new OllamaSyntheticWireCapture.TeeStream(inner, "synthetic", new Sink().Write))
+            {
                 Assert.ThrowsException<NotSupportedException>(() => { var ignored = tee.Length; });
                 Assert.ThrowsException<NotSupportedException>(() => { var ignored = tee.Position; });
                 Assert.ThrowsException<NotSupportedException>(() => tee.Position = 1);
@@ -432,7 +460,8 @@ namespace VBAi.Tests.Unit
         [DataTestMethod, DataRow(false), DataRow(true)]
         public void SyntheticArgumentsRetainObjectVersusScalarWithoutCoercingTheMarker(bool nested)
         {
-            using (var fixture = new Fixture()) {
+            using (var fixture = new Fixture())
+            {
                 object marker = nested ? (object)new Dictionary<string, object> { ["value"] = "VB_AI_42" } : "VB_AI_42";
                 var parsed = new Dictionary<string, object> { ["marker"] = marker };
                 string raw = new JavaScriptSerializer().Serialize(parsed);
@@ -449,7 +478,8 @@ namespace VBAi.Tests.Unit
         [TestMethod]
         public void DiagnosticSerializationAndDiskErrorsCannotEscapeArgumentOrCompletionRecording()
         {
-            using (var fixture = new Fixture(save: (path, bytes) => { throw new IOException("synthetic evidence"); })) {
+            using (var fixture = new Fixture(save: (path, bytes) => { throw new IOException("synthetic evidence"); }))
+            {
                 var cyclic = new Dictionary<string, object>(); cyclic["self"] = cyclic;
                 fixture.Scope.RecordArguments("cycle", cyclic, cyclic);
                 fixture.Scope.RecordArguments("disk", "{}", new Dictionary<string, object>());
@@ -460,11 +490,12 @@ namespace VBAi.Tests.Unit
         [TestMethod]
         public void DeliveryErrorEvidenceIsContentFreeAndDoesNotTreatAnExceptionAsCompletion()
         {
-            using(var fixture=new Fixture()) {
-                fixture.Scope.RecordDeliveryError("synthetic",new IOException("private-exception-message-not-for-evidence"));
-                var data=fixture.Sink.Object("-delivery-error.json");
-                Assert.AreEqual(typeof(IOException).FullName,data["ErrorType"]);
-                StringAssert.Contains((string)data["Outcome"],"Unknown delivery");
+            using (var fixture = new Fixture())
+            {
+                fixture.Scope.RecordDeliveryError("synthetic", new IOException("private-exception-message-not-for-evidence"));
+                var data = fixture.Sink.Object("-delivery-error.json");
+                Assert.AreEqual(typeof(IOException).FullName, data["ErrorType"]);
+                StringAssert.Contains((string)data["Outcome"], "Unknown delivery");
                 Assert.IsFalse(fixture.Sink.Text.Contains("private-exception-message-not-for-evidence"));
             }
         }
@@ -472,18 +503,21 @@ namespace VBAi.Tests.Unit
         [TestMethod]
         public void DefaultDurableWriterCreatesUniqueBoundedSyntheticFilesInItsExplicitRoot()
         {
-            string root=Root;
-            Func<HttpMessageHandler> current=()=>new HttpClientHandler{AllowAutoRedirect=false};
-            try {
-                using(var scope=new OllamaSyntheticWireCapture(true,true,root,Endpoint,"synthetic-tool-roundtrip",()=>current,value=>current=value)) {
-                    scope.RecordArguments("first","{}",new Dictionary<string,object>());
-                    scope.RecordArguments("second","{}",new Dictionary<string,object>());
+            string root = Root;
+            Func<HttpMessageHandler> current = () => new HttpClientHandler { AllowAutoRedirect = false };
+            try
+            {
+                using (var scope = new OllamaSyntheticWireCapture(true, true, root, Endpoint, "synthetic-tool-roundtrip", () => current, value => current = value))
+                {
+                    scope.RecordArguments("first", "{}", new Dictionary<string, object>());
+                    scope.RecordArguments("second", "{}", new Dictionary<string, object>());
                 }
-                var files=Directory.GetFiles(root);
-                Assert.AreEqual(4,files.Length);
-                Assert.IsTrue(files.All(file=>new FileInfo(file).Length<=OllamaSyntheticWireCapture.Limit));
-                Assert.IsTrue(files.All(file=>new JavaScriptSerializer().DeserializeObject(File.ReadAllText(file,Encoding.UTF8))!=null));
-            } finally { if(Directory.Exists(root))Directory.Delete(root,true); }
+                var files = Directory.GetFiles(root);
+                Assert.AreEqual(4, files.Length);
+                Assert.IsTrue(files.All(file => new FileInfo(file).Length <= OllamaSyntheticWireCapture.Limit));
+                Assert.IsTrue(files.All(file => new JavaScriptSerializer().DeserializeObject(File.ReadAllText(file, Encoding.UTF8)) != null));
+            }
+            finally { if (Directory.Exists(root)) Directory.Delete(root, true); }
         }
 
         [DataTestMethod, DataRow(false), DataRow(true)]
@@ -493,12 +527,16 @@ namespace VBAi.Tests.Unit
             var provider = LlmProvider.All.Single(item => item.IsOllama);
             var settings = new LlmSettings { OllamaEndpoint = Endpoint.AbsoluteUri }; settings.SetKey(provider, "synthetic-only");
             using (var fixture = new Fixture(save: (path, bytes) => { throw new IOException("synthetic diagnostic"); }))
-            using (var client = new LlmChatClient(provider, settings, "synthetic-model", handler)) {
-                if (fail) {
-                    try { await fixture.Scope.CompleteAsync("synthetic", client, new object[] { new { role="user", content="synthetic" } }, new object[0]); Assert.Fail(); }
+            using (var client = new LlmChatClient(provider, settings, "synthetic-model", handler))
+            {
+                if (fail)
+                {
+                    try { await fixture.Scope.CompleteAsync("synthetic", client, new object[] { new { role = "user", content = "synthetic" } }, new object[0]); Assert.Fail(); }
                     catch (Exception observed) { Assert.AreSame(handler.Error, observed); }
-                } else {
-                    var result = await fixture.Scope.CompleteAsync("synthetic", client, new object[] { new { role="user", content="synthetic" } }, new object[0]);
+                }
+                else
+                {
+                    var result = await fixture.Scope.CompleteAsync("synthetic", client, new object[] { new { role = "user", content = "synthetic" } }, new object[0]);
                     Assert.AreEqual("READY", result["content"]);
                 }
                 Assert.AreEqual(1, handler.Requests);
@@ -519,7 +557,7 @@ namespace VBAi.Tests.Unit
         {
             internal readonly Sink Sink = new Sink();
             internal readonly OllamaSyntheticWireCapture Scope;
-            internal Fixture(Action<string, byte[]> save = null, Func<HttpContent,string,Action<string,byte[]>,HttpContent> wrap = null)
+            internal Fixture(Action<string, byte[]> save = null, Func<HttpContent, string, Action<string, byte[]>, HttpContent> wrap = null)
             {
                 Func<HttpMessageHandler> current = () => new HttpClientHandler { AllowAutoRedirect = false };
                 Scope = new OllamaSyntheticWireCapture(true, true, Root, Endpoint, "synthetic-tool-roundtrip", () => current,
@@ -531,44 +569,46 @@ namespace VBAi.Tests.Unit
         {
             internal int Reads, Disposals, Flushes;
             internal CountingStream(byte[] bytes) : base(bytes) { }
-            public override int Read(byte[] buffer,int offset,int count) { Reads++; return base.Read(buffer,offset,count); }
+            public override int Read(byte[] buffer, int offset, int count) { Reads++; return base.Read(buffer, offset, count); }
             public override void Flush() { Flushes++; base.Flush(); }
-            protected override void Dispose(bool disposing) { if(disposing) Disposals++; base.Dispose(disposing); }
+            protected override void Dispose(bool disposing) { if (disposing) Disposals++; base.Dispose(disposing); }
         }
         private sealed class FailingReadStream : MemoryStream
         {
             private readonly Exception error;
             internal FailingReadStream(Exception error) { this.error = error; }
-            public override Task<int> ReadAsync(byte[] buffer,int offset,int count,CancellationToken token) => Task.FromException<int>(error);
+            public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken token) => Task.FromException<int>(error);
         }
         private sealed class PendingReadStream : MemoryStream
         {
             internal readonly TaskCompletionSource<int> Result = new TaskCompletionSource<int>();
-            public override Task<int> ReadAsync(byte[] buffer,int offset,int count,CancellationToken token) => Result.Task;
+            public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken token) => Result.Task;
         }
         private sealed class FailingDisposeStream : MemoryStream
         {
             private readonly Exception error;
             internal int Disposals;
             internal FailingDisposeStream(Exception error) { this.error = error; }
-            protected override void Dispose(bool disposing) { if(disposing){Disposals++;throw error;}base.Dispose(disposing); }
+            protected override void Dispose(bool disposing) { if (disposing) { Disposals++; throw error; } base.Dispose(disposing); }
         }
         private sealed class TrackingTransport : HttpClientHandler
         {
             internal int Disposals;
-            protected override void Dispose(bool disposing) { if(disposing)Disposals++;base.Dispose(disposing); }
+            protected override void Dispose(bool disposing) { if (disposing) Disposals++; base.Dispose(disposing); }
         }
         private sealed class FakeHandler : HttpMessageHandler
         {
             internal int Requests, Disposals;
             internal Exception Error;
-            protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request,CancellationToken token)
+            protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken token)
             {
                 Requests++;
-                return Error != null ? Task.FromException<HttpResponseMessage>(Error) : Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK) {
-                    Content = new StringContent("{\"choices\":[{\"message\":{\"role\":\"assistant\",\"content\":\"READY\"}}]}",Encoding.UTF8,"application/json") });
+                return Error != null ? Task.FromException<HttpResponseMessage>(Error) : Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK)
+                {
+                    Content = new StringContent("{\"choices\":[{\"message\":{\"role\":\"assistant\",\"content\":\"READY\"}}]}", Encoding.UTF8, "application/json")
+                });
             }
-            protected override void Dispose(bool disposing) { if(disposing)Disposals++;base.Dispose(disposing); }
+            protected override void Dispose(bool disposing) { if (disposing) Disposals++; base.Dispose(disposing); }
         }
     }
 }

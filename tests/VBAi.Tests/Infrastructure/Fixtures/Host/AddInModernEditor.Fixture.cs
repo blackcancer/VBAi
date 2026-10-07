@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-using VBAi;
 using VBAi.Tests.Infrastructure;
 
 namespace VBAi.Tests.Unit

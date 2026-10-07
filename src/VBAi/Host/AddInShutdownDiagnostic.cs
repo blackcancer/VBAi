@@ -220,8 +220,13 @@ namespace VBAi
             Action<int, object, bool> publish)
         {
             var json = new JavaScriptSerializer();
-            return new Session { Nonce = nonce, Identity = json.Deserialize<Identity>(json.Serialize(actual)),
-                ObserveThread = observe, Publish = publish };
+            return new Session
+            {
+                Nonce = nonce,
+                Identity = json.Deserialize<Identity>(json.Serialize(actual)),
+                ObserveThread = observe,
+                Publish = publish
+            };
         }
 
         /// <summary>Admits a bounded nested cleanup invocation only beneath its exact currently active parent.</summary>
@@ -335,12 +340,24 @@ namespace VBAi
                     throw new InvalidOperationException("Shutdown observation left its owning native STA.");
                 int sequence = ++session.Sequence;
                 if (sequence > MaximumEvents) throw new InvalidOperationException("Shutdown event bound exceeded.");
-                session.Publish(sequence, new { Version = 1, session.Nonce, session.Identity, InvocationId, ParentInvocationId = parent,
-                    EntryPoint = entryPoint, Sequence = sequence, Phase = phase, Stage = stage, Thread = thread,
-                    Utc = DateTime.UtcNow.ToString("o"), ElapsedTicks = session.Clock.ElapsedTicks,
+                session.Publish(sequence, new
+                {
+                    Version = 1,
+                    session.Nonce,
+                    session.Identity,
+                    InvocationId,
+                    ParentInvocationId = parent,
+                    EntryPoint = entryPoint,
+                    Sequence = sequence,
+                    Phase = phase,
+                    Stage = stage,
+                    Thread = thread,
+                    Utc = DateTime.UtcNow.ToString("o"),
+                    session.Clock.ElapsedTicks,
                     Error = phase == "Fault" ? (error == null ? "Caught exception; managed detail unavailable." : error.ToString()) : null,
                     FaultCaught = phase == "Fault" ? (bool?)caught : null,
-                    ErrorIsComException = phase == "Fault" ? (bool?)(error is COMException) : null }, stage == null && phase != "Entry");
+                    ErrorIsComException = phase == "Fault" ? (bool?)(error is COMException) : null
+                }, stage == null && phase != "Entry");
             }
             catch (Exception publication) { Fail(publication); }
         }
@@ -352,12 +369,10 @@ namespace VBAi
         /// <exception cref="InvalidOperationException">The nonce, size, version, fields, types, or canonical serialization do not match.</exception>
         internal static Identity DecodeRequest(string text, string nonce)
         {
-            Guid guid;
-            if (!Guid.TryParseExact(nonce, "N", out guid) || text == null || Encoding.UTF8.GetByteCount(text) > MaximumBytes)
+            if (!Guid.TryParseExact(nonce, "N", out _) || text == null || Encoding.UTF8.GetByteCount(text) > MaximumBytes)
                 throw new InvalidOperationException("A bounded owned shutdown request is required.");
             var json = new JavaScriptSerializer();
-            var fields = json.DeserializeObject(text) as IDictionary<string, object>;
-            if (fields == null || fields.Count != 3 || !fields.ContainsKey("Version") || !(fields["Version"] is int) || (int)fields["Version"] != 1 ||
+            if (!(json.DeserializeObject(text) is IDictionary<string, object> fields) || fields.Count != 3 || !fields.ContainsKey("Version") || !(fields["Version"] is int v) || v != 1 ||
                 !fields.ContainsKey("Nonce") || !string.Equals(fields["Nonce"] as string, nonce, StringComparison.Ordinal) || !fields.ContainsKey("Identity") ||
                 !string.Equals(json.Serialize(fields), text, StringComparison.Ordinal))
                 throw new InvalidOperationException("The version, nonce and canonical request fields must be exact.");
@@ -370,9 +385,8 @@ namespace VBAi
         internal static Identity DecodeIdentity(object value)
         {
             var json = new JavaScriptSerializer();
-            var identity = value as IDictionary<string, object>;
             string[] names = { "ProcessId", "ProcessStartedUtc", "HostImagePath", "ProductPath", "ProductMvid", "ProductSha256", "ThreadId" };
-            if (identity == null || identity.Count != names.Length || names.Any(name => !identity.ContainsKey(name)) ||
+            if (!(value is IDictionary<string, object> identity) || identity.Count != names.Length || names.Any(name => !identity.ContainsKey(name)) ||
                 !(identity["ProcessId"] is int) || (!(identity["ThreadId"] is int) && !(identity["ThreadId"] is long)) ||
                 names.Where(name => name != "ProcessId" && name != "ThreadId").Any(name => !(identity[name] is string)))
                 throw new InvalidOperationException("Shutdown identity fields and their types must be exact.");
@@ -384,10 +398,9 @@ namespace VBAi
         /// <param name="actual">Independently captured live process, loaded product, and owner-thread identity.</param>
         internal static void RequireSameIdentity(Identity expected, Identity actual)
         {
-            DateTime birth; Guid mvid;
             if (expected == null || actual == null || expected.ProcessId <= 0 || expected.ThreadId == 0 ||
-                !DateTime.TryParseExact(expected.ProcessStartedUtc, "o", CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind, out birth) || birth.Kind != DateTimeKind.Utc ||
-                !Guid.TryParseExact(expected.ProductMvid, "D", out mvid) || !IsLocalCanonical(expected.HostImagePath) || !IsLocalCanonical(expected.ProductPath) ||
+                !DateTime.TryParseExact(expected.ProcessStartedUtc, "o", CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind, out DateTime birth) || birth.Kind != DateTimeKind.Utc ||
+                !Guid.TryParseExact(expected.ProductMvid, "D", out Guid mvid) || !IsLocalCanonical(expected.HostImagePath) || !IsLocalCanonical(expected.ProductPath) ||
                 expected.ProductSha256 == null || expected.ProductSha256.Length != 64 || expected.ProductSha256.Any(value => !Uri.IsHexDigit(value)) ||
                 expected.ProcessId != actual.ProcessId || expected.ProcessStartedUtc != actual.ProcessStartedUtc || expected.ThreadId != actual.ThreadId ||
                 !string.Equals(expected.HostImagePath, actual.HostImagePath, StringComparison.OrdinalIgnoreCase) ||
@@ -401,8 +414,10 @@ namespace VBAi
         /// <param name="path">Path to validate; UNC paths and non-canonical spellings are rejected.</param>
         /// <returns><see langword="true"/> when the path is rooted on a drive and equals its full-path form.</returns>
         private static bool IsLocalCanonical(string path)
-        { return !string.IsNullOrWhiteSpace(path) && Path.IsPathRooted(path) && !path.StartsWith(@"\\", StringComparison.Ordinal) &&
-            path.Length >= 3 && path[1] == ':' && path[2] == '\\' && string.Equals(path, Path.GetFullPath(path), StringComparison.OrdinalIgnoreCase); }
+        {
+            return !string.IsNullOrWhiteSpace(path) && Path.IsPathRooted(path) && !path.StartsWith(@"\\", StringComparison.Ordinal) &&
+            path.Length >= 3 && path[1] == ':' && path[2] == '\\' && string.Equals(path, Path.GetFullPath(path), StringComparison.OrdinalIgnoreCase);
+        }
 
         /// <summary>Bounds ordinary paths to a fixed temporary GUID child; this is not a hostile-race filesystem security primitive.</summary>
         /// <param name="root">Prepared request directory expected to be a GUID child of the fixed diagnostic directory.</param>
@@ -410,8 +425,7 @@ namespace VBAi
         /// <returns>The validated canonical request directory.</returns>
         internal static string RequireRoot(string root, string temporaryRoot)
         {
-            Guid guid;
-            if (!IsLocalCanonical(root) || !Guid.TryParseExact(Path.GetFileName(root), "N", out guid) ||
+            if (!IsLocalCanonical(root) || !Guid.TryParseExact(Path.GetFileName(root), "N", out _) ||
                 !string.Equals(Path.GetDirectoryName(root), Path.Combine(Path.GetFullPath(temporaryRoot), DirectoryName).TrimEnd('\\'), StringComparison.OrdinalIgnoreCase))
                 throw new InvalidOperationException("An owned local temporary shutdown diagnostic root is required.");
             RequireNoReparse(root);
@@ -471,9 +485,16 @@ namespace VBAi
                 string product = typeof(AddIn).Assembly.Location, hash;
                 using (var file = new FileStream(product, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
                 using (var sha = SHA256.Create()) hash = BitConverter.ToString(sha.ComputeHash(file)).Replace("-", "");
-                return new Identity { ProcessId = process.Id, ProcessStartedUtc = process.StartTime.ToUniversalTime().ToString("o"),
-                    HostImagePath = process.MainModule.FileName, ProductPath = product,
-                    ProductMvid = typeof(AddIn).Module.ModuleVersionId.ToString("D"), ProductSha256 = hash, ThreadId = GetCurrentThreadId() };
+                return new Identity
+                {
+                    ProcessId = process.Id,
+                    ProcessStartedUtc = process.StartTime.ToUniversalTime().ToString("o"),
+                    HostImagePath = process.MainModule.FileName,
+                    ProductPath = product,
+                    ProductMvid = typeof(AddIn).Module.ModuleVersionId.ToString("D"),
+                    ProductSha256 = hash,
+                    ThreadId = GetCurrentThreadId()
+                };
             }
         }
 

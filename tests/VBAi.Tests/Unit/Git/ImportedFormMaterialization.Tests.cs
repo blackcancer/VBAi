@@ -1,9 +1,9 @@
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.ExceptionServices;
 using System.Threading;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace VBAi.Tests.Unit
 {
@@ -192,7 +192,8 @@ namespace VBAi.Tests.Unit
         [TestMethod, DataRow(false, null), DataRow(true, false), DataRow(true, null)]
         public void DiagnosticRefusalSeparatesObservedVisibilityWithoutNativeRequery(bool main, bool? designer)
         {
-            Sta(() => {
+            Sta(() =>
+            {
                 int reads = 0, descriptions = 0;
                 var failure = Assert.ThrowsException<InvalidOperationException>(() => ImportedFormMaterialization.SelectObservedTarget(
                     "before-first-render", new IntPtr(11), IntPtr.Zero, true, true, main, designer, 1, 42,
@@ -208,7 +209,8 @@ namespace VBAi.Tests.Unit
         [TestMethod, DataRow("before-first-render"), DataRow("immediately-before-PrintWindow"), DataRow("after-PrintWindow")]
         public void DiagnosticInactiveDesignerKeepsTheStageAndRefusesBeforeNativeOwnership(string stage)
         {
-            Sta(() => {
+            Sta(() =>
+            {
                 var failure = Assert.ThrowsException<InvalidOperationException>(() => ImportedFormMaterialization.SelectObservedTarget(
                     stage, new IntPtr(11), IntPtr.Zero, true, false, true, true, 1, 42,
                     _ => throw new AssertFailedException("Unexpected ownership read"), () => "not-evaluated"));
@@ -221,7 +223,8 @@ namespace VBAi.Tests.Unit
         [TestMethod]
         public void DiagnosticForeignRootPreservesExactlyOneOwnerReadAndOriginalFailure()
         {
-            Sta(() => {
+            Sta(() =>
+            {
                 int reads = 0;
                 var failure = Assert.ThrowsException<InvalidOperationException>(() => ImportedFormMaterialization.SelectObservedTarget(
                     "before-first-render", new IntPtr(11), new IntPtr(12), true, true, true, true, 1, 42,
@@ -250,7 +253,8 @@ namespace VBAi.Tests.Unit
             var events = new List<string>(); int captures = 0;
             var result = ImportedFormMaterialization.Prepare(target, target.Manifest.Components[0], Bindings(target),
                 () => { events.Add("capture " + ++captures); return captures == 1 || captures == 2 && !earlyExact || residual ? different : target; },
-                probe => {
+                probe =>
+                {
                     bool designerActive = false;
                     var outcome = ImportedFormMaterialization.ShowAndInitialize(() => events.Add("show"), probe,
                         () => { designerActive = true; events.Add("focus"); }, () => events.Add("render"), () => { });
@@ -335,7 +339,8 @@ namespace VBAi.Tests.Unit
             var target = Snapshot(FormStreamPaddingTests.ContainerResourceBefore()); int captures = 0, shows = 0;
             var failure = new InvalidOperationException("export failed");
             var thrown = Assert.ThrowsException<InvalidOperationException>(() => ImportedFormMaterialization.Prepare(target,
-                target.Manifest.Components[0], Bindings(target), () => {
+                target.Manifest.Components[0], Bindings(target), () =>
+                {
                     if (++captures == failedCapture) throw failure; return captures == 1 ? ChangedFrame(target) : target;
                 }, probe => ImportedFormMaterialization.ShowAndInitialize(() => shows++, probe,
                     () => Assert.Fail("The probe never returns nonexact"), () => Assert.Fail("No render"), () => { }), () => { }));
@@ -424,10 +429,16 @@ namespace VBAi.Tests.Unit
         /// <summary>Constructs a validated single-form snapshot from retained synthetic resources.</summary>
         private static VbaGitSnapshot Snapshot(byte[] resource)
         {
-            return new VbaGitSnapshot(new VbaGitManifest { References = "", Components = new[] {
-                new VbaGitComponent { Name = "Form1", Type = 3, HasResources = true } } }, new Dictionary<string, byte[]> {
+            return new VbaGitSnapshot(new VbaGitManifest
+            {
+                References = "",
+                Components = new[] {
+                new VbaGitComponent { Name = "Form1", Type = 3, HasResources = true } }
+            }, new Dictionary<string, byte[]>
+            {
                 ["Form1.frm"] = VbaGitSnapshot.Utf8.GetBytes("VERSION 5.00\nBegin SyntheticForm\n OleObjectBlob = \"Form1.frx\":0000\nEnd\nAttribute VB_Name = \"Form1\"\n"),
-                ["Form1.frx"] = (byte[])resource.Clone() });
+                ["Form1.frx"] = (byte[])resource.Clone()
+            });
         }
 
         /// <summary>Returns the exact parsed root and Frame descriptor plan.</summary>

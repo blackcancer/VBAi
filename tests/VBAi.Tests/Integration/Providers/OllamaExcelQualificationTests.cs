@@ -1,3 +1,4 @@
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -9,7 +10,6 @@ using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Web.Script.Serialization;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace VBAi.Tests.Integration
 {
@@ -46,14 +46,21 @@ namespace VBAi.Tests.Integration
             string projectName = "OllamaFixture" + Guid.NewGuid().ToString("N").Substring(0, 12);
             string marker = "OBSERVED_" + Guid.NewGuid().ToString("N");
             var json = new JavaScriptSerializer();
-            var report = new Dictionary<string, object> {
-                ["State"] = "RUNNING", ["Model"] = model, ["Endpoint"] = endpoint,
-                ["Temperature"] = profile.Temperature, ["TopP"] = profile.TopP,
-                ["Project"] = projectName, ["Module"] = moduleName,
-                ["MarkerSha256"] = EditorDocument.Hash(marker), ["StartedUtc"] = DateTime.UtcNow.ToString("o"),
+            var report = new Dictionary<string, object>
+            {
+                ["State"] = "RUNNING",
+                ["Model"] = model,
+                ["Endpoint"] = endpoint,
+                ["Temperature"] = profile.Temperature,
+                ["TopP"] = profile.TopP,
+                ["Project"] = projectName,
+                ["Module"] = moduleName,
+                ["MarkerSha256"] = EditorDocument.Hash(marker),
+                ["StartedUtc"] = DateTime.UtcNow.ToString("o"),
                 ["AssemblyPath"] = typeof(LlmChatClient).Assembly.Location,
                 ["AssemblyModuleVersionId"] = typeof(LlmChatClient).Module.ModuleVersionId.ToString("D"),
-                ["ToolInvocations"] = 0, ["MacroExecutionRequested"] = false,
+                ["ToolInvocations"] = 0,
+                ["MacroExecutionRequested"] = false,
                 ["Scope"] = "Production HTTP/client/tools/session and native Excel COM. In-process test dispatch; installed bridge and embedded UI are not qualified."
             };
             object application = null, books = null, book = null, vbe = null, project = null, components = null, component = null, code = null;
@@ -63,8 +70,13 @@ namespace VBAi.Tests.Integration
             try
             {
                 var provider = LlmProvider.All.Single(item => item.IsOllama);
-                var settings = new LlmSettings { ProviderName = provider.Name, OllamaEndpoint = endpoint,
-                    OllamaModel = model, VbeEditApproval = "ReadOnly" };
+                var settings = new LlmSettings
+                {
+                    ProviderName = provider.Name,
+                    OllamaEndpoint = endpoint,
+                    OllamaModel = model,
+                    VbeEditApproval = "ReadOnly"
+                };
                 profile.ApplyTo(settings);
                 // Shadow any inherited credential without loading or saving personal settings.
                 settings.SetKey(provider, "vbai-synthetic-loopback-excel-test");
@@ -89,11 +101,15 @@ namespace VBAi.Tests.Integration
                 vbe = excel.VBE;
                 var adapter = new EditorVbeModule(vbe, project, component);
                 report["HostProcessId"] = adapter.HostProcessId;
-                var tools = new LlmVbeTools(new VbeSession(vbe), null, settings) {
-                    BoundProject = projectName, CurrentProviderName = provider.Name, Mode = ChatMode.Discussion
+                var tools = new LlmVbeTools(new VbeSession(vbe), null, settings)
+                {
+                    BoundProject = projectName,
+                    CurrentProviderName = provider.Name,
+                    Mode = ChatMode.Discussion
                 };
                 // Retain the production definition; restrict only the advertised tool set.
-                object[] definitions = LlmVbeTools.Definitions.Where(definition => {
+                object[] definitions = LlmVbeTools.Definitions.Where(definition =>
+                {
                     var item = (IDictionary<string, object>)json.DeserializeObject(json.Serialize(definition));
                     return (string)((IDictionary<string, object>)item["function"])["name"] == "read_module";
                 }).ToArray();

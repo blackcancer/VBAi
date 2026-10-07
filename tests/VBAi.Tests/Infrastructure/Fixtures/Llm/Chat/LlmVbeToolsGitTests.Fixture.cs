@@ -1,9 +1,8 @@
 namespace VBAi.Tests.Unit
 {
     using System;
-    using System.IO;
     using System.Diagnostics;
-    using System.Web.Script.Serialization;
+    using System.IO;
     using VBAi;
 
     /// <summary>Hôte VBE simulé contenant les projets associés au test Git.</summary>
@@ -60,18 +59,18 @@ namespace VBAi.Tests.Unit
             internal Fixture()
             {
                 Directory.CreateDirectory(Root);
-                string remote = Path.Combine(Root,"origin.git");
-                Git("init","--bare",remote);
-                Repository = new MacroGitRepository(Path.Combine(Root,"cache.git"),"main");
+                string remote = Path.Combine(Root, "origin.git");
+                Git("init", "--bare", remote);
+                Repository = new MacroGitRepository(Path.Combine(Root, "cache.git"), "main");
                 Repository.Initialize(remote);
-                Git("--git-dir="+Path.Combine(Root,"cache.git"),"config","user.name","Coverage Fixture");
-                Git("--git-dir="+Path.Combine(Root,"cache.git"),"config","user.email","coverage@example.invalid");
-                Host = new global::FakeProject { FileName = Path.Combine(Root,"fixture.xlsm") };
-                Host.VBComponents.Add(new global::FakeComponent("Module1",1,"Attribute VB_Name = \"Module1\"\nOption Explicit\nPublic Const Value = 1\n"));
-                Project = new VbaGitProject(() => Host,Host.FileName);
-                Initial = Repository.Commit(Project.Capture(),null,"Initial fixture");
-                Repository.SetRef(Repository.Head,Initial); Repository.SetRef(MacroGitRepository.Baseline,Initial);
-                Tools = new LlmVbeTools(null,null,Settings) { BoundProject = "P", GitOperationsFactory = p => new MacroGitOperations(Project,Repository) };
+                Git("--git-dir=" + Path.Combine(Root, "cache.git"), "config", "user.name", "Coverage Fixture");
+                Git("--git-dir=" + Path.Combine(Root, "cache.git"), "config", "user.email", "coverage@example.invalid");
+                Host = new global::FakeProject { FileName = Path.Combine(Root, "fixture.xlsm") };
+                Host.VBComponents.Add(new global::FakeComponent("Module1", 1, "Attribute VB_Name = \"Module1\"\nOption Explicit\nPublic Const Value = 1\n"));
+                Project = new VbaGitProject(() => Host, Host.FileName);
+                Initial = Repository.Commit(Project.Capture(), null, "Initial fixture");
+                Repository.SetRef(Repository.Head, Initial); Repository.SetRef(MacroGitRepository.Baseline, Initial);
+                Tools = new LlmVbeTools(null, null, Settings) { BoundProject = "P", GitOperationsFactory = p => new MacroGitOperations(Project, Repository) };
             }
             /// <summary>Exécute git.exe dans la racine temporaire et renvoie sa sortie standard.</summary>
             /// <param name="arguments">Arguments transmis à Git.</param>
@@ -80,25 +79,25 @@ namespace VBAi.Tests.Unit
             /// <exception cref="InvalidOperationException">Git renvoie un code d’erreur.</exception>
             internal string Git(params string[] arguments)
             {
-                var start = new ProcessStartInfo("git.exe",string.Join(" ",Array.ConvertAll(arguments,a=>"\""+a.Replace("\"","\\\"")+"\"")))
-                { WorkingDirectory=Root,UseShellExecute=false,CreateNoWindow=true,RedirectStandardError=true,RedirectStandardOutput=true,RedirectStandardInput=true };
-                using(var process=new Process { StartInfo=start })
+                var start = new ProcessStartInfo("git.exe", string.Join(" ", Array.ConvertAll(arguments, a => "\"" + a.Replace("\"", "\\\"") + "\"")))
+                { WorkingDirectory = Root, UseShellExecute = false, CreateNoWindow = true, RedirectStandardError = true, RedirectStandardOutput = true, RedirectStandardInput = true };
+                using (var process = new Process { StartInfo = start })
                 {
                     ProcessInput.StartWithoutPreamble(process);
                     process.StandardInput.Close();
-                    var output=process.StandardOutput.ReadToEndAsync(); var error=process.StandardError.ReadToEndAsync();
-                    if(!process.WaitForExit(30000)) { process.Kill(); throw new TimeoutException("Fixture git timeout"); }
-                    if(process.ExitCode!=0) throw new InvalidOperationException(error.GetAwaiter().GetResult());
+                    var output = process.StandardOutput.ReadToEndAsync(); var error = process.StandardError.ReadToEndAsync();
+                    if (!process.WaitForExit(30000)) { process.Kill(); throw new TimeoutException("Fixture git timeout"); }
+                    if (process.ExitCode != 0) throw new InvalidOperationException(error.GetAwaiter().GetResult());
                     return output.GetAwaiter().GetResult().Trim();
                 }
             }
             /// <summary>Vérifie que la racine reste sous le préfixe temporaire avant de supprimer le dépôt.</summary>
             public void Dispose()
             {
-                if (!Path.GetFullPath(Root).StartsWith(Path.GetFullPath(Path.GetTempPath())+"CodexToolGit-",StringComparison.OrdinalIgnoreCase))
+                if (!Path.GetFullPath(Root).StartsWith(Path.GetFullPath(Path.GetTempPath()) + "CodexToolGit-", StringComparison.OrdinalIgnoreCase))
                     throw new InvalidOperationException("Cleanup escaped fixture root");
-                foreach(string file in Directory.GetFiles(Root,"*",SearchOption.AllDirectories)) File.SetAttributes(file,FileAttributes.Normal);
-                Directory.Delete(Root,true);
+                foreach (string file in Directory.GetFiles(Root, "*", SearchOption.AllDirectories)) File.SetAttributes(file, FileAttributes.Normal);
+                Directory.Delete(Root, true);
             }
         }
     }

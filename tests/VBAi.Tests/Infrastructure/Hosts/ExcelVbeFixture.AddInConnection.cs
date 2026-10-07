@@ -1,10 +1,9 @@
+using Microsoft.Win32;
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Threading;
-using Microsoft.Win32;
 
 namespace VBAi.Tests.Integration
 {
@@ -32,7 +31,8 @@ namespace VBAi.Tests.Integration
                 uint pid; uint tid = GetWindowThreadProcessId(hwnd, out pid);
                 if (pid != (uint)ProcessId || tid == 0) throw new InvalidOperationException("Original VBE window owner is absent.");
                 addins = ((dynamic)editor).AddIns; entry = ((dynamic)addins).Item("VBAi.AddIn");
-                Action guard = () => {
+                Action guard = () =>
+                {
                     if (Thread.CurrentThread.ManagedThreadId != owningThread || Thread.CurrentThread.GetApartmentState() != ApartmentState.STA ||
                         !ReferenceEquals(app, application) || !ReferenceEquals(process, ownedProcess) || !ReferenceEquals(child, privateDesktopChild) ||
                         process.HasExited || process.Id != ProcessId || (child != null && child.ProcessId != ProcessId))
@@ -47,7 +47,8 @@ namespace VBAi.Tests.Integration
                     OllamaOfficeDesktop.RequireWindow(desktop, (uint)ProcessId, true, current);
                 };
                 gate.Run("VBAi.AddIn", guard, () => ((dynamic)entry).Connect,
-                    () => ((dynamic)entry).Connect = true, ReadQ028AddInRegistration, row => {
+                    () => ((dynamic)entry).Connect = true, ReadQ028AddInRegistration, row =>
+                    {
                         row["Host"] = "Excel"; row["ProcessId"] = ProcessId; row["Desktop"] = desktop;
                         row["SharedConnectionGateOrigin"] = "Qualified private Access single-use gate; applied here only to owned Excel";
                         row["OriginalProcessHandle"] = child != null ? child.ProcessHandle.ToInt64() : process.Handle.ToInt64();
@@ -63,9 +64,9 @@ namespace VBAi.Tests.Integration
         {
             var rows = new List<string>();
             foreach (RegistryHive hive in new[] { RegistryHive.CurrentUser, RegistryHive.LocalMachine })
-            using (var root = RegistryKey.OpenBaseKey(hive, RegistryView.Registry64))
-            using (var key = root.OpenSubKey(@"Software\Microsoft\VBA\VBE\6.0\Addins64\VBAi.AddIn", false))
-                rows.Add(hive + "|" + Convert.ToString(key?.GetValue("LoadBehavior")));
+                using (var root = RegistryKey.OpenBaseKey(hive, RegistryView.Registry64))
+                using (var key = root.OpenSubKey(@"Software\Microsoft\VBA\VBE\6.0\Addins64\VBAi.AddIn", false))
+                    rows.Add(hive + "|" + Convert.ToString(key?.GetValue("LoadBehavior")));
             using (var root = RegistryKey.OpenBaseKey(RegistryHive.CurrentUser, RegistryView.Registry64))
             using (var server = root.OpenSubKey(@"Software\Classes\CLSID\{8E854243-087F-4D6C-9E0E-8622B0E50883}\InprocServer32", false))
             {

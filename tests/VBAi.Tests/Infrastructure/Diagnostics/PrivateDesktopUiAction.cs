@@ -1,8 +1,8 @@
+using Accessibility;
 using System;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Windows.Automation;
-using Accessibility;
 using VBAi.Desktop.Helper;
 
 namespace VBAi.Tests.Integration

@@ -1,9 +1,9 @@
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
 using System.Runtime.InteropServices;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace VBAi.Tests.Unit
 {
@@ -206,7 +206,8 @@ namespace VBAi.Tests.Unit
             var receipts = new List<string>(); int checks = 0;
             FormFontRestoration.AssignRootCore(properties, RootBinding().Descriptor, () => checks++, "Arial",
                 (field, value) => receipts.Add("before:" + field),
-                (field, value, property) => {
+                (field, value, property) =>
+                {
                     Assert.AreEqual(value, ((FakeChild)property).Value, field);
                     receipts.Add("after:" + field);
                 }, () => receipts.Add("after-temporary-snapshot"));
@@ -250,7 +251,8 @@ namespace VBAi.Tests.Unit
             var secondCleanup = new InvalidOperationException("First acquired reference failed to release.");
             var visited = new List<object>();
             var error = Assert.ThrowsException<AggregateException>(() =>
-                FormFontRestoration.ReleaseOwnedReferences(references, item => {
+                FormFontRestoration.ReleaseOwnedReferences(references, item =>
+                {
                     visited.Add(item);
                     if (ReferenceEquals(item, references[1])) throw firstCleanup;
                     if (ReferenceEquals(item, references[0])) throw secondCleanup;

@@ -13,7 +13,8 @@ namespace VBAi.Tests.Integration
             var lease = new GitSourceFontLease();
             try
             {
-                WithGitLayoutDesigner(form, (component, designer) => {
+                WithGitLayoutDesigner(form, (component, designer) =>
+                {
                     lease.Form = ((dynamic)designer).Font;
                     report["SourceFormFontIdentity"] = DescribeGitFontPersistence(lease.Form);
                     if (layout != "FrameMultiPage") return;
@@ -37,7 +38,8 @@ namespace VBAi.Tests.Integration
         {
             if (lease == null || lease.Form == null || (layout == "FrameMultiPage" && lease.Frame == null))
                 throw new InvalidOperationException("An intact source-font lease is required before assignment.");
-            WithGitLayoutDesigner(form, (component, designer) => {
+            WithGitLayoutDesigner(form, (component, designer) =>
+            {
                 ((dynamic)designer).Font = lease.Form;
                 if (layout != "FrameMultiPage") return;
                 object controls = null, frame = null;

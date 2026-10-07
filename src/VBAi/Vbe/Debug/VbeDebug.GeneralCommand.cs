@@ -41,7 +41,8 @@ namespace VBAi
             var captured = matches[0]; int originalType = (int)((dynamic)captured.Control).Type;
             if (originalType != 1) throw new InvalidOperationException("General command must be the exact native menu button.");
             bool consumed = false;
-            return beforeExecute => {
+            return beforeExecute =>
+            {
                 if (consumed) throw new InvalidOperationException("Original General command cannot be executed twice.");
                 consumed = true;
                 if ((string)vbe.CommandBars.ActiveMenuBar.Name != menuName) throw new InvalidOperationException("General active menu name changed.");

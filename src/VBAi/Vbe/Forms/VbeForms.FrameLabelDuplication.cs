@@ -84,7 +84,8 @@ namespace VBAi
             foreach (dynamic childPlan in plan.Children)
             {
                 dynamic label = ResolveTreeItem(form.Designer, (string)childPlan.SourcePath);
-                var item = new DirectLabelCopy {
+                var item = new DirectLabelCopy
+                {
                     SourcePath = (string)childPlan.SourcePath,
                     Name = (string)childPlan.ProposedName,
                     Caption = (string)label.Caption,
@@ -161,13 +162,18 @@ namespace VBAi
                         (bool)installed.Font.Bold != item.FontBold)
                         throw new InvalidOperationException("Copied Label differs from source: " + childPath);
                 }
-                return new { SourcePath = request.ControlPath, NewPath = framePath,
+                return new
+                {
+                    SourcePath = request.ControlPath,
+                    NewPath = framePath,
                     DirectLabelsCopied = labels.Count,
                     CopiedChildPaths = labels.Select(item => framePath + "/Controls/" + item.Name).ToArray(),
                     FrameProperties = new[] { "Name", "Caption", "Left", "Top", "Width", "Height" },
                     LabelProperties = new[] { "Name", "Caption", "Left", "Top", "Width", "Height",
                         "BackColor", "Font.Name", "Font.Size", "Font.Bold" },
-                    Completeness = "Partial", Tree = after };
+                    Completeness = "Partial",
+                    Tree = after
+                };
             }
             catch (Exception originalError)
             {
@@ -192,7 +198,7 @@ namespace VBAi
         /// <returns>Entier de couleur au format OLE.</returns>
         private static int CopyOleColor(object value)
         {
-            return value is Color ? ColorTranslator.ToOle((Color)value) :
+            return value is Color clr ? ColorTranslator.ToOle(clr) :
                 Convert.ToInt32(value, CultureInfo.InvariantCulture);
         }
 

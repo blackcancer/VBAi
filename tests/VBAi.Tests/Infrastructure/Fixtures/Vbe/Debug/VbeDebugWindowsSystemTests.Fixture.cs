@@ -47,17 +47,20 @@ namespace VBAi.Tests.Unit
                     var field = typeof(VbeDebugWindows).GetField(name, BindingFlags.Static | BindingFlags.NonPublic);
                     saved.Add(field, field.GetValue(null));
                 }
-                VbeDebugWindows.EnumWindows = (callback, parameter) => {
+                VbeDebugWindows.EnumWindows = (callback, parameter) =>
+                {
                     foreach (var window in Windows.Where(w => w.Parent == IntPtr.Zero).ToArray())
                         if (!callback(window.Handle, parameter)) break;
                     return true;
                 };
-                VbeDebugWindows.EnumChildWindows = (parent, callback, parameter) => {
+                VbeDebugWindows.EnumChildWindows = (parent, callback, parameter) =>
+                {
                     foreach (var window in Windows.Where(w => IsBelow(w, parent)).ToArray())
                         if (!callback(window.Handle, parameter)) break;
                     return true;
                 };
-                VbeDebugWindows.GetWindowThreadProcessId = (IntPtr handle, out uint processId) => {
+                VbeDebugWindows.GetWindowThreadProcessId = (IntPtr handle, out uint processId) =>
+                {
                     var window = Find(handle);
                     processId = window?.ProcessId ?? 0;
                     return window?.ThreadId ?? 0;
@@ -68,17 +71,20 @@ namespace VBAi.Tests.Unit
                 VbeDebugWindows.GetDlgItem = (dialog, id) => Windows.FirstOrDefault(w => w.Parent == dialog && w.ControlId == id)?.Handle ?? IntPtr.Zero;
                 VbeDebugWindows.IsWindowVisible = handle => Find(handle)?.Visible ?? false;
                 VbeDebugWindows.OptionsWindowEnabled = handle => Find(handle)?.Enabled ?? false;
-                VbeDebugWindows.PostMessage = (handle, message, wParam, lParam) => {
+                VbeDebugWindows.PostMessage = (handle, message, wParam, lParam) =>
+                {
                     Messages.Add(Tuple.Create(handle, message, wParam, lParam));
                     OnMessage?.Invoke(Find(handle), message); return PostSucceeds;
                 };
-                VbeDebugWindows.SendMessageText = (handle, message, parameter, text) => {
+                VbeDebugWindows.SendMessageText = (handle, message, parameter, text) =>
+                {
                     Replacements.Add(Tuple.Create(handle, text));
                     var window = Find(handle); if (window != null) window.Text = text;
                     return IntPtr.Zero;
                 };
                 VbeDebugWindows.SendMessageInt = (handle, message, wParam, lParam) => IntegerMessageResult;
-                VbeDebugWindows.AccessibleObjectFromWindow = (IntPtr handle, uint objectId, ref Guid iid, out object accessible) => {
+                VbeDebugWindows.AccessibleObjectFromWindow = (IntPtr handle, uint objectId, ref Guid iid, out object accessible) =>
+                {
                     accessible = OverrideAccessibility ? AccessibilityOverride : Find(handle)?.Accessible;
                     return AccessibilityHResult;
                 };
@@ -94,9 +100,16 @@ namespace VBAi.Tests.Unit
 
             public SystemWindow Add(string text, string kind = "#32770", SystemWindow parent = null, int id = 0)
             {
-                var window = new SystemWindow { Handle = new IntPtr(100 + Windows.Count), Text = text,
-                    Class = kind, Parent = parent?.Handle ?? IntPtr.Zero, ControlId = id,
-                    ProcessId = parent?.ProcessId ?? (uint)Process.GetCurrentProcess().Id, ThreadId = parent?.ThreadId ?? 1 };
+                var window = new SystemWindow
+                {
+                    Handle = new IntPtr(100 + Windows.Count),
+                    Text = text,
+                    Class = kind,
+                    Parent = parent?.Handle ?? IntPtr.Zero,
+                    ControlId = id,
+                    ProcessId = parent?.ProcessId ?? (uint)Process.GetCurrentProcess().Id,
+                    ThreadId = parent?.ThreadId ?? 1
+                };
                 Windows.Add(window); return window;
             }
 

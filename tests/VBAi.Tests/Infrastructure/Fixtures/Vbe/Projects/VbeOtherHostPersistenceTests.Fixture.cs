@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-using VBAi;
 
 namespace VBAi.Tests.Unit
 {
@@ -55,8 +54,13 @@ namespace VBAi.Tests.Unit
             {
                 if (unsaved) { Project.FileName = ""; Observation.Path = ""; Exists = false; }
                 dynamic snapshot = Service.ProjectProperties("P");
-                return new Request { Project = "P", ExpectedProjectVersion = snapshot.Version,
-                    ExpectedHostPath = unsaved ? "" : Observation.Path, Path = @"C:\fixture\New" + extension };
+                return new Request
+                {
+                    Project = "P",
+                    ExpectedProjectVersion = snapshot.Version,
+                    ExpectedHostPath = unsaved ? "" : Observation.Path,
+                    Path = @"C:\fixture\New" + extension
+                };
             }
             public object Application() { if (Failure == "application") throw new InvalidOperationException("application unreadable"); return ReadApplication == null ? this : ReadApplication(); }
             public uint ApplicationProcessId(object app) { Calls++; return Failure == "changed pid" && Calls > 1 ? 43 : Owner; }

@@ -1,10 +1,9 @@
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
-using System.ComponentModel;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Reflection;
 using System.Runtime.ExceptionServices;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
-using VBAi;
 
 namespace VBAi.Tests.Unit
 {
@@ -21,7 +20,8 @@ namespace VBAi.Tests.Unit
             {
                 VbeScalarProperty.NativeObject = _ => true;
                 var target = new ScalarTarget();
-                VbeScalarProperty.NativeSetterInvocation = (owner, name, flags, value) => {
+                VbeScalarProperty.NativeSetterInvocation = (owner, name, flags, value) =>
+                {
                     Assert.AreSame(target, owner);
                     AssertScalarPutFlags(flags);
                     invocations.Add(Tuple.Create(name, value));
@@ -89,7 +89,8 @@ namespace VBAi.Tests.Unit
             try
             {
                 VbeScalarProperty.NativeObject = _ => true;
-                VbeScalarProperty.NativeSetterInvocation = (owner, name, flags, value) => {
+                VbeScalarProperty.NativeSetterInvocation = (owner, name, flags, value) =>
+                {
                     Assert.AreSame(target, owner); Assert.AreEqual("Number", name);
                     AssertScalarPutFlags(flags); Assert.AreEqual(13d, value);
                     attempts++;
@@ -198,7 +199,8 @@ namespace VBAi.Tests.Unit
                 {
                     var property = GetType().GetProperty(name);
                     properties[index++] = new VbeFormsCoverageTests.LiveProperty(name, property.PropertyType,
-                        () => property.GetValue(this), ReadOnly ? (Action<object>)null : _ => {
+                        () => property.GetValue(this), ReadOnly ? (Action<object>)null : _ =>
+                        {
                             DescriptorWrites++; throw new InvalidOperationException("Unsafe native descriptor setter invoked.");
                         });
                 }

@@ -1,7 +1,6 @@
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Threading.Tasks;
-using VBAi;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace VBAi.Tests.Unit
 {
@@ -29,8 +28,8 @@ namespace VBAi.Tests.Unit
             foreach (string args in new[] { "null", "{}", "{\"ObjectName\":\"Alpha\",\"Unknown\":0}", "{\"ObjectName\":2}" })
                 Failed(await tools.InvokeAsync("select_object_browser", args), "invalid browser selection");
             foreach (string command in new[] { "read_object_browser", "read_runtime_forms" })
-            foreach (string args in new[] { "null", "{\"Unknown\":0}" })
-                Failed(await tools.InvokeAsync(command, args), "invalid browser read");
+                foreach (string args in new[] { "null", "{\"Unknown\":0}" })
+                    Failed(await tools.InvokeAsync(command, args), "invalid browser read");
             Assert.AreEqual(before, calls);
         }
     }

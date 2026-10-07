@@ -1,10 +1,10 @@
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Web.Script.Serialization;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace VBAi.Tests.Integration
 {
@@ -20,7 +20,8 @@ namespace VBAi.Tests.Integration
             string path = null;
             var expected = new Dictionary<string, string>();
             int savedPid = 0;
-            ExcelVbeFixture.Run(host => {
+            ExcelVbeFixture.Run(host =>
+            {
                 savedPid = host.ProcessId;
                 string project = Project(host);
                 path = host.File("Q006Saved.xlsm");
@@ -32,13 +33,33 @@ namespace VBAi.Tests.Integration
                     else Data(host.Command(new { Command = item.Item2 == 2 ? "create_class" : "create_module", Project = path, Module = item.Item1, ExpectedMode = 2 }));
                     var before = Data(host.Command(new { Command = "read_module", Project = path, Module = item.Item1 }));
                     var component = Data(host.Command(new { Command = "component_properties", Project = path, Module = item.Item1 }));
-                    Data(host.Command(new { Command = "replace_lines", Project = path, Module = item.Item1, ExpectedSha256 = before["Sha256"],
-                        StartLine = 1, Count = component["CodeLines"], Text = "Option Explicit\r\nPublic Sub Q006Marker()\r\n    Debug.Print \"synthetic Q006\"\r\nEnd Sub" }));
+                    Data(host.Command(new
+                    {
+                        Command = "replace_lines",
+                        Project = path,
+                        Module = item.Item1,
+                        ExpectedSha256 = before["Sha256"],
+                        StartLine = 1,
+                        Count = component["CodeLines"],
+                        Text = "Option Explicit\r\nPublic Sub Q006Marker()\r\n    Debug.Print \"synthetic Q006\"\r\nEnd Sub"
+                    }));
                     expected[item.Item1] = (string)Data(host.Command(new { Command = "read_module", Project = path, Module = item.Item1 }))["Code"];
                 }
                 var form = Data(host.Command(new { Command = "form_state", Project = path, Form = "Q006Form" }));
-                Data(host.Command(new { Command = "add_form_control", Project = path, Form = "Q006Form", ExpectedFormVersion = form["Version"],
-                    Control = "Q006Label", ControlType = "Forms.Label.1", Caption = "Q006 persisted label", Left = 12, Top = 12, Width = 140, Height = 24 }));
+                Data(host.Command(new
+                {
+                    Command = "add_form_control",
+                    Project = path,
+                    Form = "Q006Form",
+                    ExpectedFormVersion = form["Version"],
+                    Control = "Q006Label",
+                    ControlType = "Forms.Label.1",
+                    Caption = "Q006 persisted label",
+                    Left = 12,
+                    Top = 12,
+                    Width = 140,
+                    Height = 24
+                }));
                 var beforeSave = Data(host.Command(new { Command = "project_persistence_status", Project = path }));
                 Assert.AreEqual(false, beforeSave["HostSaved"], "Pending module/class/form edits must make the host dirty.");
                 properties = Data(host.Command(new { Command = "project_properties", Project = path }));
@@ -48,7 +69,8 @@ namespace VBAi.Tests.Integration
                 Assert.IsTrue(File.Exists(path));
                 // Fixture Close(false)/Quit must not perform a helper Save.
             });
-            ExcelVbeFixture.Run(reopened => {
+            ExcelVbeFixture.Run(reopened =>
+            {
                 Assert.AreNotEqual(savedPid, reopened.ProcessId);
                 object document = null, project = null, components = null;
                 try
@@ -83,9 +105,18 @@ namespace VBAi.Tests.Integration
                         ? TestContext.TestResultsDirectory : reopened.Root;
                     string report = Path.Combine(reportDirectory, "q006-persistence.json");
                     File.WriteAllText(report,
-                        new JavaScriptSerializer().Serialize(new { SavedPid = savedPid, ReopenedPid = reopened.ProcessId, Path = path,
-                            ModuleSources = expected, Form = "Q006Form", Label = "Q006 persisted label", HelperSaveInvoked = false,
-                            MacrosDisabledOnReopen = true, AssemblyMvid = typeof(VbeSession).Module.ModuleVersionId }));
+                        new JavaScriptSerializer().Serialize(new
+                        {
+                            SavedPid = savedPid,
+                            ReopenedPid = reopened.ProcessId,
+                            Path = path,
+                            ModuleSources = expected,
+                            Form = "Q006Form",
+                            Label = "Q006 persisted label",
+                            HelperSaveInvoked = false,
+                            MacrosDisabledOnReopen = true,
+                            AssemblyMvid = typeof(VbeSession).Module.ModuleVersionId
+                        }));
                     TestContext.AddResultFile(report);
                 }
                 finally

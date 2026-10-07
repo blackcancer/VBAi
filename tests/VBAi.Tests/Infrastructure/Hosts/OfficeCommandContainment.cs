@@ -26,9 +26,13 @@ namespace VBAi.Tests.Integration
         {
             RequireTerminal();
             if (sequence >= 512) throw new InvalidOperationException("The synthetic Office command evidence limit was reached before dispatch.");
-            var record = new Dictionary<string, object> {
-                ["Command"] = command, ["Request"] = request, ["Sequence"] = ++sequence,
-                ["StartedUtc"] = DateTime.UtcNow.ToString("o"), ["State"] = "Prepared; terminal response has not been observed"
+            var record = new Dictionary<string, object>
+            {
+                ["Command"] = command,
+                ["Request"] = request,
+                ["Sequence"] = ++sequence,
+                ["StartedUtc"] = DateTime.UtcNow.ToString("o"),
+                ["State"] = "Prepared; terminal response has not been observed"
             };
             append(record);
             persist(); // A failed preparation write never emits a request.

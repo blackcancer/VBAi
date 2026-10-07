@@ -1,8 +1,7 @@
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Threading;
 using System.Windows.Forms;
-using VBAi;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace VBAi.Tests.Unit
 {
@@ -15,7 +14,8 @@ namespace VBAi.Tests.Unit
         {
             string text = "é Ω\r\ntext";
             bool present = true;
-            var clipboard = new WindowsCodeClipboard {
+            var clipboard = new WindowsCodeClipboard
+            {
                 SequenceNative = () => 42,
                 ContainsNative = format => { Assert.AreEqual(TextDataFormat.UnicodeText, format); return present; },
                 GetNative = format => { Assert.AreEqual(TextDataFormat.UnicodeText, format); return text; }
@@ -36,9 +36,13 @@ namespace VBAi.Tests.Unit
         public void UnicodeClipboardWritesValidateBoundsAndVerifyTheNativeReadback()
         {
             string current = null; bool present = true, ignore = false;
-            var clipboard = new WindowsCodeClipboard { SequenceNative = () => 1,
-                ContainsNative = format => present, GetNative = format => current,
-                SetNative = (text, format) => { Assert.AreEqual(TextDataFormat.UnicodeText, format); if (!ignore) current = text; } };
+            var clipboard = new WindowsCodeClipboard
+            {
+                SequenceNative = () => 1,
+                ContainsNative = format => present,
+                GetNative = format => current,
+                SetNative = (text, format) => { Assert.AreEqual(TextDataFormat.UnicodeText, format); if (!ignore) current = text; }
+            };
             foreach (string invalid in new[] { null, "", new string('x', 1024 * 1024 + 1) })
                 Assert.ThrowsException<ArgumentException>(() => clipboard.Write(invalid));
             Assert.AreEqual("é", clipboard.Write("é").Text);
@@ -53,7 +57,8 @@ namespace VBAi.Tests.Unit
         public void WindowsClipboardRejectsMtaBeforeNativeAccess()
         {
             Exception failure = null;
-            var thread = new Thread(() => {
+            var thread = new Thread(() =>
+            {
                 try
                 {
                     var clipboard = new WindowsCodeClipboard { SequenceNative = () => { Assert.Fail("No native access on MTA"); return 0; } };

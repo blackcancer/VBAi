@@ -61,8 +61,13 @@ namespace VBAi
             switch (reason)
             {
                 case null: TerminalReason = "missing"; break;
-                case "stop": case "tool_calls": case "length": case "content_filter":
-                case "end_turn": case "tool_use": case "stop_sequence": TerminalReason = reason; break;
+                case "stop":
+                case "tool_calls":
+                case "length":
+                case "content_filter":
+                case "end_turn":
+                case "tool_use":
+                case "stop_sequence": TerminalReason = reason; break;
                 default: TerminalReason = "unknown"; break;
             }
         }
@@ -125,8 +130,10 @@ namespace VBAi
             var inputs = new Dictionary<int, StringBuilder>();
             var data = new StringBuilder(); string stop = null; bool ended = false;
             using (token.Register(() => stream.Dispose()))
-            using (var reader = new StreamReader(new BoundedStream(stream), Encoding.UTF8)) {
-                while (!ended) {
+            using (var reader = new StreamReader(new BoundedStream(stream), Encoding.UTF8))
+            {
+                while (!ended)
+                {
                     token.ThrowIfCancellationRequested();
                     string line = await reader.ReadLineAsync();
                     if (line == null) break;
@@ -137,14 +144,16 @@ namespace VBAi
                     diagnostics.JsonChunks++;
                     var root = Obj(json.DeserializeObject(payload));
                     if (root.ContainsKey("error") || Text(root, "type") == "error") throw new InvalidOperationException(UiText.Get("The provider interrupted the response with an error."));
-                    if (!claude) {
+                    if (!claude)
+                    {
                         var choices = ClaudeProtocol.Array(root, "choices"); if (choices.Length == 0) { diagnostics.EmptyChoiceChunks++; if (root.ContainsKey("usage")) diagnostics.UsageChunks++; continue; }
                         var choice = Obj(choices[0]);
                         if (Text(choice, "finish_reason") != null) { stop = Text(choice, "finish_reason"); diagnostics.SetTerminalReason(stop); }
                         if (!choice.ContainsKey("delta")) { diagnostics.MissingDeltaChunks++; continue; }
                         var delta = Obj(choice["delta"]);
                         if (ClaudeProtocol.Array(delta, "tool_calls").Length > 0) diagnostics.ToolCallChunks++;
-                        foreach (var rawCall in ClaudeProtocol.Array(delta, "tool_calls")) {
+                        foreach (var rawCall in ClaudeProtocol.Array(delta, "tool_calls"))
+                        {
                             var call = Obj(rawCall); int index = Convert.ToInt32(call["index"]); call.Remove("index");
                             IDictionary<string, object> target;
                             if (!calls.TryGetValue(index, out target)) calls[index] = target = new Dictionary<string, object>();
@@ -152,14 +161,18 @@ namespace VBAi
                         }
                         delta.Remove("tool_calls"); string text = Text(delta, "content"); Merge(message, delta);
                         if (!string.IsNullOrEmpty(text)) { diagnostics.TextChunks++; progress?.Invoke(text); }
-                    } else {
+                    }
+                    else
+                    {
                         string type = Text(root, "type");
-                        if (type == "content_block_start") {
+                        if (type == "content_block_start")
+                        {
                             int index = Convert.ToInt32(root["index"]); blocks[index] = Obj(root["content_block"]);
                             if (Text(blocks[index], "type") == "tool_use") diagnostics.ToolCallChunks++;
                             if (Text(blocks[index], "type") == "text") { string initial = Text(blocks[index], "text"); if (!string.IsNullOrEmpty(initial)) { diagnostics.TextChunks++; progress?.Invoke(initial); } }
                         }
-                        if (type == "content_block_delta") {
+                        if (type == "content_block_delta")
+                        {
                             int index = Convert.ToInt32(root["index"]); var block = blocks[index]; var delta = Obj(root["delta"]); string kind = Text(delta, "type");
                             if (kind == "input_json_delta") { if (!inputs.TryGetValue(index, out var input)) inputs[index] = input = new StringBuilder(); input.Append(Text(delta, "partial_json")); }
                             else if (kind == "text_delta") { string text = Text(delta, "text"); Append(block, "text", text); if (!string.IsNullOrEmpty(text)) diagnostics.TextChunks++; progress?.Invoke(text); }
@@ -175,7 +188,8 @@ namespace VBAi
             diagnostics.SetTerminalReason(stop);
             bool validStop = claude ? stop == "end_turn" || stop == "tool_use" || stop == "stop_sequence" : stop == "stop" || stop == "tool_calls";
             if (!ended || !validStop) throw new InvalidDataException(UiText.Get("Response interrupted, truncated or filtered; no partial tool call was executed."));
-            if (claude) {
+            if (claude)
+            {
                 foreach (var pair in inputs) blocks[pair.Key]["input"] = json.DeserializeObject(pair.Value.ToString());
                 foreach (var block in blocks.Values) FinalizeText(block);
                 return ClaudeProtocol.Response(new Dictionary<string, object> { ["content"] = blocks.Values.Cast<object>().ToArray(), ["stop_reason"] = stop });
@@ -207,7 +221,8 @@ namespace VBAi
         /// <param name="delta">Dictionnaire contenant le nouveau fragment.</param>
         private static void Merge(IDictionary<string, object> target, IDictionary<string, object> delta)
         {
-            foreach (var pair in delta) {
+            foreach (var pair in delta)
+            {
                 if (pair.Value == null) continue;
                 object previous; target.TryGetValue(pair.Key, out previous);
                 var child = pair.Value as IDictionary<string, object>;

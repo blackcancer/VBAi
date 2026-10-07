@@ -84,8 +84,13 @@ namespace VBAi.Tests.Integration
             if (selected == null || selected.OwnerShape == null || currentOwner == null ||
                 selected.NativeClass != currentPopupClass || selected.OwnerHandle != currentPopupOwner)
                 throw new InvalidOperationException("The exact Word chat Options popup owner changed before invocation.");
-            var now = new Candidate { PopupHandle = selected.PopupHandle, NativeClass = currentPopupClass,
-                OwnerHandle = currentPopupOwner, OwnerShape = currentOwner };
+            var now = new Candidate
+            {
+                PopupHandle = selected.PopupHandle,
+                NativeClass = currentPopupClass,
+                OwnerHandle = currentPopupOwner,
+                OwnerShape = currentOwner
+            };
             OwnerShape before = selected.OwnerShape;
             if (!HasStrictPopupOwner(selected, processId, threadId, expectedRoot, exactScopePicker, exactOptionsButton) ||
                 !HasStrictPopupOwner(now, processId, threadId, expectedRoot, exactScopePicker, exactOptionsButton) || !SameOwner(before, currentOwner))

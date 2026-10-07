@@ -1,9 +1,9 @@
 namespace VBAi.Tests.Unit
 {
+    using Microsoft.VisualStudio.TestTools.UnitTesting;
     using System;
     using System.Threading;
     using VBAi;
-    using Microsoft.VisualStudio.TestTools.UnitTesting;
 
     public sealed partial class VbeDebugTests
     {
@@ -122,17 +122,17 @@ namespace VBAi.Tests.Unit
         public void ExistingProjectPropertiesDialogsAreRejectedOnlyForVisibleCurrentHost()
         {
             foreach (string fault in new[] { "none", "English", "French", "foreign", "hidden", "wrong class", "wrong caption" })
-            using (var scene = new SystemScene())
-            {
-                var window = scene.Add(fault == "French" ? "P - Propriétés du projet" : "P - Project Properties");
-                if (fault == "none") scene.Windows.Clear();
-                if (fault == "foreign") window.ProcessId = 999999;
-                if (fault == "hidden") window.Visible = false;
-                if (fault == "wrong class") window.Class = "unrelated";
-                if (fault == "wrong caption") window.Text = "Other";
-                if (fault == "English" || fault == "French") Assert.ThrowsException<InvalidOperationException>(() => VbeDebugWindows.EnsureNoProjectPropertiesDialog());
-                else VbeDebugWindows.EnsureNoProjectPropertiesDialog();
-            }
+                using (var scene = new SystemScene())
+                {
+                    var window = scene.Add(fault == "French" ? "P - Propriétés du projet" : "P - Project Properties");
+                    if (fault == "none") scene.Windows.Clear();
+                    if (fault == "foreign") window.ProcessId = 999999;
+                    if (fault == "hidden") window.Visible = false;
+                    if (fault == "wrong class") window.Class = "unrelated";
+                    if (fault == "wrong caption") window.Text = "Other";
+                    if (fault == "English" || fault == "French") Assert.ThrowsException<InvalidOperationException>(() => VbeDebugWindows.EnsureNoProjectPropertiesDialog());
+                    else VbeDebugWindows.EnsureNoProjectPropertiesDialog();
+                }
         }
     }
 }

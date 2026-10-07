@@ -1,15 +1,17 @@
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
-using System.Collections.Generic;
 using System.IO;
 using System.Text;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace VBAi.Tests.Unit
 {
     public sealed partial class FormStreamPaddingTests
     {
         [TestMethod]
-        [DataRow(16)] [DataRow(47)] [DataRow(18)] [DataRow(12)]
+        [DataRow(16)]
+        [DataRow(47)]
+        [DataRow(18)]
+        [DataRow(12)]
         public void RetainedFlatControlPairsNormalizeOnlyDocumentedPadding(int type)
         {
             byte[][] input = RetainedControlStreams(type), unchanged = RetainedControlStreams(type, true);
@@ -36,7 +38,10 @@ namespace VBAi.Tests.Unit
         }
 
         [TestMethod]
-        [DataRow(16)] [DataRow(47)] [DataRow(18)] [DataRow(12)]
+        [DataRow(16)]
+        [DataRow(47)]
+        [DataRow(18)]
+        [DataRow(12)]
         public void EveryRetainedFlatControlNonPaddingByteRemainsSignificant(int type)
         {
             byte[][] input = RetainedControlStreams(type), expected = FormStreamPadding.Normalize(input[0], input[1]);
@@ -54,7 +59,10 @@ namespace VBAi.Tests.Unit
         }
 
         [TestMethod]
-        [DataRow(16)] [DataRow(47)] [DataRow(18)] [DataRow(12)]
+        [DataRow(16)]
+        [DataRow(47)]
+        [DataRow(18)]
+        [DataRow(12)]
         public void AllFlatControlTruncationsAndTrailingBytesRetainBothOriginalStreams(int type)
         {
             byte[][] input = RetainedControlStreams(type);
@@ -71,7 +79,10 @@ namespace VBAi.Tests.Unit
         }
 
         [TestMethod]
-        [DataRow(16, 4, 3)] [DataRow(47, 8, 3)] [DataRow(18, 3, 4)] [DataRow(12, 0, 9)]
+        [DataRow(16, 4, 3)]
+        [DataRow(47, 8, 3)]
+        [DataRow(18, 3, 4)]
+        [DataRow(12, 0, 9)]
         public void ReservedMaskBitsAndMissingRequiredSizeAreConservative(int type, int unused, int required)
         {
             byte[][] input = RetainedControlStreams(type); int start = type == 12 ? 128 : 132;
@@ -88,7 +99,10 @@ namespace VBAi.Tests.Unit
         }
 
         [TestMethod]
-        [DataRow(16)] [DataRow(47)] [DataRow(18)] [DataRow(12)]
+        [DataRow(16)]
+        [DataRow(47)]
+        [DataRow(18)]
+        [DataRow(12)]
         public void RichFlatControlsReadEveryOptionalFieldAndOnlyClearAlignment(int type)
         {
             byte[] leaf = RichFlatControl(type), form = SingleControlForm((uint)type, leaf.Length);
@@ -116,7 +130,8 @@ namespace VBAi.Tests.Unit
         }
 
         [TestMethod]
-        [DataRow(16, 8)] [DataRow(47, 9)]
+        [DataRow(16, 8)]
+        [DataRow(47, 9)]
         public void SpinAndScrollEnabledMaskDependenciesRejectInconsistentPreviousOrNext(int type, int previous)
         {
             byte[] leaf = RichFlatControl(type), form = SingleControlForm((uint)type, leaf.Length);
@@ -129,7 +144,10 @@ namespace VBAi.Tests.Unit
         }
 
         [TestMethod]
-        [DataRow(16)] [DataRow(47)] [DataRow(18)] [DataRow(12)]
+        [DataRow(16)]
+        [DataRow(47)]
+        [DataRow(18)]
+        [DataRow(12)]
         public void PictureEnvelopeUnknownGuidSentinelPreambleAndOversizeNeverPartiallyNormalize(int type)
         {
             byte[] leaf = RichFlatControl(type), form = SingleControlForm((uint)type, leaf.Length);

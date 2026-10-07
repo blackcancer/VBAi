@@ -1,9 +1,8 @@
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Web.Script.Serialization;
-using VBAi;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace VBAi.Tests.Integration
 {
@@ -41,7 +40,8 @@ namespace VBAi.Tests.Integration
                 string hostB = second.FullName;
                 object vbe = excel.VBE;
                 var tools = new LlmVbeTools(new VbeSession(vbe), null,
-                    new LlmSettings { VbeEditApproval = "Automatic" }) { BoundProject = projectA };
+                    new LlmSettings { VbeEditApproval = "Automatic" })
+                { BoundProject = projectA };
                 string readA = json.Serialize(new { Project = projectA, Module = "AllowedCode" });
                 string readB = json.Serialize(new { Project = projectB, Module = "SecretCode" });
                 Assert.IsTrue(json.Deserialize<Response>(tools.Invoke("read_module", readA)).Ok);
@@ -67,8 +67,12 @@ namespace VBAi.Tests.Integration
                 Assert.IsTrue(json.Deserialize<Response>(granted).Ok);
                 StringAssert.Contains(granted, secret);
                 int countBefore = second.VBProject.VBComponents.Count;
-                Assert.IsFalse(json.Deserialize<Response>(tools.Invoke("create_module", json.Serialize(new {
-                    Project = projectB, Module = "UnauthorizedWrite", ExpectedMode = 2 }))).Ok);
+                Assert.IsFalse(json.Deserialize<Response>(tools.Invoke("create_module", json.Serialize(new
+                {
+                    Project = projectB,
+                    Module = "UnauthorizedWrite",
+                    ExpectedMode = 2
+                }))).Ok);
                 Assert.AreEqual(countBefore, (int)second.VBProject.VBComponents.Count);
                 Assert.AreEqual(sourceB, (string)moduleB.CodeModule.Lines[1, moduleB.CodeModule.CountOfLines]);
                 Assert.IsFalse(json.Deserialize<Response>(tools.Invoke("code_panes", "{}")).Ok,

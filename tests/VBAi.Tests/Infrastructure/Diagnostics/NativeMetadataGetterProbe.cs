@@ -6,12 +6,12 @@ using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.ComTypes;
 using DISPPARAMS = System.Runtime.InteropServices.ComTypes.DISPPARAMS;
-using EXCEPINFO = System.Runtime.InteropServices.ComTypes.EXCEPINFO;
-using TYPEATTR = System.Runtime.InteropServices.ComTypes.TYPEATTR;
-using TYPELIBATTR = System.Runtime.InteropServices.ComTypes.TYPELIBATTR;
-using FUNCDESC = System.Runtime.InteropServices.ComTypes.FUNCDESC;
 using ELEMDESC = System.Runtime.InteropServices.ComTypes.ELEMDESC;
+using EXCEPINFO = System.Runtime.InteropServices.ComTypes.EXCEPINFO;
+using FUNCDESC = System.Runtime.InteropServices.ComTypes.FUNCDESC;
+using TYPEATTR = System.Runtime.InteropServices.ComTypes.TYPEATTR;
 using TYPEDESC = System.Runtime.InteropServices.ComTypes.TYPEDESC;
+using TYPELIBATTR = System.Runtime.InteropServices.ComTypes.TYPELIBATTR;
 
 namespace VBAi.Tests.Integration
 {
@@ -35,9 +35,14 @@ namespace VBAi.Tests.Integration
             Action<IDictionary<string, object>> begin = null)
         {
             if (IntPtr.Size != 8) throw new PlatformNotSupportedException("This diagnostic requires the x64 VARIANT ABI.");
-            var report = new Dictionary<string, object> { ["VariantBufferBytes"] = VariantBytes,
-                ["DispatchFlags"] = "DISPATCH_PROPERTYGET only", ["NativeWrites"] = 0,
-                ["RawLocale"] = 0, ["ClrBinderCulture"] = "InvariantCulture" };
+            var report = new Dictionary<string, object>
+            {
+                ["VariantBufferBytes"] = VariantBytes,
+                ["DispatchFlags"] = "DISPATCH_PROPERTYGET only",
+                ["NativeWrites"] = 0,
+                ["RawLocale"] = 0,
+                ["ClrBinderCulture"] = "InvariantCulture"
+            };
             begin?.Invoke(report);
             pending("AcquireIDispatch");
             IntPtr dispatch = Marshal.GetIDispatchForObject(target);
@@ -45,15 +50,23 @@ namespace VBAi.Tests.Integration
             {
                 pending("RuntimeTypeInfo");
                 try { report["RuntimeTypeInfo"] = ReadTypeInfo(dispatch); }
-                catch (Exception error) { report["RuntimeTypeInfo"] = new Dictionary<string, object> {
-                    ["State"] = "ERROR", ["Error"] = error.Message, ["HResult"] = Hex(error.HResult) }; }
+                catch (Exception error)
+                {
+                    report["RuntimeTypeInfo"] = new Dictionary<string, object>
+                    {
+                        ["State"] = "ERROR",
+                        ["Error"] = error.Message,
+                        ["HResult"] = Hex(error.HResult)
+                    };
+                }
                 var values = new List<object>(); report["Properties"] = values;
                 foreach (var member in new[] { new { Name = "HelpFile", Id = 116 }, new { Name = "HelpContextID", Id = 117 } })
                 {
                     var row = new Dictionary<string, object> { ["Name"] = member.Name, ["Dispid"] = member.Id };
                     values.Add(row);
                     pending(member.Name + ".Descriptor");
-                    row["Descriptor"] = Observe(() => {
+                    row["Descriptor"] = Observe(() =>
+                    {
                         var descriptor = TypeDescriptor.GetProperties(target).Find(member.Name, false);
                         if (descriptor == null) throw new MissingMemberException(member.Name);
                         row["DescriptorType"] = descriptor.PropertyType.FullName;
@@ -66,7 +79,8 @@ namespace VBAi.Tests.Integration
                         null, target, null, CultureInfo.InvariantCulture));
                     pending(member.Name + ".RawDispatch");
                     var invoke = Slot<InvokeDelegate>(dispatch, 6);
-                    row["RawDispatch"] = ReadVariant(pointer => {
+                    row["RawDispatch"] = ReadVariant(pointer =>
+                    {
                         var parameters = new DISPPARAMS(); var exception = new EXCEPINFO();
                         Guid iid = Guid.Empty; uint argument;
                         int result = invoke(dispatch, member.Id, ref iid, 0, 2 /* PROPERTYGET */,
@@ -93,14 +107,24 @@ namespace VBAi.Tests.Integration
                     throw new InvalidOperationException("Unexpected non-I4/BSTR metadata getter type.");
                 if (value is string text && text.Length > 4096)
                     throw new InvalidOperationException("Owned metadata string exceeds the bounded diagnostic read.");
-                return new Dictionary<string, object> { ["State"] = "READ", ["Value"] = value,
-                    ["ClrType"] = value?.GetType().FullName, ["StringLength"] = (value as string)?.Length };
+                return new Dictionary<string, object>
+                {
+                    ["State"] = "READ",
+                    ["Value"] = value,
+                    ["ClrType"] = value?.GetType().FullName,
+                    ["StringLength"] = (value as string)?.Length
+                };
             }
             catch (Exception error)
             {
                 if (error is TargetInvocationException invocation && invocation.InnerException != null) error = invocation.InnerException;
-                return new Dictionary<string, object> { ["State"] = "ERROR", ["Error"] = error.Message,
-                    ["ExceptionType"] = error.GetType().FullName, ["HResult"] = Hex(error.HResult) };
+                return new Dictionary<string, object>
+                {
+                    ["State"] = "ERROR",
+                    ["Error"] = error.Message,
+                    ["ExceptionType"] = error.GetType().FullName,
+                    ["HResult"] = Hex(error.HResult)
+                };
             }
         }
 
@@ -192,8 +216,14 @@ namespace VBAi.Tests.Integration
                                     parameter * Marshal.SizeOf(typeof(ELEMDESC))), typeof(ELEMDESC));
                                 parameters.Add(new { Type = DescribeType(item.tdesc, 0), Flags = item.desc.paramdesc.wParamFlags.ToString() });
                             }
-                            members.Add(new { Name = name, Dispid = entry.memid, InvokeKind = entry.invkind.ToString(),
-                                ReturnType = DescribeType(entry.elemdescFunc.tdesc, 0), Parameters = parameters });
+                            members.Add(new
+                            {
+                                Name = name,
+                                Dispid = entry.memid,
+                                InvokeKind = entry.invkind.ToString(),
+                                ReturnType = DescribeType(entry.elemdescFunc.tdesc, 0),
+                                Parameters = parameters
+                            });
                             observed.Add(entry.memid + ":" + entry.invkind);
                         }
                         finally { info.ReleaseFuncDesc(function); }
@@ -208,8 +238,15 @@ namespace VBAi.Tests.Integration
                 try
                 {
                     var type = (TYPELIBATTR)Marshal.PtrToStructure(libraryAttribute, typeof(TYPELIBATTR));
-                    result["Library"] = new { Guid = type.guid.ToString("D"), Major = type.wMajorVerNum,
-                        Minor = type.wMinorVerNum, SystemKind = type.syskind.ToString(), Locale = type.lcid, Index = containingIndex };
+                    result["Library"] = new
+                    {
+                        Guid = type.guid.ToString("D"),
+                        Major = type.wMajorVerNum,
+                        Minor = type.wMinorVerNum,
+                        SystemKind = type.syskind.ToString(),
+                        Locale = type.lcid,
+                        Index = containingIndex
+                    };
                 }
                 finally { library.ReleaseTLibAttr(libraryAttribute); }
                 result["State"] = "READ";

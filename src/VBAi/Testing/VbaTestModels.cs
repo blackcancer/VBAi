@@ -157,29 +157,29 @@ namespace VBAi
         /// <summary>No execution result was recorded for the test.</summary>
         NotRun,
 
-/// <summary>The test completed and reported success.</summary>
-Passed,
+        /// <summary>The test completed and reported success.</summary>
+        Passed,
 
-/// <summary>The test completed and reported an assertion or expected failure.</summary>
-Failed,
+        /// <summary>The test completed and reported an assertion or expected failure.</summary>
+        Failed,
 
-/// <summary>Execution raised an error before a normal test verdict was produced.</summary>
-Error,
+        /// <summary>Execution raised an error before a normal test verdict was produced.</summary>
+        Error,
 
-/// <summary>The test ran but did not produce a pass or fail verdict.</summary>
-Inconclusive,
+        /// <summary>The test ran but did not produce a pass or fail verdict.</summary>
+        Inconclusive,
 
-/// <summary>The runner deliberately omitted this test.</summary>
-Skipped,
+        /// <summary>The runner deliberately omitted this test.</summary>
+        Skipped,
 
-/// <summary>The runner observed cancellation and stopped the test sequence.</summary>
-Cancelled,
+        /// <summary>The runner observed cancellation and stopped the test sequence.</summary>
+        Cancelled,
 
-/// <summary>Execution was refused because a required precondition was not satisfied.</summary>
-Blocked,
+        /// <summary>Execution was refused because a required precondition was not satisfied.</summary>
+        Blocked,
 
-/// <summary>The host call ended without reliable proof whether the test executed; do not retry automatically.</summary>
-OutcomeUnknown
+        /// <summary>The host call ended without reliable proof whether the test executed; do not retry automatically.</summary>
+        OutcomeUnknown
     }
 
     /// <summary>Stores one descriptor's terminal verdict and execution diagnostics.</summary>

@@ -1,5 +1,5 @@
-using System;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+using System;
 
 namespace VBAi.Tests.Integration
 {
@@ -25,10 +25,16 @@ namespace VBAi.Tests.Integration
                 Assert.AreEqual(1, Convert.ToInt32(((dynamic)fixture.workbooks).Count));
                 Assert.IsTrue(string.IsNullOrEmpty(Convert.ToString(((dynamic)fixture.workbook).Path)));
                 // Keep the existing evidence filename and members for the private path.
-                fixture.WriteEvidence("private-unsaved-workbook.json", new {
-                    Desktop = desktop, fixture.ProcessId, Workbook = Convert.ToString(((dynamic)fixture.workbook).Name),
-                    SavedPath = Convert.ToString(((dynamic)fixture.workbook).Path), HelperSaveInvoked = false,
-                    SeedClosedWithoutSaving = true, Utc = DateTime.UtcNow.ToString("o") });
+                fixture.WriteEvidence("private-unsaved-workbook.json", new
+                {
+                    Desktop = desktop,
+                    fixture.ProcessId,
+                    Workbook = Convert.ToString(((dynamic)fixture.workbook).Name),
+                    SavedPath = Convert.ToString(((dynamic)fixture.workbook).Path),
+                    HelperSaveInvoked = false,
+                    SeedClosedWithoutSaving = true,
+                    Utc = DateTime.UtcNow.ToString("o")
+                });
                 fixture.PreserveForDiagnosticRecovery = false;
                 return fixture;
             }

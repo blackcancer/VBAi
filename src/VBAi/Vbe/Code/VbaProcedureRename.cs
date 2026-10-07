@@ -253,8 +253,13 @@ namespace VBAi
                 if (active != null) throw new InvalidOperationException("Nested or unterminated procedures are unsupported.");
                 int name = first + (Same(tokens[first].Text, "Property") ? 2 : 1);
                 if (name >= tokens.Count) throw new InvalidOperationException("A procedure name is unreadable.");
-                active = new Signature { Name = Bare(tokens[name].Text), Kind = Same(tokens[first].Text, "Property") ? "Property" : Same(tokens[first].Text, "Sub") ? "Sub" : "Function",
-                    Access = Same(access, "Public") ? "Public" : Same(access, "Private") ? "Private" : access, NameToken = tokens[name] };
+                active = new Signature
+                {
+                    Name = Bare(tokens[name].Text),
+                    Kind = Same(tokens[first].Text, "Property") ? "Property" : Same(tokens[first].Text, "Sub") ? "Sub" : "Function",
+                    Access = Same(access, "Public") ? "Public" : Same(access, "Private") ? "Private" : access,
+                    NameToken = tokens[name]
+                };
                 signatures.Add(active);
             }
             if (active != null) throw new InvalidOperationException("The matching End statement is required.");

@@ -1,3 +1,4 @@
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -7,7 +8,6 @@ using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
 using System.Windows.Automation;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace VBAi.Tests.Integration
 {
@@ -55,7 +55,8 @@ namespace VBAi.Tests.Integration
             {
                 if (stop()) throw new InvalidOperationException("Coordinator stopped discovery; no UI action is permitted.");
                 requireOwner(); var matches = new List<IntPtr>(); int count = 0;
-                Visitor visitor = (hwnd, unused) => {
+                Visitor visitor = (hwnd, unused) =>
+                {
                     if (++count > 4096) return false;
                     uint pid; uint tid = GetWindowThreadProcessId(hwnd, out pid);
                     if (pid != processId || tid != scope.ThreadId || GetWindow(hwnd, 4) != scope.VbeHandle) return true;
@@ -72,8 +73,15 @@ namespace VBAi.Tests.Integration
             root = AutomationElement.FromHandle(window); Guard(root, window);
             windowPattern = Pattern<WindowPattern>(root, WindowPattern.Pattern);
             sessionId = EmbeddedGitUiProtocol.ReadSession(root.Current.HelpText)[2];
-            record(new { Phase = "OwnedModalObserved", ProcessId = processId, ThreadId = scope.ThreadId,
-                Handle = window.ToInt64(), Owner = scope.VbeHandle.ToInt64(), WindowPatternObserved = true });
+            record(new
+            {
+                Phase = "OwnedModalObserved",
+                ProcessId = processId,
+                ThreadId = scope.ThreadId,
+                Handle = window.ToInt64(),
+                Owner = scope.VbeHandle.ToInt64(),
+                WindowPatternObserved = true
+            });
         }
 
         internal void Link(string remote, string branch, string branchCommit)
@@ -111,9 +119,16 @@ namespace VBAi.Tests.Integration
             var label = ((object[])tree["Controls"]).Select(VbeBridgeClient.Object)
                 .Single(node => Convert.ToString(node["Name"]) == "QualificationLabel");
             IDictionary<string, object> mutation = null;
-            Protocol.EmitOnce("synthetic-label-caption", () => mutation = fixture.Command(new { Command = "set_form_node_property",
-                Project = scope.Path, Form = "EmbeddedForm", ControlPath = label["Path"], ExpectedTreeVersion = tree["TreeVersion"],
-                Property = "Caption", Value = "Changed synthetic label " + nonce }));
+            Protocol.EmitOnce("synthetic-label-caption", () => mutation = fixture.Command(new
+            {
+                Command = "set_form_node_property",
+                Project = scope.Path,
+                Form = "EmbeddedForm",
+                ControlPath = label["Path"],
+                ExpectedTreeVersion = tree["TreeVersion"],
+                Property = "Caption",
+                Value = "Changed synthetic label " + nonce
+            }));
             if (mutation == null) { Protocol.MarkUncertain("Native edit has no terminal response."); throw new InvalidOperationException("Native edit delivery is uncertain."); }
             bool ok = Convert.ToBoolean(mutation["Ok"]); Protocol.Terminal("synthetic-label-caption", true, ok);
             Assert.IsTrue(ok, Convert.ToString(mutation["Error"]));
@@ -133,7 +148,8 @@ namespace VBAi.Tests.Integration
             record(new { Phase = "CheckpointSelectionObserved", AlreadySelected = alreadySelected, Name = items[0].Current.Name });
             if (!alreadySelected)
             {
-                Protocol.EmitOnce("select-checkpoint", () => {
+                Protocol.EmitOnce("select-checkpoint", () =>
+                {
                     try { select.Select(); }
                     catch (ElementNotEnabledException error)
                     {
@@ -156,8 +172,14 @@ namespace VBAi.Tests.Integration
             }
             if (idleObservations < 2) { Protocol.MarkUncertain("Selected checkpoint did not reach an idle owned view."); throw new TimeoutException("Checkpoint selection/view remains pending."); }
             if (!alreadySelected) Protocol.Terminal("select-checkpoint", true, true);
-            record(new { Phase = "CheckpointSelectionReadback", Selected = select.Current.IsSelected, SelectionApiError = selectionApiError,
-                Status = Text("status"), ReplayAttempts = 0 });
+            record(new
+            {
+                Phase = "CheckpointSelectionReadback",
+                Selected = select.Current.IsSelected,
+                SelectionApiError = selectionApiError,
+                Status = Text("status"),
+                ReplayAttempts = 0
+            });
             var tabs = Leaf("tabs"); var tab = tabs.FindAll(TreeScope.Children,
                 new PropertyCondition(AutomationElement.ControlTypeProperty, ControlType.TabItem)).Cast<AutomationElement>()
                 .Single(item => item.Current.ProcessId == processId && item.Current.Name == tabName);
@@ -188,9 +210,15 @@ namespace VBAi.Tests.Integration
                 var checkpoint = repo.Checkpoints().Single(item => item.Label == nonce);
                 Assert.AreEqual(checkpoint.Commit, repo.Resolve("refs/codex/checkpoints/" + checkpoint.Id));
                 EmbeddedGitSnapshotOracle.Verify(scope.Baseline, repo.Read(checkpoint.Commit));
-                record(new { Phase = "CheckpointContentVerified", checkpoint.Id, checkpoint.Commit, checkpoint.Label,
+                record(new
+                {
+                    Phase = "CheckpointContentVerified",
+                    checkpoint.Id,
+                    checkpoint.Commit,
+                    checkpoint.Label,
                     Files = EmbeddedGitSnapshotOracle.Describe(repo.Read(checkpoint.Commit)),
-                    Scope = "Installed owner-dispatched capture and local checkpoint only; no remote publish/import/reopen acceptance" });
+                    Scope = "Installed owner-dispatched capture and local checkpoint only; no remote publish/import/reopen acceptance"
+                });
             }
         }
 
@@ -237,8 +265,15 @@ namespace VBAi.Tests.Integration
             {
                 IntPtr target = new IntPtr(unchecked((long)(uint)item.Current.NativeWindowHandle));
                 string frozenName = item.Current.Name;
-                record(new { Phase = "PrivateNativeButtonPrepared", Id = id, Name = frozenName,
-                    Handle = target.ToInt64(), ProcessId = processId, ThreadId = scope.ThreadId });
+                record(new
+                {
+                    Phase = "PrivateNativeButtonPrepared",
+                    Id = id,
+                    Name = frozenName,
+                    Handle = target.ToInt64(),
+                    ProcessId = processId,
+                    ThreadId = scope.ThreadId
+                });
                 Protocol.EmitOnce(id, () => PrivateDesktopUiAction.ClickButtonOnce(item, id, frozenName,
                     window, target, processId, scope.ThreadId));
             }
@@ -283,7 +318,8 @@ namespace VBAi.Tests.Integration
             success = false;
             if (stop()) throw new InvalidOperationException("Coordinator stopped handoff observation.");
             requireOwner(); var matches = new List<IntPtr>(); int count = 0;
-            Visitor visit = (hwnd, unused) => {
+            Visitor visit = (hwnd, unused) =>
+            {
                 if (++count > 4096) return false;
                 uint pid; uint tid = GetWindowThreadProcessId(hwnd, out pid);
                 if (pid != processId || tid != scope.ThreadId || GetWindow(hwnd, 4) != scope.VbeHandle || !IsWindowVisible(hwnd)) return true;
@@ -304,8 +340,16 @@ namespace VBAi.Tests.Integration
                     element.Current.HelpText, ref observedOperation, out success)) return false;
                 window = candidate; root = element; Guard(root, window);
                 windowPattern = Pattern<WindowPattern>(root, WindowPattern.Pattern);
-                record(new { Phase = "OwnedHandoffTerminalObserved", Session = sessionId, Operation = observedOperation,
-                    Handle = window.ToInt64(), ProcessId = processId, ThreadId = scope.ThreadId, Success = success });
+                record(new
+                {
+                    Phase = "OwnedHandoffTerminalObserved",
+                    Session = sessionId,
+                    Operation = observedOperation,
+                    Handle = window.ToInt64(),
+                    ProcessId = processId,
+                    ThreadId = scope.ThreadId,
+                    Success = success
+                });
                 return true;
             }
             catch (ElementNotAvailableException) { return false; } // Only a disappearing read-only provider, never an identity refusal.
@@ -381,8 +425,14 @@ namespace VBAi.Tests.Integration
             }
             if (matches.Count != 1) throw new InvalidOperationException("Exact native leaf absent or ambiguous: " + id);
             var result = matches[0];
-            if (inventories.Add(id)) record(new { Phase = "PatternInventory", Id = id, Handle = result.Current.NativeWindowHandle,
-                Type = result.Current.ControlType.ProgrammaticName, Patterns = result.GetSupportedPatterns().Select(x => x.ProgrammaticName).ToArray() });
+            if (inventories.Add(id)) record(new
+            {
+                Phase = "PatternInventory",
+                Id = id,
+                Handle = result.Current.NativeWindowHandle,
+                Type = result.Current.ControlType.ProgrammaticName,
+                Patterns = result.GetSupportedPatterns().Select(x => x.ProgrammaticName).ToArray()
+            });
             return result;
         }
     }

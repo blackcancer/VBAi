@@ -1,8 +1,7 @@
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Collections.Generic;
 using System.Web.Script.Serialization;
-using VBAi;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 namespace VBAi.Tests.Unit
 {
     [TestClass, TestCategory("Unit")]

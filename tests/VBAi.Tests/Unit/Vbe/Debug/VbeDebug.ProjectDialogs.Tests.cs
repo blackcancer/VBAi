@@ -1,8 +1,8 @@
 namespace VBAi.Tests.Unit
 {
+    using Microsoft.VisualStudio.TestTools.UnitTesting;
     using System;
     using System.Threading;
-    using Microsoft.VisualStudio.TestTools.UnitTesting;
     using VBAi;
     using VBAi.Tests.Infrastructure;
 
@@ -117,18 +117,18 @@ namespace VBAi.Tests.Unit
             try
             {
                 foreach (string replacement in new[] { "same-type", "different-type", "managed" })
-                using (var captured = new OwnedCommandDispatchFixture())
-                using (var live = new OwnedCommandDispatchFixture())
-                {
-                    var project = new Project(); var host = new DialogHost { ActiveVBProject = project }; host.VBProjects.Add(project);
-                    var bar = new DialogBar(); bar.Controls.Add(captured.Control); host.CommandBars.Add(bar);
-                    var context = new QueueContext(); SynchronizationContext.SetSynchronizationContext(context);
-                    new VbeDebug(host).QueueProjectPropertiesDialog(new Request { Project = project.Name, ExpectedProjectVersion = "v", ControlCaption = captured.Caption }, _ => true);
-                    var managed = new VbeDebugTests.FakeControl { Id = live.Id, Caption = live.Caption };
-                    if (replacement == "different-type") live.Type = 2;
-                    bar.Controls[0] = replacement == "managed" ? (object)managed : live.Control;
-                    context.Run(); Assert.AreEqual(replacement == "same-type" ? 1 : 0, live.Executions); Assert.AreEqual(0, captured.Executions); Assert.AreEqual(0, managed.ExecuteCount);
-                }
+                    using (var captured = new OwnedCommandDispatchFixture())
+                    using (var live = new OwnedCommandDispatchFixture())
+                    {
+                        var project = new Project(); var host = new DialogHost { ActiveVBProject = project }; host.VBProjects.Add(project);
+                        var bar = new DialogBar(); bar.Controls.Add(captured.Control); host.CommandBars.Add(bar);
+                        var context = new QueueContext(); SynchronizationContext.SetSynchronizationContext(context);
+                        new VbeDebug(host).QueueProjectPropertiesDialog(new Request { Project = project.Name, ExpectedProjectVersion = "v", ControlCaption = captured.Caption }, _ => true);
+                        var managed = new VbeDebugTests.FakeControl { Id = live.Id, Caption = live.Caption };
+                        if (replacement == "different-type") live.Type = 2;
+                        bar.Controls[0] = replacement == "managed" ? (object)managed : live.Control;
+                        context.Run(); Assert.AreEqual(replacement == "same-type" ? 1 : 0, live.Executions); Assert.AreEqual(0, captured.Executions); Assert.AreEqual(0, managed.ExecuteCount);
+                    }
             }
             finally { SynchronizationContext.SetSynchronizationContext(previous); }
         }

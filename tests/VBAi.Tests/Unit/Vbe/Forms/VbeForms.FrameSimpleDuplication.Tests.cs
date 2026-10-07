@@ -1,10 +1,9 @@
 namespace VBAi.Tests.Unit
 {
+    using Microsoft.VisualStudio.TestTools.UnitTesting;
     using System;
     using System.Collections;
     using System.Linq;
-    using VBAi;
-    using Microsoft.VisualStudio.TestTools.UnitTesting;
 
     public sealed partial class VbeFormsValueDuplicationTests
     {
@@ -53,8 +52,8 @@ namespace VBAi.Tests.Unit
 }
 namespace VBAi.Tests.Unit
 {
-    using System;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
+    using System;
     public sealed partial class VbeFormsFrameDuplicationTests
     {
         [TestMethod] public void SimpleFrameChecksPreflightGeometryFontsAndConcurrentTreeChanges() { FramePreflightFailures("simple"); }
@@ -63,16 +62,16 @@ namespace VBAi.Tests.Unit
         [TestMethod]
         public void SimpleFrameRejectsIneligiblePlanAndPreservesNullTextBoxValues()
         {
-            var f=Create();f.Frame.Controls.AddExisting("CheckBox","Check");
-            var error=Assert.ThrowsException<InvalidOperationException>(()=>f.Service.DuplicateFrameWithSimpleChildren(f.Request()));
-            StringAssert.Contains(error.Message,"plan is ineligible");
-            var nullable=FrameWithChildren("simple");nullable.Frame.Controls.Item("Entry").Value=null;
-            dynamic result=nullable.Service.DuplicateFrameWithSimpleChildren(nullable.Request());
-            Assert.AreEqual(1,(int)result.DirectTextBoxesCopied);
+            var f = Create(); f.Frame.Controls.AddExisting("CheckBox", "Check");
+            var error = Assert.ThrowsException<InvalidOperationException>(() => f.Service.DuplicateFrameWithSimpleChildren(f.Request()));
+            StringAssert.Contains(error.Message, "plan is ineligible");
+            var nullable = FrameWithChildren("simple"); nullable.Frame.Controls.Item("Entry").Value = null;
+            dynamic result = nullable.Service.DuplicateFrameWithSimpleChildren(nullable.Request());
+            Assert.AreEqual(1, (int)result.DirectTextBoxesCopied);
             Assert.IsNull(nullable.Form.Designer.Controls.Item("FrameCopy").Controls.Item("FrameCopy_Entry").Value);
-            var mismatch=FrameWithChildren("simple");var request=mismatch.Request();
-            mismatch.Form.Designer.Controls.ConfigureAdded=frame=>frame.Controls.ConfigureAdded=c=>{if(c.Name.EndsWith("_Entry",StringComparison.Ordinal)) c.ReadOverrides["Value"]="changed";};
-            AssertRolledBack(mismatch,request,"simple","Copied TextBox value differs");
+            var mismatch = FrameWithChildren("simple"); var request = mismatch.Request();
+            mismatch.Form.Designer.Controls.ConfigureAdded = frame => frame.Controls.ConfigureAdded = c => { if (c.Name.EndsWith("_Entry", StringComparison.Ordinal)) c.ReadOverrides["Value"] = "changed"; };
+            AssertRolledBack(mismatch, request, "simple", "Copied TextBox value differs");
         }
     }
 }

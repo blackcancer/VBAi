@@ -1,12 +1,11 @@
 namespace VBAi.Tests.Unit
 {
+    using Microsoft.VisualStudio.TestTools.UnitTesting;
     using System.Collections.Generic;
     using System.Collections.ObjectModel;
     using System.Linq;
     using System.Windows;
-    using System.Windows.Controls;
     using VBAi;
-    using Microsoft.VisualStudio.TestTools.UnitTesting;
 
     public sealed partial class ChatWindowStateTests
     {
@@ -81,20 +80,20 @@ namespace VBAi.Tests.Unit
         public void ActivityFragmentsRebuildMissingViewsAndPreserveTerminalMetadata()
         {
             foreach (string changed in new[] { "missing", "disposed", "kind", "title", "status", "duration" })
-            using (var window = Surfaces())
-            {
-                Call(window, "ReceiveAgentActivity", new CodexAgentActivity { Id = "stream", Kind = "commandExecution", Title = "Run", Detail = "first", Status = "inProgress" });
-                var entry = Get<List<ChatEntry>>(window, "transcriptEntries")[0];
-                using (var host = (ChatDesignerHost)Call(window, "RenderEntry", entry))
+                using (var window = Surfaces())
                 {
-                    var texts = Get<Dictionary<string, System.Windows.Forms.RichTextBox>>(window, "liveTexts");
-                    if (changed == "missing") texts.Remove("stream");
-                    if (changed == "disposed") texts["stream"].Dispose();
-                    int changes = 0; Get<ObservableCollection<object>>(window, "visibleEntries").CollectionChanged += (s, e) => changes++;
-                    Call(window, "ReceiveAgentActivity", new CodexAgentActivity { Id = "stream", Kind = changed == "kind" ? "reasoning" : "commandExecution", Title = changed == "title" ? "Updated" : "Run", Detail = " next", Append = true, Status = changed == "status" ? "completed" : "inProgress", DurationMs = changed == "duration" ? (long?)75 : null });
-                    Assert.AreEqual(2, changes, changed); Assert.AreEqual("first next", entry.Activity.Detail);
+                    Call(window, "ReceiveAgentActivity", new CodexAgentActivity { Id = "stream", Kind = "commandExecution", Title = "Run", Detail = "first", Status = "inProgress" });
+                    var entry = Get<List<ChatEntry>>(window, "transcriptEntries")[0];
+                    using (var host = (ChatDesignerHost)Call(window, "RenderEntry", entry))
+                    {
+                        var texts = Get<Dictionary<string, System.Windows.Forms.RichTextBox>>(window, "liveTexts");
+                        if (changed == "missing") texts.Remove("stream");
+                        if (changed == "disposed") texts["stream"].Dispose();
+                        int changes = 0; Get<ObservableCollection<object>>(window, "visibleEntries").CollectionChanged += (s, e) => changes++;
+                        Call(window, "ReceiveAgentActivity", new CodexAgentActivity { Id = "stream", Kind = changed == "kind" ? "reasoning" : "commandExecution", Title = changed == "title" ? "Updated" : "Run", Detail = " next", Append = true, Status = changed == "status" ? "completed" : "inProgress", DurationMs = changed == "duration" ? (long?)75 : null });
+                        Assert.AreEqual(2, changes, changed); Assert.AreEqual("first next", entry.Activity.Detail);
+                    }
                 }
-            }
             using (var window = Surfaces())
             {
                 Set(window, "busy", true);
@@ -218,8 +217,9 @@ namespace VBAi.Tests.Unit
                 if (!string.IsNullOrEmpty(preview))
                 {
                     group.Width = 500; group.PerformLayout();
-                    using (var bitmap = new System.Drawing.Bitmap(group.Width, group.Height)) {
-                        group.DrawToBitmap(bitmap, new System.Drawing.Rectangle(0,0,group.Width,group.Height));
+                    using (var bitmap = new System.Drawing.Bitmap(group.Width, group.Height))
+                    {
+                        group.DrawToBitmap(bitmap, new System.Drawing.Rectangle(0, 0, group.Width, group.Height));
                         System.IO.Directory.CreateDirectory(System.IO.Path.GetDirectoryName(preview)); bitmap.Save(preview, System.Drawing.Imaging.ImageFormat.Png);
                     }
                 }
@@ -302,10 +302,8 @@ namespace VBAi.Tests.Unit
 
 namespace VBAi.Tests.Unit
 {
-    using System.Collections.Generic;
-    using System.Linq;
-    using System.Windows.Controls;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
+    using System.Collections.Generic;
 
     public sealed partial class ChatWindowStateTests
     {
@@ -345,28 +343,31 @@ namespace VBAi.Tests.Unit
 }
 namespace VBAi.Tests.Unit
 {
+    using Microsoft.VisualStudio.TestTools.UnitTesting;
     using System.Collections.Generic;
     using VBAi;
-    using Microsoft.VisualStudio.TestTools.UnitTesting;
     public sealed partial class ChatWindowStateTests
     {
         [STATestMethod, TestCategory("Unit")]
         public void CollapsingNativeActivityGroupAndStepRemovesTheirPersistedExpansion()
         {
-            using(var window=Surfaces()) {
-                var entry=new ChatEntry { Speaker="Outil", Activity=new CodexAgentActivity { Kind="commandExecution",Title="command",Detail="details",Status="completed" } };
-                using(var host=(ChatDesignerHost)Call(window,"RenderActivityGroup",entry,new List<ChatEntry>{entry})) {
-                    var group=((ChatActivityGroupView)host.View).section;
-                    var step=(ChatActivityStepView)group.body.Controls[0];
-                    group.Expanded=true; step.section.Expanded=true;
-                    Assert.IsTrue(Get<HashSet<ChatEntry>>(window,"expandedActivityGroups").Contains(entry));
-                    Assert.IsTrue(Get<HashSet<ChatEntry>>(window,"expandedActivitySteps").Contains(entry));
-                    group.Expanded=false; step.section.Expanded=false;
-                    Assert.IsFalse(Get<HashSet<ChatEntry>>(window,"expandedActivityGroups").Contains(entry));
-                    Assert.IsFalse(Get<HashSet<ChatEntry>>(window,"expandedActivitySteps").Contains(entry));
+            using (var window = Surfaces())
+            {
+                var entry = new ChatEntry { Speaker = "Outil", Activity = new CodexAgentActivity { Kind = "commandExecution", Title = "command", Detail = "details", Status = "completed" } };
+                using (var host = (ChatDesignerHost)Call(window, "RenderActivityGroup", entry, new List<ChatEntry> { entry }))
+                {
+                    var group = ((ChatActivityGroupView)host.View).section;
+                    var step = (ChatActivityStepView)group.body.Controls[0];
+                    group.Expanded = true; step.section.Expanded = true;
+                    Assert.IsTrue(Get<HashSet<ChatEntry>>(window, "expandedActivityGroups").Contains(entry));
+                    Assert.IsTrue(Get<HashSet<ChatEntry>>(window, "expandedActivitySteps").Contains(entry));
+                    group.Expanded = false; step.section.Expanded = false;
+                    Assert.IsFalse(Get<HashSet<ChatEntry>>(window, "expandedActivityGroups").Contains(entry));
+                    Assert.IsFalse(Get<HashSet<ChatEntry>>(window, "expandedActivitySteps").Contains(entry));
                 }
-                using(var recreated=(ChatDesignerHost)Call(window,"RenderActivityGroup",entry,new List<ChatEntry>{entry})) {
-                    var group=((ChatActivityGroupView)recreated.View).section;
+                using (var recreated = (ChatDesignerHost)Call(window, "RenderActivityGroup", entry, new List<ChatEntry> { entry }))
+                {
+                    var group = ((ChatActivityGroupView)recreated.View).section;
                     Assert.IsFalse(group.Expanded); Assert.IsFalse(((ChatActivityStepView)group.body.Controls[0]).section.Expanded);
                 }
             }

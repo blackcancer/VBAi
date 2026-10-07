@@ -1,3 +1,4 @@
+using Microsoft.Win32;
 using System;
 using System.Diagnostics;
 using System.IO;
@@ -5,7 +6,6 @@ using System.Net.Http;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading;
 using System.Threading.Tasks;
-using Microsoft.Win32;
 
 namespace VBAi
 {
@@ -74,10 +74,10 @@ namespace VBAi
         internal static bool Installed()
         {
             foreach (var hive in new[] { RegistryHive.CurrentUser, RegistryHive.LocalMachine })
-            foreach (var view in new[] { RegistryView.Registry32, RegistryView.Registry64 })
-                using (var root = OpenRegistryRoot(hive, view))
-                using (var key = OpenRuntimeKey(root, @"Software\Microsoft\EdgeUpdate\Clients\{F3017226-FE2A-4295-8BDF-00C3A9A7E4C5}"))
-                    if (ValidVersion(key == null ? null : ReadRuntimeVersion(key) as string)) return true;
+                foreach (var view in new[] { RegistryView.Registry32, RegistryView.Registry64 })
+                    using (var root = OpenRegistryRoot(hive, view))
+                    using (var key = OpenRuntimeKey(root, @"Software\Microsoft\EdgeUpdate\Clients\{F3017226-FE2A-4295-8BDF-00C3A9A7E4C5}"))
+                        if (ValidVersion(key == null ? null : ReadRuntimeVersion(key) as string)) return true;
             return false;
         }
 

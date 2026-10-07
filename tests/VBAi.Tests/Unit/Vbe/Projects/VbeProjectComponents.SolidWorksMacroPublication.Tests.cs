@@ -1,12 +1,12 @@
 namespace VBAi.Tests.Unit
 {
+    using Microsoft.VisualStudio.TestTools.UnitTesting;
     using System;
     using System.Collections;
     using System.Collections.Generic;
     using System.IO;
     using System.Linq;
     using System.Threading.Tasks;
-    using Microsoft.VisualStudio.TestTools.UnitTesting;
     using VBAi;
 
     [TestClass]
@@ -31,7 +31,8 @@ namespace VBAi.Tests.Unit
                 if (fault == "collision") f.Path = System.IO.Path.Combine(f.Root, "Source.swp");
                 var request = f.Request();
                 if (fault == "version") request.ExpectedProjectVersion = "stale";
-                try {
+                try
+                {
                     var result = (VbeProjectComponents.SolidWorksMacroPublicationResult)await f.Service.PublishSolidWorksMacroAsync(request);
                     Assert.IsFalse(result.Verified, result.Error);
                     Assert.IsTrue(result.Terminal, result.Error);
@@ -122,7 +123,8 @@ namespace VBAi.Tests.Unit
         {
             using (var f = new Fixture())
             {
-                f.AfterGeneralRead = ordinal => {
+                f.AfterGeneralRead = ordinal =>
+                {
                     if (ordinal == readOrdinal) f.Vbe.VBProjects[0] = new Project { Name = f.Source.Name };
                 };
                 var result = (VbeProjectComponents.SolidWorksMacroPublicationResult)await f.Service.PublishSolidWorksMacroAsync(f.Request());
@@ -170,9 +172,13 @@ namespace VBAi.Tests.Unit
             using (var f = new Fixture())
             {
                 f.Source.VBComponents.Items.Add(new Component("Form1", 3));
-                f.Service.PublicationFormTree = (project, form) => new Dictionary<string, object> { ["TreeVersion"] =
+                f.Service.PublicationFormTree = (project, form) => new Dictionary<string, object>
+                {
+                    ["TreeVersion"] =
                     mismatch && project == "Published" ? "changed-picture-or-control" : "full-controls-picture-digest",
-                    ["Properties"] = new[] { new { Name = "Caption", Value = mismatch && project == "Published" ? "Different" : "Original", Error = (string)null } }, ["Controls"] = new object[0] };
+                    ["Properties"] = new[] { new { Name = "Caption", Value = mismatch && project == "Published" ? "Different" : "Original", Error = (string)null } },
+                    ["Controls"] = new object[0]
+                };
                 var result = (VbeProjectComponents.SolidWorksMacroPublicationResult)
                     await f.Service.PublishSolidWorksMacroAsync(f.Request());
                 Assert.AreEqual(!mismatch, result.Verified, result.Error);
@@ -254,18 +260,24 @@ namespace VBAi.Tests.Unit
             {
                 bool revoked = false;
                 int falseChecks = 0;
-                f.Service.PublicationCreate = (request, authorize, claim, context) => {
+                f.Service.PublicationCreate = (request, authorize, claim, context) =>
+                {
                     f.Source.VBComponents.Items[0].CodeModule.FailRead = true;
                     authorize(false); // A pure final check must succeed despite inaccessible COM source getters.
                     falseChecks++;
                     revoked = true;
                     Assert.ThrowsException<InvalidOperationException>(() => authorize(false));
                     f.Source.VBComponents.Items[0].CodeModule.FailRead = false;
-                    return Task.FromResult(new VbeProjectComponents.SolidWorksMacroCreationResult {
-                        Terminal = true, Verified = false, Error = "Cached policy refused before native entry." });
+                    return Task.FromResult(new VbeProjectComponents.SolidWorksMacroCreationResult
+                    {
+                        Terminal = true,
+                        Verified = false,
+                        Error = "Cached policy refused before native entry."
+                    });
                 };
                 var result = (VbeProjectComponents.SolidWorksMacroPublicationResult)
-                    await f.Service.PublishSolidWorksMacroAsync(f.Request(), authorization: shared => {
+                    await f.Service.PublishSolidWorksMacroAsync(f.Request(), authorization: shared =>
+                    {
                         if (revoked) throw new InvalidOperationException("Policy revoked.");
                     });
                 Assert.AreEqual(1, falseChecks, result.Error);
@@ -283,7 +295,8 @@ namespace VBAi.Tests.Unit
             {
                 int entries = 0;
                 var result = (VbeProjectComponents.SolidWorksMacroPublicationResult)
-                    await f.Service.PublishSolidWorksMacroAsync(f.Request(), requireNativeContext: () => {
+                    await f.Service.PublishSolidWorksMacroAsync(f.Request(), requireNativeContext: () =>
+                    {
                         if (++entries > 3) throw new InvalidOperationException("Desktop ownership changed.");
                     });
                 Assert.IsFalse(result.Verified); Assert.AreEqual(0, f.CreateAttempts);
@@ -294,9 +307,12 @@ namespace VBAi.Tests.Unit
         [TestMethod, TestCategory("Unit")]
         public void PublicationRequiresReadableCompleteDesignerAndComparesHiddenAttributes()
         {
-            var nested = new Dictionary<string, object> { ["Controls"] = new object[] {
+            var nested = new Dictionary<string, object>
+            {
+                ["Controls"] = new object[] {
                 new Dictionary<string, object> { ["Properties"] = new object[] {
-                    new Dictionary<string, object> { ["Name"] = "Picture", ["Error"] = "Cannot fingerprint image" } } } } };
+                    new Dictionary<string, object> { ["Name"] = "Picture", ["Error"] = "Cannot fingerprint image" } } } }
+            };
             Assert.ThrowsException<InvalidOperationException>(() => VbeProjectComponents.RequirePublicationDesignerReadable(nested));
             Assert.AreEqual(VbeProjectComponents.PublicationAttributes("Attribute VB_Name = \"Class1\"\r\nAttribute VB_PredeclaredId = True\r\n"),
                 VbeProjectComponents.PublicationAttributes("Attribute VB_PredeclaredId = True\nAttribute VB_Name = \"Class1\"\n"));
@@ -810,15 +826,19 @@ namespace VBAi.Tests.Unit
             public override void SetValue(object component, object value) { throw new InvalidOperationException("No native setter in this test."); }
             public override void ResetValue(object component) { throw new InvalidOperationException("No native reset in this test."); }
         }
-        private static object CapturedReservedWriteOnlyMetadata() => new {
-            Property = "_Font_Reserved", Discovery = "IProvideClassInfo/ITypeInfo", MetadataComplete = true,
-            SetterDeclared = true, Interfaces = new[] { "Captured MSForms ILabelControl/_UserForm" },
+        private static object CapturedReservedWriteOnlyMetadata() => new
+        {
+            Property = "_Font_Reserved",
+            Discovery = "IProvideClassInfo/ITypeInfo",
+            MetadataComplete = true,
+            SetterDeclared = true,
+            Interfaces = new[] { "Captured MSForms ILabelControl/_UserForm" },
             Accessors = new[] { new { Name = "_Font_Reserved", DispId = 2147483135, InvocationKind = "INVOKE_PROPERTYPUT" } },
             Errors = new string[0]
         };
         private static void ApplyActualReservedReaderClassification(Dictionary<string, object> tree)
         {
-            foreach(var owner in CapturedOwnerProperties(tree))
+            foreach (var owner in CapturedOwnerProperties(tree))
             {
                 var properties = ((IEnumerable)owner["Properties"]).Cast<IDictionary<string, object>>().ToArray();
                 int index = Array.FindIndex(properties, p => (string)p["Name"] == "_Font_Reserved");
@@ -852,16 +872,17 @@ namespace VBAi.Tests.Unit
         [DataRow("font"), DataRow("font-member"), DataRow("picture")]
         public async Task PublicationCapturedPersistentFontOrPictureErrorStillRefusesBeforeExportOrNativeCreation(string fault)
         {
-            using(var f = new Fixture())
+            using (var f = new Fixture())
             {
                 var tree = CapturedNativeFontTree(); ApplyActualReservedReaderClassification(tree);
                 var properties = ((IEnumerable)tree["Properties"]).Cast<IDictionary<string, object>>().ToList();
                 var font = properties.Single(p => (string)p["Name"] == "Font");
-                if(fault == "font") font["Error"] = "Canonical font getter unavailable";
-                else if(fault == "font-member") ((IEnumerable)font["Members"]).Cast<IDictionary<string, object>>().Single(m => (string)m["Name"] == "Size")["Error"] = "Actual font size unavailable";
-                else {
+                if (fault == "font") font["Error"] = "Canonical font getter unavailable";
+                else if (fault == "font-member") ((IEnumerable)font["Members"]).Cast<IDictionary<string, object>>().Single(m => (string)m["Name"] == "Size")["Error"] = "Actual font size unavailable";
+                else
+                {
                     var picture = properties.SingleOrDefault(p => (string)p["Name"] == "Picture");
-                    if(picture == null){picture = new Dictionary<string, object> { ["Name"] = "Picture" }; properties.Add(picture); tree["Properties"] = properties.Cast<object>().ToArray();}
+                    if (picture == null) { picture = new Dictionary<string, object> { ["Name"] = "Picture" }; properties.Add(picture); tree["Properties"] = properties.Cast<object>().ToArray(); }
                     picture["Error"] = "Actual picture persistence digest unavailable";
                 }
                 f.Source.VBComponents.Items.Add(new Component("Form1", 3));
@@ -875,7 +896,7 @@ namespace VBAi.Tests.Unit
         [TestMethod, TestCategory("Unit")]
         public async Task PublicationCapturedManagedAndOleFontShapesReachFullCopyWithActualAliasClassification()
         {
-            using(var f = new Fixture())
+            using (var f = new Fixture())
             {
                 var tree = CapturedNativeFontTree(); ApplyActualReservedReaderClassification(tree);
                 f.Source.VBComponents.Items.Add(new Component("Form1", 3));
@@ -892,10 +913,22 @@ namespace VBAi.Tests.Unit
         {
             using (var f = new Fixture())
             {
-                var left = new VbeProjectComponents.PublicationComponent { Name = "Form1", Type = 3,
-                    Code = "Option Explicit\r\n", FormVersion = "tree-source", DesignerJson = "{\"Properties\":[]}" };
-                var right = new VbeProjectComponents.PublicationComponent { Name = left.Name, Type = left.Type,
-                    Code = left.Code, FormVersion = left.FormVersion, DesignerJson = left.DesignerJson };
+                var left = new VbeProjectComponents.PublicationComponent
+                {
+                    Name = "Form1",
+                    Type = 3,
+                    Code = "Option Explicit\r\n",
+                    FormVersion = "tree-source",
+                    DesignerJson = "{\"Properties\":[]}"
+                };
+                var right = new VbeProjectComponents.PublicationComponent
+                {
+                    Name = left.Name,
+                    Type = left.Type,
+                    Code = left.Code,
+                    FormVersion = left.FormVersion,
+                    DesignerJson = left.DesignerJson
+                };
                 if (field == "name") right.Name = "Form2";
                 if (field == "type") right.Type = 1;
                 if (field == "code") right.Code = "\r\n" + right.Code;
@@ -948,8 +981,12 @@ namespace VBAi.Tests.Unit
             using (var f = new Fixture())
             {
                 f.Source.VBComponents.Items.Add(new Component("Form1", 3));
-                f.Service.PublicationFormTree = (project, form) => new Dictionary<string, object> {
-                    ["TreeVersion"] = project == "Published" ? "destination-tree" : "source-tree", ["Properties"] = new[] { new { Name = "Caption", Value = project, Error = (string)null } }, ["Controls"] = new object[0] };
+                f.Service.PublicationFormTree = (project, form) => new Dictionary<string, object>
+                {
+                    ["TreeVersion"] = project == "Published" ? "destination-tree" : "source-tree",
+                    ["Properties"] = new[] { new { Name = "Caption", Value = project, Error = (string)null } },
+                    ["Controls"] = new object[0]
+                };
                 var result = (VbeProjectComponents.SolidWorksMacroPublicationResult)await f.Service.PublishSolidWorksMacroAsync(f.Request());
                 Assert.IsFalse(result.Verified); Assert.IsTrue(result.Terminal); Assert.IsTrue(result.Uncertain);
                 Assert.IsTrue(result.MutationInvoked); Assert.IsTrue(result.DestinationCreated); Assert.IsTrue(result.OriginalPreserved);
@@ -966,8 +1003,11 @@ namespace VBAi.Tests.Unit
             using (var f = new Fixture())
             {
                 f.Source.VBComponents.Items.Add(new Component("Form1", 3));
-                f.Service.PublicationFormTree = (project, form) => new Dictionary<string, object> {
-                    ["TreeVersion"] = "unreadable", ["Properties"] = new[] { new { Name = "Picture", Error = "Missing persisted picture" } } };
+                f.Service.PublicationFormTree = (project, form) => new Dictionary<string, object>
+                {
+                    ["TreeVersion"] = "unreadable",
+                    ["Properties"] = new[] { new { Name = "Picture", Error = "Missing persisted picture" } }
+                };
                 await Assert.ThrowsExceptionAsync<InvalidOperationException>(() => f.Service.PublishSolidWorksMacroAsync(f.Request()));
                 Assert.AreEqual(0, f.CreateAttempts); Assert.AreEqual(0, f.SaveAttempts); Assert.AreEqual(0, f.GeneralReads);
                 Assert.AreEqual(0, Directory.GetFiles(f.Root, "import-mismatch-*.json", SearchOption.AllDirectories).Length);
@@ -990,7 +1030,8 @@ namespace VBAi.Tests.Unit
             {
                 f.Source.VBComponents.Items.Add(new Component("Form1", 3));
                 string retained = null;
-                f.Service.PublicationFormTree = (project, form) => {
+                f.Service.PublicationFormTree = (project, form) =>
+                {
                     if (project == "Published")
                     {
                         string staging = Directory.GetDirectories(f.Root, ".vbai-publication-*").Single();
@@ -1054,7 +1095,8 @@ End
                 var form = new Component(formName, 3) { FormExportHeader = Native09ExportHeader };
                 form.CodeModule.Source = (string)source["Code"];
                 f.Source.VBComponents.Items.Add(form);
-                f.AfterCreate = () => {
+                f.AfterCreate = () =>
+                {
                     f.Target.VBComponents.ImportedCodeOverrides[formName] = (string)imported["Code"];
                     f.Target.VBComponents.FormExportHeaderOverrides[formName] = Native09ExportHeader;
                 };
@@ -1083,7 +1125,8 @@ End
                 bool revoked = false; PublicationCodeModule liveCode = null;
                 var result = (VbeProjectComponents.SolidWorksMacroPublicationResult)await f.Service.PublishSolidWorksMacroAsync(f.Request(),
                     shared => { if (revoked) throw new UnauthorizedAccessException("Revoked publication grant"); },
-                    claim => {
+                    claim =>
+                    {
                         if (claim.Phase != "BeforeImportedCodePrefixReconciliation") return;
                         var live = f.Target.VBComponents.Items.Single(x => x.Name == name); liveCode = live.CodeModule;
                         if (fault == "source") original.CodeModule.Source = "Changed original";
@@ -1126,7 +1169,8 @@ End
                 Service = new VbeProjectComponents(Vbe, new VbeForms(Vbe));
                 Service.GeneralProjectIdentity = ReferenceEquals;
                 Service.SolidWorksSaveProbe = () => new Owner();
-                Service.PublicationReadGeneral = async request => {
+                Service.PublicationReadGeneral = async request =>
+                {
                     Assert.AreEqual("read_project_general", request.Command);
                     Assert.AreEqual(Source.Name, request.Project);
                     Assert.AreEqual(2, request.ExpectedMode);
@@ -1138,29 +1182,53 @@ End
                     AfterGeneralRead?.Invoke(ordinal);
                     return snapshot;
                 };
-                Service.PublicationCreate = (r, a, c, n) => {
+                Service.PublicationCreate = (r, a, c, n) =>
+                {
                     CreateAttempts++; Target = new Project { Name = "Published", Type = 100, FileName = r.Path };
                     Target.VBComponents.Items.Add(new Component("ThisLibrary", 100));
                     Target.VBComponents.Items.Add(new Component("Published1", 1));
                     if (NativeReference != null) Target.References.Items.Add(NativeReference);
                     Target.VBComponents.Fault = ImportFault; Vbe.VBProjects.Add(Target); File.WriteAllText(r.Path, "Native100");
                     AfterCreate?.Invoke();
-                    return Task.FromResult(new VbeProjectComponents.SolidWorksMacroCreationResult {
-                        Verified = !CreationUnsettled, Terminal = !CreationUnsettled, CommandEntered = true,
-                        OriginalCommandReturned = !CreationUnsettled, DestinationCreated = true,
-                        Project = Target.Name, HostPath = r.Path, Uncertain = CreationUnsettled });
+                    return Task.FromResult(new VbeProjectComponents.SolidWorksMacroCreationResult
+                    {
+                        Verified = !CreationUnsettled,
+                        Terminal = !CreationUnsettled,
+                        CommandEntered = true,
+                        OriginalCommandReturned = !CreationUnsettled,
+                        DestinationCreated = true,
+                        Project = Target.Name,
+                        HostPath = r.Path,
+                        Uncertain = CreationUnsettled
+                    });
                 };
                 Service.PublicationSave = r => { SaveAttempts++; return Task.FromResult<object>(new { Verified = true, Uncertain = false }); };
             }
-            internal Request Request() => new Request { Project = Source.Name, ExpectedMode = 2, Path = Path,
-                ExpectedProjectVersion = (string)((dynamic)Service.ProjectProperties(Source.Name)).Version };
-            internal Dictionary<string, object> GeneralSnapshot() => new Dictionary<string, object> {
-                ["Available"] = true, ["Terminal"] = true, ["OriginalExecuteReturned"] = true,
-                ["DialogClosed"] = true, ["Uncertain"] = false, ["MutationInvoked"] = false,
-                ["CommittedRequested"] = false, ["Error"] = null, ["OpenAttempts"] = 1,
-                ["CancelAttempts"] = 1, ["FieldAttempts"] = 0, ["OkAttempts"] = 0,
-                ["OptionsVersion"] = GeneralOptionsVersion, ["Name"] = Source.Name,
-                ["Description"] = Source.Description ?? "", ["HelpFile"] = Source.HelpFile ?? "",
+            internal Request Request() => new Request
+            {
+                Project = Source.Name,
+                ExpectedMode = 2,
+                Path = Path,
+                ExpectedProjectVersion = (string)((dynamic)Service.ProjectProperties(Source.Name)).Version
+            };
+            internal Dictionary<string, object> GeneralSnapshot() => new Dictionary<string, object>
+            {
+                ["Available"] = true,
+                ["Terminal"] = true,
+                ["OriginalExecuteReturned"] = true,
+                ["DialogClosed"] = true,
+                ["Uncertain"] = false,
+                ["MutationInvoked"] = false,
+                ["CommittedRequested"] = false,
+                ["Error"] = null,
+                ["OpenAttempts"] = 1,
+                ["CancelAttempts"] = 1,
+                ["FieldAttempts"] = 0,
+                ["OkAttempts"] = 0,
+                ["OptionsVersion"] = GeneralOptionsVersion,
+                ["Name"] = Source.Name,
+                ["Description"] = Source.Description ?? "",
+                ["HelpFile"] = Source.HelpFile ?? "",
                 ["HelpContextText"] = Source.HelpContextID.ToString(System.Globalization.CultureInfo.InvariantCulture),
                 ["ConditionalCompilation"] = ConditionalCompilation
             };

@@ -1,12 +1,8 @@
 namespace VBAi.Tests.Unit
 {
-    using System;
-    using System.Collections.Generic;
-    using System.ComponentModel;
-    using System.Globalization;
-    using System.Windows.Forms;
-    using VBAi;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
+    using System.Globalization;
+    using VBAi;
 
     /// <summary>Vérifie l’exhaustivité des catalogues de langue intégrés et la détection des menus.</summary>
     [TestClass]

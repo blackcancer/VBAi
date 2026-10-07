@@ -1,3 +1,4 @@
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -7,7 +8,6 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Threading;
 using System.Web.Script.Serialization;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace VBAi.Tests.Integration
 {
@@ -33,8 +33,13 @@ namespace VBAi.Tests.Integration
             Assert.AreEqual(expected, typeof(VbeSession).Module.ModuleVersionId);
             Assert.AreEqual(hash, Sha(typeof(VbeSession).Assembly.Location), true);
             var context = new Context(Path.Combine(root, "word-owner-git-" + Guid.NewGuid().ToString("N")), plan);
-            context.Record(new { Phase = "Preflight", ExpectedMvid = expected, ExpectedSha256 = hash,
-                Scope = "Actual installed Word Git menu, owner-thread capture, local checkpoint and compare; no push/import/macro execution or chat-provider acceptance." });
+            context.Record(new
+            {
+                Phase = "Preflight",
+                ExpectedMvid = expected,
+                ExpectedSha256 = hash,
+                Scope = "Actual installed Word Git menu, owner-thread capture, local checkpoint and compare; no push/import/macro execution or chat-provider acceptance."
+            });
             var owner = new Thread(() => Owner(context, expected, hash)) { IsBackground = true };
             owner.SetApartmentState(ApartmentState.STA); owner.Start();
             try
@@ -63,10 +68,20 @@ namespace VBAi.Tests.Integration
                     lock (Retained) Retained.Add(context);
                 }
                 Exception preserved = EmbeddedGitUiProtocol.PreserveFailures(primary, context.UiError, context.OwnerError);
-                context.Record(new { Phase = "FailedOrRetained", context.Retain, context.MenuEmitted, context.ModalClosed,
-                    ProcessId = context.Fixture?.ProcessId, DocumentPath = context.Fixture?.DocumentPath,
+                context.Record(new
+                {
+                    Phase = "FailedOrRetained",
+                    context.Retain,
+                    context.MenuEmitted,
+                    context.ModalClosed,
+                    ProcessId = context.Fixture?.ProcessId,
+                    DocumentPath = context.Fixture?.DocumentPath,
                     FixtureRoot = context.Fixture?.Root,
-                    OwnerTerminal = context.OwnerDone.IsSet, UiTerminal = context.UiDone.IsSet, Error = preserved.ToString(), ReplayAttempts = 0 });
+                    OwnerTerminal = context.OwnerDone.IsSet,
+                    UiTerminal = context.UiDone.IsSet,
+                    Error = preserved.ToString(),
+                    ReplayAttempts = 0
+                });
                 if (!ReferenceEquals(primary, preserved)) ExceptionDispatchInfo.Capture(preserved).Throw();
                 throw;
             }
@@ -85,7 +100,8 @@ namespace VBAi.Tests.Integration
                 context.Ready.Set();
                 if (!context.StartMenu.Wait(TimeSpan.FromSeconds(30))) throw new TimeoutException("Word UI worker did not arm.");
                 if (context.Stop) throw new InvalidOperationException("Stopped before Word menu invocation.");
-                context.Fixture.ExecuteWordGitMenu(context.Scope, value => {
+                context.Fixture.ExecuteWordGitMenu(context.Scope, value =>
+                {
                     context.Record(value);
                     if (new JavaScriptSerializer().Serialize(value).Contains("MenuExecuteIntent"))
                     { context.MenuEmitted = true; context.MenuIntent.Set(); }

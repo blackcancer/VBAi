@@ -1,5 +1,6 @@
 namespace VBAi.Tests.Unit
 {
+    using Microsoft.VisualStudio.TestTools.UnitTesting;
     using System;
     using System.Collections.Generic;
     using System.Diagnostics;
@@ -9,7 +10,6 @@ namespace VBAi.Tests.Unit
     using System.Threading.Tasks;
     using System.Windows.Forms;
     using VBAi;
-    using Microsoft.VisualStudio.TestTools.UnitTesting;
 
     public sealed partial class GitWindowCoverageTests
     {

@@ -31,7 +31,7 @@ namespace VBAi
         private static void Nodes(IDictionary<string, object> owner, string key, SortedDictionary<string, object> rows)
         {
             if (!owner.TryGetValue(key, out var raw) || !(raw is object[] nodes)) return;
-            foreach (IDictionary<string, object> node in nodes)
+            foreach (IDictionary<string, object> node in nodes.Cast<IDictionary<string, object>>())
             {
                 string path = Convert.ToString(node["Path"]), type = Convert.ToString(node["Type"]);
                 if (!new[] { "CheckBox", "ComboBox", "CommandButton", "Frame", "Image", "Label", "ListBox", "MultiPage", "OptionButton", "ScrollBar", "SpinButton", "TabStrip", "TextBox", "ToggleButton", "Page", "Tab" }.Contains(type))
@@ -49,7 +49,7 @@ namespace VBAi
         private static void Properties(IDictionary<string, object> owner, string path, SortedDictionary<string, object> rows)
         {
             if (!owner.TryGetValue("Properties", out var raw) || !(raw is object[] properties)) throw new InvalidOperationException("Designer properties are unavailable.");
-            foreach (IDictionary<string, object> property in properties)
+            foreach (IDictionary<string, object> property in properties.Cast<IDictionary<string, object>>())
             {
                 string name = Convert.ToString(property["Name"]);
                 // Runtime links, native Undo state and collection wrappers are not persisted content.

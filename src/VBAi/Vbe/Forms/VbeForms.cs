@@ -1,17 +1,17 @@
 using System;
-using System.Collections.Generic;
 using System.Collections;
+using System.Collections.Generic;
 using System.ComponentModel;
 using System.Drawing;
 using System.Drawing.Imaging;
 using System.Globalization;
 using System.IO;
 using System.Linq;
+using System.Reflection;
+using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.RegularExpressions;
-using System.Runtime.InteropServices;
-using System.Reflection;
 using System.Web.Script.Serialization;
 
 namespace VBAi
@@ -87,12 +87,17 @@ namespace VBAi
         public object Tree(string projectName, string formName)
         {
             dynamic form = GetForm(GetProject(projectName), formName);
-            List<object> nodes;
-            List<VbePropertyInfo> properties;
-            int nodeCount;
-            string version = TreeVersion(form, out nodes, out properties, out nodeCount);
-            return new { Project = projectName, Form = formName, FormVersion = version, TreeVersion = version,
-                NodeCount = nodeCount, Properties = properties, Controls = nodes };
+            string version = TreeVersion(form, out List<object> nodes, out List<VbePropertyInfo> properties, out int nodeCount);
+            return new
+            {
+                Project = projectName,
+                Form = formName,
+                FormVersion = version,
+                TreeVersion = version,
+                NodeCount = nodeCount,
+                Properties = properties,
+                Controls = nodes
+            };
         }
 
         /// <summary>Retourne les événements COM disponibles pour le UserForm ou le contrôle canonique indiqué.</summary>
@@ -110,11 +115,16 @@ namespace VBAi
                 throw new InvalidOperationException("ControlPath is not a canonical path in form_tree.");
             object target = userForm ? (object)form.Designer : ResolveTreeItem(form.Designer, controlPath);
             object catalog = VbeComEvents.Read(target);
-            return new { Project = projectName, Form = formName,
+            return new
+            {
+                Project = projectName,
+                Form = formName,
                 ControlPath = userForm ? "UserForm" : controlPath,
                 ObjectName = userForm ? "UserForm" : (string)((dynamic)target).Name,
                 Type = TypeDescriptor.GetClassName(target),
-                TreeVersion = (string)tree.TreeVersion, Catalog = catalog };
+                TreeVersion = (string)tree.TreeVersion,
+                Catalog = catalog
+            };
         }
 
         /// <summary>Construit l’arbre du concepteur et calcule sa version à partir de son contenu.</summary>
@@ -149,11 +159,16 @@ namespace VBAi
             foreach (dynamic control in form.Designer.Controls)
             {
                 object parent = control.Parent;
-                rows.Add(new { Control = (string)control.Name,
-                    ParentName = SafeComName(parent), ParentType = TypeDescriptor.GetClassName(parent),
-                    DesignerName = SafeComName(designer), DesignerType = TypeDescriptor.GetClassName(designer),
+                rows.Add(new
+                {
+                    Control = (string)control.Name,
+                    ParentName = SafeComName(parent),
+                    ParentType = TypeDescriptor.GetClassName(parent),
+                    DesignerName = SafeComName(designer),
+                    DesignerType = TypeDescriptor.GetClassName(designer),
                     SameDesigner = SameComIdentity(parent, designer),
-                    SameComponent = SameComIdentity(parent, (object)form) });
+                    SameComponent = SameComIdentity(parent, (object)form)
+                });
             }
             return new { Project = projectName, Form = formName, Rows = rows };
         }
@@ -290,8 +305,15 @@ namespace VBAi
                     children.AddRange(ReadChildControls(controls.GetValue(item), item, formName,
                         path + "/Controls", depth + 1, ref nodeCount));
             }
-            return new { Path = path, Name = name, Kind = kind,
-                Type = TypeDescriptor.GetClassName(item), Properties = ReadObjectProperties(item), Children = children };
+            return new
+            {
+                Path = path,
+                Name = name,
+                Kind = kind,
+                Type = TypeDescriptor.GetClassName(item),
+                Properties = ReadObjectProperties(item),
+                Children = children
+            };
         }
 
         /// <summary>Lit les propriétés descriptibles d’un objet du concepteur.</summary>
@@ -303,10 +325,14 @@ namespace VBAi
             string targetType = TypeDescriptor.GetClassName(item);
             foreach (PropertyDescriptor descriptor in TypeDescriptor.GetProperties(item))
             {
-                var info = new VbePropertyInfo { Name = descriptor.Name,
-                    Type = descriptor.PropertyType?.FullName, ReadOnly = descriptor.IsReadOnly,
+                var info = new VbePropertyInfo
+                {
+                    Name = descriptor.Name,
+                    Type = descriptor.PropertyType?.FullName,
+                    ReadOnly = descriptor.IsReadOnly,
                     AllowedValues = EnumChoices(descriptor.PropertyType),
-                    SetterStatus = DesignerSetterStatus(targetType, descriptor) };
+                    SetterStatus = DesignerSetterStatus(targetType, descriptor)
+                };
                 if (TryDescribeReservedFontWriteOnly(item, descriptor, info))
                 { result.Add(info); continue; }
                 try
@@ -315,7 +341,10 @@ namespace VBAi
                     info.Kind = value != null && (Marshal.IsComObject(value) || value is Font || value is Image)
                         ? "object" : "scalar";
                     if (info.Kind == "scalar") info.Value = NormalizeScalar(value);
-                    else if (value is Image) info.Digest = ImageDigest((Image)value);
+                    else if (value is Image img)
+                    {
+                        info.Digest = ImageDigest(img);
+                    }
                     else if (value is Font)
                     {
                         try { info.Members = DescribeObjectMembers((object)((dynamic)item).Font); }
@@ -389,13 +418,19 @@ namespace VBAi
             }
             string currentName = (string)form.Name;
             var properties = DescribeProperties(form);
-            return new { Project = request.Project, Form = currentName, Property = request.Property,
-                Properties = properties, State = Snapshot(request.Project, form) };
+            return new
+            {
+                request.Project,
+                Form = currentName,
+                request.Property,
+                Properties = properties,
+                State = Snapshot(request.Project, form)
+            };
         }
 
-        /// <summary>Affecte et vérifie une image OLE sur le contrôle ciblé.</summary>
+        /// <summary>Affecte et vérifie une img OLE sur le contrôle ciblé.</summary>
         /// <param name="request">Paramètres de la commande et version attendue par le client.</param>
-        /// <returns>État mis à jour après le remplacement de l’image.</returns>
+        /// <returns>État mis à jour après le remplacement de l’img.</returns>
         public object SetPicture(Request request)
         {
             dynamic form = GetForm(GetDesignProject(request.Project), request.Form);
@@ -408,8 +443,14 @@ namespace VBAi
             string actual = OlePictureLoader.Fingerprint(installed);
             if (!string.Equals(expected, actual, StringComparison.Ordinal))
                 throw new InvalidOperationException("The UserForm did not retain the requested OLE picture.");
-            return new { Project = request.Project, Form = request.Form,
-                Picture = actual, Properties = DescribeProperties(form), State = Snapshot(request.Project, form) };
+            return new
+            {
+                request.Project,
+                request.Form,
+                Picture = actual,
+                Properties = DescribeProperties(form),
+                State = Snapshot(request.Project, form)
+            };
         }
 
         /// <summary>Convertit une valeur JSON vers le type scalaire de la propriété COM.</summary>
@@ -423,15 +464,12 @@ namespace VBAi
                 throw new InvalidOperationException("This property is not a supported scalar type.");
             if (targetType.IsEnum)
             {
-                if (value is string) return Enum.Parse(targetType, (string)value, true);
+                if (value is string v) return Enum.Parse(targetType, v, true);
                 return Enum.ToObject(targetType, Convert.ToInt32(value, CultureInfo.InvariantCulture));
             }
-            if (targetType == typeof(bool) && value is string)
+            if (targetType == typeof(bool) && value is string v1)
             {
-                bool parsed;
-                if (!bool.TryParse((string)value, out parsed))
-                    throw new ArgumentException("Boolean value must be true or false.");
-                return parsed;
+                return !bool.TryParse(v1, out bool parsed) ? throw new ArgumentException("Boolean value must be true or false.") : (object)parsed;
             }
             if (targetType == typeof(string))
             {
@@ -498,10 +536,14 @@ namespace VBAi
             {
                 string name = (string)property.Name;
                 PropertyDescriptor descriptor = descriptors.Find(name, true);
-                var info = new VbePropertyInfo { Name = name, Type = descriptor?.PropertyType?.FullName,
+                var info = new VbePropertyInfo
+                {
+                    Name = name,
+                    Type = descriptor?.PropertyType?.FullName,
                     ReadOnly = descriptor == null ? (bool?)null : descriptor.IsReadOnly,
                     AllowedValues = EnumChoices(descriptor?.PropertyType),
-                    SetterStatus = descriptor == null ? "Unknown" : DesignerSetterStatus("UserForm", descriptor) };
+                    SetterStatus = descriptor == null ? "Unknown" : DesignerSetterStatus("UserForm", descriptor)
+                };
                 if (string.Equals(name, "Picture", StringComparison.OrdinalIgnoreCase))
                 {
                     info.Kind = "object";
@@ -532,11 +574,11 @@ namespace VBAi
                 object inspected = managed ?? raw;
                 if (inspected != null && info.Type == null) info.Type = inspected.GetType().FullName;
                 if (info.NumIndices > 0) info.Kind = "indexed";
-                else if (inspected is Image)
+                else if (inspected is Image img)
                 {
                     info.Kind = "object";
                     info.Display = inspected.GetType().Name;
-                    info.Digest = ImageDigest((Image)inspected);
+                    info.Digest = ImageDigest(img);
                     info.Members = DescribeObjectMembers(inspected);
                 }
                 else if (inspected != null &&
@@ -550,7 +592,7 @@ namespace VBAi
                 {
                     info.Kind = "scalar";
                     info.Value = NormalizeScalar(raw ?? managed);
-                    if (managed is Color) info.Display = ((Color)managed).Name;
+                    if (managed is Color clr) info.Display = clr.Name;
                 }
                 result.Add(info);
             }
@@ -566,8 +608,13 @@ namespace VBAi
             foreach (PropertyDescriptor descriptor in TypeDescriptor.GetProperties(source))
             {
                 if (members.Count >= 64) break;
-                var info = new VbePropertyInfo { Name = descriptor.Name, Type = descriptor.PropertyType?.FullName,
-                    ReadOnly = descriptor.IsReadOnly, AllowedValues = EnumChoices(descriptor.PropertyType) };
+                var info = new VbePropertyInfo
+                {
+                    Name = descriptor.Name,
+                    Type = descriptor.PropertyType?.FullName,
+                    ReadOnly = descriptor.IsReadOnly,
+                    AllowedValues = EnumChoices(descriptor.PropertyType)
+                };
                 try
                 {
                     object value = descriptor.GetValue(source);
@@ -631,9 +678,9 @@ namespace VBAi
             return Convert.ToString(value, CultureInfo.InvariantCulture);
         }
 
-        /// <summary>Calcule l’empreinte de l’image actuellement exposée par le contrôle.</summary>
-        /// <param name="image">Valeur image à empreinter.</param>
-        /// <returns>Empreinte de l’image lue.</returns>
+        /// <summary>Calcule l’empreinte de l’img actuellement exposée par le contrôle.</summary>
+        /// <param name="image">Valeur img à empreinter.</param>
+        /// <returns>Empreinte de l’img lue.</returns>
         private static string ImageDigest(Image image)
         {
             try
@@ -670,12 +717,16 @@ namespace VBAi
                         value = Convert.ToString(raw, CultureInfo.InvariantCulture);
                 }
                 catch (Exception ex) { error = ex.Message; }
-                result.Add(new { Name = descriptor.Name,
-                    Type = descriptor.PropertyType == null ? null : descriptor.PropertyType.FullName,
+                result.Add(new
+                {
+                    descriptor.Name,
+                    Type = descriptor.PropertyType?.FullName,
                     ReadOnly = descriptor.IsReadOnly,
                     SetterStatus = DesignerSetterStatus(targetType, descriptor),
                     AllowedValues = EnumChoices(descriptor.PropertyType),
-                    Value = value, Error = error });
+                    Value = value,
+                    Error = error
+                });
             }
             return result;
         }
@@ -804,9 +855,7 @@ namespace VBAi
         /// <param name="name">Nom de la propriété, du composant ou du contrôle.</param>
         private static void RequireWritableControlProperty(object control, string name)
         {
-            PropertyDescriptor descriptor = TypeDescriptor.GetProperties(control).Find(name, true);
-            if (descriptor == null)
-                throw new InvalidOperationException("The selected control type does not expose " + name + ".");
+            PropertyDescriptor descriptor = TypeDescriptor.GetProperties(control).Find(name, true) ?? throw new InvalidOperationException("The selected control type does not expose " + name + ".");
             if (descriptor.IsReadOnly)
                 throw new InvalidOperationException("The selected control type exposes " + name + " as read-only.");
         }
@@ -1003,16 +1052,29 @@ namespace VBAi
                     fontBold = (bool)font.Bold;
                 }
                 catch { }
-                controls.Add(new { Name = (string)control.Name, Caption = caption,
-                    Left = (double)control.Left, Top = (double)control.Top,
-                    Width = (double)control.Width, Height = (double)control.Height,
-                    FontName = fontName, FontSize = fontSize, FontBold = fontBold });
+                controls.Add(new
+                {
+                    Name = (string)control.Name,
+                    Caption = caption,
+                    Left = (double)control.Left,
+                    Top = (double)control.Top,
+                    Width = (double)control.Width,
+                    Height = (double)control.Height,
+                    FontName = fontName,
+                    FontSize = fontSize,
+                    FontBold = fontBold
+                });
             }
-            return new { Project = projectName, Form = (string)form.Name,
+            return new
+            {
+                Project = projectName,
+                Form = (string)form.Name,
                 Caption = (string)form.Properties.Item("Caption").Value,
                 Width = Convert.ToDouble(form.Properties.Item("Width").Value, CultureInfo.InvariantCulture),
                 Height = Convert.ToDouble(form.Properties.Item("Height").Value, CultureInfo.InvariantCulture),
-                Version = Version(form), Controls = controls };
+                Version = Version(form),
+                Controls = controls
+            };
         }
 
         /// <summary>Calcule l’empreinte de version du formulaire et de ses contrôles.</summary>
@@ -1020,10 +1082,7 @@ namespace VBAi
         /// <returns>Empreinte de version du formulaire.</returns>
         private static string Version(dynamic form)
         {
-            List<object> nodes;
-            List<VbePropertyInfo> properties;
-            int nodeCount;
-            return TreeVersion(form, out nodes, out properties, out nodeCount);
+            return TreeVersion(form, out List<object> _, out List<VbePropertyInfo> _, out int _);
         }
 
         // Create inside a verified canonical container and confirm rollback if any post-add step fails.
@@ -1115,8 +1174,7 @@ namespace VBAi
             if (propertyPath.Length < 1 || propertyPath.Length > 2 ||
                 propertyPath.Any(part => string.IsNullOrWhiteSpace(part)))
                 throw new ArgumentException("Property must be a property name or one object member path.");
-            PropertyDescriptor root = TypeDescriptor.GetProperties(target).Find(propertyPath[0], true);
-            if (root == null) throw new InvalidOperationException("Property is not exposed: " + propertyPath[0]);
+            PropertyDescriptor root = TypeDescriptor.GetProperties(target).Find(propertyPath[0], true) ?? throw new InvalidOperationException("Property is not exposed: " + propertyPath[0]);
             if (string.Equals(root.Name, "_Font_Reserved", StringComparison.OrdinalIgnoreCase))
                 throw new InvalidOperationException("_Font_Reserved is a COM reserved member whose getter is unavailable in the tested VBE.");
             if (propertyPath.Length == 1)
@@ -1170,8 +1228,7 @@ namespace VBAi
                     ? (object)((dynamic)target).Font : root.GetValue(target);
                 if (owner == null || !Marshal.IsComObject(owner))
                     throw new InvalidOperationException("The object property is not exposed as an editable COM object.");
-                PropertyDescriptor member = TypeDescriptor.GetProperties(owner).Find(propertyPath[1], true);
-                if (member == null) throw new InvalidOperationException("Object member is not exposed: " + request.Property);
+                PropertyDescriptor member = TypeDescriptor.GetProperties(owner).Find(propertyPath[1], true) ?? throw new InvalidOperationException("Object member is not exposed: " + request.Property);
                 if (member.IsReadOnly) throw new InvalidOperationException("Object member is read-only: " + request.Property);
                 object oldValue = member.GetValue(owner);
                 object converted = ConvertDescriptorValue(request.Value, member.PropertyType, oldValue);
@@ -1180,12 +1237,12 @@ namespace VBAi
                     throw new InvalidOperationException("The VBE did not retain object member " + request.Property + ".");
             }
             dynamic after = Tree(request.Project, request.Form);
-            return new { ControlPath = request.ControlPath, Property = request.Property, Tree = after };
+            return new { request.ControlPath, request.Property, Tree = after };
         }
 
-        /// <summary>Affecte une image OLE au nœud sélectionné après vérification de son chemin et de la version.</summary>
+        /// <summary>Affecte une img OLE au nœud sélectionné après vérification de son chemin et de la version.</summary>
         /// <param name="request">Paramètres de la commande et version attendue par le client.</param>
-        /// <returns>Résultat de l’affectation de l’image et arbre actualisé.</returns>
+        /// <returns>Résultat de l’affectation de l’img et arbre actualisé.</returns>
         public object SetNodePicture(Request request)
         {
             if (string.IsNullOrWhiteSpace(request.ControlPath) ||
@@ -1203,7 +1260,7 @@ namespace VBAi
             PropertyDescriptor descriptor = TypeDescriptor.GetProperties(target).Find(request.Property, true);
             if (descriptor == null || descriptor.IsReadOnly ||
                 (descriptor.PropertyType != typeof(Bitmap) && descriptor.PropertyType != typeof(Icon)))
-                throw new InvalidOperationException("The selected node has no writable OLE image property by that name.");
+                throw new InvalidOperationException("The selected node has no writable OLE img property by that name.");
             object picture = OlePictureLoader.Load(request.Path);
             target.GetType().InvokeMember(descriptor.Name, BindingFlags.SetProperty,
                 null, target, new[] { picture });
@@ -1211,9 +1268,13 @@ namespace VBAi
                 null, target, null);
             if (!string.Equals(OlePictureLoader.Fingerprint(installed), OlePictureLoader.Fingerprint(picture),
                 StringComparison.Ordinal))
-                throw new InvalidOperationException("The VBE did not retain the requested OLE image.");
-            return new { ControlPath = request.ControlPath, Property = descriptor.Name,
-                Tree = Tree(request.Project, request.Form) };
+                throw new InvalidOperationException("The VBE did not retain the requested OLE img.");
+            return new
+            {
+                request.ControlPath,
+                Property = descriptor.Name,
+                Tree = Tree(request.Project, request.Form)
+            };
         }
 
         /// <summary>Retire un contrôle après validation du chemin canonique et de la version de l’arbre.</summary>
@@ -1238,9 +1299,7 @@ namespace VBAi
             string name = parts[parts.Length - 1];
             object owner = parts.Length == 2 ? (object)form.Designer :
                 ResolveTreeItem(form.Designer, string.Join("/", parts.Take(parts.Length - 2)));
-            PropertyDescriptor descriptor = TypeDescriptor.GetProperties(owner).Find("Controls", true);
-            if (descriptor == null)
-                throw new InvalidOperationException("The selected parent has no Controls collection.");
+            PropertyDescriptor descriptor = TypeDescriptor.GetProperties(owner).Find("Controls", true) ?? throw new InvalidOperationException("The selected parent has no Controls collection.");
             dynamic controls = descriptor.GetValue(owner);
             controls.Remove(name);
             dynamic after = Tree(request.Project, request.Form);
@@ -1276,11 +1335,17 @@ namespace VBAi
             dynamic after = Tree(request.Project, request.Form);
             if (!TreeContainsPath((IEnumerable)after.Controls, request.ControlPath))
                 throw new InvalidOperationException("The control is no longer present after ZOrder.");
-            return new { ControlPath = request.ControlPath, ZPosition = request.ZPosition,
-                Executed = true, Verification = "Unverified",
+            return new
+            {
+                request.ControlPath,
+                request.ZPosition,
+                Executed = true,
+                Verification = "Unverified",
                 VerificationPending = true,
                 VerificationLimit = "MSForms does not expose z-order through Controls or form_tree; compare the visible overlap in the designer.",
-                TreeBefore = before, TreeAfter = after };
+                TreeBefore = before,
+                TreeAfter = after
+            };
         }
 
         /// <summary>Ajoute une page de MultiPage ou un onglet de TabStrip après validation de l’arbre.</summary>
@@ -1396,9 +1461,7 @@ namespace VBAi
             string name = parts[parts.Length - 1];
             string parentPath = string.Join("/", parts.Take(parts.Length - 2));
             object parent = ResolveTreeItem(form.Designer, parentPath);
-            PropertyDescriptor descriptor = TypeDescriptor.GetProperties(parent).Find(collectionName, true);
-            if (descriptor == null)
-                throw new InvalidOperationException("The selected parent has no " + collectionName + " collection.");
+            PropertyDescriptor descriptor = TypeDescriptor.GetProperties(parent).Find(collectionName, true) ?? throw new InvalidOperationException("The selected parent has no " + collectionName + " collection.");
             dynamic collection = descriptor.GetValue(parent);
             int index = -1;
             int current = 0;
@@ -1434,8 +1497,8 @@ namespace VBAi
                 ? previous?.GetType() ?? value.GetType() : declaredType;
             if (type == typeof(Color))
             {
-                if (value is string && ((string)value).StartsWith("#", StringComparison.Ordinal))
-                    return ColorTranslator.FromHtml((string)value);
+                if (value is string v && v.StartsWith("#", StringComparison.Ordinal))
+                    return ColorTranslator.FromHtml(v);
                 return ColorTranslator.FromOle(Convert.ToInt32(value, CultureInfo.InvariantCulture));
             }
             return ConvertScalar(value, type);
@@ -1449,8 +1512,8 @@ namespace VBAi
         {
             if (Equals(actual, expected)) return true;
             if (actual == null || expected == null) return false;
-            if (actual is Color && expected is Color)
-                return ((Color)actual).ToArgb() == ((Color)expected).ToArgb();
+            if (actual is Color clr && expected is Color clr2)
+                return clr.ToArgb() == clr2.ToArgb();
             if (actual is IConvertible && expected is IConvertible)
                 return string.Equals(Convert.ToString(actual, CultureInfo.InvariantCulture),
                     Convert.ToString(expected, CultureInfo.InvariantCulture), StringComparison.OrdinalIgnoreCase);
@@ -1490,8 +1553,8 @@ namespace VBAi
                 foreach (dynamic candidate in (dynamic)collection.GetValue(current))
                     if (string.Equals((string)candidate.Name, parts[i + 1], StringComparison.Ordinal))
                     { found = candidate; break; }
-                if (found == null) throw new InvalidOperationException("Path item is unavailable: " + parts[i + 1]);
-                current = found;
+
+                current = found ?? throw new InvalidOperationException("Path item is unavailable: " + parts[i + 1]);
             }
             return current;
         }
@@ -1514,9 +1577,7 @@ namespace VBAi
                 if ((collectionName != "Controls" && collectionName != "Pages") ||
                     !Regex.IsMatch(itemName, @"^[A-Za-z_][A-Za-z0-9_]*$"))
                     throw new ArgumentException("ParentPath contains an invalid collection or name.");
-                PropertyDescriptor descriptor = TypeDescriptor.GetProperties(current).Find(collectionName, true);
-                if (descriptor == null)
-                    throw new InvalidOperationException("The path element has no " + collectionName + " collection.");
+                PropertyDescriptor descriptor = TypeDescriptor.GetProperties(current).Find(collectionName, true) ?? throw new InvalidOperationException("The path element has no " + collectionName + " collection.");
                 object collection = descriptor.GetValue(current);
                 object match = null;
                 foreach (dynamic candidate in (dynamic)collection)
@@ -1525,11 +1586,10 @@ namespace VBAi
                         if (match != null) throw new InvalidOperationException("Ambiguous parent path element: " + itemName);
                         match = candidate;
                     }
-                if (match == null) throw new InvalidOperationException("Parent path element not found: " + itemName);
-                current = match;
+
+                current = match ?? throw new InvalidOperationException("Parent path element not found: " + itemName);
             }
-            PropertyDescriptor controls = TypeDescriptor.GetProperties(current).Find("Controls", true);
-            if (controls == null) throw new InvalidOperationException("The selected parent has no Controls collection.");
+            PropertyDescriptor controls = TypeDescriptor.GetProperties(current).Find("Controls", true) ?? throw new InvalidOperationException("The selected parent has no Controls collection.");
             return controls.GetValue(current);
         }
 

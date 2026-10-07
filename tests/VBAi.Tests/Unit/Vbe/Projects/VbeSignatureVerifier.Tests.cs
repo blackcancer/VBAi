@@ -1,9 +1,8 @@
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
-using VBAi;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace VBAi.Tests.Unit
 {
@@ -79,7 +78,8 @@ namespace VBAi.Tests.Unit
                 {
                     int selected = scenario, verifies = 0, closes = 0;
                     var verifier = new VbeSignatureVerifier { Provider = subject => provider };
-                    verifier.Native = (IntPtr owner, ref Guid policy, ref VbeSignatureVerifier.TrustData data) => {
+                    verifier.Native = (IntPtr owner, ref Guid policy, ref VbeSignatureVerifier.TrustData data) =>
+                    {
                         Assert.AreEqual(new IntPtr(-1), owner); Assert.AreEqual(2u, data.Ui); Assert.AreEqual(1u, data.Choice);
                         Assert.AreEqual(0x1080u, data.Flags); Assert.AreEqual((uint)Marshal.SizeOf(typeof(VbeSignatureVerifier.TrustData)), data.Size);
                         var file = Marshal.PtrToStructure<VbeSignatureVerifier.TrustFile>(data.File);

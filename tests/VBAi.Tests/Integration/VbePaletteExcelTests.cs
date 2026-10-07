@@ -1,10 +1,9 @@
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
-using VBAi;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace VBAi.Tests.Integration
 {
@@ -41,12 +40,12 @@ namespace VBAi.Tests.Integration
                 book = excel.Workbooks.Add(); excel.VBE.MainWindow.Visible = true;
                 object vbe = (object)excel.VBE;
                 before = VbeNativePaletteDialog.Visit(vbe, rows => null);
-                var original = before.Select(row => new VbeNativePaletteState.ColorRow { Name=row.Name, Foreground=row.Foreground, Background=row.Background, Indicator=row.Indicator }).ToArray();
+                var original = before.Select(row => new VbeNativePaletteState.ColorRow { Name = row.Name, Foreground = row.Foreground, Background = row.Background, Indicator = row.Indicator }).ToArray();
                 var dark = VbeNativePaletteState.Dark(original);
                 int changed = Array.FindIndex(before, row => row.Foreground != dark[Array.IndexOf(before, row)].Foreground);
                 Assert.IsTrue(changed >= 0, "A native foreground must differ from the configured dark foreground.");
                 original[changed].Foreground = Enumerable.Range(0, 17).First(value => value != before[changed].Foreground && value != dark[changed].Foreground);
-                var previous = new VbeNativePaletteState { VbeVersion=(string)excel.VBE.Version, Original=original, Applied=VbeNativePaletteState.Dark(original) };
+                var previous = new VbeNativePaletteState { VbeVersion = (string)excel.VBE.Version, Original = original, Applied = VbeNativePaletteState.Dark(original) };
                 string path = Path.Combine(root, "palette.json"); previous.SaveNew(path);
                 string previousBytes = File.ReadAllText(path);
                 VbeNativePalette.Change(vbe, true, path);

@@ -1,10 +1,10 @@
-using System;
-using System.IO;
-using System.Collections.Generic;
-using System.Runtime.InteropServices;
-using System.Web.Script.Serialization;
-using System.Security.Cryptography;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Runtime.InteropServices;
+using System.Security.Cryptography;
+using System.Web.Script.Serialization;
 using VBAi.Tests.Integration;
 
 namespace VBAi.Tests.Unit
@@ -15,7 +15,8 @@ namespace VBAi.Tests.Unit
         [TestMethod]
         public void RawHashReadsUnchangedWorkbookWhileAnOwnedWriterAllowsReaders()
         {
-            WithFile(path => {
+            WithFile(path =>
+            {
                 byte[] original = { 0, 1, 2, 3, 4, 255 };
                 File.WriteAllBytes(path, original);
                 string expected;
@@ -39,7 +40,8 @@ namespace VBAi.Tests.Unit
         [TestMethod]
         public void RawHashPreservesMissingFileFailureAndDoesNotCreateAFile()
         {
-            WithFile(path => {
+            WithFile(path =>
+            {
                 Assert.ThrowsException<FileNotFoundException>(() => ExcelVbeFixture.EmbeddedRawHash(path));
                 Assert.IsFalse(File.Exists(path));
             });
@@ -83,7 +85,8 @@ namespace VBAi.Tests.Unit
             int receipts = 0, reads = 0;
             var primary = new COMException("Synthetic getter error", unchecked((int)0x800A03EC));
             var actual = Assert.ThrowsException<COMException>(() => ExcelVbeFixture.ObserveEmbeddedVbeRead(
-                "VBE.MainWindow", () => { reads++; throw primary; }, item => {
+                "VBE.MainWindow", () => { reads++; throw primary; }, item =>
+                {
                     receipts++; if (receipts == 2) throw new IOException("Synthetic receipt failure");
                 }, 41));
             Assert.AreSame(primary, actual); Assert.AreEqual(1, reads); Assert.AreEqual(2, receipts);
@@ -104,10 +107,12 @@ namespace VBAi.Tests.Unit
         {
             object lease = null; int reads = 0, releases = 0, receipts = 0;
             var acquired = new object();
-            Assert.ThrowsException<IOException>(() => {
+            Assert.ThrowsException<IOException>(() =>
+            {
                 try
                 {
-                    ExcelVbeFixture.ObserveEmbeddedVbeRead("VBE.MainWindow", () => { reads++; lease = acquired; }, item => {
+                    ExcelVbeFixture.ObserveEmbeddedVbeRead("VBE.MainWindow", () => { reads++; lease = acquired; }, item =>
+                    {
                         receipts++; if (receipts == 2) throw new IOException("Returned receipt unavailable");
                     }, 41);
                 }
@@ -151,7 +156,8 @@ namespace VBAi.Tests.Unit
                 () => { order.Add("read"); reads++; return acquired; },
                 value => { Assert.AreSame(acquired, value); order.Add("release"); releases++; },
                 () => { order.Add("replace"); replacements++; },
-                item => {
+                item =>
+                {
                     var receipt = Row(item);
                     Assert.AreEqual("BeforeCopy", receipt["Stage"]);
                     Assert.AreEqual("Application.VBE", receipt["Getter"]);
@@ -193,7 +199,8 @@ namespace VBAi.Tests.Unit
             var releaseError = new InvalidOperationException("Synthetic release failed");
             Action invoke = () => ExcelVbeFixture.ObserveRetainedVbeBeforeCopy(
                 () => { reads++; if (fault == "getter") throw getterError; return fault == "null" ? null : acquired; },
-                value => {
+                value =>
+                {
                     if (fault == "getter" || fault == "intent" || fault == "null") Assert.IsNull(value);
                     else Assert.AreSame(acquired, value);
                     releases++;
@@ -221,7 +228,8 @@ namespace VBAi.Tests.Unit
             int reads = 0, releases = 0, replacements = 0, receipts = 0;
             var original = new COMException("Synthetic native VBE failure", unchecked((int)0x800A03EC));
             var observed = Assert.ThrowsException<COMException>(() => ExcelVbeFixture.ObserveRetainedVbeBeforeCopy(
-                () => { reads++; throw original; }, _ => releases++, () => replacements++, item => {
+                () => { reads++; throw original; }, _ => releases++, () => replacements++, item =>
+                {
                     receipts++;
                     if (receipts == 2)
                     {
@@ -244,7 +252,8 @@ namespace VBAi.Tests.Unit
             var native = new COMException("Synthetic native getter failure", unchecked((int)0x800A03EC));
             var cleanup = new IOException("Synthetic release failure");
             var failure = Assert.ThrowsException<AggregateException>(() => ExcelVbeFixture.ObserveRetainedVbeBeforeCopy(
-                () => { reads++; throw native; }, value => {
+                () => { reads++; throw native; }, value =>
+                {
                     Assert.IsNull(value); releases++; throw cleanup;
                 }, () => replacements++, _ => { }, 41));
             Assert.AreEqual(2, failure.InnerExceptions.Count);

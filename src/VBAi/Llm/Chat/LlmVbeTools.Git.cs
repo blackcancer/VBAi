@@ -36,7 +36,11 @@ namespace VBAi
 
         /// <summary>Définitions des opérations Git exposées au modèle.</summary>
         /// <value>Définitions des opérations Git exposées au modèle.</value>
-        private static object[] GitDefinitions { get { return new[] {
+        private static object[] GitDefinitions
+        {
+            get
+            {
+                return new[] {
             GitDefinition("status", "Read the conversation document's configured Git binding, branch, local changes and State revision. Never invent a remote or bind a repository. Call before every mutation.", true),
             GitDefinition("history", "Read local commit history for the bound macro.", true),
             GitDefinition("commit_read", "Read details and VBA file names in an existing commit. Name is a commit hash from history, never a shell expression.", true, "Name"),
@@ -63,7 +67,9 @@ namespace VBAi
             GitDefinition("merge_complete", "Validate the resolved VBA package, create a two-parent merge commit and import it with checkpoint. Text is commit message. All conflicts must be resolved.", false, "Text"),
             GitDefinition("merge_abort", "Discard the pending merge plan without changing VBA or branch history.", false),
             GitDefinition("rollback", "Restore the backup before the latest import only if live VBA still matches its readback. Does not rewrite remote history.", false)
-        }; } }
+        };
+            }
+        }
 
         /// <summary>Valide les arguments et autorisations avant d’exécuter une opération Git.</summary>
         /// <param name="name">Nom de l’outil Git à invoquer.</param>
@@ -73,13 +79,12 @@ namespace VBAi
         {
             try
             {
-                var definition = GitDefinitions.Cast<dynamic>().SingleOrDefault(x => (string)x.function.name == name);
-                if (definition == null) throw new ArgumentException("Unknown Git tool.");
+                var definition = GitDefinitions.Cast<dynamic>().SingleOrDefault(x => (string)x.function.name == name) ?? throw new ArgumentException("Unknown Git tool.");
                 var values = json.DeserializeObject(arguments) as IDictionary<string, object> ?? throw new ArgumentException("Arguments must be an object.");
                 string[] required = (string[])definition.function.parameters.required;
                 if (values.Keys.Any(x => !required.Contains(x))) throw new ArgumentException("Unexpected Git argument.");
                 foreach (string field in required)
-                    if (!values.ContainsKey(field) || !(values[field] is string) || (field != "Text" && string.IsNullOrWhiteSpace((string)values[field]))) throw new ArgumentException(field + " is required as a string.");
+                    if (!values.ContainsKey(field) || !(values[field] is string v) || (field != "Text" && string.IsNullOrWhiteSpace(v))) throw new ArgumentException(field + " is required as a string.");
                 string requested = (string)values["Project"];
                 if (string.IsNullOrEmpty(BoundProject) || !string.Equals(requested, BoundProject, StringComparison.OrdinalIgnoreCase))
                     throw new InvalidOperationException(UiText.Get("Git is limited to the document of this conversation."));
@@ -88,18 +93,21 @@ namespace VBAi
                 if (edit && settings.VbeEditApproval == "AskEachTime" && ConfirmGit(owner, name + "\r\n" + arguments,
                     UiText.Get("VBAi — Git operation")) != DialogResult.Yes)
                     throw new InvalidOperationException(UiText.Get("Git operation declined by the user."));
-                Func<string, string> value = key => values.ContainsKey(key) ? (string)values[key] : null;
+                string value(string key) => values.ContainsKey(key) ? (string)values[key] : null;
                 using (var operations = GitOperationsFactory != null ? GitOperationsFactory(requested) : OpenGit(requested))
                 {
-                    if (name == "git_commit_read") {
+                    if (name == "git_commit_read")
+                    {
                         string commit = operations.Repository.VerifiedCommit(value("Name"));
                         return json.Serialize(Response.Success(new { Details = operations.Repository.CommitDetails(commit), Modules = operations.Repository.Read(commit)?.Manifest.Components }));
                     }
-                    if (name == "git_pull_requests") {
+                    if (name == "git_pull_requests")
+                    {
                         using (var api = GitHubApiFactory(settings.GitHubAccount))
                             return json.Serialize(Response.Success(await api.Pulls(operations.Repository.RemoteUrl, System.Threading.CancellationToken.None)));
                     }
-                    if (name == "git_commit_selected") {
+                    if (name == "git_commit_selected")
+                    {
                         if (value("Choice") != "references" && value("Choice") != "modules") throw new ArgumentException("Choice must be references or modules.");
                         return json.Serialize(Response.Success(await operations.ExecuteAsync("commit_selected", value("ExpectedState"), text: value("Text"), modules: value("Name").Split(',').Select(x => x.Trim()).Where(x => x.Length > 0).ToArray(), references: value("Choice") == "references")));
                     }

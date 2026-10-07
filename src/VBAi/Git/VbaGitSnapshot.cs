@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.Globalization;
-using System.IO;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -103,8 +102,10 @@ namespace VBAi
         /// <returns>Dictionnaire contenant les fichiers VBA et manifest.json.</returns>
         internal SortedDictionary<string, byte[]> Serialize()
         {
-            var result = new SortedDictionary<string, byte[]>(Files, StringComparer.Ordinal);
-            result.Add("manifest.json", Utf8.GetBytes(new JavaScriptSerializer().Serialize(Manifest) + "\n"));
+            var result = new SortedDictionary<string, byte[]>(Files, StringComparer.Ordinal)
+            {
+                { "manifest.json", Utf8.GetBytes(new JavaScriptSerializer().Serialize(Manifest) + "\n") }
+            };
             return result;
         }
 
@@ -220,8 +221,11 @@ namespace VBAi
                 files.Add(component.FileName, origin.Files[component.FileName]);
                 if (component.HasResources) files.Add(component.Name + ".frx", origin.Files[component.Name + ".frx"]);
             }
-            return new VbaGitSnapshot(new VbaGitManifest { Components = components,
-                References = references || baseline == null ? source.Manifest.References : baseline.Manifest.References }, files);
+            return new VbaGitSnapshot(new VbaGitManifest
+            {
+                Components = components,
+                References = references || baseline == null ? source.Manifest.References : baseline.Manifest.References
+            }, files);
         }
 
         /// <summary>Produit le résumé des changements et des références avant import.</summary>
@@ -283,9 +287,8 @@ namespace VBAi
                     string metadata = text.Substring(0, metadataLength);
                     foreach (Match resource in ResourceReferences(metadata))
                     {
-                        uint offset;
                         if (!component.HasResources || resource.Groups[1].Value != component.Name + ".frx" ||
-                            !uint.TryParse(resource.Groups[2].Value.Trim(), NumberStyles.AllowHexSpecifier, CultureInfo.InvariantCulture, out offset) ||
+                            !uint.TryParse(resource.Groups[2].Value.Trim(), NumberStyles.AllowHexSpecifier, CultureInfo.InvariantCulture, out uint offset) ||
                             offset >= resources.Length)
                             throw new InvalidOperationException("Invalid or out-of-range form resource offset: " + component.Name);
                     }

@@ -2,12 +2,9 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
-using System.Text.RegularExpressions;
 using System.Windows;
 using System.Windows.Automation;
 using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
 using System.Windows.Media;
 using System.Windows.Threading;
 
@@ -69,8 +66,13 @@ namespace VBAi
         /// <summary>Configure la liste virtualisée, les événements de défilement, l’accessibilité et les changements de thème.</summary>
         private void InitializeTranscript()
         {
-            conversationItems = new ListBox { ItemsSource = visibleEntries, Background = Ink("#F8FAFC"), BorderThickness = new Thickness(0),
-                FlowDirection = UiText.Culture.TextInfo.IsRightToLeft ? FlowDirection.RightToLeft : FlowDirection.LeftToRight };
+            conversationItems = new ListBox
+            {
+                ItemsSource = visibleEntries,
+                Background = Ink("#F8FAFC"),
+                BorderThickness = new Thickness(0),
+                FlowDirection = UiText.Culture.TextInfo.IsRightToLeft ? FlowDirection.RightToLeft : FlowDirection.LeftToRight
+            };
             ScrollViewer.SetCanContentScroll(conversationItems, true);
             ScrollViewer.SetHorizontalScrollBarVisibility(conversationItems, ScrollBarVisibility.Disabled);
             VirtualizingPanel.SetIsVirtualizing(conversationItems, true);
@@ -87,9 +89,9 @@ namespace VBAi
             style.Setters.Add(new Setter(Control.PaddingProperty, new Thickness(8, 2, 8, 0)));
             style.Setters.Add(new Setter(Control.BackgroundProperty, Brushes.Transparent));
             conversationItems.ItemContainerStyle = style;
-            conversationItems.AddHandler(ScrollViewer.ScrollChangedEvent, new ScrollChangedEventHandler((s, e) => {
-                var scroller = e.OriginalSource as ScrollViewer;
-                if (scroller == null || !ReferenceEquals(scroller.TemplatedParent, conversationItems)) return;
+            conversationItems.AddHandler(ScrollViewer.ScrollChangedEvent, new ScrollChangedEventHandler((s, e) =>
+            {
+                if (!(e.OriginalSource is ScrollViewer scroller) || !ReferenceEquals(scroller.TemplatedParent, conversationItems)) return;
                 conversationScroll = scroller;
                 if (Math.Abs(e.ExtentHeightChange) < 0.1 && Math.Abs(e.VerticalChange) > 0.1)
                     followConversation = conversationScroll.ScrollableHeight - conversationScroll.VerticalOffset < 32;
@@ -98,7 +100,7 @@ namespace VBAi
             AutomationProperties.SetName(conversationItems, UiText.Get("Conversation"));
             transcriptHost.Child = conversationItems;
 
-            Action themeChanged = () => { if (!IsDisposed && IsHandleCreated) BeginInvoke(new Action(() => { conversationItems.Background = Ink("#F8FAFC"); prompt.Foreground = Ink("#1E293B"); referenceList.BackColor = UiTheme.Surface; UiTheme.Apply(referenceView); RefreshTranscriptWindow(firstLoadedEntry); ShowWelcome(); })); };
+            void themeChanged() { if (!IsDisposed && IsHandleCreated) BeginInvoke(new Action(() => { conversationItems.Background = Ink("#F8FAFC"); prompt.Foreground = Ink("#1E293B"); referenceList.BackColor = UiTheme.Surface; UiTheme.Apply(referenceView); RefreshTranscriptWindow(firstLoadedEntry); ShowWelcome(); })); }
             UiTheme.Changed += themeChanged;
             Disposed += (s, e) => UiTheme.Changed -= themeChanged;
         }
@@ -107,14 +109,14 @@ namespace VBAi
         /// <param name="item">Élément du transcript à matérialiser.</param>
         private void RealizeEntry(TranscriptItem item)
         {
-            var entry = item.DataContext as ChatEntry;
-            if (entry != null) { var view = RenderEntry(entry); entryViews[entry] = view; item.Content = view; RefreshCodeChangeCards(); }
+            if (item.DataContext is ChatEntry entry) { var view = RenderEntry(entry); entryViews[entry] = view; item.Content = view; RefreshCodeChangeCards(); }
             else if (ReferenceEquals(item.DataContext, earlierEntries))
             {
 
                 var more = new ChatLinkView(); more.link.Text = UiText.Get("Load earlier messages");
 
-                more.link.Click += (s, e) => {
+                more.link.Click += (s, e) =>
+                {
                     var anchor = visibleEntries.OfType<ChatEntry>().FirstOrDefault();
                     RefreshTranscriptWindow(Math.Max(0, firstLoadedEntry - 80));
                     if (anchor != null) conversationItems.ScrollIntoView(anchor);
@@ -130,7 +132,8 @@ namespace VBAi
         private void ReleaseEntry(TranscriptItem item)
         {
             if ((item.RenderedContext is ChatEntry || ReferenceEquals(item.RenderedContext, earlierEntries)) && item.Content is FrameworkElement content) DisposeEntryView(content);
-            if (item.RenderedContext is ChatEntry entry && entryViews.TryGetValue(entry, out var view) && ReferenceEquals(view, item.Content)) {
+            if (item.RenderedContext is ChatEntry entry && entryViews.TryGetValue(entry, out var view) && ReferenceEquals(view, item.Content))
+            {
                 entryViews.Remove(entry);
                 ReleaseActivityTexts(entry);
                 if (entry.StreamId != null) liveTexts.Remove(entry.StreamId);
@@ -189,7 +192,8 @@ namespace VBAi
         {
             if (runtimeDisposed || !followConversation || conversationItems == null || visibleEntries.Count == 0 ||
                 pendingFollow?.Status == DispatcherOperationStatus.Pending) return;
-            pendingFollow = conversationItems.Dispatcher.BeginInvoke(DispatcherPriority.Background, new Action(() => {
+            pendingFollow = conversationItems.Dispatcher.BeginInvoke(DispatcherPriority.Background, new Action(() =>
+            {
                 pendingFollow = null;
                 if (!IsDisposed && !runtimeDisposed && followConversation && visibleEntries.Count > 0)
                     conversationItems.ScrollIntoView(visibleEntries.Last());
@@ -203,7 +207,7 @@ namespace VBAi
         private ChatTextContentView SelectableText(string text, bool code = false)
         {
 
-            var view = new ChatTextContentView { ErrorHandler = SetStatus }; view.ShowPlain(text,code); return view;
+            var view = new ChatTextContentView { ErrorHandler = SetStatus }; view.ShowPlain(text, code); return view;
         }
 
         /// <summary>Ajoute un message simple au transcript.</summary>
@@ -238,17 +242,20 @@ namespace VBAi
 
             card.speaker.Text = UiText.Speaker(entry.Speaker);
 
-            card.copy.Click += (s,e) => CopyText(entry.Text);
+            card.copy.Click += (s, e) => CopyText(entry.Text);
 
             card.fork.Visible = entry.Speaker == "Vous" || entry.Speaker == "Assistant";
 
-            card.fork.Click += (s,e) => ForkChat(entry);
+            card.fork.Click += (s, e) => ForkChat(entry);
 
-            if (!string.IsNullOrEmpty(entry.StreamId) && !completedStreams.Contains(entry.StreamId)) {
+            if (!string.IsNullOrEmpty(entry.StreamId) && !completedStreams.Contains(entry.StreamId))
+            {
 
                 card.message.ShowPlain(entry.Text); liveTexts[entry.StreamId] = card.message.content;
 
-            } else {
+            }
+            else
+            {
 
                 var refs = transcriptEntries.SelectMany(x => x.References ?? new VbeChatReference[0]).GroupBy(x => x.Token).ToDictionary(x => x.Key, x => x.Last());
 
@@ -257,12 +264,14 @@ namespace VBAi
 
             card.memory.Visible = !string.IsNullOrWhiteSpace(entry.AttachedMemory);
 
-            if (card.memory.Visible) {
+            if (card.memory.Visible)
+            {
 
                 var text = SelectableText(entry.AttachedMemory); card.memory.body.Controls.Add(text);
             }
 
-            foreach (var attachment in entry.Attachments ?? new ChatAttachment[0]) {
+            foreach (var attachment in entry.Attachments ?? new ChatAttachment[0])
+            {
 
                 var row = new ChatAttachmentView();
 
@@ -270,30 +279,32 @@ namespace VBAi
 
                 row.text.ShowPlain(attachment.Text, !string.IsNullOrEmpty(attachment.Module)); row.open.Visible = !string.IsNullOrEmpty(attachment.Module);
 
-                row.open.Click += (s,e) => NavigateAttachment(attachment); card.attachments.Controls.Add(row);
+                row.open.Click += (s, e) => NavigateAttachment(attachment); card.attachments.Controls.Add(row);
             }
 
-            foreach (var reference in entry.References ?? new VbeChatReference[0]) {
+            foreach (var reference in entry.References ?? new VbeChatReference[0])
+            {
 
-                var row = new ChatLinkView(); row.link.Text = reference.Token; row.link.Click += (s,e) => NavigateReference(reference);
+                var row = new ChatLinkView(); row.link.Text = reference.Token; row.link.Click += (s, e) => NavigateReference(reference);
 
                 card.references.Controls.Add(row);
             }
 
             var targets = entry.Speaker == "Intervention" ? codeChanges.Where(x => x.TurnId == entry.TurnId).ToArray() : new CodeChange[0];
 
-            foreach (var target in targets) {
+            foreach (var target in targets)
+            {
 
-                var row = new ChatLinkView(); row.link.Text = target.Label; row.link.Click += (s,e) => ShowCodeChanges(target); card.targets.Controls.Add(row);
+                var row = new ChatLinkView(); row.link.Text = target.Label; row.link.Click += (s, e) => ShowCodeChanges(target); card.targets.Controls.Add(row);
             }
 
             card.undoTurn.Visible = targets.Length > 0;
 
-            card.undoTurn.Click += (s,e) => { if (targets.Length > 0) RollbackIntervention(targets[0], null, true); };
+            card.undoTurn.Click += (s, e) => { if (targets.Length > 0) RollbackIntervention(targets[0], null, true); };
 
             card.fix.Visible = entry.Speaker == "Vérification" && entry.Attachments?.Length > 0;
 
-            card.fix.Click += (s,e) => { if (busy) return; modePicker.SelectedItem = ChatMode.Agent; prompt.Text = "/corriger " + entry.Text; draftAttachments.AddRange(entry.Attachments); RefreshContextChips(); };
+            card.fix.Click += (s, e) => { if (busy) return; modePicker.SelectedItem = ChatMode.Agent; prompt.Text = "/corriger " + entry.Text; draftAttachments.AddRange(entry.Attachments); RefreshContextChips(); };
 
             return new ChatDesignerHost(card) { Margin = new Thickness(entry.Speaker == "Vous" ? 20 : 0, 0, 4, 8) };
         }
@@ -324,13 +335,14 @@ namespace VBAi
 
             card.module.Text = "#" + change.Project + "." + change.Module;
 
-            card.module.Click += (s,e) => NavigateReference(new VbeChatReference { Project = change.Project, Module = change.Module });
+            card.module.Click += (s, e) => NavigateReference(new VbeChatReference { Project = change.Project, Module = change.Module });
 
             card.count.Text = "+" + change.Rows.Count(r => r.Kind == CodeDiffKind.Added) + "  −" + change.Rows.Count(r => r.Kind == CodeDiffKind.Removed);
 
             card.diff.ShowDiff(change.Before, change.After); card.section.Expanded = true;
 
-            card.undo.Click += async (s,e) => {
+            card.undo.Click += async (s, e) =>
+            {
                 if (busy || tools == null) return;
 
                 try { EnsureCurrentScope(); } catch (Exception ex) { SetStatus(ex.Message); return; }
@@ -341,14 +353,16 @@ namespace VBAi
 
             rollbackButtons[change] = card.undo; changeStates[change] = card.state;
 
-            card.blocks.Click += (s,e) => {
+            card.blocks.Click += (s, e) =>
+            {
 
                 card.blockMenu.Items.Clear();
-                foreach (var hunk in CodeRollback.Hunks(change.Before, change.After).Where(x => !change.RestoredHunks.Contains(x.Index))) {
+                foreach (var hunk in CodeRollback.Hunks(change.Before, change.After).Where(x => !change.RestoredHunks.Contains(x.Index)))
+                {
 
                     var item = new System.Windows.Forms.ToolStripMenuItem(UiText.Get("Block ") + (hunk.Index + 1) + " · L" + (hunk.AfterStart + 1) + " · +" + hunk.After.Length + " −" + hunk.Before.Length) { Enabled = !busy };
 
-                    item.Click += (a,b) => RollbackIntervention(change, hunk.Index, false); card.blockMenu.Items.Add(item);
+                    item.Click += (a, b) => RollbackIntervention(change, hunk.Index, false); card.blockMenu.Items.Add(item);
                 }
 
                 card.blockMenu.Show(card.blocks, 0, card.blocks.Height);
@@ -357,7 +371,7 @@ namespace VBAi
 
             card.undoTurn.Visible = !string.IsNullOrEmpty(change.TurnId);
 
-            card.undoTurn.Click += (s,e) => RollbackIntervention(change, null, true);
+            card.undoTurn.Click += (s, e) => RollbackIntervention(change, null, true);
 
             var host = new ChatDesignerHost(card) { Margin = new Thickness(0, 0, 4, 8) };
 
@@ -393,11 +407,15 @@ namespace VBAi
         {
             if (IsDisposed || runtimeDisposed || conversationItems == null || (completedStreams.Contains(id) && !complete)) return;
             if (kind == "summary" && !liveEntries.ContainsKey(id) && string.IsNullOrWhiteSpace(text)) return;
-            ChatEntry entry;
-            if (!liveEntries.TryGetValue(id, out entry))
+            if (!liveEntries.TryGetValue(id, out ChatEntry entry))
             {
-                entry = new ChatEntry { Speaker = kind == "summary" ? "Réflexion" :
-                    kind == "tool" ? "Outil" : "Assistant", StreamId = id, Text = "" };
+                entry = new ChatEntry
+                {
+                    Speaker = kind == "summary" ? "Réflexion" :
+                    kind == "tool" ? "Outil" : "Assistant",
+                    StreamId = id,
+                    Text = ""
+                };
                 liveEntries[id] = entry;
                 AddEntry(entry);
             }
@@ -483,11 +501,12 @@ namespace VBAi
 
             var welcome = new ChatWelcomeView();
 
-            foreach (var button in new[] { welcome.explain, welcome.fix, welcome.improve }) {
+            foreach (var button in new[] { welcome.explain, welcome.fix, welcome.improve })
+            {
 
                 string seed = button.Text;
 
-                button.Click += (s,e) => { prompt.Text = seed + " "; prompt.CaretIndex = prompt.Text.Length; prompt.Focus(); };
+                button.Click += (s, e) => { prompt.Text = seed + " "; prompt.CaretIndex = prompt.Text.Length; prompt.Focus(); };
             }
 
             visibleEntries.Add(new ChatDesignerHost(welcome));

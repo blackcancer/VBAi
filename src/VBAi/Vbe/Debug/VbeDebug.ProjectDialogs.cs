@@ -19,8 +19,12 @@ namespace VBAi
                 string.IsNullOrWhiteSpace(request.ExpectedProjectVersion) ||
                 string.IsNullOrWhiteSpace(request.ControlCaption) || versionCheck == null)
                 throw new ArgumentException("Project, ExpectedProjectVersion and exact ControlCaption are required.");
-            var captured = new Request { Project = request.Project, ExpectedProjectVersion = request.ExpectedProjectVersion,
-                ControlCaption = request.ControlCaption };
+            var captured = new Request
+            {
+                Project = request.Project,
+                ExpectedProjectVersion = request.ExpectedProjectVersion,
+                ControlCaption = request.ControlCaption
+            };
             object project = GetProject(captured.Project);
             RequireProjectPropertiesSelection(project, captured, versionCheck);
             string name = (string)((dynamic)project).Name;
@@ -29,8 +33,7 @@ namespace VBAi
             if (commands.Count == 0)
                 throw new InvalidOperationException("The exact native project properties command 2578 is unavailable.");
             var command = commands[0];
-            var context = SynchronizationContext.Current;
-            if (context == null) throw new InvalidOperationException("The VBE UI context is unavailable.");
+            var context = SynchronizationContext.Current ?? throw new InvalidOperationException("The VBE UI context is unavailable.");
             context.Post(_ =>
             {
                 int stage = 0;
@@ -48,8 +51,14 @@ namespace VBAi
                 }
                 catch { LoadLog.Write("Project properties dialog was not executed; native preflight stage " + stage + " failed."); }
             }, null);
-            return new { Scheduled = true, Project = captured.Project, ProjectName = name,
-                ControlId = 2578, ControlCaption = captured.ControlCaption };
+            return new
+            {
+                Scheduled = true,
+                captured.Project,
+                ProjectName = name,
+                ControlId = 2578,
+                captured.ControlCaption
+            };
         }
 
         /// <summary>Résout une commande différée par chemin/ID/légende/type sans conserver un proxy Office instable.</summary>

@@ -1,10 +1,8 @@
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
-using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Web.Script.Serialization;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
-using VBAi;
 
 namespace VBAi.Tests.Unit
 {
@@ -19,18 +17,37 @@ namespace VBAi.Tests.Unit
         private static readonly string Before = Path.Combine(Evidence, "before");
         private static readonly string Changed = Path.Combine(Evidence, "changed");
 
-        private static OwnerGitQualificationStep Step(string verb, int number, string error = null) => new OwnerGitQualificationStep {
-            Id = number.ToString("x32"), Verb = verb, ExpectedSnapshotDirectory = Before,
-            ExpectedSnapshotSha256 = Sha, TargetSnapshotDirectory = Changed, TargetSnapshotSha256 = Sha,
-            CheckpointId = verb == "checkpoint_restore" ? "20261006000000000-abcdef12" : null, ExpectedErrorSubstring = error };
+        private static OwnerGitQualificationStep Step(string verb, int number, string error = null) => new OwnerGitQualificationStep
+        {
+            Id = number.ToString("x32"),
+            Verb = verb,
+            ExpectedSnapshotDirectory = Before,
+            ExpectedSnapshotSha256 = Sha,
+            TargetSnapshotDirectory = Changed,
+            TargetSnapshotSha256 = Sha,
+            CheckpointId = verb == "checkpoint_restore" ? "20261006000000000-abcdef12" : null,
+            ExpectedErrorSubstring = error
+        };
 
-        private static OwnerGitQualificationManifest Plan(params OwnerGitQualificationStep[] steps) => new OwnerGitQualificationManifest {
-            Version = 1, OwnerPid = 42, OwnerBirthUtcTicks = 638000000000000000,
-            OwnerNativeTid = 100, VbeHandle = 200,
-            AssemblyMvid = "00000000-0000-0000-0000-000000000001", AssemblySha256 = Sha,
-            FixtureRoot = Fixture, WorkbookPath = Workbook, EvidenceRoot = Evidence,
-            RepoRelativePath = "local.git", Project = Workbook, Branch = "qualification-layout",
-            RemoteUrl = null, RemoteCommit = null, Steps = steps };
+        private static OwnerGitQualificationManifest Plan(params OwnerGitQualificationStep[] steps) => new OwnerGitQualificationManifest
+        {
+            Version = 1,
+            OwnerPid = 42,
+            OwnerBirthUtcTicks = 638000000000000000,
+            OwnerNativeTid = 100,
+            VbeHandle = 200,
+            AssemblyMvid = "00000000-0000-0000-0000-000000000001",
+            AssemblySha256 = Sha,
+            FixtureRoot = Fixture,
+            WorkbookPath = Workbook,
+            EvidenceRoot = Evidence,
+            RepoRelativePath = "local.git",
+            Project = Workbook,
+            Branch = "qualification-layout",
+            RemoteUrl = null,
+            RemoteCommit = null,
+            Steps = steps
+        };
 
         private static string Json(OwnerGitQualificationManifest plan) => new JavaScriptSerializer().Serialize(plan);
 

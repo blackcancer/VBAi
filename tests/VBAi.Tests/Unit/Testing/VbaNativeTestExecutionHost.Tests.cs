@@ -1,9 +1,9 @@
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Collections.Generic;
 using System.Dynamic;
 using System.Threading.Tasks;
 using System.Windows.Forms;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace VBAi.Tests.Unit
 {
@@ -186,8 +186,13 @@ namespace VBAi.Tests.Unit
             internal readonly VbaTestDescriptor Test = new VbaTestDescriptor { Id = "test", Module = "Tests", Procedure = "Check", Kind = "Sub" };
             internal readonly VbaTestCatalog Catalog = new VbaTestCatalog
             {
-                Project = new VbaTestProjectSnapshot { Id = "project", HostPath = @"C:\fixture\owned.swp", Revision = "revision",
-                    Modules = new[] { new VbaTestModuleSnapshot { Name = VbaTestRuntimeSource.ModuleName, Source = "reviewed source" } } }
+                Project = new VbaTestProjectSnapshot
+                {
+                    Id = "project",
+                    HostPath = @"C:\fixture\owned.swp",
+                    Revision = "revision",
+                    Modules = new[] { new VbaTestModuleSnapshot { Name = VbaTestRuntimeSource.ModuleName, Source = "reviewed source" } }
+                }
             };
             internal readonly VbaNativeTestExecutionHost Host;
             internal Action Queued, Tick, GuardAction, ValidateAction;
@@ -649,11 +654,21 @@ namespace VBAi.Tests.Unit
         public void PostShowWindowDiagnosticsObserveZeroComHandlesAndOwnedNativeClassesWithoutCaptionsOrCode()
         {
             var project = new DiagnosticProject { Name = "Private project name" };
-            var module = new DiagnosticModule { Parent = new DiagnosticComponent { Name = "Private module name",
-                Collection = new DiagnosticCollection { Parent = project } } };
+            var module = new DiagnosticModule
+            {
+                Parent = new DiagnosticComponent
+                {
+                    Name = "Private module name",
+                    Collection = new DiagnosticCollection { Parent = project }
+                }
+            };
             var expectedPane = new DiagnosticPane { CodeModule = module };
-            var editor = new DiagnosticEditor { ActiveWindow = expectedPane.Window, ActiveCodePane = expectedPane,
-                Windows = new[] { expectedPane.Window } };
+            var editor = new DiagnosticEditor
+            {
+                ActiveWindow = expectedPane.Window,
+                ActiveCodePane = expectedPane,
+                Windows = new[] { expectedPane.Window }
+            };
             string observation = VbaNativeTestExecutionHost.DescribeNativeWindows(editor, expectedPane, module,
                 ReferenceEquals, main => { Assert.AreEqual(new IntPtr(123), main); return "{HWnd=456,PID=1234,Class=VbaWindow,Parent=123,Visible=True}"; });
             StringAssert.Contains(observation, "paneWindow={Type=0,Visible=False,HWnd=0,State=0}");
@@ -673,10 +688,22 @@ namespace VBAi.Tests.Unit
         {
             var expectedProject = new DiagnosticProject { Name = "Owned project" };
             var otherProject = new DiagnosticProject { Name = "Other project" };
-            var expectedModule = new DiagnosticModule { Parent = new DiagnosticComponent { Name = VbaTestRuntimeSource.ModuleName,
-                Collection = new DiagnosticCollection { Parent = expectedProject } } };
-            var otherModule = new DiagnosticModule { Parent = new DiagnosticComponent { Name = "OtherModule",
-                Collection = new DiagnosticCollection { Parent = withinSelectedProject ? expectedProject : otherProject } } };
+            var expectedModule = new DiagnosticModule
+            {
+                Parent = new DiagnosticComponent
+                {
+                    Name = VbaTestRuntimeSource.ModuleName,
+                    Collection = new DiagnosticCollection { Parent = expectedProject }
+                }
+            };
+            var otherModule = new DiagnosticModule
+            {
+                Parent = new DiagnosticComponent
+                {
+                    Name = "OtherModule",
+                    Collection = new DiagnosticCollection { Parent = withinSelectedProject ? expectedProject : otherProject }
+                }
+            };
             var expectedPane = new DiagnosticPane { CodeModule = expectedModule };
             var actualPane = new DiagnosticPane { CodeModule = otherModule };
             var editor = new DiagnosticEditor { ActiveVBProject = withinSelectedProject ? expectedProject : otherProject, ActiveCodePane = actualPane };
@@ -725,8 +752,14 @@ namespace VBAi.Tests.Unit
             using (var f = new Fixture())
             {
                 var project = new DiagnosticProject { Name = "Owned project" };
-                var module = new DiagnosticModule { Parent = new DiagnosticComponent { Name = VbaTestRuntimeSource.ModuleName,
-                    Collection = new DiagnosticCollection { Parent = project } } };
+                var module = new DiagnosticModule
+                {
+                    Parent = new DiagnosticComponent
+                    {
+                        Name = VbaTestRuntimeSource.ModuleName,
+                        Collection = new DiagnosticCollection { Parent = project }
+                    }
+                };
                 var pane = new DiagnosticPane { CodeModule = module, FailSelection = disconnected };
                 var editor = new DiagnosticEditor { ActiveVBProject = project, ActiveCodePane = disconnected ? pane : null };
                 f.Native.OnRevalidate = () => throw new InvalidOperationException("The support code pane no longer owns the native run selection."
@@ -893,7 +926,8 @@ namespace VBAi.Tests.Unit
         [TestMethod]
         public void NativeProbeRecoversOnlyLostZeroHandleWindowFocusBeforeArmingAndNeverRefocusesLater()
         {
-            RunOnSta(() => {
+            RunOnSta(() =>
+            {
                 foreach (bool missingWindow in new[] { false, true })
                 {
                     var f = new NativeFixture(); f.Module.CodePane.Materialize = false;
@@ -922,7 +956,8 @@ namespace VBAi.Tests.Unit
         [TestMethod]
         public void PreArmFocusRecoveryRejectsChangedContextAuthorityHandlesAndPreviouslyConsumedRecovery()
         {
-            RunOnSta(() => {
+            RunOnSta(() =>
+            {
                 foreach (string fault in new[] { "project", "mode", "source", "pane", "module", "line", "column", "wrapper", "type", "hidden",
                     "nonzero", "null", "modeGetter", "sourceGetter", "projectGetter", "selectionGetter", "consumed" })
                 {
@@ -961,12 +996,14 @@ namespace VBAi.Tests.Unit
         [TestMethod]
         public void PreArmNativeActivationMustRevalidateSourceModeContextAndUniqueWindowOwnership()
         {
-            RunOnSta(() => {
+            RunOnSta(() =>
+            {
                 foreach (string fault in new[] { "source", "mode", "project", "pane", "selection", "owner" })
                 {
                     var f = new NativeFixture(); f.Module.CodePane.Materialize = false;
                     var plan = f.Prepare(); f.Editor.ActiveWindow = f.Editor.MainWindow;
-                    f.Windows.FocusAction = () => {
+                    f.Windows.FocusAction = () =>
+                    {
                         f.Editor.ActiveWindow = f.Module.CodePane.Window;
                         if (fault == "source") f.Module.Lines.Source = "Changed during focus";
                         if (fault == "mode") f.Project.Mode = 0;
@@ -988,7 +1025,8 @@ namespace VBAi.Tests.Unit
         [TestMethod]
         public void FocusRefusalPreservesTheInitialWindowObservationEvenWhenLaterGettersRestoreTheContext()
         {
-            RunOnSta(() => {
+            RunOnSta(() =>
+            {
                 var f = new NativeFixture(); f.Module.CodePane.Materialize = false;
                 var plan = f.Prepare(); f.Editor.ActiveWindow = f.Editor.MainWindow;
                 f.Editor.OnReadActiveWindow = () => f.Editor.ActiveWindow = f.Module.CodePane.Window;
@@ -1002,26 +1040,37 @@ namespace VBAi.Tests.Unit
         [TestMethod]
         public void NativeHostRevalidatesAllAuthorityAfterPreArmFocusRecoveryBeforeExposingOrExecutingTheAttempt()
         {
-            RunOnSta(() => {
+            RunOnSta(() =>
+            {
                 foreach (string fault in new[] { "none", "catalog", "permission", "lostAgain" })
                 {
                     var f = new NativeFixture(); f.Module.CodePane.Materialize = false;
-                    var catalog = new VbaTestCatalog { Project = new VbaTestProjectSnapshot { Id = "owned", Revision = "revision",
-                        Modules = new[] { new VbaTestModuleSnapshot { Name = VbaTestRuntimeSource.ModuleName, Source = f.Module.Lines.Source } } } };
+                    var catalog = new VbaTestCatalog
+                    {
+                        Project = new VbaTestProjectSnapshot
+                        {
+                            Id = "owned",
+                            Revision = "revision",
+                            Modules = new[] { new VbaTestModuleSnapshot { Name = VbaTestRuntimeSource.ModuleName, Source = f.Module.Lines.Source } }
+                        }
+                    };
                     var test = new VbaTestDescriptor { Id = "test", Module = "Tests", Procedure = "Alpha", Kind = "Sub" };
                     int validations = 0, executions = 0;
                     bool permitted = true;
                     f.Windows.FocusAction = () => { f.Editor.ActiveWindow = f.Module.CodePane.Window; if (fault == "permission") permitted = false; };
                     using (var sink = new VbaTestResultSink(ReferenceEquals))
                     using (var dispatcher = new Control())
-                    using (var host = new VbaNativeTestExecutionHost(f.Editor, dispatcher, sink, _ => f.Project, _ => {
+                    using (var host = new VbaNativeTestExecutionHost(f.Editor, dispatcher, sink, _ => f.Project, _ =>
+                    {
                         validations++;
                         if (validations == 3) f.Editor.ActiveWindow = f.Editor.MainWindow;
                         if (validations == 4 && fault == "catalog") throw new InvalidOperationException("Revision changed during focus recovery.");
                         if (validations == 4 && fault == "lostAgain") f.Editor.ActiveWindow = f.Editor.MainWindow;
-                    }, () => { if (!permitted) throw new InvalidOperationException("Permission withdrawn during focus recovery."); }, _ => "signature", () => "run") { Probe = f.Probe, Post = action => action() })
+                    }, () => { if (!permitted) throw new InvalidOperationException("Permission withdrawn during focus recovery."); }, _ => "signature", () => "run")
+                    { Probe = f.Probe, Post = action => action() })
                     {
-                        f.Editor.CommandBars.Control.OnExecute = () => {
+                        f.Editor.CommandBars.Control.OnExecute = () =>
+                        {
                             executions++;
                             var runtime = new VbaTestRuntime();
                             var job = (object[])runtime.Request(VbaTestRuntimeSource.Version, "signature");
@@ -1182,7 +1231,8 @@ namespace VBAi.Tests.Unit
             int visits = 0;
             string longText = VbaNativeTestExecutionHost.NativeWindowObservation.Read(new IntPtr(1), f, (parent, visit) => { while (visit(new IntPtr(2))) visits++; });
             Assert.IsTrue(visits < 64); Assert.IsTrue(longText.Length >= 3900); Assert.IsFalse(longText.Contains(new string('x', 96)));
-            RunOnSta(() => {
+            RunOnSta(() =>
+            {
                 using (var form = new Form())
                 using (var child = new Control())
                 {
@@ -1209,7 +1259,8 @@ namespace VBAi.Tests.Unit
                     using (var dispatcher = new Control())
                     using (var host = new VbaNativeTestExecutionHost(f.Editor, dispatcher, sink, _ => ++reads == 2 && changed ? new object() : f.Project, _ => { }, () => { }, _ => "signature", () => "run") { Probe = f.Probe, Post = action => action() })
                     {
-                        f.Editor.CommandBars.Control.OnExecute = () => {
+                        f.Editor.CommandBars.Control.OnExecute = () =>
+                        {
                             executions++;
                             var runtime = new VbaTestRuntime();
                             var job = (object[])runtime.Request(VbaTestRuntimeSource.Version, "signature");

@@ -1,8 +1,8 @@
 namespace VBAi.Tests.Unit
 {
     using System;
-    using System.IO;
     using System.Collections.Generic;
+    using System.IO;
     using System.Reflection;
     using System.Runtime.ExceptionServices;
     using VBAi;
@@ -26,15 +26,19 @@ namespace VBAi.Tests.Unit
         }
         private static Request ProfileRequest(VbeEditorWindows service, string name)
         {
-            return new Request { ObjectName = name, ExpectedToolbarCollectionVersion = (string)Data(service.Toolbars())["ToolbarCollectionVersion"],
-                ExpectedToolbarControlsVersion = (string)Data(service.ToolbarControls(new Request { ObjectName = name }))["ToolbarControlsVersion"] };
+            return new Request
+            {
+                ObjectName = name,
+                ExpectedToolbarCollectionVersion = (string)Data(service.Toolbars())["ToolbarCollectionVersion"],
+                ExpectedToolbarControlsVersion = (string)Data(service.ToolbarControls(new Request { ObjectName = name }))["ToolbarControlsVersion"]
+            };
         }
         private static Request LayoutProfileRequest(VbeEditorWindows service, string name, string action)
         {
-            var bars=(System.Collections.IEnumerable)Data(service.Toolbars())["Toolbars"];
-            foreach(Dictionary<string,object> bar in bars)
-                if((string)((Dictionary<string,object>)bar["Properties"])["Name"]==name)
-                    return new Request { ObjectName=name,Action=action,ExpectedWindowVersion=(string)bar["WindowVersion"],ExpectedToolbarLayoutVersion=(string)bar["ToolbarLayoutVersion"] };
+            var bars = (System.Collections.IEnumerable)Data(service.Toolbars())["Toolbars"];
+            foreach (Dictionary<string, object> bar in bars)
+                if ((string)((Dictionary<string, object>)bar["Properties"])["Name"] == name)
+                    return new Request { ObjectName = name, Action = action, ExpectedWindowVersion = (string)bar["WindowVersion"], ExpectedToolbarLayoutVersion = (string)bar["ToolbarLayoutVersion"] };
             throw new InvalidOperationException("Missing fixture toolbar.");
         }
         private static void SaveProfile(VbeEditorWindows service, ToolbarCustomizationTests.Bar bar, bool create)

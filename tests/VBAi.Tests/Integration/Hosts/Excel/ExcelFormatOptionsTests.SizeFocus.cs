@@ -1,3 +1,4 @@
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -7,7 +8,6 @@ using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
 using System.Windows.Automation;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace VBAi.Tests.Integration.Hosts.Excel
 {
@@ -18,8 +18,7 @@ namespace VBAi.Tests.Integration.Hosts.Excel
         {
             if (Environment.GetEnvironmentVariable("VBAi_RUN_EXCEL_TESTS") != "1")
                 Assert.Inconclusive("Excel automation is opt-in.");
-            string desktop = Environment.GetEnvironmentVariable("VBAi_TEST_DESKTOP_NAME");
-            IsolatedTestDesktop.RequireCurrent(desktop);
+            string desktop = NativeTestDesktop.Current();
             string output = Environment.GetEnvironmentVariable("VBAi_TEST_FORMAT_OPTIONS_OUTPUT");
             Assert.IsTrue(System.IO.Path.IsPathRooted(output));
             evidenceDirectory = System.IO.Path.Combine(output, "options-evidence-" + Guid.NewGuid().ToString("N"));
@@ -42,13 +41,14 @@ namespace VBAi.Tests.Integration.Hosts.Excel
                     .Single(x => ((object[])x["Controls"]).Select(VbeBridgeClient.Object)
                         .Any(c => Equals(c["Name"], "Size") || Equals(c["Name"], "Taille :")));
                 string tab = (string)format["Tab"];
-                var actor = new Thread(() => {
+                var actor = new Thread(() =>
+                {
                     IntPtr lease = IntPtr.Zero;
                     try
                     {
                         lease = SizeFocusNative.OpenDesktopW(desktop, 0, false, 0xC7);
                         if (lease == IntPtr.Zero || !SizeFocusNative.SetThreadDesktop(lease)) throw new Win32Exception(Marshal.GetLastWin32Error());
-                        IsolatedTestDesktop.RequireCurrent(desktop);
+                        NativeTestDesktop.RequireCurrent(desktop);
                         if (!intent.Wait(TimeSpan.FromSeconds(15))) throw new TimeoutException("Options command was not emitted.");
                         IntPtr dialog = SizeFocusNative.WaitDialog(host.ProcessId, guard);
                         record("SizeFocusDialog", new { Hwnd = dialog.ToInt64(), PreferenceWrites = 0 });
@@ -64,8 +64,15 @@ namespace VBAi.Tests.Integration.Hosts.Excel
                         SizeFocusNative.RequireOwned(parent, host.ProcessId);
                         string before = SizeFocusNative.Text(size);
                         int countBefore = SizeFocusNative.Count(size);
-                        record("SizeFocusBefore", new { SizeHwnd = size.ToInt64(), ParentHwnd = parent.ToInt64(), OwnerThreadId = owner,
-                            Value = before, Count = countBefore, FocusHwnd = SizeFocusNative.Focus(owner).ToInt64() });
+                        record("SizeFocusBefore", new
+                        {
+                            SizeHwnd = size.ToInt64(),
+                            ParentHwnd = parent.ToInt64(),
+                            OwnerThreadId = owner,
+                            Value = before,
+                            Count = countBefore,
+                            FocusHwnd = SizeFocusNative.Focus(owner).ToInt64()
+                        });
                         guard();
                         record("SizeFocusIntent", new { Message = "WM_NEXTDLGCTL", Target = size.ToInt64(), Attempts = 1 });
                         if (!SizeFocusNative.PostMessage(parent, 0x28, size, new IntPtr(1))) throw new Win32Exception(Marshal.GetLastWin32Error());
@@ -82,9 +89,19 @@ namespace VBAi.Tests.Integration.Hosts.Excel
                         string after = SizeFocusNative.Text(size);
                         if (expanded) { guard(); SizeFocusNative.Send(size, 0x14F, IntPtr.Zero); }
                         Assert.AreEqual(before, after, "Focus and expansion must preserve the exact edit value.");
-                        record("SizeFocusCatalogue", new { CountBefore = countBefore, CountFocused = countFocused,
-                            CountExpanded = choices.Length, Choices = choices, ValueBefore = before, ValueAfter = after,
-                            FocusHwnd = focus.ToInt64(), PreferenceWrites = 0, KeyboardInput = 0, ExpansionAttempted = expanded });
+                        record("SizeFocusCatalogue", new
+                        {
+                            CountBefore = countBefore,
+                            CountFocused = countFocused,
+                            CountExpanded = choices.Length,
+                            Choices = choices,
+                            ValueBefore = before,
+                            ValueAfter = after,
+                            FocusHwnd = focus.ToInt64(),
+                            PreferenceWrites = 0,
+                            KeyboardInput = 0,
+                            ExpansionAttempted = expanded
+                        });
                         IntPtr cancel = SizeFocusNative.GetDlgItem(dialog, 2);
                         Assert.AreNotEqual(IntPtr.Zero, cancel); Assert.AreEqual("Button", SizeFocusNative.Class(cancel));
                         SizeFocusNative.RequireOwned(cancel, host.ProcessId);
@@ -97,10 +114,12 @@ namespace VBAi.Tests.Integration.Hosts.Excel
                     }
                     catch (Exception error) { actorError = error; record("SizeFocusActorFailed", new { Error = error.ToString(), CleanupAllowed = false }); }
                     finally { done.Set(); if (lease != IntPtr.Zero) SizeFocusNative.CloseDesktop(lease); }
-                }) { IsBackground = true };
+                })
+                { IsBackground = true };
                 actor.SetApartmentState(ApartmentState.MTA); actor.Start();
                 guard();
-                host.ExecuteOwnedOptionsMenu(value => {
+                host.ExecuteOwnedOptionsMenu(value =>
+                {
                     record("SizeFocusMenu", value);
                     if (value.GetType().GetProperty("Phase").GetValue(value).ToString() == "OptionsMenuIntent")
                     { menuEmitted = true; intent.Set(); }
@@ -122,8 +141,15 @@ namespace VBAi.Tests.Integration.Hosts.Excel
             catch (Exception error)
             {
                 RetainHost(host);
-                record("SizeFocusRetained", new { Error = error.ToString(), menuEmitted, closed, ActorTerminal = done.IsSet,
-                    ActorError = actorError?.ToString(), CleanupReplayed = false });
+                record("SizeFocusRetained", new
+                {
+                    Error = error.ToString(),
+                    menuEmitted,
+                    closed,
+                    ActorTerminal = done.IsSet,
+                    ActorError = actorError?.ToString(),
+                    CleanupReplayed = false
+                });
                 throw;
             }
         }
@@ -156,7 +182,8 @@ namespace VBAi.Tests.Integration.Hosts.Excel
             [DllImport("user32.dll", CharSet = CharSet.Unicode, EntryPoint = "SendMessageTimeoutW", SetLastError = true)] private static extern IntPtr SendText(IntPtr window, uint msg, IntPtr wp, StringBuilder text, uint flags, uint timeout, out IntPtr result);
             [DllImport("user32.dll", SetLastError = true)] internal static extern bool PostMessage(IntPtr window, uint msg, IntPtr wp, IntPtr lp);
             [DllImport("user32.dll", SetLastError = true)] private static extern bool GetGUIThreadInfo(uint thread, ref GuiInfo info);
-            [StructLayout(LayoutKind.Sequential)] private struct GuiInfo
+            [StructLayout(LayoutKind.Sequential)]
+            private struct GuiInfo
             { internal uint Size, Flags; internal IntPtr Active, Focus, Capture, MenuOwner, MoveSize, Caret; internal int Left, Top, Right, Bottom; }
             internal static IntPtr Focus(uint owner) { var info = new GuiInfo { Size = (uint)Marshal.SizeOf(typeof(GuiInfo)) }; if (!GetGUIThreadInfo(owner, ref info)) throw new Win32Exception(Marshal.GetLastWin32Error()); return info.Focus; }
             internal static uint RequireOwned(IntPtr window, int expected) { uint pid; uint tid = GetWindowThreadProcessId(window, out pid); Assert.IsTrue(tid != 0 && pid == expected && IsWindow(window)); return tid; }
@@ -173,7 +200,8 @@ namespace VBAi.Tests.Integration.Hosts.Excel
             internal static IntPtr WaitDialog(int pid, Action guard)
             {
                 var timer = Stopwatch.StartNew();
-                do {
+                do
+                {
                     guard(); var found = new List<IntPtr>(); Exception failure = null;
                     bool ok = EnumWindows((window, _) => { try { var owner = NativeWindowEnumerationOwnership.ReadProcessId(window, GetWindowThreadProcessId, Marshal.GetLastWin32Error, IsWindow); if (owner == pid && IsWindowVisible(window) && Class(window) == "#32770" && Text(window) == "Options") found.Add(window); return true; } catch (Exception error) { failure = error; return false; } }, IntPtr.Zero);
                     if (failure != null) throw failure; Assert.IsTrue(ok); Assert.IsTrue(found.Count <= 1);

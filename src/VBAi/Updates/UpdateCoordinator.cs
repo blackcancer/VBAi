@@ -135,8 +135,14 @@ namespace VBAi
                 var existing = UpdateInstallJob.Load(UpdatePaths.Root);
                 if (existing != null && !existing.Completed) throw new InvalidOperationException("An update is already scheduled.");
                 UpdateState.RecordHost();
-                var job = new UpdateInstallJob { InstallerPath = path, Sha256 = release.Installer.Hash, TargetVersion = release.Version.Text,
-                    InstallationDirectory = UpdateState.InstallationDirectory, Culture = UiText.Culture.Name };
+                var job = new UpdateInstallJob
+                {
+                    InstallerPath = path,
+                    Sha256 = release.Installer.Hash,
+                    TargetVersion = release.Version.Text,
+                    InstallationDirectory = UpdateState.InstallationDirectory,
+                    Culture = UiText.Culture.Name
+                };
                 job.Validate(UpdatePaths.Root); job.Save(UpdatePaths.Root);
             }
             LaunchWorker(background);

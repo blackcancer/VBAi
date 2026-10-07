@@ -1,15 +1,12 @@
 namespace VBAi.Tests.Unit
 {
+    using Microsoft.VisualStudio.TestTools.UnitTesting;
     using System;
-    using System.Collections.Generic;
     using System.IO;
-    using System.Linq;
     using System.Security.Cryptography;
     using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
-    using System.Web.Script.Serialization;
-    using Microsoft.VisualStudio.TestTools.UnitTesting;
     using VBAi;
 
     /// <summary>Vérifie le décodage des flux OpenAI compatibles et Claude.</summary>
@@ -152,7 +149,8 @@ namespace VBAi.Tests.Unit
                 new { choices = new[] { new { delta = new { role = "assistant", type = "message", content = "", count = 2, nested = new { value = "first" } } } } },
                 new { choices = new[] { new { delta = new { nested = new { value = "second" }, content = "text" } } } },
                 new { choices = new[] { new { finish_reason = "stop" } } }, "[DONE]").ToArray());
-            using (var stream = new System.IO.MemoryStream(System.Text.Encoding.UTF8.GetBytes(wire))) {
+            using (var stream = new System.IO.MemoryStream(System.Text.Encoding.UTF8.GetBytes(wire)))
+            {
                 var result = await ChatStreamReader.ReadAsync(stream, false, null, System.Threading.CancellationToken.None);
                 Microsoft.VisualStudio.TestTools.UnitTesting.Assert.AreEqual("assistant", result["role"]);
                 Microsoft.VisualStudio.TestTools.UnitTesting.Assert.AreEqual("message", result["type"]);
@@ -168,24 +166,33 @@ namespace VBAi.Tests.Unit
         [Microsoft.VisualStudio.TestTools.UnitTesting.TestMethod]
         public async System.Threading.Tasks.Task StreamStopsRejectInvalidCompletionForBothProtocols()
         {
-            foreach (var stop in new[] { null, "length", "tool_calls", "stop", "end_turn", "tool_use", "stop_sequence" }) {
-                using (var stream = Events(new { choices = new[] { new { delta = new { content = "ok" }, finish_reason = stop } } }, "[DONE]")) {
-                    if (stop == "stop" || stop == "tool_calls") {
+            foreach (var stop in new[] { null, "length", "tool_calls", "stop", "end_turn", "tool_use", "stop_sequence" })
+            {
+                using (var stream = Events(new { choices = new[] { new { delta = new { content = "ok" }, finish_reason = stop } } }, "[DONE]"))
+                {
+                    if (stop == "stop" || stop == "tool_calls")
+                    {
                         var result = await ChatStreamReader.ReadAsync(stream, false, value => { }, System.Threading.CancellationToken.None);
                         Microsoft.VisualStudio.TestTools.UnitTesting.Assert.AreEqual("ok", result["content"]);
-                    } else await Microsoft.VisualStudio.TestTools.UnitTesting.Assert.ThrowsExceptionAsync<System.IO.InvalidDataException>(() => ChatStreamReader.ReadAsync(stream, false, null, System.Threading.CancellationToken.None));
+                    }
+                    else await Microsoft.VisualStudio.TestTools.UnitTesting.Assert.ThrowsExceptionAsync<System.IO.InvalidDataException>(() => ChatStreamReader.ReadAsync(stream, false, null, System.Threading.CancellationToken.None));
                 }
-                using (var stream = Events(new { type = "message_delta", delta = new { stop_reason = stop } }, new { type = "message_stop" })) {
-                    if (stop == "end_turn" || stop == "tool_use" || stop == "stop_sequence") {
+                using (var stream = Events(new { type = "message_delta", delta = new { stop_reason = stop } }, new { type = "message_stop" }))
+                {
+                    if (stop == "end_turn" || stop == "tool_use" || stop == "stop_sequence")
+                    {
                         var result = await ChatStreamReader.ReadAsync(stream, true, null, System.Threading.CancellationToken.None);
                         Microsoft.VisualStudio.TestTools.UnitTesting.Assert.AreEqual("", result["content"]);
-                    } else await Microsoft.VisualStudio.TestTools.UnitTesting.Assert.ThrowsExceptionAsync<System.IO.InvalidDataException>(() => ChatStreamReader.ReadAsync(stream, true, null, System.Threading.CancellationToken.None));
+                    }
+                    else await Microsoft.VisualStudio.TestTools.UnitTesting.Assert.ThrowsExceptionAsync<System.IO.InvalidDataException>(() => ChatStreamReader.ReadAsync(stream, true, null, System.Threading.CancellationToken.None));
                 }
             }
-            using (var stream = Events(new { type = "message_delta", delta = new { stop_reason = "end_turn" } })) {
+            using (var stream = Events(new { type = "message_delta", delta = new { stop_reason = "end_turn" } }))
+            {
                 await Microsoft.VisualStudio.TestTools.UnitTesting.Assert.ThrowsExceptionAsync<System.IO.InvalidDataException>(() => ChatStreamReader.ReadAsync(stream, true, null, System.Threading.CancellationToken.None));
             }
-            using (var stream = Events(new { type = "error", message = "private" })) {
+            using (var stream = Events(new { type = "error", message = "private" }))
+            {
                 var error = await Microsoft.VisualStudio.TestTools.UnitTesting.Assert.ThrowsExceptionAsync<System.InvalidOperationException>(() => ChatStreamReader.ReadAsync(stream, true, null, System.Threading.CancellationToken.None));
                 Microsoft.VisualStudio.TestTools.UnitTesting.Assert.IsFalse(error.Message.Contains("private"));
             }
@@ -201,12 +208,14 @@ namespace VBAi.Tests.Unit
                 new { type = "content_block_start", index = 0, content_block = new { type = "text", text = "" } },
                 new { type = "content_block_delta", index = 0, delta = new { type = "unknown", text = "ignored" } },
                 new { type = "content_block_delta", index = 0, delta = new { type = "text_delta", text = "answer" } },
-                new { type = "message_delta", delta = new { stop_reason = "end_turn" } }, new { type = "message_stop" })) {
+                new { type = "message_delta", delta = new { stop_reason = "end_turn" } }, new { type = "message_stop" }))
+            {
                 var result = await ChatStreamReader.ReadAsync(stream, true, null, System.Threading.CancellationToken.None);
                 Microsoft.VisualStudio.TestTools.UnitTesting.Assert.AreEqual("answer", result["content"]);
             }
             using (var stream = Events(new { type = "content_block_start", index = 0, content_block = new { type = "text", text = "initial" } },
-                new { type = "message_delta", delta = new { stop_reason = "stop_sequence" } }, new { type = "message_stop" })) {
+                new { type = "message_delta", delta = new { stop_reason = "stop_sequence" } }, new { type = "message_stop" }))
+            {
                 var result = await ChatStreamReader.ReadAsync(stream, true, null, System.Threading.CancellationToken.None);
                 Microsoft.VisualStudio.TestTools.UnitTesting.Assert.AreEqual("initial", result["content"]);
             }
@@ -217,11 +226,13 @@ namespace VBAi.Tests.Unit
         [Microsoft.VisualStudio.TestTools.UnitTesting.TestMethod]
         public async System.Threading.Tasks.Task OversizeInputAndCancellationDuringProgressAreRejected()
         {
-            using (var stream = new System.IO.MemoryStream(System.Text.Encoding.UTF8.GetBytes(new string('x', 10 * 1024 * 1024 + 1) + "\n"))) {
+            using (var stream = new System.IO.MemoryStream(System.Text.Encoding.UTF8.GetBytes(new string('x', 10 * 1024 * 1024 + 1) + "\n")))
+            {
                 await Microsoft.VisualStudio.TestTools.UnitTesting.Assert.ThrowsExceptionAsync<System.IO.InvalidDataException>(() => ChatStreamReader.ReadAsync(stream, false, null, System.Threading.CancellationToken.None));
             }
             using (var source = new System.Threading.CancellationTokenSource())
-            using (var stream = Events(new { choices = new[] { new { delta = new { content = "first" } } } }, "[DONE]")) {
+            using (var stream = Events(new { choices = new[] { new { delta = new { content = "first" } } } }, "[DONE]"))
+            {
                 await Microsoft.VisualStudio.TestTools.UnitTesting.Assert.ThrowsExceptionAsync<System.OperationCanceledException>(() =>
                     ChatStreamReader.ReadAsync(stream, false, value => source.Cancel(), source.Token));
                 Microsoft.VisualStudio.TestTools.UnitTesting.Assert.IsFalse(stream.CanRead);
@@ -232,13 +243,13 @@ namespace VBAi.Tests.Unit
 
 namespace VBAi.Tests.Unit
 {
+    using Microsoft.VisualStudio.TestTools.UnitTesting;
     using System;
     using System.Collections.Generic;
     using System.IO;
     using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
-    using Microsoft.VisualStudio.TestTools.UnitTesting;
     using VBAi;
 
     public sealed partial class StreamTests
@@ -248,12 +259,12 @@ namespace VBAi.Tests.Unit
         {
             const int limit = 10 * 1024 * 1024;
             foreach (byte value in new[] { (byte)'x', (byte)'\n' })
-            using (var stream = new GeneratedSseStream(value, limit + 8192))
-            {
-                await Assert.ThrowsExceptionAsync<InvalidDataException>(() => ChatStreamReader.ReadAsync(stream, false, null, CancellationToken.None));
-                Assert.IsTrue(stream.BytesRead <= limit + 1, "The reader must stop at the limit before consuming an oversized line or ignored blank frames.");
-                Assert.IsTrue(stream.Disposed);
-            }
+                using (var stream = new GeneratedSseStream(value, limit + 8192))
+                {
+                    await Assert.ThrowsExceptionAsync<InvalidDataException>(() => ChatStreamReader.ReadAsync(stream, false, null, CancellationToken.None));
+                    Assert.IsTrue(stream.BytesRead <= limit + 1, "The reader must stop at the limit before consuming an oversized line or ignored blank frames.");
+                    Assert.IsTrue(stream.Disposed);
+                }
         }
 
         [TestMethod]
@@ -288,8 +299,11 @@ namespace VBAi.Tests.Unit
             {
                 string part = i % 2 == 0 ? "é" : "漢";
                 expected.Append(part);
-                frames.Add(new { choices = new[] { new { delta = new { role = "assistant", type = "message", content = part,
-                    tool_calls = new[] { new { index = 0, type = "function", function = new { arguments = part } } } } } } });
+                frames.Add(new
+                {
+                    choices = new[] { new { delta = new { role = "assistant", type = "message", content = part,
+                    tool_calls = new[] { new { index = 0, type = "function", function = new { arguments = part } } } } } }
+                });
             }
             frames.Add(new { choices = new[] { new { finish_reason = "tool_calls" } } }); frames.Add("[DONE]");
             using (var stream = Events(frames.ToArray()))

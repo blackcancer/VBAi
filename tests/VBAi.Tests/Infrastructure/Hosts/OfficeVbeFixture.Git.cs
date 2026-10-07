@@ -1,9 +1,9 @@
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace VBAi.Tests.Integration
 {
@@ -85,18 +85,21 @@ namespace VBAi.Tests.Integration
                 if (captureDiagnostic)
                 {
                     var firstGit = new VbaGitProject(() => resolve(firstPath), firstPath, readPath);
-                    GitPhase("Diagnostic only: first external-STA production Git Capture", () => {
+                    GitPhase("Diagnostic only: first external-STA production Git Capture", () =>
+                    {
                         var snapshot = firstGit.Capture();
                         AssertOwnedMarker(snapshot, "FirstOwnedMarker", "SecondOwnedMarker");
                         Assert.IsFalse(snapshot.Manifest.Components.Any(c => c.Type == 3));
                     });
-                    GitPhase("Diagnostic only: second external-STA production Git Capture", () => {
+                    GitPhase("Diagnostic only: second external-STA production Git Capture", () =>
+                    {
                         var snapshot = secondGit.Capture();
                         AssertOwnedMarker(snapshot, "SecondOwnedMarker", "FirstOwnedMarker");
                         Assert.IsFalse(snapshot.Manifest.Components.Any(c => c.Type == 3));
                     });
                     // Separate fresh destinations are diagnostics, never a retry of a failed Capture export.
-                    GitPhase("Diagnostic only: Word module export through owning-process bridge", () => {
+                    GitPhase("Diagnostic only: Word module export through owning-process bridge", () =>
+                    {
                         string destination = Path.Combine(Root, "bridge-marker.bas");
                         Assert.IsFalse(File.Exists(destination));
                         var state = Data("component_properties", "Project", firstPath, "Module", "QualificationMarker");
@@ -104,7 +107,8 @@ namespace VBAi.Tests.Integration
                             "ExpectedComponentVersion", state["Version"]);
                         StringAssert.Contains(File.ReadAllText(destination), "FirstOwnedMarker");
                     });
-                    GitPhase("Diagnostic only: Word module export through external STA", () => {
+                    GitPhase("Diagnostic only: Word module export through external STA", () =>
+                    {
                         string destination = Path.Combine(Root, "external-marker.bas");
                         Assert.IsFalse(File.Exists(destination));
                         object collection = null, component = null;
@@ -119,19 +123,28 @@ namespace VBAi.Tests.Integration
                     });
                 }
                 // Exercise the real in-process bridge selection data consumed by chat and Immediate guards.
-                PathPhase("Word canonical native selection", () => {
+                PathPhase("Word canonical native selection", () =>
+                {
                     Data("select_code", "Project", secondPath, "Module", "QualificationMarker", "StartLine", 1, "ExpectedSha256", secondCode["Sha256"]);
                     var selection = Data("debug_state", "Project", secondPath);
                     Assert.AreEqual(secondPath, selection["SelectedHostPath"]);
                     Assert.AreEqual(commonName, selection["SelectedProject"]);
                 });
-                steps.Add(new { Scope = "Word canonical path, selection and stale SaveAs qualification",
-                    FirstPath = firstPath, SecondPath = secondPath, CommonProjectName = commonName,
+                steps.Add(new
+                {
+                    Scope = "Word canonical path, selection and stale SaveAs qualification",
+                    FirstPath = firstPath,
+                    SecondPath = secondPath,
+                    CommonProjectName = commonName,
                     CaptureExportDiagnosticOptIn = captureDiagnostic,
                     GitExecution = captureDiagnostic ? "Historical external-STA Capture/export diagnostic" : "No Git Capture/export",
                     ChatEvidence = "Real bridge canonical scope/selection fields; actual chat UI opening is not claimed",
-                    RemoteOperations = 0, MacroExecutions = 0, UserForms = 0 });
-                PathPhase("Word Git refuses stale SaveAs binding before CodePane access", () => {
+                    RemoteOperations = 0,
+                    MacroExecutions = 0,
+                    UserForms = 0
+                });
+                PathPhase("Word Git refuses stale SaveAs binding before CodePane access", () =>
+                {
                     RequireActiveWordGitDocument(secondDocument, secondProject, secondPath, probe);
                     try { ((dynamic)secondDocument).SaveAs2(renamedPath, 13); } // One owned rename, no user file overwrite.
                     catch { NativeExecutionUnsettled = true; throw; } // Unknown SaveAs outcome retains the original host.
@@ -146,7 +159,8 @@ namespace VBAi.Tests.Integration
                     Assert.AreEqual(renamedPath, readPath(secondProject), true);
                     Assert.AreEqual(secondCode["Sha256"], Data("read_module", "Project", renamedPath, "Module", "QualificationMarker")["Sha256"]);
                 });
-                PathPhase("Other same-name Word document source preserved", () => {
+                PathPhase("Other same-name Word document source preserved", () =>
+                {
                     Assert.AreEqual(firstCode["Sha256"], Data("read_module", "Project", firstPath, "Module", "QualificationMarker")["Sha256"]);
                     Assert.AreEqual(firstPath, readPath(firstProject));
                 });
@@ -157,8 +171,13 @@ namespace VBAi.Tests.Integration
                 {
                     uncertainWordGitIsolationLeases = new List<object> { editor, secondProject, firstProject,
                         secondDocument, documents };
-                    steps.Add(new { Scenario = "Word Git uncertain native mutation retained", ProcessId,
-                        CloseAttempted = false, ReplayAttempts = 0 });
+                    steps.Add(new
+                    {
+                        Scenario = "Word Git uncertain native mutation retained",
+                        ProcessId,
+                        CloseAttempted = false,
+                        ReplayAttempts = 0
+                    });
                 }
                 else
                 {
@@ -211,8 +230,14 @@ namespace VBAi.Tests.Integration
             catch (Exception error)
             {
                 Failures.Add(name + ": " + error);
-                steps.Add(new { Scenario = name, Result = "FAIL", ExceptionType = error.GetType().FullName,
-                    HResult = "0x" + unchecked((uint)error.HResult).ToString("X8"), Error = error.ToString() });
+                steps.Add(new
+                {
+                    Scenario = name,
+                    Result = "FAIL",
+                    ExceptionType = error.GetType().FullName,
+                    HResult = "0x" + unchecked((uint)error.HResult).ToString("X8"),
+                    Error = error.ToString()
+                });
                 throw;
             }
         }
@@ -223,8 +248,14 @@ namespace VBAi.Tests.Integration
             catch (Exception error)
             {
                 Failures.Add(name + ": " + error.GetType().Name + " / 0x" + unchecked((uint)error.HResult).ToString("X8") + ": " + error.Message);
-                steps.Add(new { Scenario = name, Result = "FAIL", ExceptionType = error.GetType().FullName,
-                    HResult = "0x" + unchecked((uint)error.HResult).ToString("X8"), Error = error.ToString() });
+                steps.Add(new
+                {
+                    Scenario = name,
+                    Result = "FAIL",
+                    ExceptionType = error.GetType().FullName,
+                    HResult = "0x" + unchecked((uint)error.HResult).ToString("X8"),
+                    Error = error.ToString()
+                });
             }
         }
 

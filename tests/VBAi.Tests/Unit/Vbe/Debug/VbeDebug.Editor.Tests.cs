@@ -1,8 +1,7 @@
 namespace VBAi.Tests.Unit
 {
-    using System;
-    using VBAi;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
+    using System;
 
     [TestClass, TestCategory("Unit")]
     public sealed class VbeEditorSplitTests
@@ -54,7 +53,8 @@ namespace VBAi.Tests.Unit
             foreach (int failure in new[] { 0, 1, 2, 3 })
             {
                 var f = new EditorDebugFixture(); var request = f.Location("split");
-                f.Command(302, "split", () => {
+                f.Command(302, "split", () =>
+                {
                     if (failure == 1 || failure == 2) f.Vbe.OnReadPanes = () => { throw new InvalidOperationException("readback failed"); };
                     if (failure == 0 || failure == 2) throw new InvalidOperationException("execute failed");
                 });

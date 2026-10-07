@@ -1,3 +1,4 @@
+using Microsoft.CSharp.RuntimeBinder;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -5,7 +6,6 @@ using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
-using Microsoft.CSharp.RuntimeBinder;
 
 namespace VBAi
 {
@@ -172,7 +172,8 @@ namespace VBAi
             internal Func<string, object> ReadActiveApplication = Marshal.GetActiveObject;
 
             /// <summary>Reads the running executable's Office major version without choosing an installed instance.</summary>
-            internal Func<int> ReadHostMajorVersion = () => {
+            internal Func<int> ReadHostMajorVersion = () =>
+            {
                 using (var process = Process.GetCurrentProcess())
                     return FileVersionInfo.GetVersionInfo(process.MainModule.FileName).FileMajorPart;
             };
@@ -220,10 +221,12 @@ namespace VBAi
                 if (HostKind == "Access" || HostKind == "Publisher")
                     throw new InvalidOperationException("No running " + HostKind + " application was verified as belonging to this VBE PID. " + rotObservation);
                 var windows = new List<IntPtr>();
-                VbeDebugWindows.EnumWindows((parent, parameter) => {
-                    uint owner; VbeDebugWindows.GetWindowThreadProcessId(parent, out owner);
+                VbeDebugWindows.EnumWindows((parent, parameter) =>
+                {
+                    VbeDebugWindows.GetWindowThreadProcessId(parent, out uint owner);
                     if (owner != (uint)CurrentProcessId) return true;
-                    VbeDebugWindows.EnumChildWindows(parent, (child, childParameter) => {
+                    VbeDebugWindows.EnumChildWindows(parent, (child, childParameter) =>
+                    {
                         VbeDebugWindows.GetWindowThreadProcessId(child, out owner);
                         var name = new StringBuilder(256); VbeDebugWindows.GetClassName(child, name, name.Capacity);
                         if (owner == (uint)CurrentProcessId && name.ToString() == (HostKind == "Word" ? "_WwG" : "paneClassDC")) windows.Add(child);
@@ -235,8 +238,8 @@ namespace VBAi
                 {
                     try
                     {
-                        Guid dispatch = new Guid("00020400-0000-0000-C000-000000000046"); object native;
-                        if (VbeDebugWindows.AccessibleObjectFromWindow(window, 0xFFFFFFF0, ref dispatch, out native) != 0 || native == null) continue;
+                        Guid dispatch = new Guid("00020400-0000-0000-C000-000000000046");
+                        if (VbeDebugWindows.AccessibleObjectFromWindow(window, 0xFFFFFFF0, ref dispatch, out object native) != 0 || native == null) continue;
                         object application = ((dynamic)native).Application;
                         if (ApplicationProcessId(application) == (uint)CurrentProcessId) return application;
                     }
@@ -270,7 +273,7 @@ namespace VBAi
             /// <param name="window">Handle natif à vérifier.</param>
             /// <returns>PID propriétaire de la fenêtre.</returns>
             private static uint Owner(IntPtr window)
-            { uint owner; GetWindowThreadProcessId(window, out owner); return owner; }
+            { GetWindowThreadProcessId(window, out uint owner); return owner; }
 
             /// <summary>Énumère les documents sans ignorer une erreur d'accès au catalogue.</summary>
             /// <param name="application">Application Office vérifiée.</param>
@@ -362,15 +365,26 @@ namespace VBAi
                 if (HostKind == "Access")
                 {
                     dynamic current = document; dynamic database = current.Application.CurrentDb();
-                    try { return new OtherHostDocumentState { Path = (string)current.FullName, Saved = null,
-                        ReadOnly = !(bool)database.Updatable, Format = Convert.ToInt32(current.FileFormat) }; }
+                    try
+                    {
+                        return new OtherHostDocumentState
+                        {
+                            Path = (string)current.FullName,
+                            Saved = null,
+                            ReadOnly = !(bool)database.Updatable,
+                            Format = Convert.ToInt32(current.FileFormat)
+                        };
+                    }
                     finally { if (database != null && Marshal.IsComObject(database)) Marshal.ReleaseComObject(database); }
                 }
                 dynamic item = document; bool hasPath = !string.IsNullOrWhiteSpace((string)item.Path);
-                return new OtherHostDocumentState { Path = hasPath ? (string)item.FullName : "",
+                return new OtherHostDocumentState
+                {
+                    Path = hasPath ? (string)item.FullName : "",
                     ReadOnly = HostKind == "PowerPoint" ? Convert.ToInt32(item.ReadOnly) != 0 : (bool)item.ReadOnly,
                     Saved = HostKind == "PowerPoint" ? Convert.ToInt32(item.Saved) == -1 : (bool)item.Saved,
-                    Format = HostKind == "PowerPoint" ? null : (int?)Convert.ToInt32(item.SaveFormat) };
+                    Format = HostKind == "PowerPoint" ? null : (int?)Convert.ToInt32(item.SaveFormat)
+                };
             }
 
             /// <summary>Appelle la méthode native appropriée sans fermer, imprimer ou démarrer un document.</summary>
@@ -458,16 +472,37 @@ namespace VBAi
             try
             {
                 object document = MatchOtherHost((object)project, native); var state = native.State(document);
-                return new { Project = selector, ProjectSaved = (bool)project.Saved, Host = native.HostKind,
-                    HostAvailable = true, HostPath = state.Path, HostSaved = (bool?)state.Saved, HostReadOnly = (bool?)state.ReadOnly,
-                    HostHasPath = (bool?)!string.IsNullOrWhiteSpace(state.Path), NativeFileFormat = state.Format,
-                    OwnerProcessId = native.CurrentProcessId, IdentityVerified = true, NativeQualification = "NOT_RUN", Reason = (string)null };
+                return new
+                {
+                    Project = selector,
+                    ProjectSaved = (bool)project.Saved,
+                    Host = native.HostKind,
+                    HostAvailable = true,
+                    HostPath = state.Path,
+                    HostSaved = (bool?)state.Saved,
+                    HostReadOnly = (bool?)state.ReadOnly,
+                    HostHasPath = (bool?)!string.IsNullOrWhiteSpace(state.Path),
+                    NativeFileFormat = state.Format,
+                    OwnerProcessId = native.CurrentProcessId,
+                    IdentityVerified = true,
+                    NativeQualification = "NOT_RUN",
+                    Reason = (string)null
+                };
             }
             catch (Exception ex)
             {
-                return new { Project = selector, ProjectSaved = (bool)project.Saved, HostAvailable = false,
-                    HostPath = (string)null, HostSaved = (bool?)null, HostReadOnly = (bool?)null, HostHasPath = (bool?)null,
-                    NativeQualification = "NOT_RUN", Reason = ex.Message };
+                return new
+                {
+                    Project = selector,
+                    ProjectSaved = (bool)project.Saved,
+                    HostAvailable = false,
+                    HostPath = (string)null,
+                    HostSaved = (bool?)null,
+                    HostReadOnly = (bool?)null,
+                    HostHasPath = (bool?)null,
+                    NativeQualification = "NOT_RUN",
+                    Reason = ex.Message
+                };
             }
         }
 
@@ -555,18 +590,44 @@ namespace VBAi
                         throw new InvalidOperationException("Save verification failed: SourceSha256.");
                     if (!native.SameProject((object)project, native.DocumentProject(document)))
                         throw new InvalidOperationException("Save verification failed: ProjectIdentity.");
-                    return new { Project = request.Project, Host = native.HostKind, HostPath = path, SaveAsInvoked = saveAs, SaveInvoked = !saveAs,
-                        Verified = true, Uncertain = false, MutationInvoked = true, HostSaved = after.Saved, ProjectSaved = true, Bytes = native.FileLength(path),
-                        SourceSha256 = sourceSha, CodePreserved = true, NativeFileFormatVerified = after.Format.HasValue,
-                        NativeQualification = "NOT_RUN", PersistenceReopenVerified = false,
-                        Limit = "Live code, available host state and file presence were verified. Access has no document Saved property. Reopen the native file to verify code persistence; native qualification remains NOT_RUN." };
+                    return new
+                    {
+                        request.Project,
+                        Host = native.HostKind,
+                        HostPath = path,
+                        SaveAsInvoked = saveAs,
+                        SaveInvoked = !saveAs,
+                        Verified = true,
+                        Uncertain = false,
+                        MutationInvoked = true,
+                        HostSaved = after.Saved,
+                        ProjectSaved = true,
+                        Bytes = native.FileLength(path),
+                        SourceSha256 = sourceSha,
+                        CodePreserved = true,
+                        NativeFileFormatVerified = after.Format.HasValue,
+                        NativeQualification = "NOT_RUN",
+                        PersistenceReopenVerified = false,
+                        Limit = "Live code, available host state and file presence were verified. Access has no document Saved property. Reopen the native file to verify code persistence; native qualification remains NOT_RUN."
+                    };
                 }
                 catch (Exception ex)
                 {
                     if (native is NativeOtherHostProbe invokedProbe && !invokedProbe.SaveInvocationStarted) throw;
-                    return new { Project = request.Project, Host = native.HostKind, HostPath = path, MutationInvoked = true,
-                        SaveAsInvoked = saveAs, SaveInvoked = !saveAs, Verified = false, Uncertain = true, NativeQualification = "NOT_RUN",
-                        Reason = ex.Message, Next = "Read project_persistence_status and inspect the file; do not retry automatically." };
+                    return new
+                    {
+                        request.Project,
+                        Host = native.HostKind,
+                        HostPath = path,
+                        MutationInvoked = true,
+                        SaveAsInvoked = saveAs,
+                        SaveInvoked = !saveAs,
+                        Verified = false,
+                        Uncertain = true,
+                        NativeQualification = "NOT_RUN",
+                        Reason = ex.Message,
+                        Next = "Read project_persistence_status and inspect the file; do not retry automatically."
+                    };
                 }
             }
             finally { if (approvedApplication != null) ReleaseAccessObservation(document); }
@@ -672,8 +733,12 @@ namespace VBAi
             foreach (dynamic component in ((dynamic)project).VBComponents)
             {
                 dynamic code = component.CodeModule; int count = (int)code.CountOfLines;
-                rows.Add(new { Name = (string)component.Name, Type = (int)component.Type,
-                    SourceSha = Hash(count == 0 ? "" : (string)code.Lines(1, count)) });
+                rows.Add(new
+                {
+                    Name = (string)component.Name,
+                    Type = (int)component.Type,
+                    SourceSha = Hash(count == 0 ? "" : (string)code.Lines(1, count))
+                });
             }
             return Hash(new System.Web.Script.Serialization.JavaScriptSerializer().Serialize(rows));
         }

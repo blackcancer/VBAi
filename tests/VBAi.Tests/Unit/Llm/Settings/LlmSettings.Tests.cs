@@ -1,12 +1,11 @@
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Text;
-using VBAi;
 using VBAi.Tests.Infrastructure;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace VBAi.Tests.Unit
 {
@@ -40,9 +39,11 @@ namespace VBAi.Tests.Unit
             DataRow("{\"ProviderName\":\"Ollama\",\"OllamaModel\":\"synthetic-model\",\"UnknownSamplingFixture\":true}")]
         public void LegacySettingsLeaveOllamaSamplingUnspecified(string legacy)
         {
-            using (var scope = new LlmBoundaryScope()) {
+            using (var scope = new LlmBoundaryScope())
+            {
                 string original = LlmSettings.StoragePathOverride;
-                try {
+                try
+                {
                     LlmSettings.StoragePathOverride = Path.Combine(scope.Root, "legacy-sampling.json");
                     Assert.IsNull(new LlmSettings().OllamaTemperature); Assert.IsNull(new LlmSettings().OllamaTopP);
                     Assert.IsNull(LlmSettings.Load().OllamaTemperature); Assert.IsNull(LlmSettings.Load().OllamaTopP);
@@ -52,16 +53,19 @@ namespace VBAi.Tests.Unit
                     loaded.Save();
                     var reread = LlmSettings.Load(); Assert.IsNull(reread.OllamaTemperature); Assert.IsNull(reread.OllamaTopP);
                     if (legacy.Contains("UnknownSamplingFixture")) StringAssert.Contains(File.ReadAllText(LlmSettings.StoragePathOverride), "UnknownSamplingFixture");
-                } finally { LlmSettings.StoragePathOverride = original; }
+                }
+                finally { LlmSettings.StoragePathOverride = original; }
             }
         }
 
         [DataTestMethod, DataRow(null, null), DataRow(0.0, null), DataRow(null, 0.8), DataRow(2.0, 1.0), DataRow(0.7, 0.8)]
         public void OptionalOllamaSamplingRoundTripsAndCanBeClearedToBackendDefaults(double? temperature, double? topP)
         {
-            using (var scope = new LlmBoundaryScope()) {
+            using (var scope = new LlmBoundaryScope())
+            {
                 string original = LlmSettings.StoragePathOverride;
-                try {
+                try
+                {
                     LlmSettings.StoragePathOverride = Path.Combine(scope.Root, "sampling.json");
                     var settings = new LlmSettings { OllamaTemperature = temperature, OllamaTopP = topP, CodexModel = "unrelated" };
                     settings.Save();
@@ -70,16 +74,19 @@ namespace VBAi.Tests.Unit
                     loaded.OllamaTemperature = null; loaded.OllamaTopP = null; loaded.Save();
                     var cleared = LlmSettings.Load(); Assert.IsNull(cleared.OllamaTemperature); Assert.IsNull(cleared.OllamaTopP);
                     Assert.AreEqual("unrelated", cleared.CodexModel);
-                } finally { LlmSettings.StoragePathOverride = original; }
+                }
+                finally { LlmSettings.StoragePathOverride = original; }
             }
         }
 
         [TestMethod]
         public void ConcurrentOllamaSamplingEditsMergeIndependentFieldsAndRejectConflictingValues()
         {
-            using (var scope = new LlmBoundaryScope()) {
+            using (var scope = new LlmBoundaryScope())
+            {
                 string original = LlmSettings.StoragePathOverride;
-                try {
+                try
+                {
                     LlmSettings.StoragePathOverride = Path.Combine(scope.Root, "sampling-merge.json");
                     new LlmSettings { OllamaTemperature = 0.7, OllamaTopP = 0.8, CodexModel = "initial" }.Save();
                     var first = LlmSettings.Load(); var second = LlmSettings.Load();
@@ -98,7 +105,8 @@ namespace VBAi.Tests.Unit
                     Assert.AreEqual(1.0, LlmSettings.Load().OllamaTemperature);
                     left.OllamaTemperature = null; left.Save();
                     Assert.IsNull(LlmSettings.Load().OllamaTemperature); Assert.AreEqual(0.9, LlmSettings.Load().OllamaTopP);
-                } finally { LlmSettings.StoragePathOverride = original; }
+                }
+                finally { LlmSettings.StoragePathOverride = original; }
             }
         }
 

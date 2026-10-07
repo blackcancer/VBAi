@@ -1,10 +1,10 @@
 namespace VBAi.Tests.Unit
 {
+    using Microsoft.VisualStudio.TestTools.UnitTesting;
     using System;
     using System.Reflection;
     using System.Windows.Forms;
     using VBAi;
-    using Microsoft.VisualStudio.TestTools.UnitTesting;
 
     public sealed partial class HostSettingsCoverageTests
     {
@@ -75,12 +75,12 @@ namespace VBAi.Tests.Unit
 
 namespace VBAi.Tests.Unit
 {
+    using Microsoft.VisualStudio.TestTools.UnitTesting;
     using System;
     using System.Globalization;
     using System.Windows.Forms;
     using VBAi;
     using VBAi.Tests.Infrastructure;
-    using Microsoft.VisualStudio.TestTools.UnitTesting;
 
     [TestClass, TestCategory("Unit")]
     public sealed class OllamaSamplingSettingsWindowTests
@@ -178,8 +178,13 @@ namespace VBAi.Tests.Unit
         {
             using (var scope = new LlmBoundaryScope())
             {
-                var settings = new LlmSettings { ProviderName = "Ollama", OllamaTemperature = 0, OllamaTopP = 0.8,
-                    OpenAiEndpoint = "https://fixture.invalid/v1/chat/completions" };
+                var settings = new LlmSettings
+                {
+                    ProviderName = "Ollama",
+                    OllamaTemperature = 0,
+                    OllamaTopP = 0.8,
+                    OpenAiEndpoint = "https://fixture.invalid/v1/chat/completions"
+                };
                 using (var window = scope.Window(settings))
                 {
                     LlmBoundaryScope.Get<TextBox>(window, "ollamaTemperature").Text = " ";
@@ -284,14 +289,12 @@ namespace VBAi.Tests.Unit
 
 namespace VBAi.Tests.Unit
 {
+    using Microsoft.VisualStudio.TestTools.UnitTesting;
     using System;
     using System.Collections.Generic;
     using System.Reflection;
-    using System.Runtime.InteropServices;
-    using System.Runtime.Serialization;
     using System.Windows.Forms;
     using VBAi;
-    using Microsoft.VisualStudio.TestTools.UnitTesting;
 
     public sealed partial class HostSettingsWindowTests
     {
@@ -369,15 +372,14 @@ namespace VBAi.Tests.Unit
 
 namespace VBAi.Tests.Unit
 {
+    using Microsoft.VisualStudio.TestTools.UnitTesting;
     using System;
-    using System.Collections.Generic;
     using System.IO;
     using System.Linq;
     using System.Threading.Tasks;
     using System.Windows.Forms;
     using VBAi;
     using VBAi.Tests.Infrastructure;
-    using Microsoft.VisualStudio.TestTools.UnitTesting;
     [TestClass, TestCategory("Unit")]
     public sealed class LlmSettingsWindowBoundaryTests
     {

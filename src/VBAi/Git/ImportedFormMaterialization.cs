@@ -1,11 +1,11 @@
 using System;
-using System.Diagnostics;
 using System.Collections.Generic;
-using System.Globalization;
+using System.Diagnostics;
 using System.Drawing;
+using System.Globalization;
 using System.Linq;
-using System.Runtime.InteropServices;
 using System.Runtime.ExceptionServices;
+using System.Runtime.InteropServices;
 using System.Threading;
 
 namespace VBAi
@@ -16,13 +16,15 @@ namespace VBAi
     {
 
         /// <summary>Records how initialization settled, independently of the final import acceptance.</summary>
-        internal enum MaterializationOutcome {
+        internal enum MaterializationOutcome
+        {
 
-/// <summary>Identifies the resources exact before focus case of materialization outcome.</summary>
-ResourcesExactBeforeFocus = 1,
+            /// <summary>Identifies the resources exact before focus case of materialization outcome.</summary>
+            ResourcesExactBeforeFocus = 1,
 
-/// <summary>Identifies the rendered case of materialization outcome.</summary>
-Rendered = 2 }
+            /// <summary>Identifies the rendered case of materialization outcome.</summary>
+            Rendered = 2
+        }
 
         /// <summary>Preserves exact resources and returns only font owners still different after one initialization.</summary>
         /// <param name="target">Repository snapshot whose serialized form resources must remain byte-exact.</param>
@@ -41,7 +43,8 @@ Rendered = 2 }
             string resource = component.Name + ".frx";
             if (target.SameFile(actual, resource)) return new FormStreamPadding.FormFontBinding[0];
             revalidate();
-            MaterializationOutcome outcome = materialize(() => {
+            MaterializationOutcome outcome = materialize(() =>
+            {
                 revalidate();
                 VbaGitSnapshot probe = capture();
                 revalidate();
@@ -55,9 +58,7 @@ Rendered = 2 }
             if (outcome == MaterializationOutcome.ResourcesExactBeforeFocus)
                 throw new InvalidOperationException("The imported form resources changed after restoring its prior view; font delivery is refused.");
             VbaGitComponent observedComponent = actual.Manifest.Components.Single(item => item.Name == component.Name && item.Type == 3);
-            var observed = actual.FormFonts(observedComponent);
-            if (observed == null)
-                throw new InvalidOperationException("The imported form resource graph cannot be verified after designer initialization.");
+            var observed = actual.FormFonts(observedComponent) ?? throw new InvalidOperationException("The imported form resource graph cannot be verified after designer initialization.");
             return bindings.Where(expected => !observed.Any(value => value.Type == expected.Type &&
                 value.OwnerPath == expected.OwnerPath && value.Descriptor.SequenceEqual(expected.Descriptor))).ToArray();
         }
@@ -103,7 +104,8 @@ Rendered = 2 }
                 catch (Exception error) { restoreFailure = error; }
                 Exception combined = restoreFailure == null ? primary : primary == null ? restoreFailure :
                     new AggregateException("Imported designer initialization and navigation restoration failed.", primary, restoreFailure);
-                FormFontRestoration.ReleaseOwnedReferences(new[] { window, editor, main, previous }, value => {
+                FormFontRestoration.ReleaseOwnedReferences(new[] { window, editor, main, previous }, value =>
+                {
                     if (value != null && Marshal.IsComObject(value)) Marshal.ReleaseComObject(value);
                 }, combined);
                 if (restoreFailure != null) ExceptionDispatchInfo.Capture(combined).Throw();
@@ -197,8 +199,7 @@ Rendered = 2 }
         {
             revalidate();
             IntPtr target = ReadTarget(project, window, editor, main, previous, "before-first-render");
-            Rectangle native;
-            if (!GetWindowRect(target, out native)) throw new InvalidOperationException("The imported designer bounds are unavailable.");
+            if (!GetWindowRect(target, out Rectangle native)) throw new InvalidOperationException("The imported designer bounds are unavailable.");
             int width = checked(native.Right - native.Left), height = checked(native.Bottom - native.Top);
             if (width <= 0 || height <= 0 || width > 4096 || height > 4096)
                 throw new InvalidOperationException("The imported designer render exceeds the bounded native surface.");
@@ -248,16 +249,16 @@ Rendered = 2 }
                 // manufacture evidence after the failed guard.
                 var owners = new Dictionary<IntPtr, uint>();
                 var observations = new Dictionary<IntPtr, string>();
-                Func<IntPtr, uint> owner = handle => {
-                    uint pid;
-                    if (owners.TryGetValue(handle, out pid)) return pid;
+                uint owner(IntPtr handle)
+                {
+                    if (owners.TryGetValue(handle, out uint pid)) return pid;
                     uint thread = GetWindowThreadProcessId(handle, out pid);
                     int error = thread == 0 ? Marshal.GetLastWin32Error() : 0;
                     owners.Add(handle, pid);
                     observations.Add(handle, string.Format(CultureInfo.InvariantCulture,
                         "HWND={0},Pid={1},Thread={2},Error={3}", handle.ToInt64(), pid, thread, error));
                     return pid;
-                };
+                }
                 return SelectObservedTarget(stage, root, designer, projectMatches, designerMatches,
                     mainVisible, designerVisible, type, (uint)Process.GetCurrentProcess().Id, owner,
                     () => observations.Count == 0 ? "not-evaluated" : string.Join("|",
@@ -344,10 +345,12 @@ Rendered = 2 }
 
         /// <summary>Native screen rectangle used solely to bound an owned rendering surface.</summary>
         [StructLayout(LayoutKind.Sequential)]
-        private struct Rectangle {
+        private struct Rectangle
+        {
 
-/// <summary>Screen-coordinate bounds used to cap the in-memory render surface at 4096 pixels per side.</summary>
-internal int Left, Top, Right, Bottom; }
+            /// <summary>Screen-coordinate bounds used to cap the in-memory render surface at 4096 pixels per side.</summary>
+            internal int Left, Top, Right, Bottom;
+        }
 
         /// <summary>Reads bounds of the already verified owned window.</summary>
         /// <param name="window">Already verified native render target.</param><param name="bounds">Receives its screen-coordinate bounds.</param>

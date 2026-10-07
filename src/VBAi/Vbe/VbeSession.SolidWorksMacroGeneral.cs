@@ -22,17 +22,24 @@ namespace VBAi
                 source.Command != "read_project_general" || source.ExpectedMode != 2 ||
                 string.IsNullOrWhiteSpace(source.Project) || string.IsNullOrWhiteSpace(source.ExpectedProjectVersion))
                 throw new InvalidOperationException("Only the original publication may inspect its exact source General page.");
-            var request = new Request { Command = "read_project_general", Project = source.Project,
-                ExpectedMode = 2, ExpectedProjectVersion = source.ExpectedProjectVersion };
+            var request = new Request
+            {
+                Command = "read_project_general",
+                Project = source.Project,
+                ExpectedMode = 2,
+                ExpectedProjectVersion = source.ExpectedProjectVersion
+            };
             bool opened = false;
-            Action<bool> scoped = live => {
+            void scoped(bool live)
+            {
                 context();
                 if (live) generalAuthorizationDepth++;
                 try { authorize(live); }
                 finally { if (live) generalAuthorizationDepth--; }
                 context();
-            };
-            Action<VbeProjectGeneralOperation.Result> journal = result => {
+            }
+            void journal(VbeProjectGeneralOperation.Result result)
+            {
                 context();
                 opened |= result.OpenAttempts != 0 && !result.Terminal;
                 LoadLog.AppendText(LoadLog.PathName, DateTime.UtcNow.ToString("o") +
@@ -40,7 +47,7 @@ namespace VBAi
                     " OK=" + result.OkAttempts + " Cancel=" + result.CancelAttempts +
                     " Terminal=" + result.Terminal + " Uncertain=" + result.Uncertain +
                     " Closed=" + result.DialogClosed + " ExecuteReturned=" + result.OriginalExecuteReturned + Environment.NewLine);
-            };
+            }
             generalInFlight = true;
             try
             {

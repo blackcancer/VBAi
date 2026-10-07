@@ -25,29 +25,31 @@ namespace VBAi
         internal readonly List<TextAction> actions = new List<TextAction>();
 
         /// <summary>Character range and callback associated with a rendered transcript link or code-copy action.</summary>
-        internal sealed class TextAction {
+        internal sealed class TextAction
+        {
 
-/// <summary>Start index and number of rendered characters covered by this action.</summary>
-internal int Start, Length;
+            /// <summary>Start index and number of rendered characters covered by this action.</summary>
+            internal int Start, Length;
 
-/// <summary>Callback invoked when the user activates a character within the range.</summary>
-internal Action Invoke;
+            /// <summary>Callback invoked when the user activates a character within the range.</summary>
+            internal Action Invoke;
 
-/// <summary>Optional source text copied by the code-copy menu for this action.</summary>
-internal string Code; }
+            /// <summary>Optional source text copied by the code-copy menu for this action.</summary>
+            internal string Code;
+        }
 
         /// <summary>Creates the native read-only text field and context menu.</summary>
         public ChatTextContentView()
         {
             InitializeComponent(); UiText.Apply(this, components); UiTheme.Apply(this);
-            content.ContentsResized += (s,e) => { if (contentUpdateDepth == 0 && !resizingText) content.Height = content.TextLength == 0 ? 24 : Math.Max(24, Math.Min(1200, e.NewRectangle.Height + 8)); };
-            content.TextChanged += (s,e) => ResizeText();
-            content.HandleCreated += (s,e) => ResizeText();
-            content.MouseUp += (s,e) => { if (e.Button != MouseButtons.Left || content.SelectionLength != 0) return; ActivateAt(content.GetCharIndexFromPosition(e.Location)); };
-            content.KeyDown += (s,e) => { if (e.KeyCode == Keys.Enter) { ActivateAt(content.SelectionStart); e.Handled = true; } };
-            copySelection.Click += (s,e) => Copy(content.SelectionLength > 0 ? content.SelectedText : content.Text);
-            copyCode.Click += (s,e) => { var action = ActionAt(content.SelectionStart); if (action?.Code != null) Copy(action.Code); };
-            copyMenu.Opening += (s,e) => copyCode.Visible = ActionAt(content.SelectionStart)?.Code != null;
+            content.ContentsResized += (s, e) => { if (contentUpdateDepth == 0 && !resizingText) content.Height = content.TextLength == 0 ? 24 : Math.Max(24, Math.Min(1200, e.NewRectangle.Height + 8)); };
+            content.TextChanged += (s, e) => ResizeText();
+            content.HandleCreated += (s, e) => ResizeText();
+            content.MouseUp += (s, e) => { if (e.Button != MouseButtons.Left || content.SelectionLength != 0) return; ActivateAt(content.GetCharIndexFromPosition(e.Location)); };
+            content.KeyDown += (s, e) => { if (e.KeyCode == Keys.Enter) { ActivateAt(content.SelectionStart); e.Handled = true; } };
+            copySelection.Click += (s, e) => Copy(content.SelectionLength > 0 ? content.SelectedText : content.Text);
+            copyCode.Click += (s, e) => { var action = ActionAt(content.SelectionStart); if (action?.Code != null) Copy(action.Code); };
+            copyMenu.Opening += (s, e) => copyCode.Visible = ActionAt(content.SelectionStart)?.Code != null;
         }
 
         /// <summary>Replaces the transcript content with plain text and applies code or interface formatting.</summary>
@@ -61,7 +63,7 @@ internal string Code; }
                 actions.Clear(); content.Clear();
                 content.RightToLeft = !code && UiText.Culture.TextInfo.IsRightToLeft ? RightToLeft.Yes : RightToLeft.No;
                 content.Font = OwnFont(code ? "Consolas" : "Segoe UI", 9.5f, FontStyle.Regular);
-                content.Text = text ?? ""; content.Select(0,0);
+                content.Text = text ?? ""; content.Select(0, 0);
             }
             finally { contentUpdateDepth--; ResizeText(); }
         }
@@ -71,7 +73,7 @@ internal string Code; }
         /// <param name="references">VBA references that should become interactive transcript links.</param>
         /// <param name="navigate">Callback used to open a recognized VBA reference.</param>
         /// <param name="error">Callback used to report link and action errors.</param>
-        internal void ShowMarkdown(string text, IDictionary<string,VbeChatReference> references, Action<VbeChatReference> navigate, Action<string> error)
+        internal void ShowMarkdown(string text, IDictionary<string, VbeChatReference> references, Action<VbeChatReference> navigate, Action<string> error)
         {
             contentUpdateDepth++;
             try
@@ -80,7 +82,7 @@ internal string Code; }
                 content.RightToLeft = UiText.Culture.TextInfo.IsRightToLeft ? RightToLeft.Yes : RightToLeft.No;
                 actions.Clear(); content.Clear();
                 ChatNativeMarkdown.Render(this, text ?? "", references, navigate, error);
-                content.Select(0,0);
+                content.Select(0, 0);
             }
             finally { contentUpdateDepth--; ResizeText(); }
         }
@@ -90,7 +92,7 @@ internal string Code; }
         /// <param name="size">Font size in points.</param>
         /// <param name="style">Font style to apply.</param>
         /// <returns>The matching font instance, created and retained by this view when necessary.</returns>
-        internal Font OwnFont(string family, float size, FontStyle style) { var existing = ownedFonts.Find(f => f.FontFamily.Name == family && f.Size == size && f.Style == style); if (existing != null) return existing; var font = new Font(family,size,style); ownedFonts.Add(font); return font; }
+        internal Font OwnFont(string family, float size, FontStyle style) { var existing = ownedFonts.Find(f => f.FontFamily.Name == family && f.Size == size && f.Style == style); if (existing != null) return existing; var font = new Font(family, size, style); ownedFonts.Add(font); return font; }
 
         /// <summary>Appends a styled text run to the native transcript control.</summary>
         /// <param name="text">Text to append to the transcript.</param>
@@ -106,7 +108,7 @@ internal string Code; }
         /// <param name="color">Optional foreground color for the appended text.</param>
         internal void Append(string text, string family, float size, FontStyle style, Color? color = null)
         {
-            content.Select(content.TextLength,0); content.SelectionFont = OwnFont(family,size,style);
+            content.Select(content.TextLength, 0); content.SelectionFont = OwnFont(family, size, style);
             content.SelectionColor = color ?? UiTheme.Foreground; content.AppendText(text ?? "");
         }
 

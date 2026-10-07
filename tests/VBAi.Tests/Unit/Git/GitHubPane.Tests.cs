@@ -1,14 +1,12 @@
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.IO;
-using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
-using VBAi;
 using VBAi.Tests.Infrastructure;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace VBAi.Tests.Unit
 {
@@ -16,8 +14,8 @@ namespace VBAi.Tests.Unit
     [TestClass, TestCategory("Unit")]
     public sealed partial class GitHubPaneCoverageTests
     {
-                /// <summary>Vérifie les dépôts, le filtrage, la sélection et la création depuis l’interface.</summary>
-[STATestMethod]
+        /// <summary>Vérifie les dépôts, le filtrage, la sélection et la création depuis l’interface.</summary>
+        [STATestMethod]
         public void DesignerRepositoriesFilteringSelectionAndCreationUseActualControlEvents()
         {
             using (var scope = new HostUiScope()) using (var pane = new GitHubPane())
@@ -32,8 +30,8 @@ namespace VBAi.Tests.Unit
                 Api(pane, "[{\"name\":\"dev\"}]"); Field<ListBox>(pane, "repositoryList").SelectedIndex = 1; Idle(pane); Assert.AreEqual("dev", Field<ComboBox>(pane, "repositoryBranch").Text);
             }
         }
-                /// <summary>Vérifie les détails et brouillons de demandes de fusion ainsi que la navigation aux modules.</summary>
-[STATestMethod]
+        /// <summary>Vérifie les détails et brouillons de demandes de fusion ainsi que la navigation aux modules.</summary>
+        [STATestMethod]
         public void PullDetailsChecksDraftsAndModuleNavigationKeepNativeValidationAndNullCallbacks()
         {
             using (var scope = new HostUiScope()) using (var pane = new GitHubPane())
@@ -51,8 +49,8 @@ namespace VBAi.Tests.Unit
                 Invoke(pane, "LoadDraft_Click"); pane.LoadDraft = () => null; Invoke(pane, "LoadDraft_Click"); pane.LoadDraft = () => new GitPullDraft { Target = "dev", Title = "Draft", Body = "Prepared" }; Invoke(pane, "LoadDraft_Click"); Assert.AreEqual("Prepared", Field<TextBox>(pane, "pullBody").Text); Assert.AreSame(Field<TabPage>(pane, "composeTab"), Field<TabControl>(pane, "pullTabs").SelectedTab); pane.LoadDraft = () => throw new IOException("draft unavailable"); Invoke(pane, "LoadDraft_Click"); Assert.AreEqual("draft unavailable", Field<Label>(pane, "status").Text);
             }
         }
-                /// <summary>Vérifie l’annulation, la destruction et les erreurs des opérations en cours.</summary>
-[STATestMethod]
+        /// <summary>Vérifie l’annulation, la destruction et les erreurs des opérations en cours.</summary>
+        [STATestMethod]
         public void PendingOperationsCancellationDisposalAndErrorKindsRestoreEnabledState()
         {
             using (var scope = new HostUiScope())

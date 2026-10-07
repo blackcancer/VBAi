@@ -1,10 +1,9 @@
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Windows.Forms;
-using VBAi;
 using VBAi.Tests.Infrastructure;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace VBAi.Tests.Unit
 {
@@ -62,61 +61,61 @@ namespace VBAi.Tests.Unit
         public void NativeInspectionTimerUpdatesGeometryWithoutReadingOrChangingTheSelectedDocument()
         {
             foreach (bool visible in new[] { true, false })
-            using (var f = new AddInModernEditorFixture())
-            using (var code = new Form { TopLevel = false, FormBorderStyle = FormBorderStyle.None })
-            using (var input = new TextBox())
-            {
-                var editor = f.Get();
-                LlmBoundaryScope.Get<EditorWorkspaceHost>(f.Instance, "editorWorkspace").Dispose();
-                var owner = f.Scope.Host.Owner;
-                var mdi = owner.Controls.OfType<MdiClient>().Single();
-                code.Controls.Add(input);
-                SetParent(code.Handle, mdi.Handle); code.Show();
-                Assert.IsTrue(SetWindowPos(code.Handle, IntPtr.Zero, 0, 0, 300, 250, 0x0010));
-                if (visible) editor.Show(); else editor.Hide();
-                SetFocus(input.Handle);
-                int activeReads = 0;
-                var host = new WorkspaceContractHost
+                using (var f = new AddInModernEditorFixture())
+                using (var code = new Form { TopLevel = false, FormBorderStyle = FormBorderStyle.None })
+                using (var input = new TextBox())
                 {
-                    MainWindow = f.Scope.Host.MainWindow,
-                    ReadActive = () =>
+                    var editor = f.Get();
+                    LlmBoundaryScope.Get<EditorWorkspaceHost>(f.Instance, "editorWorkspace").Dispose();
+                    var owner = f.Scope.Host.Owner;
+                    var mdi = owner.Controls.OfType<MdiClient>().Single();
+                    code.Controls.Add(input);
+                    SetParent(code.Handle, mdi.Handle); code.Show();
+                    Assert.IsTrue(SetWindowPos(code.Handle, IntPtr.Zero, 0, 0, 300, 250, 0x0010));
+                    if (visible) editor.Show(); else editor.Hide();
+                    SetFocus(input.Handle);
+                    int activeReads = 0;
+                    var host = new WorkspaceContractHost
                     {
-                        Assert.IsFalse(VbeDebugInspection.IsActive, "A timer must not inspect or activate documents during native dispatch.");
-                        activeReads++;
-                        return new AddInEditorActiveWindow { Type = visible ? 2 : 0 };
+                        MainWindow = f.Scope.Host.MainWindow,
+                        ReadActive = () =>
+                        {
+                            Assert.IsFalse(VbeDebugInspection.IsActive, "A timer must not inspect or activate documents during native dispatch.");
+                            activeReads++;
+                            return new AddInEditorActiveWindow { Type = visible ? 2 : 0 };
+                        }
+                    };
+                    using (var workspace = new EditorWorkspaceHost(host, editor))
+                    using (new VbeDebugInspection())
+                    {
+                        var initialBounds = editor.Bounds;
+                        owner.ClientSize = new System.Drawing.Size(owner.ClientSize.Width + 120, owner.ClientSize.Height + 80);
+                        owner.PerformLayout();
+                        var expectedBounds = mdi.ClientRectangle;
+                        Assert.AreNotEqual(initialBounds, expectedBounds);
+                        var previous = GetWindow(code.Handle, 3);
+                        var next = GetWindow(code.Handle, 2);
+                        var focus = GetFocus();
+                        Assert.AreEqual(input.Handle, focus);
+                        var codeBounds = code.Bounds;
+                        for (int tick = 0; tick < 3; tick++) LlmBoundaryScope.Call(workspace, "Resize");
+                        Assert.AreEqual(expectedBounds, editor.Bounds);
+                        Assert.AreEqual(visible, editor.Visible, "Reservation must preserve both hidden and visible editor states.");
+                        Assert.AreEqual(0, activeReads);
+                        Assert.AreEqual(previous, GetWindow(code.Handle, 3));
+                        Assert.AreEqual(next, GetWindow(code.Handle, 2));
+                        Assert.AreEqual(focus, GetFocus());
+                        Assert.AreEqual(codeBounds, code.Bounds);
+                        Assert.IsTrue(code.Visible);
                     }
-                };
-                using (var workspace = new EditorWorkspaceHost(host, editor))
-                using (new VbeDebugInspection())
-                {
-                    var initialBounds = editor.Bounds;
-                    owner.ClientSize = new System.Drawing.Size(owner.ClientSize.Width + 120, owner.ClientSize.Height + 80);
-                    owner.PerformLayout();
-                    var expectedBounds = mdi.ClientRectangle;
-                    Assert.AreNotEqual(initialBounds, expectedBounds);
-                    var previous = GetWindow(code.Handle, 3);
-                    var next = GetWindow(code.Handle, 2);
-                    var focus = GetFocus();
-                    Assert.AreEqual(input.Handle, focus);
-                    var codeBounds = code.Bounds;
-                    for (int tick = 0; tick < 3; tick++) LlmBoundaryScope.Call(workspace, "Resize");
-                    Assert.AreEqual(expectedBounds, editor.Bounds);
-                    Assert.AreEqual(visible, editor.Visible, "Reservation must preserve both hidden and visible editor states.");
-                    Assert.AreEqual(0, activeReads);
-                    Assert.AreEqual(previous, GetWindow(code.Handle, 3));
-                    Assert.AreEqual(next, GetWindow(code.Handle, 2));
-                    Assert.AreEqual(focus, GetFocus());
-                    Assert.AreEqual(codeBounds, code.Bounds);
-                    Assert.IsTrue(code.Visible);
+                    Assert.IsFalse(VbeDebugInspection.IsActive);
+                    using (var resumed = new EditorWorkspaceHost(host, editor))
+                    {
+                        LlmBoundaryScope.Call(resumed, "Resize");
+                        Assert.AreEqual(1, activeReads, "Ordinary workspace observation must resume after reservation disposal.");
+                        Assert.AreEqual(!visible, editor.Visible);
+                    }
                 }
-                Assert.IsFalse(VbeDebugInspection.IsActive);
-                using (var resumed = new EditorWorkspaceHost(host, editor))
-                {
-                    LlmBoundaryScope.Call(resumed, "Resize");
-                    Assert.AreEqual(1, activeReads, "Ordinary workspace observation must resume after reservation disposal.");
-                    Assert.AreEqual(!visible, editor.Visible);
-                }
-            }
         }
         [STATestMethod]
         public void TimerResizePreservesNativePaneZOrderDuringFrameDocking()
@@ -147,47 +146,47 @@ namespace VBAi.Tests.Unit
         public void HiddenEditorTracksWorkspaceResizeWithoutChangingNativeDocumentBoundsZOrderOrFocus()
         {
             foreach (int type in new[] { 1, 2 })
-            using (var f = new AddInModernEditorFixture())
-            using (var native = new Form { TopLevel = false, FormBorderStyle = FormBorderStyle.None })
-            using (var input = new TextBox())
-            {
-                var editor = f.Get();
-                var owner = f.Scope.Host.Owner;
-                var mdi = owner.Controls.OfType<MdiClient>().Single();
-                var workspace = LlmBoundaryScope.Get<EditorWorkspaceHost>(f.Instance, "editorWorkspace");
-                native.Controls.Add(input);
-                SetParent(native.Handle, mdi.Handle); native.Show();
-                Assert.IsTrue(SetWindowPos(native.Handle, IntPtr.Zero, 20, 25, 300, 250, 0x0010));
-                f.Scope.Host.ActiveWindow = new AddInEditorActiveWindow { Type = type };
-                LlmBoundaryScope.Call(workspace, "Resize");
-                Assert.IsFalse(editor.Visible);
-                SetFocus(input.Handle);
-                Assert.AreEqual(input.Handle, GetFocus());
+                using (var f = new AddInModernEditorFixture())
+                using (var native = new Form { TopLevel = false, FormBorderStyle = FormBorderStyle.None })
+                using (var input = new TextBox())
+                {
+                    var editor = f.Get();
+                    var owner = f.Scope.Host.Owner;
+                    var mdi = owner.Controls.OfType<MdiClient>().Single();
+                    var workspace = LlmBoundaryScope.Get<EditorWorkspaceHost>(f.Instance, "editorWorkspace");
+                    native.Controls.Add(input);
+                    SetParent(native.Handle, mdi.Handle); native.Show();
+                    Assert.IsTrue(SetWindowPos(native.Handle, IntPtr.Zero, 20, 25, 300, 250, 0x0010));
+                    f.Scope.Host.ActiveWindow = new AddInEditorActiveWindow { Type = type };
+                    LlmBoundaryScope.Call(workspace, "Resize");
+                    Assert.IsFalse(editor.Visible);
+                    SetFocus(input.Handle);
+                    Assert.AreEqual(input.Handle, GetFocus());
 
-                var previousEditorBounds = editor.Bounds;
-                var nativeBounds = native.Bounds;
-                owner.ClientSize = new System.Drawing.Size(owner.ClientSize.Width + 120, owner.ClientSize.Height + 80);
-                owner.PerformLayout();
-                var expectedEditorBounds = mdi.ClientRectangle;
-                Assert.AreNotEqual(previousEditorBounds, expectedEditorBounds, "The fixture must actually resize the workspace.");
-                var nativePrevious = GetWindow(native.Handle, 3);
-                var nativeNext = GetWindow(native.Handle, 2);
-                var topChild = GetWindow(mdi.Handle, 5);
-                var focus = GetFocus();
-                Assert.AreEqual(input.Handle, focus, "Resizing the owner must leave the native document focused.");
+                    var previousEditorBounds = editor.Bounds;
+                    var nativeBounds = native.Bounds;
+                    owner.ClientSize = new System.Drawing.Size(owner.ClientSize.Width + 120, owner.ClientSize.Height + 80);
+                    owner.PerformLayout();
+                    var expectedEditorBounds = mdi.ClientRectangle;
+                    Assert.AreNotEqual(previousEditorBounds, expectedEditorBounds, "The fixture must actually resize the workspace.");
+                    var nativePrevious = GetWindow(native.Handle, 3);
+                    var nativeNext = GetWindow(native.Handle, 2);
+                    var topChild = GetWindow(mdi.Handle, 5);
+                    var focus = GetFocus();
+                    Assert.AreEqual(input.Handle, focus, "Resizing the owner must leave the native document focused.");
 
-                LlmBoundaryScope.Call(workspace, "Resize");
+                    LlmBoundaryScope.Call(workspace, "Resize");
 
-                Assert.AreEqual(expectedEditorBounds, editor.Bounds, "Hidden Monaco must follow the resized MDI client for native document type " + type + ".");
-                Assert.IsFalse(editor.Visible, "Geometry updates must keep Monaco hidden.");
-                Assert.IsTrue(native.Visible);
-                Assert.AreEqual(nativeBounds, native.Bounds, "The native document geometry must be preserved.");
-                Assert.AreEqual(mdi.Handle, OwnedMdiWorkspace.GetParent(native.Handle));
-                Assert.AreEqual(nativePrevious, GetWindow(native.Handle, 3));
-                Assert.AreEqual(nativeNext, GetWindow(native.Handle, 2));
-                Assert.AreEqual(topChild, GetWindow(mdi.Handle, 5), "Resizing hidden Monaco must preserve native child ordering.");
-                Assert.AreEqual(focus, GetFocus(), "Resizing hidden Monaco must not take keyboard focus.");
-            }
+                    Assert.AreEqual(expectedEditorBounds, editor.Bounds, "Hidden Monaco must follow the resized MDI client for native document type " + type + ".");
+                    Assert.IsFalse(editor.Visible, "Geometry updates must keep Monaco hidden.");
+                    Assert.IsTrue(native.Visible);
+                    Assert.AreEqual(nativeBounds, native.Bounds, "The native document geometry must be preserved.");
+                    Assert.AreEqual(mdi.Handle, OwnedMdiWorkspace.GetParent(native.Handle));
+                    Assert.AreEqual(nativePrevious, GetWindow(native.Handle, 3));
+                    Assert.AreEqual(nativeNext, GetWindow(native.Handle, 2));
+                    Assert.AreEqual(topChild, GetWindow(mdi.Handle, 5), "Resizing hidden Monaco must preserve native child ordering.");
+                    Assert.AreEqual(focus, GetFocus(), "Resizing hidden Monaco must not take keyboard focus.");
+                }
         }
 
         [STATestMethod]
@@ -295,28 +294,28 @@ namespace VBAi.Tests.Unit
             try
             {
                 foreach (bool rejected in new[] { false, true })
-                using (var f = new AddInModernEditorFixture())
-                {
-                    EditorWorkspaceHost.ChangeParent = (child, parent) =>
+                    using (var f = new AddInModernEditorFixture())
                     {
-                        if (!rejected) native(child, parent);
-                        SetLastError(rejected ? 5u : 0u);
-                        return IntPtr.Zero;
-                    };
-                    if (rejected)
-                    {
-                        var failure = Assert.ThrowsException<System.Reflection.TargetInvocationException>(() => f.Get());
-                        Assert.IsInstanceOfType(failure.InnerException, typeof(System.ComponentModel.Win32Exception));
-                        Assert.AreEqual(5, ((System.ComponentModel.Win32Exception)failure.InnerException).NativeErrorCode);
-                        Assert.IsTrue(f.Editors.Single().IsDisposed);
+                        EditorWorkspaceHost.ChangeParent = (child, parent) =>
+                        {
+                            if (!rejected) native(child, parent);
+                            SetLastError(rejected ? 5u : 0u);
+                            return IntPtr.Zero;
+                        };
+                        if (rejected)
+                        {
+                            var failure = Assert.ThrowsException<System.Reflection.TargetInvocationException>(() => f.Get());
+                            Assert.IsInstanceOfType(failure.InnerException, typeof(System.ComponentModel.Win32Exception));
+                            Assert.AreEqual(5, ((System.ComponentModel.Win32Exception)failure.InnerException).NativeErrorCode);
+                            Assert.IsTrue(f.Editors.Single().IsDisposed);
+                        }
+                        else
+                        {
+                            var editor = f.Get();
+                            Assert.IsTrue(editor.Visible);
+                            Assert.AreEqual(f.Scope.Host.Owner.Controls.OfType<MdiClient>().Single().Handle, OwnedMdiWorkspace.GetParent(editor.Handle));
+                        }
                     }
-                    else
-                    {
-                        var editor = f.Get();
-                        Assert.IsTrue(editor.Visible);
-                        Assert.AreEqual(f.Scope.Host.Owner.Controls.OfType<MdiClient>().Single().Handle, OwnedMdiWorkspace.GetParent(editor.Handle));
-                    }
-                }
             }
             finally { EditorWorkspaceHost.ChangeParent = native; }
         }
@@ -325,21 +324,21 @@ namespace VBAi.Tests.Unit
         public void WorkspaceLifetimeAndLateNativeWindowLossStopResizingSafely()
         {
             foreach (int outcome in new[] { 0, 1, 2, 3 })
-            using (var f = new AddInModernEditorFixture())
-            {
-                var editor = f.Get();
-                var host = new WorkspaceContractHost { MainWindow = f.Scope.Host.MainWindow, ReadActive = () => null };
-                using (var workspace = new EditorWorkspaceHost(host, editor))
+                using (var f = new AddInModernEditorFixture())
                 {
-                    if (outcome == 0) editor.Dispose();
-                    if (outcome == 1) f.Scope.Host.Owner.Controls.OfType<MdiClient>().Single().Dispose();
-                    if (outcome == 2) host.ReadActive = () => throw new COMException("Owned active-window failure");
-                    if (outcome == 3) host.ReadActive = () => { f.Scope.Host.Owner.Controls.OfType<MdiClient>().Single().Dispose(); return null; };
-                    LlmBoundaryScope.Call(workspace, "Resize");
-                    if (outcome < 2) Assert.IsFalse(LlmBoundaryScope.Get<Timer>(workspace, "timer").Enabled);
-                    if (outcome == 2) Assert.IsTrue(editor.Visible);
+                    var editor = f.Get();
+                    var host = new WorkspaceContractHost { MainWindow = f.Scope.Host.MainWindow, ReadActive = () => null };
+                    using (var workspace = new EditorWorkspaceHost(host, editor))
+                    {
+                        if (outcome == 0) editor.Dispose();
+                        if (outcome == 1) f.Scope.Host.Owner.Controls.OfType<MdiClient>().Single().Dispose();
+                        if (outcome == 2) host.ReadActive = () => throw new COMException("Owned active-window failure");
+                        if (outcome == 3) host.ReadActive = () => { f.Scope.Host.Owner.Controls.OfType<MdiClient>().Single().Dispose(); return null; };
+                        LlmBoundaryScope.Call(workspace, "Resize");
+                        if (outcome < 2) Assert.IsFalse(LlmBoundaryScope.Get<Timer>(workspace, "timer").Enabled);
+                        if (outcome == 2) Assert.IsTrue(editor.Visible);
+                    }
                 }
-            }
         }
 
         [STATestMethod]

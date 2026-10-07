@@ -1,9 +1,8 @@
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Windows.Forms;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
-using VBAi;
 using VBAi.Tests.Infrastructure;
 
 namespace VBAi.Tests.Integration

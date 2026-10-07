@@ -1,7 +1,7 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Globalization;
-using System.Collections;
 using System.Linq;
 using System.Runtime.InteropServices;
 
@@ -48,17 +48,21 @@ namespace VBAi
         public object RestoreDesignerClipboard(Request request)
         {
             dynamic form = GetForm(GetDesignProject(request.Project), request.Form);
-            var recovery = clipboardRecoveries.FirstOrDefault(x => x.Id == request.DesignerClipboardRecoveryId);
-            if (recovery == null) throw new InvalidOperationException("Clipboard recovery not found or expired; only the latest 8 cuts in this session are retained.");
+            var recovery = clipboardRecoveries.FirstOrDefault(x => x.Id == request.DesignerClipboardRecoveryId) ?? throw new InvalidOperationException("Clipboard recovery not found or expired; only the latest 8 cuts in this session are retained.");
             if (!ReferenceEquals((object)form, recovery.Form) || (request.ParentPath ?? "") != recovery.ParentPath)
                 throw new InvalidOperationException("Clipboard recovery belongs to another live form or container.");
             dynamic before = ClipboardState(request.Project, request.Form, request.ParentPath);
             RequireClipboardRevision(request, (string)before.SelectionVersion, (string)before.ClipboardVersion);
             WriteDesignerClipboard(recovery.Backup.CreateDataObject(), true);
             bool verified = recovery.Backup.Matches(ReadDesignerClipboard());
-            return new { Restored = verified, recovery.Backup.OmittedFormats,
-                State = ClipboardState(request.Project, request.Form, request.ParentPath), NextAction = "native_form_clipboard paste",
-                Limit = "Restores captured clipboard formats only; does not recreate controls. Inspect the current tree before an explicit paste to avoid duplicates. Native paste may change placement; omitted formats are not restored." };
+            return new
+            {
+                Restored = verified,
+                recovery.Backup.OmittedFormats,
+                State = ClipboardState(request.Project, request.Form, request.ParentPath),
+                NextAction = "native_form_clipboard paste",
+                Limit = "Restores captured clipboard formats only; does not recreate controls. Inspect the current tree before an explicit paste to avoid duplicates. Native paste may change placement; omitted formats are not restored."
+            };
         }
 
         /// <summary>Lit le numéro de séquence natif du presse-papiers Windows.</summary>
@@ -96,9 +100,18 @@ namespace VBAi
             if (sequence != DesignerClipboardSequence()) throw new InvalidOperationException("Clipboard changed during inspection.");
             string selectionVersion = VbeCodeClipboard.Hash(new System.Web.Script.Serialization.JavaScriptSerializer().Serialize(
                 new { Project = projectName, Form = formName, ParentPath = parentPath ?? "", TreeVersion = (string)tree.TreeVersion, Selected = selected }));
-            return new { Project = projectName, Form = formName, ParentPath = parentPath ?? "", Tree = (object)tree, Selected = selected,
-                SelectionVersion = selectionVersion, ClipboardVersion = sequence.ToString(CultureInfo.InvariantCulture), CanPaste = canPaste,
-                Limit = "Current Designer selection; binary clipboard data is not read or sent to the model. Clipboard revision is a Windows sequence number, not a content hash." };
+            return new
+            {
+                Project = projectName,
+                Form = formName,
+                ParentPath = parentPath ?? "",
+                Tree = (object)tree,
+                Selected = selected,
+                SelectionVersion = selectionVersion,
+                ClipboardVersion = sequence.ToString(CultureInfo.InvariantCulture),
+                CanPaste = canPaste,
+                Limit = "Current Designer selection; binary clipboard data is not read or sent to the model. Clipboard revision is a Windows sequence number, not a content hash."
+            };
         }
 
         /// <summary>Exécute Copy, Cut ou Paste sur le conteneur courant avec validation des versions Designer et clipboard.</summary>
@@ -129,8 +142,14 @@ namespace VBAi
                     foreach (dynamic control in container.Controls)
                     {
                         string name = (string)control.Name; tabs.Add((int)control.TabIndex, name);
-                        if (((List<string>)before.Selected).Contains(name)) boxes.Add(new FormLayoutBox { Path = name,
-                            Left = (double)control.Left, Top = (double)control.Top, Width = (double)control.Width, Height = (double)control.Height });
+                        if (((List<string>)before.Selected).Contains(name)) boxes.Add(new FormLayoutBox
+                        {
+                            Path = name,
+                            Left = (double)control.Left,
+                            Top = (double)control.Top,
+                            Width = (double)control.Width,
+                            Height = (double)control.Height
+                        });
                     }
                     container.Copy();
                     uint sequence = DesignerClipboardSequence();
@@ -150,14 +169,28 @@ namespace VBAi
             var changes = afterTree == null ? new FormHistoryDiff.Change[0] : FormHistoryDiff.Compare((object)before.Tree, afterTree);
             if (recovery != null && afterTree != null && error == null && changes.Length > 0) recovery.CutTree = afterTree;
             bool clipboardChanged = after != null && (string)((dynamic)after).ClipboardVersion != (string)before.ClipboardVersion;
-            return new { request.Project, request.Form, request.Action, Executed = error == null,
-                DesignerChangeObserved = changes.Length > 0, ClipboardChanged = clipboardChanged,
-                DesignerClipboardRecoveryId = recovery?.Id, RecoveryOmittedFormats = recovery?.Backup.OmittedFormats, RecoveryBytes = recovery?.Backup.ByteCount,
-                ClipboardContentVerified = false, Before = (object)before, After = after, DesignerChanges = changes,
+            return new
+            {
+                request.Project,
+                request.Form,
+                request.Action,
+                Executed = error == null,
+                DesignerChangeObserved = changes.Length > 0,
+                ClipboardChanged = clipboardChanged,
+                DesignerClipboardRecoveryId = recovery?.Id,
+                RecoveryOmittedFormats = recovery?.Backup.OmittedFormats,
+                RecoveryBytes = recovery?.Backup.ByteCount,
+                ClipboardContentVerified = false,
+                Before = (object)before,
+                After = after,
+                DesignerChanges = changes,
                 ReadErrorsBefore = FormHistoryDiff.ReadErrorCount((object)before.Tree),
                 ReadErrorsAfter = afterTree == null ? (int?)null : FormHistoryDiff.ReadErrorCount(afterTree),
-                NativeError = error, Saved = false, NextRead = "form_clipboard_state",
-                Limit = "Native selected controls are copied/cut; paste uses this Designer's current selection context. Event-handler code is not transferred. Binary clipboard contents are not inspected. Partial changes are reported without retry or implicit rollback; Copy/Cut/Paste may not enter native undo history; inspect CanUndo before offering native_form_history. Cut stores up to 8 MiB of readable MSForms formats before removal (latest 8 cuts in this session). restore_form_clipboard can republish the recovery; it does not undo or restore geometry automatically." };
+                NativeError = error,
+                Saved = false,
+                NextRead = "form_clipboard_state",
+                Limit = "Native selected controls are copied/cut; paste uses this Designer's current selection context. Event-handler code is not transferred. Binary clipboard contents are not inspected. Partial changes are reported without retry or implicit rollback; Copy/Cut/Paste may not enter native undo history; inspect CanUndo before offering native_form_history. Cut stores up to 8 MiB of readable MSForms formats before removal (latest 8 cuts in this session). restore_form_clipboard can republish the recovery; it does not undo or restore geometry automatically."
+            };
         }
 
         /// <summary>Résout le formulaire racine ou un conteneur canonique pouvant exposer Controls.</summary>
@@ -206,8 +239,15 @@ namespace VBAi
             catch (Exception ex) { error = error ?? ex.Message; }
             bool verified = after != null && error == null &&
                 new HashSet<string>((List<string>)((dynamic)after).Selected, StringComparer.Ordinal).SetEquals(request.Items);
-            return new { Verified = verified, Before = (object)before, After = after, NativeError = error,
-                NextRead = "form_clipboard_state", Limit = "Changes only the specified container selection; selections in other containers are independent. No focus or clipboard mutation. On partial failure re-read before another action." };
+            return new
+            {
+                Verified = verified,
+                Before = (object)before,
+                After = after,
+                NativeError = error,
+                NextRead = "form_clipboard_state",
+                Limit = "Changes only the specified container selection; selections in other containers are independent. No focus or clipboard mutation. On partial failure re-read before another action."
+            };
         }
 
         /// <summary>Refuse une commande lorsque la sélection Designer ou le presse-papiers diffère de la lecture attendue.</summary>

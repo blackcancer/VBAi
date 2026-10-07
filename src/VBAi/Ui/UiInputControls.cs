@@ -243,23 +243,27 @@ namespace VBAi
     {
 
         /// <summary>Carries the native rect values passed between operations.</summary>
-        [StructLayout(LayoutKind.Sequential)] private struct NativeRect {
+        [StructLayout(LayoutKind.Sequential)]
+        private struct NativeRect
+        {
 
-/// <summary>Native left, top, right, and bottom edges returned by COMBOBOXINFO.</summary>
-public int Left, Top, Right, Bottom; }
+            /// <summary>Native left, top, right, and bottom edges returned by COMBOBOXINFO.</summary>
+            public int Left, Top, Right, Bottom;
+        }
 
         /// <summary>Carries the combo info values passed between operations.</summary>
-        [StructLayout(LayoutKind.Sequential)] private struct ComboInfo
+        [StructLayout(LayoutKind.Sequential)]
+        private struct ComboInfo
         {
 
             /// <summary>Size of this COMBOBOXINFO-compatible structure in bytes before the native call.</summary>
             public int Size;
 
-/// <summary>Screen-coordinate rectangles for the displayed item and drop-down button.</summary>
-public NativeRect Item, Button;
+            /// <summary>Screen-coordinate rectangles for the displayed item and drop-down button.</summary>
+            public NativeRect Item, Button;
 
-/// <summary>Native state flags for the drop-down button.</summary>
-public int ButtonState;
+            /// <summary>Native state flags for the drop-down button.</summary>
+            public int ButtonState;
 
             /// <summary>Handles of the combo, edit child, and list child windows.</summary>
             public IntPtr Combo, Edit, List;
@@ -395,9 +399,9 @@ public int ButtonState;
                 {
                     var info = new ComboInfo { Size = Marshal.SizeOf(typeof(ComboInfo)) };
                     if (GetComboBoxInfo(Handle, ref info))
-                    using (var erase = new Pen(BackColor, 3))
-                        graphics.DrawRectangle(erase, info.Item.Left - 2, info.Item.Top - 2,
-                            info.Item.Right - info.Item.Left + 4, info.Item.Bottom - info.Item.Top + 4);
+                        using (var erase = new Pen(BackColor, 3))
+                            graphics.DrawRectangle(erase, info.Item.Left - 2, info.Item.Top - 2,
+                                info.Item.Right - info.Item.Left + 4, info.Item.Bottom - info.Item.Top + 4);
                 }
                 UiInputFrame.DrawOutline(graphics, this);
             }

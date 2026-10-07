@@ -1,8 +1,8 @@
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Threading;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace VBAi.Tests.Unit
 {
@@ -15,7 +15,8 @@ namespace VBAi.Tests.Unit
             using (var fixture = new Fixture())
             {
                 object[] arguments = { "Tests", "Alpha" }; object returned = new object();
-                fixture.Host.RunProcedure = (application, macro, array) => {
+                fixture.Host.RunProcedure = (application, macro, array) =>
+                {
                     Assert.AreSame(fixture.Application, application);
                     Assert.AreEqual("Original.pptm!Support.Run", macro);
                     CollectionAssert.AreEqual(arguments, array);
@@ -69,12 +70,14 @@ namespace VBAi.Tests.Unit
             {
                 int ownerReads = 0;
                 fixture.Host.ReadWindowOwner = window => { ownerReads++; return 123; };
-                fixture.Host.ReadApplicationWindow = application => {
+                fixture.Host.ReadApplicationWindow = application =>
+                {
                     Assert.AreSame(fixture.Application, application); return IntPtr.Zero;
                 };
                 Assert.ThrowsException<InvalidOperationException>(() => fixture.Resolve());
                 Assert.AreEqual(0, ownerReads);
-                fixture.Host.ReadApplicationWindow = application => {
+                fixture.Host.ReadApplicationWindow = application =>
+                {
                     Assert.AreSame(fixture.Application, application); throw new InvalidOperationException("Window proof unavailable");
                 };
                 Assert.ThrowsException<InvalidOperationException>(() => fixture.Resolve());

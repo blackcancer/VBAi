@@ -164,21 +164,24 @@ namespace VBAi
         /// <param name="handle">Handle Win32 du contrôle ou site à interroger.</param>
         /// <param name="rect">Rectangle de sortie fourni par Windows.</param>
         /// <returns>true si Windows a fourni le rectangle client.</returns>
-        [DllImport("user32.dll")] [return: MarshalAs(UnmanagedType.Bool)]
+        [DllImport("user32.dll")]
+        [return: MarshalAs(UnmanagedType.Bool)]
         private static extern bool GetClientRect(IntPtr handle, out NativeRect rect);
 
         /// <summary>Obtient le rectangle écran d’une fenêtre.</summary>
         /// <param name="handle">Handle Win32 du contrôle ou site à interroger.</param>
         /// <param name="rect">Rectangle de sortie fourni par Windows.</param>
         /// <returns>true si Windows a fourni le rectangle écran.</returns>
-        [DllImport("user32.dll")] [return: MarshalAs(UnmanagedType.Bool)]
+        [DllImport("user32.dll")]
+        [return: MarshalAs(UnmanagedType.Bool)]
         private static extern bool GetWindowRect(IntPtr handle, out NativeRect rect);
 
         /// <summary>Convertit un point écran vers les coordonnées client d’une fenêtre.</summary>
         /// <param name="handle">Handle Win32 de la fenêtre de destination.</param>
         /// <param name="point">Point à convertir, mis à jour par Windows.</param>
         /// <returns>true si le point a été converti.</returns>
-        [DllImport("user32.dll")] [return: MarshalAs(UnmanagedType.Bool)]
+        [DllImport("user32.dll")]
+        [return: MarshalAs(UnmanagedType.Bool)]
         private static extern bool ScreenToClient(IntPtr handle, ref NativePoint point);
 
         /// <summary>Positionne et redimensionne une fenêtre enfant.</summary>
@@ -190,7 +193,8 @@ namespace VBAi
         /// <param name="height">Nouvelle hauteur de la fenêtre.</param>
         /// <param name="flags">Options de positionnement Win32.</param>
         /// <returns>true si le déplacement ou redimensionnement a réussi.</returns>
-        [DllImport("user32.dll")] [return: MarshalAs(UnmanagedType.Bool)]
+        [DllImport("user32.dll")]
+        [return: MarshalAs(UnmanagedType.Bool)]
         private static extern bool SetWindowPos(IntPtr handle, IntPtr after, int x, int y, int width, int height, uint flags);
     }
 }

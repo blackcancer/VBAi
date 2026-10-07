@@ -5,9 +5,7 @@ namespace VBAi.Tests.Unit
     using System.Collections.Generic;
     using System.ComponentModel;
     using System.Linq;
-    using System.Reflection;
     using VBAi;
-    using Microsoft.VisualStudio.TestTools.UnitTesting;
 
     public sealed partial class VbeFormsPartialTests
     {

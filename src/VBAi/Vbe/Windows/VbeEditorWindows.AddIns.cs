@@ -58,9 +58,8 @@ namespace VBAi
             if (string.IsNullOrWhiteSpace(request.ExpectedAddInVersion) || before.AddInVersion == null ||
                 !string.Equals((string)before.AddInVersion, request.ExpectedAddInVersion, StringComparison.OrdinalIgnoreCase))
                 throw new InvalidOperationException("The add-in state changed or could not be read completely. Read list_addins again.");
-            Guid identity;
             if (string.Equals(request.ProgId, "VBAi.AddIn", StringComparison.OrdinalIgnoreCase) ||
-                (Guid.TryParse((string)before.Properties["Guid"], out identity) && identity == typeof(AddIn).GUID))
+                (Guid.TryParse((string)before.Properties["Guid"], out Guid identity) && identity == typeof(AddIn).GUID))
                 throw new InvalidOperationException("VBAi cannot change its own connection from an active agent command.");
             bool desired = request.Action == "connect";
             if ((bool)before.Properties["Connect"] == desired)
@@ -80,9 +79,18 @@ namespace VBAi
                     (bool)current.Properties["Connect"] == desired;
             }
             catch (Exception error) { readError = error.Message; }
-            return new { Applied = nativeError == null ? (bool?)true : null, Verified = verified, VerificationPending = !verified,
-                Before = (object)before, After = after, NativeError = nativeError, ReadbackError = readError,
-                PersistenceVerified = false, NextRead = verified ? null : "list_addins" };
+            return new
+            {
+                Applied = nativeError == null ? (bool?)true : null,
+                Verified = verified,
+                VerificationPending = !verified,
+                Before = (object)before,
+                After = after,
+                NativeError = nativeError,
+                ReadbackError = readError,
+                PersistenceVerified = false,
+                NextRead = verified ? null : "list_addins"
+            };
         }
     }
 }

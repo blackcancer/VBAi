@@ -1,6 +1,5 @@
-using System;
-using VBAi;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+using System;
 namespace VBAi.Tests.Unit
 {
     [TestClass, TestCategory("Unit")]
@@ -26,8 +25,17 @@ namespace VBAi.Tests.Unit
                 if (request.Command == "replace_lines") { Writes++; Code = request.Text; return Response.Success(null); }
                 throw new InvalidOperationException(request.Command);
             }
-            public Request Request() => new Request { Project = "P", Module = "M", ExpectedSha256 = VbeCodeClipboard.Hash(Code),
-                StartLine = 1, StartColumn = 2, EndLine = 2, EndColumn = 2, ExpectedClipboardVersion = "1" };
+            public Request Request() => new Request
+            {
+                Project = "P",
+                Module = "M",
+                ExpectedSha256 = VbeCodeClipboard.Hash(Code),
+                StartLine = 1,
+                StartColumn = 2,
+                EndLine = 2,
+                EndColumn = 2,
+                ExpectedClipboardVersion = "1"
+            };
         }
         [TestMethod]
         public void CopyUsesExclusiveMultilineRangeWithoutEditing()

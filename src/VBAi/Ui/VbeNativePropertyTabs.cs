@@ -48,19 +48,26 @@ namespace VBAi
         internal int PrintCount { get; private set; }
 
         /// <summary>Native rectangle bounds in left, top, right, bottom order.</summary>
-        [StructLayout(LayoutKind.Sequential)] internal struct Rect {
+        [StructLayout(LayoutKind.Sequential)]
+        internal struct Rect
+        {
 
             /// <summary>Left, top, right, and bottom edges in the coordinate space returned by User32.</summary>
-            internal int Left, Top, Right, Bottom; }
+            internal int Left, Top, Right, Bottom;
+        }
 
         /// <summary>Native point in the current coordinate space.</summary>
-        [StructLayout(LayoutKind.Sequential)] internal struct Point {
+        [StructLayout(LayoutKind.Sequential)]
+        internal struct Point
+        {
 
             /// <summary>Horizontal and vertical coordinates passed to the native tab-control APIs.</summary>
-            internal int X, Y; }
+            internal int X, Y;
+        }
 
         /// <summary>TCITEM-compatible structure used to read native tab text and state.</summary>
-        [StructLayout(LayoutKind.Sequential)] internal struct TabItem
+        [StructLayout(LayoutKind.Sequential)]
+        internal struct TabItem
         {
 
             /// <summary>Requested TCITEM fields, current item state, and which state bits are valid.</summary>
@@ -77,7 +84,8 @@ namespace VBAi
         }
 
         /// <summary>PAINTSTRUCT-compatible data for a native tab paint transaction.</summary>
-        [StructLayout(LayoutKind.Sequential)] internal struct PaintState
+        [StructLayout(LayoutKind.Sequential)]
+        internal struct PaintState
         {
 
             /// <summary>Paint device context.</summary>
@@ -97,7 +105,8 @@ namespace VBAi
         }
 
         /// <summary>TRACKMOUSEEVENT-compatible request for tab hover and leave notifications.</summary>
-        [StructLayout(LayoutKind.Sequential)] internal struct TrackMouse
+        [StructLayout(LayoutKind.Sequential)]
+        internal struct TrackMouse
         {
 
             /// <summary>TRACKMOUSEEVENT byte size and requested enter/leave tracking flags.</summary>
@@ -368,9 +377,8 @@ namespace VBAi
             if (SendMessage(window, 0x1304, IntPtr.Zero, IntPtr.Zero).ToInt32() != 2 ||
                 SendMessage(window, 0x1302, IntPtr.Zero, IntPtr.Zero) != IntPtr.Zero ||
                 SendMessage(window, 0x132c, IntPtr.Zero, IntPtr.Zero).ToInt32() > 1 || RelatedWindow(window, 5) != IntPtr.Zero) return false;
-            Rect client, bounds;
             var origin = new Point();
-            return ClientBounds(window, out client) && WindowBounds(window, out bounds) && ScreenPoint(window, ref origin) &&
+            return ClientBounds(window, out Rect client) && WindowBounds(window, out Rect bounds) && ScreenPoint(window, ref origin) &&
                 client.Right > 0 && client.Bottom > 0 && client.Right <= 16384 && client.Bottom <= 16384 &&
                 origin.X == bounds.Left && origin.Y == bounds.Top && client.Right == bounds.Right - bounds.Left && client.Bottom == bounds.Bottom - bounds.Top;
         }
@@ -393,8 +401,7 @@ namespace VBAi
             result = IntPtr.Zero;
             if (disposed || ownerThread != CurrentThread() ||
                 (message != Paint && message != Erase && message != Print && message != PrintClient)) return false;
-            Snapshot state;
-            if (!TryRead(out state)) return false;
+            if (!TryRead(out Snapshot state)) return false;
             if (message == Erase)
             {
                 // WM_PAINT supplies the complete background in the same transaction as its text.
@@ -404,8 +411,7 @@ namespace VBAi
             if (message == Paint)
             {
                 PaintCount++;
-                PaintState paint;
-                IntPtr dc = StartPaint(window, out paint);
+                IntPtr dc = StartPaint(window, out PaintState paint);
                 try { if (dc != IntPtr.Zero) Draw(dc, state); }
                 finally { FinishPaint(window, ref paint); }
                 return true;
@@ -435,8 +441,7 @@ namespace VBAi
                 int next = -1;
                 for (int index = 0; index < 2; index++)
                 {
-                    Rect item;
-                    if (ReadItemRect(window, 0x130a, new IntPtr(index), out item) != IntPtr.Zero &&
+                    if (ReadItemRect(window, 0x130a, new IntPtr(index), out Rect item) != IntPtr.Zero &&
                         x >= item.Left && x < item.Right && y >= item.Top && y < item.Bottom) { next = index; break; }
                 }
                 changed = hotItem != next;
@@ -483,9 +488,8 @@ namespace VBAi
                 {
                     var item = new TabItem { Mask = 1 | 16, StateMask = 2, Text = storage, TextCapacity = 1024 };
                     Marshal.WriteInt16(storage, 0);
-                    Rect bounds;
                     if (ReadItem(window, 0x133c, new IntPtr(index), ref item) == IntPtr.Zero ||
-                        ReadItemRect(window, 0x130a, new IntPtr(index), out bounds) == IntPtr.Zero ||
+                        ReadItemRect(window, 0x130a, new IntPtr(index), out Rect bounds) == IntPtr.Zero ||
                         bounds.Right <= bounds.Left || bounds.Bottom <= bounds.Top) return false;
                     // TCM_GETITEM may return a different text pointer. Copy it while the
                     // control is on its owning thread; never free the returned pointer.

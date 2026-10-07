@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.Drawing.Drawing2D;
@@ -85,8 +85,8 @@ namespace VBAi
         {
             var tokens = Regex.Matches(data, @"[A-Za-z]|-?\d+(?:\.\d+)?");
             var path = new GraphicsPath(); int index = 0; PointF current = PointF.Empty;
-            Func<float> number = () => float.Parse(tokens[index++].Value, CultureInfo.InvariantCulture);
-            Func<PointF> point = () => new PointF(number(), number());
+            float number() => float.Parse(tokens[index++].Value, CultureInfo.InvariantCulture);
+            PointF point() => new PointF(number(), number());
             try
             {
                 while (index < tokens.Count)

@@ -135,8 +135,13 @@ namespace VBAi
             dynamic state = ProjectProperties(selector);
             var properties = ((System.Collections.Generic.IEnumerable<VbePropertyInfo>)state.Properties)
                 .Where(property => !string.Equals(property.Name, "Saved", StringComparison.OrdinalIgnoreCase)).ToArray();
-            return Hash(json.Serialize(new { Mode = (int)state.Mode, Properties = properties,
-                Components = (object)state.Components, References = (object)state.References }));
+            return Hash(json.Serialize(new
+            {
+                Mode = (int)state.Mode,
+                Properties = properties,
+                Components = (object)state.Components,
+                References = (object)state.References
+            }));
         }
 
         /// <summary>Performs existing-project SOLIDWORKS Save checks on the owning VBE thread.</summary>
@@ -181,8 +186,7 @@ namespace VBAi
             {
                 if (!IsSolidWorks) throw new InvalidOperationException("This save adapter requires SOLIDWORKS.");
                 IntPtr window = new IntPtr(Convert.ToInt64(((dynamic)editor).MainWindow.HWnd));
-                uint owner;
-                uint thread = GetWindowThreadProcessId(window, out owner);
+                uint thread = GetWindowThreadProcessId(window, out uint owner);
                 if (window == IntPtr.Zero || owner != (uint)ProcessId || thread != GetCurrentThreadId())
                     throw new InvalidOperationException("The VBE window must belong to this SOLIDWORKS process and owning UI thread.");
             }
@@ -302,17 +306,38 @@ namespace VBAi
                 native.RequireOwner((object)vbe);
                 string path = SolidWorksMacroPath(projectObject);
                 bool exists = native.FileExists(path);
-                return new { Project = selector, ProjectSaved = (bool)project.Saved, Host = "SOLIDWORKS",
-                    HostAvailable = true, HostPath = path, HostSaved = exists ? (bool?)(bool)project.Saved : null,
-                    HostReadOnly = exists ? (bool?)native.FileReadOnly(path) : null, HostHasPath = (bool?)true,
-                    FileExists = exists, OwnerProcessId = native.ProcessId, SaveApi = "VBE.CommandBars.ID3",
-                    NativeQualification = "NOT_RUN", PersistenceReopenVerified = false, Reason = (string)null };
+                return new
+                {
+                    Project = selector,
+                    ProjectSaved = (bool)project.Saved,
+                    Host = "SOLIDWORKS",
+                    HostAvailable = true,
+                    HostPath = path,
+                    HostSaved = exists ? (bool?)(bool)project.Saved : null,
+                    HostReadOnly = exists ? (bool?)native.FileReadOnly(path) : null,
+                    HostHasPath = (bool?)true,
+                    FileExists = exists,
+                    OwnerProcessId = native.ProcessId,
+                    SaveApi = "VBE.CommandBars.ID3",
+                    NativeQualification = "NOT_RUN",
+                    PersistenceReopenVerified = false,
+                    Reason = (string)null
+                };
             }
             catch (Exception error)
             {
-                return new { Project = selector, ProjectSaved = (bool)project.Saved, Host = "SOLIDWORKS",
-                    HostAvailable = false, HostPath = (string)null, HostSaved = (bool?)null,
-                    HostReadOnly = (bool?)null, HostHasPath = (bool?)null, Reason = error.Message };
+                return new
+                {
+                    Project = selector,
+                    ProjectSaved = (bool)project.Saved,
+                    Host = "SOLIDWORKS",
+                    HostAvailable = false,
+                    HostPath = (string)null,
+                    HostSaved = (bool?)null,
+                    HostReadOnly = (bool?)null,
+                    HostHasPath = (bool?)null,
+                    Reason = error.Message
+                };
             }
         }
 
@@ -397,18 +422,48 @@ namespace VBAi
                             throw new InvalidOperationException("Native SWP Save verification failed: " + mismatch + ".");
                         break;
                     }
-                    return new { Project = selector, Host = "SOLIDWORKS", HostPath = path, SaveApi = "VBE.CommandBars.ID3",
-                        SaveInvoked = true, SaveAsInvoked = false, MutationInvoked = true, Verified = true, Uncertain = false,
-                        ProjectSaved = true, HostSaved = true, Bytes = native.FileLength(path), OwnerProcessId = processId,
-                        SourceSha256 = sourceSha, CodePreserved = true, NativeSelection = native.Selection, NativeQualification = "NOT_RUN", PersistenceReopenVerified = false,
-                        Verification = "DeferredOwnerThreadSavedReadback", VerificationMilliseconds = elapsed.ElapsedMilliseconds,
-                        Limit = "Native command, saved flags, file presence and unchanged live code were observed. Reopen the SWP to verify persisted code, resources and signatures." };
+                    return new
+                    {
+                        Project = selector,
+                        Host = "SOLIDWORKS",
+                        HostPath = path,
+                        SaveApi = "VBE.CommandBars.ID3",
+                        SaveInvoked = true,
+                        SaveAsInvoked = false,
+                        MutationInvoked = true,
+                        Verified = true,
+                        Uncertain = false,
+                        ProjectSaved = true,
+                        HostSaved = true,
+                        Bytes = native.FileLength(path),
+                        OwnerProcessId = processId,
+                        SourceSha256 = sourceSha,
+                        CodePreserved = true,
+                        NativeSelection = native.Selection,
+                        NativeQualification = "NOT_RUN",
+                        PersistenceReopenVerified = false,
+                        Verification = "DeferredOwnerThreadSavedReadback",
+                        VerificationMilliseconds = elapsed.ElapsedMilliseconds,
+                        Limit = "Native command, saved flags, file presence and unchanged live code were observed. Reopen the SWP to verify persisted code, resources and signatures."
+                    };
                 }
                 catch (Exception error)
                 {
-                    return new { Project = selector, Host = "SOLIDWORKS", HostPath = path, SaveApi = "VBE.CommandBars.ID3",
-                        SaveInvoked = true, SaveAsInvoked = false, MutationInvoked = true, Verified = false, Uncertain = true,
-                        NativeSelection = native.Selection, Reason = error.Message, Next = "Inspect project_persistence_status and the SWP file; do not retry automatically." };
+                    return new
+                    {
+                        Project = selector,
+                        Host = "SOLIDWORKS",
+                        HostPath = path,
+                        SaveApi = "VBE.CommandBars.ID3",
+                        SaveInvoked = true,
+                        SaveAsInvoked = false,
+                        MutationInvoked = true,
+                        Verified = false,
+                        Uncertain = true,
+                        NativeSelection = native.Selection,
+                        Reason = error.Message,
+                        Next = "Inspect project_persistence_status and the SWP file; do not retry automatically."
+                    };
                 }
             }
             finally

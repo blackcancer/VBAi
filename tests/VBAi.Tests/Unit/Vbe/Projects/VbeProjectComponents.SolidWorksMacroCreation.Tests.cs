@@ -1,9 +1,8 @@
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Threading.Tasks;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
-using VBAi;
 
 namespace VBAi.Tests.Unit
 {
@@ -168,10 +167,12 @@ namespace VBAi.Tests.Unit
                 Service.SolidWorksMacroCreationTimeoutMilliseconds = 100; Native = new Native(Scheduler);
             }
             internal Task<VbeProjectComponents.SolidWorksMacroCreationResult> Begin() => Service.RunSolidWorksMacroCreationAsync(
-                @"C:\synthetic\owned.swp", Native, Scheduler, () => Live(), () => { }, result => {
+                @"C:\synthetic\owned.swp", Native, Scheduler, () => Live(), () => { }, result =>
+                {
                     Assert.IsTrue(result.OriginalCommandReturned); Verifications++;
                     if (VerifyError) throw new InvalidOperationException("final readback differs"); result.Verified = true; return result;
-                }, result => {
+                }, result =>
+                {
                     string phase = result.Terminal ? "terminal" : result.SaveAttempts != 0 ? "save" : result.FilenameAttempts != 0 ? "filename" : "command";
                     Claims.Add(phase); if (result.Terminal) TerminalVerified = result.Verified;
                     if (phase == ClaimErrorPhase) throw new IOException("durable claim failed");
@@ -263,16 +264,16 @@ namespace VBAi.Tests.Unit
         [TestMethod]
         public void NativeCreationRefusesPriorSaveOnTheSameOwnerBeforeAnyFactoryOrRead()
         {
-            var f = Create(); var pending=typeof(VbeProjectComponents).GetField("solidWorksSavePending",System.Reflection.BindingFlags.Static|System.Reflection.BindingFlags.NonPublic);
-            bool old=(bool)pending.GetValue(null); int factories=0;
-            f.Service.SolidWorksMacroCreationNativeFactory=(v,a)=>{factories++;throw new InvalidOperationException("must not create");};
+            var f = Create(); var pending = typeof(VbeProjectComponents).GetField("solidWorksSavePending", System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.NonPublic);
+            bool old = (bool)pending.GetValue(null); int factories = 0;
+            f.Service.SolidWorksMacroCreationNativeFactory = (v, a) => { factories++; throw new InvalidOperationException("must not create"); };
             try
             {
-                pending.SetValue(null,true); f.Vbe.VBProjects.ThrowEnumeration=true;
-                var error=Assert.ThrowsException<InvalidOperationException>(()=>f.Service.CreateSolidWorksMacroAsync(new Request{ExpectedMode=2}));
-                StringAssert.Contains(error.Message,"save");Assert.AreEqual(0,factories);
+                pending.SetValue(null, true); f.Vbe.VBProjects.ThrowEnumeration = true;
+                var error = Assert.ThrowsException<InvalidOperationException>(() => f.Service.CreateSolidWorksMacroAsync(new Request { ExpectedMode = 2 }));
+                StringAssert.Contains(error.Message, "save"); Assert.AreEqual(0, factories);
             }
-            finally {pending.SetValue(null,old);}
+            finally { pending.SetValue(null, old); }
         }
 
         private static void RunNativeCreationReadback(bool generic, bool missingDocument, bool replaced)
@@ -286,7 +287,8 @@ namespace VBAi.Tests.Unit
                 f.Service.SolidWorksMacroCreationSchedulerFactory = () => scheduler;
                 f.Service.SolidWorksMacroCreationNativeFactory = (v, a) => native;
                 var original = f.Vbe.VBProjects.Items[0];
-                native.AfterSave = () => {
+                native.AfterSave = () =>
+                {
                     File.WriteAllText(path, "owned synthetic file");
                     if (replaced) f.Vbe.VBProjects.Items[0] = new LifecycleProject { Name = original.Name, FileName = "" };
                     var target = new LifecycleProject { Name = "Native", FileName = path, Type = generic ? 101 : 100 };

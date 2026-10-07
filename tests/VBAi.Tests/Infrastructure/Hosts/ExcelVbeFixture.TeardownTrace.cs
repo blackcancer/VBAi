@@ -28,10 +28,15 @@ namespace VBAi.Tests.Integration
             IntPtr retained = ownedProcess.Handle;
             string image = ExcelOwnedProcessImage.Read(retained);
             DateTime start = ownedProcess.StartTime.ToUniversalTime();
-            teardownTrace = new NativeTeardownTraceGate(new NativeTeardownTraceGate.Identity {
-                ProcessId = ProcessId, ProcessStartedUtc = start.ToString("o"), Executable = image, Root = Root,
+            teardownTrace = new NativeTeardownTraceGate(new NativeTeardownTraceGate.Identity
+            {
+                ProcessId = ProcessId,
+                ProcessStartedUtc = start.ToString("o"),
+                Executable = image,
+                Root = Root,
                 AssemblyMvid = Convert.ToString(loaded["AssemblyModuleVersionId"]),
-                AssemblyPath = Convert.ToString(loaded["AssemblyPath"]), Scenario = scenario
+                AssemblyPath = Convert.ToString(loaded["AssemblyPath"]),
+                Scenario = scenario
             }, () => !ownedProcess.HasExited && ownedProcess.StartTime.ToUniversalTime() == start &&
                     string.Equals(ExcelOwnedProcessImage.Read(retained), image, StringComparison.OrdinalIgnoreCase),
                 () => ownedProcess.HasExited,

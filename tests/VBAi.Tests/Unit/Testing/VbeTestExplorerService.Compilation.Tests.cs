@@ -1,9 +1,9 @@
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Collections.Generic;
 using System.Reflection;
 using System.Threading.Tasks;
 using System.Windows.Forms;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace VBAi.Tests.Unit
 {
@@ -59,117 +59,120 @@ namespace VBAi.Tests.Unit
         public void LateObservationOrSlowAuthorityChecksRequireActualDisabledStateBeforeSuccess()
         {
             foreach (string delay in new[] { "first tick", "guard", "getter" })
-            foreach (bool disabled in new[] { false, true })
-            using (var fixture = new Fixture())
-            {
-                fixture.Service.CompileCoverageProject(fixture.Project);
-                int reads = fixture.Control.Reads, guards = 0;
-                var observed = fixture.Service.VerifyCoverageCompilationAsync(fixture.Project, () => {
-                    guards++;
-                    if (delay == "guard") fixture.Clock = 3500;
-                });
-                Application.DoEvents();
-                Assert.IsFalse(observed.IsCompleted);
-                Assert.AreEqual(reads, fixture.Control.Reads, "Publication alone cannot prove compilation.");
-                fixture.Control.State = !disabled;
-                if (delay == "first tick") fixture.Clock = 3500;
-                if (delay == "getter") fixture.Control.OnRead = () => fixture.Clock = 3500;
-                fixture.Timer.Tick();
-                if (disabled)
-                {
-                    Assert.IsTrue(observed.GetAwaiter().GetResult(), delay);
-                    Assert.AreEqual(2, guards, "Success still requires authority validation after the native state read.");
-                }
-                else
-                {
-                    var error = Assert.ThrowsException<InvalidOperationException>(() => observed.GetAwaiter().GetResult());
-                    StringAssert.Contains(error.Message, "still enabled when observed after the three-second deadline");
-                    Assert.IsFalse((Exception)error is VbaTestInvocationException, "An observation timeout has a known outcome.");
-                    Assert.AreEqual(1, guards);
-                }
-                Assert.AreEqual(reads + 1, fixture.Control.Reads, "A late observation must read the actual native compiler state exactly once.");
-                Assert.AreEqual(1, fixture.Control.Executions, "Polling must never retry the compiler command.");
-                Assert.IsTrue(fixture.Timer.Disposed);
-                fixture.Timer.Tick();
-                Assert.AreEqual(reads + 1, fixture.Control.Reads, "A terminal observer must not perform another read.");
-            }
+                foreach (bool disabled in new[] { false, true })
+                    using (var fixture = new Fixture())
+                    {
+                        fixture.Service.CompileCoverageProject(fixture.Project);
+                        int reads = fixture.Control.Reads, guards = 0;
+                        var observed = fixture.Service.VerifyCoverageCompilationAsync(fixture.Project, () =>
+                        {
+                            guards++;
+                            if (delay == "guard") fixture.Clock = 3500;
+                        });
+                        Application.DoEvents();
+                        Assert.IsFalse(observed.IsCompleted);
+                        Assert.AreEqual(reads, fixture.Control.Reads, "Publication alone cannot prove compilation.");
+                        fixture.Control.State = !disabled;
+                        if (delay == "first tick") fixture.Clock = 3500;
+                        if (delay == "getter") fixture.Control.OnRead = () => fixture.Clock = 3500;
+                        fixture.Timer.Tick();
+                        if (disabled)
+                        {
+                            Assert.IsTrue(observed.GetAwaiter().GetResult(), delay);
+                            Assert.AreEqual(2, guards, "Success still requires authority validation after the native state read.");
+                        }
+                        else
+                        {
+                            var error = Assert.ThrowsException<InvalidOperationException>(() => observed.GetAwaiter().GetResult());
+                            StringAssert.Contains(error.Message, "still enabled when observed after the three-second deadline");
+                            Assert.IsFalse((Exception)error is VbaTestInvocationException, "An observation timeout has a known outcome.");
+                            Assert.AreEqual(1, guards);
+                        }
+                        Assert.AreEqual(reads + 1, fixture.Control.Reads, "A late observation must read the actual native compiler state exactly once.");
+                        Assert.AreEqual(1, fixture.Control.Executions, "Polling must never retry the compiler command.");
+                        Assert.IsTrue(fixture.Timer.Disposed);
+                        fixture.Timer.Tick();
+                        Assert.AreEqual(reads + 1, fixture.Control.Reads, "A terminal observer must not perform another read.");
+                    }
         }
 
         [STATestMethod]
         public void ChangedProjectAndNonDesignModeCannotUseAnotherDisabledCompileControlAsProof()
         {
             foreach (string fault in new[] { "identity", "mode" })
-            using (var fixture = new Fixture())
-            {
-                fixture.Service.CompileCoverageProject(fixture.Project);
-                var observed = fixture.Observe();
-                int reads = fixture.Control.Reads;
-                fixture.Control.State = false;
-                if (fault == "identity") fixture.Vbe.ActiveVBProject = new CompilerProject { Name = fixture.Project.Name };
-                else fixture.Project.Mode = 1;
-                fixture.Timer.Tick();
-                Assert.ThrowsException<InvalidOperationException>(() => observed.GetAwaiter().GetResult());
-                Assert.AreEqual(reads, fixture.Control.Reads);
-                Assert.AreEqual(1, fixture.Control.Executions);
-                Assert.IsTrue(fixture.Timer.Disposed);
-            }
+                using (var fixture = new Fixture())
+                {
+                    fixture.Service.CompileCoverageProject(fixture.Project);
+                    var observed = fixture.Observe();
+                    int reads = fixture.Control.Reads;
+                    fixture.Control.State = false;
+                    if (fault == "identity") fixture.Vbe.ActiveVBProject = new CompilerProject { Name = fixture.Project.Name };
+                    else fixture.Project.Mode = 1;
+                    fixture.Timer.Tick();
+                    Assert.ThrowsException<InvalidOperationException>(() => observed.GetAwaiter().GetResult());
+                    Assert.AreEqual(reads, fixture.Control.Reads);
+                    Assert.AreEqual(1, fixture.Control.Executions);
+                    Assert.IsTrue(fixture.Timer.Disposed);
+                }
         }
 
         [STATestMethod]
         public void RevokedGuardAndCancellationStopBeforeReadingCompilationState()
         {
             foreach (bool cancel in new[] { false, true })
-            using (var fixture = new Fixture())
-            {
-                fixture.Service.CompileCoverageProject(fixture.Project);
-                int guards = 0, reads = fixture.Control.Reads;
-                var observed = fixture.Service.VerifyCoverageCompilationAsync(fixture.Project, () => {
-                    guards++;
-                    if (cancel) throw new OperationCanceledException();
-                    throw new InvalidOperationException("The original project approval was revoked.");
-                });
-                Application.DoEvents(); fixture.Timer.Tick();
-                if (cancel) Assert.ThrowsException<OperationCanceledException>(() => observed.GetAwaiter().GetResult());
-                else Assert.ThrowsException<InvalidOperationException>(() => observed.GetAwaiter().GetResult());
-                Assert.AreEqual(1, guards);
-                Assert.AreEqual(reads, fixture.Control.Reads);
-                Assert.IsTrue(fixture.Timer.Disposed);
-            }
+                using (var fixture = new Fixture())
+                {
+                    fixture.Service.CompileCoverageProject(fixture.Project);
+                    int guards = 0, reads = fixture.Control.Reads;
+                    var observed = fixture.Service.VerifyCoverageCompilationAsync(fixture.Project, () =>
+                    {
+                        guards++;
+                        if (cancel) throw new OperationCanceledException();
+                        throw new InvalidOperationException("The original project approval was revoked.");
+                    });
+                    Application.DoEvents(); fixture.Timer.Tick();
+                    if (cancel) Assert.ThrowsException<OperationCanceledException>(() => observed.GetAwaiter().GetResult());
+                    else Assert.ThrowsException<InvalidOperationException>(() => observed.GetAwaiter().GetResult());
+                    Assert.AreEqual(1, guards);
+                    Assert.AreEqual(reads, fixture.Control.Reads);
+                    Assert.IsTrue(fixture.Timer.Disposed);
+                }
         }
 
         [STATestMethod]
         public void ExecuteFailureOrProjectChangeDuringExecuteIsUncertainAndNeverRetried()
         {
             foreach (bool changedProject in new[] { false, true })
-            using (var fixture = new Fixture())
-            {
-                fixture.Control.OnExecute = () => {
-                    if (changedProject) fixture.Vbe.ActiveVBProject = new CompilerProject { Name = "Other" };
-                    else throw new InvalidOperationException("Native command completion unavailable");
-                };
-                var error = Assert.ThrowsException<VbaTestInvocationException>(() => fixture.Service.CompileCoverageProject(fixture.Project));
-                Assert.IsTrue(error.Uncertain);
-                Assert.AreEqual(1, fixture.Control.Executions);
-                Assert.IsNull(fixture.Timer);
-            }
+                using (var fixture = new Fixture())
+                {
+                    fixture.Control.OnExecute = () =>
+                    {
+                        if (changedProject) fixture.Vbe.ActiveVBProject = new CompilerProject { Name = "Other" };
+                        else throw new InvalidOperationException("Native command completion unavailable");
+                    };
+                    var error = Assert.ThrowsException<VbaTestInvocationException>(() => fixture.Service.CompileCoverageProject(fixture.Project));
+                    Assert.IsTrue(error.Uncertain);
+                    Assert.AreEqual(1, fixture.Control.Executions);
+                    Assert.IsNull(fixture.Timer);
+                }
         }
 
         [STATestMethod]
         public void DispatcherOrServiceDisposalSettlesObserverAndPreventsFurtherComReads()
         {
             foreach (bool disposeDispatcher in new[] { false, true })
-            using (var fixture = new Fixture())
-            {
-                fixture.Service.CompileCoverageProject(fixture.Project);
-                var observed = fixture.Observe();
-                int reads = fixture.Control.Reads;
-                if (disposeDispatcher) fixture.Dispatcher.Dispose();
-                else { fixture.Service.Dispose(); fixture.Timer.Tick(); }
-                Assert.ThrowsException<ObjectDisposedException>(() => observed.GetAwaiter().GetResult());
-                Assert.IsTrue(fixture.Timer.Disposed);
-                fixture.Timer.Tick();
-                Assert.AreEqual(reads, fixture.Control.Reads);
-            }
+                using (var fixture = new Fixture())
+                {
+                    fixture.Service.CompileCoverageProject(fixture.Project);
+                    var observed = fixture.Observe();
+                    int reads = fixture.Control.Reads;
+                    if (disposeDispatcher) fixture.Dispatcher.Dispose();
+                    else { fixture.Service.Dispose(); fixture.Timer.Tick(); }
+                    Assert.ThrowsException<ObjectDisposedException>(() => observed.GetAwaiter().GetResult());
+                    Assert.IsTrue(fixture.Timer.Disposed);
+                    fixture.Timer.Tick();
+                    Assert.AreEqual(reads, fixture.Control.Reads);
+                }
         }
 
         [STATestMethod]
@@ -191,103 +194,108 @@ namespace VBAi.Tests.Unit
         public void FocusPumpingRevalidatesProjectAndApprovalBeforeExecutingCompiler()
         {
             foreach (bool revokeApproval in new[] { false, true })
-            using (var fixture = new Fixture())
-            {
-                bool permitted = true;
-                typeof(VbeTestExplorerService).GetField("currentCoverageCompileGuard", BindingFlags.Instance | BindingFlags.NonPublic)
-                    .SetValue(fixture.Service, new Action(() => {
-                        if (!permitted) throw new InvalidOperationException("Approval revoked during focus.");
-                    }));
-                fixture.Pane.Window.OnFocus = () => {
-                    if (revokeApproval) permitted = false;
-                    else fixture.Vbe.ActiveVBProject = new CompilerProject { Name = fixture.Project.Name };
-                };
-                var error = Assert.ThrowsException<InvalidOperationException>(() => fixture.Service.CompileCoverageProject(fixture.Project));
-                Assert.IsFalse((Exception)error is VbaTestInvocationException, "No compiler command was dispatched.");
-                Assert.IsTrue(fixture.Vbe.MainWindow.Visible);
-                Assert.AreEqual(1, fixture.Pane.Shows);
-                Assert.AreEqual(1, fixture.Pane.Window.Focuses);
-                Assert.AreSame(fixture.Pane, fixture.Vbe.ActiveCodePane);
-                Assert.AreEqual(0, fixture.Control.Executions);
-            }
+                using (var fixture = new Fixture())
+                {
+                    bool permitted = true;
+                    typeof(VbeTestExplorerService).GetField("currentCoverageCompileGuard", BindingFlags.Instance | BindingFlags.NonPublic)
+                        .SetValue(fixture.Service, new Action(() =>
+                        {
+                            if (!permitted) throw new InvalidOperationException("Approval revoked during focus.");
+                        }));
+                    fixture.Pane.Window.OnFocus = () =>
+                    {
+                        if (revokeApproval) permitted = false;
+                        else fixture.Vbe.ActiveVBProject = new CompilerProject { Name = fixture.Project.Name };
+                    };
+                    var error = Assert.ThrowsException<InvalidOperationException>(() => fixture.Service.CompileCoverageProject(fixture.Project));
+                    Assert.IsFalse((Exception)error is VbaTestInvocationException, "No compiler command was dispatched.");
+                    Assert.IsTrue(fixture.Vbe.MainWindow.Visible);
+                    Assert.AreEqual(1, fixture.Pane.Shows);
+                    Assert.AreEqual(1, fixture.Pane.Window.Focuses);
+                    Assert.AreSame(fixture.Pane, fixture.Vbe.ActiveCodePane);
+                    Assert.AreEqual(0, fixture.Control.Executions);
+                }
         }
 
         [STATestMethod]
         public void ObserverStartupFailureSettlesTaskWithoutReexecutingCommand()
         {
             foreach (bool throwOnStart in new[] { false, true })
-            using (var fixture = new Fixture())
-            {
-                fixture.Service.CompileCoverageProject(fixture.Project);
-                fixture.Service.StartCoverageCompilationTimer = tick => {
-                    if (throwOnStart) throw new InvalidOperationException("Timer unavailable.");
-                    return null;
-                };
-                var observed = fixture.Observe();
-                Assert.ThrowsException<InvalidOperationException>(() => observed.GetAwaiter().GetResult());
-                Assert.AreEqual(1, fixture.Control.Executions);
-            }
+                using (var fixture = new Fixture())
+                {
+                    fixture.Service.CompileCoverageProject(fixture.Project);
+                    fixture.Service.StartCoverageCompilationTimer = tick =>
+                    {
+                        if (throwOnStart) throw new InvalidOperationException("Timer unavailable.");
+                        return null;
+                    };
+                    var observed = fixture.Observe();
+                    Assert.ThrowsException<InvalidOperationException>(() => observed.GetAwaiter().GetResult());
+                    Assert.AreEqual(1, fixture.Control.Executions);
+                }
         }
 
         [STATestMethod]
         public void CustomOrReplacedCommandCannotExecuteOrProveCompilation()
         {
             foreach (string fault in new[] { "id", "type", "builtin", "action" })
-            foreach (bool afterExecute in new[] { false, true })
-            using (var fixture = new Fixture())
-            {
-                Task<bool> observed = null;
-                if (afterExecute) { fixture.Service.CompileCoverageProject(fixture.Project); observed = fixture.Observe(); }
-                if (fault == "id") fixture.Control.Id = 999;
-                else if (fault == "type") fixture.Control.Type = 2;
-                else if (fault == "builtin") fixture.Control.BuiltIn = false;
-                else fixture.Control.OnAction = "UserMacro";
-                fixture.Control.State = false;
-                if (afterExecute)
-                {
-                    fixture.Timer.Tick();
-                    Assert.ThrowsException<InvalidOperationException>(() => observed.GetAwaiter().GetResult());
-                    Assert.IsTrue(fixture.Timer.Disposed);
-                }
-                else Assert.ThrowsException<InvalidOperationException>(() => fixture.Service.CompileCoverageProject(fixture.Project));
-                Assert.AreEqual(afterExecute ? 1 : 0, fixture.Control.Executions);
-            }
+                foreach (bool afterExecute in new[] { false, true })
+                    using (var fixture = new Fixture())
+                    {
+                        Task<bool> observed = null;
+                        if (afterExecute) { fixture.Service.CompileCoverageProject(fixture.Project); observed = fixture.Observe(); }
+                        if (fault == "id") fixture.Control.Id = 999;
+                        else if (fault == "type") fixture.Control.Type = 2;
+                        else if (fault == "builtin") fixture.Control.BuiltIn = false;
+                        else fixture.Control.OnAction = "UserMacro";
+                        fixture.Control.State = false;
+                        if (afterExecute)
+                        {
+                            fixture.Timer.Tick();
+                            Assert.ThrowsException<InvalidOperationException>(() => observed.GetAwaiter().GetResult());
+                            Assert.IsTrue(fixture.Timer.Disposed);
+                        }
+                        else Assert.ThrowsException<InvalidOperationException>(() => fixture.Service.CompileCoverageProject(fixture.Project));
+                        Assert.AreEqual(afterExecute ? 1 : 0, fixture.Control.Executions);
+                    }
         }
 
         [STATestMethod]
         public void DisabledGetterCannotProveCompilationAfterChangingContextSourceOrApproval()
         {
             foreach (string fault in new[] { "identity", "mode", "source", "approval", "cancellation" })
-            using (var fixture = new Fixture())
-            {
-                fixture.Service.CompileCoverageProject(fixture.Project);
-                string revision = "reviewed";
-                bool permitted = true, cancelled = false;
-                int guards = 0;
-                var observed = fixture.Service.VerifyCoverageCompilationAsync(fixture.Project, () => {
-                    guards++;
-                    if (cancelled) throw new OperationCanceledException();
-                    if (!permitted || revision != "reviewed") throw new InvalidOperationException("Original/copy authority changed during state read.");
-                });
-                Application.DoEvents();
-                // A late observation must preserve the same post-getter authority checks.
-                fixture.Clock = 3500;
-                fixture.Control.State = false;
-                fixture.Control.OnRead = () => {
-                    if (fault == "identity") fixture.Vbe.ActiveVBProject = new CompilerProject { Name = fixture.Project.Name };
-                    else if (fault == "mode") fixture.Project.Mode = 1;
-                    else if (fault == "source") revision = "edited";
-                    else if (fault == "approval") permitted = false;
-                    else cancelled = true;
-                };
-                fixture.Timer.Tick();
-                Assert.IsTrue(observed.IsCompleted);
-                if (fault == "cancellation") Assert.ThrowsException<OperationCanceledException>(() => observed.GetAwaiter().GetResult());
-                else Assert.ThrowsException<InvalidOperationException>(() => observed.GetAwaiter().GetResult());
-                Assert.AreEqual(2, guards);
-                Assert.AreEqual(1, fixture.Control.Executions);
-                Assert.IsTrue(fixture.Timer.Disposed);
-            }
+                using (var fixture = new Fixture())
+                {
+                    fixture.Service.CompileCoverageProject(fixture.Project);
+                    string revision = "reviewed";
+                    bool permitted = true, cancelled = false;
+                    int guards = 0;
+                    var observed = fixture.Service.VerifyCoverageCompilationAsync(fixture.Project, () =>
+                    {
+                        guards++;
+                        if (cancelled) throw new OperationCanceledException();
+                        if (!permitted || revision != "reviewed") throw new InvalidOperationException("Original/copy authority changed during state read.");
+                    });
+                    Application.DoEvents();
+                    // A late observation must preserve the same post-getter authority checks.
+                    fixture.Clock = 3500;
+                    fixture.Control.State = false;
+                    fixture.Control.OnRead = () =>
+                    {
+                        if (fault == "identity") fixture.Vbe.ActiveVBProject = new CompilerProject { Name = fixture.Project.Name };
+                        else if (fault == "mode") fixture.Project.Mode = 1;
+                        else if (fault == "source") revision = "edited";
+                        else if (fault == "approval") permitted = false;
+                        else cancelled = true;
+                    };
+                    fixture.Timer.Tick();
+                    Assert.IsTrue(observed.IsCompleted);
+                    if (fault == "cancellation") Assert.ThrowsException<OperationCanceledException>(() => observed.GetAwaiter().GetResult());
+                    else Assert.ThrowsException<InvalidOperationException>(() => observed.GetAwaiter().GetResult());
+                    Assert.AreEqual(2, guards);
+                    Assert.AreEqual(1, fixture.Control.Executions);
+                    Assert.IsTrue(fixture.Timer.Disposed);
+                }
         }
 
         [STATestMethod]
@@ -311,7 +319,8 @@ namespace VBAi.Tests.Unit
         public void CompilationTimerDisposesOnStartupFailureAndDefaultTicksUseTheOwnedUiThread()
         {
             bool disposed = false;
-            var error = Assert.ThrowsException<InvalidOperationException>(() => VbeTestExplorerService.StartCompilationTimer(() => Assert.Fail("No tick on failed startup"), timer => {
+            var error = Assert.ThrowsException<InvalidOperationException>(() => VbeTestExplorerService.StartCompilationTimer(() => Assert.Fail("No tick on failed startup"), timer =>
+            {
                 timer.Disposed += (_, __) => disposed = true;
                 throw new InvalidOperationException("Timer startup failed");
             }));
@@ -348,14 +357,14 @@ namespace VBAi.Tests.Unit
         public void MissingCoverageRuntimeCannotSelectAPaneOrExecuteCompilation()
         {
             foreach (bool otherModule in new[] { false, true })
-            using (var fixture = new Fixture())
-            {
-                fixture.Project.VBComponents.Clear();
-                if (otherModule) fixture.Project.VBComponents.Add(new CompilerComponent { Name = "Other", CodeModule = new CompilerCode { CodePane = fixture.Pane } });
-                var error = Assert.ThrowsException<InvalidOperationException>(() => fixture.Service.CompileCoverageProject(fixture.Project));
-                StringAssert.Contains(error.Message, "runtime module is missing");
-                Assert.AreEqual(0, fixture.Pane.Shows); Assert.AreEqual(0, fixture.Control.Executions);
-            }
+                using (var fixture = new Fixture())
+                {
+                    fixture.Project.VBComponents.Clear();
+                    if (otherModule) fixture.Project.VBComponents.Add(new CompilerComponent { Name = "Other", CodeModule = new CompilerCode { CodePane = fixture.Pane } });
+                    var error = Assert.ThrowsException<InvalidOperationException>(() => fixture.Service.CompileCoverageProject(fixture.Project));
+                    StringAssert.Contains(error.Message, "runtime module is missing");
+                    Assert.AreEqual(0, fixture.Pane.Shows); Assert.AreEqual(0, fixture.Control.Executions);
+                }
         }
 
         private sealed class Fixture : IDisposable

@@ -1,3 +1,4 @@
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -6,9 +7,7 @@ using System.Net.Http;
 using System.Reflection;
 using System.Threading.Tasks;
 using System.Web.Script.Serialization;
-using VBAi;
 using VBAi.Tests.Infrastructure;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace VBAi.Tests.Unit
 {
@@ -35,7 +34,8 @@ namespace VBAi.Tests.Unit
             {
                 var handler = new LlmHttpFixture();
                 handler.Replies.Enqueue(new LlmHttpFixture.Reply(streaming ?
-                    "data: {\"choices\":[{\"delta\":{\"content\":\"answer\"},\"finish_reason\":\"stop\"}]}\n\ndata: [DONE]\n\n" : Answer) {
+                    "data: {\"choices\":[{\"delta\":{\"content\":\"answer\"},\"finish_reason\":\"stop\"}]}\n\ndata: [DONE]\n\n" : Answer)
+                {
                     MediaType = streaming ? "text/event-stream" : "application/json"
                 });
                 var settings = new LlmSettings { OllamaTemperature = temperature, OllamaTopP = topP };
@@ -76,14 +76,16 @@ namespace VBAi.Tests.Unit
                     settings.OllamaTemperature = null; settings.OllamaTopP = null;
                     await client.CompleteAsync(History(), Tools());
                     Assert.AreEqual(2, handler.Bodies.Count);
-                    foreach (string request in handler.Bodies) {
+                    foreach (string request in handler.Bodies)
+                    {
                         var body = LlmBoundaryScope.Object(new JavaScriptSerializer().DeserializeObject(request));
                         Assert.AreEqual(0.0, Convert.ToDouble(body["temperature"]));
                         Assert.AreEqual(0.8, Convert.ToDouble(body["top_p"]));
                     }
                 }
                 var absent = new LlmSettings(); var unchanged = new LlmHttpFixture(Answer);
-                using (var client = new LlmChatClient(LlmBoundaryScope.Provider("Ollama"), absent, "model", unchanged)) {
+                using (var client = new LlmChatClient(LlmBoundaryScope.Provider("Ollama"), absent, "model", unchanged))
+                {
                     absent.OllamaTemperature = 0; absent.OllamaTopP = 0.8;
                     await client.CompleteAsync(History(), Tools());
                     var body = LlmBoundaryScope.Object(new JavaScriptSerializer().DeserializeObject(unchanged.Bodies.Single()));
@@ -108,7 +110,8 @@ namespace VBAi.Tests.Unit
                 var error = Assert.ThrowsException<InvalidOperationException>(() => new LlmChatClient(provider, settings, "model"));
                 StringAssert.Contains(error.Message, temperature.HasValue ? "OllamaTemperature" : "OllamaTopP");
                 Assert.AreEqual(0, factoryCalls);
-                using (var handler = new LlmHttpFixture(Answer)) {
+                using (var handler = new LlmHttpFixture(Answer))
+                {
                     Assert.ThrowsException<InvalidOperationException>(() => new LlmChatClient(provider, settings, "model", handler));
                     Assert.AreEqual(0, handler.Bodies.Count);
                 }
@@ -119,20 +122,21 @@ namespace VBAi.Tests.Unit
         public async Task OtherHttpProvidersIgnoreEvenInvalidOllamaSamplingWithoutChangingNativePayloads()
         {
             using (var scope = new LlmBoundaryScope())
-            foreach (var provider in LlmProvider.All.Where(item => !item.IsCodex && !item.IsCopilot && !item.IsOllama))
+                foreach (var provider in LlmProvider.All.Where(item => !item.IsCodex && !item.IsCopilot && !item.IsOllama))
+                {
+                    string response = provider.IsClaude ? "{\"content\":[{\"type\":\"text\",\"text\":\"answer\"}],\"stop_reason\":\"end_turn\"}" :
+                        provider.IsBedrock ? "{\"output\":{\"message\":{\"content\":[{\"text\":\"answer\"}]}},\"stopReason\":\"end_turn\"}" : Answer;
+                    var baseline = Settings(provider); var withOllama = Settings(provider);
+                    withOllama.OllamaTemperature = Double.NaN; withOllama.OllamaTopP = Double.PositiveInfinity;
+                    var original = new LlmHttpFixture(response); var configured = new LlmHttpFixture(response);
+                    using (var client = new LlmChatClient(provider, baseline, "model", original)) await client.CompleteAsync(History(), Tools());
+                    using (var client = new LlmChatClient(provider, withOllama, "model", configured)) await client.CompleteAsync(History(), Tools());
+                    Assert.AreEqual(original.Bodies.Single(), configured.Bodies.Single(), provider.Name);
+                    var body = LlmBoundaryScope.Object(new JavaScriptSerializer().DeserializeObject(configured.Bodies.Single()));
+                    Assert.IsFalse(body.ContainsKey("temperature"), provider.Name); Assert.IsFalse(body.ContainsKey("top_p"), provider.Name);
+                }
+            using (var scope = new LlmBoundaryScope())
             {
-                string response = provider.IsClaude ? "{\"content\":[{\"type\":\"text\",\"text\":\"answer\"}],\"stop_reason\":\"end_turn\"}" :
-                    provider.IsBedrock ? "{\"output\":{\"message\":{\"content\":[{\"text\":\"answer\"}]}},\"stopReason\":\"end_turn\"}" : Answer;
-                var baseline = Settings(provider); var withOllama = Settings(provider);
-                withOllama.OllamaTemperature = Double.NaN; withOllama.OllamaTopP = Double.PositiveInfinity;
-                var original = new LlmHttpFixture(response); var configured = new LlmHttpFixture(response);
-                using (var client = new LlmChatClient(provider, baseline, "model", original)) await client.CompleteAsync(History(), Tools());
-                using (var client = new LlmChatClient(provider, withOllama, "model", configured)) await client.CompleteAsync(History(), Tools());
-                Assert.AreEqual(original.Bodies.Single(), configured.Bodies.Single(), provider.Name);
-                var body = LlmBoundaryScope.Object(new JavaScriptSerializer().DeserializeObject(configured.Bodies.Single()));
-                Assert.IsFalse(body.ContainsKey("temperature"), provider.Name); Assert.IsFalse(body.ContainsKey("top_p"), provider.Name);
-            }
-            using (var scope = new LlmBoundaryScope()) {
                 scope.UseCopilot();
                 using (var client = new LlmChatClient(LlmBoundaryScope.Provider("GitHub Copilot"),
                     new LlmSettings { OllamaTemperature = Double.NaN, OllamaTopP = Double.PositiveInfinity }, "model"))
@@ -265,42 +269,42 @@ namespace VBAi.Tests.Unit
         public async Task OversizedCompletionAndCatalogueBodiesStopBeforeTransportBuffering()
         {
             using (var scope = new LlmBoundaryScope())
-            foreach (bool catalogue in new[] { false, true })
-            {
-                var stream = new GeneratedHttpBody();
-                using (var handler = new StreamBodyHandler(stream, HttpStatusCode.OK))
+                foreach (bool catalogue in new[] { false, true })
                 {
-                    var provider = LlmBoundaryScope.Provider("Ollama");
-                    if (catalogue)
-                        await Assert.ThrowsExceptionAsync<System.IO.InvalidDataException>(() => LlmChatClient.ListModelsAsync(provider, new LlmSettings(), handler));
-                    else
-                        using (var client = new LlmChatClient(provider, new LlmSettings(), "model", handler))
-                            await Assert.ThrowsExceptionAsync<System.IO.InvalidDataException>(() => client.CompleteAsync(History(), Tools()));
-                    Assert.IsTrue(stream.BytesRead <= 10 * 1024 * 1024 + 1, "An oversized HTTP body must not be buffered before the limit is checked.");
-                    Assert.IsTrue(stream.Disposed);
+                    var stream = new GeneratedHttpBody();
+                    using (var handler = new StreamBodyHandler(stream, HttpStatusCode.OK))
+                    {
+                        var provider = LlmBoundaryScope.Provider("Ollama");
+                        if (catalogue)
+                            await Assert.ThrowsExceptionAsync<System.IO.InvalidDataException>(() => LlmChatClient.ListModelsAsync(provider, new LlmSettings(), handler));
+                        else
+                            using (var client = new LlmChatClient(provider, new LlmSettings(), "model", handler))
+                                await Assert.ThrowsExceptionAsync<System.IO.InvalidDataException>(() => client.CompleteAsync(History(), Tools()));
+                        Assert.IsTrue(stream.BytesRead <= 10 * 1024 * 1024 + 1, "An oversized HTTP body must not be buffered before the limit is checked.");
+                        Assert.IsTrue(stream.Disposed);
+                    }
                 }
-            }
         }
 
         [TestMethod]
         public async Task FailedHttpStatusDoesNotReadAnUntrustedBody()
         {
             using (var scope = new LlmBoundaryScope())
-            foreach (bool catalogue in new[] { false, true })
-            {
-                var stream = new GeneratedHttpBody();
-                using (var handler = new StreamBodyHandler(stream, HttpStatusCode.Forbidden))
+                foreach (bool catalogue in new[] { false, true })
                 {
-                    var provider = LlmBoundaryScope.Provider("Ollama");
-                    if (catalogue)
-                        await Assert.ThrowsExceptionAsync<InvalidOperationException>(() => LlmChatClient.ListModelsAsync(provider, new LlmSettings(), handler));
-                    else
-                        using (var client = new LlmChatClient(provider, new LlmSettings(), "model", handler))
-                            await Assert.ThrowsExceptionAsync<InvalidOperationException>(() => client.CompleteAsync(History(), Tools()));
-                    Assert.AreEqual(0, stream.BytesRead);
-                    Assert.IsTrue(stream.Disposed);
+                    var stream = new GeneratedHttpBody();
+                    using (var handler = new StreamBodyHandler(stream, HttpStatusCode.Forbidden))
+                    {
+                        var provider = LlmBoundaryScope.Provider("Ollama");
+                        if (catalogue)
+                            await Assert.ThrowsExceptionAsync<InvalidOperationException>(() => LlmChatClient.ListModelsAsync(provider, new LlmSettings(), handler));
+                        else
+                            using (var client = new LlmChatClient(provider, new LlmSettings(), "model", handler))
+                                await Assert.ThrowsExceptionAsync<InvalidOperationException>(() => client.CompleteAsync(History(), Tools()));
+                        Assert.AreEqual(0, stream.BytesRead);
+                        Assert.IsTrue(stream.Disposed);
+                    }
                 }
-            }
         }
 
         private sealed class StreamBodyHandler : HttpMessageHandler

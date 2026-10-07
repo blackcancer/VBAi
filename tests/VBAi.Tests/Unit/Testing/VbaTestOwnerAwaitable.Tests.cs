@@ -1,9 +1,9 @@
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace VBAi.Tests.Unit
 {
@@ -93,20 +93,20 @@ namespace VBAi.Tests.Unit
         public void ExplicitContinuationRegistrationUsesTheOwnerQueueOrUnownedTask(bool owned)
         {
             foreach (bool unsafeRegistration in new[] { false, true })
-            using (var queue = new BlockingCollection<Action>())
-            {
-                int checks = 0, result = 0;
-                var source = new TaskCompletionSource<int>(TaskCreationOptions.RunContinuationsAsynchronously);
-                var awaiter = (owned ? new VbaTestOwnerAwaitable<int>(source.Task, queue.Add, () => checks++)
-                    : VbaTestOwnerAwaitable<int>.Unowned(source.Task)).GetAwaiter();
-                var done = new TaskCompletionSource<bool>();
-                Action continuation = () => { result = awaiter.GetResult(); done.SetResult(true); };
-                if (unsafeRegistration) awaiter.UnsafeOnCompleted(continuation); else awaiter.OnCompleted(continuation);
-                Assert.IsFalse(awaiter.IsCompleted);
-                source.SetResult(73);
-                if (owned) Pump(done.Task, queue); else Assert.IsTrue(done.Task.Wait(10000));
-                Assert.AreEqual(73, result); Assert.AreEqual(owned ? 1 : 0, checks);
-            }
+                using (var queue = new BlockingCollection<Action>())
+                {
+                    int checks = 0, result = 0;
+                    var source = new TaskCompletionSource<int>(TaskCreationOptions.RunContinuationsAsynchronously);
+                    var awaiter = (owned ? new VbaTestOwnerAwaitable<int>(source.Task, queue.Add, () => checks++)
+                        : VbaTestOwnerAwaitable<int>.Unowned(source.Task)).GetAwaiter();
+                    var done = new TaskCompletionSource<bool>();
+                    Action continuation = () => { result = awaiter.GetResult(); done.SetResult(true); };
+                    if (unsafeRegistration) awaiter.UnsafeOnCompleted(continuation); else awaiter.OnCompleted(continuation);
+                    Assert.IsFalse(awaiter.IsCompleted);
+                    source.SetResult(73);
+                    if (owned) Pump(done.Task, queue); else Assert.IsTrue(done.Task.Wait(10000));
+                    Assert.AreEqual(73, result); Assert.AreEqual(owned ? 1 : 0, checks);
+                }
         }
 
         internal static void Pump(Task task, BlockingCollection<Action> queue)

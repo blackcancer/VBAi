@@ -6,12 +6,12 @@ using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.ComTypes;
 using System.Security.Cryptography;
 using System.Text;
-using TYPEATTR = System.Runtime.InteropServices.ComTypes.TYPEATTR;
-using TYPELIBATTR = System.Runtime.InteropServices.ComTypes.TYPELIBATTR;
 using FUNCDESC = System.Runtime.InteropServices.ComTypes.FUNCDESC;
-using VARDESC = System.Runtime.InteropServices.ComTypes.VARDESC;
-using TYPEKIND = System.Runtime.InteropServices.ComTypes.TYPEKIND;
 using IMPLTYPEFLAGS = System.Runtime.InteropServices.ComTypes.IMPLTYPEFLAGS;
+using TYPEATTR = System.Runtime.InteropServices.ComTypes.TYPEATTR;
+using TYPEKIND = System.Runtime.InteropServices.ComTypes.TYPEKIND;
+using TYPELIBATTR = System.Runtime.InteropServices.ComTypes.TYPELIBATTR;
+using VARDESC = System.Runtime.InteropServices.ComTypes.VARDESC;
 
 namespace VBAi
 {
@@ -78,8 +78,7 @@ namespace VBAi
         /// <returns>Bibliothèque de types chargée.</returns>
         private static ITypeLib LoadSelectedFile(string path)
         {
-            ITypeLib library;
-            LoadTypeLibEx(path, 2, out library); // REGKIND_NONE
+            LoadTypeLibEx(path, 2, out ITypeLib library); // REGKIND_NONE
             return library;
         }
 
@@ -90,8 +89,7 @@ namespace VBAi
         /// <returns>Bibliothèque enregistrée correspondante.</returns>
         private static ITypeLib LoadRegisteredLibrary(Guid guid, ushort major, ushort minor)
         {
-            ITypeLib library;
-            LoadRegTypeLib(ref guid, major, minor, 0, out library);
+            LoadRegTypeLib(ref guid, major, minor, 0, out ITypeLib library);
             return library;
         }
 
@@ -115,8 +113,7 @@ namespace VBAi
             {
                 try
                 {
-                    ITypeInfo typeInfo;
-                    library.GetTypeInfo(index, out typeInfo);
+                    library.GetTypeInfo(index, out ITypeInfo typeInfo);
                     types.Add(ReadType(typeInfo, index, reference));
                 }
                 catch (Exception ex)
@@ -124,10 +121,18 @@ namespace VBAi
                     types.Add(new { TypeIndex = index, Error = Error(ex) });
                 }
             }
-            return new { Project = request.Project, Reference = reference,
-                Source = loaded.Source, FallbackError = loaded.FallbackError,
-                TotalTypes = count, Offset = offset, Returned = types.Count, HasMore = end < count,
-                Types = types };
+            return new
+            {
+                request.Project,
+                Reference = reference,
+                loaded.Source,
+                loaded.FallbackError,
+                TotalTypes = count,
+                Offset = offset,
+                Returned = types.Count,
+                HasMore = end < count,
+                Types = types
+            };
         }
 
         /// <summary>Retourne une page de membres pour un type précédemment listé, après vérification de son identité.</summary>
@@ -148,8 +153,7 @@ namespace VBAi
             if (typeCount < 0 || typeCount > MaxTypes || request.TypeIndex < 0 ||
                 request.TypeIndex >= typeCount)
                 throw new ArgumentOutOfRangeException("TypeIndex");
-            ITypeInfo typeInfo;
-            library.GetTypeInfo(request.TypeIndex, out typeInfo);
+            library.GetTypeInfo(request.TypeIndex, out ITypeInfo typeInfo);
             TypeMetadata metadata = ReadTypeMetadata(typeInfo, request.TypeIndex, reference);
             if (!string.Equals(metadata.Identity, request.TypeIdentity, StringComparison.OrdinalIgnoreCase))
                 throw new InvalidOperationException("The type changed since list_reference_types; list it again.");
@@ -185,13 +189,22 @@ namespace VBAi
                     members.Add(new { MemberIndex = index, Error = Error(ex) });
                 }
             }
-            return new { Project = request.Project, Reference = reference,
-                Type = metadata, MemberInterface = memberMetadata,
-                Resolution = resolution, Source = loaded.Source,
-                FallbackError = loaded.FallbackError,
+            return new
+            {
+                request.Project,
+                Reference = reference,
+                Type = metadata,
+                MemberInterface = memberMetadata,
+                Resolution = resolution,
+                loaded.Source,
+                loaded.FallbackError,
                 Scope = "Raw COM type members and accessors; inherited interfaces and VBE Object Browser filtering are not expanded.",
-                TotalMembers = count, Offset = request.Offset, Returned = members.Count,
-                HasMore = end < count, Members = members };
+                TotalMembers = count,
+                request.Offset,
+                Returned = members.Count,
+                HasMore = end < count,
+                Members = members
+            };
         }
 
         /// <summary>Valide le décalage et la limite de pagination d’une requête.</summary>
@@ -220,17 +233,15 @@ namespace VBAi
         /// <exception cref="FileNotFoundException">Le fichier de bibliothèque n’est pas disponible.</exception>
         private ReferenceSource FindReference(Request request)
         {
-            Guid expectedGuid;
             if (string.IsNullOrWhiteSpace(request.Project) ||
-                !Guid.TryParse(request.Guid, out expectedGuid) || request.Major < 0 || request.Minor < 0 ||
+                !Guid.TryParse(request.Guid, out Guid expectedGuid) || request.Major < 0 || request.Minor < 0 ||
                 request.Major > ushort.MaxValue || request.Minor > ushort.MaxValue)
                 throw new ArgumentException("Project, reference Guid, Major and Minor are required.");
             dynamic project = VbeProjectResolver.Resolve(vbe, request.Project);
             ReferenceSource found = null;
             foreach (dynamic reference in project.References)
             {
-                Guid actualGuid;
-                if (!Guid.TryParse((string)reference.GUID, out actualGuid) ||
+                if (!Guid.TryParse((string)reference.GUID, out Guid actualGuid) ||
                     actualGuid != expectedGuid || (int)reference.Major != request.Major ||
                     (int)reference.Minor != request.Minor) continue;
                 if (found != null) throw new InvalidOperationException("Reference identity is ambiguous.");
@@ -240,10 +251,16 @@ namespace VBAi
                 if (string.IsNullOrWhiteSpace(path) || !Path.IsPathRooted(path) || !File.Exists(path))
                     throw new FileNotFoundException("Reference type library file is unavailable.", path);
                 var file = new FileInfo(path);
-                found = new ReferenceSource { Name = (string)reference.Name,
-                    Guid = actualGuid.ToString("B"), Major = request.Major, Minor = request.Minor,
-                    FullPath = path, FileLength = file.Length,
-                    FileLastWriteUtc = file.LastWriteTimeUtc.ToString("O") };
+                found = new ReferenceSource
+                {
+                    Name = (string)reference.Name,
+                    Guid = actualGuid.ToString("B"),
+                    Major = request.Major,
+                    Minor = request.Minor,
+                    FullPath = path,
+                    FileLength = file.Length,
+                    FileLastWriteUtc = file.LastWriteTimeUtc.ToString("O")
+                };
             }
             if (found == null) throw new InvalidOperationException("The exact reference is not selected by this project.");
             return found;
@@ -286,8 +303,12 @@ namespace VBAi
                     throw new InvalidOperationException("The file type library identity differs from the selected VBE reference.");
             }
             finally { if (pointer != IntPtr.Zero) library.ReleaseTLibAttr(pointer); }
-            return new LoadedLibrary { Library = library, Source = source,
-                FallbackError = fallbackError };
+            return new LoadedLibrary
+            {
+                Library = library,
+                Source = source,
+                FallbackError = fallbackError
+            };
         }
 
         /// <summary>Choisit l’interface par défaut non source d’une coclasse, si elle en expose une.</summary>
@@ -303,18 +324,15 @@ namespace VBAi
                 int selected = -1;
                 for (int index = 0; index < attr.cImplTypes; index++)
                 {
-                    IMPLTYPEFLAGS flags;
-                    coclass.GetImplTypeFlags(index, out flags);
+                    coclass.GetImplTypeFlags(index, out IMPLTYPEFLAGS flags);
                     if ((flags & IMPLTYPEFLAGS.IMPLTYPEFLAG_FSOURCE) != 0) continue;
                     if ((flags & IMPLTYPEFLAGS.IMPLTYPEFLAG_FDEFAULT) != 0)
                     { selected = index; break; }
                     if (selected == -1) selected = index;
                 }
                 if (selected == -1) return null;
-                int href;
-                coclass.GetRefTypeOfImplType(selected, out href);
-                ITypeInfo result;
-                coclass.GetRefTypeInfo(href, out result);
+                coclass.GetRefTypeOfImplType(selected, out int href);
+                coclass.GetRefTypeInfo(href, out ITypeInfo result);
                 return result;
             }
             finally { if (pointer != IntPtr.Zero) coclass.ReleaseTypeAttr(pointer); }
@@ -328,9 +346,17 @@ namespace VBAi
         private static object ReadType(ITypeInfo typeInfo, int index, ReferenceSource reference)
         {
             TypeMetadata type = ReadTypeMetadata(typeInfo, index, reference);
-            return new { type.TypeIndex, type.Name, type.Guid, type.Kind,
-                type.FunctionCount, type.VariableCount, type.ImplementedInterfaceCount,
-                TypeIdentity = type.Identity };
+            return new
+            {
+                type.TypeIndex,
+                type.Name,
+                type.Guid,
+                type.Kind,
+                type.FunctionCount,
+                type.VariableCount,
+                type.ImplementedInterfaceCount,
+                TypeIdentity = type.Identity
+            };
         }
 
         /// <summary>Lit les attributs, le nom et le GUID d’un type et calcule son identité de pagination.</summary>
@@ -345,16 +371,21 @@ namespace VBAi
             {
                 typeInfo.GetTypeAttr(out pointer);
                 var attr = (TYPEATTR)Marshal.PtrToStructure(pointer, typeof(TYPEATTR));
-                string name, description, helpFile;
-                int helpContext;
-                typeInfo.GetDocumentation(-1, out name, out description, out helpContext, out helpFile);
+                typeInfo.GetDocumentation(-1, out string name, out string description, out int helpContext, out string helpFile);
                 string identity = Hash(reference.Guid + "|" + reference.Major + "|" + reference.Minor +
                     "|" + reference.FileLength + "|" + reference.FileLastWriteUtc + "|" +
                     index + "|" + attr.guid + "|" + attr.typekind + "|" + name);
-                return new TypeMetadata { TypeIndex = index, Name = name, Guid = attr.guid.ToString("B"),
-                    Kind = attr.typekind.ToString(), FunctionCount = attr.cFuncs,
-                    VariableCount = attr.cVars, ImplementedInterfaceCount = attr.cImplTypes,
-                    Identity = identity };
+                return new TypeMetadata
+                {
+                    TypeIndex = index,
+                    Name = name,
+                    Guid = attr.guid.ToString("B"),
+                    Kind = attr.typekind.ToString(),
+                    FunctionCount = attr.cFuncs,
+                    VariableCount = attr.cVars,
+                    ImplementedInterfaceCount = attr.cImplTypes,
+                    Identity = identity
+                };
             }
             finally { if (pointer != IntPtr.Zero) typeInfo.ReleaseTypeAttr(pointer); }
         }
@@ -371,14 +402,19 @@ namespace VBAi
                 typeInfo.GetFuncDesc(index, out pointer);
                 var descriptor = (FUNCDESC)Marshal.PtrToStructure(pointer, typeof(FUNCDESC));
                 string[] names = new string[Math.Min(32, Math.Max(1, descriptor.cParams + 1))];
-                int count;
-                typeInfo.GetNames(descriptor.memid, names, names.Length, out count);
-                return new { MemberIndex = index, Kind = "Function", Name = count > 0 ? names[0] : null,
-                    DispId = descriptor.memid, InvocationKind = descriptor.invkind.ToString(),
+                typeInfo.GetNames(descriptor.memid, names, names.Length, out int count);
+                return new
+                {
+                    MemberIndex = index,
+                    Kind = "Function",
+                    Name = count > 0 ? names[0] : null,
+                    DispId = descriptor.memid,
+                    InvocationKind = descriptor.invkind.ToString(),
                     FunctionFlags = descriptor.wFuncFlags,
                     ParameterCount = (int)descriptor.cParams,
                     ParameterNames = names.Skip(1).Take(Math.Max(0, count - 1)).ToArray(),
-                    ParameterNamesTruncated = descriptor.cParams + 1 > names.Length };
+                    ParameterNamesTruncated = descriptor.cParams + 1 > names.Length
+                };
             }
             finally { if (pointer != IntPtr.Zero) typeInfo.ReleaseFuncDesc(pointer); }
         }
@@ -395,12 +431,16 @@ namespace VBAi
             {
                 typeInfo.GetVarDesc(index, out pointer);
                 var descriptor = (VARDESC)Marshal.PtrToStructure(pointer, typeof(VARDESC));
-                string name, description, helpFile;
-                int helpContext;
-                typeInfo.GetDocumentation(descriptor.memid, out name, out description,
-                    out helpContext, out helpFile);
-                return new { MemberIndex = memberIndex, Kind = "Variable", Name = name,
-                    DispId = descriptor.memid, VariableKind = descriptor.varkind.ToString() };
+                typeInfo.GetDocumentation(descriptor.memid, out string name, out string description,
+                    out int helpContext, out string helpFile);
+                return new
+                {
+                    MemberIndex = memberIndex,
+                    Kind = "Variable",
+                    Name = name,
+                    DispId = descriptor.memid,
+                    VariableKind = descriptor.varkind.ToString()
+                };
             }
             finally { if (pointer != IntPtr.Zero) typeInfo.ReleaseVarDesc(pointer); }
         }
@@ -420,9 +460,12 @@ namespace VBAi
         /// <returns>Objet anonyme contenant les informations d’erreur.</returns>
         private static object Error(Exception error)
         {
-            return new { Type = error.GetType().Name,
+            return new
+            {
+                Type = error.GetType().Name,
                 HResult = HResultHex(error),
-                Message = error.Message };
+                error.Message
+            };
         }
 
         /// <summary>Formate le HRESULT d’une exception sur huit chiffres hexadécimaux préfixés par <c>0x</c>.</summary>

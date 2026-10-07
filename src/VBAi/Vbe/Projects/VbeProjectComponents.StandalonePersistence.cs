@@ -56,12 +56,21 @@ namespace VBAi
             bool hasPath = !string.IsNullOrWhiteSpace(path) && Path.IsPathRooted(path);
             bool exists = hasPath && File.Exists(path);
             bool? readOnly = exists ? (bool?)((File.GetAttributes(path) & FileAttributes.ReadOnly) != 0) : null;
-            return new { Project = selector, ProjectSaved = (bool)project.Saved, HostAvailable = true,
-                HostPath = hasPath ? Path.GetFullPath(path) : null, HostSaved = exists ? (bool?)(bool)project.Saved : null,
-                HostReadOnly = readOnly, HostHasPath = (bool?)hasPath, FileExists = exists,
-                SaveApi = solidWorksDraft ? null : "Standalone VBProject.SaveAs", SaveSupported = !solidWorksDraft,
+            return new
+            {
+                Project = selector,
+                ProjectSaved = (bool)project.Saved,
+                HostAvailable = true,
+                HostPath = hasPath ? Path.GetFullPath(path) : null,
+                HostSaved = exists ? (bool?)(bool)project.Saved : null,
+                HostReadOnly = readOnly,
+                HostHasPath = (bool?)hasPath,
+                FileExists = exists,
+                SaveApi = solidWorksDraft ? null : "Standalone VBProject.SaveAs",
+                SaveSupported = !solidWorksDraft,
                 Reason = solidWorksDraft ? "A generic Type101 SaveAs does not create a native SOLIDWORKS container. Use publish_solidworks_macro to retain this draft and create a new native macro, or create_solidworks_macro with a path from the start." : null,
-                Limit = "Generic standalone VBIDE persistence is distinct from native SOLIDWORKS SWP hosting. File metadata is not proof of reload fidelity or signature trust." };
+                Limit = "Generic standalone VBIDE persistence is distinct from native SOLIDWORKS SWP hosting. File metadata is not proof of reload fidelity or signature trust."
+            };
         }
 
         /// <summary>Enregistre une macro SWP autonome par VBIDE après contrôle de sa version et de son chemin.</summary>
@@ -103,10 +112,20 @@ namespace VBAi
             if (string.IsNullOrWhiteSpace(actual) || !Path.IsPathRooted(actual) || !string.Equals(Path.GetFullPath(actual), destination, StringComparison.OrdinalIgnoreCase) ||
                 !saved || !File.Exists(destination) || new FileInfo(destination).Length == 0)
                 throw new InvalidOperationException("Native SaveAs returned without matching saved project/file state; inspect the macro before retrying.");
-            return new { Project = request.Project, HostPath = destination, SaveInvoked = true, SaveAsInvoked = saveAs,
-                ProjectSavedBefore = savedBefore, ProjectSaved = saved, HostSaved = saved, Bytes = new FileInfo(destination).Length,
-                Verification = "StandaloneProjectSaveAsAndFileReadback", ReloadVerified = false,
-                Limit = "Native SWP reload and signature persistence must be qualified separately. No export/import or document Save API is substituted." };
+            return new
+            {
+                request.Project,
+                HostPath = destination,
+                SaveInvoked = true,
+                SaveAsInvoked = saveAs,
+                ProjectSavedBefore = savedBefore,
+                ProjectSaved = saved,
+                HostSaved = saved,
+                Bytes = new FileInfo(destination).Length,
+                Verification = "StandaloneProjectSaveAsAndFileReadback",
+                ReloadVerified = false,
+                Limit = "Native SWP reload and signature persistence must be qualified separately. No export/import or document Save API is substituted."
+            };
         }
     }
 }

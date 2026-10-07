@@ -1,8 +1,7 @@
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.IO;
 using System.Linq;
-using VBAi;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace VBAi.Tests.Unit
 {
@@ -13,7 +12,10 @@ namespace VBAi.Tests.Unit
         {
             var original = Enumerable.Range(0, 10).Select(index => new VbeNativePaletteState.ColorRow
             {
-                Name = "Category " + index, Foreground = index, Background = 16 - index, Indicator = index + 1
+                Name = "Category " + index,
+                Foreground = index,
+                Background = 16 - index,
+                Indicator = index + 1
             }).ToArray();
             return new VbeNativePaletteState { VbeVersion = "7.1", Original = original, Applied = VbeNativePaletteState.Dark(original) };
         }

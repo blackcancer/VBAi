@@ -1,9 +1,9 @@
 namespace VBAi.Tests.Unit
 {
+    using Microsoft.VisualStudio.TestTools.UnitTesting;
     using System;
     using System.Collections.Generic;
     using System.Text;
-    using Microsoft.VisualStudio.TestTools.UnitTesting;
 
     [TestClass]
     [TestCategory("Unit")]
@@ -83,11 +83,17 @@ namespace VBAi.Tests.Unit
         [TestMethod]
         public void ManifestPreflightRejectsCorruptOleResourcesBeforeAnAdapterCanImport()
         {
-            var manifest = new VbaGitManifest { References = "", Components = new[] {
-                new VbaGitComponent { Name = "Form1", Type = 3, HasResources = true } } };
-            var files = new Dictionary<string, byte[]> {
+            var manifest = new VbaGitManifest
+            {
+                References = "",
+                Components = new[] {
+                new VbaGitComponent { Name = "Form1", Type = 3, HasResources = true } }
+            };
+            var files = new Dictionary<string, byte[]>
+            {
                 ["Form1.frm"] = VbaGitSnapshot.Utf8.GetBytes("VERSION 5.00\nBegin SyntheticForm\n OleObjectBlob = \"Form1.frx\":0000\nEnd\nAttribute VB_Name = \"Form1\"\n"),
-                ["Form1.frx"] = Resource() };
+                ["Form1.frx"] = Resource()
+            };
             var accepted = new VbaGitSnapshot(manifest, files);
             CollectionAssert.AreEqual(files["Form1.frx"], accepted.Files["Form1.frx"]);
             files["Form1.frx"] = new byte[accepted.Files["Form1.frx"].Length];

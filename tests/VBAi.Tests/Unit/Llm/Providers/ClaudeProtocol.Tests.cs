@@ -1,9 +1,8 @@
 namespace VBAi.Tests.Unit
 {
+    using Microsoft.VisualStudio.TestTools.UnitTesting;
     using System;
     using System.Collections.Generic;
-    using System.Web.Script.Serialization;
-    using Microsoft.VisualStudio.TestTools.UnitTesting;
     using VBAi;
 
     /// <summary>Vérifie les requêtes, réponses et métadonnées natives du protocole Claude.</summary>

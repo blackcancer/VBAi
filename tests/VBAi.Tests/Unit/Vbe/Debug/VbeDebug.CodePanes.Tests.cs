@@ -1,9 +1,8 @@
-using System.Runtime.InteropServices;
-using VBAi;
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Collections;
 using System.Linq;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
+using System.Runtime.InteropServices;
 
 namespace VBAi.Tests.Unit
 {
@@ -49,7 +48,8 @@ namespace VBAi.Tests.Unit
             foreach (int scenario in new[] { 0, 1, 2, 3, 4, 5 })
             {
                 var f = new EditorDebugFixture(); var request = f.Inspect(); request.StartLine = 2;
-                f.Pane.OnSetTop = value => {
+                f.Pane.OnSetTop = value =>
+                {
                     if (scenario == 1) throw new COMException("scroll rejected");
                     if (scenario == 2) f.Pane.OnReadSelection = () => { throw new COMException("readback rejected"); };
                     if (scenario == 3) f.Pane.OnReadSelection = () => { f.Pane.OnSetTop = null; f.Pane.TopLine = 1; };
@@ -114,16 +114,16 @@ namespace VBAi.Tests.Unit
         public void ViewUsesNativeToolbarAndVerifiesEveryPaneAndSourceHash()
         {
             foreach (int scenario in new[] { 0, 1, 2 })
-            using (var scene = new NativeDebugScene())
-            {
-                scene.CodeWindow(); var f = new EditorDebugFixture();
-                f.Vbe.Panes.Add(new EditorDebugFixture.DebugPane { CodeModule = f.Module, Window = f.Pane.Window, CodePaneView = 0 });
-                var request = f.Inspect("procedure");
-                scene.OnClick = () => { if (scenario != 1) f.Pane.CodePaneView = 0; if (scenario == 2) f.Module.Code = "changed"; };
-                dynamic result = f.Service.SetCodePaneView(request);
-                Assert.IsTrue((bool)result.Changed); Assert.AreEqual(scenario == 0, (bool)result.Verified); Assert.AreEqual(scenario != 0, (bool)result.VerificationPending);
-                Assert.AreEqual(2, ((object[])result.AfterPanes).Length); Assert.IsNotNull(result.Native);
-            }
+                using (var scene = new NativeDebugScene())
+                {
+                    scene.CodeWindow(); var f = new EditorDebugFixture();
+                    f.Vbe.Panes.Add(new EditorDebugFixture.DebugPane { CodeModule = f.Module, Window = f.Pane.Window, CodePaneView = 0 });
+                    var request = f.Inspect("procedure");
+                    scene.OnClick = () => { if (scenario != 1) f.Pane.CodePaneView = 0; if (scenario == 2) f.Module.Code = "changed"; };
+                    dynamic result = f.Service.SetCodePaneView(request);
+                    Assert.IsTrue((bool)result.Changed); Assert.AreEqual(scenario == 0, (bool)result.Verified); Assert.AreEqual(scenario != 0, (bool)result.VerificationPending);
+                    Assert.AreEqual(2, ((object[])result.AfterPanes).Length); Assert.IsNotNull(result.Native);
+                }
         }
     }
     [TestClass, TestCategory("Unit")]

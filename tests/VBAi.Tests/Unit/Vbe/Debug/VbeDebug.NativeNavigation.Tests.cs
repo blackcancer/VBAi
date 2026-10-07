@@ -1,7 +1,6 @@
-using System.Dynamic;
-using VBAi;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
+using System.Dynamic;
 using System.Threading;
 namespace VBAi.Tests.Unit
 {
@@ -49,7 +48,7 @@ namespace VBAi.Tests.Unit
             dynamic queued = f.Service.NativeNavigation(r); string id = queued.OperationId;
             Assert.AreEqual("Queued", (string)queued.State); Assert.AreEqual(6, f.Pane.EndColumn);
             r.Project = "changed by caller"; r.Module = "changed by caller"; r.ExpectedSha256 = "changed"; r.ControlCaption = "changed"; r.ExpectedMode = 0; r.StartLine = 99;
-            context.RunAll(); dynamic result = Status(f,id);
+            context.RunAll(); dynamic result = Status(f, id);
             Assert.AreEqual("Completed", (string)result.State); Assert.IsTrue((bool)result.NavigationObserved);
             Assert.IsTrue((bool)result.CommandCompleted); Assert.IsFalse((bool)result.DefinitionResolved);
         }
@@ -72,16 +71,17 @@ namespace VBAi.Tests.Unit
         public void NavigationRejectsNewRequestsWhileQueuedRunningOrObserving()
         {
             var f = new EditorDebugFixture(); string id = null;
-            f.Command(1822, "last_position", () => {
-                Assert.AreEqual("Running", (string)Status(f,id).State);
+            f.Command(1822, "last_position", () =>
+            {
+                Assert.AreEqual("Running", (string)Status(f, id).State);
                 Assert.ThrowsException<InvalidOperationException>(() => f.Service.NativeNavigation(Last(f)));
             });
             dynamic queued = f.Service.NativeNavigation(Last(f)); id = queued.OperationId;
             Assert.ThrowsException<InvalidOperationException>(() => f.Service.NativeNavigation(Last(f)));
-            context.RunNext(); Assert.AreEqual("Observing", (string)Status(f,id).State);
+            context.RunNext(); Assert.AreEqual("Observing", (string)Status(f, id).State);
             Assert.ThrowsException<InvalidOperationException>(() => f.Service.NativeNavigation(Last(f)));
             context.RunAll(); Thread.Sleep(2100);
-            dynamic result = Status(f,id); Assert.AreEqual("Completed", (string)result.State);
+            dynamic result = Status(f, id); Assert.AreEqual("Completed", (string)result.State);
             Assert.IsFalse((bool)result.NavigationObserved); Assert.IsTrue((bool)result.CommandCompleted);
         }
         [TestMethod]
@@ -99,7 +99,7 @@ namespace VBAi.Tests.Unit
                 if (scenario == 5) cmd.Caption = "changed";
                 if (scenario == 6) f.Pane.Window.OnFocus = () => f.Pane.TopLine = 2; // viewport alone is not a navigation-position change
                 if (scenario == 7) f.Pane.Window.OnFocus = () => f.Pane.EndColumn = 2;
-                context.RunAll(); dynamic result = Status(f,id);
+                context.RunAll(); dynamic result = Status(f, id);
                 if (scenario == 6) { Assert.AreEqual("Observing", (string)result.State); Assert.AreEqual(1, cmd.Executions); }
                 else { Assert.AreEqual("Failed", (string)result.State); Assert.IsNotNull(result.NativeError); Assert.AreEqual(0, cmd.Executions); }
             }
@@ -111,12 +111,13 @@ namespace VBAi.Tests.Unit
             {
                 context = new NativeNavigationContext { RejectPost = scenario == 0 ? 1 : scenario == 1 ? 2 : 0 };
                 SynchronizationContext.SetSynchronizationContext(context);
-                var f = new EditorDebugFixture(); f.Command(1822, "last_position", () => {
+                var f = new EditorDebugFixture(); f.Command(1822, "last_position", () =>
+                {
                     if (scenario == 2) throw new InvalidOperationException("execute failed");
                     if (scenario == 3) f.Pane.OnReadSelection = () => { throw new InvalidOperationException("observation failed"); };
                 });
                 dynamic queued = f.Service.NativeNavigation(Last(f)); string id = queued.OperationId;
-                context.RunAll(); dynamic result = Status(f,id);
+                context.RunAll(); dynamic result = Status(f, id);
                 Assert.AreEqual("Failed", (string)result.State); Assert.IsNotNull(result.NativeError);
                 Assert.AreEqual(scenario == 1 || scenario == 3, (bool)result.CommandCompleted);
             }
@@ -129,13 +130,14 @@ namespace VBAi.Tests.Unit
                 var f = new EditorDebugFixture(); f.Project.FileName = " "; f.Project.FailPath = scenario == 1;
                 f.Vbe.ActiveWindow = null;
                 f.Vbe.Windows.Add(new EditorDebugFixture.Window { Type = 2, Visible = false });
-                f.Command(1822, "last_position", () => {
+                f.Command(1822, "last_position", () =>
+                {
                     if (scenario == 2) f.Vbe.ActiveCodePane = null;
                     f.Vbe.Windows.Add(new EditorDebugFixture.Window { Type = 2 });
                 });
                 dynamic queued = f.Service.NativeNavigation(Last(f)); string id = queued.OperationId;
                 Assert.AreEqual(f.Project.Name, (string)queued.Before.Project); Assert.IsNull(queued.Before.ActiveWindow);
-                context.RunAll(); dynamic result = Status(f,id);
+                context.RunAll(); dynamic result = Status(f, id);
                 Assert.AreEqual("Completed", (string)result.State); Assert.IsTrue((bool)result.NavigationObserved);
                 if (scenario == 2) Assert.IsFalse((bool)result.After.CodePaneAvailable);
             }
@@ -145,12 +147,12 @@ namespace VBAi.Tests.Unit
         {
             var f = new EditorDebugFixture(); f.Command(1822, "last_position", () => f.Pane.EndColumn = f.Pane.EndColumn == 1 ? 2 : 1);
             string first = null;
-            for (int i=0; i<21; i++)
+            for (int i = 0; i < 21; i++)
             {
-                dynamic queued = f.Service.NativeNavigation(Last(f)); string id = queued.OperationId; if (i==0) first=id;
-                context.RunAll(); Assert.AreEqual("Completed", (string)Status(f,id).State);
+                dynamic queued = f.Service.NativeNavigation(Last(f)); string id = queued.OperationId; if (i == 0) first = id;
+                context.RunAll(); Assert.AreEqual("Completed", (string)Status(f, id).State);
             }
-            Assert.ThrowsException<InvalidOperationException>(() => Status(f,first));
+            Assert.ThrowsException<InvalidOperationException>(() => Status(f, first));
         }
     }
     [TestClass, TestCategory("Unit")]
@@ -181,15 +183,15 @@ namespace VBAi.Tests.Unit
                 dynamic before = Position(), after = Position();
                 var values = (System.Collections.Generic.IDictionary<string, object>)after;
                 values[field] = field == "Project" || field == "Module" ? (object)"different" : 99;
-                Assert.IsTrue(VbeDebug.NavigationChanged(before,after), field);
+                Assert.IsTrue(VbeDebug.NavigationChanged(before, after), field);
             }
             dynamic a = Position(), b = Position();
-            a.ActiveWindow = null; b.ActiveWindow.Type = 2; Assert.IsTrue(VbeDebug.NavigationChanged(a,b));
-            a = Position(); b = Position(); b.ActiveWindow.Type = 2; Assert.IsTrue(VbeDebug.NavigationChanged(a,b));
-            a.ActiveWindow.Type = 2; Assert.IsFalse(VbeDebug.NavigationChanged(a,b));
-            b.ActiveWindow = null; Assert.IsFalse(VbeDebug.NavigationChanged(a,b));
-            a.CodePaneAvailable = false; Assert.IsFalse(VbeDebug.NavigationChanged(a,b));
-            a.CodePaneAvailable = true; b.CodePaneAvailable = false; Assert.IsFalse(VbeDebug.NavigationChanged(a,b));
+            a.ActiveWindow = null; b.ActiveWindow.Type = 2; Assert.IsTrue(VbeDebug.NavigationChanged(a, b));
+            a = Position(); b = Position(); b.ActiveWindow.Type = 2; Assert.IsTrue(VbeDebug.NavigationChanged(a, b));
+            a.ActiveWindow.Type = 2; Assert.IsFalse(VbeDebug.NavigationChanged(a, b));
+            b.ActiveWindow = null; Assert.IsFalse(VbeDebug.NavigationChanged(a, b));
+            a.CodePaneAvailable = false; Assert.IsFalse(VbeDebug.NavigationChanged(a, b));
+            a.CodePaneAvailable = true; b.CodePaneAvailable = false; Assert.IsFalse(VbeDebug.NavigationChanged(a, b));
         }
         [TestMethod]
         public void BrowserAppearanceIsObservedWithoutClaimingItsSelectedMember()

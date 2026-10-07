@@ -13,13 +13,15 @@ namespace VBAi
     {
 
         /// <summary>Identifies the attempted write or its subsequent verification without implying rollback.</summary>
-        internal enum FailurePhase {
+        internal enum FailurePhase
+        {
 
-/// <summary>Identifies the setter invocation case of failure phase.</summary>
-SetterInvocation,
+            /// <summary>Identifies the setter invocation case of failure phase.</summary>
+            SetterInvocation,
 
-/// <summary>Identifies the retention readback case of failure phase.</summary>
-RetentionReadback }
+            /// <summary>Identifies the retention readback case of failure phase.</summary>
+            RetentionReadback
+        }
 
         /// <summary>Private exception-data identity prevents unrelated annotations from being reported as scalar phases.</summary>
         private static readonly object FailurePhaseKey = new object();

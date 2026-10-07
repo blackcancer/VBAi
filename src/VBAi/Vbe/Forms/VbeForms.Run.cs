@@ -33,8 +33,9 @@ namespace VBAi
         public object FormRunStatus(Request request)
         {
             var operation = formRuns.SingleOrDefault(item => item.Id == request.Query && item.Project == request.Project);
-            if (operation == null) throw new ArgumentException("Unknown UserForm run operation for this project.");
-            return FormRunSnapshot(operation);
+            return operation == null
+                ? throw new ArgumentException("Unknown UserForm run operation for this project.")
+                : FormRunSnapshot(operation);
         }
 
         /// <summary>Place l’exécution de la commande Run sur le contexte UI après deux contrôles des versions et de l’identité COM.</summary>
@@ -48,8 +49,7 @@ namespace VBAi
                 string.IsNullOrWhiteSpace(request.Form) || string.IsNullOrWhiteSpace(request.ExpectedSha256) ||
                 string.IsNullOrWhiteSpace(request.ExpectedTreeVersion) || string.IsNullOrWhiteSpace(request.ControlCaption))
                 throw new ArgumentException("Project, Form, ExpectedMode=2, ExpectedSha256, ExpectedTreeVersion and exact Run ControlCaption are required.");
-            var context = SynchronizationContext.Current;
-            if (context == null) throw new InvalidOperationException("A VBE UI synchronization context is required.");
+            var context = SynchronizationContext.Current ?? throw new InvalidOperationException("A VBE UI synchronization context is required.");
             if (formRuns.Any(item => item.State == "Queued" || item.State == "Running"))
                 throw new InvalidOperationException("A UserForm run command is still pending.");
             string projectName = request.Project, formName = request.Form, sha = request.ExpectedSha256,
@@ -93,9 +93,17 @@ namespace VBAi
         /// <returns>Opération, état, erreur éventuelle et lectures natives recommandées.</returns>
         private static object FormRunSnapshot(FormRunOperation operation)
         {
-            return new { OperationId = operation.Id, operation.Project, operation.Form, operation.State,
-                operation.CommandCompleted, operation.Error, RuntimeVerified = false,
-                NextRead = "form_run_status, read_runtime_forms, debug_state and debug_dialog; command return alone does not prove that the UserForm was displayed or initialized." };
+            return new
+            {
+                OperationId = operation.Id,
+                operation.Project,
+                operation.Form,
+                operation.State,
+                operation.CommandCompleted,
+                operation.Error,
+                RuntimeVerified = false,
+                NextRead = "form_run_status, read_runtime_forms, debug_state and debug_dialog; command return alone does not prove that the UserForm was displayed or initialized."
+            };
         }
 
         /// <summary>Vérifie l’empreinte du code et la version de l’arbre avant de lancer le formulaire.</summary>

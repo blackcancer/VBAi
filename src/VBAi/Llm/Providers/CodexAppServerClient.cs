@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using System.Reflection;
 using System.Security.Cryptography;
 using System.Text;
 using System.Threading;
@@ -68,10 +67,14 @@ namespace VBAi
         public void Start()
         {
             string executable = CodexCliLocator.Resolve(InstalledExists, GetDirectories, GetLastWriteTimeUtc);
-            var info = new ProcessStartInfo(executable, "app-server") {
-                UseShellExecute = false, RedirectStandardInput = true,
-                RedirectStandardOutput = true, RedirectStandardError = true,
-                CreateNoWindow = true, StandardOutputEncoding = new UTF8Encoding(false),
+            var info = new ProcessStartInfo(executable, "app-server")
+            {
+                UseShellExecute = false,
+                RedirectStandardInput = true,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                CreateNoWindow = true,
+                StandardOutputEncoding = new UTF8Encoding(false),
                 StandardErrorEncoding = new UTF8Encoding(false)
             };
             ProviderSessionStorage.ConfigureCodex(info);
@@ -300,7 +303,8 @@ namespace VBAi
                 if (!transportStarted) await StartAsync();
                 else await RefreshDeveloperInstructionsAsync();
                 if (interruptRequested) throw new OperationCanceledException();
-                var started = await RequestAsync("turn/start", new {
+                var started = await RequestAsync("turn/start", new
+                {
                     threadId,
                     model,
                     effort,
@@ -332,7 +336,8 @@ namespace VBAi
                 transport.Start();
                 transportStarted = true;
                 progress(UiText.Get("Codex: initializing the local server"));
-                await RequestAsync("initialize", new {
+                await RequestAsync("initialize", new
+                {
                     clientInfo = new { name = "VBAi", title = "VBAi", version = "0.1.0" },
                     capabilities = new { experimentalApi = true }
                 });
@@ -343,10 +348,16 @@ namespace VBAi
                 if (GetString(accountInfo, "type") != "chatgpt")
                     throw new InvalidOperationException(UiText.Get("Codex must be signed in through ChatGPT. No API key is used here."));
 
-                var definitions = tools.CatalogForProvider(true).Select(raw => {
+                var definitions = tools.CatalogForProvider(true).Select(raw =>
+                {
                     dynamic function = ((dynamic)raw).function;
-                    return (object)new { type = "function", name = (string)function.name,
-                        description = (string)function.description, inputSchema = function.parameters };
+                    return (object)new
+                    {
+                        type = "function",
+                        name = (string)function.name,
+                        description = (string)function.description,
+                        inputSchema = function.parameters
+                    };
                 }).ToArray();
                 progress(UiText.Get("Codex: opening the VBE conversation"));
                 string instructions = DeveloperInstructionSource();
@@ -357,15 +368,16 @@ namespace VBAi
                     ? await RequestAsync("thread/resume", refreshOnResume
                         ? (object)new { threadId, approvalPolicy = "untrusted", sandbox = "read-only", developerInstructions = instructions }
                         : new { threadId, approvalPolicy = "untrusted", sandbox = "read-only" })
-                    : await RequestAsync("thread/start", new {
-                    ephemeral = false,
-                    cwd = Path.GetTempPath(),
-                    sandbox = "read-only",
-                    approvalPolicy = "untrusted",
-                    serviceName = "VBAi",
-                    developerInstructions = instructions,
-                    dynamicTools = definitions
-                });
+                    : await RequestAsync("thread/start", new
+                    {
+                        ephemeral = false,
+                        cwd = Path.GetTempPath(),
+                        sandbox = "read-only",
+                        approvalPolicy = "untrusted",
+                        serviceName = "VBAi",
+                        developerInstructions = instructions,
+                        dynamicTools = definitions
+                    });
                 string returnedThreadId = GetString(GetObject(GetObject(started, "result"), "thread"), "id");
                 if (string.IsNullOrWhiteSpace(returnedThreadId)) throw new InvalidOperationException("Codex did not create a thread.");
                 if (!string.IsNullOrEmpty(expectedThreadId) && !string.Equals(expectedThreadId, returnedThreadId, StringComparison.Ordinal))
@@ -390,8 +402,11 @@ namespace VBAi
             string hash = InstructionsHash(instructions);
             if (string.Equals(appliedInstructionsHash, hash, StringComparison.Ordinal)) return;
             string existingThreadId = threadId;
-            var response = await RequestAsync("thread/resume", new {
-                threadId = existingThreadId, approvalPolicy = "untrusted", sandbox = "read-only",
+            var response = await RequestAsync("thread/resume", new
+            {
+                threadId = existingThreadId,
+                approvalPolicy = "untrusted",
+                sandbox = "read-only",
                 developerInstructions = instructions
             });
             string resumedId = GetString(GetObject(GetObject(response, "result"), "thread"), "id");
@@ -510,7 +525,8 @@ namespace VBAi
                                     if (!string.IsNullOrEmpty(GetString(item, "id")) && !string.IsNullOrWhiteSpace(partText)) PublishActivity(new CodexAgentActivity { Id = GetString(item, "id") + ":summary:" + partNumber, Kind = "reasoning", Title = UiText.Get("Reasoning · summary"), Detail = partText, Status = "completed" });
                                     partNumber++;
                                 }
-                                var parts = ((object[])summary).Select(part => {
+                                var parts = ((object[])summary).Select(part =>
+                                {
                                     var value = part as IDictionary<string, object>;
                                     return value != null ? GetString(value, "text") : part as string;
                                 }).Where(part => !string.IsNullOrWhiteSpace(part));
@@ -526,7 +542,8 @@ namespace VBAi
                         EndActivities(status);
                         var completion = turnDone;
                         string answer = finalText;
-                        ui.Post(_ => {
+                        ui.Post(_ =>
+                        {
                             if (status == "completed") completion.TrySetResult(answer ?? UiText.Get("Codex finished without a text response."));
                             else if (status == "interrupted") completion.TrySetException(new OperationCanceledException());
                             else completion.TrySetException(new InvalidOperationException(
@@ -557,8 +574,13 @@ namespace VBAi
         {
             CodexAgentActivity[] pending;
             lock (gate) { pending = runningActivities.Values.ToArray(); runningActivities.Clear(); }
-            foreach (var activity in pending) PublishActivity(new CodexAgentActivity { Id = activity.Id, Kind = activity.Kind,
-                Status = status == "failed" ? "failed" : status == "completed" && activity.Kind == "reasoning" ? "completed" : "interrupted", Append = true });
+            foreach (var activity in pending) PublishActivity(new CodexAgentActivity
+            {
+                Id = activity.Id,
+                Kind = activity.Kind,
+                Status = status == "failed" ? "failed" : status == "completed" && activity.Kind == "reasoning" ? "completed" : "interrupted",
+                Append = true
+            });
         }
 
         /// <summary>Publie une mise à jour de conversation sur le contexte de l’interface.</summary>
@@ -577,7 +599,8 @@ namespace VBAi
         /// <param name="parameters">Paramètres de l’appel d’outil.</param>
         private void HandleToolCall(object requestId, IDictionary<string, object> parameters)
         {
-            ui.Post(async state => {
+            ui.Post(async state =>
+            {
                 try
                 {
                     if (GetString(parameters, "threadId") != threadId || turnDone == null)
@@ -593,20 +616,39 @@ namespace VBAi
                     var response = NewJson().Deserialize<Response>(output);
                     PublishActivity(CodexAgentActivity.FromItem(new Dictionary<string, object> { ["type"] = "dynamicToolCall", ["id"] = activityId, ["tool"] = name, ["arguments"] = parameters["arguments"], ["success"] = response != null && response.Ok }, true));
                     ChatUpdate?.Invoke("tool", activityId, name + (response != null && response.Ok ? UiText.Get(" · complete") : UiText.Get(" · failed")), true);
-                    Send(new { id = requestId, result = new {
-                        contentItems = new[] { new { type = "inputText", text = output } },
-                        success = response != null && response.Ok
-                    } });
+                    Send(new
+                    {
+                        id = requestId,
+                        result = new
+                        {
+                            contentItems = new[] { new { type = "inputText", text = output } },
+                            success = response != null && response.Ok
+                        }
+                    });
                 }
                 catch (Exception ex)
                 {
                     if (GetString(parameters, "threadId") == threadId && turnDone != null)
-                        PublishActivity(new CodexAgentActivity { Id = GetString(parameters, "callId") ?? GetString(parameters, "itemId") ?? "tool-" + Convert.ToString(requestId),
-                        Kind = "dynamicToolCall", Title = GetString(parameters, "tool"), Detail = ex.Message,
-                        Status = ex is OperationCanceledException ? "interrupted" : "failed" });
-                    try { Send(new { id = requestId, result = new {
-                        contentItems = new[] { new { type = "inputText", text = ex.Message } }, success = false
-                    } }); }
+                        PublishActivity(new CodexAgentActivity
+                        {
+                            Id = GetString(parameters, "callId") ?? GetString(parameters, "itemId") ?? "tool-" + Convert.ToString(requestId),
+                            Kind = "dynamicToolCall",
+                            Title = GetString(parameters, "tool"),
+                            Detail = ex.Message,
+                            Status = ex is OperationCanceledException ? "interrupted" : "failed"
+                        });
+                    try
+                    {
+                        Send(new
+                        {
+                            id = requestId,
+                            result = new
+                            {
+                                contentItems = new[] { new { type = "inputText", text = ex.Message } },
+                                success = false
+                            }
+                        });
+                    }
                     catch { FailPending(ex); }
                 }
             }, null);

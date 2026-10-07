@@ -1,7 +1,7 @@
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Collections.Generic;
 using System.Windows.Automation;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 using VBAi.Tests.Integration;
 
 namespace VBAi.Tests.Unit
@@ -24,9 +24,15 @@ namespace VBAi.Tests.Unit
         [DataRow("expected-zero")]
         public void PickerGuardRequiresTheFrozenNativeAndUiIdentity(string change)
         {
-            var actual = new WordChatScopeIdle.PickerIdentity {
-                Handle = 41, NativeProcessId = 10, UiProcessId = 10, NativeThreadId = 20,
-                WithinChat = true, IsComboBox = true, AutomationId = "scopePicker"
+            var actual = new WordChatScopeIdle.PickerIdentity
+            {
+                Handle = 41,
+                NativeProcessId = 10,
+                UiProcessId = 10,
+                NativeThreadId = 20,
+                WithinChat = true,
+                IsComboBox = true,
+                AutomationId = "scopePicker"
             };
             if (change == "zero") actual.Handle = 0;
             if (change == "replaced") actual.Handle = 42;
@@ -138,12 +144,14 @@ namespace VBAi.Tests.Unit
         public void DelayedGuardOrReadCannotAdmitLateAcceptanceOrCollapse(string phase, int expectedReads)
         {
             var p = new Probe();
-            p.Read = () => {
+            p.Read = () =>
+            {
                 if (phase == "expanded-read" || phase == "second-good-read" && p.Reads == 2) p.Elapsed = 15000;
                 return Sample(state: phase == "expanded-read" || phase == "collapse-guard"
                     ? ExpandCollapseState.Expanded : ExpandCollapseState.Collapsed);
             };
-            p.Guard = () => {
+            p.Guard = () =>
+            {
                 if (phase == "initial-guard" || phase == "collapse-guard" && p.Guards == 2) p.Elapsed = 15000;
             };
             Assert.ThrowsException<TimeoutException>(() => p.Run());

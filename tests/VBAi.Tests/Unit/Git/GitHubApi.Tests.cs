@@ -1,7 +1,9 @@
 namespace VBAi.Tests.Unit
 {
+    using Microsoft.VisualStudio.TestTools.UnitTesting;
     using System;
     using System.Collections.Generic;
+    using System.IO;
     using System.Linq;
     using System.Net;
     using System.Net.Http;
@@ -9,9 +11,7 @@ namespace VBAi.Tests.Unit
     using System.Threading.Tasks;
     using System.Web.Script.Serialization;
     using VBAi;
-    using Microsoft.VisualStudio.TestTools.UnitTesting;
     using VBAi.Tests.Infrastructure;
-    using System.IO;
 
     /// <summary>Vérifie les appels GitHub avec handlers mémoire et fixtures de processus sans accès réseau réel.</summary>
     [TestClass, TestCategory("Unit")]
@@ -85,40 +85,40 @@ namespace VBAi.Tests.Unit
                 try
                 {
                     foreach (var cancel in new[] { false, true })
-                    using (var cancellation = new CancellationTokenSource())
-                    {
-                        int inputCalls = 0;
-                        var inputFailure = new IOException("Fixture input pipe failure.");
-                        GitHubApi.WriteCredentialInput = (process, input) =>
+                        using (var cancellation = new CancellationTokenSource())
                         {
-                            inputCalls++;
-                            Assert.IsTrue(process.HasExited);
-                            Assert.AreEqual("protocol=https\nhost=github.com\n\n", input);
-                            return Task.FromException(inputFailure);
-                        };
-                        GitHubApi.StartCredentialProcess = process =>
-                        {
-                            var started = fixture.Start(process, "wait");
-                            Assert.IsTrue(started);
-                            // Terminate the real fixture child; inject the input failure independently of pipe buffering.
-                            process.Kill();
-                            Assert.IsTrue(process.WaitForExit(5000), "The fixture child must exit before the input pipe is used.");
-                            if (cancel) cancellation.Cancel();
-                            return started;
-                        };
-                        if (cancel)
-                        {
-                            var error = await Assert.ThrowsExceptionAsync<OperationCanceledException>(() => GitHubApi.ReadCredential(null, cancellation.Token));
-                            Assert.IsTrue(error.CancellationToken.IsCancellationRequested);
+                            int inputCalls = 0;
+                            var inputFailure = new IOException("Fixture input pipe failure.");
+                            GitHubApi.WriteCredentialInput = (process, input) =>
+                            {
+                                inputCalls++;
+                                Assert.IsTrue(process.HasExited);
+                                Assert.AreEqual("protocol=https\nhost=github.com\n\n", input);
+                                return Task.FromException(inputFailure);
+                            };
+                            GitHubApi.StartCredentialProcess = process =>
+                            {
+                                var started = fixture.Start(process, "wait");
+                                Assert.IsTrue(started);
+                                // Terminate the real fixture child; inject the input failure independently of pipe buffering.
+                                process.Kill();
+                                Assert.IsTrue(process.WaitForExit(5000), "The fixture child must exit before the input pipe is used.");
+                                if (cancel) cancellation.Cancel();
+                                return started;
+                            };
+                            if (cancel)
+                            {
+                                var error = await Assert.ThrowsExceptionAsync<OperationCanceledException>(() => GitHubApi.ReadCredential(null, cancellation.Token));
+                                Assert.IsTrue(error.CancellationToken.IsCancellationRequested);
+                            }
+                            else
+                            {
+                                var error = await Assert.ThrowsExceptionAsync<IOException>(() => GitHubApi.ReadCredential(null, cancellation.Token));
+                                Assert.AreSame(inputFailure, error);
+                                Assert.IsFalse(cancellation.IsCancellationRequested);
+                            }
+                            Assert.AreEqual(1, inputCalls);
                         }
-                        else
-                        {
-                            var error = await Assert.ThrowsExceptionAsync<IOException>(() => GitHubApi.ReadCredential(null, cancellation.Token));
-                            Assert.AreSame(inputFailure, error);
-                            Assert.IsFalse(cancellation.IsCancellationRequested);
-                        }
-                        Assert.AreEqual(1, inputCalls);
-                    }
                 }
                 finally
                 {

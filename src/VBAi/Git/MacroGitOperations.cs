@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
@@ -93,11 +92,17 @@ namespace VBAi
         internal async Task<object> StatusAsync()
         {
             var live = project.Capture();
-            return await Task.Run<object>(() => new {
-                State = Revision(live), Branch = Repository.Branch, Head = Repository.Resolve(Repository.Head),
+            return await Task.Run<object>(() => new
+            {
+                State = Revision(live),
+                Repository.Branch,
+                Head = Repository.Resolve(Repository.Head),
                 ChangedFiles = live.Changes(Repository.Read(Repository.Resolve(MacroGitRepository.Baseline))),
-                Branches = Repository.Branches(), Checkpoints = Repository.Checkpoints(), History = Repository.History(),
-                Merge = Repository.PendingMerge, RecoveryPending = Repository.RecoveryPending,
+                Branches = Repository.Branches(),
+                Checkpoints = Repository.Checkpoints(),
+                History = Repository.History(),
+                Merge = Repository.PendingMerge,
+                Repository.RecoveryPending,
                 Synchronization = Repository.SynchronizationStatus()
             });
         }
@@ -164,7 +169,8 @@ namespace VBAi
                     break;
                 case "commit_selected":
                 case "commit":
-                    string commit = await Task.Run(() => {
+                    string commit = await Task.Run(() =>
+                    {
                         if (string.IsNullOrWhiteSpace(text)) throw new ArgumentException(UiText.Get("A commit message is required."));
                         string parent = Repository.Resolve(Repository.Head) ?? Repository.Resolve("refs/remotes/origin/selected");
                         var previous = Repository.Read(parent);
@@ -177,13 +183,15 @@ namespace VBAi
                     }); return new { Commit = commit, Published = false };
                 case "fetch": await Task.Run(() => Repository.Fetch()); break;
                 case "push":
-                    await Task.Run(() => {
+                    await Task.Run(() =>
+                    {
                         string local = Repository.Resolve(Repository.Head) ?? throw new InvalidOperationException(UiText.Get("No commit to publish."));
                         string remote = Repository.Fetch(); if (remote != null) Repository.RequireFastForward(remote, local);
                         Repository.Push(local);
                     }); break;
                 case "pull":
-                    string incoming = await Task.Run(() => {
+                    string incoming = await Task.Run(() =>
+                    {
                         var previous = Repository.Read(Repository.Resolve(MacroGitRepository.Baseline));
                         if (previous != null && !live.SameAs(previous)) throw new InvalidOperationException(UiText.Get("VBA contains uncommitted local changes."));
                         string remote = Repository.Fetch() ?? throw new InvalidOperationException("Branche distante absente.");
@@ -201,7 +209,8 @@ namespace VBAi
                     await ImportAsync(await Task.Run(() => Repository.Read(merged)), live);
                     await Task.Run(() => { Repository.SetRef(Repository.Head, merged); Repository.SetRef(MacroGitRepository.Baseline, merged); Repository.AbortMerge(); }); break;
                 case "rollback":
-                    var rollback = await Task.Run(() => {
+                    var rollback = await Task.Run(() =>
+                    {
                         var after = Repository.Read(Repository.Resolve(MacroGitRepository.AfterImport));
                         if (after == null || !live.SameAs(after)) throw new InvalidOperationException(UiText.Get("Code changed since the import; automatic restore refused."));
                         return Repository.Read(Repository.Resolve(MacroGitRepository.Backup)) ?? throw new InvalidOperationException("Aucune sauvegarde.");

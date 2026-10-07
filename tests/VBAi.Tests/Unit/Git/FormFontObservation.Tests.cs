@@ -1,9 +1,9 @@
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Security.Cryptography;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace VBAi.Tests.Unit
 {
@@ -81,7 +81,8 @@ namespace VBAi.Tests.Unit
         public void InitialExactOrUnrelatedDifferenceRefusesBeforeTransfer()
         {
             var target = Target(); var source = VbaGitSnapshot.Utf8.GetString(target.Files["Form1.frm"]);
-            var otherSource = new VbaGitSnapshot(target.Manifest, new Dictionary<string, byte[]> {
+            var otherSource = new VbaGitSnapshot(target.Manifest, new Dictionary<string, byte[]>
+            {
                 ["Form1.frm"] = VbaGitSnapshot.Utf8.GetBytes(source + "' Different source\n"),
                 ["Form1.frx"] = DifferentResource()
             });
@@ -135,7 +136,8 @@ namespace VBAi.Tests.Unit
         private static VbaGitSnapshot Target()
         {
             var form = new VbaGitComponent { Name = "Form1", Type = 3, HasResources = true };
-            var files = new Dictionary<string, byte[]>(StringComparer.Ordinal) {
+            var files = new Dictionary<string, byte[]>(StringComparer.Ordinal)
+            {
                 ["Form1.frm"] = VbaGitSnapshot.Utf8.GetBytes(
                     "OleObjectBlob = \"Form1.frx\":0000\nAttribute VB_Name = \"Form1\"\nOption Explicit\n"),
                 ["Form1.frx"] = FormStreamPaddingTests.ContainerResourceBefore()
@@ -144,8 +146,10 @@ namespace VBAi.Tests.Unit
         }
         private static VbaGitSnapshot WithResource(VbaGitSnapshot target, byte[] resource)
         {
-            return new VbaGitSnapshot(target.Manifest, new Dictionary<string, byte[]> {
-                ["Form1.frm"] = target.Files["Form1.frm"], ["Form1.frx"] = resource
+            return new VbaGitSnapshot(target.Manifest, new Dictionary<string, byte[]>
+            {
+                ["Form1.frm"] = target.Files["Form1.frm"],
+                ["Form1.frx"] = resource
             });
         }
         private static byte[] DifferentResource()
@@ -160,12 +164,16 @@ namespace VBAi.Tests.Unit
         {
             string nonce = Guid.NewGuid().ToString("N");
             byte[] descriptor = target.FormFonts(target.Manifest.Components[0]).Single(item => item.OwnerPath == "").Descriptor;
-            return new FormFontObservation.Manifest {
-                ProjectPath = ProjectPath(), FormName = "Form1", Mode = mode,
+            return new FormFontObservation.Manifest
+            {
+                ProjectPath = ProjectPath(),
+                FormName = "Form1",
+                Mode = mode,
                 TargetFormSha256 = Hash(target.Files["Form1.frm"]),
                 TargetDescriptorHex = BitConverter.ToString(descriptor).Replace("-", ""),
                 CandidateMvid = typeof(FormFontObservation).Module.ModuleVersionId.ToString(),
-                OutputRoot = Path.Combine(Path.GetTempPath(), nonce), Nonce = nonce,
+                OutputRoot = Path.Combine(Path.GetTempPath(), nonce),
+                Nonce = nonce,
                 TemporaryName = mode == FormFontObservation.DistinctChildName ? "Arial" : null
             };
         }

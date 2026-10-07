@@ -57,91 +57,139 @@ namespace VBAi.Tests.Integration
             OllamaOfficeDesktop.Require(desktop);
             bool initialInventory = true;
             object lastInventory = null;
-            try {
-            Wait(() => {
-                var roots = new List<IntPtr>(); var tops = new List<IntPtr>(); var topInventory = new List<object>(); int count = 0;
-                EnumWindows((window, state) => {
-                    if (++count >= 4096) return false;
-                    uint process; GetWindowThreadProcessId(window, out process);
-                    if (process != pid) return true;
-                    var name = new StringBuilder(128); GetClassName(window, name, name.Capacity);
-                    var title = new StringBuilder(128); GetWindowText(window, title, title.Capacity);
-                    topInventory.Add(new { Hwnd = window.ToInt64(), Class = name.ToString(), Visible = IsWindowVisible(window),
-                        Owner = GetWindow(window, 4).ToInt64(), CaptionMatches = title.ToString() == "VBAi — Your AI agent for VBA" });
-                    if (!IsWindowVisible(window)) return true;
-                    tops.Add(window);
-                    if (name.ToString() == "wndclass_desked_gsk") roots.Add(window);
-                    return true;
-                }, IntPtr.Zero);
-                if (count >= 4096 || roots.Count > 1) throw new InvalidOperationException("Ambiguous/bounded owned VBE inventory.");
-                if (roots.Count == 0) return false;
-                vbe = roots[0]; uint nativePid; ownerThread = GetWindowThreadProcessId(vbe, out nativePid);
-                OllamaOfficeDesktop.RequireWindow(desktop, (uint)pid, true, vbe);
-                var windows = new HashSet<IntPtr>(); int children = 0;
-                foreach (var top in tops.Where(window => window == vbe || OwnedByVbe(window)))
+            try
+            {
+                Wait(() =>
                 {
-                    windows.Add(top);
-                    EnumChildWindows(top, (window, state) => {
-                        if (++children >= 2048) return false;
-                        windows.Add(window); return true;
+                    var roots = new List<IntPtr>(); var tops = new List<IntPtr>(); var topInventory = new List<object>(); int count = 0;
+                    EnumWindows((window, state) =>
+                    {
+                        if (++count >= 4096) return false;
+                        uint process; GetWindowThreadProcessId(window, out process);
+                        if (process != pid) return true;
+                        var name = new StringBuilder(128); GetClassName(window, name, name.Capacity);
+                        var title = new StringBuilder(128); GetWindowText(window, title, title.Capacity);
+                        topInventory.Add(new
+                        {
+                            Hwnd = window.ToInt64(),
+                            Class = name.ToString(),
+                            Visible = IsWindowVisible(window),
+                            Owner = GetWindow(window, 4).ToInt64(),
+                            CaptionMatches = title.ToString() == "VBAi — Your AI agent for VBA"
+                        });
+                        if (!IsWindowVisible(window)) return true;
+                        tops.Add(window);
+                        if (name.ToString() == "wndclass_desked_gsk") roots.Add(window);
+                        return true;
                     }, IntPtr.Zero);
-                    if (children >= 2048) throw new InvalidOperationException("Bounded native tool site inventory.");
-                }
-                var found = new List<IntPtr>();
-                var inventory = new List<object>();
-                foreach (var window in windows)
+                    if (count >= 4096 || roots.Count > 1) throw new InvalidOperationException("Ambiguous/bounded owned VBE inventory.");
+                    if (roots.Count == 0) return false;
+                    vbe = roots[0]; uint nativePid; ownerThread = GetWindowThreadProcessId(vbe, out nativePid);
+                    OllamaOfficeDesktop.RequireWindow(desktop, (uint)pid, true, vbe);
+                    var windows = new HashSet<IntPtr>(); int children = 0;
+                    foreach (var top in tops.Where(window => window == vbe || OwnedByVbe(window)))
+                    {
+                        windows.Add(top);
+                        EnumChildWindows(top, (window, state) =>
+                        {
+                            if (++children >= 2048) return false;
+                            windows.Add(window); return true;
+                        }, IntPtr.Zero);
+                        if (children >= 2048) throw new InvalidOperationException("Bounded native tool site inventory.");
+                    }
+                    var found = new List<IntPtr>();
+                    var inventory = new List<object>();
+                    foreach (var window in windows)
+                    {
+                        uint process; uint thread = GetWindowThreadProcessId(window, out process);
+                        if (process != pid || thread != ownerThread) continue;
+                        var name = new StringBuilder(128); GetClassName(window, name, name.Capacity);
+                        if (!name.ToString().StartsWith("WindowsForms", StringComparison.Ordinal)) continue;
+                        var title = new StringBuilder(128); GetWindowText(window, title, title.Capacity);
+                        bool captionMatches = title.ToString() == "VBAi — Your AI agent for VBA";
+                        var candidate = AutomationElement.FromHandle(window);
+                        string automationId = candidate.Current.AutomationId;
+                        bool knownControl = automationId == "ChatToolWindow" || automationId == "ChatWindow";
+                        inventory.Add(new
+                        {
+                            Hwnd = window.ToInt64(),
+                            Class = name.ToString(),
+                            ProcessId = process,
+                            NativeThread = thread,
+                            CaptionMatches = captionMatches,
+                            ChildOfVbe = IsChild(vbe, window),
+                            Visible = IsWindowVisible(window),
+                            KnownAssistantControl = knownControl,
+                            FixedControlId = knownControl ? automationId : null,
+                            Type = candidate.Current.ControlType.ProgrammaticName,
+                            ControlIdSha256 = EditorDocument.Hash(automationId ?? ""),
+                            Root = GetAncestor(window, 2).ToInt64(),
+                            Parent = GetAncestor(window, 1).ToInt64()
+                        });
+                        // A hosted borderless Form need not expose its caption through cross-process
+                        // GetWindowText. The COM container and exact control identities are the proof.
+                        if (!IsWindowVisible(window) || (!captionMatches && !knownControl)) continue;
+                        if (candidate.Current.ControlType != ControlType.Window && candidate.Current.ControlType != ControlType.Pane) continue;
+                        var scope = candidate.FindAll(TreeScope.Descendants,
+                            new PropertyCondition(AutomationElement.AutomationIdProperty, "scopePicker"));
+                        var options = candidate.FindAll(TreeScope.Descendants,
+                            new PropertyCondition(AutomationElement.AutomationIdProperty, "options"));
+                        var send = candidate.FindAll(TreeScope.Descendants,
+                            new PropertyCondition(AutomationElement.AutomationIdProperty, "send"));
+                        IntPtr container, site;
+                        bool hosted = TryHostedSite(window, out container, out site);
+                        inventory.Add(new
+                        {
+                            Candidate = window.ToInt64(),
+                            ScopeCount = scope.Count,
+                            HostedToolWindow = hosted,
+                            ToolContainer = container.ToInt64(),
+                            NativeSite = site.ToInt64()
+                        });
+                        if (scope.Count == 1 && options.Count == 1 && send.Count == 1 && hosted) found.Add(window);
+                    }
+                    lastInventory = new { ProcessId = pid, Vbe = vbe.ToInt64(), Windows = inventory, TopWindows = topInventory };
+                    if (initialInventory) { record(new { Phase = "InitialAssistantInventory", Inventory = lastInventory }); initialInventory = false; }
+                    // A container and its inner Form can expose the same descendants. Prefer the
+                    // innermost native candidate, while retaining distinct tool sites as ambiguous.
+                    found = found.Where(window => !found.Any(other => other != window && IsChild(window, other))).ToList();
+                    if (children >= 2048 || found.Count > 1) throw new InvalidOperationException("Ambiguous/bounded installed assistant inventory.");
+                    if (found.Count == 0) return false;
+                    chat = found[0]; root = AutomationElement.FromHandle(chat);
+                    if (!TryHostedSite(chat, out toolContainer, out nativeSite)) throw new InvalidOperationException("Native tool site changed.");
+                    Guard();
+                    record(new
+                    {
+                        Phase = "ActualEmbeddedAssistant",
+                        ProcessId = pid,
+                        Vbe = vbe.ToInt64(),
+                        Chat = chat.ToInt64(),
+                        NativeThread = ownerThread,
+                        Desktop = desktop,
+                        ChildOfVbe = IsChild(vbe, chat),
+                        HostedToolWindow = true,
+                        ToolContainer = toolContainer.ToInt64(),
+                        NativeSite = nativeSite.ToInt64(),
+                        NativeSiteOwnedByVbe = OwnedByVbe(GetAncestor(nativeSite, 2)),
+                        ContainerIdentity = AutomationElement.FromHandle(toolContainer).Current.AutomationId,
+                        NativeSiteClass = "GenericPane",
+                        NativeToolCaptionMatches = true
+                    });
+                    return true;
+                }, 45, "discover the installed embedded assistant");
+            }
+            catch
+            {
+                record(new
                 {
-                    uint process; uint thread = GetWindowThreadProcessId(window, out process);
-                    if (process != pid || thread != ownerThread) continue;
-                    var name = new StringBuilder(128); GetClassName(window, name, name.Capacity);
-                    if (!name.ToString().StartsWith("WindowsForms", StringComparison.Ordinal)) continue;
-                    var title = new StringBuilder(128); GetWindowText(window, title, title.Capacity);
-                    bool captionMatches = title.ToString() == "VBAi — Your AI agent for VBA";
-                    var candidate = AutomationElement.FromHandle(window);
-                    string automationId = candidate.Current.AutomationId;
-                    bool knownControl = automationId == "ChatToolWindow" || automationId == "ChatWindow";
-                    inventory.Add(new { Hwnd = window.ToInt64(), Class = name.ToString(), ProcessId = process,
-                        NativeThread = thread, CaptionMatches = captionMatches, ChildOfVbe = IsChild(vbe, window),
-                        Visible = IsWindowVisible(window), KnownAssistantControl = knownControl,
-                        FixedControlId = knownControl ? automationId : null, Type = candidate.Current.ControlType.ProgrammaticName,
-                        ControlIdSha256 = EditorDocument.Hash(automationId ?? ""),
-                        Root = GetAncestor(window, 2).ToInt64(), Parent = GetAncestor(window, 1).ToInt64() });
-                    // A hosted borderless Form need not expose its caption through cross-process
-                    // GetWindowText. The COM container and exact control identities are the proof.
-                    if (!IsWindowVisible(window) || (!captionMatches && !knownControl)) continue;
-                    if (candidate.Current.ControlType != ControlType.Window && candidate.Current.ControlType != ControlType.Pane) continue;
-                    var scope = candidate.FindAll(TreeScope.Descendants,
-                        new PropertyCondition(AutomationElement.AutomationIdProperty, "scopePicker"));
-                    var options = candidate.FindAll(TreeScope.Descendants,
-                        new PropertyCondition(AutomationElement.AutomationIdProperty, "options"));
-                    var send = candidate.FindAll(TreeScope.Descendants,
-                        new PropertyCondition(AutomationElement.AutomationIdProperty, "send"));
-                    IntPtr container, site;
-                    bool hosted = TryHostedSite(window, out container, out site);
-                    inventory.Add(new { Candidate = window.ToInt64(), ScopeCount = scope.Count, HostedToolWindow = hosted,
-                        ToolContainer = container.ToInt64(), NativeSite = site.ToInt64() });
-                    if (scope.Count == 1 && options.Count == 1 && send.Count == 1 && hosted) found.Add(window);
-                }
-                lastInventory = new { ProcessId = pid, Vbe = vbe.ToInt64(), Windows = inventory, TopWindows = topInventory };
-                if (initialInventory) { record(new { Phase = "InitialAssistantInventory", Inventory = lastInventory }); initialInventory = false; }
-                // A container and its inner Form can expose the same descendants. Prefer the
-                // innermost native candidate, while retaining distinct tool sites as ambiguous.
-                found = found.Where(window => !found.Any(other => other != window && IsChild(window, other))).ToList();
-                if (children >= 2048 || found.Count > 1) throw new InvalidOperationException("Ambiguous/bounded installed assistant inventory.");
-                if (found.Count == 0) return false;
-                chat = found[0]; root = AutomationElement.FromHandle(chat);
-                if (!TryHostedSite(chat, out toolContainer, out nativeSite)) throw new InvalidOperationException("Native tool site changed.");
-                Guard();
-                record(new { Phase = "ActualEmbeddedAssistant", ProcessId = pid, Vbe = vbe.ToInt64(), Chat = chat.ToInt64(),
-                    NativeThread = ownerThread, Desktop = desktop, ChildOfVbe = IsChild(vbe, chat), HostedToolWindow = true,
-                    ToolContainer = toolContainer.ToInt64(), NativeSite = nativeSite.ToInt64(),
-                    NativeSiteOwnedByVbe = OwnedByVbe(GetAncestor(nativeSite, 2)),
-                    ContainerIdentity = AutomationElement.FromHandle(toolContainer).Current.AutomationId,
-                    NativeSiteClass = "GenericPane", NativeToolCaptionMatches = true });
-                return true;
-            }, 45, "discover the installed embedded assistant");
-            } catch { record(new { Phase = "AssistantDiscoveryFailed", ProcessId = pid, Vbe = vbe.ToInt64(),
-                Chat = chat.ToInt64(), NativeThread = ownerThread, LastInventory = lastInventory }); throw; }
+                    Phase = "AssistantDiscoveryFailed",
+                    ProcessId = pid,
+                    Vbe = vbe.ToInt64(),
+                    Chat = chat.ToInt64(),
+                    NativeThread = ownerThread,
+                    LastInventory = lastInventory
+                }); throw;
+            }
         }
 
         internal void DetectNativeLanguage()
@@ -192,11 +240,19 @@ namespace VBAi.Tests.Integration
                 var element = AutomationElement.FromHandle(parent);
                 var cls = new StringBuilder(128); GetClassName(parent, cls, cls.Capacity);
                 var title = new StringBuilder(128); GetWindowText(parent, title, title.Capacity);
-                if (recordedAncestors.Add(parent)) record(new { Phase = "AssistantAncestorIdentity", Hwnd = parent.ToInt64(),
-                    ProcessId = process, NativeThread = thread, Class = cls.ToString(),
-                    AutomationId = element.Current.AutomationId, Type = element.Current.ControlType.ProgrammaticName,
-                    ContainerNameMatches = element.Current.Name == "ChatToolWindow", NativeToolCaptionMatches = title.ToString() == "VBAi",
-                    Parent = GetAncestor(parent, 1).ToInt64() });
+                if (recordedAncestors.Add(parent)) record(new
+                {
+                    Phase = "AssistantAncestorIdentity",
+                    Hwnd = parent.ToInt64(),
+                    ProcessId = process,
+                    NativeThread = thread,
+                    Class = cls.ToString(),
+                    AutomationId = element.Current.AutomationId,
+                    Type = element.Current.ControlType.ProgrammaticName,
+                    ContainerNameMatches = element.Current.Name == "ChatToolWindow",
+                    NativeToolCaptionMatches = title.ToString() == "VBAi",
+                    Parent = GetAncestor(parent, 1).ToInt64()
+                });
                 if (element.Current.AutomationId != "ChatToolWindow" && element.Current.AutomationId != "ControlAxSourcingSite") continue;
                 // VBIDE supplies ControlAxSourcingSite as the ActiveX container's runtime
                 // name. Its immediate native tool pane must still be the exact VBAi site.
@@ -286,12 +342,23 @@ namespace VBAi.Tests.Integration
             var button = Leaf(id);
             IntPtr target = new IntPtr(button.Current.NativeWindowHandle);
             uint nativePid; uint nativeThread = GetWindowThreadProcessId(target, out nativePid);
-            record(new { Phase = "ButtonPreflight", Id = id, AutomationId = button.Current.AutomationId,
-                Name = button.Current.Name, UiProcessId = button.Current.ProcessId, NativeProcessId = nativePid,
-                NativeThread = nativeThread, ExpectedNativeThread = ownerThread, Handle = target.ToInt64(),
-                UiEnabled = button.Current.IsEnabled, UiOffscreen = button.Current.IsOffscreen,
-                NativeVisible = IsWindowVisible(target), NativeEnabled = IsWindowEnabled(target),
-                OriginalParentMatches = IsChild(chat, target) });
+            record(new
+            {
+                Phase = "ButtonPreflight",
+                Id = id,
+                AutomationId = button.Current.AutomationId,
+                Name = button.Current.Name,
+                UiProcessId = button.Current.ProcessId,
+                NativeProcessId = nativePid,
+                NativeThread = nativeThread,
+                ExpectedNativeThread = ownerThread,
+                Handle = target.ToInt64(),
+                UiEnabled = button.Current.IsEnabled,
+                UiOffscreen = button.Current.IsOffscreen,
+                NativeVisible = IsWindowVisible(target),
+                NativeEnabled = IsWindowEnabled(target),
+                OriginalParentMatches = IsChild(chat, target)
+            });
             record(new { Phase = "ButtonIntentOnce", Id = id, Name = button.Current.Name });
             PrivateDesktopUiAction.ClickButtonOnce(button, id, button.Current.Name, chat,
                 new IntPtr(button.Current.NativeWindowHandle), pid, ownerThread);
@@ -308,7 +375,8 @@ namespace VBAi.Tests.Integration
             record(new { Phase = "ComboExpandIntentOnce", Id = id }); expand.Expand();
             string desktop = OllamaOfficeDesktop.MainEnabled ? "Default" : Environment.GetEnvironmentVariable("VBAi_TEST_DESKTOP_NAME");
             var choice = VBAi.Desktop.Helper.NativeComboListDiscovery.RequireExactItem(comboHandle, expected,
-                pid, ownerThread, desktop, thread => {
+                pid, ownerThread, desktop, thread =>
+                {
                     if (thread != ownerThread) throw new InvalidOperationException("Foreign combo/list thread.");
                     // Desktop identity comes from the exact owned window inventory. Querying
                     // GetThreadDesktop for a foreign process is not a reliable proof here.
@@ -415,8 +483,13 @@ namespace VBAi.Tests.Integration
             RequireReferenceRelease(observerThread, Thread.CurrentThread.ManagedThreadId, SentUnsettled);
             fixedControls.Clear();
             root = null;
-            record(new { Phase = "ObserverReferencesDropped", ObserverThread = observerThread,
-                NativeMutationEntries = 0, NativeRcwReleaseProven = false });
+            record(new
+            {
+                Phase = "ObserverReferencesDropped",
+                ObserverThread = observerThread,
+                NativeMutationEntries = 0,
+                NativeRcwReleaseProven = false
+            });
         }
 
         /// <summary>Never abandons pending observation or releases another observer's references.</summary>
@@ -447,7 +520,8 @@ namespace VBAi.Tests.Integration
             Rect viewport;
             if (!GetWindowRect(panel, out viewport)) throw new InvalidOperationException("Transcript viewport unavailable.");
             var handles = new List<IntPtr>(); int count = 0;
-            EnumChildWindows(panel, (window, state) => {
+            EnumChildWindows(panel, (window, state) =>
+            {
                 if (++count >= 2048) return false;
                 var name = new StringBuilder(128); GetClassName(window, name, name.Capacity);
                 if (name.ToString().IndexOf("RichEdit", StringComparison.OrdinalIgnoreCase) >= 0) handles.Add(window);

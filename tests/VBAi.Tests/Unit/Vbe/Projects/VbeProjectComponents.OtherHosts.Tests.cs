@@ -1,7 +1,6 @@
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.IO;
-using VBAi;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace VBAi.Tests.Unit
 {
@@ -17,7 +16,8 @@ namespace VBAi.Tests.Unit
             var f = new Fixture { Kind = "PowerPoint" };
             f.Observation.Path = @"C:\fixture\Document.pptm";
             f.Project.FileName = f.Observation.Path; f.Observation.Format = 25;
-            f.AfterInvocation = () => {
+            f.AfterInvocation = () =>
+            {
                 f.Observation.Format = 25;
                 switch (guard)
                 {
@@ -81,9 +81,12 @@ namespace VBAi.Tests.Unit
             editor.VBProjects.Add(project); editor.ActiveVBProject = project;
             var app = new PathApplication(); var doc = new PathDocument { Application = app, FullName = project.FileName };
             app.CurrentProject = doc; app.Documents.Add(doc);
-            var native = new VbeProjectComponents.NativeOtherHostProbe {
-                ReadHostKind = () => kind, ReadOwner = h => h.ToInt64() == 77 ? (uint)System.Diagnostics.Process.GetCurrentProcess().Id : 0,
-                ReadIdentity = ReferenceEquals, ReadActiveApplication = name => app
+            var native = new VbeProjectComponents.NativeOtherHostProbe
+            {
+                ReadHostKind = () => kind,
+                ReadOwner = h => h.ToInt64() == 77 ? (uint)System.Diagnostics.Process.GetCurrentProcess().Id : 0,
+                ReadIdentity = ReferenceEquals,
+                ReadActiveApplication = name => app
             };
             native.BindProject(project);
             Assert.AreSame(app, native.Application()); Assert.AreSame(doc, native.Documents(app)[0]);
@@ -129,7 +132,8 @@ namespace VBAi.Tests.Unit
         public sealed class PathControl
         {
             public int Id => 3; public int Type => 1; public bool BuiltIn => true; public bool Enabled { get; set; } = true;
-            public int Executions { get; private set; } public void Execute() { Executions++; }
+            public int Executions { get; private set; }
+            public void Execute() { Executions++; }
         }
         public sealed class PathDatabase { public bool Updatable => true; }
         public sealed class PathApplication
@@ -141,9 +145,12 @@ namespace VBAi.Tests.Unit
         }
         public sealed class PathDocument
         {
-            public object Application { get; set; } public string FullName { get; set; } public string Path => @"C:\fixture";
+            public object Application { get; set; }
+            public string FullName { get; set; }
+            public string Path => @"C:\fixture";
             public int FileFormat => 12; public int SaveFormat { get; set; } = 1; public bool Saved => true; public bool ReadOnly { get; set; }
-            public int SaveCalls { get; private set; } public void Save() { SaveCalls++; }
+            public int SaveCalls { get; private set; }
+            public void Save() { SaveCalls++; }
         }
 
         [TestMethod]
@@ -151,10 +158,13 @@ namespace VBAi.Tests.Unit
         {
             var app = new PathApplication(); var attempts = new System.Collections.Generic.List<string>();
             uint owner = (uint)System.Diagnostics.Process.GetCurrentProcess().Id;
-            var native = new VbeProjectComponents.NativeOtherHostProbe {
-                ReadHostKind = () => "Access", ReadHostMajorVersion = () => 16,
+            var native = new VbeProjectComponents.NativeOtherHostProbe
+            {
+                ReadHostKind = () => "Access",
+                ReadHostMajorVersion = () => 16,
                 ReadOwner = h => owner,
-                ReadActiveApplication = name => {
+                ReadActiveApplication = name =>
+                {
                     attempts.Add(name);
                     if (name == "Access.Application") throw new System.Runtime.InteropServices.COMException("Not registered", unchecked((int)0x800401E3));
                     return app;
@@ -172,15 +182,22 @@ namespace VBAi.Tests.Unit
             foreach (string fault in new[] { "none", "documents", "foreign document", "projects", "foreign project", "foreign vbe", "pid", "path", "format", "readonly" })
             {
                 var editor = new PathEditor();
-                var project = new PathProject { VBE = editor, FileName = "",
-                    PathReadError = unavailablePath ? new DirectoryNotFoundException("Path not found") : null };
+                var project = new PathProject
+                {
+                    VBE = editor,
+                    FileName = "",
+                    PathReadError = unavailablePath ? new DirectoryNotFoundException("Path not found") : null
+                };
                 editor.VBProjects.Add(project);
                 var app = new PathApplication(); var doc = new PathDocument { Application = app, FullName = @"C:\fixture\Owned.pub" };
                 app.Documents.Add(doc);
                 uint owner = (uint)System.Diagnostics.Process.GetCurrentProcess().Id;
-                var native = new VbeProjectComponents.NativeOtherHostProbe {
-                    ReadHostKind = () => "Publisher", ReadOwner = h => owner,
-                    ReadIdentity = ReferenceEquals, ReadActiveApplication = name => app
+                var native = new VbeProjectComponents.NativeOtherHostProbe
+                {
+                    ReadHostKind = () => "Publisher",
+                    ReadOwner = h => owner,
+                    ReadIdentity = ReferenceEquals,
+                    ReadActiveApplication = name => app
                 };
                 native.BindProject(project); native.BindDocument(doc);
                 Assert.AreSame(project, native.DocumentProject(doc));
@@ -216,9 +233,12 @@ namespace VBAi.Tests.Unit
                 var app = new PathApplication(); var doc = new PathDocument { Application = app, FullName = project.FileName };
                 app.Documents.Add(doc);
                 uint owner = (uint)System.Diagnostics.Process.GetCurrentProcess().Id;
-                var native = new VbeProjectComponents.NativeOtherHostProbe {
-                    ReadHostKind = () => "Publisher", ReadOwner = h => owner,
-                    ReadIdentity = ReferenceEquals, ReadActiveApplication = name => app
+                var native = new VbeProjectComponents.NativeOtherHostProbe
+                {
+                    ReadHostKind = () => "Publisher",
+                    ReadOwner = h => owner,
+                    ReadIdentity = ReferenceEquals,
+                    ReadActiveApplication = name => app
                 };
                 native.BindProject(project); native.BindDocument(doc);
                 Assert.AreSame(project, native.DocumentProject(doc));
@@ -241,7 +261,8 @@ namespace VBAi.Tests.Unit
             var fixture = new Fixture();
             if (temporaryPathBeforeSave) fixture.Project.FileName = @"C:\fixture\~WRL0002.tmp";
             else fixture.Project.PathReadError = new DirectoryNotFoundException("Path not found");
-            fixture.AfterInvocation = () => {
+            fixture.AfterInvocation = () =>
+            {
                 fixture.Project.PathReadError = null;
                 fixture.Project.FileName = @"C:\fixture\~WRL0002.tmp";
             };
@@ -330,7 +351,8 @@ namespace VBAi.Tests.Unit
                 if (fault == "oversized documents") for (int i = 0; i < 1000; i++) f.Items.Add(f);
                 if (fault == "project path") f.Project.FileName = @"C:\fixture\Previous.docm";
                 if (fault == "identity") f.ChangeIdentity = true;
-                f.BeforeSecondState = () => {
+                f.BeforeSecondState = () =>
+                {
                     if (fault == "readonly") f.Observation.ReadOnly = true;
                     if (fault == "path") f.Observation.Path = @"C:\fixture\Changed.docm";
                     if (fault == "format") f.Observation.Format = 15;
@@ -364,20 +386,20 @@ namespace VBAi.Tests.Unit
             Assert.AreEqual(System.Diagnostics.Process.GetCurrentProcess().Id, native.CurrentProcessId);
             Assert.ThrowsException<InvalidOperationException>(() => native.Application()); Assert.AreEqual(0u, native.ApplicationProcessId(new object()));
             foreach (string kind in new[] { "Word", "PowerPoint" }) foreach (string fault in new[] { "registered", "rot-com", "rot-binder", "rot-foreign", "om-error", "om-null", "om-com", "om-binder", "om-foreign", "om-absent" })
-            using (var f = new VBAi.Tests.Infrastructure.NativeOtherHostsFixture())
-            {
-                f.Kind = kind; foreach (long handle in new long[] { 20, 22, 23 }) f.Classes[handle] = kind == "Word" ? "_WwG" : "paneClassDC";
-                if (fault != "registered") f.Native.ReadActiveApplication = name => { if (fault == "rot-binder") throw new Microsoft.CSharp.RuntimeBinder.RuntimeBinderException("ROT binder"); if (fault == "rot-foreign") return new VBAi.Tests.Infrastructure.NativeOtherHostsFixture.ApplicationContract(); throw new System.Runtime.InteropServices.COMException("ROT absent"); };
-                if (fault == "om-error") f.AccessibilityError = 1;
-                if (fault == "om-null") f.Accessible[20] = null;
-                if (fault == "om-com") f.Accessible[20] = new System.Runtime.InteropServices.COMException("NativeOM failed");
-                if (fault == "om-binder") f.Accessible[20] = new object();
-                if (fault == "om-foreign") f.Accessible[20] = new VBAi.Tests.Infrastructure.NativeOtherHostsFixture.AutomationContract { Application = new VBAi.Tests.Infrastructure.NativeOtherHostsFixture.ApplicationContract() };
-                if (fault == "om-absent") f.Children.Clear();
-                if (fault == "om-absent") Assert.ThrowsException<InvalidOperationException>(() => f.Native.Application());
-                else Assert.AreSame(f.Application, f.Native.Application(), kind + ":" + fault);
-                Assert.AreEqual(fault == "registered" || fault == "om-absent" ? 0 : fault.StartsWith("om-") ? 2 : 1, f.AccessibleCalls);
-            }
+                using (var f = new VBAi.Tests.Infrastructure.NativeOtherHostsFixture())
+                {
+                    f.Kind = kind; foreach (long handle in new long[] { 20, 22, 23 }) f.Classes[handle] = kind == "Word" ? "_WwG" : "paneClassDC";
+                    if (fault != "registered") f.Native.ReadActiveApplication = name => { if (fault == "rot-binder") throw new Microsoft.CSharp.RuntimeBinder.RuntimeBinderException("ROT binder"); if (fault == "rot-foreign") return new VBAi.Tests.Infrastructure.NativeOtherHostsFixture.ApplicationContract(); throw new System.Runtime.InteropServices.COMException("ROT absent"); };
+                    if (fault == "om-error") f.AccessibilityError = 1;
+                    if (fault == "om-null") f.Accessible[20] = null;
+                    if (fault == "om-com") f.Accessible[20] = new System.Runtime.InteropServices.COMException("NativeOM failed");
+                    if (fault == "om-binder") f.Accessible[20] = new object();
+                    if (fault == "om-foreign") f.Accessible[20] = new VBAi.Tests.Infrastructure.NativeOtherHostsFixture.AutomationContract { Application = new VBAi.Tests.Infrastructure.NativeOtherHostsFixture.ApplicationContract() };
+                    if (fault == "om-absent") f.Children.Clear();
+                    if (fault == "om-absent") Assert.ThrowsException<InvalidOperationException>(() => f.Native.Application());
+                    else Assert.AreSame(f.Application, f.Native.Application(), kind + ":" + fault);
+                    Assert.AreEqual(fault == "registered" || fault == "om-absent" ? 0 : fault.StartsWith("om-") ? 2 : 1, f.AccessibleCalls);
+                }
         }
 
         [STATestMethod]
@@ -552,7 +574,8 @@ namespace VBAi.Tests.Unit
                     fixture.Project.FileName = fixture.Observation.Path; fixture.Observation.Format = null;
                 }
                 var request = fixture.Request();
-                fixture.AfterInvocation = () => {
+                fixture.AfterInvocation = () =>
+                {
                     if (scenario == "native error") fixture.Failure = "native error";
                     if (scenario == "host unsaved") fixture.Observation.Saved = false;
                     if (scenario == "project unsaved") fixture.Project.Saved = false;

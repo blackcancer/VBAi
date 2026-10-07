@@ -1,8 +1,6 @@
-using System;
-using System.Collections.Generic;
-using System.Reflection;
-using VBAi;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+using System;
+using System.Reflection;
 
 namespace VBAi.Tests.Unit
 {
@@ -22,29 +20,30 @@ namespace VBAi.Tests.Unit
         public void NativeCutNotificationsRequireBothRecoveryIdentityAndObservedDesignerChange()
         {
             foreach (string identity in new[] { null, "", "live" })
-            foreach (bool observed in new[] { false, true })
-            foreach (bool subscribed in new[] { false, true })
-            {
-                var tools = new ToolFixture().Tools; int notifications = 0;
-                if (subscribed) tools.FormCut += change => {
-                    notifications++; Assert.AreSame(tools, change.Owner); Assert.AreEqual(2, change.ControlCount);
-                    Assert.AreEqual("live", change.RecoveryId); Assert.AreEqual("P", change.Project);
-                };
-                tools.Execute = r => Response.Success(new LiveCutResult { DesignerClipboardRecoveryId = identity, DesignerChangeObserved = observed });
-                var args = Arguments("native_form_clipboard"); args["Action"] = "cut";
-                Success(tools.Invoke("native_form_clipboard", Json.Serialize(args)), "native cut");
-                Assert.AreEqual(identity == "live" && observed && subscribed ? 1 : 0, notifications);
-            }
+                foreach (bool observed in new[] { false, true })
+                    foreach (bool subscribed in new[] { false, true })
+                    {
+                        var tools = new ToolFixture().Tools; int notifications = 0;
+                        if (subscribed) tools.FormCut += change =>
+                        {
+                            notifications++; Assert.AreSame(tools, change.Owner); Assert.AreEqual(2, change.ControlCount);
+                            Assert.AreEqual("live", change.RecoveryId); Assert.AreEqual("P", change.Project);
+                        };
+                        tools.Execute = r => Response.Success(new LiveCutResult { DesignerClipboardRecoveryId = identity, DesignerChangeObserved = observed });
+                        var args = Arguments("native_form_clipboard"); args["Action"] = "cut";
+                        Success(tools.Invoke("native_form_clipboard", Json.Serialize(args)), "native cut");
+                        Assert.AreEqual(identity == "live" && observed && subscribed ? 1 : 0, notifications);
+                    }
             foreach (bool restoring in new[] { false, true })
-            foreach (bool subscribed in new[] { false, true })
-            {
-                var tools = new ToolFixture().Tools; int notifications = 0;
-                if (subscribed) tools.CodeEdited += change => notifications++;
-                typeof(LlmVbeTools).GetField("restoring", BindingFlags.Instance | BindingFlags.NonPublic).SetValue(tools, restoring);
-                tools.Execute = r => Response.Success(new NativeHistoryResult { Changes = new[] { new CodeChange(), new CodeChange() } });
-                Success(tools.Invoke("native_code_history", Json.Serialize(Arguments("native_code_history"))), "native history");
-                Assert.AreEqual(!restoring && subscribed ? 2 : 0, notifications);
-            }
+                foreach (bool subscribed in new[] { false, true })
+                {
+                    var tools = new ToolFixture().Tools; int notifications = 0;
+                    if (subscribed) tools.CodeEdited += change => notifications++;
+                    typeof(LlmVbeTools).GetField("restoring", BindingFlags.Instance | BindingFlags.NonPublic).SetValue(tools, restoring);
+                    tools.Execute = r => Response.Success(new NativeHistoryResult { Changes = new[] { new CodeChange(), new CodeChange() } });
+                    Success(tools.Invoke("native_code_history", Json.Serialize(Arguments("native_code_history"))), "native history");
+                    Assert.AreEqual(!restoring && subscribed ? 2 : 0, notifications);
+                }
         }
 
         [TestMethod]
@@ -53,7 +52,8 @@ namespace VBAi.Tests.Unit
             foreach (string command in new[] { "cut_code", "paste_code" })
             {
                 var tools = new ToolFixture().Tools; int reads = 0;
-                tools.Execute = r => {
+                tools.Execute = r =>
+                {
                     if (r.Command == "read_module") { reads++; return Response.Success(new LiveSourceResult { Code = reads == 1 ? "abc" : "partial" }); }
                     throw new InvalidOperationException("native write interrupted");
                 };

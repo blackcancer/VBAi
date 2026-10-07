@@ -111,16 +111,13 @@ namespace VBAi
             if (components != null)
                 foreach (IComponent component in components.Components)
                 {
-                    var tips = component as ToolTip;
-                    if (tips != null) tips.SetToolTip(control, Get(tips.GetToolTip(control)));
+                    if (component is ToolTip tips) tips.SetToolTip(control, Get(tips.GetToolTip(control)));
                 }
             UiHelpHints.Apply(control, components, additionalTips);
-            var combo = control as ComboBox;
-            if (combo != null)
+            if (control is ComboBox combo)
                 for (int i = 0; i < combo.Items.Count; i++)
-                    if (combo.Items[i] is string) combo.Items[i] = Get((string)combo.Items[i]);
-            var grid = control as DataGridView;
-            if (grid != null)
+                    if (combo.Items[i] is string v) combo.Items[i] = Get(v);
+            if (control is DataGridView grid)
                 foreach (DataGridViewColumn column in grid.Columns) column.HeaderText = Get(column.HeaderText);
             foreach (Control child in control.Controls) Apply(child, components, additionalTips);
             if (components != null)
@@ -139,8 +136,7 @@ namespace VBAi
                 item.Text = Get(item.Text);
                 item.ToolTipText = Get(item.ToolTipText);
                 item.AccessibleName = Get(item.AccessibleName);
-                var dropdown = item as ToolStripDropDownItem;
-                if (dropdown != null) ApplyItems(dropdown.DropDownItems);
+                if (item is ToolStripDropDownItem dropdown) ApplyItems(dropdown.DropDownItems);
             }
         }
 

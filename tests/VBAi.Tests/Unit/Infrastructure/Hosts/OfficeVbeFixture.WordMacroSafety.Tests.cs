@@ -1,6 +1,6 @@
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Collections.Generic;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 using VBAi.Tests.Integration;
 
 namespace VBAi.Tests.Unit
@@ -12,7 +12,8 @@ namespace VBAi.Tests.Unit
         public void SuppressionPrecedesDocumentCreationAndReleasesItsExactLeaseOnce()
         {
             var app = new FakeApplication();
-            OfficeVbeFixture.SuppressWordAutoMacros(app, () => app.Trace.Add("owner"), lease => {
+            OfficeVbeFixture.SuppressWordAutoMacros(app, () => app.Trace.Add("owner"), lease =>
+            {
                 Assert.AreSame(app.Commands, lease); app.Trace.Add("release");
             }, unused => Assert.Fail("A successful command must not be retained as uncertain."));
             app.Trace.Add("create");
@@ -31,10 +32,13 @@ namespace VBAi.Tests.Unit
             var app = new FakeApplication { FailurePhase = phase };
             var error = app.Error;
             var retained = new List<object>();
-            var observed = Assert.ThrowsException<InvalidOperationException>(() => {
-                OfficeVbeFixture.SuppressWordAutoMacros(app, () => {
+            var observed = Assert.ThrowsException<InvalidOperationException>(() =>
+            {
+                OfficeVbeFixture.SuppressWordAutoMacros(app, () =>
+                {
                     app.Trace.Add("owner"); if (phase == "owner") throw error;
-                }, lease => {
+                }, lease =>
+                {
                     Assert.AreSame(app.Commands, lease); app.Trace.Add("release");
                     if (phase == "release") throw error;
                 }, retained.Add);

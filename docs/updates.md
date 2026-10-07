@@ -1,11 +1,11 @@
-# Updates and the future installer
+# Updates and distribution
 
 [Documentation](README.md)
 
-**The standalone installer is a later deliverable.** VBAi already contains update
-coordination and an external updater foundation, but those components are not a
-completed installation product. Developer registration is described in
-[source-build setup](installation.md).
+The maintainer selected public distribution of an **unsigned** Windows x64
+installer and uninstaller for 1.0.0. This release is installed manually. The
+automatic updater keeps its signature checks and cannot apply unsigned packages.
+See [installation](installation.md) and [code signing](code-signing.md).
 
 ## Existing update foundation
 
@@ -25,10 +25,10 @@ Authenticode trust before execution. Source archives are not installer assets.
 
 ## Installer contract
 
-A future versioned release supplies `VBAi-Setup-win-x64.msi` or
-`VBAi-Setup-win-x64.exe`; the MSI is preferred when both exist. The installer must
-have a valid embedded Authenticode signature and deploy the complete add-in, TLB,
-resources, dependencies and independent `VBAi.Updater.exe`.
+Version 1.0.0 supplies `VBAi-Setup-win-x64.exe`. Future signed releases can supply
+an EXE or MSI; the updater prefers MSI when both exist. Automatic installation
+requires a valid embedded Authenticode signature. The package deploys the complete
+add-in, TLB, resources, dependencies and independent `VBAi.Updater.exe`.
 
 It must register the existing COM identities, preserve user data, handle occupied
 files and support rollback. The stable COM assembly identity and the delivery
@@ -40,10 +40,11 @@ architecture `win-x64`, `UpdateProtocol` set to `1` and a persistent, unique
 managed-installation checks.
 
 The updater launches MSI with `/i`, `/quiet`, `/norestart` and logging. An EXE must
-implement `/update /quiet /norestart`, wait for the actual installation to finish
+implement quiet installation, wait for the actual installation to finish
 and return a reliable exit code. Codes `0`, `3010` and `1641` indicate accepted
 success/restart outcomes; after a zero result the installed product version is
-checked against the requested target.
+checked against the requested target. The VBAi EXE is invoked with
+`/update /quiet /norestart /VERYSILENT /SUPPRESSMSGBOXES /SP-` for Inno Setup compatibility.
 
 ## Host lifecycle and recovery
 
@@ -51,12 +52,12 @@ The updater runs independently of the loaded add-in and waits for registered hos
 processes to exit. PID plus creation time avoids confusing a reused PID with the
 original host. It does not terminate applications to force an update.
 
-The future installer must still handle a host starting after that precheck. A
+The installer checks for open hosts before file installation and registration. A
 job interrupted after installation begins remains uncertain and is not blindly
 re-executed. Pending jobs, host registrations and downloaded payloads live under
 `%LOCALAPPDATA%\VBAi\Updates`.
 
-## Prepare a payload, not a release
+## Prepare the payload and installer
 
 ```powershell
 powershell.exe -NoProfile -File tools/Prepare-Release.ps1 -Version 0.1.1-beta.1
@@ -70,10 +71,34 @@ assets go under `dist/releases/<version>/`. Only compiled CHM files are copied
 into the payload's `Help/` folder; screenshots, HTML previews and compiler logs
 are excluded.
 
-The version above is an example, not an announced release. The script builds the
-Release payload, exports the TLB and prepares packaging metadata. It does not
-publish a release or build the future global installer. A supplied `-InstallerPath`
-is for an installer already built and signed separately.
+The version above is a build example. The script builds the Release payload,
+exports the TLB and prepares packaging metadata; it does not publish a release.
+Use `-MSBuildPath` with Visual Studio MSBuild when the .NET SDK cannot build the
+native renderer. `-BuildOutputRoot` selects fresh isolated staging. A supplied
+`-InstallerPath` remains restricted to an asset already built and signed.
+
+Compile the unsigned 1.0.0 setup with Inno Setup 6.7 or newer:
+
+```powershell
+tools/Prepare-Release.ps1 -Version 1.0.0
+tools/installer/Build-Installer.ps1 -Version 1.0.0 `
+  -PackageDirectory dist/releases/1.0.0/package `
+  -CompilerPath "C:/Program Files (x86)/Inno Setup 6/ISCC.exe" `
+  -OutputDirectory dist/releases/1.0.0/setup-unsigned -Unsigned
+```
+
+Outputs include Setup, `SHA256SUMS.txt` and a build receipt. Both commands refuse
+existing output directories. Signed compilation replaces `-Unsigned` with
+`-SigningScript <approved-provider-adapter.ps1>`; the adapter signs the generated
+uninstaller and the final EXE, with trust and timestamp verification at each step.
+
+Setup installs for the current user in `%LOCALAPPDATA%\Programs\VBAi` and writes
+the installation marker after registration succeeds. The ID persists on repair
+and upgrade. A one-time UAC prompt may be needed for the path-independent shared
+chat ProgID. Uninstall preserves user data and this shared machine mapping.
+Registration snapshots and logs reside under `%LOCALAPPDATA%\VBAi\SetupBackups`
+and `SetupLogs`. Failed registration requests verified restoration of the prior
+HKCU trees; that result alone does not prove whole-installation file rollback.
 
 The updater also provides `--check-webview2` and `--ensure-webview2` prerequisite
 entry points. The latter can download the official Microsoft bootstrapper, verify

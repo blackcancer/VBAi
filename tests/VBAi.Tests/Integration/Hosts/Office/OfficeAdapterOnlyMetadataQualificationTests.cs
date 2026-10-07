@@ -1,7 +1,7 @@
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Globalization;
 using System.IO;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace VBAi.Tests.Integration
 {
@@ -30,17 +30,25 @@ namespace VBAi.Tests.Integration
         private void Qualify(string host, string property, bool serializedPublisherSeed = false)
         {
             object expected = null, before = null;
-            OfficeAdapterOnlyProjectQualification.Run(host, "Metadata." + property, null, fixture => {
+            OfficeAdapterOnlyProjectQualification.Run(host, "Metadata." + property, null, fixture =>
+            {
                 before = OfficeAdapterOnlyProjectQualification.ReadProperty(fixture, property);
                 expected = property == "Description" ? (object)("VBAi adapter metadata été " + Guid.NewGuid().ToString("N")) :
                     property == "HelpFile" ? Path.Combine(fixture.Root, "OwnedMetadataHelp.chm") :
                     (object)(Convert.ToInt32(before, CultureInfo.InvariantCulture) == 321 ? 322 : 321);
                 if (property == "HelpContextID" && before is string) expected = Convert.ToString(expected, CultureInfo.InvariantCulture);
                 Assert.AreNotEqual(Convert.ToString(before, CultureInfo.InvariantCulture), Convert.ToString(expected, CultureInfo.InvariantCulture));
-                fixture.RecordAdapterStage("MetadataExpectedReadback", new { Property = property, Before = before, Expected = expected,
-                    HelpFileContentCreated = false, HelpInvoked = false });
+                fixture.RecordAdapterStage("MetadataExpectedReadback", new
+                {
+                    Property = property,
+                    Before = before,
+                    Expected = expected,
+                    HelpFileContentCreated = false,
+                    HelpInvoked = false
+                });
                 OfficeAdapterOnlyProjectQualification.SetProperty(fixture, property, expected);
-            }, fixture => {
+            }, fixture =>
+            {
                 Assert.AreEqual(Convert.ToString(expected, CultureInfo.InvariantCulture),
                     Convert.ToString(OfficeAdapterOnlyProjectQualification.ReadProperty(fixture, property), CultureInfo.InvariantCulture),
                     "Project metadata was not retained exactly: " + property);

@@ -1,6 +1,6 @@
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Threading;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace VBAi.Tests.Integration
 {
@@ -29,9 +29,16 @@ namespace VBAi.Tests.Integration
                 Assert.IsNotNull(command, "The native Options command must exist.");
                 Assert.AreEqual(522, Convert.ToInt32(((dynamic)command).Id));
                 Assert.IsTrue(Convert.ToBoolean(((dynamic)command).Enabled));
-                record(new { Phase = "OptionsMenuIntent", CommandId = 522,
-                    Caption = Convert.ToString(((dynamic)command).Caption), VbeHwnd = window.ToInt64(),
-                    OwnerThreadId = tid, OwnerDesktop = ownerDesktop, WindowDesktop = windowDesktop });
+                record(new
+                {
+                    Phase = "OptionsMenuIntent",
+                    CommandId = 522,
+                    Caption = Convert.ToString(((dynamic)command).Caption),
+                    VbeHwnd = window.ToInt64(),
+                    OwnerThreadId = tid,
+                    OwnerDesktop = ownerDesktop,
+                    WindowDesktop = windowDesktop
+                });
                 ((dynamic)command).Execute(); // Exactly once; the modal lifetime is observed by the UIA worker.
                 record(new { Phase = "OptionsMenuReturned" });
             }

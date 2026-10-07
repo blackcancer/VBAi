@@ -1,10 +1,10 @@
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Text;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 using VBAi.Tests.Integration;
 
 namespace VBAi.Tests.Unit
@@ -33,7 +33,8 @@ namespace VBAi.Tests.Unit
         public void NativeFailurePreservesExactWin32ErrorAfterOneBoundedQuery()
         {
             int calls = 0;
-            ExcelOwnedProcessImage.ImageQuery query = (IntPtr handle, int flags, StringBuilder path, ref int size) => {
+            ExcelOwnedProcessImage.ImageQuery query = (IntPtr handle, int flags, StringBuilder path, ref int size) =>
+            {
                 calls++;
                 Assert.AreEqual(new IntPtr(42), handle);
                 Assert.AreEqual(0, flags, "Win32 paths are required, not device paths.");
@@ -49,7 +50,8 @@ namespace VBAi.Tests.Unit
         public void OnlyCompleteNativePathCanSatisfyExactPidPathAndStartGuards()
         {
             string image = Path.Combine(Path.GetTempPath(), "EXCEL.EXE");
-            ExcelOwnedProcessImage.ImageQuery query = (IntPtr handle, int flags, StringBuilder path, ref int size) => {
+            ExcelOwnedProcessImage.ImageQuery query = (IntPtr handle, int flags, StringBuilder path, ref int size) =>
+            {
                 path.Append(image);
                 size = image.Length;
                 return true;
@@ -68,7 +70,8 @@ namespace VBAi.Tests.Unit
         [DataRow(12)]
         public void EmptyTruncatedOrInconsistentNativeLengthCannotProveIdentity(int returnedSize)
         {
-            ExcelOwnedProcessImage.ImageQuery query = (IntPtr handle, int flags, StringBuilder path, ref int size) => {
+            ExcelOwnedProcessImage.ImageQuery query = (IntPtr handle, int flags, StringBuilder path, ref int size) =>
+            {
                 path.Append("C:\\x.exe");
                 size = returnedSize;
                 return true;

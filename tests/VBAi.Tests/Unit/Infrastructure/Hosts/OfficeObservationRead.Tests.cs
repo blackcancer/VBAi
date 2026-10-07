@@ -1,8 +1,8 @@
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using System.Threading;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 using VBAi.Tests.Integration;
 
 namespace VBAi.Tests.Unit
@@ -17,7 +17,8 @@ namespace VBAi.Tests.Unit
         {
             int calls = 0, thread = Thread.CurrentThread.ManagedThreadId;
             var waits = new List<int>(); var records = new List<int>();
-            string result = OfficeObservationRead.Getter(() => {
+            string result = OfficeObservationRead.Getter(() =>
+            {
                 Assert.AreEqual(thread, Thread.CurrentThread.ManagedThreadId);
                 if (calls++ < rejections) throw new COMException("rejected", unchecked((int)0x80010001));
                 return "native read";

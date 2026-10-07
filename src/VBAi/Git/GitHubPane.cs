@@ -81,7 +81,8 @@ namespace VBAi
         /// <param name="e">Données de l’événement WinForms.</param>
         private async void LoadRepositories_Click(object sender, EventArgs e)
         {
-            await Run(async (api, ct) => {
+            await Run(async (api, ct) =>
+            {
                 repositories = await api.Repositories(ct); FilterRepositories(sender, e);
                 organization.Items.Clear(); organization.Items.Add(UiText.Get("Personal account"));
                 organization.Items.AddRange((await api.Organizations(ct)).Select(x => x.login).ToArray()); organization.SelectedIndex = 0;
@@ -123,7 +124,8 @@ namespace VBAi
         /// <param name="e">Données de l’événement WinForms.</param>
         private async void CreateRepository_Click(object sender, EventArgs e)
         {
-            await Run(async (api, ct) => {
+            await Run(async (api, ct) =>
+            {
                 var created = await api.CreateRepository(repositoryName.Text.Trim(), organization.SelectedIndex > 0 ? organization.Text : null, privateRepository.Checked, ct);
                 repositories = repositories.Concat(new[] { created }).ToArray(); repositorySearch.Clear(); FilterRepositories(sender, e);
                 repositoryList.SelectedItem = created; repositoryBranch.Text = created.default_branch ?? "main";
@@ -136,7 +138,8 @@ namespace VBAi
         /// <param name="e">Données de l’événement WinForms.</param>
         private async void LoadPulls_Click(object sender, EventArgs e)
         {
-            await Run(async (api, ct) => {
+            await Run(async (api, ct) =>
+            {
                 pulls.Items.Clear(); pulls.Items.AddRange(await api.Pulls(remote, ct));
                 targetBranch.Items.Clear(); targetBranch.Items.AddRange((await api.Branches(remote, ct)).Select(x => x.name).ToArray());
                 if (targetBranch.Items.Contains("main")) targetBranch.SelectedItem = "main";
@@ -150,7 +153,8 @@ namespace VBAi
         {
             var pull = pulls.SelectedItem as GitHubPull; if (pull == null) return;
             selectedPull = pull;
-            await Run(async (api, ct) => {
+            await Run(async (api, ct) =>
+            {
                 string path = GitHubApi.RepositoryPath(remote);
                 var details = await api.Request<GitHubPull>(HttpMethod.Get, path + "/pulls/" + pull.number, null, ct);
                 pullDetails.Text = details.title + Environment.NewLine + details.state + (details.merged ? " · " + UiText.Get("Merged") : "") + Environment.NewLine + details.body;
@@ -168,7 +172,8 @@ namespace VBAi
         /// <param name="e">Données de l’événement WinForms.</param>
         private async void CreatePull_Click(object sender, EventArgs e)
         {
-            await Run(async (api, ct) => {
+            await Run(async (api, ct) =>
+            {
                 var created = await api.CreatePull(remote, branch, targetBranch.Text, pullTitle.Text, pullBody.Text, draft.Checked, ct);
                 pulls.Items.Insert(0, created); selectedPull = created; pullDetails.Text = created.html_url;
             }, false);
@@ -188,14 +193,16 @@ namespace VBAi
         /// <param name="e">Données de l’événement WinForms.</param>
         private void OpenFile_Click(object sender, EventArgs e)
         {
-            try {
+            try
+            {
                 string path = (files.SelectedItem as GitHubFile)?.filename;
                 int line = 1;
                 if (sender == comments) { var comment = comments.SelectedItem as GitHubComment; path = comment?.path; line = comment?.line ?? 1; }
                 if (path == null || !path.StartsWith("vba/", StringComparison.Ordinal) || path.Substring(4).Contains("/")) return;
                 string name = System.IO.Path.GetFileNameWithoutExtension(path);
                 OpenModule?.Invoke(name, line);
-            } catch (Exception ex) { status.Text = ex.Message; }
+            }
+            catch (Exception ex) { status.Text = ex.Message; }
         }
 
         /// <summary>Affiche le corps du commentaire actuellement sélectionné.</summary>
@@ -208,12 +215,14 @@ namespace VBAi
         /// <param name="e">Données de l’événement WinForms.</param>
         private void LoadDraft_Click(object sender, EventArgs e)
         {
-            try {
+            try
+            {
                 var prepared = LoadDraft?.Invoke();
                 if (prepared == null) { status.Text = UiText.Get("No prepared draft for this branch."); return; }
                 targetBranch.Text = prepared.Target; pullTitle.Text = prepared.Title; pullBody.Text = prepared.Body;
                 pullTabs.SelectedTab = composeTab;
-            } catch (Exception ex) { status.Text = ex.Message; }
+            }
+            catch (Exception ex) { status.Text = ex.Message; }
         }
 
         /// <summary>Demande l’annulation de l’opération GitHub en cours.</summary>

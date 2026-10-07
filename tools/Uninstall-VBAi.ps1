@@ -1,8 +1,8 @@
-param([switch] $Direct)
+param([switch] $Direct, [string]$AssemblyDirectory, [switch]$PreserveMachineMapping)
 
 $ErrorActionPreference = 'Stop'
 
-if ($env:CODEX_SHELL -eq '1' -and -not $Direct) {
+if ($env:CODEX_SHELL -eq '1' -and -not $Direct -and -not $AssemblyDirectory) {
     & (Join-Path $PSScriptRoot 'Invoke-VBAi-OutsideSandbox.ps1') -Action Uninstall
     return
 }
@@ -38,11 +38,12 @@ try {
 
     & (Join-Path $PSScriptRoot 'Register-VbaTestRuntime.ps1') -Unregister
     $registry.DeleteSubKeyTree("Software\Microsoft\VBA\VBE\6.0\Addins64\$progId", $false)
-    $typeLibPath = Join-Path (Split-Path -Parent $PSScriptRoot) 'bin\Debug\net48\VBAi.tlb'
+    if (-not $AssemblyDirectory) { $AssemblyDirectory = Join-Path (Split-Path -Parent $PSScriptRoot) 'bin\Debug\net48' }
+    $typeLibPath = Join-Path $AssemblyDirectory 'VBAi.tlb'
     if (Test-Path -LiteralPath $typeLibPath) {
-        & (Join-Path $PSScriptRoot 'Register-VBAiTypeLib.ps1') -Unregister
+        & (Join-Path $PSScriptRoot 'Register-VBAiTypeLib.ps1') -Unregister -TypeLibPath $typeLibPath
     }
-    & (Join-Path $PSScriptRoot 'Register-ChatToolWindow.ps1') -Unregister
+    & (Join-Path $PSScriptRoot 'Register-ChatToolWindow.ps1') -Unregister -PreserveMachineMapping:$PreserveMachineMapping
     $registry.DeleteSubKeyTree("Software\Classes\$progId", $false)
     $registry.DeleteSubKeyTree("Software\Classes\CLSID\$classId", $false)
     Write-Output "Unregistered $progId for the current user."

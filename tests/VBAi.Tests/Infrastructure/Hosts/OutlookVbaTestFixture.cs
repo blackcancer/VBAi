@@ -1,3 +1,5 @@
+using Microsoft.VisualStudio.TestTools.UnitTesting;
+using Microsoft.Win32;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -7,8 +9,6 @@ using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Text;
 using System.Web.Script.Serialization;
-using Microsoft.Win32;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace VBAi.Tests.Integration
 {
@@ -37,11 +37,14 @@ namespace VBAi.Tests.Integration
 
         [StructLayout(LayoutKind.Sequential)] private struct Disposition { public byte DeleteFile; }
         [StructLayout(LayoutKind.Sequential)] private struct AttributeTag { public uint Attributes, ReparseTag; }
-        [DllImport("kernel32.dll", CharSet = CharSet.Unicode, SetLastError = true)] private static extern Microsoft.Win32.SafeHandles.SafeFileHandle CreateFile(
+        [DllImport("kernel32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+        private static extern Microsoft.Win32.SafeHandles.SafeFileHandle CreateFile(
             string path, uint access, uint share, IntPtr security, uint creation, uint flags, IntPtr template);
-        [DllImport("kernel32.dll", SetLastError = true)] private static extern bool GetFileInformationByHandleEx(
+        [DllImport("kernel32.dll", SetLastError = true)]
+        private static extern bool GetFileInformationByHandleEx(
             Microsoft.Win32.SafeHandles.SafeFileHandle file, int informationClass, out AttributeTag attributes, uint size);
-        [DllImport("kernel32.dll", SetLastError = true)] private static extern bool SetFileInformationByHandle(
+        [DllImport("kernel32.dll", SetLastError = true)]
+        private static extern bool SetFileInformationByHandle(
             Microsoft.Win32.SafeHandles.SafeFileHandle file, int informationClass, ref Disposition disposition, uint size);
 
         internal static OutlookVbaTestFixture Start()
@@ -116,9 +119,17 @@ namespace VBAi.Tests.Integration
                     "BLOCKED: the Outlook project already contains source. No mutation is permitted.");
                 fixture.referencesVersion = (string)fixture.Data("list_references")["Version"];
                 fixture.baselineVerified = true;
-                fixture.Save("project-baseline.json", new { OtmPath = otm, InitiallyAbsent = true, Modules = fixture.baseline,
-                    ReferencesVersion = fixture.referencesVersion, Project = fixture.Project, ProcessId = fixture.ProcessId,
-                    ReportedFileName = path, SelectorKind = fixedOtmPath ? "FixedOtmPath" : "UniqueUnpersistedProjectName" });
+                fixture.Save("project-baseline.json", new
+                {
+                    OtmPath = otm,
+                    InitiallyAbsent = true,
+                    Modules = fixture.baseline,
+                    ReferencesVersion = fixture.referencesVersion,
+                    Project = fixture.Project,
+                    ProcessId = fixture.ProcessId,
+                    ReportedFileName = path,
+                    SelectorKind = fixedOtmPath ? "FixedOtmPath" : "UniqueUnpersistedProjectName"
+                });
                 return fixture;
             }
             catch (Exception primary)
@@ -186,10 +197,15 @@ namespace VBAi.Tests.Integration
 
         private IDictionary<string, object>[] ReadSources()
         {
-            return Items("list_modules").Select(module => {
+            return Items("list_modules").Select(module =>
+            {
                 var source = Data("read_module", "Module", module["Name"]);
-                return (IDictionary<string, object>)new Dictionary<string, object> {
-                    ["Name"] = module["Name"], ["Code"] = source["Code"], ["Sha256"] = source["Sha256"] };
+                return (IDictionary<string, object>)new Dictionary<string, object>
+                {
+                    ["Name"] = module["Name"],
+                    ["Code"] = source["Code"],
+                    ["Sha256"] = source["Sha256"]
+                };
             }).OrderBy(module => (string)module["Name"], StringComparer.Ordinal).ToArray();
         }
 
@@ -300,8 +316,18 @@ namespace VBAi.Tests.Integration
         }
 
         private void FlushCommandEvidence()
-        { Save("command-evidence.json", new { ProcessId, Project, runPending, commandContainment.Pending,
-            commandContainment.Uncertain, commandContainment.Command, Steps = evidence }); }
+        {
+            Save("command-evidence.json", new
+            {
+                ProcessId,
+                Project,
+                runPending,
+                commandContainment.Pending,
+                commandContainment.Uncertain,
+                commandContainment.Command,
+                Steps = evidence
+            });
+        }
 
         private void RetainUncertainOutlook()
         {
@@ -320,12 +346,24 @@ namespace VBAi.Tests.Integration
 
         private void SaveLifecycle(List<string> failures, bool restored, bool exitedNormally)
         {
-            Save("qualification-lifecycle.json", new { ProcessId, Project, OtmPath, InitiallyAbsent = baselineAbsent,
-                ProjectRestored = restored, ExitedNormally = exitedNormally, StartupFailure = startupFailure?.ToString(),
-                NativeExecutionUnsettled = runPending, BridgePending = commandContainment.Pending,
-                BridgeUncertain = commandContainment.Uncertain, OwnershipRetained = hostTeardownRefused,
-                ComReferencesRetained = hostTeardownRefused, ProcessHandleRetained = hostTeardownRefused && process != null,
-                Failures = failures, Steps = evidence });
+            Save("qualification-lifecycle.json", new
+            {
+                ProcessId,
+                Project,
+                OtmPath,
+                InitiallyAbsent = baselineAbsent,
+                ProjectRestored = restored,
+                ExitedNormally = exitedNormally,
+                StartupFailure = startupFailure?.ToString(),
+                NativeExecutionUnsettled = runPending,
+                BridgePending = commandContainment.Pending,
+                BridgeUncertain = commandContainment.Uncertain,
+                OwnershipRetained = hostTeardownRefused,
+                ComReferencesRetained = hostTeardownRefused,
+                ProcessHandleRetained = hostTeardownRefused && process != null,
+                Failures = failures,
+                Steps = evidence
+            });
         }
 
         private void DeleteCreatedOtm()
@@ -352,8 +390,17 @@ namespace VBAi.Tests.Integration
                     using (var output = new FileStream(backup, FileMode.CreateNew, FileAccess.Write, FileShare.None))
                     { file.CopyTo(output); output.Flush(true); }
                     Assert.AreEqual(hash, HashFile(backup), "Created OTM backup did not match; deletion is refused.");
-                    Save("otm-before-delete.json", new { OtmPath, Backup = backup, Sha256 = hash, Bytes = file.Length, ProcessId,
-                        BaselineAbsent = true, ProjectRestored = true, OwnedProcessExitedNormally = true });
+                    Save("otm-before-delete.json", new
+                    {
+                        OtmPath,
+                        Backup = backup,
+                        Sha256 = hash,
+                        Bytes = file.Length,
+                        ProcessId,
+                        BaselineAbsent = true,
+                        ProjectRestored = true,
+                        OwnedProcessExitedNormally = true
+                    });
                     RequireNoOutlook();
                     var disposition = new Disposition { DeleteFile = 1 };
                     if (!SetFileInformationByHandle(file.SafeFileHandle, 4, ref disposition, 1))

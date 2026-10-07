@@ -25,7 +25,7 @@ namespace VBAi
             {
                 editor = ((dynamic)project).VBE; main = ((dynamic)editor).MainWindow;
                 IntPtr handle = new IntPtr(Convert.ToInt64(((dynamic)main).HWnd));
-                uint pid; uint thread = GetWindowThreadProcessId(handle, out pid);
+                uint thread = GetWindowThreadProcessId(handle, out uint pid);
                 if (handle == IntPtr.Zero || pid != (uint)Process.GetCurrentProcess().Id || thread == 0 ||
                     thread != GetCurrentThreadId() || Thread.CurrentThread.GetApartmentState() != ApartmentState.STA)
                     throw new InvalidOperationException("UserForm font restoration requires the actual owning VBE process and STA thread.");
@@ -128,12 +128,10 @@ namespace VBAi
                         }
                         else
                         {
-                            if (observation != null)
-                                observation.Observe("before-write-after-preflight", component, designer, owners[i], rootProperties[i], revalidate);
+                            observation?.Observe("before-write-after-preflight", component, designer, owners[i], rootProperties[i], revalidate);
                             AssignRoot(rootProperties[i], bindings[i].Descriptor, revalidate, observation,
                                 () => observation.Observe("after-temporary-name", component, designer, owners[i], rootProperties[i], revalidate));
-                            if (observation != null)
-                                observation.Observe("after-root", component, designer, owners[i], rootProperties[i], revalidate);
+                            observation?.Observe("after-root", component, designer, owners[i], rootProperties[i], revalidate);
                         }
                     }
                 }
@@ -280,11 +278,16 @@ namespace VBAi
         /// <param name="revalidate">Optional identity and policy check before assignment.</param>
         private static void AssignNested(object owner, byte[] data, string setter = "MSForms.Font.set", Action revalidate = null)
         {
-            var description = new FontDescription {
+            var description = new FontDescription
+            {
                 StructureSize = (uint)Marshal.SizeOf(typeof(FontDescription)),
-                Name = Encoding.ASCII.GetString(data, 11, data[10]), Size = BitConverter.ToUInt32(data, 6),
-                Weight = (short)BitConverter.ToUInt16(data, 4), Charset = BitConverter.ToInt16(data, 1),
-                Italic = (data[3] & 2) != 0, Underline = (data[3] & 4) != 0, Strikethrough = (data[3] & 8) != 0
+                Name = Encoding.ASCII.GetString(data, 11, data[10]),
+                Size = BitConverter.ToUInt32(data, 6),
+                Weight = (short)BitConverter.ToUInt16(data, 4),
+                Charset = BitConverter.ToInt16(data, 1),
+                Italic = (data[3] & 2) != 0,
+                Underline = (data[3] & 4) != 0,
+                Strikethrough = (data[3] & 8) != 0
             };
             IntPtr pointer = IntPtr.Zero; object font = null; IStream stream = null;
             string operation = "OleCreateFontIndirect";
@@ -321,7 +324,8 @@ namespace VBAi
             catch (Exception error) { primary = error; throw; }
             finally
             {
-                ReleaseOwnedReferences(new object[] { pointer, font, stream }, value => {
+                ReleaseOwnedReferences(new object[] { pointer, font, stream }, value =>
+                {
                     if (value is IntPtr acquired && acquired != IntPtr.Zero) Marshal.Release(acquired);
                     else Release(value);
                 }, primary);
@@ -416,22 +420,22 @@ namespace VBAi
             /// <param name="clsid">Receives the class ID.</param>
             void GetClassID(out Guid clsid);
 
-/// <summary>Reports whether the font has state not reflected by its persisted stream.</summary>
-/// <returns>HRESULT indicating dirty state.</returns>
-[PreserveSig] int IsDirty();
+            /// <summary>Reports whether the font has state not reflected by its persisted stream.</summary>
+            /// <returns>HRESULT indicating dirty state.</returns>
+            [PreserveSig] int IsDirty();
 
             /// <summary>Loads font state from the supplied persisted descriptor stream.</summary>
             /// <param name="stream">Descriptor source.</param>
             void Load(IStream stream);
 
-/// <summary>Saves font state to a stream.</summary>
-/// <param name="stream">Destination stream.</param>
-/// <param name="clearDirty">Whether saving clears the object's dirty state.</param>
-void Save(IStream stream, [MarshalAs(UnmanagedType.Bool)] bool clearDirty);
+            /// <summary>Saves font state to a stream.</summary>
+            /// <param name="stream">Destination stream.</param>
+            /// <param name="clearDirty">Whether saving clears the object's dirty state.</param>
+            void Save(IStream stream, [MarshalAs(UnmanagedType.Bool)] bool clearDirty);
 
-/// <summary>Returns the maximum stream size required to save this object.</summary>
-/// <param name="size">Receives the maximum byte count.</param>
-void GetSizeMax(out long size);
+            /// <summary>Returns the maximum stream size required to save this object.</summary>
+            /// <param name="size">Receives the maximum byte count.</param>
+            void GetSizeMax(out long size);
         }
     }
 }

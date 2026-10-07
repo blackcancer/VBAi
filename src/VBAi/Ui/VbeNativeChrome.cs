@@ -12,19 +12,26 @@ namespace VBAi
     {
 
         /// <summary>Native rectangle bounds used by User32 window-coordinate APIs.</summary>
-        [StructLayout(LayoutKind.Sequential)] internal struct Rect {
+        [StructLayout(LayoutKind.Sequential)]
+        internal struct Rect
+        {
 
             /// <summary>Left, top, right, and bottom edges from a native window rectangle.</summary>
-            internal int Left, Top, Right, Bottom; }
+            internal int Left, Top, Right, Bottom;
+        }
 
         /// <summary>Native point used by User32 screen- and client-coordinate APIs.</summary>
-        [StructLayout(LayoutKind.Sequential)] internal struct Point {
+        [StructLayout(LayoutKind.Sequential)]
+        internal struct Point
+        {
 
             /// <summary>X and Y coordinates in the screen or client space required by the called API.</summary>
-            internal int X, Y; }
+            internal int X, Y;
+        }
 
         /// <summary>COMBOBOXINFO-compatible data describing a combo's rectangles, state, and child handles.</summary>
-        [StructLayout(LayoutKind.Sequential)] internal struct ComboInfo
+        [StructLayout(LayoutKind.Sequential)]
+        internal struct ComboInfo
         {
 
             /// <summary>Structure size in bytes.</summary>
@@ -279,9 +286,8 @@ namespace VBAi
         /// <param name="window">Window whose border is repainted.</param>
         internal static void PaintBorder(IntPtr window)
         {
-            Rect bounds, client;
             var origin = new Point();
-            if (!WindowBounds(window, out bounds) || !ClientBounds(window, out client) || !ToScreen(window, ref origin)) return;
+            if (!WindowBounds(window, out Rect bounds) || !ClientBounds(window, out Rect client) || !ToScreen(window, ref origin)) return;
             int width = bounds.Right - bounds.Left, height = bounds.Bottom - bounds.Top;
             int left = origin.X - bounds.Left;
             int top = origin.Y - bounds.Top;
@@ -315,14 +321,12 @@ namespace VBAi
         internal static void PaintComboButton(IntPtr window)
         {
             var info = new ComboInfo { Size = Marshal.SizeOf(typeof(ComboInfo)) };
-            Rect client;
-            if (!ComboInformation(window, ref info) || !ClientBounds(window, out client) || (info.ButtonState & 0x8000) != 0) return;
+            if (!ComboInformation(window, ref info) || !ClientBounds(window, out Rect client) || (info.ButtonState & 0x8000) != 0) return;
             var button = Rectangle.FromLTRB(info.Button.Left, info.Button.Top, info.Button.Right, info.Button.Bottom);
             var area = Rectangle.FromLTRB(0, 0, client.Right, client.Bottom);
             if (button.Width < 4 || button.Height < 4 || !area.Contains(button)) return;
             bool enabled = WindowEnabled(window);
-            Point cursor;
-            bool hot = PointerPosition(out cursor) && ToClient(window, ref cursor) && button.Contains(cursor.X, cursor.Y);
+            bool hot = PointerPosition(out Point cursor) && ToClient(window, ref cursor) && button.Contains(cursor.X, cursor.Y);
             Color face = !enabled ? Color.FromArgb(32, 36, 43) : (info.ButtonState & 8) != 0
                 ? Color.FromArgb(52, 68, 82) : hot ? Color.FromArgb(62, 70, 81) : Color.FromArgb(40, 45, 53);
             IntPtr dc = AcquireClientDc(window);
@@ -358,17 +362,15 @@ namespace VBAi
         internal static void Paint(IntPtr window, bool client, IntPtr suppliedDc, bool hostedCaption = false, bool preserveDarkClient = false, bool codeSurface = false)
         {
             if (painting) return;
-            Rect bounds, inner;
-            if (!WindowBounds(window, out bounds) || !ClientBounds(window, out inner)) return;
+            if (!WindowBounds(window, out Rect bounds) || !ClientBounds(window, out Rect inner)) return;
             var origin = new Point();
             if (!ToScreen(window, ref origin)) return;
             int width = client ? inner.Right : bounds.Right - bounds.Left;
             int height = client ? inner.Bottom : origin.Y - bounds.Top;
             if (hostedCaption)
             {
-                Rect childBounds;
                 IntPtr child = RelatedWindow(window, 5);
-                if (child == IntPtr.Zero || !WindowBounds(child, out childBounds)) return;
+                if (child == IntPtr.Zero || !WindowBounds(child, out Rect childBounds)) return;
                 height = childBounds.Top - bounds.Top;
             }
             if (width <= 0 || height <= 0 || width > 16384 || height > 16384) return;

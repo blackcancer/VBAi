@@ -145,8 +145,12 @@ namespace VBAi
                 {
                     foreach (var moduleInfo in Read("list_modules", project, null))
                     {
-                        var item = new VbeChatReference { Project = project,
-                            Module = Field(moduleInfo, "Name"), Kind = "Module" };
+                        var item = new VbeChatReference
+                        {
+                            Project = project,
+                            Module = Field(moduleInfo, "Name"),
+                            Kind = "Module"
+                        };
                         entries.Add(item);
                         pending.Enqueue(item);
                     }
@@ -159,26 +163,35 @@ namespace VBAi
             var module = pending.Dequeue();
             try
             {
-                Response response = Execute(new Request { Command = "list_procedures",
-                    Project = module.Project, Module = module.Module });
+                Response response = Execute(new Request
+                {
+                    Command = "list_procedures",
+                    Project = module.Project,
+                    Module = module.Module
+                });
                 if (!response.Ok) throw new InvalidOperationException(response.Error);
                 var data = json.DeserializeObject(json.Serialize(response.Data)) as IDictionary<string, object>;
                 module.Sha256 = Field(data, "Sha256");
-                object raw;
-                var procedures = data != null && data.TryGetValue("Procedures", out raw) ? raw as object[] : null;
+                var procedures = data != null && data.TryGetValue("Procedures", out object raw) ? raw as object[] : null;
                 if (procedures != null)
                     foreach (var value in procedures)
                     {
-                        var procedure = value as IDictionary<string, object>;
-                        if (procedure == null) continue;
+                        if (!(value is IDictionary<string, object> procedure)) continue;
                         int kind = Convert.ToInt32(procedure["Kind"]);
                         string declaration = Field(procedure, "Declaration");
-                        entries.Add(new VbeChatReference { Project = module.Project, Module = module.Module,
-                            Name = Field(procedure, "Name"), Kind = kind == 0
+                        entries.Add(new VbeChatReference
+                        {
+                            Project = module.Project,
+                            Module = module.Module,
+                            Name = Field(procedure, "Name"),
+                            Kind = kind == 0
                                 ? (declaration.IndexOf("Function", StringComparison.OrdinalIgnoreCase) >= 0 ? "Function" : "Sub")
                                 : "Property",
-                            ProcKind = kind, StartLine = Convert.ToInt32(procedure["StartLine"]),
-                            EndLine = Convert.ToInt32(procedure["EndLine"]), Sha256 = module.Sha256 });
+                            ProcKind = kind,
+                            StartLine = Convert.ToInt32(procedure["StartLine"]),
+                            EndLine = Convert.ToInt32(procedure["EndLine"]),
+                            Sha256 = module.Sha256
+                        });
                     }
                 // Read declarations once per module; physical positions retain their own source SHA.
                 Response sourceResponse = Execute(new Request { Command = "read_module", Project = module.Project, Module = module.Module });
@@ -186,11 +199,18 @@ namespace VBAi
                 var sourceData = json.DeserializeObject(json.Serialize(sourceResponse.Data)) as IDictionary<string, object>;
                 string code = Field(sourceData, "Code"), sourceSha = Field(sourceData, "Sha256");
                 foreach (var declaration in VbaDeclarationIndex.Read(code))
-                    entries.Add(new VbeChatReference { Project = module.Project, Module = module.Module,
-                        Name = declaration.Name, Kind = declaration.Kind,
+                    entries.Add(new VbeChatReference
+                    {
+                        Project = module.Project,
+                        Module = module.Module,
+                        Name = declaration.Name,
+                        Kind = declaration.Kind,
                         DeclarationScope = declaration.Scope == "Module" ? null : declaration.Scope,
-                        DeclarationColumn = declaration.Column, StartLine = declaration.Line, EndLine = declaration.Line,
-                        Sha256 = sourceSha });
+                        DeclarationColumn = declaration.Column,
+                        StartLine = declaration.Line,
+                        EndLine = declaration.Line,
+                        Sha256 = sourceSha
+                    });
             }
             catch (Exception ex) { Error = module.Token + " : " + ex.Message; }
             Changed?.Invoke();
@@ -231,15 +251,27 @@ namespace VBAi
             {
                 if (!string.Equals(item.Sha256, Field(data, "Sha256"), StringComparison.OrdinalIgnoreCase))
                     return Response.Failure("The declaration changed since discovery; refresh its reference before navigating.");
-                return Execute(new Request { Command = "select_code", Project = item.Project, Module = item.Module,
-                    StartLine = item.StartLine, StartColumn = item.DeclarationColumn,
+                return Execute(new Request
+                {
+                    Command = "select_code",
+                    Project = item.Project,
+                    Module = item.Module,
+                    StartLine = item.StartLine,
+                    StartColumn = item.DeclarationColumn,
                     EndColumn = item.DeclarationColumn + item.Name.Length,
-                    Expression = item.Name, ExpectedSha256 = item.Sha256 });
+                    Expression = item.Name,
+                    ExpectedSha256 = item.Sha256
+                });
             }
-            return Execute(new Request {
+            return Execute(new Request
+            {
                 Command = item.Name == null ? "select_code" : "select_procedure",
-                Project = item.Project, Module = item.Module, Procedure = item.Name,
-                ProcKind = item.ProcKind, StartLine = 1, ExpectedSha256 = Field(data, "Sha256")
+                Project = item.Project,
+                Module = item.Module,
+                Procedure = item.Name,
+                ProcKind = item.ProcKind,
+                StartLine = 1,
+                ExpectedSha256 = Field(data, "Sha256")
             });
         }
 
@@ -256,8 +288,12 @@ namespace VBAi
                     string.Join("\n", modules.Select(value => Field(value, "Name") +
                         " (type " + Field(value, "Type") + ", " + Field(value, "Lines") + " lignes)"));
             }
-            Response response = Execute(new Request { Command = "read_module",
-                Project = item.Project, Module = item.Module });
+            Response response = Execute(new Request
+            {
+                Command = "read_module",
+                Project = item.Project,
+                Module = item.Module
+            });
             if (!response.Ok) throw new InvalidOperationException(response.Error);
             var data = json.DeserializeObject(json.Serialize(response.Data)) as IDictionary<string, object>;
             string code = Field(data, "Code");
@@ -283,8 +319,7 @@ namespace VBAi
         {
             Response response = Execute(new Request { Command = command, Project = project, Module = module });
             if (!response.Ok) throw new InvalidOperationException(response.Error);
-            var array = json.DeserializeObject(json.Serialize(response.Data)) as object[];
-            return array == null ? new IDictionary<string, object>[0] :
+            return !(json.DeserializeObject(json.Serialize(response.Data)) is object[] array) ? new IDictionary<string, object>[0] :
                 array.OfType<IDictionary<string, object>>().ToArray();
         }
 
@@ -294,8 +329,7 @@ namespace VBAi
         /// <returns>Valeur convertie ou chaîne vide.</returns>
         private static string Field(IDictionary<string, object> value, string name)
         {
-            object raw;
-            return value != null && value.TryGetValue(name, out raw) ? Convert.ToString(raw) : "";
+            return value != null && value.TryGetValue(name, out object raw) ? Convert.ToString(raw) : "";
         }
     }
 }

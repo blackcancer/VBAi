@@ -1,6 +1,5 @@
-using System;
-using VBAi;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+using System;
 
 namespace VBAi.Tests.Unit
 {
@@ -16,9 +15,21 @@ namespace VBAi.Tests.Unit
                 int current = scenario, writes = 0;
                 string code = original;
                 VbeCodeEdits edits = null;
-                var request = new Request { Project = "P", Module = "Module1", Procedure = "Run", Query = "value", NewName = "amount",
-                    ProcKind = 0, StartLine = 1, StartColumn = original.IndexOf("value", StringComparison.Ordinal) + 1, ExpectedSha256 = Hash(code), ExpectedMode = 2 };
-                edits = new VbeCodeEdits(command => {
+                var request = new Request
+                {
+                    Project = "P",
+                    Module = "Module1",
+                    Procedure = "Run",
+                    Query = "value",
+                    NewName = "amount",
+                    ProcKind = 0,
+                    StartLine = 1,
+                    StartColumn = original.IndexOf("value", StringComparison.Ordinal) + 1,
+                    ExpectedSha256 = Hash(code),
+                    ExpectedMode = 2
+                };
+                edits = new VbeCodeEdits(command =>
+                {
                     switch (command.Command)
                     {
                         case "read_module": return Response.Success(new Snapshot { Code = code });
@@ -26,9 +37,12 @@ namespace VBAi.Tests.Unit
                         case "list_procedures":
                             if (current == 2) return Response.Failure("catalog failed");
                             var selected = new ProcedureRow { Name = "Run", Kind = 0, BodyLine = 1, EndLine = 3 };
-                            return Response.Success(new ProcedureCatalog { Sha256 = current == 3 ? "stale" : Hash(code),
+                            return Response.Success(new ProcedureCatalog
+                            {
+                                Sha256 = current == 3 ? "stale" : Hash(code),
                                 Procedures = current == 4 ? new ProcedureRow[0] : current == 5 ? new[] { selected, selected } :
-                                new[] { new ProcedureRow { Name = "Other", Kind = 0 }, new ProcedureRow { Name = "Run", Kind = 1 }, selected } });
+                                new[] { new ProcedureRow { Name = "Other", Kind = 0 }, new ProcedureRow { Name = "Run", Kind = 1 }, selected }
+                            });
                         case "debug_state": return current == 7 ? Response.Failure("state failed") : Response.Success(new DesignState { Mode = current == 8 ? 1 : 2 });
                         case "replace_lines":
                             writes++;

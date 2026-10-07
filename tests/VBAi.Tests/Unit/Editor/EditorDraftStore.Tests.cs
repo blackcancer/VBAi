@@ -1,8 +1,7 @@
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System.IO;
 using System.Linq;
-using VBAi;
 using VBAi.Tests.Infrastructure;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 namespace VBAi.Tests.Unit
 {
     [TestClass, TestCategory("Unit")]
@@ -30,11 +29,11 @@ namespace VBAi.Tests.Unit
 
 namespace VBAi.Tests.Unit.Editor
 {
+    using Microsoft.VisualStudio.TestTools.UnitTesting;
     using System;
     using System.Diagnostics;
     using System.IO;
     using VBAi;
-    using Microsoft.VisualStudio.TestTools.UnitTesting;
     [TestClass, TestCategory("Unit")]
     public sealed class EditorDraftRetentionTests
     {

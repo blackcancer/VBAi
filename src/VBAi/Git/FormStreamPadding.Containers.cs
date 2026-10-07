@@ -31,8 +31,7 @@ namespace VBAi
             if (streams == null || storageMetadata == null || rootPath == null) return streams;
             try
             {
-                List<StorageNode> nodes;
-                return ReadGraph(streams, storageMetadata, rootPath, out nodes).Comparison;
+                return ReadGraph(streams, storageMetadata, rootPath, out List<StorageNode> nodes).Comparison;
             }
             catch (UnsupportedLayoutException) { return streams; }
         }
@@ -47,7 +46,7 @@ namespace VBAi
             if (streams == null || storageMetadata == null) return null;
             try
             {
-                List<StorageNode> nodes; ReadGraph(streams, storageMetadata, "", out nodes, true);
+                ReadGraph(streams, storageMetadata, "", out List<StorageNode> nodes, true);
                 Require(!nodes.Any(node => node.UnsupportedFont));
                 return nodes.Where(node => node.Font != null)
                     .Select(node => new FormFontBinding(node.OwnerPath, node.Font, node.Type)).ToArray();
@@ -281,9 +280,9 @@ namespace VBAi
                 Require(StreamClaims.Add(path)); return bytes;
             }
 
-        /// <summary>Validates MultiPage page-property records, tab count, and the ordered page-ID map.</summary>
-        /// <param name="node">Validated MultiPage node with its parsed page sites and tab links.</param>
-        /// <param name="bytes">Exact x-stream bytes; a clone is parsed so comparison data remains unchanged.</param>
+            /// <summary>Validates MultiPage page-property records, tab count, and the ordered page-ID map.</summary>
+            /// <param name="node">Validated MultiPage node with its parsed page sites and tab links.</param>
+            /// <param name="bytes">Exact x-stream bytes; a clone is parsed so comparison data remains unchanged.</param>
             private static void ValidateMultiPage(StorageNode node, byte[] bytes)
             {
                 // MS-OFORMS 2.1.2.3 and 2.2.6. The x stream remains exact even for its ignored first PageProperties.

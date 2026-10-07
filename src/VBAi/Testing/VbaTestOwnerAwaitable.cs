@@ -20,7 +20,7 @@ namespace VBAi
 
     /// <summary>Resumes success, exceptions and finally blocks through an explicit owning-thread dispatcher.</summary>
     /// <typeparam name="T">Result type produced by the wrapped operation.</typeparam>
-    internal struct VbaTestOwnerAwaitable<T>
+    internal readonly struct VbaTestOwnerAwaitable<T>
     {
 
         /// <summary>Task whose completion or exception is propagated by this awaitable.</summary>
@@ -59,7 +59,7 @@ namespace VBAi
         public Awaiter GetAwaiter() => new Awaiter(task, post, requireOwner);
 
         /// <summary>Carries the awaiter values passed between operations.</summary>
-        internal struct Awaiter : ICriticalNotifyCompletion
+        internal readonly struct Awaiter : ICriticalNotifyCompletion
         {
 
             /// <summary>Task whose completion this awaiter observes.</summary>

@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Diagnostics;
+using System.Linq;
 using System.Text;
 
 namespace VBAi
@@ -95,13 +95,11 @@ namespace VBAi
         private void GuardProjectPrivacy(string name, string arguments)
         {
             if (string.IsNullOrEmpty(BoundProject)) return;
-            var values = json.DeserializeObject(arguments) as IDictionary<string, object>;
-            object project;
-            if (values != null && values.TryGetValue("Project", out project))
+            if (json.DeserializeObject(arguments) is IDictionary<string, object> values && values.TryGetValue("Project", out object project))
             {
                 // Shape validation remains responsible for malformed selectors. No native
                 // branch accepts a missing, non-string or blank required Project argument.
-                if (!(project is string) || string.IsNullOrWhiteSpace((string)project)) return;
+                if (!(project is string v) || string.IsNullOrWhiteSpace(v)) return;
                 string selector = Convert.ToString(project);
                 if (ReadOnlyTools.Contains(name) && name != "compile_project") RequireProjectRead(selector);
                 else if (!SameProject(selector, BoundProject))
@@ -133,9 +131,8 @@ namespace VBAi
             var rows = projects.OfType<IDictionary<string, object>>().ToArray();
             return rows.Where(row => new[] { BoundProject }.Concat(readProjectGrants).Any(selector =>
             {
-                object path, projectName;
-                if (row.TryGetValue("FileName", out path) && !string.IsNullOrEmpty(Convert.ToString(path)) && SameProject(Convert.ToString(path), selector)) return true;
-                return row.TryGetValue("Name", out projectName) && SameProject(Convert.ToString(projectName), selector)
+                if (row.TryGetValue("FileName", out object path) && !string.IsNullOrEmpty(Convert.ToString(path)) && SameProject(Convert.ToString(path), selector)) return true;
+                return row.TryGetValue("Name", out object projectName) && SameProject(Convert.ToString(projectName), selector)
                     && rows.Count(other => SameProject(Convert.ToString(other["Name"]), selector)) == 1;
             })).ToArray();
         }
@@ -151,13 +148,11 @@ namespace VBAi
             if (name == "list_projects") return Response.Success(FilterProjects(response.Data));
             if (name != "debug_state") return response;
             var fields = Fields(response.Data);
-            object selectedName, selectedPath;
-            fields.TryGetValue("SelectedProject", out selectedName);
-            fields.TryGetValue("SelectedProjectPath", out selectedPath);
+            fields.TryGetValue("SelectedProject", out object selectedName);
+            fields.TryGetValue("SelectedProjectPath", out object selectedPath);
             string selector = string.IsNullOrEmpty(Convert.ToString(selectedPath)) ? Convert.ToString(selectedName) : Convert.ToString(selectedPath);
             // Context belongs to the requested project, not merely any readable project.
-            object requestedName;
-            fields.TryGetValue("Project", out requestedName);
+            fields.TryGetValue("Project", out object requestedName);
             bool same = !string.IsNullOrEmpty(selector) && (SameProject(selector, requestedProject) ||
                 (SameProject(Convert.ToString(selectedName), requestedProject) && SameProject(Convert.ToString(selectedName), Convert.ToString(requestedName))));
             if (!same)
@@ -173,12 +168,17 @@ namespace VBAi
             try { projects = Execute(new Request { Command = "list_projects" }); }
             catch { projects = Response.Failure("Project inventory unavailable."); }
             using (var process = Process.GetCurrentProcess())
-                return new { HostProcess = process.ProcessName, HostProcessId = process.Id,
-                    VbeConnected = true, HostAnsiCodePage = Encoding.Default.CodePage,
+                return new
+                {
+                    HostProcess = process.ProcessName,
+                    HostProcessId = process.Id,
+                    VbeConnected = true,
+                    HostAnsiCodePage = Encoding.Default.CodePage,
                     CodeFileEncodingPolicy = LlmVbeContext.EncodingInstructions,
                     Projects = projects.Ok ? FilterProjects(projects.Data) : null,
                     ProjectsError = projects.Ok ? null : projects.Error,
-                    AvailableAccess = "Only the bound project and explicitly authorized read projects; shared VBE context requires separate user authorization." };
+                    AvailableAccess = "Only the bound project and explicitly authorized read projects; shared VBE context requires separate user authorization."
+                };
         }
     }
 }

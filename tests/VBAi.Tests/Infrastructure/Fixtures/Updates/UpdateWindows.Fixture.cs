@@ -1,10 +1,9 @@
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Diagnostics;
 using System.Threading;
 using System.Windows.Forms;
-using VBAi;
 using VBAi.Tests.Infrastructure;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace VBAi.Tests.Unit
 {
@@ -76,4 +75,5 @@ namespace VBAi.Tests.Unit
             UpdateUiPump.Call(Window, "Download_Click"); UpdateUiPump.Until(() => !UiInvoke.Field<bool>(Window, "busy"));
         }
         public void Dispose() { Window.Dispose(); theme.Dispose(); Scope.Dispose(); }
-    }}
+    }
+}

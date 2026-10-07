@@ -1,6 +1,5 @@
-using System;
-using VBAi;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+using System;
 
 namespace VBAi.Tests.Unit
 {
@@ -59,26 +58,27 @@ namespace VBAi.Tests.Unit
         {
             var tools = new LlmVbeTools(null, null, new LlmSettings()) { BoundProject = "P" };
             foreach (bool success in new[] { false, true })
-            foreach (bool restored in new[] { false, true })
-            {
-                var change = new FormCutChange { Owner = tools, Project = "P", Form = "F", ParentPath = "Frame", RecoveryId = "token" };
-                int calls = 0, validations = 0;
-                tools.ValidateScope = () => validations++;
-                tools.Execute = r => {
-                    calls++;
-                    Assert.AreEqual("P", r.Project); Assert.AreEqual("F", r.Form);
-                    Assert.AreEqual("Frame", r.ParentPath); Assert.AreEqual("token", r.DesignerClipboardRecoveryId);
-                    if (calls == 1) { Assert.AreEqual("form_clipboard_state", r.Command); return Response.Success(new RecoveryState()); }
-                    Assert.AreEqual("recover_form_cut", r.Command);
-                    Assert.AreEqual("selection", r.ExpectedDesignerSelectionVersion);
-                    Assert.AreEqual("clipboard", r.ExpectedClipboardVersion);
-                    return success ? Response.Success(new RecoveryResult { RecoveryAttempted = true, RestoredNamesGeometryAndTabOrder = restored }) : Response.Failure("native failure");
-                };
-                Assert.AreEqual(success, tools.RecoverFormCut(change).Ok);
-                Assert.AreEqual(success, change.Attempted);
-                Assert.AreEqual(success && restored, change.Restored);
-                Assert.AreEqual(2, calls); Assert.AreEqual(1, validations);
-            }
+                foreach (bool restored in new[] { false, true })
+                {
+                    var change = new FormCutChange { Owner = tools, Project = "P", Form = "F", ParentPath = "Frame", RecoveryId = "token" };
+                    int calls = 0, validations = 0;
+                    tools.ValidateScope = () => validations++;
+                    tools.Execute = r =>
+                    {
+                        calls++;
+                        Assert.AreEqual("P", r.Project); Assert.AreEqual("F", r.Form);
+                        Assert.AreEqual("Frame", r.ParentPath); Assert.AreEqual("token", r.DesignerClipboardRecoveryId);
+                        if (calls == 1) { Assert.AreEqual("form_clipboard_state", r.Command); return Response.Success(new RecoveryState()); }
+                        Assert.AreEqual("recover_form_cut", r.Command);
+                        Assert.AreEqual("selection", r.ExpectedDesignerSelectionVersion);
+                        Assert.AreEqual("clipboard", r.ExpectedClipboardVersion);
+                        return success ? Response.Success(new RecoveryResult { RecoveryAttempted = true, RestoredNamesGeometryAndTabOrder = restored }) : Response.Failure("native failure");
+                    };
+                    Assert.AreEqual(success, tools.RecoverFormCut(change).Ok);
+                    Assert.AreEqual(success, change.Attempted);
+                    Assert.AreEqual(success && restored, change.Restored);
+                    Assert.AreEqual(2, calls); Assert.AreEqual(1, validations);
+                }
             tools.ValidateScope = null;
             tools.Execute = r => r.Command == "form_clipboard_state" ? Response.Success(new RecoveryState()) : Response.Success(new { });
             Assert.IsFalse(tools.RecoverFormCut(new FormCutChange { Owner = tools, Project = "P" }).Ok);

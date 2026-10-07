@@ -1,3 +1,4 @@
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -6,7 +7,6 @@ using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Threading;
 using System.Web.Script.Serialization;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace VBAi.Tests.Integration
 {
@@ -21,17 +21,24 @@ namespace VBAi.Tests.Integration
             commandContainment.RequireTerminal();
             RequireOwnedDocument();
             var objects = new List<object>();
-            var report = new Dictionary<string, object> {
-                ["Phase"] = phase, ["State"] = "PENDING", ["Utc"] = DateTime.UtcNow.ToString("o"),
-                ["HostProcessId"] = ProcessId, ["HostStartedUtc"] = ownedProcess.StartTime.ToUniversalTime().ToString("o"),
-                ["DocumentPath"] = DocumentPath, ["ProjectSelector"] = Project,
+            var report = new Dictionary<string, object>
+            {
+                ["Phase"] = phase,
+                ["State"] = "PENDING",
+                ["Utc"] = DateTime.UtcNow.ToString("o"),
+                ["HostProcessId"] = ProcessId,
+                ["HostStartedUtc"] = ownedProcess.StartTime.ToUniversalTime().ToString("o"),
+                ["DocumentPath"] = DocumentPath,
+                ["ProjectSelector"] = Project,
                 ["DocumentExtension"] = Path.GetExtension(DocumentPath),
                 ["ExpectedAssemblyMvid"] = typeof(VbeSession).Module.ModuleVersionId.ToString("D"),
                 ["ReferencedAssemblyPath"] = typeof(VbeSession).Assembly.Location,
                 ["Apartment"] = Thread.CurrentThread.GetApartmentState().ToString(),
                 ["GetterExecution"] = "External owned fixture STA; COM proxy dispatches to Office's owning apartment.",
                 ["Scope"] = "Only HelpFile/HelpContextID values and their runtime type info on the mapped owned Access VBProject; no setters, methods, save, help invocation or macro execution.",
-                ["AdditionalNativeMutations"] = 0, ["AdditionalSaves"] = 0 };
+                ["AdditionalNativeMutations"] = 0,
+                ["AdditionalSaves"] = 0
+            };
             string path = Path.Combine(Root, "metadata-getters-" + phase + ".json");
             var serializer = new JavaScriptSerializer { MaxJsonLength = 1024 * 1024 };
             Action persist = () => File.WriteAllText(path, serializer.Serialize(report));
@@ -72,7 +79,8 @@ namespace VBAi.Tests.Integration
                 report["ProtectionBefore"] = Convert.ToInt32(((dynamic)mapped).Protection);
                 report["SavedBefore"] = Convert.ToBoolean(((dynamic)mapped).Saved);
                 Assert.AreEqual(2, report["ModeBefore"]); Assert.AreEqual(0, report["ProtectionBefore"]);
-                report["Reads"] = NativeMetadataGetterProbe.Read(mapped, pending => {
+                report["Reads"] = NativeMetadataGetterProbe.Read(mapped, pending =>
+                {
                     report["PendingRead"] = pending; persist();
                 }, partial => report["Reads"] = partial);
                 report["PendingRead"] = null;
@@ -98,8 +106,13 @@ namespace VBAi.Tests.Integration
                 // Comparison results remain raw evidence. A mismatch must not
                 // prevent the existing save/reopen qualification from recording
                 // its original outcome; its exact metadata assertions stay intact.
-                RecordAdapterStage("MetadataGetterProbeObserved", new { Phase = phase, EvidencePath = path,
-                    AdditionalNativeMutations = 0, AdditionalSaves = 0 });
+                RecordAdapterStage("MetadataGetterProbeObserved", new
+                {
+                    Phase = phase,
+                    EvidencePath = path,
+                    AdditionalNativeMutations = 0,
+                    AdditionalSaves = 0
+                });
             }
             catch (Exception error)
             {

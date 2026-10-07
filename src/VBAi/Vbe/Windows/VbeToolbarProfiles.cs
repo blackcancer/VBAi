@@ -10,56 +10,60 @@ namespace VBAi
     {
 
         /// <summary>Commande native copiée dans une barre persistante.</summary>
-        internal sealed class Command {
+        internal sealed class Command
+        {
 
-/// <summary>Crée un enregistrement de commande vide pour la désérialisation.</summary>
-public Command() { }
+            /// <summary>Crée un enregistrement de commande vide pour la désérialisation.</summary>
+            public Command() { }
 
-/// <summary>Identifiant de la commande intégrée au VBE.</summary>
-/// <value>Identifiant numérique de la commande.</value>
-public int Id { get; set; }
+            /// <summary>Identifiant de la commande intégrée au VBE.</summary>
+            /// <value>Identifiant numérique de la commande.</value>
+            public int Id { get; set; }
 
-/// <summary>Légende attendue pour l’identification de la commande native.</summary>
-/// <value>Légende enregistrée pour vérifier la correspondance native.</value>
-public string Caption { get; set; }
+            /// <summary>Légende attendue pour l’identification de la commande native.</summary>
+            /// <value>Légende enregistrée pour vérifier la correspondance native.</value>
+            public string Caption { get; set; }
 
-/// <summary>Marqueur persistant unique apposé à la copie.</summary>
-/// <value>Tag stable de la commande persistante.</value>
-public string Tag { get; set; } }
+            /// <summary>Marqueur persistant unique apposé à la copie.</summary>
+            /// <value>Tag stable de la commande persistante.</value>
+            public string Tag { get; set; }
+        }
 
         /// <summary>État persistant d’une barre VBAi, incluant placement et commandes reconnues.</summary>
-        internal sealed class Bar {
+        internal sealed class Bar
+        {
 
-/// <summary>Crée un enregistrement de barre vide pour la désérialisation.</summary>
-public Bar() { }
+            /// <summary>Crée un enregistrement de barre vide pour la désérialisation.</summary>
+            public Bar() { }
 
-/// <summary>Nom complet de la barre personnalisée.</summary>
-/// <value>Nom VBAi complet de la barre.</value>
-public string Name { get; set; }
+            /// <summary>Nom complet de la barre personnalisée.</summary>
+            /// <value>Nom VBAi complet de la barre.</value>
+            public string Name { get; set; }
 
-/// <summary>État de visibilité à restaurer.</summary>
-/// <value><see langword="true"/> si la barre doit être visible.</value>
-public bool Visible { get; set; }
+            /// <summary>État de visibilité à restaurer.</summary>
+            /// <value><see langword="true"/> si la barre doit être visible.</value>
+            public bool Visible { get; set; }
 
-/// <summary>Mode d’ancrage ou de flottement natif.</summary>
-/// <value>Valeur Position native enregistrée.</value>
-public int Position { get; set; }
+            /// <summary>Mode d’ancrage ou de flottement natif.</summary>
+            /// <value>Valeur Position native enregistrée.</value>
+            public int Position { get; set; }
 
-/// <summary>Position horizontale d’une barre flottante, si définie.</summary>
-/// <value>Coordonnée Left en pixels, ou <see langword="null"/>.</value>
-public int? Left { get; set; }
+            /// <summary>Position horizontale d’une barre flottante, si définie.</summary>
+            /// <value>Coordonnée Left en pixels, ou <see langword="null"/>.</value>
+            public int? Left { get; set; }
 
-/// <summary>Position verticale d’une barre flottante, si définie.</summary>
-/// <value>Coordonnée Top en pixels, ou <see langword="null"/>.</value>
-public int? Top { get; set; }
+            /// <summary>Position verticale d’une barre flottante, si définie.</summary>
+            /// <value>Coordonnée Top en pixels, ou <see langword="null"/>.</value>
+            public int? Top { get; set; }
 
-/// <summary>Rangée d’ancrage, si définie.</summary>
-/// <value>Indice de rangée ou <see langword="null"/> pour une barre flottante.</value>
-public int? RowIndex { get; set; }
+            /// <summary>Rangée d’ancrage, si définie.</summary>
+            /// <value>Indice de rangée ou <see langword="null"/> pour une barre flottante.</value>
+            public int? RowIndex { get; set; }
 
-/// <summary>Commandes VBAi persistantes à rétablir.</summary>
-/// <value>Commandes reconnues du profil.</value>
-public Command[] Commands { get; set; } }
+            /// <summary>Commandes VBAi persistantes à rétablir.</summary>
+            /// <value>Commandes reconnues du profil.</value>
+            public Command[] Commands { get; set; }
+        }
 
         /// <summary>Chemin absolu du stockage des profils.</summary>
         private readonly string path;

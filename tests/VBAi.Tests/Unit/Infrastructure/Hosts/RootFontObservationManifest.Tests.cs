@@ -1,3 +1,4 @@
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -5,7 +6,6 @@ using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
 using System.Web.Script.Serialization;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 using VBAi.Tests.Integration;
 
 namespace VBAi.Tests.Unit
@@ -15,27 +15,37 @@ namespace VBAi.Tests.Unit
     public sealed class RootFontObservationManifestTests
     {
         [DataTestMethod]
-        [DataRow(null)][DataRow("")][DataRow("0")][DataRow("true")]
+        [DataRow(null)]
+        [DataRow("")]
+        [DataRow("0")]
+        [DataRow("true")]
         public void DisabledDiagnosticReadsOnlyOptInAndDoesNotInspectPaths(string flag)
         {
             int reads = 0;
-            Assert.IsNull(RootFontObservationManifest.Prepare(key => {
+            Assert.IsNull(RootFontObservationManifest.Prepare(key =>
+            {
                 Assert.AreEqual(RootFontObservationManifest.OptIn, key); reads++; return flag;
             }, null, true, path => { Assert.Fail("Disabled diagnostics must not inspect metadata."); return 0; }));
             Assert.AreEqual(1, reads);
         }
 
         [DataTestMethod]
-        [DataRow(null, false)][DataRow("LabelButton", true)][DataRow("unknown", false)]
+        [DataRow(null, false)]
+        [DataRow("LabelButton", true)]
+        [DataRow("unknown", false)]
         public void CapturePersistenceAndUndeclaredLayoutsRefuseBeforeAnyMetadata(string layout, bool persistence)
         {
-            Assert.ThrowsException<InvalidOperationException>(() => RootFontObservationManifest.Prepare(key => {
+            Assert.ThrowsException<InvalidOperationException>(() => RootFontObservationManifest.Prepare(key =>
+            {
                 Assert.AreEqual(RootFontObservationManifest.OptIn, key); return "1";
             }, layout, persistence, path => { Assert.Fail("No metadata after an invalid scenario."); return 0; }));
         }
 
         [DataTestMethod]
-        [DataRow(null)][DataRow("")][DataRow("observewrites")][DataRow("DistinctName")]
+        [DataRow(null)]
+        [DataRow("")]
+        [DataRow("observewrites")]
+        [DataRow("DistinctName")]
         public void ModeMustBeExplicitAndExact(string mode)
         {
             Assert.ThrowsException<InvalidOperationException>(() => RootFontObservationManifest.Prepare(
@@ -46,7 +56,8 @@ namespace VBAi.Tests.Unit
         [TestMethod]
         public void ExplicitSeedIsBoundBeforeBootstrapOnlyForDeferredDiagnostic()
         {
-            WithCase((root, path, project) => {
+            WithCase((root, path, project) =>
+            {
                 var armed = RootFontObservationManifest.Prepare(
                     EnvironmentFor(path, "AfterInitialCapture", RootFontObservationManifest.SyntheticExplicitArial9),
                     "LabelButton", false);
@@ -65,7 +76,8 @@ namespace VBAi.Tests.Unit
         [TestMethod]
         public void RetainedSourceRequiresItsExactDeferredProfileAndPinnedBytesBeforeBootstrap()
         {
-            WithCase((root, path, project) => {
+            WithCase((root, path, project) =>
+            {
                 string source = Path.Combine(root, "source.xlsm");
                 File.WriteAllText(source, "inert, but not the pinned workbook");
                 Func<string, string> retained = key => key == RootFontObservationManifest.SourceWorkbookVariable ? source :
@@ -105,7 +117,8 @@ namespace VBAi.Tests.Unit
                 new[] { Binding("", 7, expected), Binding("", 7, expected) } })
                 Assert.ThrowsException<InvalidOperationException>(() => RootFontObservationManifest.RequireRoot(
                     invalid, "AfterInitialCapture", RootFontObservationManifest.SyntheticExplicitArial9));
-            WithCase((root, path, project) => {
+            WithCase((root, path, project) =>
+            {
                 Guid candidate = Guid.NewGuid();
                 Assert.ThrowsException<InvalidOperationException>(() => RootFontObservationManifest.Build(
                     Config(path, "AfterInitialCapture", RootFontObservationManifest.SyntheticExplicitArial9),
@@ -115,8 +128,11 @@ namespace VBAi.Tests.Unit
         }
 
         [DataTestMethod]
-        [DataRow("relative.json")][DataRow("C:relative.json")][DataRow("\\\\server\\share\\manifest.json")]
-        [DataRow("C:\\manifest.json:stream")][DataRow("C:\\folder\\..\\manifest.json")]
+        [DataRow("relative.json")]
+        [DataRow("C:relative.json")]
+        [DataRow("\\\\server\\share\\manifest.json")]
+        [DataRow("C:\\manifest.json:stream")]
+        [DataRow("C:\\folder\\..\\manifest.json")]
         public void NonExactLocalPathsRefuse(string path)
         {
             Assert.ThrowsException<InvalidOperationException>(() => RootFontObservationManifest.Prepare(
@@ -126,7 +142,8 @@ namespace VBAi.Tests.Unit
         [TestMethod]
         public void EachDeclaredLayoutCanArmBeforeBootstrapWithoutCreatingTheManifest()
         {
-            WithCase((root, path, project) => {
+            WithCase((root, path, project) =>
+            {
                 foreach (string layout in new[] { "LabelButton", "TextBox", "ComboBox", "ListBox", "CheckBox", "OptionButton",
                     "ToggleButton", "ScrollBar", "SpinButton", "TabStrip", "Image", "FrameMultiPage" })
                     Assert.AreEqual(path, RootFontObservationManifest.Prepare(EnvironmentFor(path, "ObserveWrites"), layout, false).Path);
@@ -135,10 +152,12 @@ namespace VBAi.Tests.Unit
         }
 
         [DataTestMethod]
-        [DataRow(false)][DataRow(true)]
+        [DataRow(false)]
+        [DataRow(true)]
         public void ExistingManifestFileOrDirectoryIsNotOverwritten(bool directory)
         {
-            WithCase((root, path, project) => {
+            WithCase((root, path, project) =>
+            {
                 if (directory) Directory.CreateDirectory(path); else File.WriteAllText(path, "original");
                 Assert.ThrowsException<InvalidOperationException>(() => RootFontObservationManifest.Prepare(
                     EnvironmentFor(path, "ObserveWrites"), "LabelButton", false));
@@ -147,11 +166,16 @@ namespace VBAi.Tests.Unit
         }
 
         [DataTestMethod]
-        [DataRow("reparse-leaf")][DataRow("reparse-parent")][DataRow("file-parent")][DataRow("missing-parent")]
+        [DataRow("reparse-leaf")]
+        [DataRow("reparse-parent")]
+        [DataRow("file-parent")]
+        [DataRow("missing-parent")]
         public void UnsafeOrMissingManifestAncestorsRefuseWithoutClaim(string scenario)
         {
-            WithCase((root, path, project) => {
-                Func<string, FileAttributes> inspect = item => {
+            WithCase((root, path, project) =>
+            {
+                Func<string, FileAttributes> inspect = item =>
+                {
                     if (item == path && scenario == "reparse-leaf") return FileAttributes.ReparsePoint;
                     if (item == root && scenario == "reparse-parent") return FileAttributes.Directory | FileAttributes.ReparsePoint;
                     if (item == root && scenario == "file-parent") return FileAttributes.Normal;
@@ -165,24 +189,31 @@ namespace VBAi.Tests.Unit
         }
 
         [DataTestMethod]
-        [DataRow("access")][DataRow("io")]
+        [DataRow("access")]
+        [DataRow("io")]
         public void MetadataErrorsRemainErrorsRatherThanBeingTreatedAsAbsence(string failure)
         {
-            WithCase((root, path, project) => {
+            WithCase((root, path, project) =>
+            {
                 Exception expected = failure == "access" ? (Exception)new UnauthorizedAccessException("owned synthetic probe") : new IOException("owned synthetic probe");
-                try { RootFontObservationManifest.Prepare(EnvironmentFor(path, "ObserveWrites"), "LabelButton", false,
-                    item => { throw expected; }); Assert.Fail("Metadata uncertainty must refuse."); }
+                try
+                {
+                    RootFontObservationManifest.Prepare(EnvironmentFor(path, "ObserveWrites"), "LabelButton", false,
+                    item => { throw expected; }); Assert.Fail("Metadata uncertainty must refuse.");
+                }
                 catch (Exception actual) { Assert.AreSame(expected, actual); }
                 Assert.IsFalse(File.Exists(path));
             });
         }
 
         [DataTestMethod]
-        [DataRow("ObserveWrites", "")][DataRow("DistinctChildName", "Arial")]
+        [DataRow("ObserveWrites", "")]
+        [DataRow("DistinctChildName", "Arial")]
         [DataRow("AfterInitialCapture", "")]
         public void ActualBoundedRootFixtureBindsAllExactContractFieldsWithoutChangingBaseline(string mode, string temporaryFace)
         {
-            WithCase((root, path, project) => {
+            WithCase((root, path, project) =>
+            {
                 var baseline = Baseline(); var original = baseline.Files.ToDictionary(item => item.Key, item => (byte[])item.Value.Clone());
                 var candidate = Guid.NewGuid(); var nonce = Guid.NewGuid();
                 var manifest = RootFontObservationManifest.Build(Config(path, mode), root, project, baseline, candidate, candidate, nonce);
@@ -201,10 +232,13 @@ namespace VBAi.Tests.Unit
         }
 
         [DataTestMethod]
-        [DataRow("empty-candidate")][DataRow("wrong-candidate")][DataRow("empty-nonce")]
+        [DataRow("empty-candidate")]
+        [DataRow("wrong-candidate")]
+        [DataRow("empty-nonce")]
         public void CandidateMismatchOrMissingNonceCannotBuildAClaim(string scenario)
         {
-            WithCase((root, path, project) => {
+            WithCase((root, path, project) =>
+            {
                 Guid expected = scenario == "empty-candidate" ? Guid.Empty : Guid.NewGuid();
                 Guid loaded = scenario == "wrong-candidate" ? Guid.NewGuid() : expected;
                 Guid nonce = scenario == "empty-nonce" ? Guid.Empty : Guid.NewGuid();
@@ -215,11 +249,18 @@ namespace VBAi.Tests.Unit
         }
 
         [DataTestMethod]
-        [DataRow("missing-form")][DataRow("ambiguous-form")][DataRow("no-resources")][DataRow("missing-source")]
-        [DataRow("empty-source")][DataRow("missing-resource")][DataRow("opaque-resource")][DataRow("ambiguous-blob")]
+        [DataRow("missing-form")]
+        [DataRow("ambiguous-form")]
+        [DataRow("no-resources")]
+        [DataRow("missing-source")]
+        [DataRow("empty-source")]
+        [DataRow("missing-resource")]
+        [DataRow("opaque-resource")]
+        [DataRow("ambiguous-blob")]
         public void MissingOrAmbiguousBaselineCannotArmTheDiagnostic(string scenario)
         {
-            WithCase((root, path, project) => {
+            WithCase((root, path, project) =>
+            {
                 var baseline = Baseline(); var form = baseline.Manifest.Components[0];
                 if (scenario == "missing-form") form.Name = "AnotherForm";
                 if (scenario == "ambiguous-form") baseline.Manifest.Components = new[] { form, form };
@@ -251,7 +292,8 @@ namespace VBAi.Tests.Unit
         }
 
         [DataTestMethod]
-        [DataRow("Arial")][DataRow("arial")]
+        [DataRow("Arial")]
+        [DataRow("arial")]
         public void DistinctModeRefusesTheFixedFaceWhenItIsAlreadyTheTarget(string face)
         {
             var bindings = new[] { Binding("", 7, Descriptor(face)) };
@@ -262,7 +304,8 @@ namespace VBAi.Tests.Unit
         [TestMethod]
         public void FreshPublicationCreatesOnlyOneExactUtf8ManifestAndNeverTheOutputDirectory()
         {
-            WithCase((root, path, project) => {
+            WithCase((root, path, project) =>
+            {
                 var configuration = Config(path); Guid candidate = Guid.NewGuid();
                 var manifest = RootFontObservationManifest.Build(configuration, root, project, Baseline(), candidate, candidate, Guid.NewGuid());
                 RootFontObservationManifest.Publish(configuration, manifest, EnvironmentFor(path, configuration.Mode));
@@ -277,10 +320,14 @@ namespace VBAi.Tests.Unit
         }
 
         [DataTestMethod]
-        [DataRow("flag")][DataRow("mode")][DataRow("path")][DataRow("seed")]
+        [DataRow("flag")]
+        [DataRow("mode")]
+        [DataRow("path")]
+        [DataRow("seed")]
         public void ChangedInheritedConfigurationRefusesBeforePublication(string changed)
         {
-            WithCase((root, path, project) => {
+            WithCase((root, path, project) =>
+            {
                 var configuration = Config(path); Guid candidate = Guid.NewGuid();
                 var manifest = RootFontObservationManifest.Build(configuration, root, project, Baseline(), candidate, candidate, Guid.NewGuid());
                 var environment = EnvironmentFor(path, configuration.Mode);
@@ -293,11 +340,16 @@ namespace VBAi.Tests.Unit
         }
 
         [DataTestMethod]
-        [DataRow("existing-output")][DataRow("project-directory")][DataRow("project-missing")]
-        [DataRow("reparse-project")][DataRow("output-nonce")][DataRow("output-mode")]
+        [DataRow("existing-output")]
+        [DataRow("project-directory")]
+        [DataRow("project-missing")]
+        [DataRow("reparse-project")]
+        [DataRow("output-nonce")]
+        [DataRow("output-mode")]
         public void PublicationRevalidatesFreshOutputAndOwnedProjectBeforeClaim(string changed)
         {
-            WithCase((root, path, project) => {
+            WithCase((root, path, project) =>
+            {
                 var configuration = Config(path); Guid candidate = Guid.NewGuid();
                 var manifest = RootFontObservationManifest.Build(configuration, root, project, Baseline(), candidate, candidate, Guid.NewGuid());
                 if (changed == "existing-output") Directory.CreateDirectory(Convert.ToString(manifest["OutputRoot"]));
@@ -314,7 +366,8 @@ namespace VBAi.Tests.Unit
         [TestMethod]
         public void FileCreatedAfterMetadataCheckCannotBeOverwrittenByCreateNew()
         {
-            WithCase((root, path, project) => {
+            WithCase((root, path, project) =>
+            {
                 var configuration = Config(path); Guid candidate = Guid.NewGuid();
                 var manifest = RootFontObservationManifest.Build(configuration, root, project, Baseline(), candidate, candidate, Guid.NewGuid());
                 File.WriteAllText(path, "race claim");
@@ -327,15 +380,20 @@ namespace VBAi.Tests.Unit
         private static RootFontObservationManifest.Configuration Config(string path, string mode = "ObserveWrites", string seed = null)
         { return RootFontObservationManifest.Prepare(EnvironmentFor(path, mode, seed), "LabelButton", false); }
         private static Func<string, string> EnvironmentFor(string path, string mode, string seed = null)
-        { return key => key == RootFontObservationManifest.OptIn ? "1" : key == RootFontObservationManifest.ModeVariable ? mode :
-            key == RootFontObservationManifest.SeedProfileVariable ? seed : key == RootFontObservationManifest.ManifestVariable ? path : null; }
+        {
+            return key => key == RootFontObservationManifest.OptIn ? "1" : key == RootFontObservationManifest.ModeVariable ? mode :
+            key == RootFontObservationManifest.SeedProfileVariable ? seed : key == RootFontObservationManifest.ManifestVariable ? path : null;
+        }
         private static VbaGitSnapshot Baseline()
         {
             var form = new VbaGitComponent { Name = "EmbeddedForm", Type = 3, HasResources = true };
             return new VbaGitSnapshot(new VbaGitManifest { References = "", Components = new[] { form } },
-                new Dictionary<string, byte[]> { ["EmbeddedForm.frm"] = VbaGitSnapshot.Utf8.GetBytes(
+                new Dictionary<string, byte[]>
+                {
+                    ["EmbeddedForm.frm"] = VbaGitSnapshot.Utf8.GetBytes(
                     "OleObjectBlob = \"EmbeddedForm.frx\":0000\r\nAttribute VB_Name = \"EmbeddedForm\"\r\nOption Explicit\r\n"),
-                    ["EmbeddedForm.frx"] = FormStreamPaddingTests.ContainerResourceBefore() });
+                    ["EmbeddedForm.frx"] = FormStreamPaddingTests.ContainerResourceBefore()
+                });
         }
         private static FormStreamPadding.FormFontBinding Binding(string owner, uint type, byte[] descriptor)
         { return new FormStreamPadding.FormFontBinding(owner, descriptor, type); }

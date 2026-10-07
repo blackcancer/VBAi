@@ -1,8 +1,7 @@
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Collections.Generic;
 using System.IO;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
-using VBAi;
 
 namespace VBAi.Tests.Unit
 {
@@ -168,9 +167,12 @@ namespace VBAi.Tests.Unit
         }
 
         [DataTestMethod]
-        [DataRow(false, "success")][DataRow(true, "success")]
-        [DataRow(false, "capture")][DataRow(true, "capture")]
-        [DataRow(false, "gone")][DataRow(true, "gone")]
+        [DataRow(false, "success")]
+        [DataRow(true, "success")]
+        [DataRow(false, "capture")]
+        [DataRow(true, "capture")]
+        [DataRow(false, "gone")]
+        [DataRow(true, "gone")]
         public void ReadOptionsCancelsOnlyItsKnownScopeAndPreservesCaptureFailure(bool debug, string phase)
         {
             var probe = new CancellationProbe { CloseAfterPauses = 20, GoneDuringCapture = phase == "gone" };
@@ -185,12 +187,18 @@ namespace VBAi.Tests.Unit
         }
 
         [DataTestMethod]
-        [DataRow(false, "cancel")][DataRow(true, "cancel")]
-        [DataRow(false, "lifetime")][DataRow(true, "lifetime")]
-        [DataRow(false, "timeout")][DataRow(true, "timeout")]
-        [DataRow(false, "hidden")][DataRow(true, "hidden")]
-        [DataRow(false, "replacement")][DataRow(true, "replacement")]
-        [DataRow(false, "fallback replacement")][DataRow(true, "fallback replacement")]
+        [DataRow(false, "cancel")]
+        [DataRow(true, "cancel")]
+        [DataRow(false, "lifetime")]
+        [DataRow(true, "lifetime")]
+        [DataRow(false, "timeout")]
+        [DataRow(true, "timeout")]
+        [DataRow(false, "hidden")]
+        [DataRow(true, "hidden")]
+        [DataRow(false, "replacement")]
+        [DataRow(true, "replacement")]
+        [DataRow(false, "fallback replacement")]
+        [DataRow(true, "fallback replacement")]
         public void ReadCaptureAndCleanupErrorsRemainDistinctWithoutASecondCancel(bool debug, string phase)
         {
             var probe = new CancellationProbe();
@@ -228,7 +236,10 @@ namespace VBAi.Tests.Unit
             ? VbeDebugWindows.ReadDebugOptions(probe) : VbeDebugWindows.ReadVbeOptions(probe);
 
         [DataTestMethod]
-        [DataRow(false, false)][DataRow(true, false)][DataRow(false, true)][DataRow(true, true)]
+        [DataRow(false, false)]
+        [DataRow(true, false)]
+        [DataRow(false, true)]
+        [DataRow(true, true)]
         public void SuccessfulReadDoesNotMaskCancellationOrObservationFailure(bool debug, bool observation)
         {
             var error = new IOException("synthetic terminal cleanup error");
@@ -337,9 +348,19 @@ namespace VBAi.Tests.Unit
     public sealed partial class VbeDebugWindowsSystemTests
     {
         [DataTestMethod]
-        [DataRow("zero")][DataRow("foreign dialog")][DataRow("wrong dialog class")][DataRow("changed dialog")]
-        [DataRow("missing button")][DataRow("foreign button")][DataRow("wrong button class")][DataRow("disabled")][DataRow("post failure")]
-        [DataRow("zero dialog thread")][DataRow("wrong button thread")][DataRow("zero button thread")][DataRow("foreign cancel lookup")]
+        [DataRow("zero")]
+        [DataRow("foreign dialog")]
+        [DataRow("wrong dialog class")]
+        [DataRow("changed dialog")]
+        [DataRow("missing button")]
+        [DataRow("foreign button")]
+        [DataRow("wrong button class")]
+        [DataRow("disabled")]
+        [DataRow("post failure")]
+        [DataRow("zero dialog thread")]
+        [DataRow("wrong button thread")]
+        [DataRow("zero button thread")]
+        [DataRow("foreign cancel lookup")]
         public void NativeOptionsCancelRejectsInvalidIdentityOrButtonWithoutAlternateAction(string scenario)
         {
             var enabled = VbeDebugWindows.OptionsWindowEnabled;

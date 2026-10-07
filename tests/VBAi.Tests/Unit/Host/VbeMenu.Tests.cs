@@ -1,10 +1,9 @@
 namespace VBAi.Tests.Unit
 {
+    using Microsoft.VisualStudio.TestTools.UnitTesting;
     using System;
     using System.Reflection;
-    using System.Windows.Forms;
     using VBAi;
-    using Microsoft.VisualStudio.TestTools.UnitTesting;
 
     /// <summary>Vérifie la découverte des menus VBE et le traitement des barres COM.</summary>
     public sealed partial class HostSettingsCoverageTests
@@ -90,14 +89,11 @@ namespace VBAi.Tests.Unit
 
 namespace VBAi.Tests.Unit
 {
+    using Microsoft.VisualStudio.TestTools.UnitTesting;
     using System;
     using System.Collections.Generic;
     using System.Reflection;
-    using System.Runtime.InteropServices;
-    using System.Runtime.Serialization;
-    using System.Windows.Forms;
     using VBAi;
-    using Microsoft.VisualStudio.TestTools.UnitTesting;
 
     /// <summary>Vérifie la recherche des menus selon le type de barre et la légende normalisée.</summary>
     public sealed partial class HostSettingsWindowTests
@@ -133,13 +129,12 @@ namespace VBAi.Tests.Unit
 
 namespace VBAi.Tests.Unit
 {
+    using Microsoft.VisualStudio.TestTools.UnitTesting;
     using System;
-    using System.Collections;
-    using System.Reflection;
     using System.Collections.Generic;
     using System.Linq;
+    using System.Reflection;
     using VBAi;
-    using Microsoft.VisualStudio.TestTools.UnitTesting;
 
     /// <summary>Vérifie les abonnements, actions et nettoyages des menus VBE.</summary>
     [TestClass]
@@ -152,15 +147,15 @@ namespace VBAi.Tests.Unit
             var read = typeof(VbeMenu).GetMethod("ReadIconNative", BindingFlags.NonPublic | BindingFlags.Static);
             foreach (var type in new[] { typeof(ChatWindow), typeof(LlmSettingsWindow), typeof(GitWindow),
                 typeof(ModernEditorWindow), typeof(AboutWindow), typeof(CrashReportWindow), typeof(UpdateWindow) })
-            using (var icon = (System.Drawing.Icon)read.Invoke(null, new object[] { type }))
-            {
-                Assert.IsNotNull(icon, type.Name);
-                using (var image = icon.ToBitmap()) Assert.IsTrue(image.Width > 0 && image.Height > 0, type.Name);
-            }
+                using (var icon = (System.Drawing.Icon)read.Invoke(null, new object[] { type }))
+                {
+                    Assert.IsNotNull(icon, type.Name);
+                    using (var image = icon.ToBitmap()) Assert.IsTrue(image.Width > 0 && image.Height > 0, type.Name);
+                }
         }
 
-                /// <summary>Vérifie les images natives, menus localisés, barres d’éditeur et erreurs de suppression.</summary>
-[STATestMethod]
+        /// <summary>Vérifie les images natives, menus localisés, barres d’éditeur et erreurs de suppression.</summary>
+        [STATestMethod]
         public void NativeMenuPicturesLocalizedEditorBarsAndRemovalFailuresKeepAllGuards()
         {
             using (var theme = new VBAi.Tests.Infrastructure.ThemeScope()) using (var culture = new VBAi.Tests.Infrastructure.LocalizationScope())
@@ -179,8 +174,8 @@ namespace VBAi.Tests.Unit
                 Assert.AreEqual(8, subscriptions.Count);
             }
         }
-                /// <summary>Vérifie le nettoyage partiel des menus face aux objets COM en lecture seule ou absents.</summary>
-[TestMethod]
+        /// <summary>Vérifie le nettoyage partiel des menus face aux objets COM en lecture seule ou absents.</summary>
+        [TestMethod]
         public void PartialMenuDestructionPreservesReadonlyNullDefenses()
         {
             foreach (var name in new[] { "viewButton", "settingsButton", "viewHandler", "settingsHandler" })
@@ -358,11 +353,11 @@ namespace VBAi.Tests.Unit
 
 namespace VBAi.Tests.Unit
 {
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using VBAi;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
+    using Microsoft.VisualStudio.TestTools.UnitTesting;
+    using System;
+    using System.Collections.Generic;
+    using System.Linq;
+    using VBAi;
 
     public sealed partial class VbeMenuLifecycleTests
     {

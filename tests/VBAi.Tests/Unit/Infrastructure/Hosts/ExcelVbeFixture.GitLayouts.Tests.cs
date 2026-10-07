@@ -1,9 +1,9 @@
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using System.Web.Script.Serialization;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 using VBAi.Tests.Integration;
 
 namespace VBAi.Tests.Unit
@@ -71,7 +71,8 @@ namespace VBAi.Tests.Unit
         {
             var component = new VbaGitComponent { Name = "Form1", Type = 3, HasResources = true };
             return new VbaGitSnapshot(new VbaGitManifest { References = "", Components = new[] { component } },
-                new Dictionary<string, byte[]> {
+                new Dictionary<string, byte[]>
+                {
                     ["Form1.frm"] = VbaGitSnapshot.Utf8.GetBytes("OleObjectBlob = \"Form1.frx\":0000\nAttribute VB_Name = \"Form1\"\nOption Explicit\n"),
                     ["Form1.frx"] = FormStreamPaddingTests.ContainerResourceBefore()
                 });

@@ -1,3 +1,4 @@
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -6,7 +7,6 @@ using System.Linq;
 using System.Runtime.ExceptionServices;
 using System.Text;
 using System.Web.Script.Serialization;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace VBAi.Tests.Integration
 {
@@ -51,7 +51,8 @@ namespace VBAi.Tests.Integration
                 startupEvidence["HostBuild"] = Convert.ToString(((dynamic)application).Build);
             }
             if (workbook != null && !startupEvidence.ContainsKey("InitialWorkbook"))
-                startupEvidence["InitialWorkbook"] = new {
+                startupEvidence["InitialWorkbook"] = new
+                {
                     Name = Convert.ToString(((dynamic)workbook).Name),
                     FullName = Convert.ToString(((dynamic)workbook).FullName),
                     Saved = Convert.ToBoolean(((dynamic)workbook).Saved)
@@ -78,9 +79,12 @@ namespace VBAi.Tests.Integration
             if (!retainEvidence) return execute();
             int sequence = ++commandSequence;
             if (sequence > MaximumCommandRecords) return execute();
-            var record = new Dictionary<string, object> {
-                ["Sequence"] = sequence, ["ProcessId"] = ProcessId,
-                ["StartedUtc"] = DateTime.UtcNow.ToString("o"), ["Request"] = BoundedJson(request, 16384)
+            var record = new Dictionary<string, object>
+            {
+                ["Sequence"] = sequence,
+                ["ProcessId"] = ProcessId,
+                ["StartedUtc"] = DateTime.UtcNow.ToString("o"),
+                ["Request"] = BoundedJson(request, 16384)
             };
             IDictionary<string, object> response = null;
             Exception failure = null;

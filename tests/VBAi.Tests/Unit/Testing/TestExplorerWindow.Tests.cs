@@ -1,3 +1,4 @@
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -10,7 +11,6 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 using VBAi.Tests.Infrastructure;
 
 namespace VBAi.Tests.Unit
@@ -22,67 +22,68 @@ namespace VBAi.Tests.Unit
         public void InitialNativePlacementRepairsOnlyCollapsedOwnedSitesAndKeepsDesignerDimensions()
         {
             for (int index = 0; index < 4; index++)
-            using (var host = new Form { ShowInTaskbar = false, StartPosition = FormStartPosition.Manual })
-            using (var container = new ChatToolWindow())
-            using (var explorer = new TestExplorerWindow())
-            {
-                var designerSize = explorer.Size;
-                var frame = index % 2 == 0 ? null : new ExplorerNativeFrameDouble();
-                var native = new ExplorerNativeWindowDouble(host) { LinkedWindowFrame = frame };
-                host.Controls.Add(container);
-                var minimum = explorer.MinimumSize;
-                var tinySizes = new[] { new Size(200, 100), new Size(Math.Max(1920, minimum.Width), 6),
+                using (var host = new Form { ShowInTaskbar = false, StartPosition = FormStartPosition.Manual })
+                using (var container = new ChatToolWindow())
+                using (var explorer = new TestExplorerWindow())
+                {
+                    var designerSize = explorer.Size;
+                    var frame = index % 2 == 0 ? null : new ExplorerNativeFrameDouble();
+                    var native = new ExplorerNativeWindowDouble(host) { LinkedWindowFrame = frame };
+                    host.Controls.Add(container);
+                    var minimum = explorer.MinimumSize;
+                    var tinySizes = new[] { new Size(200, 100), new Size(Math.Max(1920, minimum.Width), 6),
                     new Size(minimum.Width - 1, minimum.Height + 120), new Size(minimum.Width + 120, minimum.Height - 1) };
-                host.ClientSize = tinySizes[index];
-                host.Show();
-                container.Attach(explorer);
-                Application.DoEvents();
-                var owner = index % 2 == 0 ? (IWin32Window)host : new ExplorerMonitorFallbackOwner();
-                var area = Screen.FromHandle(owner.Handle).WorkingArea;
-                explorer.EnsureUsableNativePlacement(container, native, owner);
-                Application.DoEvents();
-                Assert.AreEqual(Math.Min(designerSize.Width, area.Width), host.Width);
-                Assert.AreEqual(Math.Min(designerSize.Height, area.Height), host.Height);
-                Assert.IsTrue(area.Contains(host.Bounds), "Recovered native bounds must remain on the owner's monitor.");
-                Assert.IsFalse(explorer.TopLevel, "Recovery retains the native tool container.");
-                Assert.IsTrue(explorer.Visible);
-                if (frame != null) {
-                    Assert.AreEqual(1, frame.LinkedWindows.Removed.Count);
-                    Assert.AreSame(native, frame.LinkedWindows.Removed[0]);
-                    Assert.IsNull(native.LinkedWindowFrame);
+                    host.ClientSize = tinySizes[index];
+                    host.Show();
+                    container.Attach(explorer);
+                    Application.DoEvents();
+                    var owner = index % 2 == 0 ? (IWin32Window)host : new ExplorerMonitorFallbackOwner();
+                    var area = Screen.FromHandle(owner.Handle).WorkingArea;
+                    explorer.EnsureUsableNativePlacement(container, native, owner);
+                    Application.DoEvents();
+                    Assert.AreEqual(Math.Min(designerSize.Width, area.Width), host.Width);
+                    Assert.AreEqual(Math.Min(designerSize.Height, area.Height), host.Height);
+                    Assert.IsTrue(area.Contains(host.Bounds), "Recovered native bounds must remain on the owner's monitor.");
+                    Assert.IsFalse(explorer.TopLevel, "Recovery retains the native tool container.");
+                    Assert.IsTrue(explorer.Visible);
+                    if (frame != null)
+                    {
+                        Assert.AreEqual(1, frame.LinkedWindows.Removed.Count);
+                        Assert.AreSame(native, frame.LinkedWindows.Removed[0]);
+                        Assert.IsNull(native.LinkedWindowFrame);
+                    }
+                    var recovered = host.Bounds;
+                    explorer.EnsureUsableNativePlacement(container, native, owner);
+                    Assert.AreEqual(recovered, host.Bounds, "Reopening a readable pane must not reset its placement.");
                 }
-                var recovered = host.Bounds;
-                explorer.EnsureUsableNativePlacement(container, native, owner);
-                Assert.AreEqual(recovered, host.Bounds, "Reopening a readable pane must not reset its placement.");
-            }
         }
 
         [STATestMethod]
         public void NativePlacementPreservesReadableFloatingAndDockedUserBounds()
         {
             foreach (bool docked in new[] { false, true })
-            using (var host = new Form { ShowInTaskbar = false, StartPosition = FormStartPosition.Manual })
-            using (var container = new ChatToolWindow())
-            using (var explorer = new TestExplorerWindow())
-            {
-                host.ClientSize = new Size(explorer.MinimumSize.Width + 120, explorer.MinimumSize.Height + 80);
-                var frame = docked ? new ExplorerNativeFrameDouble() : null;
-                var native = new ExplorerNativeWindowDouble(host) { LinkedWindowFrame = frame };
-                host.Controls.Add(container);
-                host.Show();
-                container.Attach(explorer);
-                Application.DoEvents();
-                var userBounds = host.Bounds;
-                explorer.EnsureUsableNativePlacement(container, native, host);
-                Assert.AreEqual(userBounds, host.Bounds);
-                Assert.AreSame(frame, native.LinkedWindowFrame);
-                if (frame != null) Assert.AreEqual(0, frame.LinkedWindows.Removed.Count);
-                host.ClientSize = new Size(explorer.MinimumSize.Width + 160, explorer.MinimumSize.Height + 130);
-                Application.DoEvents();
-                userBounds = host.Bounds;
-                explorer.EnsureUsableNativePlacement(container, native, host);
-                Assert.AreEqual(userBounds, host.Bounds, "A later user resize is authoritative.");
-            }
+                using (var host = new Form { ShowInTaskbar = false, StartPosition = FormStartPosition.Manual })
+                using (var container = new ChatToolWindow())
+                using (var explorer = new TestExplorerWindow())
+                {
+                    host.ClientSize = new Size(explorer.MinimumSize.Width + 120, explorer.MinimumSize.Height + 80);
+                    var frame = docked ? new ExplorerNativeFrameDouble() : null;
+                    var native = new ExplorerNativeWindowDouble(host) { LinkedWindowFrame = frame };
+                    host.Controls.Add(container);
+                    host.Show();
+                    container.Attach(explorer);
+                    Application.DoEvents();
+                    var userBounds = host.Bounds;
+                    explorer.EnsureUsableNativePlacement(container, native, host);
+                    Assert.AreEqual(userBounds, host.Bounds);
+                    Assert.AreSame(frame, native.LinkedWindowFrame);
+                    if (frame != null) Assert.AreEqual(0, frame.LinkedWindows.Removed.Count);
+                    host.ClientSize = new Size(explorer.MinimumSize.Width + 160, explorer.MinimumSize.Height + 130);
+                    Application.DoEvents();
+                    userBounds = host.Bounds;
+                    explorer.EnsureUsableNativePlacement(container, native, host);
+                    Assert.AreEqual(userBounds, host.Bounds, "A later user resize is authoritative.");
+                }
         }
 
         [STATestMethod]
@@ -296,8 +297,12 @@ namespace VBAi.Tests.Unit
         public void ModuleScopeSurvivesExecutionRefreshAndThemeWithoutIncludingAnotherModule()
         {
             var service = new ExplorerDouble();
-            service.Catalog.Modules.Add(new VbaTestModule { Name = "Elsewhere", Tests = new List<VbaTestDescriptor>
-                { new VbaTestDescriptor { Id = "third", Module = "Elsewhere", Procedure = "AnotherTest", Kind = "Sub" } } });
+            service.Catalog.Modules.Add(new VbaTestModule
+            {
+                Name = "Elsewhere",
+                Tests = new List<VbaTestDescriptor>
+                { new VbaTestDescriptor { Id = "third", Module = "Elsewhere", Procedure = "AnotherTest", Kind = "Sub" } }
+            });
             using (var window = new TestExplorerWindow())
             {
                 window.Configure(service);
@@ -319,25 +324,25 @@ namespace VBAi.Tests.Unit
         public void CategoryAndOutcomeScopesReturnAfterTransientAbsenceAndSurviveTheme()
         {
             foreach (int grouping in new[] { 1, 2 })
-            using (var window = new TestExplorerWindow())
-            {
-                var service = new ExplorerDouble();
-                window.Configure(service);
-                var handle = window.Handle;
-                window.RunScopeAsync().GetAwaiter().GetResult();
-                Field<ComboBox>(window, "grouping").SelectedIndex = grouping;
-                var tree = Field<TreeView>(window, "testTree");
-                var treeHandle = tree.Handle;
-                tree.SelectedNode = tree.Nodes[0].Nodes.Cast<TreeNode>().Single(node => node.Nodes.Cast<TreeNode>().Any(test => ((VbaTestDescriptor)test.Tag).Id == "first"));
-                string scope = tree.SelectedNode.Text;
-                window.RunScopeAsync().GetAwaiter().GetResult();
-                Assert.AreEqual(scope, tree.SelectedNode.Text);
-                window.RefreshProjects(); RaiseThemeChanged();
-                Assert.AreEqual(scope, tree.SelectedNode.Text);
-                CollectionAssert.AreEqual(new[] { "first" }, window.ScopeTests().Select(test => test.Id).ToArray());
-                window.RunScopeAsync().GetAwaiter().GetResult();
-                CollectionAssert.AreEqual(new[] { "first" }, service.Selected.Select(test => test.Id).ToArray());
-            }
+                using (var window = new TestExplorerWindow())
+                {
+                    var service = new ExplorerDouble();
+                    window.Configure(service);
+                    var handle = window.Handle;
+                    window.RunScopeAsync().GetAwaiter().GetResult();
+                    Field<ComboBox>(window, "grouping").SelectedIndex = grouping;
+                    var tree = Field<TreeView>(window, "testTree");
+                    var treeHandle = tree.Handle;
+                    tree.SelectedNode = tree.Nodes[0].Nodes.Cast<TreeNode>().Single(node => node.Nodes.Cast<TreeNode>().Any(test => ((VbaTestDescriptor)test.Tag).Id == "first"));
+                    string scope = tree.SelectedNode.Text;
+                    window.RunScopeAsync().GetAwaiter().GetResult();
+                    Assert.AreEqual(scope, tree.SelectedNode.Text);
+                    window.RefreshProjects(); RaiseThemeChanged();
+                    Assert.AreEqual(scope, tree.SelectedNode.Text);
+                    CollectionAssert.AreEqual(new[] { "first" }, window.ScopeTests().Select(test => test.Id).ToArray());
+                    window.RunScopeAsync().GetAwaiter().GetResult();
+                    CollectionAssert.AreEqual(new[] { "first" }, service.Selected.Select(test => test.Id).ToArray());
+                }
         }
 
         [STATestMethod]
@@ -475,24 +480,24 @@ namespace VBAi.Tests.Unit
                 window.Configure(new ExplorerDouble());
                 window.RunScopeAsync().GetAwaiter().GetResult();
                 foreach (bool contrast in new[] { false, true })
-                foreach (var choice in new[] { ThemeChoice.Light, ThemeChoice.Dark })
-                {
-                    UiTheme.HighContrast = () => contrast;
-                    ThemeScope.SetChoice(choice);
-                    RaiseThemeChanged();
-                    var tests = Field<TreeView>(window, "testTree").Nodes[0].Nodes[0].Nodes.Cast<TreeNode>().ToArray();
-                    StringAssert.StartsWith(tests[0].Text, "✗ ");
-                    StringAssert.StartsWith(tests[1].Text, "✓ ");
-                    StringAssert.Contains(tests[0].Text, UiText.Get(VbaTestOutcome.Failed.ToString()));
-                    StringAssert.Contains(tests[1].Text, UiText.Get(VbaTestOutcome.Passed.ToString()));
-                    Assert.AreEqual(UiTheme.Error, tests[0].ForeColor);
-                    Assert.AreEqual(UiTheme.Success, tests[1].ForeColor);
-                    if (contrast)
+                    foreach (var choice in new[] { ThemeChoice.Light, ThemeChoice.Dark })
                     {
-                        Assert.AreEqual(SystemColors.WindowText, tests[0].ForeColor);
-                        Assert.AreEqual(SystemColors.WindowText, tests[1].ForeColor);
+                        UiTheme.HighContrast = () => contrast;
+                        ThemeScope.SetChoice(choice);
+                        RaiseThemeChanged();
+                        var tests = Field<TreeView>(window, "testTree").Nodes[0].Nodes[0].Nodes.Cast<TreeNode>().ToArray();
+                        StringAssert.StartsWith(tests[0].Text, "✗ ");
+                        StringAssert.StartsWith(tests[1].Text, "✓ ");
+                        StringAssert.Contains(tests[0].Text, UiText.Get(VbaTestOutcome.Failed.ToString()));
+                        StringAssert.Contains(tests[1].Text, UiText.Get(VbaTestOutcome.Passed.ToString()));
+                        Assert.AreEqual(UiTheme.Error, tests[0].ForeColor);
+                        Assert.AreEqual(UiTheme.Success, tests[1].ForeColor);
+                        if (contrast)
+                        {
+                            Assert.AreEqual(SystemColors.WindowText, tests[0].ForeColor);
+                            Assert.AreEqual(SystemColors.WindowText, tests[1].ForeColor);
+                        }
                     }
-                }
             }
         }
 
@@ -657,29 +662,29 @@ namespace VBAi.Tests.Unit
             try
             {
                 foreach (bool coverage in new[] { false, true })
-                using (var window = new TestExplorerWindow())
-                {
-                    var service = new DisposalDouble { ClearContext = true, Pending = new TaskCompletionSource<VbaTestRun>() };
-                    window.Configure(service);
-                    window.ConfirmCoverage = (_, __) => true;
-                    Task run = null;
-                    int releasedOn = 0;
-                    var error = Assert.ThrowsException<AssertFailedException>(() =>
+                    using (var window = new TestExplorerWindow())
                     {
-                        try
+                        var service = new DisposalDouble { ClearContext = true, Pending = new TaskCompletionSource<VbaTestRun>() };
+                        window.Configure(service);
+                        window.ConfirmCoverage = (_, __) => true;
+                        Task run = null;
+                        int releasedOn = 0;
+                        var error = Assert.ThrowsException<AssertFailedException>(() =>
                         {
-                            run = coverage ? window.RunScopeCoverageAsync() : window.RunScopeAsync();
-                            Field<Control>(window, "runContinuationDispatcher").Disposed += (_, __) => releasedOn = Thread.CurrentThread.ManagedThreadId;
-                            Assert.Fail("Deliberate assertion before pending completion.");
-                        }
-                        finally { SettleDisposalTest(window, service, run); }
-                    });
-                    StringAssert.Contains(error.Message, "Deliberate assertion before pending completion.");
-                    Assert.IsTrue(service.Pending.Task.IsCanceled);
-                    Assert.IsTrue(run.IsCompleted); Assert.AreEqual(owner, releasedOn);
-                    Assert.IsNull(Field<Control>(window, "runContinuationDispatcher"));
-                    Assert.AreEqual(0, service.WrongOwnerCalls);
-                }
+                            try
+                            {
+                                run = coverage ? window.RunScopeCoverageAsync() : window.RunScopeAsync();
+                                Field<Control>(window, "runContinuationDispatcher").Disposed += (_, __) => releasedOn = Thread.CurrentThread.ManagedThreadId;
+                                Assert.Fail("Deliberate assertion before pending completion.");
+                            }
+                            finally { SettleDisposalTest(window, service, run); }
+                        });
+                        StringAssert.Contains(error.Message, "Deliberate assertion before pending completion.");
+                        Assert.IsTrue(service.Pending.Task.IsCanceled);
+                        Assert.IsTrue(run.IsCompleted); Assert.AreEqual(owner, releasedOn);
+                        Assert.IsNull(Field<Control>(window, "runContinuationDispatcher"));
+                        Assert.AreEqual(0, service.WrongOwnerCalls);
+                    }
             }
             finally { SynchronizationContext.SetSynchronizationContext(previous); }
         }
@@ -697,80 +702,80 @@ namespace VBAi.Tests.Unit
             try
             {
                 foreach (bool clearContext in new[] { false, true })
-                foreach (bool coverage in new[] { false, true })
-                using (var window = new TestExplorerWindow())
-                {
-                    SynchronizationContext.SetSynchronizationContext(new WindowsFormsSynchronizationContext());
-                    var service = new DisposalDouble { ClearContext = clearContext, Pending = new TaskCompletionSource<VbaTestRun>() };
-                    window.Configure(service);
-                    window.ConfirmCoverage = (_, __) => true;
-                    Task run = null;
-                    try
-                    {
-                        run = coverage ? window.RunScopeCoverageAsync() : window.RunScopeAsync();
-                        Assert.AreEqual(owner, service.DispatchThread);
-                        if (clearContext) Assert.IsNull(service.ContextBeforeReturn, "The fake native boundary must clear context before returning its pending task.");
-                        else Assert.IsInstanceOfType(service.ContextBeforeReturn, typeof(WindowsFormsSynchronizationContext));
-                        var dispatcher = Field<Control>(window, "runContinuationDispatcher");
-                        Assert.IsNotNull(dispatcher); Assert.IsTrue(dispatcher.IsHandleCreated);
-                        Assert.IsFalse(run.IsCompleted);
-                        int releasedOn = 0;
-                        ApartmentState releasedApartment = ApartmentState.Unknown;
-                        dispatcher.Disposed += (_, __) => { releasedOn = Thread.CurrentThread.ManagedThreadId; releasedApartment = Thread.CurrentThread.GetApartmentState(); };
-                        bool disposedUi = false;
-                        int lateUiChanges = 0;
-                        EventHandler uiChanged = (_, __) => { if (disposedUi) lateUiChanges++; };
-                        Field<Label>(window, "status").TextChanged += uiChanged;
-                        Field<Label>(window, "coverage").TextChanged += uiChanged;
-                        Field<TextBox>(window, "humanReport").TextChanged += uiChanged;
-                        Field<TextBox>(window, "compactReport").TextChanged += uiChanged;
-                        var result = new VbaTestResult { Test = service.Selected[0], Outcome = VbaTestOutcome.Passed, Message = "Late native result" };
-                        Exception progressError = null;
-                        var progress = new Thread(() => { try { service.SavedProgress(result); } catch (Exception error) { progressError = error; } });
-                        progress.Start(); progress.Join();
-                        Assert.IsNull(progressError);
-                        Assert.IsTrue(CallbackCount(dispatcher) > 0, "Worker progress must be queued before forced disposal.");
-                        int readsBeforeDisposal = service.AvailabilityCalls;
-                        window.Dispose();
-                        disposedUi = true;
-                        service.Disposed = true; // Models AddIn teardown disposing the service while its native result is still pending.
-                        Assert.IsTrue(window.IsDisposed); Assert.IsTrue(service.Cancellation.IsCancellationRequested);
-                        Assert.IsFalse(dispatcher.IsDisposed, "Only the run continuation handle must survive forced UI disposal.");
-                        Assert.IsFalse(run.IsCompleted);
-                        Exception completionError = null;
-                        int completionThread = 0;
-                        var completion = new Thread(() =>
+                    foreach (bool coverage in new[] { false, true })
+                        using (var window = new TestExplorerWindow())
                         {
+                            SynchronizationContext.SetSynchronizationContext(new WindowsFormsSynchronizationContext());
+                            var service = new DisposalDouble { ClearContext = clearContext, Pending = new TaskCompletionSource<VbaTestRun>() };
+                            window.Configure(service);
+                            window.ConfirmCoverage = (_, __) => true;
+                            Task run = null;
                             try
                             {
-                                completionThread = Thread.CurrentThread.ManagedThreadId;
-                                service.SavedProgress(result); // A late progress callback must be ignored after disposal.
-                                if (fail) service.Pending.SetException(new InvalidOperationException("Late native failure"));
-                                else service.Pending.SetResult(new VbaTestRun { Revision = "r1", Results = new List<VbaTestResult> { result } });
+                                run = coverage ? window.RunScopeCoverageAsync() : window.RunScopeAsync();
+                                Assert.AreEqual(owner, service.DispatchThread);
+                                if (clearContext) Assert.IsNull(service.ContextBeforeReturn, "The fake native boundary must clear context before returning its pending task.");
+                                else Assert.IsInstanceOfType(service.ContextBeforeReturn, typeof(WindowsFormsSynchronizationContext));
+                                var dispatcher = Field<Control>(window, "runContinuationDispatcher");
+                                Assert.IsNotNull(dispatcher); Assert.IsTrue(dispatcher.IsHandleCreated);
+                                Assert.IsFalse(run.IsCompleted);
+                                int releasedOn = 0;
+                                ApartmentState releasedApartment = ApartmentState.Unknown;
+                                dispatcher.Disposed += (_, __) => { releasedOn = Thread.CurrentThread.ManagedThreadId; releasedApartment = Thread.CurrentThread.GetApartmentState(); };
+                                bool disposedUi = false;
+                                int lateUiChanges = 0;
+                                EventHandler uiChanged = (_, __) => { if (disposedUi) lateUiChanges++; };
+                                Field<Label>(window, "status").TextChanged += uiChanged;
+                                Field<Label>(window, "coverage").TextChanged += uiChanged;
+                                Field<TextBox>(window, "humanReport").TextChanged += uiChanged;
+                                Field<TextBox>(window, "compactReport").TextChanged += uiChanged;
+                                var result = new VbaTestResult { Test = service.Selected[0], Outcome = VbaTestOutcome.Passed, Message = "Late native result" };
+                                Exception progressError = null;
+                                var progress = new Thread(() => { try { service.SavedProgress(result); } catch (Exception error) { progressError = error; } });
+                                progress.Start(); progress.Join();
+                                Assert.IsNull(progressError);
+                                Assert.IsTrue(CallbackCount(dispatcher) > 0, "Worker progress must be queued before forced disposal.");
+                                int readsBeforeDisposal = service.AvailabilityCalls;
+                                window.Dispose();
+                                disposedUi = true;
+                                service.Disposed = true; // Models AddIn teardown disposing the service while its native result is still pending.
+                                Assert.IsTrue(window.IsDisposed); Assert.IsTrue(service.Cancellation.IsCancellationRequested);
+                                Assert.IsFalse(dispatcher.IsDisposed, "Only the run continuation handle must survive forced UI disposal.");
+                                Assert.IsFalse(run.IsCompleted);
+                                Exception completionError = null;
+                                int completionThread = 0;
+                                var completion = new Thread(() =>
+                                {
+                                    try
+                                    {
+                                        completionThread = Thread.CurrentThread.ManagedThreadId;
+                                        service.SavedProgress(result); // A late progress callback must be ignored after disposal.
+                                        if (fail) service.Pending.SetException(new InvalidOperationException("Late native failure"));
+                                        else service.Pending.SetResult(new VbaTestRun { Revision = "r1", Results = new List<VbaTestResult> { result } });
+                                    }
+                                    catch (Exception error) { completionError = error; }
+                                });
+                                // A plain worker with no context and a synchronous TCS publishes BeginInvoke before Join returns.
+                                // Drain the already posted WinForms queue explicitly on the owner; no polling, timer or deadline is used.
+                                completion.Start(); completion.Join();
+                                Assert.AreNotEqual(owner, completionThread); Assert.IsNull(completionError);
+                                Assert.IsTrue(CallbackCount(dispatcher) >= 2, "Both prior progress and the native continuation must be posted to the surviving owner handle.");
+                                typeof(Control).GetMethod("InvokeMarshaledCallbacks", BindingFlags.Instance | BindingFlags.NonPublic).Invoke(dispatcher, null);
+                                Assert.IsTrue(run.IsCompleted, "The deterministic owner drain did not settle the disposed window's run.");
+                                run.GetAwaiter().GetResult();
+                                Assert.IsTrue(dispatcher.IsDisposed); Assert.AreEqual(owner, releasedOn);
+                                Assert.AreEqual(ApartmentState.STA, releasedApartment);
+                                Assert.AreEqual(0, lateUiChanges, "Completion changed a disposed UI control.");
+                                Assert.IsNull(Field<Control>(window, "runContinuationDispatcher"));
+                                Assert.IsFalse(Field<bool>(window, "running"));
+                                Assert.IsNull(Field<CancellationTokenSource>(window, "cancellation"));
+                                Assert.AreEqual(0, Field<Dictionary<string, VbaTestResult>>(window, "results").Count, "A disposed UI accepted a queued or late native result.");
+                                Assert.AreEqual(readsBeforeDisposal, service.AvailabilityCalls, "Completion queried a service that AddIn teardown had already disposed.");
+                                Assert.AreEqual(0, service.WrongOwnerCalls);
+                                lock (unhandled) Assert.AreEqual(0, unhandled.Count, "An owner/worker continuation escaped as an unhandled exception.");
                             }
-                            catch (Exception error) { completionError = error; }
-                        });
-                        // A plain worker with no context and a synchronous TCS publishes BeginInvoke before Join returns.
-                        // Drain the already posted WinForms queue explicitly on the owner; no polling, timer or deadline is used.
-                        completion.Start(); completion.Join();
-                        Assert.AreNotEqual(owner, completionThread); Assert.IsNull(completionError);
-                        Assert.IsTrue(CallbackCount(dispatcher) >= 2, "Both prior progress and the native continuation must be posted to the surviving owner handle.");
-                        typeof(Control).GetMethod("InvokeMarshaledCallbacks", BindingFlags.Instance | BindingFlags.NonPublic).Invoke(dispatcher, null);
-                        Assert.IsTrue(run.IsCompleted, "The deterministic owner drain did not settle the disposed window's run.");
-                        run.GetAwaiter().GetResult();
-                        Assert.IsTrue(dispatcher.IsDisposed); Assert.AreEqual(owner, releasedOn);
-                        Assert.AreEqual(ApartmentState.STA, releasedApartment);
-                        Assert.AreEqual(0, lateUiChanges, "Completion changed a disposed UI control.");
-                        Assert.IsNull(Field<Control>(window, "runContinuationDispatcher"));
-                        Assert.IsFalse(Field<bool>(window, "running"));
-                        Assert.IsNull(Field<CancellationTokenSource>(window, "cancellation"));
-                        Assert.AreEqual(0, Field<Dictionary<string, VbaTestResult>>(window, "results").Count, "A disposed UI accepted a queued or late native result.");
-                        Assert.AreEqual(readsBeforeDisposal, service.AvailabilityCalls, "Completion queried a service that AddIn teardown had already disposed.");
-                        Assert.AreEqual(0, service.WrongOwnerCalls);
-                        lock (unhandled) Assert.AreEqual(0, unhandled.Count, "An owner/worker continuation escaped as an unhandled exception.");
-                    }
-                    finally { SettleDisposalTest(window, service, run); }
-                }
+                            finally { SettleDisposalTest(window, service, run); }
+                        }
             }
             finally
             {
@@ -850,8 +855,13 @@ namespace VBAi.Tests.Unit
                         else
                         {
                             var result = new VbaTestResult { Test = service.Selected[0], Outcome = VbaTestOutcome.Passed, Message = "Verified asynchronous coverage completion." };
-                            service.Completion.SetResult(new VbaTestRun { Id = "async-run", Revision = "r1", Results = new List<VbaTestResult> { result },
-                                Coverage = new VbaCoverageReport { Available = true, Complete = false, DenominatorKnown = true, Revision = "r1", Hit = 1, Eligible = 2, Percent = 50 } });
+                            service.Completion.SetResult(new VbaTestRun
+                            {
+                                Id = "async-run",
+                                Revision = "r1",
+                                Results = new List<VbaTestResult> { result },
+                                Coverage = new VbaCoverageReport { Available = true, Complete = false, DenominatorKnown = true, Revision = "r1", Hit = 1, Eligible = 2, Percent = 50 }
+                            });
                         }
                         return Thread.CurrentThread.ManagedThreadId;
                     }).GetAwaiter().GetResult();
@@ -1124,15 +1134,15 @@ namespace VBAi.Tests.Unit
         public void RunFailuresAndUnknownOutcomesAreDisplayedWithoutRetry()
         {
             foreach (bool unknown in new[] { false, true })
-            using (var window = new TestExplorerWindow())
-            {
-                var service = new ExplorerDouble { Pending = new TaskCompletionSource<VbaTestRun>() };
-                window.Configure(service);
-                service.Pending.SetResult(new VbaTestRun { Revision = "r1", Error = unknown ? null : "Run guard failed", OutcomeUnknown = unknown });
-                window.RunScopeAsync().GetAwaiter().GetResult();
-                StringAssert.Contains(Field<Label>(window, "status").Text, unknown ? UiText.Get("Test outcome is unknown. No automatic retry was performed.") : "Run guard failed");
-                Assert.AreEqual(1, service.Runs);
-            }
+                using (var window = new TestExplorerWindow())
+                {
+                    var service = new ExplorerDouble { Pending = new TaskCompletionSource<VbaTestRun>() };
+                    window.Configure(service);
+                    service.Pending.SetResult(new VbaTestRun { Revision = "r1", Error = unknown ? null : "Run guard failed", OutcomeUnknown = unknown });
+                    window.RunScopeAsync().GetAwaiter().GetResult();
+                    StringAssert.Contains(Field<Label>(window, "status").Text, unknown ? UiText.Get("Test outcome is unknown. No automatic retry was performed.") : "Run guard failed");
+                    Assert.AreEqual(1, service.Runs);
+                }
             using (var window = new TestExplorerWindow())
             {
                 var service = new ExplorerDouble { Pending = new TaskCompletionSource<VbaTestRun>() };
@@ -1168,19 +1178,19 @@ namespace VBAi.Tests.Unit
         public void SaveDialogPreservesHumanOrJsonDefaultsAndReturnsCancellationWithoutWriting()
         {
             using (var owner = new Form())
-            foreach (bool compact in new[] { false, true })
-            foreach (var choice in new[] { DialogResult.Cancel, DialogResult.OK })
-            {
-                string value = TestExplorerWindow.SelectReportExportPath(owner, compact, (dialog, suppliedOwner) =>
-                {
-                    Assert.AreSame(owner, suppliedOwner);
-                    Assert.AreEqual(compact ? "vba-test-results.json" : "vba-test-results.txt", dialog.FileName);
-                    StringAssert.StartsWith(dialog.Filter, compact ? "JSON" : "Text");
-                    dialog.FileName = "reviewed-result";
-                    return choice;
-                });
-                Assert.AreEqual(choice == DialogResult.OK ? "reviewed-result" : null, value);
-            }
+                foreach (bool compact in new[] { false, true })
+                    foreach (var choice in new[] { DialogResult.Cancel, DialogResult.OK })
+                    {
+                        string value = TestExplorerWindow.SelectReportExportPath(owner, compact, (dialog, suppliedOwner) =>
+                        {
+                            Assert.AreSame(owner, suppliedOwner);
+                            Assert.AreEqual(compact ? "vba-test-results.json" : "vba-test-results.txt", dialog.FileName);
+                            StringAssert.StartsWith(dialog.Filter, compact ? "JSON" : "Text");
+                            dialog.FileName = "reviewed-result";
+                            return choice;
+                        });
+                        Assert.AreEqual(choice == DialogResult.OK ? "reviewed-result" : null, value);
+                    }
         }
 
         [STATestMethod]
@@ -1427,8 +1437,14 @@ namespace VBAi.Tests.Unit
                 var run = new VbaTestRun { Id = "run", Project = catalog.Project.Name, Revision = catalog.Project.Revision };
                 foreach (var test in tests)
                 {
-                    var result = new VbaTestResult { Test = test, Outcome = !PassAll && test.Id == "first" ? VbaTestOutcome.Failed : VbaTestOutcome.Passed,
-                        Message = !PassAll && test.Id == "first" ? "expected 4, actual 3" : "Completed", Duration = TimeSpan.FromMilliseconds(12), Phase = "test" };
+                    var result = new VbaTestResult
+                    {
+                        Test = test,
+                        Outcome = !PassAll && test.Id == "first" ? VbaTestOutcome.Failed : VbaTestOutcome.Passed,
+                        Message = !PassAll && test.Id == "first" ? "expected 4, actual 3" : "Completed",
+                        Duration = TimeSpan.FromMilliseconds(12),
+                        Phase = "test"
+                    };
                     run.Results.Add(result);
                     onResult(result);
                 }

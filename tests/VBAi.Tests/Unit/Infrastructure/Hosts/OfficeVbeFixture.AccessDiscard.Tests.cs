@@ -1,3 +1,4 @@
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -7,7 +8,6 @@ using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Web.Script.Serialization;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 using VBAi.Tests.Integration;
 
 namespace VBAi.Tests.Unit
@@ -21,10 +21,12 @@ namespace VBAi.Tests.Unit
         [TestMethod]
         public void UnsavedModuleMissingFromAllModulesIsCancelledOnceBeforeTheOriginalSingleCloseAndQuit()
         {
-            WithFixture((fixture, app, process, root) => {
+            WithFixture((fixture, app, process, root) =>
+            {
                 fixture.Data("create_module", "Module", Module, "ExpectedMode", 2);
                 int clicks = 0, processId = process.Id;
-                fixture.ScanAccessDiscard = lease => lease.TryCancel(new IntPtr(100), window => Dialog(process.Id), cancel => {
+                fixture.ScanAccessDiscard = lease => lease.TryCancel(new IntPtr(100), window => Dialog(process.Id), cancel =>
+                {
                     Assert.AreEqual(new IntPtr(102), cancel); Interlocked.Increment(ref clicks); app.CancelObserved.Set(); return true;
                 });
                 fixture.Dispose();
@@ -44,7 +46,8 @@ namespace VBAi.Tests.Unit
         [TestMethod]
         public void OnlySuccessfulExactProjectAndReturnedCreationNamesAcquireDiscardAuthority()
         {
-            WithFixture((fixture, app, process, root) => {
+            WithFixture((fixture, app, process, root) =>
+            {
                 foreach (string command in new[] { "create_module", "create_class", "create_form" })
                 {
                     string key = command == "create_form" ? "Form" : "Module";
@@ -97,7 +100,8 @@ namespace VBAi.Tests.Unit
         {
             bool authority = true;
             var lease = Lease(() => authority); lease.BindWorkerThread(); int reads = 0, clicks = 0;
-            Assert.ThrowsException<InvalidOperationException>(() => lease.TryCancel(new IntPtr(100), window => {
+            Assert.ThrowsException<InvalidOperationException>(() => lease.TryCancel(new IntPtr(100), window =>
+            {
                 if (++reads == 2) authority = false; return Dialog(42);
             }, cancel => { clicks++; return true; }));
             Assert.AreEqual(0, clicks); Assert.AreEqual(0, lease.Record["CancelEntries"]);
@@ -113,10 +117,12 @@ namespace VBAi.Tests.Unit
         [TestMethod]
         public void UnknownCancelRetainsTheGenerationAndDoesNotEmitQuitOrRetryClose()
         {
-            WithFixture((fixture, app, process, root) => {
+            WithFixture((fixture, app, process, root) =>
+            {
                 fixture.Data("create_module", "Module", Module);
                 int clicks = 0, processId = process.Id;
-                fixture.ScanAccessDiscard = lease => {
+                fixture.ScanAccessDiscard = lease =>
+                {
                     try { lease.TryCancel(new IntPtr(100), window => Dialog(process.Id), cancel => { Interlocked.Increment(ref clicks); return false; }); }
                     finally { app.CancelObserved.Set(); }
                 };
@@ -131,7 +137,8 @@ namespace VBAi.Tests.Unit
             foreach (bool throws in new[] { false, true })
             {
                 var lease = Lease(); lease.BindWorkerThread(); int entries = 0;
-                Assert.ThrowsException<InvalidOperationException>(() => lease.TryCancel(new IntPtr(100), window => Dialog(42), cancel => {
+                Assert.ThrowsException<InvalidOperationException>(() => lease.TryCancel(new IntPtr(100), window => Dialog(42), cancel =>
+                {
                     entries++; if (throws) throw new InvalidOperationException("uncertain Cancel"); return false;
                 }));
                 Assert.ThrowsException<InvalidOperationException>(() => lease.TryCancel(new IntPtr(200), window => Dialog(42), cancel => { entries++; return true; }));
@@ -142,13 +149,15 @@ namespace VBAi.Tests.Unit
         [TestMethod]
         public void PendingExecutionRefusesDiscardPreparationAndVisibleCancelledDialogRefusesQuit()
         {
-            WithFixture((fixture, app, process, root) => {
+            WithFixture((fixture, app, process, root) =>
+            {
                 fixture.NativeExecutionUnsettled = true;
                 Assert.ThrowsException<AssertFailedException>(() => fixture.Dispose());
                 Assert.AreEqual(0, app.CloseEntries); Assert.AreEqual(0, app.QuitEntries);
                 Assert.IsFalse(File.Exists(Path.Combine(root, "access-discard-dialogs.json")));
             });
-            WithFixture((fixture, app, process, root) => {
+            WithFixture((fixture, app, process, root) =>
+            {
                 fixture.Data("create_module", "Module", Module);
                 fixture.IsVisibleOwnedAccessDiscard = (window, original, start) => true;
                 fixture.ScanAccessDiscard = lease => lease.TryCancel(new IntPtr(100), window => Dialog(process.Id), cancel => { app.CancelObserved.Set(); return true; });
@@ -198,16 +207,37 @@ namespace VBAi.Tests.Unit
         }
         private static OfficeVbeFixture.AccessDiscardDialog Dialog(int pid)
         {
-            return new OfficeVbeFixture.AccessDiscardDialog {
-                Window = new IntPtr(100), Edit = new IntPtr(101), Cancel = new IntPtr(102),
-                ProcessId = pid, EditProcessId = pid, CancelProcessId = pid,
-                ThreadId = 3, EditThreadId = 3, CancelThreadId = 3, WindowClass = "#32770", EditClass = "RichEdit20W", CancelClass = "Button",
-                EditId = 2020, CancelId = 2, Visible = true, Enabled = true, Title = "Enregistrer sous", Name = Module, CancelText = "Annuler" };
+            return new OfficeVbeFixture.AccessDiscardDialog
+            {
+                Window = new IntPtr(100),
+                Edit = new IntPtr(101),
+                Cancel = new IntPtr(102),
+                ProcessId = pid,
+                EditProcessId = pid,
+                CancelProcessId = pid,
+                ThreadId = 3,
+                EditThreadId = 3,
+                CancelThreadId = 3,
+                WindowClass = "#32770",
+                EditClass = "RichEdit20W",
+                CancelClass = "Button",
+                EditId = 2020,
+                CancelId = 2,
+                Visible = true,
+                Enabled = true,
+                Title = "Enregistrer sous",
+                Name = Module,
+                CancelText = "Annuler"
+            };
         }
         private static IDictionary<string, object> Reply(bool ok, string project, string key, string name)
         {
-            return new Dictionary<string, object> { ["Ok"] = ok, ["Error"] = ok ? null : "synthetic refusal",
-                ["Data"] = new Dictionary<string, object> { ["Project"] = project, [key] = name } };
+            return new Dictionary<string, object>
+            {
+                ["Ok"] = ok,
+                ["Error"] = ok ? null : "synthetic refusal",
+                ["Data"] = new Dictionary<string, object> { ["Project"] = project, [key] = name }
+            };
         }
         private static void WithFixture(Action<OfficeVbeFixture, FakeApplication, Process, string> action)
         {
@@ -221,7 +251,8 @@ namespace VBAi.Tests.Unit
             var process = (Process)Field(fixture, "ownedProcess");
             fixture.RequireAdapterOnlyCleanup(); fixture.ValidateAccessDiscardDocument = () => { Assert.AreEqual(true, Field(fixture, "owned")); Assert.IsFalse(process.HasExited); };
             fixture.IsVisibleOwnedAccessDiscard = (window, original, start) => false;
-            fixture.Dispatch = (pid, request) => {
+            fixture.Dispatch = (pid, request) =>
+            {
                 var fields = (IDictionary<string, object>)request; string key = (string)fields["Command"] == "create_form" ? "Form" : "Module";
                 return Reply(true, "OwnedProject", key, Convert.ToString(fields[key]));
             };

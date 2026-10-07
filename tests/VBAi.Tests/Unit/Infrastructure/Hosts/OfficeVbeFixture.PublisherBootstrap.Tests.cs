@@ -1,7 +1,7 @@
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 using VBAi.Tests.Integration;
 
 namespace VBAi.Tests.Unit
@@ -30,10 +30,40 @@ namespace VBAi.Tests.Unit
             internal void Confirm(Action proof = null) => Gate.ConfirmNativePublication(() => { Proofs++; proof?.Invoke(); });
             internal void Save() { Gate.RequireNativePublication(); Recheck(); Saves++; }
         }
-        private static OfficeVbeFixture.PublisherBootstrapSnapshot Exact() => new OfficeVbeFixture.PublisherBootstrapSnapshot {
-            ProcessId = 100, Handle = 300, StartedUtc = "2026-10-03T09:00:00.0000000Z", Image = @"C:\Office\MSPUB.EXE",
-            SessionId = 2, OwnerThread = 42, Alive = true, PrivateWindowsVerified = true, NoVisibleModal = true, Sta = true,
-            PublisherProcessIds = new[] { 100 } };
+        private static OfficeVbeFixture.PublisherBootstrapSnapshot Exact() => new OfficeVbeFixture.PublisherBootstrapSnapshot
+        {
+            ProcessId = 100,
+            Handle = 300,
+            StartedUtc = "2026-10-03T09:00:00.0000000Z",
+            Image = @"C:\Office\MSPUB.EXE",
+            SessionId = 2,
+            OwnerThread = 42,
+            Alive = true,
+            PrivateWindowsVerified = true,
+            NoVisibleModal = true,
+            Sta = true,
+            PublisherProcessIds = new[] { 100 }
+        };
+
+        [TestMethod]
+        public void MainPublisherSnapshotRequiresMainProofAndRejectsPrivateDescriptorSubstitution()
+        {
+            var main = Exact();
+            main.MainPublisher = true;
+            main.PrivateWindowsVerified = false;
+            main.MainWindowsVerified = true;
+            main.Require();
+            var gate = new OfficeVbeFixture.PublisherBootstrapGate(true, main);
+            gate.Bind(() => main, () => 700, () => true, row => { });
+            main = Exact(); // Same PID/handle/birth cannot silently switch from Default to private.
+            Assert.ThrowsException<InvalidOperationException>(() => gate.Recheck(() => main, () => 700));
+            main.MainPublisher = true;
+            Assert.ThrowsException<InvalidOperationException>(() => main.Require());
+            main.PrivateWindowsVerified = false;
+            Assert.ThrowsException<InvalidOperationException>(() => main.Require());
+            main.MainWindowsVerified = true;
+            main.Require();
+        }
 
         private static void Change(OfficeVbeFixture.PublisherBootstrapSnapshot state, string change)
         {

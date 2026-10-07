@@ -3,14 +3,10 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Windows;
-using System.Windows.Controls;
+using System.Windows.Automation;
 using System.Windows.Controls.Primitives;
 using System.Windows.Input;
-using System.Windows.Media;
 using System.Windows.Markup;
-using System.Windows.Automation;
-using System.Windows.Data;
-using System.Windows.Media.Effects;
 using Forms = System.Windows.Forms;
 using WpfTextBox = System.Windows.Controls.TextBox;
 
@@ -65,29 +61,38 @@ namespace VBAi
 
             referenceView = new ChatSuggestionsView();
             referenceList = referenceView.targets; referenceStatus = referenceView.status;
-            referenceList.MouseUp += (sender,args) => AcceptReference();
-            referenceList.DrawItem += (sender,args) => {
+            referenceList.MouseUp += (sender, args) => AcceptReference();
+            referenceList.DrawItem += (sender, args) =>
+            {
                 if (args.Index < 0 || args.Index >= referenceList.Items.Count) return;
                 args.DrawBackground();
                 var value = referenceList.Items[args.Index];
                 string token = value is VbeChatReference reference ? reference.DisplayToken : ((ChatCommand)value).DisplayToken;
                 string kind = value is VbeChatReference item ? item.DisplayKind : ((ChatCommand)value).DisplayKind;
-                var bounds = args.Bounds; bounds.Inflate(-8,0);
+                var bounds = args.Bounds; bounds.Inflate(-8, 0);
                 Forms.TextRenderer.DrawText(args.Graphics, token + " · " + kind, args.Font, bounds, args.ForeColor,
                     Forms.TextFormatFlags.VerticalCenter | Forms.TextFormatFlags.EndEllipsis | Forms.TextFormatFlags.NoPrefix);
                 args.DrawFocusRectangle();
             };
-            referencePopup = new Popup { PlacementTarget = prompt, Placement = PlacementMode.Relative,
-                StaysOpen = false, AllowsTransparency = true, Child = new ChatDesignerHost(referenceView) };
+            referencePopup = new Popup
+            {
+                PlacementTarget = prompt,
+                Placement = PlacementMode.Relative,
+                StaysOpen = false,
+                AllowsTransparency = true,
+                Child = new ChatDesignerHost(referenceView)
+            };
             referenceIndex = new VbeChatReferences(session);
             referenceTimer = new Forms.Timer { Interval = 30 };
-            referenceTimer.Tick += (sender, args) => {
+            referenceTimer.Tick += (sender, args) =>
+            {
                 referenceIndex.Step();
                 if (!referenceIndex.IsLoading) referenceTimer.Stop();
             };
             // Event callbacks see a complete composer, including its popup and timer.
             prompt.PreviewKeyDown += PromptKeyDown;
-            prompt.TextChanged += (sender, args) => {
+            prompt.TextChanged += (sender, args) =>
+            {
                 UpdateBudgetControls();
                 acceptedTokenEnd = -1;
                 UpdateReferences();
@@ -170,10 +175,12 @@ namespace VBAi
         private void SetSuggestionTargets(object[] targets)
         {
             referenceList.BeginUpdate();
-            try {
+            try
+            {
                 referenceList.DataSource = null;
                 referenceList.Items.Clear(); referenceList.Items.AddRange(targets);
-            } finally { referenceList.EndUpdate(); }
+            }
+            finally { referenceList.EndUpdate(); }
         }
 
         /// <summary>Affiche les commandes qui correspondent au préfixe saisi en début de message.</summary>
@@ -204,14 +211,13 @@ namespace VBAi
         /// <summary>Insère la commande ou référence sélectionnée dans le message.</summary>
         private void AcceptReference()
         {
-            var command = referenceList.SelectedItem as ChatCommand;
-            if (command != null) {
+            if (referenceList.SelectedItem is ChatCommand command)
+            {
                 prompt.Select(0, prompt.CaretIndex); prompt.SelectedText = command.DisplayToken + " ";
                 if (!busy) modePicker.SelectedItem = command.Mode;
                 HideReferences(); prompt.CaretIndex = command.DisplayToken.Length + 1; return;
             }
-            var reference = referenceList.SelectedItem as VbeChatReference;
-            if (reference == null || referenceStart < 0) return;
+            if (!(referenceList.SelectedItem is VbeChatReference reference) || referenceStart < 0) return;
             int caret = prompt.CaretIndex;
             int start = referenceStart;
             prompt.Select(referenceStart, caret - referenceStart);

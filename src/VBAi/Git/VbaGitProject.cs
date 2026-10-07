@@ -31,8 +31,14 @@ namespace VBAi
 
         /// <summary>Encodage natif strict utilisé pour lire et écrire les exports COM.</summary>
         /// <value>Encodage natif strict utilisé pour lire et écrire les exports COM.</value>
-        private static Encoding NativeEncoding { get { return Encoding.GetEncoding(
-            (int)GetACP(), EncoderFallback.ExceptionFallback, DecoderFallback.ExceptionFallback); } }
+        private static Encoding NativeEncoding
+        {
+            get
+            {
+                return Encoding.GetEncoding(
+            (int)GetACP(), EncoderFallback.ExceptionFallback, DecoderFallback.ExceptionFallback);
+            }
+        }
 
         /// <summary>Crée l’adaptateur associé au résolveur et au chemin hôte attendus.</summary>
         /// <param name="resolve">Fonction qui résout le projet COM au moment de l’opération.</param>
@@ -107,7 +113,8 @@ namespace VBAi
                 if ((bool)reference.IsBroken) throw new InvalidOperationException(UiText.Get("Missing VBA reference: fix it before synchronizing."));
                 references.Add(((string)reference.GUID).ToUpperInvariant() + ":" + (int)reference.Major + ":" + (int)reference.Minor);
             }
-            return new VbaGitSnapshot(new VbaGitManifest {
+            return new VbaGitSnapshot(new VbaGitManifest
+            {
                 Components = components.OrderBy(x => x.Name, StringComparer.Ordinal).ToArray(),
                 References = string.Join(";", references.OrderBy(x => x, StringComparer.Ordinal))
             }, files);
@@ -188,7 +195,8 @@ namespace VBAi
                                     throw new InvalidOperationException(UiText.Get("Unexpected identity after import: ") + next.Name + UiText.Get(". Use Restore."));
                                 if (next.Type == 3)
                                 {
-                                    RestoreFormImportCode((object)imported.CodeModule, VbaGitSnapshot.Utf8.GetString(target.Files[next.FileName]), () => {
+                                    RestoreFormImportCode((object)imported.CodeModule, VbaGitSnapshot.Utf8.GetString(target.Files[next.FileName]), () =>
+                                    {
                                         dynamic current = CheckedProject();
                                         if (!VbeProjectHostPath.SameProject((object)current.VBComponents.Item(next.Name), (object)imported))
                                             throw new InvalidOperationException("The imported form identity changed before code readback.");
@@ -227,7 +235,8 @@ namespace VBAi
                     {
                         // This is the first post-import native snapshot. A mismatch in
                         // the selected FRX is expected evidence, not a mutation failure.
-                        observation.RunAfterInitialCapture(Capture, target, () => {
+                        observation.RunAfterInitialCapture(Capture, target, () =>
+                        {
                             if (deferredImported == null || deferredBindings == null)
                                 throw new InvalidOperationException("The declared imported form has no deferred font binding.");
                             RestoreDeferredFormFonts(observation, deferredImported, deferredBindings);
@@ -263,7 +272,8 @@ namespace VBAi
             finally
             {
                 if (deferredImported != null)
-                    FormFontRestoration.ReleaseOwnedReferences(new[] { deferredImported }, value => {
+                    FormFontRestoration.ReleaseOwnedReferences(new[] { deferredImported }, value =>
+                    {
                         if (System.Runtime.InteropServices.Marshal.IsComObject(value))
                             System.Runtime.InteropServices.Marshal.ReleaseComObject(value);
                     }, deferredPrimary);
@@ -293,7 +303,8 @@ namespace VBAi
             catch (Exception error) { primary = error; throw; }
             finally
             {
-                FormFontRestoration.ReleaseOwnedReferences(new object[] { components, current }, value => {
+                FormFontRestoration.ReleaseOwnedReferences(new object[] { components, current }, value =>
+                {
                     if (value != null && System.Runtime.InteropServices.Marshal.IsComObject(value))
                         System.Runtime.InteropServices.Marshal.ReleaseComObject(value);
                 }, primary);
@@ -404,7 +415,8 @@ namespace VBAi
             {
                 // Only our freshly generated, private flat directory is cleaned up.
                 try { foreach (string file in Directory.GetFiles(Path)) File.Delete(file); Directory.Delete(Path); }
-                catch (IOException) { } catch (UnauthorizedAccessException) { }
+                catch (IOException) { }
+                catch (UnauthorizedAccessException) { }
             }
         }
     }

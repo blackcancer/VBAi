@@ -1,5 +1,6 @@
 namespace VBAi.Tests.Unit
 {
+    using Microsoft.VisualStudio.TestTools.UnitTesting;
     using System;
     using System.Collections;
     using System.Linq;
@@ -7,7 +8,6 @@ namespace VBAi.Tests.Unit
     using System.Runtime.InteropServices;
     using System.Windows.Forms;
     using VBAi;
-    using Microsoft.VisualStudio.TestTools.UnitTesting;
 
     [TestClass]
     [TestCategory("Unit")]
@@ -190,7 +190,8 @@ namespace VBAi.Tests.Unit
                 {
                     var dialog = scene.Add("Digital Signature"); var root = Signature(dialog, "[None]", "[None]");
                     bool picker = false; root.Children[6].OnInvoke = () => picker = true;
-                    scene.OnPause = count => {
+                    scene.OnPause = count =>
+                    {
                         if (!picker || count < 5) return;
                         if (outcome == "selected" || outcome == "stuck") root.Children[3].Label = "Certificate";
                         else if (outcome == "wrong") root.Children[3].Label = "Other certificate";
@@ -260,7 +261,8 @@ namespace VBAi.Tests.Unit
                     if (outcome == "noButton") trigger.ControlId = 1;
                     if (outcome == "postFailure") scene.PostSucceeds = false;
                     SystemWindow opened = null;
-                    scene.OnMessage = (window, messageId) => {
+                    scene.OnMessage = (window, messageId) =>
+                    {
                         if (window == trigger && outcome != "timeout" && outcome != "postFailure")
                         {
                             opened = scene.Add("Pile des appels");
@@ -395,22 +397,22 @@ namespace VBAi.Tests.Unit
             root.Add(new AutomationNode { Name = "counter Value 1 Type Long Context Other.Module" });
             var selected = root.Add(new AutomationNode { Name = "counter Value 7 Type Long Context Project.Module" }.With(System.Windows.Automation.SelectionItemPattern.Pattern));
             using (var host = new AutomationHost(root))
-                using (var scene = new SystemScene())
-                {
-                    var editor = scene.Add("Editor", "wndclass_desked_gsk");
-                    var pane = scene.Add("Espions", "VbaWindow", editor); pane.Handle = host.Handle;
-                    var native = Native<VbeDebugWindows.IWatchProbe>("NativeWatchProbe");
-                    Assert.AreEqual(1, native.WatchMatches(host.Handle, "counter", "project.module"));
-                    Assert.IsTrue(native.SelectWatchRow(host.Handle, "counter", "Project.Module"));
-                    Assert.IsTrue(selected.Selected); Assert.IsTrue(selected.FocusCount > 0);
-                    var request = new Request { Expression = "counter", Context = "Project.Module" };
-                    dynamic result = VbeDebugWindows.SelectWatch(request); Assert.IsTrue((bool)result.Selected);
-                    selected.Patterns.Clear(); Assert.ThrowsException<InvalidOperationException>(() => VbeDebugWindows.SelectWatch(request));
-                    selected.Patterns.Add(System.Windows.Automation.SelectionItemPattern.Pattern.Id);
-                    dynamic stillPresent = VbeDebugWindows.VerifyWatchRemoved(request); Assert.IsTrue((bool)stillPresent.VerificationPending);
-                    root.Children.Remove(selected);
-                    dynamic removed = VbeDebugWindows.VerifyWatchRemoved(request); Assert.IsFalse((bool)removed.VerificationPending);
-                }
+            using (var scene = new SystemScene())
+            {
+                var editor = scene.Add("Editor", "wndclass_desked_gsk");
+                var pane = scene.Add("Espions", "VbaWindow", editor); pane.Handle = host.Handle;
+                var native = Native<VbeDebugWindows.IWatchProbe>("NativeWatchProbe");
+                Assert.AreEqual(1, native.WatchMatches(host.Handle, "counter", "project.module"));
+                Assert.IsTrue(native.SelectWatchRow(host.Handle, "counter", "Project.Module"));
+                Assert.IsTrue(selected.Selected); Assert.IsTrue(selected.FocusCount > 0);
+                var request = new Request { Expression = "counter", Context = "Project.Module" };
+                dynamic result = VbeDebugWindows.SelectWatch(request); Assert.IsTrue((bool)result.Selected);
+                selected.Patterns.Clear(); Assert.ThrowsException<InvalidOperationException>(() => VbeDebugWindows.SelectWatch(request));
+                selected.Patterns.Add(System.Windows.Automation.SelectionItemPattern.Pattern.Id);
+                dynamic stillPresent = VbeDebugWindows.VerifyWatchRemoved(request); Assert.IsTrue((bool)stillPresent.VerificationPending);
+                root.Children.Remove(selected);
+                dynamic removed = VbeDebugWindows.VerifyWatchRemoved(request); Assert.IsFalse((bool)removed.VerificationPending);
+            }
         }
 
         [TestMethod]
@@ -423,30 +425,30 @@ namespace VBAi.Tests.Unit
                 var group = root.Add(new AutomationNode { Name = name, HideCollapsedChildren = true, Expanded = false }.With(System.Windows.Automation.ExpandCollapsePattern.Pattern));
                 group.Add(new AutomationNode { Name = "Expression child Value 1 Type Long" });
                 using (var host = new AutomationHost(root))
-                    using (var scene = new SystemScene())
+                using (var scene = new SystemScene())
+                {
+                    var editor = scene.Add("Editor", "wndclass_desked_gsk");
+                    var pane = scene.Add(paneName == "locals" ? "Locals" : "Watch", "VbaWindow", editor); pane.Handle = host.Handle;
+                    var request = new Request { Pane = paneName, Action = "expand", PathSegments = new[] { "group" }, Context = "Project.Module" };
+                    dynamic expanded = VbeDebugWindows.ChangeDebugItem(request); Assert.AreEqual("Observed", (string)expanded.Verification);
+                    request.Action = "collapse";
+                    dynamic collapsed = VbeDebugWindows.ChangeDebugItem(request); Assert.AreEqual("Observed", (string)collapsed.Verification);
+                    request.Action = "expand"; request.PathSegments = new[] { "missing" };
+                    Assert.ThrowsException<InvalidOperationException>(() => VbeDebugWindows.ChangeDebugItem(request));
+                    request.PathSegments = new[] { "group" };
+                    if (paneName == "watches")
                     {
-                        var editor = scene.Add("Editor", "wndclass_desked_gsk");
-                        var pane = scene.Add(paneName == "locals" ? "Locals" : "Watch", "VbaWindow", editor); pane.Handle = host.Handle;
-                        var request = new Request { Pane = paneName, Action = "expand", PathSegments = new[] { "group" }, Context = "Project.Module" };
-                        dynamic expanded = VbeDebugWindows.ChangeDebugItem(request); Assert.AreEqual("Observed", (string)expanded.Verification);
-                        request.Action = "collapse";
-                        dynamic collapsed = VbeDebugWindows.ChangeDebugItem(request); Assert.AreEqual("Observed", (string)collapsed.Verification);
-                        request.Action = "expand"; request.PathSegments = new[] { "missing" };
-                        Assert.ThrowsException<InvalidOperationException>(() => VbeDebugWindows.ChangeDebugItem(request));
-                        request.PathSegments = new[] { "group" };
-                        if (paneName == "watches")
-                        {
-                            request.Context = "Other.Module"; Assert.ThrowsException<InvalidOperationException>(() => VbeDebugWindows.ChangeDebugItem(request));
-                            request.Context = "Project.Module";
-                        }
-                        group.Patterns.Clear(); Assert.ThrowsException<InvalidOperationException>(() => VbeDebugWindows.ChangeDebugItem(request));
-                        group.Patterns.Add(System.Windows.Automation.ExpandCollapsePattern.Pattern.Id);
-                        group.Children.Clear();
-                        dynamic pending = VbeDebugWindows.ChangeDebugItem(request); Assert.AreEqual("Pending", (string)pending.Verification);
-                        group.Children.Add(new AutomationNode { Parent = group, Name = "Expression child Value 1 Type Long" });
-                        group.HideCollapsedChildren = false; request.Action = "collapse";
-                        dynamic pendingCollapse = VbeDebugWindows.ChangeDebugItem(request); Assert.IsTrue((bool)pendingCollapse.VerificationPending);
+                        request.Context = "Other.Module"; Assert.ThrowsException<InvalidOperationException>(() => VbeDebugWindows.ChangeDebugItem(request));
+                        request.Context = "Project.Module";
                     }
+                    group.Patterns.Clear(); Assert.ThrowsException<InvalidOperationException>(() => VbeDebugWindows.ChangeDebugItem(request));
+                    group.Patterns.Add(System.Windows.Automation.ExpandCollapsePattern.Pattern.Id);
+                    group.Children.Clear();
+                    dynamic pending = VbeDebugWindows.ChangeDebugItem(request); Assert.AreEqual("Pending", (string)pending.Verification);
+                    group.Children.Add(new AutomationNode { Parent = group, Name = "Expression child Value 1 Type Long" });
+                    group.HideCollapsedChildren = false; request.Action = "collapse";
+                    dynamic pendingCollapse = VbeDebugWindows.ChangeDebugItem(request); Assert.IsTrue((bool)pendingCollapse.VerificationPending);
+                }
             }
         }
 
@@ -456,32 +458,37 @@ namespace VBAi.Tests.Unit
             var root = new AutomationNode { Name = "Immediate pane", Kind = System.Windows.Automation.ControlType.Pane };
             var document = root.Add(new AutomationNode { Name = "Immediate", Kind = System.Windows.Automation.ControlType.Document, Text = "previous output\r\n" }.With(System.Windows.Automation.TextPattern.Pattern));
             using (var host = new AutomationHost(root))
-                using (var scene = new SystemScene())
+            using (var scene = new SystemScene())
+            {
+                var editor = scene.Add("Editor", "wndclass_desked_gsk"); var pane = scene.Add("Immediate", "VbaWindow", editor); pane.Handle = host.Handle;
+                var native = Native<VbeDebugWindows.IImmediateProbe>("NativeImmediateProbe");
+                Assert.AreEqual(document.Text, native.Prepare(host.Handle)); Assert.IsTrue(document.FocusCount > 0); Assert.IsTrue(document.SelectionCount > 0);
+                Assert.AreEqual(document.Text, native.Text(host.Handle));
+                dynamic read = Call("ReadImmediate", host.Handle); Assert.IsTrue((bool)read.Available); Assert.AreEqual(document.Text, (string)read.Text);
+                scene.OnMessage = (window, message) =>
                 {
-                    var editor = scene.Add("Editor", "wndclass_desked_gsk"); var pane = scene.Add("Immediate", "VbaWindow", editor); pane.Handle = host.Handle;
-                    var native = Native<VbeDebugWindows.IImmediateProbe>("NativeImmediateProbe");
-                    Assert.AreEqual(document.Text, native.Prepare(host.Handle)); Assert.IsTrue(document.FocusCount > 0); Assert.IsTrue(document.SelectionCount > 0);
-                    Assert.AreEqual(document.Text, native.Text(host.Handle));
-                    dynamic read = Call("ReadImmediate", host.Handle); Assert.IsTrue((bool)read.Available); Assert.AreEqual(document.Text, (string)read.Text);
-                    scene.OnMessage = (window, message) => {
-                        if (message == 0x0102) document.Text += (char)scene.Messages.Last().Item3.ToInt32();
-                        else if (message == 0x0101) document.Text += "\r\n1\r\n";
-                    };
-                    dynamic executed = VbeDebugWindows.ExecuteImmediate("Debug.Print 1"); Assert.AreEqual("ImmediateTextChangedAfterEnter", (string)executed.Verification);
-                    document.Patterns.Clear();
-                    var patternError = Assert.ThrowsException<TargetInvocationException>(() => Call("ImmediateDocument", host.Handle)); Assert.IsInstanceOfType(patternError.InnerException, typeof(InvalidOperationException));
-                    document.Patterns.Add(System.Windows.Automation.TextPattern.Pattern.Id);
-                    root.Add(new AutomationNode { Name = "Second", Kind = System.Windows.Automation.ControlType.Document });
-                    var countError = Assert.ThrowsException<TargetInvocationException>(() => Call("ImmediateDocument", host.Handle)); Assert.IsInstanceOfType(countError.InnerException, typeof(InvalidOperationException));
-                    dynamic failed = Call("ReadImmediate", host.Handle); Assert.IsNotNull((string)failed.Error);
-                }
+                    if (message == 0x0102) document.Text += (char)scene.Messages.Last().Item3.ToInt32();
+                    else if (message == 0x0101) document.Text += "\r\n1\r\n";
+                };
+                dynamic executed = VbeDebugWindows.ExecuteImmediate("Debug.Print 1"); Assert.AreEqual("ImmediateTextChangedAfterEnter", (string)executed.Verification);
+                document.Patterns.Clear();
+                var patternError = Assert.ThrowsException<TargetInvocationException>(() => Call("ImmediateDocument", host.Handle)); Assert.IsInstanceOfType(patternError.InnerException, typeof(InvalidOperationException));
+                document.Patterns.Add(System.Windows.Automation.TextPattern.Pattern.Id);
+                root.Add(new AutomationNode { Name = "Second", Kind = System.Windows.Automation.ControlType.Document });
+                var countError = Assert.ThrowsException<TargetInvocationException>(() => Call("ImmediateDocument", host.Handle)); Assert.IsInstanceOfType(countError.InnerException, typeof(InvalidOperationException));
+                dynamic failed = Call("ReadImmediate", host.Handle); Assert.IsNotNull((string)failed.Error);
+            }
         }
 
         [TestMethod]
         public void UiaImmediateDocumentAtRootCanBeRead()
         {
-            var root = new AutomationNode { Name = "Immediate", Kind = System.Windows.Automation.ControlType.Document,
-                Text = "root output\r\n" }.With(System.Windows.Automation.TextPattern.Pattern);
+            var root = new AutomationNode
+            {
+                Name = "Immediate",
+                Kind = System.Windows.Automation.ControlType.Document,
+                Text = "root output\r\n"
+            }.With(System.Windows.Automation.TextPattern.Pattern);
             using (var host = new AutomationHost(root))
             {
                 dynamic result = Call("ReadImmediate", host.Handle);
@@ -494,10 +501,18 @@ namespace VBAi.Tests.Unit
         [TestMethod]
         public void UiaImmediateRootAndChildDocumentsAreAmbiguous()
         {
-            var root = new AutomationNode { Name = "Immediate", Kind = System.Windows.Automation.ControlType.Document,
-                Text = "root output\r\n" }.With(System.Windows.Automation.TextPattern.Pattern);
-            root.Add(new AutomationNode { Name = "Child", Kind = System.Windows.Automation.ControlType.Document,
-                Text = "child output\r\n" }.With(System.Windows.Automation.TextPattern.Pattern));
+            var root = new AutomationNode
+            {
+                Name = "Immediate",
+                Kind = System.Windows.Automation.ControlType.Document,
+                Text = "root output\r\n"
+            }.With(System.Windows.Automation.TextPattern.Pattern);
+            root.Add(new AutomationNode
+            {
+                Name = "Child",
+                Kind = System.Windows.Automation.ControlType.Document,
+                Text = "child output\r\n"
+            }.With(System.Windows.Automation.TextPattern.Pattern));
             using (var host = new AutomationHost(root))
             {
                 var error = Assert.ThrowsException<TargetInvocationException>(() => Call("ImmediateDocument", host.Handle));
@@ -528,23 +543,23 @@ namespace VBAi.Tests.Unit
             root.Add(new AutomationNode { Name = "Offscreen", Kind = System.Windows.Automation.ControlType.Edit, Offscreen = true });
             root.Add(new AutomationNode { Name = "Bad value", Kind = System.Windows.Automation.ControlType.Edit, FailValue = true }.With(System.Windows.Automation.ValuePattern.Pattern));
             using (var host = new AutomationHost(root, optionsDialog: true))
-                using (var scene = new SystemScene())
-                {
-                    var options = BindOwnedOptionsDialog(scene, host);
-                    var cancel = scene.Add("Cancel", "Button", options, 2);
-                    scene.OnMessage = (window, message) => { if (window == cancel) scene.Windows.Remove(options); };
-                    var native = Native<VbeDebugWindows.IOptionsProbe>("NativeOptionsProbe");
-                    CollectionAssert.AreEqual(new[] { "Editor" }, native.Tabs(host.Handle).ToArray());
-                    var controls = native.Controls(host.Handle, 0);
-                    Assert.AreEqual("On", controls.Single(control => control.Name == "Enabled option").Value);
-                    Assert.AreEqual(true, controls.Single(control => control.Name == "Selected").Value);
-                    Assert.AreEqual("visible text", controls.Single(control => control.Name == "Edit").Value);
-                    Assert.IsNull(controls.Single(control => control.Name == "Password").Value);
-                    Assert.AreEqual("chosen", controls.Single(control => control.Name == "Combo").Value);
-                    Assert.AreEqual(37d, controls.Single(control => control.Name == "Slider").Value);
-                    Assert.IsNotNull(controls.Single(control => control.Name == "Bad value").Error);
-                    dynamic result = VbeDebugWindows.ReadVbeOptions(); Assert.IsTrue((bool)result.DialogClosed);
-                }
+            using (var scene = new SystemScene())
+            {
+                var options = BindOwnedOptionsDialog(scene, host);
+                var cancel = scene.Add("Cancel", "Button", options, 2);
+                scene.OnMessage = (window, message) => { if (window == cancel) scene.Windows.Remove(options); };
+                var native = Native<VbeDebugWindows.IOptionsProbe>("NativeOptionsProbe");
+                CollectionAssert.AreEqual(new[] { "Editor" }, native.Tabs(host.Handle).ToArray());
+                var controls = native.Controls(host.Handle, 0);
+                Assert.AreEqual("On", controls.Single(control => control.Name == "Enabled option").Value);
+                Assert.AreEqual(true, controls.Single(control => control.Name == "Selected").Value);
+                Assert.AreEqual("visible text", controls.Single(control => control.Name == "Edit").Value);
+                Assert.IsNull(controls.Single(control => control.Name == "Password").Value);
+                Assert.AreEqual("chosen", controls.Single(control => control.Name == "Combo").Value);
+                Assert.AreEqual(37d, controls.Single(control => control.Name == "Slider").Value);
+                Assert.IsNotNull(controls.Single(control => control.Name == "Bad value").Error);
+                dynamic result = VbeDebugWindows.ReadVbeOptions(); Assert.IsTrue((bool)result.DialogClosed);
+            }
         }
 
         [TestMethod]
@@ -556,22 +571,22 @@ namespace VBAi.Tests.Unit
             root.Add(new AutomationNode { Name = "Break in Class Module", Kind = System.Windows.Automation.ControlType.RadioButton }.With(System.Windows.Automation.SelectionItemPattern.Pattern));
             root.Add(new AutomationNode { Name = "Break on Unhandled Errors", Kind = System.Windows.Automation.ControlType.RadioButton, Selected = true }.With(System.Windows.Automation.SelectionItemPattern.Pattern));
             using (var host = new AutomationHost(root, optionsDialog: true))
-                using (var scene = new SystemScene())
-                {
-                    var options = BindOwnedOptionsDialog(scene, host);
-                    var cancel = scene.Add("Cancel", "Button", options, 2);
-                    scene.OnMessage = (window, message) => { if (window == cancel) scene.Windows.Remove(options); };
-                    var native = Native<VbeDebugWindows.IOptionsProbe>("NativeOptionsProbe");
-                    var choices = native.ErrorChoices(host.Handle); Assert.AreEqual(3, choices.Count); Assert.AreEqual(1, choices.Count(choice => choice.Selected));
-                    dynamic read = VbeDebugWindows.ReadDebugOptions(); Assert.AreEqual("Break on Unhandled Errors", (string)read.ErrorTrapping);
-                    scene.Windows.Add(options);
-                    root.Children.Last().Patterns.Clear(); Assert.IsFalse(native.ErrorChoices(host.Handle).Last().Readable);
-                    general.Patterns.Clear(); Assert.ThrowsException<InvalidOperationException>(() => native.ErrorChoices(host.Handle));
-                    general.Patterns.Add(System.Windows.Automation.SelectionItemPattern.Pattern.Id);
-                    general.Name = "Other"; Assert.ThrowsException<InvalidOperationException>(() => native.ErrorChoices(host.Handle));
-                    general.Name = "General";
-                    native.Tabs(host.Handle); general.Patterns.Clear(); Assert.ThrowsException<InvalidOperationException>(() => native.Controls(host.Handle, 0));
-                }
+            using (var scene = new SystemScene())
+            {
+                var options = BindOwnedOptionsDialog(scene, host);
+                var cancel = scene.Add("Cancel", "Button", options, 2);
+                scene.OnMessage = (window, message) => { if (window == cancel) scene.Windows.Remove(options); };
+                var native = Native<VbeDebugWindows.IOptionsProbe>("NativeOptionsProbe");
+                var choices = native.ErrorChoices(host.Handle); Assert.AreEqual(3, choices.Count); Assert.AreEqual(1, choices.Count(choice => choice.Selected));
+                dynamic read = VbeDebugWindows.ReadDebugOptions(); Assert.AreEqual("Break on Unhandled Errors", (string)read.ErrorTrapping);
+                scene.Windows.Add(options);
+                root.Children.Last().Patterns.Clear(); Assert.IsFalse(native.ErrorChoices(host.Handle).Last().Readable);
+                general.Patterns.Clear(); Assert.ThrowsException<InvalidOperationException>(() => native.ErrorChoices(host.Handle));
+                general.Patterns.Add(System.Windows.Automation.SelectionItemPattern.Pattern.Id);
+                general.Name = "Other"; Assert.ThrowsException<InvalidOperationException>(() => native.ErrorChoices(host.Handle));
+                general.Name = "General";
+                native.Tabs(host.Handle); general.Patterns.Clear(); Assert.ThrowsException<InvalidOperationException>(() => native.Controls(host.Handle, 0));
+            }
         }
 
         [TestMethod]
@@ -596,15 +611,15 @@ namespace VBAi.Tests.Unit
             root.Add(new AutomationNode { Name = "Editor", Kind = System.Windows.Automation.ControlType.TabItem }.With(System.Windows.Automation.SelectionItemPattern.Pattern));
             root.Add(new AutomationNode { Name = "unavailable", Kind = System.Windows.Automation.ControlType.Edit, FailName = true });
             using (var host = new AutomationHost(root, optionsDialog: true))
-                using (var scene = new SystemScene())
-                {
-                    BindOwnedOptionsDialog(scene, host);
-                    var native = Native<VbeDebugWindows.IOptionsProbe>("NativeOptionsProbe"); native.Tabs(host.Handle);
-                    Assert.AreEqual(0, native.Controls(host.Handle, 0).Count);
-                    root.Children.RemoveAt(1);
-                    for (int i = 0; i < 2001; i++) root.Add(new AutomationNode { Name = "Value" + i, Kind = System.Windows.Automation.ControlType.Text });
-                    Assert.ThrowsException<InvalidOperationException>(() => native.Controls(host.Handle, 0));
-                }
+            using (var scene = new SystemScene())
+            {
+                BindOwnedOptionsDialog(scene, host);
+                var native = Native<VbeDebugWindows.IOptionsProbe>("NativeOptionsProbe"); native.Tabs(host.Handle);
+                Assert.AreEqual(0, native.Controls(host.Handle, 0).Count);
+                root.Children.RemoveAt(1);
+                for (int i = 0; i < 2001; i++) root.Add(new AutomationNode { Name = "Value" + i, Kind = System.Windows.Automation.ControlType.Text });
+                Assert.ThrowsException<InvalidOperationException>(() => native.Controls(host.Handle, 0));
+            }
         }
 
         [TestMethod]
@@ -675,28 +690,28 @@ namespace VBAi.Tests.Unit
             var root = new AutomationNode { Kind = System.Windows.Automation.ControlType.Window, Name = "Diagnostic" };
             root.Add(new AutomationNode { Kind = System.Windows.Automation.ControlType.Text, Name = diagnostic });
             using (var host = new AutomationHost(root))
-                using (var scene = new SystemScene())
-                {
-                    var dialog = scene.Add("Microsoft Visual Basic for Applications"); dialog.Handle = host.Handle;
-                    scene.Add(diagnostic, "Static", dialog);
-                    var ok = scene.Add("OK", "Button", dialog, 1);
-                    scene.OnMessage = (window, message) => { if (window == ok) dialog.Visible = false; };
-                    dynamic response = VbeDebugWindows.RespondDebugDialog(new Request { Diagnostic = diagnostic, Button = "OK" });
-                    Assert.AreEqual("DialogClosed", (string)response.Verification);
-                    dialog.Visible = true;
-                    using (var completed = new System.Threading.ManualResetEventSlim(true))
-                        Assert.AreEqual(diagnostic, VbeDebugWindows.AwaitCompileDialog(completed));
-                }
+            using (var scene = new SystemScene())
+            {
+                var dialog = scene.Add("Microsoft Visual Basic for Applications"); dialog.Handle = host.Handle;
+                scene.Add(diagnostic, "Static", dialog);
+                var ok = scene.Add("OK", "Button", dialog, 1);
+                scene.OnMessage = (window, message) => { if (window == ok) dialog.Visible = false; };
+                dynamic response = VbeDebugWindows.RespondDebugDialog(new Request { Diagnostic = diagnostic, Button = "OK" });
+                Assert.AreEqual("DialogClosed", (string)response.Verification);
+                dialog.Visible = true;
+                using (var completed = new System.Threading.ManualResetEventSlim(true))
+                    Assert.AreEqual(diagnostic, VbeDebugWindows.AwaitCompileDialog(completed));
+            }
         }
     }
 }
 
 namespace VBAi.Tests.Unit
 {
+    using Microsoft.VisualStudio.TestTools.UnitTesting;
     using System;
     using System.Threading;
     using VBAi;
-    using Microsoft.VisualStudio.TestTools.UnitTesting;
 
     public sealed partial class VbeDebugWindowsNativeTests
     {
@@ -775,13 +790,12 @@ namespace VBAi.Tests.Unit
 
 namespace VBAi.Tests.Unit
 {
+    using Microsoft.VisualStudio.TestTools.UnitTesting;
     using System;
     using System.Collections;
     using System.Collections.Generic;
     using System.Linq;
-    using System.Reflection;
     using VBAi;
-    using Microsoft.VisualStudio.TestTools.UnitTesting;
 
     [TestClass]
     [TestCategory("Unit")]
@@ -952,10 +966,9 @@ namespace VBAi.Tests.Unit
 
 namespace VBAi.Tests.Unit
 {
-    using System;
-    using System.Collections.Generic;
-    using VBAi;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
+    using System;
+    using VBAi;
 
     [TestClass]
     [TestCategory("Unit")]
@@ -1025,7 +1038,8 @@ namespace VBAi.Tests.Unit
             VbeImmediateContext.RequireCurrent("P", 2, execute);
             var fake = Ready("? 1");
             fake.OnRead = () => { if (changeMode) state.Mode = 1; else state.SelectedProject = "Other"; };
-            Assert.ThrowsException<InvalidOperationException>(() => VbeDebugWindows.ExecuteImmediate("? 1", fake, enter => {
+            Assert.ThrowsException<InvalidOperationException>(() => VbeDebugWindows.ExecuteImmediate("? 1", fake, enter =>
+            {
                 VbeImmediateContext.RequireCurrent("P", 2, execute);
                 enter();
             }));
@@ -1073,12 +1087,10 @@ namespace VBAi.Tests.Unit
 
 namespace VBAi.Tests.Unit
 {
+    using Microsoft.VisualStudio.TestTools.UnitTesting;
     using System;
-    using System.Collections.Generic;
-    using System.Linq;
     using System.Threading;
     using VBAi;
-    using Microsoft.VisualStudio.TestTools.UnitTesting;
 
     [TestClass]
     [TestCategory("Unit")]
@@ -1273,10 +1285,9 @@ namespace VBAi.Tests.Unit
 
 namespace VBAi.Tests.Unit
 {
-    using System;
-    using System.Collections.Generic;
-    using VBAi;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
+    using System;
+    using VBAi;
 
     [TestClass]
     [TestCategory("Unit")]
@@ -1384,9 +1395,8 @@ namespace VBAi.Tests.Unit
 
 namespace VBAi.Tests.Unit
 {
-    using System;
-    using VBAi;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
+    using VBAi;
 
     [TestClass]
     [TestCategory("Unit")]
@@ -1489,10 +1499,9 @@ namespace VBAi.Tests.Unit
 
 namespace VBAi.Tests.Unit
 {
-    using System;
-    using System.Collections.Generic;
-    using VBAi;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
+    using System;
+    using VBAi;
 
     [TestClass]
     [TestCategory("Unit")]
@@ -1555,10 +1564,10 @@ namespace VBAi.Tests.Unit
 
 namespace VBAi.Tests.Unit
 {
+    using Microsoft.VisualStudio.TestTools.UnitTesting;
     using System;
     using System.Collections.Generic;
     using System.Reflection;
-    using Microsoft.VisualStudio.TestTools.UnitTesting;
     using VBAi;
 
     [TestClass]
@@ -1716,10 +1725,9 @@ namespace VBAi.Tests.Unit
 
 namespace VBAi.Tests.Unit
 {
-    using System;
-    using System.Collections.Generic;
-    using VBAi;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
+    using System;
+    using VBAi;
 
     [TestClass]
     [TestCategory("Unit")]

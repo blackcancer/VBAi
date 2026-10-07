@@ -1,10 +1,9 @@
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Web.Script.Serialization;
-using VBAi;
 using VBAi.Tests.Infrastructure;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace VBAi.Tests.Integration
 {
@@ -52,7 +51,8 @@ namespace VBAi.Tests.Integration
                 window.Show(); PauseAutomaticWork(window);
                 var tools = new LlmVbeTools(null, null, new LlmSettings { VbeEditApproval = "Automatic" })
                 {
-                    MonacoWindow = create => window, MonacoModule = (p, m) => host,
+                    MonacoWindow = create => window,
+                    MonacoModule = (p, m) => host,
                     Execute = request =>
                     {
                         dynamic payload = new System.Dynamic.ExpandoObject();
@@ -95,7 +95,9 @@ namespace VBAi.Tests.Integration
                 window.Show(); PauseAutomaticWork(window);
                 var tools = new LlmVbeTools(null, null, new LlmSettings { VbeEditApproval = "Automatic" })
                 {
-                    BoundProject = "P", MonacoWindow = create => window, MonacoModule = (p, m) => host,
+                    BoundProject = "P",
+                    MonacoWindow = create => window,
+                    MonacoModule = (p, m) => host,
                     Execute = request =>
                     {
                         dynamic payload = new System.Dynamic.ExpandoObject();

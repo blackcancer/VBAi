@@ -6,7 +6,6 @@ namespace VBAi.Tests.Unit
     using System.ComponentModel;
     using System.Linq;
     using System.Runtime.CompilerServices;
-    using Microsoft.VisualStudio.TestTools.UnitTesting;
     using VBAi;
 
     public sealed partial class VbeFormsTests

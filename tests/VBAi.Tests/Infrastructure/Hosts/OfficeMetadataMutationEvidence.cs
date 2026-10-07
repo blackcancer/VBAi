@@ -12,8 +12,11 @@ namespace VBAi.Tests.Integration
             try { mutate(); }
             catch (Exception original) { failure = original; }
             try { observe(); }
-            catch (Exception readback) { failure = failure == null ? readback :
-                new AggregateException("The original metadata mutation and its read-only diagnostic both failed; no mutation was replayed.", failure, readback); }
+            catch (Exception readback)
+            {
+                failure = failure == null ? readback :
+                new AggregateException("The original metadata mutation and its read-only diagnostic both failed; no mutation was replayed.", failure, readback);
+            }
             if (failure != null) ExceptionDispatchInfo.Capture(failure).Throw();
         }
     }

@@ -33,9 +33,9 @@ namespace VBAi
                 var newSaved = r["Saved"];
                 if (!oldSaved.TryGetValue("Kind", out var oldKind) || !Equals(oldKind, "scalar") ||
                     !newSaved.TryGetValue("Kind", out var newKind) || !Equals(newKind, "scalar") ||
-                    !oldSaved.TryGetValue("Value", out var oldValue) || !(oldValue is bool) ||
-                    !newSaved.TryGetValue("Value", out var newValue) || !(newValue is bool) ||
-                    (bool)oldValue && !(bool)newValue) return false;
+                    !oldSaved.TryGetValue("Value", out var oldValue) || !(oldValue is bool v) ||
+                    !newSaved.TryGetValue("Value", out var newValue) || !(newValue is bool v1) ||
+                    v && !v1) return false;
                 // The complete descriptor, including Type/ReadOnly/Errors, remains equal.
                 newSaved["Value"] = oldValue;
             }
@@ -56,14 +56,12 @@ namespace VBAi
         /// <returns>Ordinally sorted name-to-descriptor map, or <see langword="null"/> for malformed or duplicate entries.</returns>
         private static SortedDictionary<string, Dictionary<string, object>> PublicationPostSaveDescriptors(object descriptors)
         {
-            var array = descriptors as IList;
-            if (array == null) return null;
+            if (!(descriptors is IList array)) return null;
             var result = new SortedDictionary<string, Dictionary<string, object>>(StringComparer.Ordinal);
             foreach (object item in array)
             {
-                var row = item as Dictionary<string, object>;
-                if (row == null || !row.TryGetValue("Name", out var name) || !(name is string) ||
-                    string.IsNullOrWhiteSpace((string)name) || result.ContainsKey((string)name)) return null;
+                if (!(item is Dictionary<string, object> row) || !row.TryGetValue("Name", out var name) || !(name is string v) ||
+                    string.IsNullOrWhiteSpace(v) || result.ContainsKey(v)) return null;
                 result.Add((string)name, row);
             }
             return result;

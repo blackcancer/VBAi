@@ -1,18 +1,10 @@
-using System;
-using System.IO;
-using System.Linq;
-using System.Text;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.Net;
-using System.Net.Http;
-using System.Threading;
-using System.Threading.Tasks;
-using System.Web.Script.Serialization;
-using System.Windows.Forms;
-using VBAi;
-using VBAi.Tests.Infrastructure;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+using System;
+using System.Diagnostics;
+using System.IO;
+using System.Text;
+using System.Web.Script.Serialization;
+using VBAi.Tests.Infrastructure;
 namespace VBAi.Tests.Unit
 {
     [TestClass, TestCategory("Unit"), DoNotParallelize]
@@ -32,7 +24,8 @@ namespace VBAi.Tests.Unit
             {
                 var job = Job(scope); UpdateState.RecordHost();
                 int hostChecks = 0, installs = 0;
-                var runner = new UpdateInstallerRunner(scope.Root) {
+                var runner = new UpdateInstallerRunner(scope.Root)
+                {
                     VerifyPublisher = path => false,
                     IsAlive = lease => { hostChecks++; return true; },
                     Install = path => { installs++; return 0; }
@@ -62,16 +55,16 @@ namespace VBAi.Tests.Unit
         public void RunnerHonorsCancellationChecksumSignatureAndInstallerFailuresWithoutStartingRealProcesses()
         {
             foreach (string scenario in new[] { "cancel", "hash", "signature", "failed", "reboot" })
-            using (var scope = new UpdateScope())
-            {
-                var job = Job(scope); int installed = 0;
-                var runner = new UpdateInstallerRunner(scope.Root) { VerifySignature = path => scenario != "signature", VerifyPublisher = path => true, Install = path => { installed++; return scenario == "reboot" ? 3010 : 1603; } };
-                if (scenario == "cancel") { var cancelled = UpdateInstallJob.Load(scope.Root); cancelled.Completed = true; cancelled.Status = "Update cancelled."; cancelled.Save(scope.Root); }
-                if (scenario == "hash") File.WriteAllText(job.InstallerPath, "changed");
-                Assert.IsTrue(runner.Tick(job)); Assert.IsTrue(job.Completed);
-                Assert.AreEqual(scenario == "failed" || scenario == "reboot" ? 1 : 0, installed);
-                Assert.AreEqual(scenario == "reboot", job.RestartRequired);
-            }
+                using (var scope = new UpdateScope())
+                {
+                    var job = Job(scope); int installed = 0;
+                    var runner = new UpdateInstallerRunner(scope.Root) { VerifySignature = path => scenario != "signature", VerifyPublisher = path => true, Install = path => { installed++; return scenario == "reboot" ? 3010 : 1603; } };
+                    if (scenario == "cancel") { var cancelled = UpdateInstallJob.Load(scope.Root); cancelled.Completed = true; cancelled.Status = "Update cancelled."; cancelled.Save(scope.Root); }
+                    if (scenario == "hash") File.WriteAllText(job.InstallerPath, "changed");
+                    Assert.IsTrue(runner.Tick(job)); Assert.IsTrue(job.Completed);
+                    Assert.AreEqual(scenario == "failed" || scenario == "reboot" ? 1 : 0, installed);
+                    Assert.AreEqual(scenario == "reboot", job.RestartRequired);
+                }
         }
         [TestMethod]
         public void NativeProcessIdentityAndWindowsSignatureChecksAreReadOnly()
@@ -97,7 +90,7 @@ namespace VBAi.Tests.Unit
                     {
                         bool msi = path.EndsWith(".MSI", StringComparison.Ordinal);
                         Assert.AreEqual(msi ? "msiexec.exe" : path, Path.GetFileName(start.FileName));
-                        Assert.AreEqual(msi ? "/i \"" + path + "\" /quiet /norestart /L*v \"" + path + ".install.log\"" : "/update /quiet /norestart", start.Arguments);
+                        Assert.AreEqual(msi ? "/i \"" + path + "\" /quiet /norestart /L*v \"" + path + ".install.log\"" : "/update /quiet /norestart /VERYSILENT /SUPPRESSMSGBOXES /SP-", start.Arguments);
                         Assert.IsTrue(start.UseShellExecute); Assert.AreEqual(ProcessWindowStyle.Hidden, start.WindowStyle);
                         return UpdatesNativeFixture.ExitHelper(7);
                     };
@@ -159,17 +152,17 @@ namespace VBAi.Tests.Unit
                 Assert.IsTrue(runner.Tick(job)); Assert.IsFalse(job.Completed);
             }
             foreach (string outcome in new[] { "1641", "0", "invalid", "mismatch", "missing", "no-pending", "host-reopened" })
-            using (var fixture = new UpdatesNativeFixture())
-            {
-                var job = Job(fixture.Scope);
-                var runner = new UpdateInstallerRunner(fixture.Scope.Root) { VerifySignature = path => true, VerifyPublisher = path => true, Install = path => outcome == "1641" ? 1641 : 0, InstalledVersion = path => outcome == "invalid" ? "invalid" : outcome == "mismatch" ? "1.2.2" : "1.2.3" };
-                if (outcome == "missing") File.Delete(job.InstallerPath);
-                if (outcome == "no-pending") File.Delete(Path.Combine(fixture.Scope.Root, "pending.json"));
-                if (outcome == "host-reopened") { runner.IsAlive = lease => true; runner.VerifySignature = path => { UpdateState.RecordHost(); return true; }; }
-                Assert.AreEqual(outcome != "host-reopened", runner.Tick(job));
-                Assert.AreEqual(outcome != "host-reopened", job.Completed);
-                if (outcome != "host-reopened") Assert.AreEqual(outcome == "1641" ? "Update installed. Restart Windows to finish." : outcome == "0" || outcome == "no-pending" ? "Update installed. Restart the VBA host." : "Installation failed. Check the installer log.", job.Status);
-            }
+                using (var fixture = new UpdatesNativeFixture())
+                {
+                    var job = Job(fixture.Scope);
+                    var runner = new UpdateInstallerRunner(fixture.Scope.Root) { VerifySignature = path => true, VerifyPublisher = path => true, Install = path => outcome == "1641" ? 1641 : 0, InstalledVersion = path => outcome == "invalid" ? "invalid" : outcome == "mismatch" ? "1.2.2" : "1.2.3" };
+                    if (outcome == "missing") File.Delete(job.InstallerPath);
+                    if (outcome == "no-pending") File.Delete(Path.Combine(fixture.Scope.Root, "pending.json"));
+                    if (outcome == "host-reopened") { runner.IsAlive = lease => true; runner.VerifySignature = path => { UpdateState.RecordHost(); return true; }; }
+                    Assert.AreEqual(outcome != "host-reopened", runner.Tick(job));
+                    Assert.AreEqual(outcome != "host-reopened", job.Completed);
+                    if (outcome != "host-reopened") Assert.AreEqual(outcome == "1641" ? "Update installed. Restart Windows to finish." : outcome == "0" || outcome == "no-pending" ? "Update installed. Restart the VBA host." : "Installation failed. Check the installer log.", job.Status);
+                }
         }
 
         [TestMethod]

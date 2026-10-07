@@ -1,9 +1,9 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Threading;
 using System.Web.Script.Serialization;
-using System.Linq;
 
 namespace VBAi
 {
@@ -225,9 +225,14 @@ namespace VBAi
             // Same local-data privacy boundary as chat.db; never replay this file automatically.
             Directory.CreateDirectory(RecoveryDirectory);
             var serializer = new JavaScriptSerializer { MaxJsonLength = 64 * 1024 * 1024 };
-            UpdatePaths.WriteAtomic(destination ?? RecoveryPath(snapshot), serializer.Serialize(new {
-                FormatVersion = 1, snapshot.Id, snapshot.Scope, snapshot.ExpectedVersion,
-                SavedUtc = DateTime.UtcNow.ToString("O"), snapshot.Payload
+            UpdatePaths.WriteAtomic(destination ?? RecoveryPath(snapshot), serializer.Serialize(new
+            {
+                FormatVersion = 1,
+                snapshot.Id,
+                snapshot.Scope,
+                snapshot.ExpectedVersion,
+                SavedUtc = DateTime.UtcNow.ToString("O"),
+                snapshot.Payload
             }));
         }
 

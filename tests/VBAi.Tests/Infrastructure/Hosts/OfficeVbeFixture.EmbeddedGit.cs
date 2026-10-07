@@ -1,10 +1,9 @@
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Runtime.InteropServices;
 using System.Text;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace VBAi.Tests.Integration
 {
@@ -21,9 +20,13 @@ namespace VBAi.Tests.Integration
             NativeExecutionUnsettled = true;
             SaveNative();
             NativeExecutionUnsettled = false;
-            var scope = new ExcelVbeFixture.EmbeddedGitScope {
-                Path = DocumentPath, Marker = marker, Cache = MacroGitRepository.ScopeDirectory(DocumentPath),
-                Code = new Dictionary<string, string>(StringComparer.Ordinal), Types = new Dictionary<string, int>(StringComparer.Ordinal)
+            var scope = new ExcelVbeFixture.EmbeddedGitScope
+            {
+                Path = DocumentPath,
+                Marker = marker,
+                Cache = MacroGitRepository.ScopeDirectory(DocumentPath),
+                Code = new Dictionary<string, string>(StringComparer.Ordinal),
+                Types = new Dictionary<string, int>(StringComparer.Ordinal)
             };
             Assert.IsFalse(Directory.Exists(scope.Cache), "A fresh disposable Word scope must not reuse a cache.");
             var components = new List<VbaGitComponent>();
@@ -54,8 +57,14 @@ namespace VBAi.Tests.Integration
             var referenceReply = Data("list_references", "Project", scope.Path);
             scope.References = WordGitReferenceIdentity((object[])referenceReply["References"]);
             scope.State = Convert.ToString(referenceReply["Version"]);
-            record(new { Phase = "OwnerBridgeReferencesRead", Project = scope.Path, References = scope.References,
-                Version = referenceReply["Version"], ExternalReferenceGetters = 0 });
+            record(new
+            {
+                Phase = "OwnerBridgeReferencesRead",
+                Project = scope.Path,
+                References = scope.References,
+                Version = referenceReply["Version"],
+                ExternalReferenceGetters = 0
+            });
             object editor = null, window = null;
             try
             {
@@ -69,9 +78,18 @@ namespace VBAi.Tests.Integration
             var markerCode = Data("read_module", "Project", DocumentPath, "Module", "QualificationMarker");
             Data("select_code", "Project", DocumentPath, "Module", "QualificationMarker", "StartLine", 1, "ExpectedSha256", markerCode["Sha256"]);
             Assert.AreEqual(DocumentPath, Data("debug_state", "Project", DocumentPath)["SelectedHostPath"]);
-            record(new { Phase = "WordScopePrepared", ProcessId, scope.ThreadId, VbeHandle = scope.VbeHandle.ToInt64(),
-                scope.Path, scope.Cache, Files = EmbeddedGitSnapshotOracle.Describe(scope.Baseline),
-                MacroExecutions = 0, ExternalGitCaptures = 0 });
+            record(new
+            {
+                Phase = "WordScopePrepared",
+                ProcessId,
+                scope.ThreadId,
+                VbeHandle = scope.VbeHandle.ToInt64(),
+                scope.Path,
+                scope.Cache,
+                Files = EmbeddedGitSnapshotOracle.Describe(scope.Baseline),
+                MacroExecutions = 0,
+                ExternalGitCaptures = 0
+            });
             return scope;
         }
 

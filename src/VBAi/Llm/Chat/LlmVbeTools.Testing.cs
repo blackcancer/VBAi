@@ -64,11 +64,10 @@ namespace VBAi
             Response preview = Execute(new Request { Command = "preview_vba_test_support", Project = request.Project });
             if (!preview.Ok) throw new InvalidOperationException(preview.Error);
             var data = Fields(preview.Data);
-            object revision, text;
-            if (data == null || !data.TryGetValue("ExpectedProjectVersion", out revision) ||
+            if (data == null || !data.TryGetValue("ExpectedProjectVersion", out object revision) ||
                 !string.Equals(Convert.ToString(revision), request.ExpectedProjectVersion, StringComparison.OrdinalIgnoreCase))
                 throw new InvalidOperationException("The project changed since the reviewed test-support preview.");
-            if (!data.TryGetValue("Text", out text) || !string.Equals(text as string, request.Text, StringComparison.Ordinal))
+            if (!data.TryGetValue("Text", out object text) || !string.Equals(text as string, request.Text, StringComparison.Ordinal))
                 throw new InvalidOperationException("Text must exactly match the reviewed test-support preview.");
         }
 

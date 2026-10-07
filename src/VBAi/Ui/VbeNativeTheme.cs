@@ -399,10 +399,12 @@ namespace VBAi
 
         /// <summary>Native rectangle using left, top, right, and bottom edge coordinates.</summary>
         [StructLayout(LayoutKind.Sequential)]
-        internal struct NativeRect {
+        internal struct NativeRect
+        {
 
-/// <summary>Bounds in left, top, right, bottom coordinate order.</summary>
-internal int Left, Top, Right, Bottom; }
+            /// <summary>Bounds in left, top, right, bottom coordinate order.</summary>
+            internal int Left, Top, Right, Bottom;
+        }
 
         /// <summary>Layout-compatible WM_DRAWITEM payload for an owner-drawn control.</summary>
         [StructLayout(LayoutKind.Sequential)]
@@ -700,8 +702,7 @@ internal int Left, Top, Right, Bottom; }
         /// <param name="className">Native window class used to restore control-specific color messages.</param>
         internal static void RestoreControlPalette(IntPtr window, string className)
         {
-            ControlPalette original;
-            if (!originalControlColors.TryGetValue(window, out original)) return;
+            if (!originalControlColors.TryGetValue(window, out ControlPalette original)) return;
             IntPtr background = new IntPtr(original.Background);
             IntPtr foreground = new IntPtr(original.Foreground);
             switch (className)
@@ -850,8 +851,7 @@ internal int Left, Top, Right, Bottom; }
                 pendingChrome.Remove(window);
                 pendingCaptions.Remove(window);
                 originalControlColors.Remove(window);
-                VbeNativePropertyTabs tabs;
-                if (propertyTabs.TryGetValue(window, out tabs))
+                if (propertyTabs.TryGetValue(window, out VbeNativePropertyTabs tabs))
                 {
                     tabs.Dispose();
                     propertyTabs.Remove(window);
@@ -898,14 +898,12 @@ internal int Left, Top, Right, Bottom; }
                 ForgetWindow(window);
                 return NativeProcedure(window, message, wParam, lParam);
             }
-            VbeNativePropertyTabs directTabs;
-            if (propertyTabs.TryGetValue(window, out directTabs))
+            if (propertyTabs.TryGetValue(window, out VbeNativePropertyTabs directTabs))
             {
                 if (message == WmQueryPropertyTabPaint && ExperimentEnabled())
                     return new IntPtr(wParam.ToInt64() == 2 ? (VbeNativePropertyTabs.CanRender(window) ? 1 : -1) :
                         wParam.ToInt64() == 1 ? directTabs.PrintCount : directTabs.PaintCount);
-                IntPtr handled;
-                if (directTabs.TryHandleMessage(message, wParam, lParam, out handled)) return handled;
+                if (directTabs.TryHandleMessage(message, wParam, lParam, out IntPtr handled)) return handled;
                 IntPtr nativeResult = NativeProcedure(window, message, wParam, lParam);
                 directTabs.AfterNativeMessage(message, wParam, lParam);
                 return nativeResult;
@@ -913,8 +911,7 @@ internal int Left, Top, Right, Bottom; }
             string className = message == WmEraseBackground ? WindowClass(window) : null;
             if (message == WmEraseBackground && (className == "#32770" || className == "MDIClient" || className == "VBSlider"))
             {
-                NativeRect rectangle;
-                if (ReadClientBounds(window, out rectangle))
+                if (ReadClientBounds(window, out NativeRect rectangle))
                 {
                     EnsureBackgroundBrush();
                     PaintBackground(wParam, ref rectangle, backgroundBrush);
@@ -1103,8 +1100,7 @@ internal int Left, Top, Right, Bottom; }
         private static bool TryAttachPropertyTabs(IntPtr window)
         {
             if (propertyTabs.ContainsKey(window)) return true;
-            VbeNativePropertyTabs renderer;
-            if (!VbeNativePropertyTabs.TryCreate(window, out renderer)) return false;
+            if (!VbeNativePropertyTabs.TryCreate(window, out VbeNativePropertyTabs renderer)) return false;
             propertyTabs.Add(window, renderer);
             pendingChrome.Remove(window);
             LoadLog.Write("Native Properties tabs: direct text renderer attached to " + window);
@@ -1116,8 +1112,7 @@ internal int Left, Top, Right, Bottom; }
         /// <returns><see langword="true"/> when both process and thread match.</returns>
         private static bool IsCurrentWindowThread(IntPtr window)
         {
-            uint processId;
-            return WindowThread(window, out processId) == CurrentThread() &&
+            return WindowThread(window, out uint processId) == CurrentThread() &&
                 processId == (uint)System.Diagnostics.Process.GetCurrentProcess().Id;
         }
 

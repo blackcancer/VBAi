@@ -1,11 +1,10 @@
 using System.Linq;
 namespace VBAi.Tests.Unit
 {
+    using Microsoft.VisualStudio.TestTools.UnitTesting;
     using System;
-    using System.Reflection;
     using System.Windows.Forms;
     using VBAi;
-    using Microsoft.VisualStudio.TestTools.UnitTesting;
 
     /// <summary>Vérifie l’arrêt de l’add-in et la propriété des fenêtres natives.</summary>
     [TestClass]
@@ -65,6 +64,7 @@ namespace VBAi.Tests.Unit
 
 namespace VBAi.Tests.Unit
 {
+    using Microsoft.VisualStudio.TestTools.UnitTesting;
     using System;
     using System.IO;
     using System.Linq;
@@ -73,42 +73,41 @@ namespace VBAi.Tests.Unit
     using System.Windows.Forms;
     using VBAi;
     using VBAi.Tests.Infrastructure;
-    using Microsoft.VisualStudio.TestTools.UnitTesting;
 
-        /// <summary>Vérifie le cycle de vie du complément et ses callbacks vers l’interface.</summary>
-[TestClass, TestCategory("Unit")]
+    /// <summary>Vérifie le cycle de vie du complément et ses callbacks vers l’interface.</summary>
+    [TestClass, TestCategory("Unit")]
     public sealed partial class AddInCoverageTests
     {
         /// <summary>Conserve les sites illisibles et les dimensions minimales, puis répare uniquement les sites inutilisables.</summary>
         [STATestMethod]
         public void PlacementChecksNativeSiteAvailabilityAndEachMinimumDimension()
         {
-            using(var scope=new HostUiScope())
+            using (var scope = new HostUiScope())
             {
-                var instance=scope.Connected();try
+                var instance = scope.Connected(); try
                 {
-                    var control=LlmBoundaryScope.Get<ChatToolWindow>(instance,"nativeChatControl");var window=scope.Host.Windows.Window;var before=window.Form.Bounds;
-                    try { LlmBoundaryScope.Set(instance,"nativeChatControl",null);Call(instance,"EnsureUsableChatPlacement");Assert.AreEqual(before,window.Form.Bounds); }
-                    finally { LlmBoundaryScope.Set(instance,"nativeChatControl",control); }
-                    var parent=control.ParentReader;var reader=control.ClientReader;
+                    var control = LlmBoundaryScope.Get<ChatToolWindow>(instance, "nativeChatControl"); var window = scope.Host.Windows.Window; var before = window.Form.Bounds;
+                    try { LlmBoundaryScope.Set(instance, "nativeChatControl", null); Call(instance, "EnsureUsableChatPlacement"); Assert.AreEqual(before, window.Form.Bounds); }
+                    finally { LlmBoundaryScope.Set(instance, "nativeChatControl", control); }
+                    var parent = control.ParentReader; var reader = control.ClientReader;
                     try
                     {
-                        control.ParentReader=h=>IntPtr.Zero;Call(instance,"EnsureUsableChatPlacement");Assert.AreEqual(before,window.Form.Bounds);
-                        control.ParentReader=parent;control.ClientReader=(IntPtr h,out ChatToolWindow.NativeRect rect)=>{rect=default(ChatToolWindow.NativeRect);return false;};
-                        Call(instance,"EnsureUsableChatPlacement");Assert.AreEqual(before,window.Form.Bounds);
-                        var minimum=Chat(instance).MinimumSize;
-                        foreach(var size in new[] {minimum,new System.Drawing.Size(minimum.Width-1,minimum.Height),new System.Drawing.Size(minimum.Width,minimum.Height-1)})
+                        control.ParentReader = h => IntPtr.Zero; Call(instance, "EnsureUsableChatPlacement"); Assert.AreEqual(before, window.Form.Bounds);
+                        control.ParentReader = parent; control.ClientReader = (IntPtr h, out ChatToolWindow.NativeRect rect) => { rect = default(ChatToolWindow.NativeRect); return false; };
+                        Call(instance, "EnsureUsableChatPlacement"); Assert.AreEqual(before, window.Form.Bounds);
+                        var minimum = Chat(instance).MinimumSize;
+                        foreach (var size in new[] { minimum, new System.Drawing.Size(minimum.Width - 1, minimum.Height), new System.Drawing.Size(minimum.Width, minimum.Height - 1) })
                         {
-                            control.ClientReader=(IntPtr h,out ChatToolWindow.NativeRect rect)=>{rect=new ChatToolWindow.NativeRect {Right=size.Width,Bottom=size.Height};return true;};
-                            window.LinkedWindowFrame=null;Call(instance,"EnsureUsableChatPlacement");
-                            if(size==minimum)Assert.AreEqual(before,window.Form.Bounds);
-                            else {var area=Screen.FromHandle(new IntPtr(scope.Host.MainWindow.HWnd)).WorkingArea;Assert.AreEqual(Math.Min(600,area.Width),window.Width);Assert.AreEqual(Math.Min(820,area.Height),window.Height);Assert.IsTrue(scope.Logs.Any(x=>x.Contains("Recovered unusable chat pane")));}
+                            control.ClientReader = (IntPtr h, out ChatToolWindow.NativeRect rect) => { rect = new ChatToolWindow.NativeRect { Right = size.Width, Bottom = size.Height }; return true; };
+                            window.LinkedWindowFrame = null; Call(instance, "EnsureUsableChatPlacement");
+                            if (size == minimum) Assert.AreEqual(before, window.Form.Bounds);
+                            else { var area = Screen.FromHandle(new IntPtr(scope.Host.MainWindow.HWnd)).WorkingArea; Assert.AreEqual(Math.Min(600, area.Width), window.Width); Assert.AreEqual(Math.Min(820, area.Height), window.Height); Assert.IsTrue(scope.Logs.Any(x => x.Contains("Recovered unusable chat pane"))); }
                         }
-                        Assert.AreEqual(0,scope.Host.MainWindow.LinkedWindows.Removes);
+                        Assert.AreEqual(0, scope.Host.MainWindow.LinkedWindows.Removes);
                     }
-                    finally {control.ParentReader=parent;control.ClientReader=reader;}
+                    finally { control.ParentReader = parent; control.ClientReader = reader; }
                 }
-                finally {scope.Close(instance);}
+                finally { scope.Close(instance); }
             }
         }
 
@@ -116,23 +115,23 @@ namespace VBAi.Tests.Unit
         [STATestMethod]
         public void HostShutdownCleansOnlyTemporaryCommandsAndLogsNativeFailureBeforeDisposal()
         {
-            foreach(bool shutdown in new[] {false,true})
-            foreach(bool failDelete in new[] {false,true})
-            using(var scope=new HostUiScope())
-            {
-                var host=new ToolbarCustomizationTests.Host();var bar=host.CommandBars.Add("Standard",1,false,true);
-                var temp=bar.Controls.Add(1,42,Type.Missing,1,true);temp.Tag="VBAi.ToolbarCommand."+new string('a',32);temp.FailDelete=failDelete;
-                var persistent=bar.Controls.Add(1,42,Type.Missing,2,true);persistent.Tag="VBAi.ToolbarCommand.Persistent.owned";
-                var foreign=bar.Controls.Add(1,42,Type.Missing,3,true);foreign.Tag="ThirdParty";
-                var instance=new AddIn();LlmBoundaryScope.Set(instance,"vbe",host);var dispatcher=new Control();LlmBoundaryScope.Set(instance,"dispatcher",dispatcher);
-                object[] custom=null;if(shutdown)instance.OnBeginShutdown(ref custom);else instance.OnDisconnection(0,ref custom);
-                Assert.AreEqual(failDelete?3:2,bar.Controls.Count);Assert.IsTrue(bar.Controls.Contains(persistent));Assert.IsTrue(bar.Controls.Contains(foreign));
-                Assert.AreEqual(failDelete,scope.Logs.Any(x=>x.Contains("Temporary toolbar cleanup failed: native delete rejected")));
-                Assert.IsTrue(dispatcher.IsDisposed);Assert.IsNull(LlmBoundaryScope.Get<object>(instance,"vbe"));
-            }
+            foreach (bool shutdown in new[] { false, true })
+                foreach (bool failDelete in new[] { false, true })
+                    using (var scope = new HostUiScope())
+                    {
+                        var host = new ToolbarCustomizationTests.Host(); var bar = host.CommandBars.Add("Standard", 1, false, true);
+                        var temp = bar.Controls.Add(1, 42, Type.Missing, 1, true); temp.Tag = "VBAi.ToolbarCommand." + new string('a', 32); temp.FailDelete = failDelete;
+                        var persistent = bar.Controls.Add(1, 42, Type.Missing, 2, true); persistent.Tag = "VBAi.ToolbarCommand.Persistent.owned";
+                        var foreign = bar.Controls.Add(1, 42, Type.Missing, 3, true); foreign.Tag = "ThirdParty";
+                        var instance = new AddIn(); LlmBoundaryScope.Set(instance, "vbe", host); var dispatcher = new Control(); LlmBoundaryScope.Set(instance, "dispatcher", dispatcher);
+                        object[] custom = null; if (shutdown) instance.OnBeginShutdown(ref custom); else instance.OnDisconnection(0, ref custom);
+                        Assert.AreEqual(failDelete ? 3 : 2, bar.Controls.Count); Assert.IsTrue(bar.Controls.Contains(persistent)); Assert.IsTrue(bar.Controls.Contains(foreign));
+                        Assert.AreEqual(failDelete, scope.Logs.Any(x => x.Contains("Temporary toolbar cleanup failed: native delete rejected")));
+                        Assert.IsTrue(dispatcher.IsDisposed); Assert.IsNull(LlmBoundaryScope.Get<object>(instance, "vbe"));
+                    }
         }
-                /// <summary>Vérifie les garde-fous d’attachement lors de la réouverture d’une fenêtre native partiellement libérée.</summary>
-[STATestMethod]
+        /// <summary>Vérifie les garde-fous d’attachement lors de la réouverture d’une fenêtre native partiellement libérée.</summary>
+        [STATestMethod]
         public void ReopeningAChatWithinALiveOrPartiallyReleasedNativeSiteKeepsAttachGuards()
         {
             foreach (bool missingControl in new[] { false, true }) using (var scope = new HostUiScope())
@@ -142,8 +141,8 @@ namespace VBAi.Tests.Unit
                 finally { LlmBoundaryScope.Set(instance, "nativeChatControl", control); scope.Close(instance); }
             }
         }
-                /// <summary>Vérifie l’attachement, le détachement et la réouverture de la fenêtre assistant.</summary>
-[STATestMethod]
+        /// <summary>Vérifie l’attachement, le détachement et la réouverture de la fenêtre assistant.</summary>
+        [STATestMethod]
         public void RealAssistantCanDockUndockRecoverDisposedSiteAndReopenAfterClosing()
         {
             using (var scope = new HostUiScope())
@@ -165,27 +164,28 @@ namespace VBAi.Tests.Unit
         public void StartupRepairsCollapsedOrDefaultTinyPaneWithoutForcingMainFrameDocking()
         {
             foreach (var size in new[] { new System.Drawing.Size(1920, 6), new System.Drawing.Size(200, 100), new System.Drawing.Size(321, 766) })
-            using (var scope = new HostUiScope())
-            {
-                scope.Host.Windows.AfterCreation = () => {
-                    scope.Host.Windows.Window.Form.ClientSize = size;
-                    scope.Host.Windows.Window.LinkedWindowFrame = scope.Host.MainWindow;
-                };
-                var instance = scope.Connected();
-                try
+                using (var scope = new HostUiScope())
                 {
-                    var window = scope.Host.Windows.Window;
-                    var area = Screen.FromHandle(new IntPtr(scope.Host.MainWindow.HWnd)).WorkingArea;
-                    Assert.AreEqual(0, scope.Host.MainWindow.LinkedWindows.Adds);
-                    Assert.AreEqual(1, scope.Host.MainWindow.LinkedWindows.Removes);
-                    Assert.AreEqual(Math.Min(600, area.Width), window.Width);
-                    Assert.AreEqual(Math.Min(820, area.Height), window.Height);
-                    Assert.IsTrue(area.Contains(window.Form.Bounds));
-                    Assert.IsTrue(window.Visible);
-                    Assert.IsTrue(LlmBoundaryScope.Get<bool>(instance, "docked"));
+                    scope.Host.Windows.AfterCreation = () =>
+                    {
+                        scope.Host.Windows.Window.Form.ClientSize = size;
+                        scope.Host.Windows.Window.LinkedWindowFrame = scope.Host.MainWindow;
+                    };
+                    var instance = scope.Connected();
+                    try
+                    {
+                        var window = scope.Host.Windows.Window;
+                        var area = Screen.FromHandle(new IntPtr(scope.Host.MainWindow.HWnd)).WorkingArea;
+                        Assert.AreEqual(0, scope.Host.MainWindow.LinkedWindows.Adds);
+                        Assert.AreEqual(1, scope.Host.MainWindow.LinkedWindows.Removes);
+                        Assert.AreEqual(Math.Min(600, area.Width), window.Width);
+                        Assert.AreEqual(Math.Min(820, area.Height), window.Height);
+                        Assert.IsTrue(area.Contains(window.Form.Bounds));
+                        Assert.IsTrue(window.Visible);
+                        Assert.IsTrue(LlmBoundaryScope.Get<bool>(instance, "docked"));
+                    }
+                    finally { scope.Close(instance); }
                 }
-                finally { scope.Close(instance); }
-            }
         }
 
         [STATestMethod]
@@ -193,7 +193,8 @@ namespace VBAi.Tests.Unit
         {
             using (var scope = new HostUiScope())
             {
-                scope.Host.Windows.AfterCreation = () => {
+                scope.Host.Windows.AfterCreation = () =>
+                {
                     scope.Host.Windows.Window.Form.ClientSize = new System.Drawing.Size(1920, 6);
                     scope.Host.Windows.Window.LinkedWindowFrame = scope.Host.MainWindow;
                     scope.Host.MainWindow.LinkedWindows.Reject = true;
@@ -233,8 +234,8 @@ namespace VBAi.Tests.Unit
                 finally { scope.Close(instance); }
             }
         }
-                /// <summary>Vérifie les menus, les dialogues possédés et les actions de préparation du compositeur.</summary>
-[STATestMethod]
+        /// <summary>Vérifie les menus, les dialogues possédés et les actions de préparation du compositeur.</summary>
+        [STATestMethod]
         public void MenuCallbacksOpenOwnedDialogsAndPrepareActualComposerActions()
         {
             using (var scope = new HostUiScope())
@@ -245,8 +246,8 @@ namespace VBAi.Tests.Unit
                 finally { scope.Close(instance); }
             }
         }
-                /// <summary>Vérifie les frontières natives au démarrage, la journalisation des valeurs nulles et les erreurs du pont.</summary>
-[STATestMethod]
+        /// <summary>Vérifie les frontières natives au démarrage, la journalisation des valeurs nulles et les erreurs du pont.</summary>
+        [STATestMethod]
         public void StartupNativeBoundariesLogNullComInstancesAndPropagateBridgeFailures()
         {
             using (var scope = new HostUiScope())
@@ -258,8 +259,8 @@ namespace VBAi.Tests.Unit
             }
             using (var scope = new HostUiScope()) { AddIn.CreateChat = session => throw new IOException("UI unavailable"); var instance = scope.Connected(); try { Assert.IsTrue(scope.Logs.Any(x => x.Contains("Assistant window failed"))); Assert.IsNull(Chat(instance)); } finally { scope.Close(instance); } }
         }
-                /// <summary>Vérifie que les erreurs COM d’attachement restaurent la fenêtre flottante et conservent les nettoyages.</summary>
-[STATestMethod]
+        /// <summary>Vérifie que les erreurs COM d’attachement restaurent la fenêtre flottante et conservent les nettoyages.</summary>
+        [STATestMethod]
         public void DockingComFailuresRestoreFloatingChatAndRetainEveryCleanupDefense()
         {
             foreach (var failure in new[] { "lookup", "creation", "missing-control", "position", "focus", "close", "null-chat", "missing-attached-control" })
@@ -271,8 +272,8 @@ namespace VBAi.Tests.Unit
                     finally { scope.Close(instance); }
                 }
         }
-                /// <summary>Vérifie les erreurs de validation des paramètres et de GitHub sans ouvrir de dialogue réel.</summary>
-[STATestMethod]
+        /// <summary>Vérifie les erreurs de validation des paramètres et de GitHub sans ouvrir de dialogue réel.</summary>
+        [STATestMethod]
         public void SettingsAndGitHubValidationReportErrorsWithoutAnyRealUserDialog()
         {
             using (var scope = new HostUiScope())
@@ -287,8 +288,8 @@ namespace VBAi.Tests.Unit
             }
             using (var scope = new HostUiScope()) { var instance = scope.Connected(); var disposed = Chat(instance); disposed.Dispose(); LlmBoundaryScope.Set(instance, "chat", disposed); Call(instance, "ShowSettings"); Assert.AreEqual(typeof(LlmSettingsWindow), scope.Dialogs.Single()); scope.Close(instance); }
         }
-                /// <summary>Vérifie l’arrêt idempotent avec une fenêtre absente, libérée, détachée ou encore active.</summary>
-[STATestMethod]
+        /// <summary>Vérifie l’arrêt idempotent avec une fenêtre absente, libérée, détachée ou encore active.</summary>
+        [STATestMethod]
         public void ShutdownHandlesLiveDisposedMissingAndUndockedChatStatesIdempotently()
         {
             foreach (var state in new[] { "live", "disposed", "missing", "no-control", "undocked", "no-window", "reject-close" }) using (var scope = new HostUiScope())
@@ -303,14 +304,11 @@ namespace VBAi.Tests.Unit
 
 namespace VBAi.Tests.Unit
 {
+    using Microsoft.VisualStudio.TestTools.UnitTesting;
     using System;
-    using System.Collections.Generic;
-    using System.Reflection;
     using System.Runtime.InteropServices;
     using System.Runtime.Serialization;
-    using System.Windows.Forms;
     using VBAi;
-    using Microsoft.VisualStudio.TestTools.UnitTesting;
 
     /// <summary>Vérifie les métadonnées COM et les callbacks sans connexion active.</summary>
     [TestClass]
@@ -334,42 +332,41 @@ namespace VBAi.Tests.Unit
 
 namespace VBAi.Tests.Unit
 {
+    using Microsoft.VisualStudio.TestTools.UnitTesting;
     using System;
     using System.IO;
     using System.Runtime.InteropServices;
     using VBAi;
     using VBAi.Tests.Infrastructure;
-    using Microsoft.VisualStudio.TestTools.UnitTesting;
     public sealed partial class AddInCoverageTests
     {
         [STATestMethod]
         public void GitHubLaunchHandlesComAndUnavailableDocumentErrorsAtBothIdentityStages()
         {
             foreach (Exception error in new Exception[] { new DirectoryNotFoundException("missing document"), new COMException("unavailable project") })
-            using (var scope = new HostUiScope())
-            {
-                var instance = new AddIn(); var host = new GitHubLaunchHost { ProjectError = error };
-                LlmBoundaryScope.Set(instance, "vbe", host);
-                Call(instance, "ShowGitHub"); Assert.AreEqual(1, scope.Notices.Count);
-                StringAssert.Contains(scope.Notices.Last(), "Select a saved VBA project");
-                host.ProjectError = null; host.Project = new GitHubUnavailableProject { PathError = error };
-                Call(instance, "ShowGitHub"); Assert.AreEqual(2, scope.Notices.Count);
-                StringAssert.Contains(scope.Notices.Last(), "Save the macro");
-                Assert.AreEqual(0, scope.Dialogs.Count); scope.Close(instance);
-            }
+                using (var scope = new HostUiScope())
+                {
+                    var instance = new AddIn(); var host = new GitHubLaunchHost { ProjectError = error };
+                    LlmBoundaryScope.Set(instance, "vbe", host);
+                    Call(instance, "ShowGitHub"); Assert.AreEqual(1, scope.Notices.Count);
+                    StringAssert.Contains(scope.Notices.Last(), "Select a saved VBA project");
+                    host.ProjectError = null; host.Project = new GitHubUnavailableProject { PathError = error };
+                    Call(instance, "ShowGitHub"); Assert.AreEqual(2, scope.Notices.Count);
+                    StringAssert.Contains(scope.Notices.Last(), "Save the macro");
+                    Assert.AreEqual(0, scope.Dialogs.Count); scope.Close(instance);
+                }
         }
     }
 }
 
 namespace VBAi.Tests.Unit
 {
+    using Microsoft.VisualStudio.TestTools.UnitTesting;
     using System;
     using System.IO;
     using System.Linq;
-    using System.Reflection;
     using VBAi;
     using VBAi.Tests.Infrastructure;
-    using Microsoft.VisualStudio.TestTools.UnitTesting;
 
     [TestClass, TestCategory("Unit"), DoNotParallelize]
     public sealed class AddInModernEditorTests
@@ -378,40 +375,40 @@ namespace VBAi.Tests.Unit
         public void EditorActionsRequireALiveVisibleReadyDocumentAndPreserveFailures()
         {
             foreach (int state in new[] { 0, 1, 2, 3, 4, 5, 6 })
-            using (var fixture = new AddInModernEditorFixture())
-            using (var module = new EditorFixture())
-            {
-                var commands = new System.Collections.Generic.List<string>();
-                ModernEditorWindow editor = state == 0 ? null : fixture.Get();
-                if (editor != null)
+                using (var fixture = new AddInModernEditorFixture())
+                using (var module = new EditorFixture())
                 {
-                    editor.ScriptExecution = (name, args) =>
+                    var commands = new System.Collections.Generic.List<string>();
+                    ModernEditorWindow editor = state == 0 ? null : fixture.Get();
+                    if (editor != null)
                     {
-                        commands.Add(name + ":" + string.Join(",", args.Select(a => Convert.ToString(a))));
-                        if (state == 6) throw new IOException("owned editor command failure");
-                        return System.Threading.Tasks.Task.FromResult("null");
-                    };
+                        editor.ScriptExecution = (name, args) =>
+                        {
+                            commands.Add(name + ":" + string.Join(",", args.Select(a => Convert.ToString(a))));
+                            if (state == 6) throw new IOException("owned editor command failure");
+                            return System.Threading.Tasks.Task.FromResult("null");
+                        };
+                        if (state >= 5)
+                        {
+                            editor.OpenModule(module).GetAwaiter().GetResult();
+                        }
+                        if (state == 1) editor.Dispose();
+                        if (state == 2) editor.Hide();
+                        if (state >= 4) LlmBoundaryScope.Set(editor, "<Ready>k__BackingField", true);
+                    }
+                    commands.Clear();
+                    LlmBoundaryScope.Call(fixture.Instance, "PrepareEditorAction", "/explain");
                     if (state >= 5)
                     {
-                        editor.OpenModule(module).GetAwaiter().GetResult();
+                        CollectionAssert.AreEqual(new[] { "command:vbai.explain" }, commands);
+                        if (state == 6) Assert.IsTrue(fixture.Scope.Notices.Contains("owned editor command failure"));
                     }
-                    if (state == 1) editor.Dispose();
-                    if (state == 2) editor.Hide();
-                    if (state >= 4) LlmBoundaryScope.Set(editor, "<Ready>k__BackingField", true);
+                    else
+                    {
+                        Assert.AreEqual(0, commands.Count);
+                        Assert.IsNotNull(LlmBoundaryScope.Get<ChatWindow>(fixture.Instance, "chat"));
+                    }
                 }
-                commands.Clear();
-                LlmBoundaryScope.Call(fixture.Instance, "PrepareEditorAction", "/explain");
-                if (state >= 5)
-                {
-                    CollectionAssert.AreEqual(new[] { "command:vbai.explain" }, commands);
-                    if (state == 6) Assert.IsTrue(fixture.Scope.Notices.Contains("owned editor command failure"));
-                }
-                else
-                {
-                    Assert.AreEqual(0, commands.Count);
-                    Assert.IsNotNull(LlmBoundaryScope.Get<ChatWindow>(fixture.Instance, "chat"));
-                }
-            }
         }
 
         [STATestMethod]
@@ -546,36 +543,36 @@ namespace VBAi.Tests.Unit
         public void ShutdownReleasesAbsentLiveDisposedAndAlreadyReleasedOwnedWorkspaces()
         {
             foreach (int state in new[] { 0, 1, 2, 3 })
-            using (var fixture = new AddInModernEditorFixture())
-            {
-                ModernEditorWindow editor = state == 0 ? null : fixture.Get();
-                if (state == 2) editor.Dispose();
-                if (state == 3) { LlmBoundaryScope.Get<EditorWorkspaceHost>(fixture.Instance, "editorWorkspace").Dispose(); LlmBoundaryScope.Set(fixture.Instance, "editorWorkspace", null); }
-                fixture.Scope.Close(fixture.Instance);
-                Assert.IsNull(LlmBoundaryScope.Get<object>(fixture.Instance, "modernEditor")); Assert.IsNull(LlmBoundaryScope.Get<object>(fixture.Instance, "editorWorkspace"));
-                if (editor != null) Assert.IsTrue(editor.IsDisposed); fixture.Scope.Close(fixture.Instance);
-            }
+                using (var fixture = new AddInModernEditorFixture())
+                {
+                    ModernEditorWindow editor = state == 0 ? null : fixture.Get();
+                    if (state == 2) editor.Dispose();
+                    if (state == 3) { LlmBoundaryScope.Get<EditorWorkspaceHost>(fixture.Instance, "editorWorkspace").Dispose(); LlmBoundaryScope.Set(fixture.Instance, "editorWorkspace", null); }
+                    fixture.Scope.Close(fixture.Instance);
+                    Assert.IsNull(LlmBoundaryScope.Get<object>(fixture.Instance, "modernEditor")); Assert.IsNull(LlmBoundaryScope.Get<object>(fixture.Instance, "editorWorkspace"));
+                    if (editor != null) Assert.IsTrue(editor.IsDisposed); fixture.Scope.Close(fixture.Instance);
+                }
         }
         [STATestMethod]
         public void ConnectionLogsSettingsAndNativeThemeFailuresAndEnabledThemeWithoutRealPalette()
         {
             foreach (int outcome in new[] { 0, 1, 2 })
-            using (var theme = new NativeThemeFixture())
-            using (var palette = new NativePaletteSchedulerFixture())
-            using (var scope = new HostUiScope())
-            {
-                VbeNativeTheme.ApplyNativeTheme = window => 1;
-                VbeNativeTheme.CreatePalette = (host, window) => palette.Service;
-                scope.Settings.NativeVbeDarkTheme = outcome == 1;
-                if (outcome == 0) AddIn.ReadSettings = () => throw new IOException("owned settings failure");
-                if (outcome == 2) scope.Host.MainWindow.RejectHandle = true;
-                var instance = scope.Connected();
-                try
+                using (var theme = new NativeThemeFixture())
+                using (var palette = new NativePaletteSchedulerFixture())
+                using (var scope = new HostUiScope())
                 {
-                    StringAssert.Contains(string.Join("\n", scope.Logs), outcome == 0 ? "Native VBE theme setting unavailable" : outcome == 1 ? "Native VBE dark mode enabled." : "Native VBE dark mode unavailable:");
+                    VbeNativeTheme.ApplyNativeTheme = window => 1;
+                    VbeNativeTheme.CreatePalette = (host, window) => palette.Service;
+                    scope.Settings.NativeVbeDarkTheme = outcome == 1;
+                    if (outcome == 0) AddIn.ReadSettings = () => throw new IOException("owned settings failure");
+                    if (outcome == 2) scope.Host.MainWindow.RejectHandle = true;
+                    var instance = scope.Connected();
+                    try
+                    {
+                        StringAssert.Contains(string.Join("\n", scope.Logs), outcome == 0 ? "Native VBE theme setting unavailable" : outcome == 1 ? "Native VBE dark mode enabled." : "Native VBE dark mode unavailable:");
+                    }
+                    finally { scope.Host.MainWindow.RejectHandle = false; scope.Close(instance); }
                 }
-                finally { scope.Host.MainWindow.RejectHandle = false; scope.Close(instance); }
-            }
         }
         [STATestMethod]
         public void StartupFailureBeforeReporterAndConnectedMenuErrorPreserveTheirCleanupContracts()

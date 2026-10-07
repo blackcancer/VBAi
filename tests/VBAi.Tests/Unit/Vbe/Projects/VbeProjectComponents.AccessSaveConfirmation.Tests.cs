@@ -1,13 +1,12 @@
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Linq;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
-using VBAi;
-using Gate = VBAi.VbeProjectComponents.AccessSaveConfirmation;
 using Candidate = VBAi.VbeProjectComponents.AccessSaveConfirmationCandidate;
 using Component = VBAi.VbeProjectComponents.AccessSaveApprovedComponent;
-using Inventory = VBAi.VbeProjectComponents.AccessSaveDialogInventory;
-using Dialog = VBAi.VbeProjectComponents.AccessSaveDialogSnapshot;
 using Control = VBAi.VbeProjectComponents.AccessSaveDialogControl;
+using Dialog = VBAi.VbeProjectComponents.AccessSaveDialogSnapshot;
+using Gate = VBAi.VbeProjectComponents.AccessSaveConfirmation;
+using Inventory = VBAi.VbeProjectComponents.AccessSaveDialogInventory;
 using Item = VBAi.VbeProjectComponents.AccessSaveDialogItem;
 
 namespace VBAi.Tests.Unit
@@ -39,9 +38,17 @@ namespace VBAi.Tests.Unit
         }
 
         private static Inventory Empty() => new Inventory { Complete = true, ProcessId = 10, OwnerThreadId = 20, Dialogs = new Dialog[0] };
-        private static Control Child(int id, string type, string text, int hwnd) => new Control {
-            Window = new IntPtr(hwnd), Id = id, Class = type, Text = text, ProcessId = 10, ThreadId = 20,
-            Visible = true, Enabled = true, Style = 0x50010000
+        private static Control Child(int id, string type, string text, int hwnd) => new Control
+        {
+            Window = new IntPtr(hwnd),
+            Id = id,
+            Class = type,
+            Text = text,
+            ProcessId = 10,
+            ThreadId = 20,
+            Visible = true,
+            Enabled = true,
+            Style = 0x50010000
         };
         private static Inventory Known()
         {
@@ -49,7 +56,12 @@ namespace VBAi.Tests.Unit
             list.Style = 0x5001016B; list.ItemsComplete = true;
             list.Items = new[] { new Item { Text = "Module: ApprovedClass", Selected = true },
                 new Item { Text = "Module: ApprovedModule", Selected = true } };
-            return new Inventory { Complete = true, ProcessId = 10, OwnerThreadId = 20, Dialogs = new[] {
+            return new Inventory
+            {
+                Complete = true,
+                ProcessId = 10,
+                OwnerThreadId = 20,
+                Dialogs = new[] {
                 new Dialog { Window = new IntPtr(100), ProcessId = 10, ThreadId = 20, Style = 0x94C800C4,
                     Class = "#32770", Caption = "Enregistrer", Visible = true, Enabled = true, ChildrenComplete = true,
                     Controls = new[] { Child(1, "Button", "&Oui", 101), Child(7, "Button", "&Non pour tout", 102),
@@ -57,7 +69,8 @@ namespace VBAi.Tests.Unit
                         Child(5271, "Static", "Enregistrer les modifications apportées aux objets suivants\u00A0?", 104), list,
                         new Control { Window = new IntPtr(106), Id = -1, Class = "Static", Text = "DAL=on",
                             ProcessId = 10, ThreadId = 20, Enabled = true, Visible = false } } }
-            } };
+            }
+            };
         }
         private static Control List(Inventory inventory) => inventory.Dialogs[0].Controls.Single(control => control.Id == 5142);
 
@@ -67,16 +80,19 @@ namespace VBAi.Tests.Unit
         {
             var f = new Fixture(); var candidate = f.Ready();
             int elapsedMilliseconds = 0, deadlineChecks = 0;
-            f.AfterRead = () => {
+            f.AfterRead = () =>
+            {
                 // Prepare, pre-Save and Observe are reads 1..3. Confirm freezes the
                 // candidate on read 4, checks approval, then performs final read 5.
                 if (f.Reads == 5) elapsedMilliseconds = expiresDuringFinalRead ? 3000 : 2999;
             };
-            Action approvedContext = () => {
+            Action approvedContext = () =>
+            {
                 f.Context();
                 Assert.AreEqual(0, elapsedMilliseconds, "Approval precedes the final native snapshot.");
             };
-            Action deliveryDeadline = () => {
+            Action deliveryDeadline = () =>
+            {
                 deadlineChecks++;
                 Assert.AreEqual(5, f.Reads, "The delivery deadline must follow the final native snapshot.");
                 if (elapsedMilliseconds >= 3000) throw new InvalidOperationException("Delivery deadline expired");
@@ -208,7 +224,8 @@ namespace VBAi.Tests.Unit
             var f = new Fixture(); var candidate = f.Ready();
             if (change == "beforeContext") f.Current.Dialogs[0].Style++;
             if (change == "ownerChanged") f.OwnerValid = false;
-            Action context = () => {
+            Action context = () =>
+            {
                 f.Context();
                 if (change == "insideContext") List(f.Current).Items[0].Selected = false;
                 if (change == "contextThrows") throw new InvalidOperationException("Approval revoked");

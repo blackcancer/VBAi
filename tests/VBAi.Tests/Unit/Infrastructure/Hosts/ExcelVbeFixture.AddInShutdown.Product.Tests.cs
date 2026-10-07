@@ -1,10 +1,10 @@
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Reflection;
 using System.Security.Cryptography;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 using VBAi.Tests.Integration;
 
 namespace VBAi.Tests.Unit
@@ -21,9 +21,14 @@ namespace VBAi.Tests.Unit
         {
             // These are the producer's status Data fields, also observed at Ready on
             // candidate 2bcabe61 / owned PID 89492. The local test copy has another path.
-            return new Dictionary<string, object> {
-                ["Version"] = "0.1.0", ["Connected"] = true, ["AssemblyPath"] = NativeProduct,
-                ["AssemblyModuleVersionId"] = Mvid.ToString("D"), ["HostProcessId"] = 89492, ["ProcessBitness"] = 64
+            return new Dictionary<string, object>
+            {
+                ["Version"] = "0.1.0",
+                ["Connected"] = true,
+                ["AssemblyPath"] = NativeProduct,
+                ["AssemblyModuleVersionId"] = Mvid.ToString("D"),
+                ["HostProcessId"] = 89492,
+                ["ProcessBitness"] = 64
             };
         }
 
@@ -49,14 +54,32 @@ namespace VBAi.Tests.Unit
         }
 
         [DataTestMethod]
-        [DataRow("missing product")] [DataRow("empty product")] [DataRow("relative product")] [DataRow("alternate stream")]
-        [DataRow("unc product")] [DataRow("noncanonical product")]
-        [DataRow("missing mvid")] [DataRow("invalid mvid")] [DataRow("foreign pinned mvid")]
-        [DataRow("missing hash")] [DataRow("short hash")] [DataRow("nonhex hash")]
-        [DataRow("missing status")] [DataRow("missing native path")] [DataRow("nonstr native path")] [DataRow("foreign native path")]
-        [DataRow("native reports local copy")] [DataRow("missing native mvid")] [DataRow("nonstr native mvid")] [DataRow("foreign native mvid")]
-        [DataRow("missing local path")] [DataRow("relative local path")] [DataRow("noncanonical local path")] [DataRow("foreign local mvid")]
-        [DataRow("foreign native bytes")] [DataRow("foreign local bytes")]
+        [DataRow("missing product")]
+        [DataRow("empty product")]
+        [DataRow("relative product")]
+        [DataRow("alternate stream")]
+        [DataRow("unc product")]
+        [DataRow("noncanonical product")]
+        [DataRow("missing mvid")]
+        [DataRow("invalid mvid")]
+        [DataRow("foreign pinned mvid")]
+        [DataRow("missing hash")]
+        [DataRow("short hash")]
+        [DataRow("nonhex hash")]
+        [DataRow("missing status")]
+        [DataRow("missing native path")]
+        [DataRow("nonstr native path")]
+        [DataRow("foreign native path")]
+        [DataRow("native reports local copy")]
+        [DataRow("missing native mvid")]
+        [DataRow("nonstr native mvid")]
+        [DataRow("foreign native mvid")]
+        [DataRow("missing local path")]
+        [DataRow("relative local path")]
+        [DataRow("noncanonical local path")]
+        [DataRow("foreign local mvid")]
+        [DataRow("foreign native bytes")]
+        [DataRow("foreign local bytes")]
         public void MissingInvalidOrForeignIndependentPinsCannotBeReplacedByAnEchoOfLoadedStatus(string kind)
         {
             Dictionary<string, object> status = Status();
@@ -117,8 +140,11 @@ namespace VBAi.Tests.Unit
         }
 
         [DataTestMethod]
-        [DataRow("distinct copy")] [DataRow("case status")] [DataRow("disabled")]
-        [DataRow("missing product")] [DataRow("foreign native status")]
+        [DataRow("distinct copy")]
+        [DataRow("case status")]
+        [DataRow("disabled")]
+        [DataRow("missing product")]
+        [DataRow("foreign native status")]
         public void ActualFixtureArmingUsesIndependentCandidatePinsAndTheNativeStatusContract(string kind)
         {
             const BindingFlags fields = BindingFlags.Instance | BindingFlags.NonPublic;

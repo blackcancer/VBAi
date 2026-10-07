@@ -1,24 +1,23 @@
 namespace VBAi.Tests.Infrastructure
 {
+    using Microsoft.CSharp;
+    using Microsoft.VisualStudio.TestTools.UnitTesting;
     using System;
-    using System.Collections.Generic;
     using System.CodeDom.Compiler;
+    using System.Collections.Generic;
     using System.Diagnostics;
     using System.IO;
     using System.Linq;
-    using System.Threading;
     using VBAi;
-    using Microsoft.CSharp;
-    using Microsoft.VisualStudio.TestTools.UnitTesting;
 
     internal sealed class AccountProcessScope : IDisposable
     {
         private readonly LlmBoundaryScope scope = new LlmBoundaryScope();
-        private readonly Func<ProcessStartInfo,Process> start = CodexAccount.StartProcess;
-        private readonly Func<Process,int,bool> wait = CodexAccount.WaitForExit;
-        private readonly Func<string,bool> exists = CodexAccount.FileExists;
-        private readonly Func<string,string[]> directories = CodexAccount.GetDirectories;
-        private readonly Func<string,DateTime> lastWrite = CodexAccount.GetLastWriteTimeUtc;
+        private readonly Func<ProcessStartInfo, Process> start = CodexAccount.StartProcess;
+        private readonly Func<Process, int, bool> wait = CodexAccount.WaitForExit;
+        private readonly Func<string, bool> exists = CodexAccount.FileExists;
+        private readonly Func<string, string[]> directories = CodexAccount.GetDirectories;
+        private readonly Func<string, DateTime> lastWrite = CodexAccount.GetLastWriteTimeUtc;
         private readonly string priorMode = Environment.GetEnvironmentVariable("VBAi_TEST_ACCOUNT_MODE");
         private readonly string priorMarker = Environment.GetEnvironmentVariable("VBAi_TEST_ACCOUNT_MARKER");
         private readonly List<Process> logins = new List<Process>();
@@ -27,43 +26,43 @@ namespace VBAi.Tests.Infrastructure
         internal readonly List<string> Commands = new List<string>();
         internal AccountProcessScope()
         {
-            Executable=Path.Combine(scope.Root,"account-fixture.exe");Marker=Path.Combine(scope.Root,"login.marker");
-            using(var compiler=new CSharpCodeProvider())
+            Executable = Path.Combine(scope.Root, "account-fixture.exe"); Marker = Path.Combine(scope.Root, "login.marker");
+            using (var compiler = new CSharpCodeProvider())
             {
-                var options=new CompilerParameters(new[] {"System.dll","System.Core.dll"},Executable)
-                {GenerateExecutable=true,GenerateInMemory=false,CompilerOptions="/target:winexe /optimize+"};
-                var result=compiler.CompileAssemblyFromSource(options,Program);
-                Assert.IsFalse(result.Errors.HasErrors,string.Join("\n",result.Errors.Cast<CompilerError>().Select(e=>e.ToString())));
+                var options = new CompilerParameters(new[] { "System.dll", "System.Core.dll" }, Executable)
+                { GenerateExecutable = true, GenerateInMemory = false, CompilerOptions = "/target:winexe /optimize+" };
+                var result = compiler.CompileAssemblyFromSource(options, Program);
+                Assert.IsFalse(result.Errors.HasErrors, string.Join("\n", result.Errors.Cast<CompilerError>().Select(e => e.ToString())));
             }
-            Environment.SetEnvironmentVariable("VBAi_CODEX_CLI",Executable);
-            Environment.SetEnvironmentVariable("VBAi_TEST_ACCOUNT_MARKER",Marker);
+            Environment.SetEnvironmentVariable("VBAi_CODEX_CLI", Executable);
+            Environment.SetEnvironmentVariable("VBAi_TEST_ACCOUNT_MARKER", Marker);
         }
-        internal void Mode(string mode) {Environment.SetEnvironmentVariable("VBAi_TEST_ACCOUNT_MODE",mode);}
-        internal void StartGit(Process process,string mode)
+        internal void Mode(string mode) { Environment.SetEnvironmentVariable("VBAi_TEST_ACCOUNT_MODE", mode); }
+        internal void StartGit(Process process, string mode)
         {
             Commands.Add(process.StartInfo.Arguments);
-            Assert.AreEqual("git.exe",process.StartInfo.FileName);
-            Assert.IsFalse(process.StartInfo.UseShellExecute);Assert.IsTrue(process.StartInfo.CreateNoWindow);
-            Assert.IsTrue(process.StartInfo.RedirectStandardOutput);Assert.IsTrue(process.StartInfo.RedirectStandardError);
-            process.StartInfo.FileName=Executable;process.StartInfo.Arguments=mode;process.Start();
+            Assert.AreEqual("git.exe", process.StartInfo.FileName);
+            Assert.IsFalse(process.StartInfo.UseShellExecute); Assert.IsTrue(process.StartInfo.CreateNoWindow);
+            Assert.IsTrue(process.StartInfo.RedirectStandardOutput); Assert.IsTrue(process.StartInfo.RedirectStandardError);
+            process.StartInfo.FileName = Executable; process.StartInfo.Arguments = mode; process.Start();
         }
         internal Process StartLogin(ProcessStartInfo info)
         {
-            Assert.AreEqual(Executable,info.FileName);Assert.AreEqual("login",info.Arguments);Assert.IsFalse(info.UseShellExecute);Assert.IsFalse(info.CreateNoWindow);Assert.AreEqual(ProviderSessionStorage.CodexHome,info.EnvironmentVariables["CODEX_HOME"]);
-            var process=Process.Start(info);logins.Add(process);return process;
+            Assert.AreEqual(Executable, info.FileName); Assert.AreEqual("login", info.Arguments); Assert.IsFalse(info.UseShellExecute); Assert.IsFalse(info.CreateNoWindow); Assert.AreEqual(ProviderSessionStorage.CodexHome, info.EnvironmentVariables["CODEX_HOME"]);
+            var process = Process.Start(info); logins.Add(process); return process;
         }
         internal void AssertLoginFinished()
         {
-            foreach(var process in logins)Assert.IsTrue(process.WaitForExit(5000));
-            Assert.IsTrue(File.Exists(Marker));Assert.AreEqual("fixture login",File.ReadAllText(Marker));
+            foreach (var process in logins) Assert.IsTrue(process.WaitForExit(5000));
+            Assert.IsTrue(File.Exists(Marker)); Assert.AreEqual("fixture login", File.ReadAllText(Marker));
         }
         public void Dispose()
         {
-            foreach(var process in logins) {if(!process.HasExited) {process.Kill();process.WaitForExit(5000);}process.Dispose();}
-            CodexAccount.StartProcess=start;CodexAccount.WaitForExit=wait;CodexAccount.FileExists=exists;
-            CodexAccount.GetDirectories=directories;CodexAccount.GetLastWriteTimeUtc=lastWrite;
-            Environment.SetEnvironmentVariable("VBAi_TEST_ACCOUNT_MODE",priorMode);
-            Environment.SetEnvironmentVariable("VBAi_TEST_ACCOUNT_MARKER",priorMarker);
+            foreach (var process in logins) { if (!process.HasExited) { process.Kill(); process.WaitForExit(5000); } process.Dispose(); }
+            CodexAccount.StartProcess = start; CodexAccount.WaitForExit = wait; CodexAccount.FileExists = exists;
+            CodexAccount.GetDirectories = directories; CodexAccount.GetLastWriteTimeUtc = lastWrite;
+            Environment.SetEnvironmentVariable("VBAi_TEST_ACCOUNT_MODE", priorMode);
+            Environment.SetEnvironmentVariable("VBAi_TEST_ACCOUNT_MARKER", priorMarker);
             scope.Dispose();
         }
         private const string Program = @"

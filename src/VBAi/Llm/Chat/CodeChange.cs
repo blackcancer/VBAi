@@ -105,8 +105,15 @@ namespace VBAi
 
         /// <summary>Obtient le libellé horodaté du changement, avec le projet et le module.</summary>
         /// <value>Libellé horodaté avec projet, module et état de restauration.</value>
-        [System.Web.Script.Serialization.ScriptIgnore] public string Label { get { return Time.ToString("HH:mm:ss") + "  " + Project + "." + Module +
-            (Restored ? UiText.Get("  (restored)") : ""); } }
+        [System.Web.Script.Serialization.ScriptIgnore]
+        public string Label
+        {
+            get
+            {
+                return Time.ToString("HH:mm:ss") + "  " + Project + "." + Module +
+            (Restored ? UiText.Get("  (restored)") : "");
+            }
+        }
 
         /// <summary>Retourne le libellé d’affichage du changement.</summary>
         /// <returns>Valeur de <see cref="Label"/>.</returns>

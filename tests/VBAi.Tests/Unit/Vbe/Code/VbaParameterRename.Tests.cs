@@ -1,6 +1,5 @@
-using System;
-using VBAi;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+using System;
 
 namespace VBAi.Tests.Unit
 {
@@ -10,8 +9,15 @@ namespace VBAi.Tests.Unit
     {
         /// <summary>Construit l'identité de la déclaration de paramètre inspectée.</summary>
         private static Request Request(string header = "Private Sub Run(ByVal value As Long)") =>
-            new Request { Module = "Module1", Procedure = "Run", Query = "value", NewName = "amount",
-                StartLine = 1, StartColumn = header.IndexOf("value", StringComparison.Ordinal) + 1 };
+            new Request
+            {
+                Module = "Module1",
+                Procedure = "Run",
+                Query = "value",
+                NewName = "amount",
+                StartLine = 1,
+                StartColumn = header.IndexOf("value", StringComparison.Ordinal) + 1
+            };
 
         /// <summary>Met à jour déclaration/usages et les appels liés sans toucher les arguments des autres méthodes.</summary>
         [TestMethod]

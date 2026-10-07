@@ -1,7 +1,5 @@
 using System;
 using System.Threading;
-using System.Windows.Forms;
-using VBAi;
 using VBAi.Tests.Infrastructure;
 namespace VBAi.Tests.Unit.Editor
 {

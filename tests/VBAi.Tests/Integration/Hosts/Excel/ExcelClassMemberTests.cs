@@ -1,8 +1,8 @@
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace VBAi.Tests.Integration
 {
@@ -50,13 +50,32 @@ namespace VBAi.Tests.Integration
                     string prefix = rename.Kind == 0 ? "Private Function " : "Private Property Get ";
                     int line = Array.FindIndex(lines, value => value.StartsWith(prefix + rename.Old + "(", StringComparison.Ordinal));
                     Assert.IsTrue(line >= 0);
-                    var preview = Data(host.Command(new { Command = "preview_class_member_rename", Project = project, Module = module,
-                        Query = rename.Old, NewName = rename.Name, ProcKind = rename.Kind,
-                        StartLine = line + 1, StartColumn = prefix.Length + 1, ExpectedSha256 = inspected["Sha256"] }));
-                    var applied = Data(host.Command(new { Command = "apply_class_member_rename", Project = project, Module = module,
-                        Query = rename.Old, NewName = rename.Name, ProcKind = rename.Kind,
-                        StartLine = line + 1, StartColumn = prefix.Length + 1, ExpectedSha256 = inspected["Sha256"],
-                        ExpectedProjectVersion = preview["ExpectedProjectVersion"], ExpectedMode = 2 }));
+                    var preview = Data(host.Command(new
+                    {
+                        Command = "preview_class_member_rename",
+                        Project = project,
+                        Module = module,
+                        Query = rename.Old,
+                        NewName = rename.Name,
+                        ProcKind = rename.Kind,
+                        StartLine = line + 1,
+                        StartColumn = prefix.Length + 1,
+                        ExpectedSha256 = inspected["Sha256"]
+                    }));
+                    var applied = Data(host.Command(new
+                    {
+                        Command = "apply_class_member_rename",
+                        Project = project,
+                        Module = module,
+                        Query = rename.Old,
+                        NewName = rename.Name,
+                        ProcKind = rename.Kind,
+                        StartLine = line + 1,
+                        StartColumn = prefix.Length + 1,
+                        ExpectedSha256 = inspected["Sha256"],
+                        ExpectedProjectVersion = preview["ExpectedProjectVersion"],
+                        ExpectedMode = 2
+                    }));
                     Assert.AreEqual(true, applied["ReadbackVerified"]);
                     VerifyNativeResult(host, project);
                 }
@@ -78,8 +97,15 @@ namespace VBAi.Tests.Integration
             Assert.AreEqual(true, compiled["Compiled"], Convert.ToString(compiled["Diagnostic"]));
             var inspected = Data(host.Command(new { Command = "read_module", Project = project, Module = "ClassCaller" }));
             int expectedCalls = Convert.ToInt32(host.ReadCell("C1")) + 1;
-            Data(host.Command(new { Command = "run_sub", Project = project, Module = "ClassCaller", Procedure = "Main",
-                ExpectedMode = 2, ExpectedSha256 = inspected["Sha256"] }));
+            Data(host.Command(new
+            {
+                Command = "run_sub",
+                Project = project,
+                Module = "ClassCaller",
+                Procedure = "Main",
+                ExpectedMode = 2,
+                ExpectedSha256 = inspected["Sha256"]
+            }));
             DateTime deadline = DateTime.UtcNow.AddSeconds(10);
             while (Convert.ToInt32(host.ReadCell("C1")) < expectedCalls && DateTime.UtcNow < deadline)
             {

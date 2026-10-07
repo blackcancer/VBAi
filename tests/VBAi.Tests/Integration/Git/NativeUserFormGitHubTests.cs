@@ -1,3 +1,4 @@
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -10,7 +11,6 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Web.Script.Serialization;
 using System.Windows.Forms;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace VBAi.Tests.Integration
 {
@@ -38,9 +38,16 @@ namespace VBAi.Tests.Integration
             string output = Path.Combine(evidenceRoot, "legacy-remote-" + Guid.NewGuid().ToString("N"));
             Directory.CreateDirectory(output);
             string branch = "qualification-userform-" + DateTime.UtcNow.ToString("yyyyMMddHHmmss") + "-" + Guid.NewGuid().ToString("N").Substring(0, 8);
-            var report = new Dictionary<string, object> { ["Stage"] = "preflight", ["Branch"] = branch, ["Remote"] = remote,
-                ["AssemblyMvid"] = typeof(VbeSession).Module.ModuleVersionId.ToString("D"), ["PublishedMain"] = false,
-                ["ProductionMacroExecuted"] = false, ["StartedUtc"] = DateTime.UtcNow.ToString("o") };
+            var report = new Dictionary<string, object>
+            {
+                ["Stage"] = "preflight",
+                ["Branch"] = branch,
+                ["Remote"] = remote,
+                ["AssemblyMvid"] = typeof(VbeSession).Module.ModuleVersionId.ToString("D"),
+                ["PublishedMain"] = false,
+                ["ProductionMacroExecuted"] = false,
+                ["StartedUtc"] = DateTime.UtcNow.ToString("o")
+            };
             var previousContext = SynchronizationContext.Current;
             using (var dispatcher = new Control())
             using (var owner = new OwnerGitQualificationScope(output))
@@ -58,7 +65,8 @@ namespace VBAi.Tests.Integration
                     {
                         VerifyRepository(api, manifest, deadline.Token);
                         Assert.IsFalse(Await(api.Branches(remote, deadline.Token)).Any(item => item.name == branch));
-                        ExcelVbeFixture.Run(source => ExcelVbeFixture.Run(target => {
+                        ExcelVbeFixture.Run(source => ExcelVbeFixture.Run(target =>
+                        {
                             report["SourcePid"] = source.ProcessId; report["TargetPid"] = target.ProcessId;
                             string sourcePath = source.File("userform-source.xlsm"), targetPath = target.File("userform-target.xlsm");
                             const string form = "QualificationForm";
@@ -68,7 +76,8 @@ namespace VBAi.Tests.Integration
                             // Preserve real host files before any import. No helper save is used as an import oracle.
                             File.Copy(sourcePath, Path.Combine(output, "source-before-import.xlsm"));
                             File.Copy(targetPath, Path.Combine(output, "target-before-import.xlsm"));
-                            source.WithGitProject(sourcePath, sourceProject => target.WithGitProject(targetPath, targetProject => {
+                            source.WithGitProject(sourcePath, sourceProject => target.WithGitProject(targetPath, targetProject =>
+                            {
                                 int ownerThread = Thread.CurrentThread.ManagedThreadId;
                                 var captured = sourceProject.Capture(); var before = targetProject.Capture();
                                 Assert.IsTrue(captured.Manifest.Components.Single(item => item.Name == form).HasResources);
@@ -185,8 +194,15 @@ namespace VBAi.Tests.Integration
         }
         private static object[] Describe(VbaGitSnapshot snapshot)
         {
-            return snapshot.Serialize().Select(file => { using (var hash = SHA256.Create()) return (object)new {
-                Path = file.Key, Bytes = file.Value.Length, Sha256 = BitConverter.ToString(hash.ComputeHash(file.Value)).Replace("-", "") }; }).ToArray();
+            return snapshot.Serialize().Select(file =>
+            {
+                using (var hash = SHA256.Create()) return (object)new
+                {
+                    Path = file.Key,
+                    Bytes = file.Value.Length,
+                    Sha256 = BitConverter.ToString(hash.ComputeHash(file.Value)).Replace("-", "")
+                };
+            }).ToArray();
         }
         private static void SaveSnapshot(string output, string name, VbaGitSnapshot snapshot)
         {

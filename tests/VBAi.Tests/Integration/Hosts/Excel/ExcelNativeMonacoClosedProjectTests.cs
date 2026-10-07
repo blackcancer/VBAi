@@ -1,3 +1,4 @@
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -8,7 +9,6 @@ using System.Runtime.ExceptionServices;
 using System.Text;
 using System.Threading;
 using System.Web.Script.Serialization;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace VBAi.Tests.Integration
 {
@@ -40,14 +40,25 @@ namespace VBAi.Tests.Integration
             string report = host.File("native-monaco-closed-project.json"), capture = host.File("native-monaco-live.png");
             string result = "RUNNING"; Exception failure = null;
             CultureInfo culture = null; bool captureAttempted = false;
-            Action persist = () => File.WriteAllText(report, json.Serialize(new { Result = result, HostProcessId = host.ProcessId,
-                ExpectedMvid = expected.ToString("D"), Source = "Actual installed embedded editor; detached forms do not qualify",
+            Action persist = () => File.WriteAllText(report, json.Serialize(new
+            {
+                Result = result,
+                HostProcessId = host.ProcessId,
+                ExpectedMvid = expected.ToString("D"),
+                Source = "Actual installed embedded editor; detached forms do not qualify",
                 AcceptanceScope = "Active native status/tab ownership and unchanged VBIDE source/identity/selection, with normal exit. Code rendering requires separate genuine-image review.",
-                RenderedCodeVerified = false, VisualReview = "NOT_RUN",
-                ClosedPath = closedPath, LivePath = livePath, CommandPending = containment.Pending, DeliveryUncertain = containment.Uncertain,
-                Records = records, Shutdown = host.ShutdownDiagnostics }), new UTF8Encoding(false));
+                RenderedCodeVerified = false,
+                VisualReview = "NOT_RUN",
+                ClosedPath = closedPath,
+                LivePath = livePath,
+                CommandPending = containment.Pending,
+                DeliveryUncertain = containment.Uncertain,
+                Records = records,
+                Shutdown = host.ShutdownDiagnostics
+            }), new UTF8Encoding(false));
             Action<string, object> phase = (name, value) => { records.Add(new { Phase = name, Utc = DateTime.UtcNow.ToString("O"), Data = value }); persist(); };
-            Func<string, object, IDictionary<string, object>> send = (command, request) => {
+            Func<string, object, IDictionary<string, object>> send = (command, request) =>
+            {
                 var response = containment.Send(command, request, records.Add, persist,
                     () => VbeBridgeClient.Read("VBAi." + host.ProcessId, request, 20000), host.PreserveMonacoNativeOutcome);
                 Assert.AreEqual(true, response["Ok"], json.Serialize(response));
@@ -56,14 +67,26 @@ namespace VBAi.Tests.Integration
             Func<string, string, IDictionary<string, object>> read = (path, module) => VbeBridgeClient.Object(send("read_module",
                 new { Command = "read_module", Project = path, Module = module })["Data"]);
             Func<string, IDictionary<string, object>> state = path => VbeBridgeClient.Object(send("debug_state", new { Command = "debug_state", Project = path })["Data"]);
-            Action<string, string, object> select = (path, module, sha) => {
-                send("select_code", new { Command = "select_code", Project = path, Module = module, StartLine = 1,
-                    EndLine = 1, StartColumn = 1, EndColumn = 1, ExpectedSha256 = sha, ExpectedMode = 2 });
+            Action<string, string, object> select = (path, module, sha) =>
+            {
+                send("select_code", new
+                {
+                    Command = "select_code",
+                    Project = path,
+                    Module = module,
+                    StartLine = 1,
+                    EndLine = 1,
+                    StartColumn = 1,
+                    EndColumn = 1,
+                    ExpectedSha256 = sha,
+                    ExpectedMode = 2
+                });
                 var actual = state(path);
                 RequireSelectedScope(actual, path, module); phase("NativeSelection", actual);
             };
             IDictionary<string, object> closedSource = null, liveSource = null;
-            Action<ExcelVbeFixture.MonacoNativeObservation, string> captureActual = (ui, image) => {
+            Action<ExcelVbeFixture.MonacoNativeObservation, string> captureActual = (ui, image) =>
+            {
                 captureAttempted = true;
                 phase("CaptureActualInstalledWindowIntent", new { Capture = image, AccessibilitySource = ExcelVbeFixture.MonacoAccessibleSourceStatus(ui) });
                 host.CaptureInstalledMonaco(ui, image); phase("GenuineCaptureAvailableForVisualReview", new { Capture = image, RenderedCodeVerified = false });
@@ -88,8 +111,17 @@ namespace VBAi.Tests.Integration
                     string module = path == closedPath ? closedModule : liveModule;
                     send("create_module", new { Command = "create_module", Project = path, Module = module, ExpectedMode = 2 });
                     var empty = read(path, module);
-                    send("replace_lines", new { Command = "replace_lines", Project = path, Module = module, StartLine = 1, Count = 0,
-                        Text = path == closedPath ? closedCode : liveCode, ExpectedSha256 = empty["Sha256"], ExpectedMode = 2 });
+                    send("replace_lines", new
+                    {
+                        Command = "replace_lines",
+                        Project = path,
+                        Module = module,
+                        StartLine = 1,
+                        Count = 0,
+                        Text = path == closedPath ? closedCode : liveCode,
+                        ExpectedSha256 = empty["Sha256"],
+                        ExpectedMode = 2
+                    });
                 }
                 closedSource = read(closedPath, closedModule); liveSource = read(livePath, liveModule);
                 phase("ExactSourceBeforeClose", new { Closed = closedSource, Live = liveSource, Projects = projects });
@@ -97,12 +129,20 @@ namespace VBAi.Tests.Integration
                 File.WriteAllText(host.File("live-source-before-close.vba.txt"), Convert.ToString(liveSource["Code"]), new UTF8Encoding(false));
                 containment.RequireTerminal(); host.SaveMonacoBaselines(closedPath, livePath);
                 string closedDiskHash = ReadNativeBaselineHash(closedPath);
-                phase("PreservedNativeBaselines", new { Closed = new { Path = closedPath, Sha256 = closedDiskHash },
+                phase("PreservedNativeBaselines", new
+                {
+                    Closed = new { Path = closedPath, Sha256 = closedDiskHash },
                     Live = new { Path = livePath, Sha256 = ReadNativeBaselineHash(livePath) },
-                    ClosedSourceSnapshot = host.File("closed-source-before-close.vba.txt"), LiveSourceSnapshot = host.File("live-source-before-close.vba.txt") });
+                    ClosedSourceSnapshot = host.File("closed-source-before-close.vba.txt"),
+                    LiveSourceSnapshot = host.File("live-source-before-close.vba.txt")
+                });
                 string synchronized = ExcelVbeFixture.MonacoLocalized(ExcelVbeFixture.MonacoSynchronizedStatus, culture);
-                phase("HostLocalization", new { Culture = culture.Name, Synchronized = synchronized,
-                    ClosedWarning = ExcelVbeFixture.MonacoLocalized(ExcelVbeFixture.MonacoClosedStatus, culture) });
+                phase("HostLocalization", new
+                {
+                    Culture = culture.Name,
+                    Synchronized = synchronized,
+                    ClosedWarning = ExcelVbeFixture.MonacoLocalized(ExcelVbeFixture.MonacoClosedStatus, culture)
+                });
                 select(closedPath, closedModule, closedSource["Sha256"]);
                 WaitForTab(host, culture, closedTab, phase, captureActual);
                 select(livePath, liveModule, liveSource["Sha256"]);

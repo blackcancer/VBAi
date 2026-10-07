@@ -8,7 +8,7 @@ per operation and tested candidate.
 
 | Your task | Guide |
 | --- | --- |
-| Set up the preview | [Source-build setup](installation.md) |
+| Install VBAi or build from source | [Installation](installation.md) |
 | Complete a first intervention | [Getting started](getting-started.md) |
 | Read the French offline manual | [User manual](help/README.md) |
 | Check your application | [Compatibility](compatibility.md) |
@@ -37,7 +37,8 @@ per operation and tested candidate.
 | [Tool reference](reference/vbe-tools.md) | Discovery/invocation and authoritative schemas |
 | [Recorded validation](test-coverage.md) | Candidate identity, executed results and measurement scope |
 | [Release qualification](release-qualification.md) | Finding register and remaining release boundaries |
-| [Updates](updates.md) | Existing updater behavior and future distribution contract |
+| [Updates](updates.md) | Installer builds, updater behavior and distribution contract |
+| [Code signing](code-signing.md) | Unsigned 1.0.0 and trusted-signature onboarding |
 | [Roadmap](roadmap.md) | Planned work and unresolved scope |
 
 ## Repository policies

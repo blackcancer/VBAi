@@ -84,7 +84,8 @@ namespace VBAi
             string head = Resolve(Head);
             if (head == null) return new GitCommitInfo[0];
             return Text("log", "-200", "--date=iso-strict", "--format=%H%x09%an%x09%ad%x09%s", head)
-                .Split(new[] { '\n' }, StringSplitOptions.RemoveEmptyEntries).Select(line => {
+                .Split(new[] { '\n' }, StringSplitOptions.RemoveEmptyEntries).Select(line =>
+                {
                     var fields = line.TrimEnd('\r').Split(new[] { '\t' }, 4);
                     return new GitCommitInfo { Id = fields[0], Author = fields[1], Date = fields[2], Subject = fields[3] };
                 }).ToArray();

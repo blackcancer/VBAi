@@ -1,5 +1,3 @@
-using System;
-using VBAi;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace VBAi.Tests.Unit
@@ -13,7 +11,8 @@ namespace VBAi.Tests.Unit
         public void PollingHandlesFailuresMissingFieldsAndUnobservedChanges()
         {
             bool fail = false; object modules = null, code = null; int projects = 0;
-            var monitor = new VbeContextMonitor(request => {
+            var monitor = new VbeContextMonitor(request =>
+            {
                 if (fail) return Response.Failure("closed");
                 if (request.Command == "list_projects") return Response.Success(new { Version = projects++ });
                 if (request.Command == "list_modules") return Response.Success(modules);

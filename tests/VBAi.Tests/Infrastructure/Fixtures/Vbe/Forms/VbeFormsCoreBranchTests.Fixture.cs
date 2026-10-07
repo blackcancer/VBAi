@@ -1,9 +1,6 @@
 namespace VBAi.Tests.Unit
 {
-    using System;
-    using System.Linq;
     using VBAi;
-    using Microsoft.VisualStudio.TestTools.UnitTesting;
 
     public sealed partial class VbeFormsCoreBranchTests
     {

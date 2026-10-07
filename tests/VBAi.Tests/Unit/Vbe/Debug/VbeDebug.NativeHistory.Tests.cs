@@ -1,10 +1,10 @@
 namespace VBAi.Tests.Unit
 {
+    using Microsoft.VisualStudio.TestTools.UnitTesting;
     using System;
     using System.Collections;
     using System.Linq;
     using VBAi;
-    using Microsoft.VisualStudio.TestTools.UnitTesting;
 
     [TestClass, TestCategory("Unit"), DoNotParallelize]
     public sealed class VbeNativeHistoryTests
@@ -65,7 +65,8 @@ namespace VBAi.Tests.Unit
             {
                 var f = new EditorDebugFixture(); f.AddModule("Unchanged", "");
                 string action = scenario == 4 ? "redo" : "undo";
-                f.Command(action == "undo" ? 128 : 129, action, () => {
+                f.Command(action == "undo" ? 128 : 129, action, () =>
+                {
                     if (scenario == 0 || scenario == 2 || scenario == 4) f.Module.Code = "restored source";
                     if (scenario == 2 || scenario == 3) f.Project.VBComponents.Remove(f.Project.VBComponents.Single(x => x.Name == "Unchanged"));
                     if (scenario == 3) f.AddModule("New");
@@ -85,7 +86,8 @@ namespace VBAi.Tests.Unit
             foreach (int scenario in new[] { 0, 1, 2, 3 })
             {
                 var f = new EditorDebugFixture();
-                f.Command(128, "undo", () => {
+                f.Command(128, "undo", () =>
+                {
                     if (scenario == 1 || scenario == 2) f.Project.Mode = 0;
                     if (scenario == 3) f.Module.Code = "changed before failure";
                     if (scenario != 1) throw new InvalidOperationException("execute failed");

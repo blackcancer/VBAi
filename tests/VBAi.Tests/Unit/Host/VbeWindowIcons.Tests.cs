@@ -1,8 +1,8 @@
-﻿namespace VBAi.Tests.Unit
+namespace VBAi.Tests.Unit
 {
     using System;
-    using VBAi;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
+    using VBAi;
 
     [TestClass]
     [TestCategory("Unit")]

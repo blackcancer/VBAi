@@ -1,6 +1,6 @@
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Collections.Generic;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 using VBAi.Tests.Integration;
 
 namespace VBAi.Tests.Unit
@@ -47,8 +47,11 @@ namespace VBAi.Tests.Unit
         {
             var baseline = Snapshot(FormResourcePreflightTests.Resource(), "Caption", "Option Explicit\n", "' Class body\n", "");
             var files = new Dictionary<string, byte[]>(baseline.Files); files.Remove("EmbeddedClass.cls");
-            var actual = new VbaGitSnapshot(new VbaGitManifest { References = baseline.Manifest.References,
-                Components = new[] { baseline.Manifest.Components[0], baseline.Manifest.Components[2] } }, files);
+            var actual = new VbaGitSnapshot(new VbaGitManifest
+            {
+                References = baseline.Manifest.References,
+                Components = new[] { baseline.Manifest.Components[0], baseline.Manifest.Components[2] }
+            }, files);
             Assert.ThrowsException<AssertFailedException>(() => EmbeddedGitSnapshotOracle.Verify(baseline, actual));
         }
 
@@ -83,21 +86,31 @@ namespace VBAi.Tests.Unit
             Assert.AreEqual("qualification-embedded-ui-fixture", plan.Branch);
             Assert.AreEqual(new string('a', 40), plan.Commit);
         }
-        private static Dictionary<string, object> Manifest() => new Dictionary<string, object> {
+        private static Dictionary<string, object> Manifest() => new Dictionary<string, object>
+        {
             ["repositoryUrl"] = "https://github.com/blackcancer/vbai-qualification-20260929203712-7267b1e6",
-            ["repositoryId"] = "1396566119", ["embeddedBranch"] = "qualification-embedded-ui-fixture",
-            ["embeddedBranchCommit"] = new string('a', 40), ["checkpointTabName"] = "Checkpoints" };
+            ["repositoryId"] = "1396566119",
+            ["embeddedBranch"] = "qualification-embedded-ui-fixture",
+            ["embeddedBranchCommit"] = new string('a', 40),
+            ["checkpointTabName"] = "Checkpoints"
+        };
 
         private static VbaGitSnapshot Snapshot(byte[] resource, string caption, string module, string classCode, string references)
         {
             var bytes = new byte[resource.Length + 13]; Buffer.BlockCopy(resource, 0, bytes, 13, resource.Length);
-            return new VbaGitSnapshot(new VbaGitManifest { References = references, Components = new[] {
+            return new VbaGitSnapshot(new VbaGitManifest
+            {
+                References = references,
+                Components = new[] {
                 new VbaGitComponent { Name = "EmbeddedModule", Type = 1 }, new VbaGitComponent { Name = "EmbeddedClass", Type = 2 },
-                new VbaGitComponent { Name = "EmbeddedForm", Type = 3, HasResources = true } } }, new Dictionary<string, byte[]> {
-                    ["EmbeddedModule.bas"] = VbaGitSnapshot.Utf8.GetBytes("Attribute VB_Name = \"EmbeddedModule\"\n" + module),
-                    ["EmbeddedClass.cls"] = VbaGitSnapshot.Utf8.GetBytes("Attribute VB_Name = \"EmbeddedClass\"\n" + classCode),
-                    ["EmbeddedForm.frm"] = VbaGitSnapshot.Utf8.GetBytes("VERSION 5.00\nBegin VB.UserForm EmbeddedForm\n Caption = \"" + caption + "\"\n OleObjectBlob = \"EmbeddedForm.frx\":000D\nEnd\nAttribute VB_Name = \"EmbeddedForm\"\nOption Explicit\n"),
-                    ["EmbeddedForm.frx"] = bytes });
+                new VbaGitComponent { Name = "EmbeddedForm", Type = 3, HasResources = true } }
+            }, new Dictionary<string, byte[]>
+            {
+                ["EmbeddedModule.bas"] = VbaGitSnapshot.Utf8.GetBytes("Attribute VB_Name = \"EmbeddedModule\"\n" + module),
+                ["EmbeddedClass.cls"] = VbaGitSnapshot.Utf8.GetBytes("Attribute VB_Name = \"EmbeddedClass\"\n" + classCode),
+                ["EmbeddedForm.frm"] = VbaGitSnapshot.Utf8.GetBytes("VERSION 5.00\nBegin VB.UserForm EmbeddedForm\n Caption = \"" + caption + "\"\n OleObjectBlob = \"EmbeddedForm.frx\":000D\nEnd\nAttribute VB_Name = \"EmbeddedForm\"\nOption Explicit\n"),
+                ["EmbeddedForm.frx"] = bytes
+            });
         }
     }
 }

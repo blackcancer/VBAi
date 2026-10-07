@@ -1,8 +1,8 @@
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Threading;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace VBAi.Tests.Unit
 {
@@ -68,20 +68,21 @@ namespace VBAi.Tests.Unit
         public void ActivationContextFailureIsUncertainWithoutFallbackOrRetry()
         {
             foreach (string fault in new[] { "path", "context", "pid", "name" })
-            using (var fixture = new Fixture())
-            {
-                var target = fixture.Resolve();
-                fixture.Source.OnActivate = () => {
-                    if (fault == "path") fixture.Source.FullName = Path.Combine(fixture.Folder, "Changed.docm");
-                    if (fault == "context") fixture.Application.ActiveDocument = new Document();
-                    if (fault == "pid") fixture.Host.ReadWindowOwner = hwnd => 999;
-                    if (fault == "name") fixture.Application.Documents.Add(new Document { FullName = Path.Combine(fixture.Folder, "Other", "Original.docm") });
-                };
-                var error = Assert.ThrowsException<VbaTestInvocationException>(() => fixture.Host.Invoke(target, "Support", "Run", new object[0]));
-                Assert.IsTrue(error.Uncertain, fault);
-                Assert.AreEqual(1, fixture.Source.ActivateCalls, fault);
-                Assert.AreEqual(0, fixture.Application.RunCalls, fault);
-            }
+                using (var fixture = new Fixture())
+                {
+                    var target = fixture.Resolve();
+                    fixture.Source.OnActivate = () =>
+                    {
+                        if (fault == "path") fixture.Source.FullName = Path.Combine(fixture.Folder, "Changed.docm");
+                        if (fault == "context") fixture.Application.ActiveDocument = new Document();
+                        if (fault == "pid") fixture.Host.ReadWindowOwner = hwnd => 999;
+                        if (fault == "name") fixture.Application.Documents.Add(new Document { FullName = Path.Combine(fixture.Folder, "Other", "Original.docm") });
+                    };
+                    var error = Assert.ThrowsException<VbaTestInvocationException>(() => fixture.Host.Invoke(target, "Support", "Run", new object[0]));
+                    Assert.IsTrue(error.Uncertain, fault);
+                    Assert.AreEqual(1, fixture.Source.ActivateCalls, fault);
+                    Assert.AreEqual(0, fixture.Application.RunCalls, fault);
+                }
         }
 
         [TestMethod]
@@ -210,38 +211,38 @@ namespace VBAi.Tests.Unit
         public void ActiveWordWindowOwnershipIsRecheckedAfterDocumentActivation()
         {
             foreach (string fault in new[] { "missing", "zero", "foreign" })
-            using (var f = new Fixture())
-            {
-                var target = f.Resolve();
-                f.Source.OnActivate = () =>
+                using (var f = new Fixture())
                 {
-                    if (fault == "missing") f.Application.ActiveWindow = null;
-                    if (fault == "zero") f.Application.ActiveWindow.Hwnd = 0;
-                    if (fault == "foreign") f.Host.ReadWindowOwner = _ => 999;
-                };
-                var error = Assert.ThrowsException<VbaTestInvocationException>(() => f.Host.Invoke(target, "Support", "Run", null));
-                Assert.IsTrue(error.Uncertain, fault);
-                Assert.AreEqual(1, f.Source.ActivateCalls, fault);
-                Assert.AreEqual(0, f.Application.RunCalls, fault);
-            }
+                    var target = f.Resolve();
+                    f.Source.OnActivate = () =>
+                    {
+                        if (fault == "missing") f.Application.ActiveWindow = null;
+                        if (fault == "zero") f.Application.ActiveWindow.Hwnd = 0;
+                        if (fault == "foreign") f.Host.ReadWindowOwner = _ => 999;
+                    };
+                    var error = Assert.ThrowsException<VbaTestInvocationException>(() => f.Host.Invoke(target, "Support", "Run", null));
+                    Assert.IsTrue(error.Uncertain, fault);
+                    Assert.AreEqual(1, f.Source.ActivateCalls, fault);
+                    Assert.AreEqual(0, f.Application.RunCalls, fault);
+                }
         }
         [TestMethod]
         public void ModuleQualifierMustHaveTheExactSingleOwnerIncludingGlobalTemplates()
         {
             foreach (string fault in new[] { "foreign", "missing", "duplicate", "unreadable", "projects", "components" })
-            using (var f = new Fixture())
-            {
-                var target = f.Resolve();
-                var project = (Project)f.Source.VBProject;
-                if (fault == "foreign") f.Application.VBE.VBProjects.Add(new Project());
-                if (fault == "missing") project.Components.Clear();
-                if (fault == "duplicate") project.Components.Add(new Component { Name = "Support" });
-                if (fault == "unreadable") f.Application.VBE.VBProjects.Add(new Project { ComponentsError = new InvalidOperationException("Protected template components unavailable") });
-                if (fault == "projects") f.Application.VBE.VBProjects.CountOverride = 1001;
-                if (fault == "components") project.Components.CountOverride = 1001;
-                Assert.ThrowsException<InvalidOperationException>(() => f.Host.Invoke(target, "Support", "Run", new object[0]), fault);
-                Assert.AreEqual(0, f.Source.ActivateCalls + f.Application.RunCalls, fault);
-            }
+                using (var f = new Fixture())
+                {
+                    var target = f.Resolve();
+                    var project = (Project)f.Source.VBProject;
+                    if (fault == "foreign") f.Application.VBE.VBProjects.Add(new Project());
+                    if (fault == "missing") project.Components.Clear();
+                    if (fault == "duplicate") project.Components.Add(new Component { Name = "Support" });
+                    if (fault == "unreadable") f.Application.VBE.VBProjects.Add(new Project { ComponentsError = new InvalidOperationException("Protected template components unavailable") });
+                    if (fault == "projects") f.Application.VBE.VBProjects.CountOverride = 1001;
+                    if (fault == "components") project.Components.CountOverride = 1001;
+                    Assert.ThrowsException<InvalidOperationException>(() => f.Host.Invoke(target, "Support", "Run", new object[0]), fault);
+                    Assert.AreEqual(0, f.Source.ActivateCalls + f.Application.RunCalls, fault);
+                }
             using (var f = new Fixture())
             {
                 var template = new Project(); template.Components[1].Name = "OtherModule";
@@ -256,34 +257,36 @@ namespace VBAi.Tests.Unit
         public void ModuleOwnershipIsRecheckedAfterExactDocumentActivation()
         {
             foreach (string fault in new[] { "collision", "missing" })
-            using (var f = new Fixture())
-            {
-                var target = f.Resolve();
-                f.Source.OnActivate = () => {
-                    if (fault == "collision") f.Application.VBE.VBProjects.Add(new Project());
-                    else ((Project)f.Source.VBProject).Components.Clear();
-                };
-                Assert.IsTrue(Assert.ThrowsException<VbaTestInvocationException>(() => f.Host.Invoke(target, "Support", "Run", null)).Uncertain);
-                Assert.AreEqual(1, f.Source.ActivateCalls);
-                Assert.AreEqual(0, f.Application.RunCalls);
-            }
+                using (var f = new Fixture())
+                {
+                    var target = f.Resolve();
+                    f.Source.OnActivate = () =>
+                    {
+                        if (fault == "collision") f.Application.VBE.VBProjects.Add(new Project());
+                        else ((Project)f.Source.VBProject).Components.Clear();
+                    };
+                    Assert.IsTrue(Assert.ThrowsException<VbaTestInvocationException>(() => f.Host.Invoke(target, "Support", "Run", null)).Uncertain);
+                    Assert.AreEqual(1, f.Source.ActivateCalls);
+                    Assert.AreEqual(0, f.Application.RunCalls);
+                }
         }
 
         [TestMethod]
         public void OnlyGeneratedCoverageZeroArgumentFunctionsReceiveExplicitSentinels()
         {
             foreach (string procedure in new[] { VbaCoverageInstrumentation.ResetProcedure, VbaCoverageInstrumentation.SnapshotProcedure })
-            using (var f = new Fixture())
-            {
-                ((Project)f.Source.VBProject).Components.Add(new Component { Name = VbaCoverageInstrumentation.ModuleName });
-                object[] received = null;
-                f.Host.RunProcedure = (application, macro, arguments) => {
-                    Assert.AreEqual(VbaCoverageInstrumentation.ModuleName.ToLowerInvariant() + "." + procedure.ToLowerInvariant(), macro);
-                    received = arguments; return f.Application.Result;
-                };
-                f.Host.Invoke(f.Resolve(), VbaCoverageInstrumentation.ModuleName.ToLowerInvariant(), procedure.ToLowerInvariant(), new object[0]);
-                CollectionAssert.AreEqual(new object[] { false, false }, received);
-            }
+                using (var f = new Fixture())
+                {
+                    ((Project)f.Source.VBProject).Components.Add(new Component { Name = VbaCoverageInstrumentation.ModuleName });
+                    object[] received = null;
+                    f.Host.RunProcedure = (application, macro, arguments) =>
+                    {
+                        Assert.AreEqual(VbaCoverageInstrumentation.ModuleName.ToLowerInvariant() + "." + procedure.ToLowerInvariant(), macro);
+                        received = arguments; return f.Application.Result;
+                    };
+                    f.Host.Invoke(f.Resolve(), VbaCoverageInstrumentation.ModuleName.ToLowerInvariant(), procedure.ToLowerInvariant(), new object[0]);
+                    CollectionAssert.AreEqual(new object[] { false, false }, received);
+                }
             using (var f = new Fixture())
             {
                 ((Project)f.Source.VBProject).Components.Add(new Component { Name = VbaCoverageInstrumentation.ModuleName });

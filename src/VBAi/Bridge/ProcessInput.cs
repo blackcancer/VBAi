@@ -28,8 +28,7 @@ namespace VBAi
             // value override across all our protocol clients; restore it even when Start fails.
             lock (startLock)
             {
-                var field = InputEncodingField();
-                if (field == null) throw new InvalidOperationException("Impossible de configurer une entrée binaire sans préambule sur ce runtime .NET Framework.");
+                var field = InputEncodingField() ?? throw new InvalidOperationException("Impossible de configurer une entrée binaire sans préambule sur ce runtime .NET Framework.");
                 object previous = field.GetValue(null);
                 try { field.SetValue(null, new UTF8Encoding(false)); return process.Start(); }
                 finally { field.SetValue(null, previous); }

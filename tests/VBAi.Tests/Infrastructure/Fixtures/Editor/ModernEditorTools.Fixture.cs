@@ -1,9 +1,7 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Reflection;
 using System.Web.Script.Serialization;
-using VBAi;
 using VBAi.Tests.Infrastructure;
 namespace VBAi.Tests.Unit.Editor
 {

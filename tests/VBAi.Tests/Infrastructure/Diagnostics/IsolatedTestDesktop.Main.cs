@@ -42,9 +42,14 @@ namespace VBAi.Tests.Integration
 
         internal static NativeChild LaunchMain(string executable, string[] arguments, string workingDir) =>
             LaunchMainOnce(executable, arguments, workingDir, RequireMainCurrent, File.Exists, Directory.Exists,
-                (image, args, directory) => {
-                    var startup = new StartupInfo { Size = (uint)Marshal.SizeOf(typeof(StartupInfo)),
-                        Desktop = "WinSta0\\Default", Flags = 0x00000080 };
+                (image, args, directory) =>
+                {
+                    var startup = new StartupInfo
+                    {
+                        Size = (uint)Marshal.SizeOf(typeof(StartupInfo)),
+                        Desktop = "WinSta0\\Default",
+                        Flags = 0x00000080
+                    };
                     ProcessInformation child;
                     // Null environment inherits the fixture's scoped manifest. No shell/COM activation is involved.
                     if (!CreateProcessW(image, new StringBuilder(CommandLine(image, args)), IntPtr.Zero,
@@ -76,7 +81,8 @@ namespace VBAi.Tests.Integration
         {
             RequireMainCurrent();
             var rows = new List<MainWindow>(); int visited = 0; Exception failure = null;
-            WindowVisitor visitor = (window, state) => {
+            WindowVisitor visitor = (window, state) =>
+            {
                 try
                 {
                     if (++visited > 8192) throw new InvalidOperationException("Main window inventory exceeded its bound.");
@@ -86,8 +92,14 @@ namespace VBAi.Tests.Integration
                     {
                         var name = new StringBuilder(256);
                         if (GetClassNameW(window, name, name.Capacity) == 0) throw new Win32Exception(Marshal.GetLastWin32Error());
-                        rows.Add(new MainWindow { Handle = window.ToInt64(), ProcessId = pid, ThreadId = tid,
-                            ClassName = name.ToString(), Visible = IsWindowVisible(window) });
+                        rows.Add(new MainWindow
+                        {
+                            Handle = window.ToInt64(),
+                            ProcessId = pid,
+                            ThreadId = tid,
+                            ClassName = name.ToString(),
+                            Visible = IsWindowVisible(window)
+                        });
                     }
                     return true;
                 }
@@ -98,8 +110,14 @@ namespace VBAi.Tests.Integration
             int nativeError = Marshal.GetLastWin32Error();
             if (failure != null) System.Runtime.ExceptionServices.ExceptionDispatchInfo.Capture(failure).Throw();
             RequireMainCurrent();
-            var result = new MainInventory { Desktop = "Default", Complete = complete, EnumerationError = nativeError,
-                Visited = visited, Windows = rows.ToArray() };
+            var result = new MainInventory
+            {
+                Desktop = "Default",
+                Complete = complete,
+                EnumerationError = nativeError,
+                Visited = visited,
+                Windows = rows.ToArray()
+            };
             RequireMainInventory(result, ownedPid, IntPtr.Zero, false, false);
             return result;
         }

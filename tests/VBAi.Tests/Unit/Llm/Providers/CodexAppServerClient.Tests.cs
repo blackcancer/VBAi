@@ -1,17 +1,15 @@
 namespace VBAi.Tests.Unit
 {
+    using Microsoft.VisualStudio.TestTools.UnitTesting;
     using System;
     using System.Collections.Generic;
-    using System.Linq;
-    using System.Threading;
-    using System.Threading.Tasks;
-    using System.Web.Script.Serialization;
-    using VBAi;
-    using Microsoft.VisualStudio.TestTools.UnitTesting;
-    using VBAi.Tests.Infrastructure;
     using System.Diagnostics;
     using System.IO;
+    using System.Linq;
     using System.Reflection;
+    using System.Threading.Tasks;
+    using VBAi;
+    using VBAi.Tests.Infrastructure;
 
     /// <summary>Vérifie le client app-server Codex avec un transport RPC simulé et sans processus externe.</summary>
     [TestClass]
@@ -208,7 +206,8 @@ namespace VBAi.Tests.Unit
                 await client.ListModelsAsync();
                 string acceptedHash = client.AppliedInstructionsHash;
                 client.DeveloperInstructionSource = () => "second";
-                transport.Intercept = message => {
+                transport.Intercept = message =>
+                {
                     if (Method(message) != "thread/resume") return false;
                     transport.Emit(new { id = message["id"], error = new { message = "instruction update refused" } });
                     return true;
@@ -226,7 +225,8 @@ namespace VBAi.Tests.Unit
         public async Task MismatchedInstructionResumeIdentityFailsClosed()
         {
             var transport = new FakeTransport();
-            transport.Intercept = message => {
+            transport.Intercept = message =>
+            {
                 if (Method(message) != "thread/resume") return false;
                 transport.Emit(new { id = message["id"], result = new { thread = new { id = "another-thread" } } });
                 return true;

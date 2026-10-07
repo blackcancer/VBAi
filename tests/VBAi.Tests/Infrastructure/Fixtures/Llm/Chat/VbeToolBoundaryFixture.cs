@@ -1,9 +1,7 @@
 namespace VBAi.Tests.Infrastructure
 {
-    using System;
-    using System.Threading;
-    using VBAi;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
+    using VBAi;
 
     /// <summary>État du mode VBE renvoyé par l’hôte simulé.</summary>
     public sealed class VbeToolMode
@@ -88,8 +86,11 @@ namespace VBAi.Tests.Infrastructure
             if (request.Command == "debug_state") return Response.Success(new VbeToolMode { Mode = 2 });
             if (request.Command == "sign_project") return Response.Success(new VbeToolSignature { CertificateName = "Disposable", UnsignedVerified = true });
             if (request.Command == "read_module" || request.Command == "native_code_history") return Response.Success(new VbeToolCodeResult());
-            if (request.Command == "preview_procedure_rename" || request.Command == "preview_class_member_rename") return Response.Success(new {
-                ExpectedProjectVersion = "value", Edits = new object[0] });
+            if (request.Command == "preview_procedure_rename" || request.Command == "preview_class_member_rename") return Response.Success(new
+            {
+                ExpectedProjectVersion = "value",
+                Edits = new object[0]
+            });
             if (request.Command == "read_project_protection" || request.Command == "set_project_protection")
                 return Response.Success(new VbeToolProjectIdentity { ProjectName = request.Project });
             return Response.Success(new { Command = request.Command });

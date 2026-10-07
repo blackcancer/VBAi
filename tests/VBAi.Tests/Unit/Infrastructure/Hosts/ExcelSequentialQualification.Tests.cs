@@ -1,7 +1,7 @@
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.IO;
 using System.Runtime.InteropServices;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 using VBAi.Tests.Integration;
 
 namespace VBAi.Tests.Unit
@@ -130,7 +130,8 @@ namespace VBAi.Tests.Unit
                 shape == "io" ? new IOException("metadata") : (Exception)new ArgumentException("metadata");
             var primary = new COMException("mutation"); int retained = 0, observations = 0;
             var actual = Assert.ThrowsException<AggregateException>(() => NativeUserFormGitHubTests.ExecuteGuardedImport(
-                () => { throw primary; }, () => NativeUserFormGitHubTests.ObserveSequentialRecovery(() => {
+                () => { throw primary; }, () => NativeUserFormGitHubTests.ObserveSequentialRecovery(() =>
+                {
                     observations++; throw observation;
                 }), () => retained++));
             CollectionAssert.AreEqual(new Exception[] { primary, observation }, actual.InnerExceptions);

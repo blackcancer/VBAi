@@ -15,8 +15,13 @@ namespace VBAi
         public object ProjectCollectionState()
         {
             var rows = ReadLifecycleCollection();
-            return new { Version = LifecycleVersion(rows), Projects = rows,
-                NativeApi = "VBProjects.Add/Open/Remove", RuntimeQualified = false };
+            return new
+            {
+                Version = LifecycleVersion(rows),
+                Projects = rows,
+                NativeApi = "VBProjects.Add/Open/Remove",
+                RuntimeQualified = false
+            };
         }
 
         /// <summary>Crée un projet autonome par l'API de l'hôte après vérification de collection.</summary>
@@ -78,8 +83,15 @@ namespace VBAi
                 var remaining = before.Where(row => row.Identity != selected.Identity).ToList();
                 if (LifecycleVersion(after) != LifecycleVersion(remaining))
                     throw new InvalidOperationException("Collection readback does not match the single requested removal.");
-                return new { Verified = true, MutationInvoked = true, Uncertain = false,
-                    Project = selected.Name, HostPath = path, CollectionState = ProjectCollectionState() };
+                return new
+                {
+                    Verified = true,
+                    MutationInvoked = true,
+                    Uncertain = false,
+                    Project = selected.Name,
+                    HostPath = path,
+                    CollectionState = ProjectCollectionState()
+                };
             }
             catch (Exception ex) { return LifecycleUncertain("Remove", ex); }
         }
@@ -105,8 +117,15 @@ namespace VBAi
                     !string.Equals(row.Path, StandaloneAwareProjectPath((object)added), StringComparison.OrdinalIgnoreCase) ||
                     (path != null && !string.Equals(row.Path, path, StringComparison.OrdinalIgnoreCase)))
                     throw new InvalidOperationException("The native returned project does not match the standalone readback.");
-                return new { Verified = true, MutationInvoked = true, Uncertain = false,
-                    Project = row.Name, HostPath = row.Path, CollectionState = ProjectCollectionState() };
+                return new
+                {
+                    Verified = true,
+                    MutationInvoked = true,
+                    Uncertain = false,
+                    Project = row.Name,
+                    HostPath = row.Path,
+                    CollectionState = ProjectCollectionState()
+                };
             }
             catch (Exception ex) { return LifecycleUncertain(path == null ? "Add" : "Open", ex); }
         }
@@ -148,19 +167,36 @@ namespace VBAi
                     {
                         dynamic code = component.CodeModule;
                         int count = (int)code.CountOfLines;
-                        components.Add(new { Name = (string)component.Name, Type = (int)component.Type,
+                        components.Add(new
+                        {
+                            Name = (string)component.Name,
+                            Type = (int)component.Type,
                             SourceSha256 = Hash(count == 0 ? "" : (string)code.Lines(1, count)),
-                            Properties = ReadProperties((object)component) });
+                            Properties = ReadProperties((object)component)
+                        });
                     }
                 var references = new List<object>();
                 if ((int)project.Protection == 0)
                     foreach (dynamic reference in project.References)
-                        references.Add(new { Guid = (string)reference.GUID, Major = (int)reference.Major,
-                            Minor = (int)reference.Minor, IsBroken = (bool)reference.IsBroken, BuiltIn = (bool)reference.BuiltIn });
-                rows.Add(new LifecycleProject { Name = name, Path = path,
-                    Identity = name + "|" + path, Type = (int)project.Type, Mode = (int)project.Mode,
-                    Protection = (int)project.Protection, Saved = (bool)project.Saved,
-                    SourceSha256 = Hash(json.Serialize(new { Components = components, References = references, Properties = ReadProperties((object)project) })) });
+                        references.Add(new
+                        {
+                            Guid = (string)reference.GUID,
+                            Major = (int)reference.Major,
+                            Minor = (int)reference.Minor,
+                            IsBroken = (bool)reference.IsBroken,
+                            BuiltIn = (bool)reference.BuiltIn
+                        });
+                rows.Add(new LifecycleProject
+                {
+                    Name = name,
+                    Path = path,
+                    Identity = name + "|" + path,
+                    Type = (int)project.Type,
+                    Mode = (int)project.Mode,
+                    Protection = (int)project.Protection,
+                    Saved = (bool)project.Saved,
+                    SourceSha256 = Hash(json.Serialize(new { Components = components, References = references, Properties = ReadProperties((object)project) }))
+                });
             }
             if (rows.GroupBy(row => row.Identity, StringComparer.OrdinalIgnoreCase).Any(group => group.Count() > 1))
                 throw new InvalidOperationException("Project identities are ambiguous.");
@@ -178,9 +214,16 @@ namespace VBAi
         /// <returns>Résultat sérialisable marquant l’opération comme incertaine et sans nouvel essai autorisé.</returns>
         private static object LifecycleUncertain(string api, Exception error)
         {
-            return new { Verified = false, MutationInvoked = true, Uncertain = true, NativeApi = api,
-                Reason = error.Message + " (" + error.GetType().FullName + ", HRESULT 0x" + unchecked((uint)error.HResult).ToString("X8") + ")", RetryAllowed = false,
-                Limit = "Inspect project_collection_state before deciding on another operation. No retry or rollback was performed." };
+            return new
+            {
+                Verified = false,
+                MutationInvoked = true,
+                Uncertain = true,
+                NativeApi = api,
+                Reason = error.Message + " (" + error.GetType().FullName + ", HRESULT 0x" + unchecked((uint)error.HResult).ToString("X8") + ")",
+                RetryAllowed = false,
+                Limit = "Inspect project_collection_state before deciding on another operation. No retry or rollback was performed."
+            };
         }
 
         /// <summary>État sérialisable d'une identité de projet natif.</summary>

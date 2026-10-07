@@ -1,16 +1,15 @@
 namespace VBAi.Tests.Unit
 {
+    using Microsoft.VisualStudio.TestTools.UnitTesting;
     using System;
     using System.Collections.Generic;
     using System.IO;
     using System.IO.Pipes;
-    using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
     using System.Web.Script.Serialization;
     using System.Windows.Forms;
     using VBAi;
-    using Microsoft.VisualStudio.TestTools.UnitTesting;
 
     /// <summary>Vérifie le transport named-pipe du pont et la validation des commandes Immediate.</summary>
     [TestClass]
@@ -103,11 +102,13 @@ namespace VBAi.Tests.Unit
                 {
                     int entries = 0;
                     bool fail = false;
-                    server.Native.Capture = _ => {
+                    server.Native.Capture = _ =>
+                    {
                         entries++;
                         Assert.AreNotEqual(owner, Thread.CurrentThread.ManagedThreadId,
                             "Native accessibility work must retain its existing worker thread.");
-                        dispatcher.Invoke(new Action(() => {
+                        dispatcher.Invoke(new Action(() =>
+                        {
                             var error = Assert.ThrowsException<InvalidOperationException>(() =>
                                 session.ProjectGeneralAsync(null, false).GetAwaiter().GetResult());
                             StringAssert.Contains(error.Message, "bridge operation is pending");
@@ -144,7 +145,8 @@ namespace VBAi.Tests.Unit
                 {
                     int calls = 0;
                     Request retained = null;
-                    server.ProjectGeneralNative = async (request, write) => {
+                    server.ProjectGeneralNative = async (request, write) =>
+                    {
                         retained = request;
                         calls++;
                         Assert.AreEqual(owner, Thread.CurrentThread.ManagedThreadId);
@@ -181,7 +183,8 @@ namespace VBAi.Tests.Unit
                 {
                     int calls = 0;
                     Request retained = null;
-                    server.ProjectGeneralNative = async (request, write) => {
+                    server.ProjectGeneralNative = async (request, write) =>
+                    {
                         retained = request; calls++;
                         await Task.Yield();
                         request.ControlCaption = "Another command";
@@ -209,7 +212,8 @@ namespace VBAi.Tests.Unit
                 using (var server = new BridgeServer(dispatcher, null, id))
                 {
                     int saves = 0;
-                    server.SaveHostDocumentNative = async request => {
+                    server.SaveHostDocumentNative = async request =>
+                    {
                         Assert.AreEqual(ownerThread, Thread.CurrentThread.ManagedThreadId);
                         Assert.AreEqual("save_host_document", request.Command);
                         saves++;
@@ -238,7 +242,8 @@ namespace VBAi.Tests.Unit
                 int id = Guid.NewGuid().GetHashCode() & int.MaxValue;
                 using (var server = new BridgeServer(dispatcher, null, id))
                 {
-                    server.ReadImmediateNative = async request => {
+                    server.ReadImmediateNative = async request =>
+                    {
                         Assert.AreEqual("P", request.Project);
                         Assert.AreEqual(thread, Thread.CurrentThread.ManagedThreadId);
                         Assert.AreEqual(ApartmentState.STA, Thread.CurrentThread.GetApartmentState());
@@ -269,7 +274,8 @@ namespace VBAi.Tests.Unit
                 int id = Guid.NewGuid().GetHashCode() & int.MaxValue;
                 using (var server = new BridgeServer(dispatcher, null, id))
                 {
-                    server.InspectLocalScalarsNative = async request => {
+                    server.InspectLocalScalarsNative = async request =>
+                    {
                         Assert.AreEqual("P", request.Project);
                         Assert.AreEqual("M", request.Module);
                         Assert.AreEqual("Run", request.Procedure);
@@ -369,18 +375,30 @@ namespace VBAi.Tests.Unit
                 int id = Guid.NewGuid().GetHashCode() & int.MaxValue;
                 using (var server = new BridgeServer(dispatcher, null, id))
                 {
-                    var state = new Infrastructure.VbeToolMode { Mode = 2, Project = "SameName", SelectedProject = "SameName",
-                        SelectedProjectPath = @"C:\Temp\B.xlsm", ActiveModule = "Module1" };
+                    var state = new Infrastructure.VbeToolMode
+                    {
+                        Mode = 2,
+                        Project = "SameName",
+                        SelectedProject = "SameName",
+                        SelectedProjectPath = @"C:\Temp\B.xlsm",
+                        ActiveModule = "Module1"
+                    };
                     int ownerThread = System.Threading.Thread.CurrentThread.ManagedThreadId;
-                    server.Execute = request => {
+                    server.Execute = request =>
+                    {
                         Assert.AreEqual(ownerThread, System.Threading.Thread.CurrentThread.ManagedThreadId);
                         return Response.Success(state);
                     };
                     int executions = 0;
                     server.Native.ExecuteImmediate = (text, submit) => { submit(() => executions++); return new { Executed = true }; };
                     server.Start();
-                    string requestJson = new JavaScriptSerializer().Serialize(new {
-                        Command = "immediate_execute", Project = @"C:\Temp\A.xlsm", ExpectedMode = 2, Text = "Debug.Print 1" });
+                    string requestJson = new JavaScriptSerializer().Serialize(new
+                    {
+                        Command = "immediate_execute",
+                        Project = @"C:\Temp\A.xlsm",
+                        ExpectedMode = 2,
+                        Text = "Debug.Print 1"
+                    });
                     var refused = SendWithMessagePump(id, requestJson);
                     Assert.AreEqual(false, refused["Ok"]);
                     StringAssert.Contains((string)refused["Error"], "requested project must be active");
@@ -388,7 +406,8 @@ namespace VBAi.Tests.Unit
                     state.SelectedProjectPath = @"C:\Temp\A.xlsm";
                     Assert.AreEqual(true, SendWithMessagePump(id, requestJson)["Ok"]);
                     Assert.AreEqual(1, executions);
-                    server.Native.ExecuteImmediate = (text, submit) => {
+                    server.Native.ExecuteImmediate = (text, submit) =>
+                    {
                         state.Mode = 1; // Native typing/echo completed while the approved mode changed.
                         submit(() => executions++);
                         return new { Executed = true };
@@ -430,8 +449,8 @@ namespace VBAi.Tests.Unit
             }
         }
         [TestMethod]
-                /// <summary>Vérifie que le dispatch natif conserve les résultats de requête et les échecs renvoyés par l’hôte.</summary>
-[STATestMethod]
+        /// <summary>Vérifie que le dispatch natif conserve les résultats de requête et les échecs renvoyés par l’hôte.</summary>
+        [STATestMethod]
         public void NativeDispatchMatrixPreservesRequestResultsAndHostFailures()
         {
             using (var dispatcher = new Control())
@@ -474,8 +493,8 @@ namespace VBAi.Tests.Unit
         }
 
         [TestMethod]
-                /// <summary>Vérifie les diagnostics, erreurs hôte, exceptions et callbacks retardés de la compilation.</summary>
-[STATestMethod]
+        /// <summary>Vérifie les diagnostics, erreurs hôte, exceptions et callbacks retardés de la compilation.</summary>
+        [STATestMethod]
         public void CompileMatrixReportsDiagnosticsHostFailuresExceptionsAndDelayedCallbacks()
         {
             using (var dispatcher = new Control())
@@ -509,8 +528,8 @@ namespace VBAi.Tests.Unit
         }
 
         [TestMethod]
-                /// <summary>Vérifie le statut de sauvegarde de signature et les nouvelles tentatives bornées en cas d’occupation.</summary>
-[STATestMethod]
+        /// <summary>Vérifie le statut de sauvegarde de signature et les nouvelles tentatives bornées en cas d’occupation.</summary>
+        [STATestMethod]
         public void SignatureMatrixRetainsSaveStatusAndBoundedBusyRetries()
         {
             using (var dispatcher = new Control())
@@ -553,8 +572,8 @@ namespace VBAi.Tests.Unit
         }
 
         [TestMethod]
-                /// <summary>Vérifie la fermeture du serveur lors d’une destruction avant démarrage ou pendant l’attente inactive.</summary>
-[STATestMethod]
+        /// <summary>Vérifie la fermeture du serveur lors d’une destruction avant démarrage ou pendant l’attente inactive.</summary>
+        [STATestMethod]
         public void DisposalBeforeStartAndDuringIdleWaitClosesServer()
         {
             using (var dispatcher = new Control())
@@ -577,8 +596,8 @@ namespace VBAi.Tests.Unit
         }
 
         [TestMethod]
-                /// <summary>Vérifie que l’échec de création du canal est retenté sauf si l’arrêt est déjà demandé.</summary>
-[STATestMethod]
+        /// <summary>Vérifie que l’échec de création du canal est retenté sauf si l’arrêt est déjà demandé.</summary>
+        [STATestMethod]
         public void PipeCreationIoFailureRetriesUnlessShutdownWasRequested()
         {
             using (var dispatcher = new Control())
@@ -588,23 +607,23 @@ namespace VBAi.Tests.Unit
                 using (var server = new BridgeServer(dispatcher, null, id))
                 {
                     var open = server.OpenPipe; int attempts = 0;
-                    server.OpenPipe = security => { if (Interlocked.Increment(ref attempts)==1) throw new IOException("transient pipe failure"); return open(security); };
+                    server.OpenPipe = security => { if (Interlocked.Increment(ref attempts) == 1) throw new IOException("transient pipe failure"); return open(security); };
                     server.Execute = Infrastructure.VbeToolBoundaryFixture.Execute;
                     server.Start();
-                    Assert.AreEqual(true,SendWithMessagePump(id,"{\"Command\":\"status\"}")["Ok"]);
-                    Assert.IsTrue(attempts>=2);
+                    Assert.AreEqual(true, SendWithMessagePump(id, "{\"Command\":\"status\"}")["Ok"]);
+                    Assert.IsTrue(attempts >= 2);
                 }
-                var stopping = new BridgeServer(dispatcher,null,Guid.NewGuid().GetHashCode() & int.MaxValue);
+                var stopping = new BridgeServer(dispatcher, null, Guid.NewGuid().GetHashCode() & int.MaxValue);
                 stopping.OpenPipe = security => { stopping.Dispose(); throw new IOException("shutdown during pipe creation"); };
                 stopping.Start();
-                var worker = (Thread)typeof(BridgeServer).GetField("worker",System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance).GetValue(stopping);
+                var worker = (Thread)typeof(BridgeServer).GetField("worker", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance).GetValue(stopping);
                 Assert.IsTrue(worker.Join(5000));
-                using (var disposed = new BridgeServer(dispatcher,null,Guid.NewGuid().GetHashCode() & int.MaxValue))
+                using (var disposed = new BridgeServer(dispatcher, null, Guid.NewGuid().GetHashCode() & int.MaxValue))
                 {
                     disposed.OpenPipe = security => { throw new ObjectDisposedException("pipe creation"); };
                     disposed.Start();
-                    worker = (Thread)typeof(BridgeServer).GetField("worker",System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance).GetValue(disposed);
-                    Assert.IsTrue(worker.Join(5000),"A disposed transport must stop the worker.");
+                    worker = (Thread)typeof(BridgeServer).GetField("worker", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance).GetValue(disposed);
+                    Assert.IsTrue(worker.Join(5000), "A disposed transport must stop the worker.");
                 }
             }
         }

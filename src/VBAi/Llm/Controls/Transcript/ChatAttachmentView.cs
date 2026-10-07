@@ -1,5 +1,3 @@
-using System;
-using System.Windows.Forms;
 namespace VBAi
 {
 
@@ -8,6 +6,6 @@ namespace VBAi
     {
 
         /// <summary>Creates the fixed controls from the WinForms Designer.</summary>
-        public ChatAttachmentView() { InitializeComponent(); UiText.Apply(this, components); UiTheme.Apply(this);  }
+        public ChatAttachmentView() { InitializeComponent(); UiText.Apply(this, components); UiTheme.Apply(this); }
     }
 }

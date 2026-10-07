@@ -67,7 +67,8 @@ namespace VBAi
             Response projects;
             try { projects = session.Execute(new Request { Command = "list_projects" }); }
             catch (Exception error) { projects = Response.Failure(error.Message); }
-            return new {
+            return new
+            {
                 HostProcess = process.ProcessName,
                 HostProcessId = process.Id,
                 VbeConnected = true,

@@ -2184,4 +2184,628 @@ Git Credential Manager로 로그인하며 커밋 작성자 정보는 Git에서 �
   <data name="User guide" xml:space="preserve"><value>사용자 안내서</value></data>
   <data name="Open the local VBAi user guide in the interface language" xml:space="preserve"><value>인터페이스 언어로 로컬 VBAi 안내서 열기</value></data>
   <data name="Local help is not included in this build. Place the VBAi help files in the Help folder beside the application." xml:space="preserve"><value>이 빌드에는 로컬 도움말이 포함되어 있지 않습니다. VBAi 도움말 파일을 응용 프로그램 옆의 Help 폴더에 넣으세요.</value></data>
+  <data name="Close this window without starting another operation." xml:space="preserve">
+    <value>다른 작업을 시작하지 않고 이 창을 닫습니다.</value>
+  </data>
+  <data name="Save the settings edited in this window." xml:space="preserve">
+    <value>이 창에서 편집한 설정을 저장합니다.</value>
+  </data>
+  <data name="Choose the provider; authentication fields and available models depend on this selection." xml:space="preserve">
+    <value>공급자를 선택합니다. 인증 필드와 사용 가능한 모델은 이 선택에 따라 달라집니다.</value>
+  </data>
+  <data name="Choose an available model for this conversation after the provider catalogue has loaded." xml:space="preserve">
+    <value>공급자 카탈로그가 로드된 후 이 대화에 사용할 모델을 선택합니다.</value>
+  </data>
+  <data name="Choose the reasoning level supported by this model for the current conversation." xml:space="preserve">
+    <value>현재 대화에 사용할 이 모델의 지원 추론 수준을 선택합니다.</value>
+  </data>
+  <data name="Select the project bound to this conversation and its VBE operations." xml:space="preserve">
+    <value>이 대화와 VBE 작업에 연결된 프로젝트를 선택합니다.</value>
+  </data>
+  <data name="Choose when VBA edits need confirmation; project identity, privacy and revision checks still apply." xml:space="preserve">
+    <value>VBA 편집에 확인이 필요한 시점을 선택합니다. 프로젝트 식별, 개인정보 보호, 리비전 검사는 계속 적용됩니다.</value>
+  </data>
+  <data name="Choose the agent&#x27;s work mode for the next request." xml:space="preserve">
+    <value>다음 요청에 대한 에이전트의 작업 모드를 선택합니다.</value>
+  </data>
+  <data name="Start account authentication for the selected provider." xml:space="preserve">
+    <value>선택한 공급자의 계정 인증을 시작합니다.</value>
+  </data>
+  <data name="Read the selected provider&#x27;s account status again without starting login." xml:space="preserve">
+    <value>로그인을 시작하지 않고 선택한 공급자의 계정 상태를 다시 읽습니다.</value>
+  </data>
+  <data name="Connection status for the selected account-based provider." xml:space="preserve">
+    <value>선택한 계정 기반 공급자의 연결 상태입니다.</value>
+  </data>
+  <data name="Set this provider&#x27;s API address; an incorrect URL can prevent models or requests from loading." xml:space="preserve">
+    <value>이 공급자의 API 주소를 설정합니다. 잘못된 URL은 모델이나 요청의 로드를 막을 수 있습니다.</value>
+  </data>
+  <data name="Enter a new key for this provider; leave it empty to keep the saved key." xml:space="preserve">
+    <value>이 공급자의 새 키를 입력합니다. 비워 두면 저장된 키를 유지합니다.</value>
+  </data>
+  <data name="Remove the saved key when settings are saved; an environment fallback may remain active." xml:space="preserve">
+    <value>설정 저장 시 저장된 키를 제거합니다. 환경 변수의 대체 키는 계속 활성화되어 있을 수 있습니다.</value>
+  </data>
+  <data name="Enter the model or deployment identifiers required by this provider, one per line." xml:space="preserve">
+    <value>이 공급자에 필요한 모델이나 배포 식별자를 한 줄에 하나씩 입력합니다.</value>
+  </data>
+  <data name="Name this custom provider so it can be recognized in the chat picker." xml:space="preserve">
+    <value>채팅 선택기에서 알아볼 수 있도록 사용자 지정 공급자에 이름을 붙입니다.</value>
+  </data>
+  <data name="Use an Entra bearer token for Azure; renew the token after it expires." xml:space="preserve">
+    <value>Azure에는 Entra bearer token을 사용합니다. 만료되면 토큰을 갱신합니다.</value>
+  </data>
+  <data name="Set Ollama sampling temperature from 0 to 2; a lower value reduces variation." xml:space="preserve">
+    <value>Ollama 샘플링 온도를 0에서 2 사이로 설정합니다. 값이 낮으면 변화가 줄어듭니다.</value>
+  </data>
+  <data name="Set Ollama nucleus sampling above 0 and at most 1." xml:space="preserve">
+    <value>Ollama nucleus sampling을 0보다 크고 1 이하로 설정합니다.</value>
+  </data>
+  <data name="Choose the GitHub account for repositories; this is separate from Copilot authentication." xml:space="preserve">
+    <value>저장소용 GitHub 계정을 선택합니다. Copilot 인증과 별개입니다.</value>
+  </data>
+  <data name="Connect a GitHub account through Git Credential Manager." xml:space="preserve">
+    <value>Git Credential Manager를 통해 GitHub 계정을 연결합니다.</value>
+  </data>
+  <data name="Reload the GitHub accounts available in Git Credential Manager." xml:space="preserve">
+    <value>Git Credential Manager에서 사용 가능한 GitHub 계정을 다시 로드합니다.</value>
+  </data>
+  <data name="Status of GitHub repository authentication, separate from the chat provider." xml:space="preserve">
+    <value>채팅 공급자와 별개인 GitHub 저장소 인증 상태입니다.</value>
+  </data>
+  <data name="Choose light, dark or Windows-following appearance for VBAi." xml:space="preserve">
+    <value>VBAi의 모양을 밝게, 어둡게, Windows 설정 따르기 중에서 선택합니다.</value>
+  </data>
+  <data name="Apply experimental dark styling to native VBE surfaces; original editor colors are retained for restoration." xml:space="preserve">
+    <value>기본 VBE 화면에 실험적인 어두운 스타일을 적용합니다. 원래 편집기 색상은 복원을 위해 보존됩니다.</value>
+  </data>
+  <data name="Start a separate conversation for the selected project." xml:space="preserve">
+    <value>선택한 프로젝트에 별도의 대화를 시작합니다.</value>
+  </data>
+  <data name="Open conversation settings and additional actions." xml:space="preserve">
+    <value>대화 설정과 추가 작업을 엽니다.</value>
+  </data>
+  <data name="Show the conversations associated with the current document." xml:space="preserve">
+    <value>현재 문서에 연결된 대화를 표시합니다.</value>
+  </data>
+  <data name="Filter this document&#x27;s conversation history by text." xml:space="preserve">
+    <value>이 문서의 대화 기록을 텍스트로 필터링합니다.</value>
+  </data>
+  <data name="Select a stored or temporary conversation to reopen." xml:space="preserve">
+    <value>다시 열 저장되거나 임시인 대화를 선택합니다.</value>
+  </data>
+  <data name="Include archived conversations so they can be reopened or restored." xml:space="preserve">
+    <value>다시 열거나 복원할 수 있도록 보관된 대화를 포함합니다.</value>
+  </data>
+  <data name="Edit the selected conversation&#x27;s title before renaming it." xml:space="preserve">
+    <value>이름을 바꾸기 전에 선택한 대화의 제목을 편집합니다.</value>
+  </data>
+  <data name="Rename the selected conversation using the title entered above." xml:space="preserve">
+    <value>위에 입력한 제목으로 선택한 대화의 이름을 바꿉니다.</value>
+  </data>
+  <data name="Archive the selected conversation, or restore it if already archived." xml:space="preserve">
+    <value>선택한 대화를 보관하거나 이미 보관되었다면 복원합니다.</value>
+  </data>
+  <data name="Pin or unpin the selected conversation in the history list." xml:space="preserve">
+    <value>기록 목록에서 선택한 대화를 고정하거나 해제합니다.</value>
+  </data>
+  <data name="Permanently remove the selected conversation from VBAi local history." xml:space="preserve">
+    <value>선택한 대화를 VBAi 로컬 기록에서 영구히 제거합니다.</value>
+  </data>
+  <data name="Export the selected conversation as Markdown; review its contents before sharing." xml:space="preserve">
+    <value>선택한 대화를 Markdown으로 내보냅니다. 공유 전에 내용을 검토합니다.</value>
+  </data>
+  <data name="Show the local notes associated with this document." xml:space="preserve">
+    <value>이 문서에 연결된 로컬 메모를 표시합니다.</value>
+  </data>
+  <data name="Edit local project notes; they are transmitted only when attached to outgoing context." xml:space="preserve">
+    <value>로컬 프로젝트 메모를 편집합니다. 전송 컨텍스트에 첨부한 경우에만 전송됩니다.</value>
+  </data>
+  <data name="Save the edited notes locally for this document." xml:space="preserve">
+    <value>편집한 메모를 이 문서용으로 로컬에 저장합니다.</value>
+  </data>
+  <data name="Include these notes in the next message sent to the selected provider." xml:space="preserve">
+    <value>선택한 공급자에 보낼 다음 메시지에 이 메모를 포함합니다.</value>
+  </data>
+  <data name="Attach the currently selected VBA code to the message being prepared." xml:space="preserve">
+    <value>현재 선택한 VBA 코드를 준비 중인 메시지에 첨부합니다.</value>
+  </data>
+  <data name="Compile the selected VBA project and read the compiler result." xml:space="preserve">
+    <value>선택한 VBA 프로젝트를 컴파일하고 컴파일 결과를 읽습니다.</value>
+  </data>
+  <data name="Request compilation after agent code changes when supported by the current workflow." xml:space="preserve">
+    <value>현재 흐름이 지원하면 에이전트의 코드 변경 후 컴파일을 요청합니다.</value>
+  </data>
+  <data name="Choose a module reference to add to the outgoing message." xml:space="preserve">
+    <value>전송 메시지에 추가할 모듈 참조를 선택합니다.</value>
+  </data>
+  <data name="Choose a procedure reference to add to the outgoing message." xml:space="preserve">
+    <value>전송 메시지에 추가할 프로시저 참조를 선택합니다.</value>
+  </data>
+  <data name="Send the prepared message and its selected context to the provider." xml:space="preserve">
+    <value>준비한 메시지와 선택한 컨텍스트를 공급자에 전송합니다.</value>
+  </data>
+  <data name="Inspect and refresh the project data and attachments that will be sent." xml:space="preserve">
+    <value>전송할 프로젝트 데이터와 첨부를 검사하고 새로 고칩니다.</value>
+  </data>
+  <data name="Scroll back to the most recent message without changing the conversation." xml:space="preserve">
+    <value>대화를 바꾸지 않고 최신 메시지로 스크롤합니다.</value>
+  </data>
+  <data name="Inspect code changes and the available revision-checked undo actions." xml:space="preserve">
+    <value>코드 변경과 리비전 검사가 적용되는 가능한 실행 취소 작업을 검사합니다.</value>
+  </data>
+  <data name="Open this referenced module or procedure if its target is still available." xml:space="preserve">
+    <value>대상을 사용할 수 있으면 이 참조의 모듈이나 프로시저를 엽니다.</value>
+  </data>
+  <data name="Remove this reference from the message being prepared." xml:space="preserve">
+    <value>준비 중인 메시지에서 이 참조를 제거합니다.</value>
+  </data>
+  <data name="Open the attached code&#x27;s target in the VBE when available." xml:space="preserve">
+    <value>가능하면 첨부한 코드의 대상을 VBE에서 엽니다.</value>
+  </data>
+  <data name="Open the displayed external link through the safe-link handler." xml:space="preserve">
+    <value>표시된 외부 링크를 안전한 링크 처리기를 통해 엽니다.</value>
+  </data>
+  <data name="Copy this message&#x27;s content to the system clipboard." xml:space="preserve">
+    <value>이 메시지의 내용을 시스템 클립보드에 복사합니다.</value>
+  </data>
+  <data name="Start a separate conversation from this message." xml:space="preserve">
+    <value>이 메시지에서 별도의 대화를 시작합니다.</value>
+  </data>
+  <data name="Prepare a correction request from the issue shown in this message." xml:space="preserve">
+    <value>이 메시지에 표시된 문제에서 수정 요청을 준비합니다.</value>
+  </data>
+  <data name="Undo this code change if the current revision still allows it." xml:space="preserve">
+    <value>현재 리비전이 허용하면 이 코드 변경을 취소합니다.</value>
+  </data>
+  <data name="Undo the code changes of this agent turn subject to revision checks." xml:space="preserve">
+    <value>리비전 검사에 따라 에이전트 이번 차례의 코드 변경을 취소합니다.</value>
+  </data>
+  <data name="Choose a changed code block to undo rather than the whole change." xml:space="preserve">
+    <value>전체 변경 대신 취소할 변경 코드 블록을 선택합니다.</value>
+  </data>
+  <data name="Open the module affected by this code change." xml:space="preserve">
+    <value>이 코드 변경에 영향을 받은 모듈을 엽니다.</value>
+  </data>
+  <data name="Expand or collapse this section to read its details." xml:space="preserve">
+    <value>이 섹션을 펼치거나 접어 세부 정보를 읽습니다.</value>
+  </data>
+  <data name="Restore the cut form controls when the saved recovery state is still usable." xml:space="preserve">
+    <value>저장된 복구 상태를 사용할 수 있으면 잘라낸 폼 컨트롤을 복원합니다.</value>
+  </data>
+  <data name="Request sending this queued message according to the current turn state." xml:space="preserve">
+    <value>현재 차례의 상태에 따라 이 대기 메시지의 전송을 요청합니다.</value>
+  </data>
+  <data name="Edit this queued message before it is sent." xml:space="preserve">
+    <value>전송 전에 이 대기 메시지를 편집합니다.</value>
+  </data>
+  <data name="Remove this unsent message from the queue." xml:space="preserve">
+    <value>아직 전송하지 않은 이 메시지를 대기열에서 제거합니다.</value>
+  </data>
+  <data name="Prepare a request to explain a VBA procedure." xml:space="preserve">
+    <value>VBA 프로시저를 설명할 요청을 준비합니다.</value>
+  </data>
+  <data name="Prepare a request to improve the current VBA code." xml:space="preserve">
+    <value>현재 VBA 코드를 개선할 요청을 준비합니다.</value>
+  </data>
+  <data name="Prepare a request to diagnose and fix a VBA error." xml:space="preserve">
+    <value>VBA 오류를 진단하고 고칠 요청을 준비합니다.</value>
+  </data>
+  <data name="Choose one of the matching VBA targets for this reference." xml:space="preserve">
+    <value>이 참조와 일치하는 VBA 대상 중 하나를 선택합니다.</value>
+  </data>
+  <data name="Type a message; add module or procedure references before sending." xml:space="preserve">
+    <value>메시지를 입력합니다. 전송 전에 모듈이나 프로시저 참조를 추가합니다.</value>
+  </data>
+  <data name="Show deletions and additions together instead of side by side." xml:space="preserve">
+    <value>나란히 표시하는 대신 삭제와 추가를 함께 표시합니다.</value>
+  </data>
+  <data name="Fold unchanged lines to concentrate on the changed code." xml:space="preserve">
+    <value>바뀌지 않은 줄을 접어 변경한 코드에 집중합니다.</value>
+  </data>
+  <data name="Move to the previous changed block in this comparison." xml:space="preserve">
+    <value>이 비교에서 이전 변경 블록으로 이동합니다.</value>
+  </data>
+  <data name="Move to the next changed block in this comparison." xml:space="preserve">
+    <value>이 비교에서 다음 변경 블록으로 이동합니다.</value>
+  </data>
+  <data name="Enter text to find within this code comparison." xml:space="preserve">
+    <value>이 코드 비교에서 찾을 텍스트를 입력합니다.</value>
+  </data>
+  <data name="Find the entered text in this comparison." xml:space="preserve">
+    <value>이 비교에서 입력한 텍스트를 찾습니다.</value>
+  </data>
+  <data name="Read the before and after source with highlighted additions and deletions." xml:space="preserve">
+    <value>추가와 삭제가 강조된 이전 및 이후 소스를 읽습니다.</value>
+  </data>
+  <data name="Choose the projects included in this view&#x27;s read or discovery scope." xml:space="preserve">
+    <value>이 보기의 읽기 또는 검색 범위에 포함할 프로젝트를 선택합니다.</value>
+  </data>
+  <data name="Allow read access to shared debugger, native inventory and clipboard data; no additional project write permission is granted." xml:space="preserve">
+    <value>공유 디버거, 기본 목록, 클립보드 데이터 읽기를 허용합니다. 추가 프로젝트 쓰기 권한은 부여하지 않습니다.</value>
+  </data>
+  <data name="Apply the selected project read scope to a new conversation." xml:space="preserve">
+    <value>선택한 프로젝트 읽기 범위를 새 대화에 적용합니다.</value>
+  </data>
+  <data name="Allow the specific VBE action described in this dialog." xml:space="preserve">
+    <value>이 대화 상자에 설명된 특정 VBE 작업을 허용합니다.</value>
+  </data>
+  <data name="Deny the specific VBE action described in this dialog." xml:space="preserve">
+    <value>이 대화 상자에 설명된 특정 VBE 작업을 거부합니다.</value>
+  </data>
+  <data name="Review the proposed action and its project before allowing or denying it." xml:space="preserve">
+    <value>허용하거나 거부하기 전에 제안된 작업과 프로젝트를 검토합니다.</value>
+  </data>
+  <data name="Apply the edited Monaco version after the conflict has been reviewed and the project revalidated." xml:space="preserve">
+    <value>충돌을 검토하고 프로젝트를 다시 검증한 후 편집한 Monaco 버전을 적용합니다.</value>
+  </data>
+  <data name="Compare the Monaco text with the current native VBA text." xml:space="preserve">
+    <value>Monaco 텍스트를 현재 기본 VBA 텍스트와 비교합니다.</value>
+  </data>
+  <data name="Reload the current VBA version instead of the conflicting local edit." xml:space="preserve">
+    <value>충돌하는 로컬 편집 대신 현재 VBA 버전을 다시 로드합니다.</value>
+  </data>
+  <data name="Review and restore an available local editor draft." xml:space="preserve">
+    <value>사용 가능한 로컬 편집기 초안을 검토하고 복원합니다.</value>
+  </data>
+  <data name="Return to the editable code surface from the comparison." xml:space="preserve">
+    <value>비교에서 편집 가능한 코드 화면으로 돌아갑니다.</value>
+  </data>
+  <data name="Choose the section to display; changing tabs alone does not submit an operation." xml:space="preserve">
+    <value>표시할 섹션을 선택합니다. 탭 변경만으로 작업이 제출되지는 않습니다.</value>
+  </data>
+  <data name="Enter the GitHub repository to link to this VBA project." xml:space="preserve">
+    <value>이 VBA 프로젝트에 연결할 GitHub 저장소를 입력합니다.</value>
+  </data>
+  <data name="Enter the repository branch used for this VBA project." xml:space="preserve">
+    <value>이 VBA 프로젝트에 사용할 저장소 브랜치를 입력합니다.</value>
+  </data>
+  <data name="Link the selected repository and branch to the current VBA project." xml:space="preserve">
+    <value>선택한 저장소와 브랜치를 현재 VBA 프로젝트에 연결합니다.</value>
+  </data>
+  <data name="Compare current VBA sources with their repository baseline." xml:space="preserve">
+    <value>현재 VBA 소스를 저장소 기준과 비교합니다.</value>
+  </data>
+  <data name="Fetch remote references without treating that alone as a VBA import." xml:space="preserve">
+    <value>원격 참조를 가져옵니다. 이것만으로 VBA 가져오기를 수행한 것으로 취급하지 않습니다.</value>
+  </data>
+  <data name="Publish local commits to the selected remote branch." xml:space="preserve">
+    <value>로컬 커밋을 선택한 원격 브랜치에 게시합니다.</value>
+  </data>
+  <data name="Pull sources and run the guarded VBA import; inspect the result and save the document." xml:space="preserve">
+    <value>소스를 Pull하고 보호된 VBA 가져오기를 실행합니다. 결과를 검사하고 문서를 저장합니다.</value>
+  </data>
+  <data name="Restore VBA from the available backup and inspect the recovery result." xml:space="preserve">
+    <value>사용 가능한 백업에서 VBA를 복원하고 복구 결과를 검사합니다.</value>
+  </data>
+  <data name="Preview the source changes that an import would apply before changing VBA." xml:space="preserve">
+    <value>VBA 변경 전에 가져오기가 적용할 소스 변경을 미리 봅니다.</value>
+  </data>
+  <data name="Request cancellation of the current operation; a native mutation already in progress may still finish." xml:space="preserve">
+    <value>현재 작업 취소를 요청합니다. 진행 중인 기본 변경은 완료될 수 있습니다.</value>
+  </data>
+  <data name="Describe the selected source changes in the commit message." xml:space="preserve">
+    <value>선택한 소스 변경을 커밋 메시지에 설명합니다.</value>
+  </data>
+  <data name="Create a local commit from the selected source changes; Push publishes it separately." xml:space="preserve">
+    <value>선택한 소스 변경에서 로컬 커밋을 만듭니다. Push로 별도 게시합니다.</value>
+  </data>
+  <data name="Select the VBA source changes to review and include in a commit." xml:space="preserve">
+    <value>검토하고 커밋에 포함할 VBA 소스 변경을 선택합니다.</value>
+  </data>
+  <data name="Open the selected module in the VBE without restoring its source." xml:space="preserve">
+    <value>소스를 복원하지 않고 선택한 모듈을 VBE에서 엽니다.</value>
+  </data>
+  <data name="Replace the selected module using the available repository version; review before applying." xml:space="preserve">
+    <value>사용 가능한 저장소 버전으로 선택한 모듈을 교체합니다. 적용 전에 검토합니다.</value>
+  </data>
+  <data name="Select a commit to inspect its details or compare revisions." xml:space="preserve">
+    <value>세부 정보를 검사하거나 리비전을 비교할 커밋을 선택합니다.</value>
+  </data>
+  <data name="Compare the chosen repository revisions without applying them to VBA." xml:space="preserve">
+    <value>선택한 저장소 리비전을 VBA에 적용하지 않고 비교합니다.</value>
+  </data>
+  <data name="Select a local or remote branch for the branch actions." xml:space="preserve">
+    <value>브랜치 작업에 사용할 로컬 또는 원격 브랜치를 선택합니다.</value>
+  </data>
+  <data name="Enter the new local branch name." xml:space="preserve">
+    <value>새 로컬 브랜치 이름을 입력합니다.</value>
+  </data>
+  <data name="Include remote branch references in the branch list." xml:space="preserve">
+    <value>브랜치 목록에 원격 브랜치 참조를 포함합니다.</value>
+  </data>
+  <data name="Create the named local branch." xml:space="preserve">
+    <value>입력한 이름의 로컬 브랜치를 만듭니다.</value>
+  </data>
+  <data name="Create local tracking for the selected remote branch." xml:space="preserve">
+    <value>선택한 원격 브랜치의 로컬 추적을 만듭니다.</value>
+  </data>
+  <data name="Switch to the selected branch subject to the current Git and VBA state checks." xml:space="preserve">
+    <value>현재 Git 및 VBA 상태 검사를 거쳐 선택한 브랜치로 전환합니다.</value>
+  </data>
+  <data name="Merge the selected branch into the current branch; review the direction first." xml:space="preserve">
+    <value>선택한 브랜치를 현재 브랜치에 병합합니다. 먼저 방향을 확인합니다.</value>
+  </data>
+  <data name="Select a stored checkpoint to inspect or restore." xml:space="preserve">
+    <value>검사하거나 복원할 저장된 체크포인트를 선택합니다.</value>
+  </data>
+  <data name="Name the checkpoint so its purpose is recognizable later." xml:space="preserve">
+    <value>나중에 목적을 알아볼 수 있도록 체크포인트에 이름을 붙입니다.</value>
+  </data>
+  <data name="Create a checkpoint of the current VBA source state." xml:space="preserve">
+    <value>현재 VBA 소스 상태의 체크포인트를 만듭니다.</value>
+  </data>
+  <data name="Restore the selected checkpoint through the guarded recovery workflow." xml:space="preserve">
+    <value>보호된 복구 흐름을 통해 선택한 체크포인트를 복원합니다.</value>
+  </data>
+  <data name="Choose the source file whose merge conflict you want to resolve." xml:space="preserve">
+    <value>병합 충돌을 해결할 소스 파일을 선택합니다.</value>
+  </data>
+  <data name="Enter the complete resolved file content, not only the changed lines." xml:space="preserve">
+    <value>변경한 줄만이 아니라 해결된 파일의 전체 내용을 입력합니다.</value>
+  </data>
+  <data name="Use the local side as the resolution for this selected file." xml:space="preserve">
+    <value>선택한 파일의 해결로 로컬 쪽을 사용합니다.</value>
+  </data>
+  <data name="Use the incoming side as the resolution for this selected file." xml:space="preserve">
+    <value>선택한 파일의 해결로 들어오는 쪽을 사용합니다.</value>
+  </data>
+  <data name="Use the complete text in the resolution editor for this selected file." xml:space="preserve">
+    <value>선택한 파일의 해결로 해결 편집기의 전체 텍스트를 사용합니다.</value>
+  </data>
+  <data name="Complete the prepared merge after all conflicts have been resolved." xml:space="preserve">
+    <value>모든 충돌을 해결한 후 준비된 병합을 완료합니다.</value>
+  </data>
+  <data name="Abort the prepared merge through the repository recovery workflow." xml:space="preserve">
+    <value>저장소 복구 흐름을 통해 준비된 병합을 중단합니다.</value>
+  </data>
+  <data name="Read the common ancestor to understand how the conflicting edits diverged." xml:space="preserve">
+    <value>공통 조상을 읽어 충돌하는 편집이 어떻게 갈라졌는지 이해합니다.</value>
+  </data>
+  <data name="Filter repositories available to the connected GitHub account." xml:space="preserve">
+    <value>연결된 GitHub 계정에서 사용 가능한 저장소를 필터링합니다.</value>
+  </data>
+  <data name="Select a GitHub repository before choosing its branch or using it." xml:space="preserve">
+    <value>브랜치를 선택하거나 사용하기 전에 GitHub 저장소를 선택합니다.</value>
+  </data>
+  <data name="Choose the branch of the selected GitHub repository." xml:space="preserve">
+    <value>선택한 GitHub 저장소의 브랜치를 선택합니다.</value>
+  </data>
+  <data name="Choose the account or organization that will own the new repository." xml:space="preserve">
+    <value>새 저장소를 소유할 계정이나 조직을 선택합니다.</value>
+  </data>
+  <data name="Enter the new GitHub repository name." xml:space="preserve">
+    <value>새 GitHub 저장소 이름을 입력합니다.</value>
+  </data>
+  <data name="Choose private visibility for the new repository before creating it." xml:space="preserve">
+    <value>새 저장소를 만들기 전에 비공개를 선택합니다.</value>
+  </data>
+  <data name="Load repositories accessible to the connected GitHub account." xml:space="preserve">
+    <value>연결된 GitHub 계정에서 접근할 수 있는 저장소를 로드합니다.</value>
+  </data>
+  <data name="Use the selected repository and branch for this VBA project&#x27;s connection." xml:space="preserve">
+    <value>선택한 저장소와 브랜치를 이 VBA 프로젝트의 연결에 사용합니다.</value>
+  </data>
+  <data name="Create a GitHub repository with the entered owner, name and visibility." xml:space="preserve">
+    <value>입력한 소유자, 이름, 공개 범위로 GitHub 저장소를 만듭니다.</value>
+  </data>
+  <data name="Choose a pull request to inspect its details, files, comments and checks." xml:space="preserve">
+    <value>세부 정보, 파일, 댓글, 검사를 살펴볼 풀 리퀘스트를 선택합니다.</value>
+  </data>
+  <data name="Load pull requests from the selected repository." xml:space="preserve">
+    <value>선택한 저장소에서 풀 리퀘스트를 로드합니다.</value>
+  </data>
+  <data name="Open the selected pull request on GitHub." xml:space="preserve">
+    <value>선택한 풀 리퀘스트를 GitHub에서 엽니다.</value>
+  </data>
+  <data name="Load the prepared pull request draft and review it before publication." xml:space="preserve">
+    <value>준비한 풀 리퀘스트 초안을 로드하고 게시 전에 검토합니다.</value>
+  </data>
+  <data name="Choose the destination branch for the new pull request." xml:space="preserve">
+    <value>새 풀 리퀘스트의 대상 브랜치를 선택합니다.</value>
+  </data>
+  <data name="Describe the proposed change in the pull request title." xml:space="preserve">
+    <value>제안한 변경을 풀 리퀘스트 제목에 설명합니다.</value>
+  </data>
+  <data name="Explain the change, validation and remaining limits before creating the pull request." xml:space="preserve">
+    <value>풀 리퀘스트를 만들기 전에 변경, 검증, 남은 한계를 설명합니다.</value>
+  </data>
+  <data name="Create the pull request as a draft when it is not ready for final review." xml:space="preserve">
+    <value>최종 검토 준비가 되지 않았을 때 풀 리퀘스트를 초안으로 만듭니다.</value>
+  </data>
+  <data name="Publish the prepared pull request using the selected source and target branches." xml:space="preserve">
+    <value>선택한 소스 및 대상 브랜치로 준비한 풀 리퀘스트를 게시합니다.</value>
+  </data>
+  <data name="Read the selected pull request&#x27;s title, state and description." xml:space="preserve">
+    <value>선택한 풀 리퀘스트의 제목, 상태, 설명을 읽습니다.</value>
+  </data>
+  <data name="Inspect the files changed by the selected pull request." xml:space="preserve">
+    <value>선택한 풀 리퀘스트가 변경한 파일을 검사합니다.</value>
+  </data>
+  <data name="Read the comments of the selected pull request." xml:space="preserve">
+    <value>선택한 풀 리퀘스트의 댓글을 읽습니다.</value>
+  </data>
+  <data name="Read the content of the selected review comment." xml:space="preserve">
+    <value>선택한 검토 댓글의 내용을 읽습니다.</value>
+  </data>
+  <data name="Inspect the status checks reported by GitHub for this pull request." xml:space="preserve">
+    <value>GitHub가 이 풀 리퀘스트에 보고한 상태 검사를 확인합니다.</value>
+  </data>
+  <data name="Filter discovered VBA tests by name or category." xml:space="preserve">
+    <value>검색한 VBA 테스트를 이름이나 범주로 필터링합니다.</value>
+  </data>
+  <data name="Filter tests by their last reported outcome." xml:space="preserve">
+    <value>테스트를 마지막으로 보고된 결과로 필터링합니다.</value>
+  </data>
+  <data name="Choose how discovered tests are grouped in the tree." xml:space="preserve">
+    <value>검색한 테스트를 트리에 그룹화할 방법을 선택합니다.</value>
+  </data>
+  <data name="Select tests or check them to define the next execution scope." xml:space="preserve">
+    <value>테스트를 선택하거나 체크하여 다음 실행 범위를 정합니다.</value>
+  </data>
+  <data name="Read the selected test&#x27;s source identity, outcome and failure details." xml:space="preserve">
+    <value>선택한 테스트의 소스 식별, 결과, 실패 세부 정보를 읽습니다.</value>
+  </data>
+  <data name="Read the human-readable report for the current VBA test run." xml:space="preserve">
+    <value>현재 VBA 테스트 실행의 사람이 읽기 쉬운 보고서를 읽습니다.</value>
+  </data>
+  <data name="Read the structured JSON report for the current VBA test run." xml:space="preserve">
+    <value>현재 VBA 테스트 실행의 구조화된 JSON 보고서를 읽습니다.</value>
+  </data>
+  <data name="Copy the current VBA test result report to the clipboard." xml:space="preserve">
+    <value>현재 VBA 테스트 결과 보고서를 클립보드에 복사합니다.</value>
+  </data>
+  <data name="Export the current VBA test result report to a chosen file." xml:space="preserve">
+    <value>현재 VBA 테스트 결과 보고서를 선택한 파일로 내보냅니다.</value>
+  </data>
+  <data name="Discover the tests currently present in the selected projects." xml:space="preserve">
+    <value>선택한 프로젝트에 현재 있는 테스트를 검색합니다.</value>
+  </data>
+  <data name="Run the selected or checked VBA tests." xml:space="preserve">
+    <value>선택하거나 체크한 VBA 테스트를 실행합니다.</value>
+  </data>
+  <data name="Run the tests in the current visible scope." xml:space="preserve">
+    <value>현재 표시 범위의 테스트를 실행합니다.</value>
+  </data>
+  <data name="Run the selected tests with the supported VBA procedure coverage workflow." xml:space="preserve">
+    <value>지원되는 VBA 프로시저 커버리지 흐름으로 선택한 테스트를 실행합니다.</value>
+  </data>
+  <data name="Run the visible scope with the supported VBA procedure coverage workflow." xml:space="preserve">
+    <value>지원되는 VBA 프로시저 커버리지 흐름으로 표시 범위를 실행합니다.</value>
+  </data>
+  <data name="Run again the tests whose current recorded result is a failure." xml:space="preserve">
+    <value>현재 기록 결과가 실패인 테스트를 다시 실행합니다.</value>
+  </data>
+  <data name="Request stopping between tests after the current VBA test finishes." xml:space="preserve">
+    <value>현재 VBA 테스트가 끝난 후 테스트 사이에 중지를 요청합니다.</value>
+  </data>
+  <data name="Open the selected test&#x27;s source in the VBE." xml:space="preserve">
+    <value>선택한 테스트의 소스를 VBE에서 엽니다.</value>
+  </data>
+  <data name="Review the test support module and its source backup before applying it." xml:space="preserve">
+    <value>적용 전에 테스트 지원 모듈과 소스 백업을 검토합니다.</value>
+  </data>
+  <data name="Apply the reviewed test support after project revalidation and backup." xml:space="preserve">
+    <value>프로젝트 재검증과 백업 후 검토한 테스트 지원을 적용합니다.</value>
+  </data>
+  <data name="Give the issue a concise title that describes the observed symptom." xml:space="preserve">
+    <value>관찰한 증상을 설명하는 간결한 문제 제목을 붙입니다.</value>
+  </data>
+  <data name="Describe reproduction steps, expected behavior and observed behavior; remove sensitive details." xml:space="preserve">
+    <value>재현 단계, 예상 동작, 관찰 동작을 설명하고 민감한 세부 정보는 제거합니다.</value>
+  </data>
+  <data name="Review the complete report that will be copied, saved or sent." xml:space="preserve">
+    <value>복사, 저장, 전송할 전체 보고서를 검토합니다.</value>
+  </data>
+  <data name="Send the reviewed issue report through the GitHub-first reporting workflow." xml:space="preserve">
+    <value>GitHub 우선 보고 흐름을 통해 검토한 문제 보고서를 전송합니다.</value>
+  </data>
+  <data name="Prepare the reviewed issue report for the available email workflow." xml:space="preserve">
+    <value>사용 가능한 이메일 흐름용으로 검토한 문제 보고서를 준비합니다.</value>
+  </data>
+  <data name="Copy the reviewed issue report to the clipboard." xml:space="preserve">
+    <value>검토한 문제 보고서를 클립보드에 복사합니다.</value>
+  </data>
+  <data name="Save the reviewed report to a chosen local file." xml:space="preserve">
+    <value>검토한 보고서를 선택한 로컬 파일에 저장합니다.</value>
+  </data>
+  <data name="Open the created GitHub issue when its link is available." xml:space="preserve">
+    <value>링크를 사용할 수 있으면 생성한 GitHub 이슈를 엽니다.</value>
+  </data>
+  <data name="Open the VBAi source repository on GitHub." xml:space="preserve">
+    <value>GitHub에서 VBAi 소스 저장소를 엽니다.</value>
+  </data>
+  <data name="Open the maintained VBAi documentation on GitHub." xml:space="preserve">
+    <value>GitHub에서 유지 관리되는 VBAi 문서를 엽니다.</value>
+  </data>
+  <data name="Open the GitHub issue form to report a VBAi problem." xml:space="preserve">
+    <value>VBAi 문제를 보고할 GitHub 이슈 양식을 엽니다.</value>
+  </data>
+  <data name="Copy version and environment metadata for support without project source or personal paths." xml:space="preserve">
+    <value>프로젝트 소스나 개인 경로 없이 지원용 버전 및 환경 메타데이터를 복사합니다.</value>
+  </data>
+  <data name="Check the configured release feed and display the available version." xml:space="preserve">
+    <value>구성된 릴리스 피드를 확인하고 사용 가능한 버전을 표시합니다.</value>
+  </data>
+  <data name="Allow the scheduled daily check for an eligible update." xml:space="preserve">
+    <value>적용 가능한 업데이트를 매일 확인하는 일정을 허용합니다.</value>
+  </data>
+  <data name="Download eligible updates automatically when their package is available." xml:space="preserve">
+    <value>패키지가 있으면 적용 가능한 업데이트를 자동으로 다운로드합니다.</value>
+  </data>
+  <data name="Schedule installation after VBA hosts close when package trust and installation policy allow it." xml:space="preserve">
+    <value>패키지 신뢰와 설치 정책이 허용하면 VBA 호스트 종료 후 설치를 예약합니다.</value>
+  </data>
+  <data name="Include prerelease versions when checking for updates." xml:space="preserve">
+    <value>업데이트 확인 시 시험판 버전을 포함합니다.</value>
+  </data>
+  <data name="Download the selected update package and verify its identity." xml:space="preserve">
+    <value>선택한 업데이트 패키지를 다운로드하고 식별을 검증합니다.</value>
+  </data>
+  <data name="Install the verified update only when the host and publisher policy permit it." xml:space="preserve">
+    <value>호스트와 게시자 정책이 허용할 때만 검증한 업데이트를 설치합니다.</value>
+  </data>
+  <data name="Ignore this proposed update version." xml:space="preserve">
+    <value>제안된 이 업데이트 버전을 무시합니다.</value>
+  </data>
+  <data name="Save the automatic-update and prerelease preferences." xml:space="preserve">
+    <value>자동 업데이트와 시험판 기본 설정을 저장합니다.</value>
+  </data>
+  <data name="Cancel the scheduled update before its installation starts." xml:space="preserve">
+    <value>설치가 시작되기 전에 예약된 업데이트를 취소합니다.</value>
+  </data>
+  <data name="Read the notes of the proposed update before downloading or installing it." xml:space="preserve">
+    <value>다운로드나 설치 전에 제안된 업데이트의 설명을 읽습니다.</value>
+  </data>
+  <data name="Open the local French user guide." xml:space="preserve">
+    <value>로컬 프랑스어 사용자 가이드를 엽니다.</value>
+  </data>
+  <data name="Local help is not included in this build. Build or obtain VBAi.fr-FR.chm and place it in the Help folder beside VBAi.dll." xml:space="preserve">
+    <value>이 빌드에는 로컬 도움말이 없습니다. VBAi.fr-FR.chm을 빌드하거나 구한 후 VBAi.dll 옆 Help 폴더에 넣으세요.</value>
+  </data>
+  <data name="Write your request. Enter sends it; Shift+Enter adds a line. Use # or @ to reference VBA code and / to see chat commands." xml:space="preserve">
+    <value>요청을 작성합니다. Enter는 전송, Shift+Enter는 줄바꿈입니다. # 또는 @로 VBA 코드를 참조하고 /로 채팅 명령을 확인합니다.</value>
+  </data>
+  <data name="Open the modified module" xml:space="preserve">
+    <value>수정된 모듈 열기</value>
+  </data>
+  <data name="Read the exact context prepared for the next message; refresh it after changing referenced code." xml:space="preserve">
+    <value>다음 메시지용으로 준비한 정확한 컨텍스트를 읽습니다. 참조 코드를 바꾼 후 새로 고칩니다.</value>
+  </data>
+  <data name="Select response text to copy it; use the context menu to copy a complete code block." xml:space="preserve">
+    <value>응답 텍스트를 선택하여 복사합니다. 전체 코드 블록은 컨텍스트 메뉴로 복사합니다.</value>
+  </data>
+  <data name="Open the provider, model and reasoning choices for this conversation." xml:space="preserve">
+    <value>이 대화의 공급자, 모델, 추론 선택을 엽니다.</value>
+  </data>
+  <data name="Compare the current and incoming versions of the selected conflict before choosing a complete resolution." xml:space="preserve">
+    <value>완전한 해결을 선택하기 전에 선택한 충돌의 현재 버전과 들어오는 버전을 비교합니다.</value>
+  </data>
+  <data name="Read the selected commit and its changed sources without importing that revision." xml:space="preserve">
+    <value>선택한 커밋과 변경 소스를 읽되 해당 리비전을 가져오지 않습니다.</value>
+  </data>
+  <data name="Review the incoming VBA components and changes before importing them into the current project." xml:space="preserve">
+    <value>현재 프로젝트로 가져오기 전에 들어오는 VBA 구성 요소와 변경을 검토합니다.</value>
+  </data>
+  <data name="Configure provider authentication, editing approvals and the repository account." xml:space="preserve">
+    <value>공급자 인증, 편집 승인, 저장소 계정을 구성합니다.</value>
+  </data>
+  <data name="Reload the model catalogue from the selected provider without sending a chat message." xml:space="preserve">
+    <value>채팅 메시지를 보내지 않고 선택한 공급자의 모델 카탈로그를 다시 로드합니다.</value>
+  </data>
+  <data name="Switch the chat between a VBE docked pane and a floating window." xml:space="preserve">
+    <value>채팅을 VBE 도킹 패널과 부동 창 사이에서 전환합니다.</value>
+  </data>
+  <data name="Choose whether to compile the project automatically after agent code edits." xml:space="preserve">
+    <value>에이전트 코드 편집 후 프로젝트를 자동으로 컴파일할지 선택합니다.</value>
+  </data>
+  <data name="Copy the selected response text to the clipboard." xml:space="preserve">
+    <value>선택한 응답 텍스트를 클립보드에 복사합니다.</value>
+  </data>
+  <data name="Copy the complete code block under the pointer without its surrounding explanation." xml:space="preserve">
+    <value>주변 설명 없이 포인터 아래의 전체 코드 블록을 복사합니다.</value>
+  </data>
+  <data name="Back to conversation" xml:space="preserve">
+    <value>대화로 돌아가기</value>
+  </data>
 </root>

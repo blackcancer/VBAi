@@ -1,10 +1,9 @@
 namespace VBAi.Tests.Unit
 {
+    using Microsoft.VisualStudio.TestTools.UnitTesting;
     using System;
-    using System.Collections.Generic;
     using System.Linq;
     using VBAi;
-    using Microsoft.VisualStudio.TestTools.UnitTesting;
 
     [TestClass]
     [TestCategory("Unit")]
@@ -93,16 +92,13 @@ namespace VBAi.Tests.Unit
 
 namespace VBAi.Tests.Unit
 {
+    using Microsoft.VisualStudio.TestTools.UnitTesting;
     using System;
     using System.Collections;
-    using System.Collections.Generic;
     using System.Linq;
     using System.Reflection;
-    using System.Security.Cryptography;
-    using System.Text;
     using System.Threading;
     using VBAi;
-    using Microsoft.VisualStudio.TestTools.UnitTesting;
 
     [TestClass]
     [TestCategory("Unit")]
@@ -746,8 +742,8 @@ namespace VBAi.Tests.Unit
         {
             var f = Create(1);
             Assert.ThrowsException<ArgumentException>(() => f.Service.QueueAddWatchDialog(null));
-            Assert.ThrowsException<ArgumentException>(() => f.Service.QueueAddWatchDialog(new Request { Project = f.Project.Name, Module = "Module1", Expression = new string ('x', 1025) }));
-            Assert.ThrowsException<ArgumentException>(() => f.Service.QueueEditWatchDialog(new Request { Project = f.Project.Name, Expression = "x", Context = "Module1", NewExpression = new string ('x', 1025) }));
+            Assert.ThrowsException<ArgumentException>(() => f.Service.QueueAddWatchDialog(new Request { Project = f.Project.Name, Module = "Module1", Expression = new string('x', 1025) }));
+            Assert.ThrowsException<ArgumentException>(() => f.Service.QueueEditWatchDialog(new Request { Project = f.Project.Name, Expression = "x", Context = "Module1", NewExpression = new string('x', 1025) }));
             Assert.ThrowsException<ArgumentException>(() => f.Service.QueueQuickWatchDialog(new Request { Project = f.Project.Name, Expression = "x", StartColumn = 1, EndColumn = 1 }));
             Assert.ThrowsException<ArgumentException>(() => f.Service.RemoveSelectedWatch(null));
             var add = new FakeControl
@@ -774,6 +770,7 @@ namespace VBAi.Tests.Unit
 
 namespace VBAi.Tests.Unit
 {
+    using Microsoft.VisualStudio.TestTools.UnitTesting;
     using System;
     using System.Collections;
     using System.Collections.Generic;
@@ -781,7 +778,6 @@ namespace VBAi.Tests.Unit
     using System.Reflection;
     using System.Threading;
     using VBAi;
-    using Microsoft.VisualStudio.TestTools.UnitTesting;
 
     public sealed partial class VbeDebugTests
     {
@@ -789,7 +785,8 @@ namespace VBAi.Tests.Unit
         public void EveryCaptionVariantIsAllowedOnlyForItsActionAndMode()
         {
             var method = typeof(VbeDebug).GetMethod("IsAllowed", BindingFlags.NonPublic | BindingFlags.Static);
-            var policies = new Dictionary<string, string[]> {
+            var policies = new Dictionary<string, string[]>
+            {
                 ["toggle_breakpoint"] = new[] { "Toggle Breakpoint", "Point d'arrêt", "Point d’arrêt" },
                 ["run"] = new[] { "Run Sub", "Exécuter Sub", "Exécuter la macro" },
                 ["continue"] = new[] { "Continue", "Continuer" },
@@ -909,8 +906,12 @@ namespace VBAi.Tests.Unit
                         new FakeControl { Id = entry.Item1, Caption = null },
                         new FakeControl { Id = entry.Item1, Caption = "Unrelated" } });
                     Assert.ThrowsException<InvalidOperationException>(() => entry.Item3());
-                    var command = new FakeControl { Id = entry.Item1, Caption = entry.Item2,
-                        OnExecute = () => { throw new InvalidOperationException("native dialog failure"); } };
+                    var command = new FakeControl
+                    {
+                        Id = entry.Item1,
+                        Caption = entry.Item2,
+                        OnExecute = () => { throw new InvalidOperationException("native dialog failure"); }
+                    };
                     f.Bar.Controls.Add(command);
                     SynchronizationContext.SetSynchronizationContext(null);
                     Assert.ThrowsException<InvalidOperationException>(() => entry.Item3());
@@ -1049,7 +1050,8 @@ namespace VBAi.Tests.Unit
             r.ExpectedMode = 1; Assert.ThrowsException<InvalidOperationException>(() => f.Service.InvokeCommand(r)); r.ExpectedMode = 2;
             r.Action = "run"; Assert.ThrowsException<InvalidOperationException>(() => f.Service.InvokeCommand(r)); r.Action = "toggle_breakpoint";
             r.Module = "Missing"; Assert.ThrowsException<InvalidOperationException>(() => f.Service.InvokeCommand(r)); r.Module = "Module1";
-            foreach (int line in new[] { 0, 3 }) { r.StartLine = line; Assert.ThrowsException<ArgumentOutOfRangeException>(() => f.Service.InvokeCommand(r)); } r.StartLine = 1;
+            foreach (int line in new[] { 0, 3 }) { r.StartLine = line; Assert.ThrowsException<ArgumentOutOfRangeException>(() => f.Service.InvokeCommand(r)); }
+            r.StartLine = 1;
             f.Module.Code = " \r\nDebug.Print 2"; r.ExpectedSha256 = Sha(f.Module.Code);
             Assert.ThrowsException<InvalidOperationException>(() => f.Service.InvokeCommand(r));
             f.Module.Code = Code; r.ExpectedSha256 = Sha(Code);
@@ -1207,7 +1209,8 @@ namespace VBAi.Tests.Unit
             var r = new Request { Project = f.Project.Name, Module = "Module1", Procedure = "TryMe", ExpectedMode = 2, ExpectedSha256 = Sha(f.Module.Code) };
             Assert.ThrowsException<ArgumentException>(() => f.Service.RunSub(null));
             foreach (var name in new[] { null, " ", "1Bad", new string('A', 41) })
-            { r.Procedure = name; Assert.ThrowsException<ArgumentException>(() => f.Service.RunSub(r)); } r.Procedure = "TryMe";
+            { r.Procedure = name; Assert.ThrowsException<ArgumentException>(() => f.Service.RunSub(r)); }
+            r.Procedure = "TryMe";
             r.ExpectedMode = 1; Assert.ThrowsException<ArgumentException>(() => f.Service.RunSub(r)); r.ExpectedMode = 2;
             f.Project.Mode = 1; Assert.ThrowsException<InvalidOperationException>(() => f.Service.RunSub(r)); f.Project.Mode = 2;
             r.Module = "Missing"; Assert.ThrowsException<InvalidOperationException>(() => f.Service.RunSub(r)); r.Module = "Module1";
@@ -1225,12 +1228,22 @@ namespace VBAi.Tests.Unit
         {
             var f = Create(); f.Project.VBComponents[0].Type = 1;
             f.Module.Code = "Sub TryMe()\r\nEnd Sub";
-            var request = new Request { Project = f.Project.Name, Module = "Module1", Procedure = "TryMe",
-                ExpectedMode = 2, ExpectedSha256 = Sha(f.Module.Code) };
+            var request = new Request
+            {
+                Project = f.Project.Name,
+                Module = "Module1",
+                Procedure = "TryMe",
+                ExpectedMode = 2,
+                ExpectedSha256 = Sha(f.Module.Code)
+            };
             f.Vbe.ActiveCodePane = new FakePane { CodeModule = f.Module };
             f.Module.CodePane.OnSetSelection = () => Assert.AreSame(f.Module.CodePane, f.Vbe.ActiveCodePane);
-            var command = new FakeControl { Id = 186, Caption = "Run Sub",
-                OnEnabledRead = () => Assert.AreSame(f.Module.CodePane, f.Vbe.ActiveCodePane) };
+            var command = new FakeControl
+            {
+                Id = 186,
+                Caption = "Run Sub",
+                OnEnabledRead = () => Assert.AreSame(f.Module.CodePane, f.Vbe.ActiveCodePane)
+            };
             f.Bar.Controls.Add(command);
             int assignmentsBefore = f.Vbe.ActiveCodePaneSetCount;
 
@@ -1247,8 +1260,14 @@ namespace VBAi.Tests.Unit
         {
             var f = Create(); f.Project.VBComponents[0].Type = 1;
             f.Module.Code = "Sub TryMe()\r\nEnd Sub";
-            var request = new Request { Project = f.Project.Name, Module = "Module1", Procedure = "TryMe",
-                ExpectedMode = 2, ExpectedSha256 = Sha(f.Module.Code) };
+            var request = new Request
+            {
+                Project = f.Project.Name,
+                Module = "Module1",
+                Procedure = "TryMe",
+                ExpectedMode = 2,
+                ExpectedSha256 = Sha(f.Module.Code)
+            };
             var previous = new FakePane { CodeModule = f.Module };
             f.Vbe.ActiveCodePane = previous;
             f.Vbe.IgnoreActiveCodePaneAssignment = true;

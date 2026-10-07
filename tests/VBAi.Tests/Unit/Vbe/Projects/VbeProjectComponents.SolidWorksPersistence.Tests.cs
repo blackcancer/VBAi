@@ -1,10 +1,9 @@
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Diagnostics;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
-using VBAi;
 namespace VBAi.Tests.Unit
 {
     [TestClass, TestCategory("Unit")]
@@ -34,8 +33,13 @@ namespace VBAi.Tests.Unit
             internal Request Request()
             {
                 dynamic state = Service.ProjectProperties("P");
-                return new Request { Project = "P", ExpectedProjectVersion = state.Version,
-                    ExpectedHostPath = @"C:\fixture\Owned.swp", Path = @"C:\fixture\Different.swp" };
+                return new Request
+                {
+                    Project = "P",
+                    ExpectedProjectVersion = state.Version,
+                    ExpectedHostPath = @"C:\fixture\Owned.swp",
+                    Path = @"C:\fixture\Different.swp"
+                };
             }
             // Trace admission precedes VbeUiTask.Run, and the original task stays owned by this test STA.
             internal Task<object> SaveHostAsync(Request request) =>
@@ -110,7 +114,8 @@ namespace VBAi.Tests.Unit
             Assert.AreEqual(0, second.CodeModule.CodePane.Window.Focuses);
         }
         [DataTestMethod]
-        [DataRow(false)][DataRow(true)]
+        [DataRow(false)]
+        [DataRow(true)]
         public void NativeSelectionRestoresOnlyItsUnchangedSelectionWithoutForcingFocus(bool userChangedSelection)
         {
             var target = new SelectionProject(); var targetModule = new SelectionComponent(target);
@@ -143,10 +148,20 @@ namespace VBAi.Tests.Unit
             Assert.AreEqual(1, p.Saves);
         }
         [SolidWorksStaTestMethod]
-        [DataRow("host")][DataRow("owner")][DataRow("type")][DataRow("path")]
-        [DataRow("extension")][DataRow("missing")][DataRow("readonly")][DataRow("empty")]
-        [DataRow("protected")][DataRow("mode")][DataRow("version")]
-        [DataRow("selection changed")][DataRow("pid changed")][DataRow("code changed")]
+        [DataRow("host")]
+        [DataRow("owner")]
+        [DataRow("type")]
+        [DataRow("path")]
+        [DataRow("extension")]
+        [DataRow("missing")]
+        [DataRow("readonly")]
+        [DataRow("empty")]
+        [DataRow("protected")]
+        [DataRow("mode")]
+        [DataRow("version")]
+        [DataRow("selection changed")]
+        [DataRow("pid changed")]
+        [DataRow("code changed")]
         public void RefusalBeforeSaveInvokesNoMutation(string failure)
         {
             var p = new Probe(); var request = p.Request();
@@ -169,12 +184,20 @@ namespace VBAi.Tests.Unit
             Assert.AreEqual(0, p.Saves);
         }
         [SolidWorksStaTestMethod]
-        [DataRow("native error")][DataRow("unsaved")][DataRow("missing")][DataRow("empty")]
-        [DataRow("path")][DataRow("code")][DataRow("identity")][DataRow("owner")][DataRow("mode")]
+        [DataRow("native error")]
+        [DataRow("unsaved")]
+        [DataRow("missing")]
+        [DataRow("empty")]
+        [DataRow("path")]
+        [DataRow("code")]
+        [DataRow("identity")]
+        [DataRow("owner")]
+        [DataRow("mode")]
         public void PostInvocationFailureRemainsUncertainAndIsNeverRetried(string failure)
         {
             var p = new Probe(); var request = p.Request();
-            p.OnSave = () => {
+            p.OnSave = () =>
+            {
                 if (failure == "native error") throw new InvalidOperationException("Native save returned an error after invocation");
                 if (failure == "unsaved") p.Project.Saved = false;
                 if (failure == "missing") p.Exists = false;
@@ -202,9 +225,11 @@ namespace VBAi.Tests.Unit
             using (var ui = new Control())
             {
                 var handle = ui.Handle;
-                p.OnSave = () => {
+                p.OnSave = () =>
+                {
                     p.Project.Saved = false;
-                    ui.BeginInvoke(new Action(() => {
+                    ui.BeginInvoke(new Action(() =>
+                    {
                         Assert.AreEqual(owner, Thread.CurrentThread.ManagedThreadId);
                         p.Project.Saved = true;
                     }));
@@ -226,8 +251,15 @@ namespace VBAi.Tests.Unit
         }
 
         [SolidWorksStaTestMethod]
-        [DataRow("code")][DataRow("path")][DataRow("identity")][DataRow("selection")]
-        [DataRow("mode")][DataRow("owner")][DataRow("pid")][DataRow("metadata")][DataRow("protected")]
+        [DataRow("code")]
+        [DataRow("path")]
+        [DataRow("identity")]
+        [DataRow("selection")]
+        [DataRow("mode")]
+        [DataRow("owner")]
+        [DataRow("pid")]
+        [DataRow("metadata")]
+        [DataRow("protected")]
         public void ChangesWhileYieldedNeverBecomeSuccessfulOrReplaySave(string change)
         {
             var p = new Probe();

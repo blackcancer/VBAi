@@ -19,7 +19,8 @@ namespace VBAi.Tests.Unit
             internal uint ColorsUsed, ColorsImportant;
         }
         [DllImport("gdi32.dll")] private static extern IntPtr CreateCompatibleDC(IntPtr source);
-        [DllImport("gdi32.dll")] private static extern IntPtr CreateDIBSection(IntPtr dc, ref BitmapInfo info, uint usage,
+        [DllImport("gdi32.dll")]
+        private static extern IntPtr CreateDIBSection(IntPtr dc, ref BitmapInfo info, uint usage,
             out IntPtr bits, IntPtr section, uint offset);
         [DllImport("gdi32.dll")] private static extern IntPtr SelectObject(IntPtr dc, IntPtr item);
         [DllImport("gdi32.dll")] private static extern bool DeleteObject(IntPtr item);

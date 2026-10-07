@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Web.Script.Serialization;
 
 namespace VBAi
@@ -50,8 +49,7 @@ namespace VBAi
                     var items = json.DeserializeObject(json.Serialize(modules.Data)) as object[];
                     foreach (var entry in (items ?? new object[0]))
                     {
-                        var fields = entry as IDictionary<string, object>;
-                        if (fields != null && fields.ContainsKey("Name")) pending.Enqueue(new Request { Command = "read_module", Project = project, Module = Convert.ToString(fields["Name"]) });
+                        if (entry is IDictionary<string, object> fields && fields.ContainsKey("Name")) pending.Enqueue(new Request { Command = "read_module", Project = project, Module = Convert.ToString(fields["Name"]) });
                     }
                 }
                 pending.Enqueue(new Request { Command = "list_references", Project = project });
@@ -61,8 +59,7 @@ namespace VBAi
             Response result = execute(request);
             if (request.Command == "read_module" && result.Ok)
             {
-                var values = json.DeserializeObject(json.Serialize(result.Data)) as IDictionary<string, object>;
-                if (values != null && values.ContainsKey("Sha256")) ObserveValue("module:" + request.Module, Convert.ToString(values["Sha256"]));
+                if (json.DeserializeObject(json.Serialize(result.Data)) is IDictionary<string, object> values && values.ContainsKey("Sha256")) ObserveValue("module:" + request.Module, Convert.ToString(values["Sha256"]));
             }
             else Observe(request.Command, result);
         }
@@ -78,8 +75,7 @@ namespace VBAi
         /// <param name="value">Nouvelle empreinte sérialisée.</param>
         private void ObserveValue(string key, string value)
         {
-            string previous;
-            bool changed = fingerprints.TryGetValue(key, out previous) && previous != value;
+            bool changed = fingerprints.TryGetValue(key, out string previous) && previous != value;
             fingerprints[key] = value;
             if (changed) Changed?.Invoke();
         }

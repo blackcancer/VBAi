@@ -25,7 +25,7 @@ namespace VBAi
         internal Func<object, IntPtr> ReadApplicationWindow = PowerPointWindow.Read;
 
         /// <summary>Reads the owning PID for an HWND.</summary>
-        internal Func<IntPtr, uint> ReadWindowOwner = hwnd => { uint owner; VbeDebugWindows.GetWindowThreadProcessId(hwnd, out owner); return owner; };
+        internal Func<IntPtr, uint> ReadWindowOwner = hwnd => { VbeDebugWindows.GetWindowThreadProcessId(hwnd, out uint owner); return owner; };
 
         /// <summary>Compares managed identity first, then native COM identity.</summary>
         internal Func<object, object, bool> SameIdentity = (first, second) => ReferenceEquals(first, second) || VbeDebug.NativeProcedureValuesHost.SameComIdentity(first, second);
@@ -97,8 +97,7 @@ namespace VBAi
         internal OwnedTarget ValidateTarget(object target)
         {
             RequireOwner();
-            var owned = target as OwnedTarget;
-            if (owned == null || !ReferenceEquals(owned.Owner, this)) throw new InvalidOperationException("An owned PowerPoint target is required.");
+            if (!(target is OwnedTarget owned) || !ReferenceEquals(owned.Owner, this)) throw new InvalidOperationException("An owned PowerPoint target is required.");
             object application = ResolveApplication();
             if (!SameIdentity(application, owned.Application)) throw new InvalidOperationException("The owned PowerPoint application identity changed.");
             object presentation = FindPresentation(application, owned.Project, owned.Path);
@@ -115,8 +114,7 @@ namespace VBAi
             if (!string.Equals(ReadProcessName(), "POWERPNT", StringComparison.OrdinalIgnoreCase))
                 throw new InvalidOperationException("PowerPoint returned values require the in-process POWERPNT host.");
             int processId = ReadProcessId();
-            object application = ReadActiveApplication("PowerPoint.Application");
-            if (application == null) throw new InvalidOperationException("The registered PowerPoint application is unavailable.");
+            object application = ReadActiveApplication("PowerPoint.Application") ?? throw new InvalidOperationException("The registered PowerPoint application is unavailable.");
             IntPtr window = ReadApplicationWindow(application);
             if (window == IntPtr.Zero || ReadWindowOwner(window) != (uint)processId)
                 throw new InvalidOperationException("The registered PowerPoint application belongs to another PID.");
@@ -162,8 +160,10 @@ namespace VBAi
         /// <param name="second">Expected path.</param>
         /// <returns>True when both paths are absolute and normalize to the same path, case-insensitively.</returns>
         internal static bool SamePath(string first, string second)
-        { return IsAbsolutePath(first) && IsAbsolutePath(second)
-            && string.Equals(Path.GetFullPath(first), Path.GetFullPath(second), StringComparison.OrdinalIgnoreCase); }
+        {
+            return IsAbsolutePath(first) && IsAbsolutePath(second)
+            && string.Equals(Path.GetFullPath(first), Path.GetFullPath(second), StringComparison.OrdinalIgnoreCase);
+        }
 
         /// <summary>Checks whether a path is rooted at a drive or network share.</summary>
         /// <param name="path">Path to validate.</param>

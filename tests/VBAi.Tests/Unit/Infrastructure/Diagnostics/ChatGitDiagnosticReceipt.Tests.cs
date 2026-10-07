@@ -1,9 +1,9 @@
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Web.Script.Serialization;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 using VBAi.Tests.Integration;
 
 namespace VBAi.Tests.Unit
@@ -15,9 +15,19 @@ namespace VBAi.Tests.Unit
         private const string Nonce = "47e3e856cfde40e08cdde96e7027e568";
         private static readonly JavaScriptSerializer Json = new JavaScriptSerializer();
         private static ChatGitModalDiagnostic.Identity Identity()
-        { return new ChatGitModalDiagnostic.Identity { DocumentPath = @"E:\Qualification\Disposable.docm", ProcessId = 71,
-            ProcessStartedUtc = "2026-10-05T16:19:22.8081032Z", ThreadId = 73, ChatHandle = 75, RootHandle = 77,
-            ProductMvid = "c4b7e1e3-dbf5-4dce-8498-1c0b7b45c973", ProductSha256 = new string('A', 64) }; }
+        {
+            return new ChatGitModalDiagnostic.Identity
+            {
+                DocumentPath = @"E:\Qualification\Disposable.docm",
+                ProcessId = 71,
+                ProcessStartedUtc = "2026-10-05T16:19:22.8081032Z",
+                ThreadId = 73,
+                ChatHandle = 75,
+                RootHandle = 77,
+                ProductMvid = "c4b7e1e3-dbf5-4dce-8498-1c0b7b45c973",
+                ProductSha256 = new string('A', 64)
+            };
+        }
         private static object[] Chain()
         {
             var expected = Identity(); var rows = new List<object>(); Action callback = null;
@@ -32,9 +42,21 @@ namespace VBAi.Tests.Unit
         { ChatGitDiagnosticReceipt.Validate(Chain(), Nonce, Identity()); }
 
         [DataTestMethod]
-        [DataRow("Nonce")][DataRow("Version")][DataRow("Phase")][DataRow("Errors")][DataRow("Missing")][DataRow("Extra")]
-        [DataRow("EarlySuccess")][DataRow("NoSuccess")][DataRow("Modal")][DataRow("Dispose")][DataRow("Timestamp")]
-        [DataRow("Identity")][DataRow("IdentityExtra")][DataRow("IdentityNumber")][DataRow("IdentityMissing")]
+        [DataRow("Nonce")]
+        [DataRow("Version")]
+        [DataRow("Phase")]
+        [DataRow("Errors")]
+        [DataRow("Missing")]
+        [DataRow("Extra")]
+        [DataRow("EarlySuccess")]
+        [DataRow("NoSuccess")]
+        [DataRow("Modal")]
+        [DataRow("Dispose")]
+        [DataRow("Timestamp")]
+        [DataRow("Identity")]
+        [DataRow("IdentityExtra")]
+        [DataRow("IdentityNumber")]
+        [DataRow("IdentityMissing")]
         public void EveryForeignPartialOrFailedChainRefusesBeforeAnyClose(string mutation)
         {
             object[] chain = Chain(); var last = (IDictionary<string, object>)chain[4];
@@ -57,7 +79,10 @@ namespace VBAi.Tests.Unit
         }
 
         [DataTestMethod]
-        [DataRow("LateReady")][DataRow("LateRead")][DataRow("NeverReady")][DataRow("AtDeadline")]
+        [DataRow("LateReady")]
+        [DataRow("LateRead")]
+        [DataRow("NeverReady")]
+        [DataRow("AtDeadline")]
         public void NoTerminalOrValidationAtOrAfterTheFixedDeadlineCanAuthorizeClose(string boundary)
         {
             long elapsed = boundary == "AtDeadline" ? 15000 : 0; int reads = 0, pauses = 0;
@@ -77,7 +102,9 @@ namespace VBAi.Tests.Unit
                 () => { reads++; return chain; }, () => Assert.Fail("No pause"), Nonce, Identity())); Assert.AreEqual(1, reads);
         }
 
-        [DataTestMethod][DataRow(false)][DataRow(true)]
+        [DataTestMethod]
+        [DataRow(false)]
+        [DataRow(true)]
         public void FailureBeforeOrAfterReadNeverBecomesAnAuthorization(bool afterRead)
         {
             int reads = 0, checks = 0;

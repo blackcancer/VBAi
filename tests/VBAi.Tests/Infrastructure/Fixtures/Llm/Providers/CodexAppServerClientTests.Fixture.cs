@@ -7,7 +7,6 @@ namespace VBAi.Tests.Unit
     using System.Threading.Tasks;
     using System.Web.Script.Serialization;
     using VBAi;
-    using Microsoft.VisualStudio.TestTools.UnitTesting;
 
     public sealed partial class CodexAppServerClientTests
     {

@@ -1,18 +1,6 @@
-using System;
-using System.IO;
-using System.Linq;
-using System.Text;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.Net;
-using System.Net.Http;
-using System.Threading;
-using System.Threading.Tasks;
-using System.Web.Script.Serialization;
-using System.Windows.Forms;
-using VBAi;
-using VBAi.Tests.Infrastructure;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+using System.IO;
+using VBAi.Tests.Infrastructure;
 namespace VBAi.Tests.Unit
 {
     [TestClass, TestCategory("Unit")]

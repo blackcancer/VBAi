@@ -18,7 +18,7 @@ namespace VBAi
         internal ChatDesignerHost(UserControl view)
         {
             Child = view;
-            view.SizeChanged += (s,e) => InvalidateMeasure();
+            view.SizeChanged += (s, e) => InvalidateMeasure();
         }
 
         /// <summary>Measures the hosted transcript view within the available designer width.</summary>

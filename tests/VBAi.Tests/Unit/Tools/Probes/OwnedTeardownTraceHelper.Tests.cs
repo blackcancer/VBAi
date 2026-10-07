@@ -1,6 +1,6 @@
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Runtime.InteropServices;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace VBAi.Tests.Unit
 {
@@ -46,9 +46,12 @@ namespace VBAi.Tests.Unit
                 IntPtr context = OwnedTeardownTraceHelper.AlignContext(allocation);
                 uint flags = variation == "NoFlags" ? 0U : variation == "NoArchitecture" ? 3U :
                     variation == "NoControl" ? 0x100002U : variation == "NoInteger" ? 0x100001U : 0x10000bU;
-                var captured = new OwnedTeardownTraceHelper.Context64 {
-                    Flags = flags, InstructionPointer = variation == "ZeroRip" ? 0UL : 0x102030UL,
-                    StackPointer = variation == "ZeroRsp" ? 0UL : 0x405060UL };
+                var captured = new OwnedTeardownTraceHelper.Context64
+                {
+                    Flags = flags,
+                    InstructionPointer = variation == "ZeroRip" ? 0UL : 0x102030UL,
+                    StackPointer = variation == "ZeroRsp" ? 0UL : 0x405060UL
+                };
                 Marshal.StructureToPtr(captured, context, false);
                 if (variation != "Complete" && variation != "AvComplete")
                 {

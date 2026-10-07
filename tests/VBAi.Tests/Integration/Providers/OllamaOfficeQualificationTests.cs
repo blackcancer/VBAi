@@ -1,3 +1,4 @@
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -5,7 +6,6 @@ using System.Linq;
 using System.Runtime.ExceptionServices;
 using System.Threading;
 using System.Web.Script.Serialization;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace VBAi.Tests.Integration
 {
@@ -34,9 +34,16 @@ namespace VBAi.Tests.Integration
             var observations = new List<object>();
             Action flush = null;
             Action<object> record = value => { lock (observations) { observations.Add(value); flush?.Invoke(); } };
-            var report = new Dictionary<string, object> { ["State"] = "STARTED_ONCE", ["Host"] = kind,
-                ["SourceMvid"] = typeof(VbeSession).Module.ModuleVersionId.ToString("D"), ["Profile"] = profile.Describe(),
-                ["MacroExecutionRequested"] = false, ["StartedUtc"] = DateTime.UtcNow.ToString("o"), ["Observations"] = observations };
+            var report = new Dictionary<string, object>
+            {
+                ["State"] = "STARTED_ONCE",
+                ["Host"] = kind,
+                ["SourceMvid"] = typeof(VbeSession).Module.ModuleVersionId.ToString("D"),
+                ["Profile"] = profile.Describe(),
+                ["MacroExecutionRequested"] = false,
+                ["StartedUtc"] = DateTime.UtcNow.ToString("o"),
+                ["Observations"] = observations
+            };
             flush = () => File.WriteAllText(path, new JavaScriptSerializer { MaxJsonLength = 8 * 1024 * 1024 }.Serialize(report));
             flush();
             OllamaOfficeHost host = null;
@@ -44,7 +51,8 @@ namespace VBAi.Tests.Integration
             ExceptionDispatchInfo failure = null;
             try
             {
-                host = OllamaOfficeHost.Start(kind, assigned => {
+                host = OllamaOfficeHost.Start(kind, assigned =>
+                {
                     host = assigned; report["ProcessId"] = assigned.ProcessId;
                     report["NativeEvidenceRoot"] = assigned.Root; flush();
                 });
@@ -71,7 +79,8 @@ namespace VBAi.Tests.Integration
                     row => Convert.ToString(host.Data("read_module", "Module", row["Name"])["Sha256"]));
                 report["SourceBeforeSha256"] = before["Sha256"]; report["MarkerSha256"] = EditorDocument.Hash(marker);
                 report["ToolProject"] = host.ToolProject;
-                var worker = new Thread(() => {
+                var worker = new Thread(() =>
+                {
                     try
                     {
                         ui = new OllamaOfficeUi(host.ProcessId, record); ui.Discover();
@@ -146,8 +155,11 @@ namespace VBAi.Tests.Integration
                 }
                 else if (host != null)
                 {
-                    try { host.Dispose(); report["FixtureShutdownVerified"] = true;
-                        if (failure == null) report["State"] = "PASS"; }
+                    try
+                    {
+                        host.Dispose(); report["FixtureShutdownVerified"] = true;
+                        if (failure == null) report["State"] = "PASS";
+                    }
                     catch (Exception cleanup)
                     {
                         report["State"] = "FAIL"; report["CleanupError"] = cleanup.ToString();

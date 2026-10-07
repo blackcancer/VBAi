@@ -1,3 +1,4 @@
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Collections.Generic;
 using System.Drawing;
@@ -6,7 +7,6 @@ using System.Runtime.InteropServices;
 using System.Threading;
 using System.Web.Script.Serialization;
 using System.Windows.Forms;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace VBAi.Tests.Integration
 {
@@ -20,8 +20,14 @@ namespace VBAi.Tests.Integration
         internal void CaptureGitFormDesigner(string form, string path)
         {
             object project = null, components = null, component = null, window = null, editor = null, mainWindow = null;
-            var evidence = new Dictionary<string, object> { ["Form"] = form, ["ExpectedProcessId"] = ProcessId,
-                ["State"] = "PENDING", ["CapturePath"] = path, ["Scope"] = "UNQUALIFIED" };
+            var evidence = new Dictionary<string, object>
+            {
+                ["Form"] = form,
+                ["ExpectedProcessId"] = ProcessId,
+                ["State"] = "PENDING",
+                ["CapturePath"] = path,
+                ["Scope"] = "UNQUALIFIED"
+            };
             var observations = new List<object>(); evidence["Observations"] = observations;
             try
             {
@@ -42,7 +48,8 @@ namespace VBAi.Tests.Integration
                         state.DesignerVisible && state.MainVisible && state.DesignerType == 1 && state.ActiveType == 1 &&
                         !string.IsNullOrWhiteSpace(state.DesignerCaption) && state.DesignerCaption == state.ActiveCaption) break;
                 }
-                IntPtr handle = SelectGitDesignerCaptureTarget(state, (uint)ProcessId, target => {
+                IntPtr handle = SelectGitDesignerCaptureTarget(state, (uint)ProcessId, target =>
+                {
                     uint owner; GetWindowThreadProcessId(target, out owner); return owner;
                 });
                 evidence["Scope"] = state.DesignerHandle == 0 ? "OwnedVbeRootWithExactActiveDesigner" : "OwnedNativeDesignerWindow";
@@ -61,7 +68,8 @@ namespace VBAi.Tests.Integration
                 }
                 var after = ReadGitDesignerCaptureState(project, window, editor, mainWindow);
                 observations.Add(after);
-                Assert.AreEqual(handle, SelectGitDesignerCaptureTarget(after, (uint)ProcessId, target => {
+                Assert.AreEqual(handle, SelectGitDesignerCaptureTarget(after, (uint)ProcessId, target =>
+                {
                     uint owner; GetWindowThreadProcessId(target, out owner); return owner;
                 }), "The exact capture target changed while taking the screenshot.");
                 evidence["State"] = "CAPTURED_PENDING_VISUAL_REVIEW";
@@ -96,12 +104,16 @@ namespace VBAi.Tests.Integration
             {
                 activeProject = ((dynamic)editor).ActiveVBProject;
                 activeWindow = ((dynamic)editor).ActiveWindow;
-                return new GitDesignerCaptureState {
-                    DesignerHandle = Convert.ToInt64(((dynamic)window).HWnd), MainHandle = Convert.ToInt64(((dynamic)mainWindow).HWnd),
+                return new GitDesignerCaptureState
+                {
+                    DesignerHandle = Convert.ToInt64(((dynamic)window).HWnd),
+                    MainHandle = Convert.ToInt64(((dynamic)mainWindow).HWnd),
                     DesignerCaption = Convert.ToString(((dynamic)window).Caption),
                     ActiveCaption = activeWindow == null ? null : Convert.ToString(((dynamic)activeWindow).Caption),
-                    DesignerType = Convert.ToInt32(((dynamic)window).Type), ActiveType = activeWindow == null ? -1 : Convert.ToInt32(((dynamic)activeWindow).Type),
-                    DesignerVisible = Convert.ToBoolean(((dynamic)window).Visible), MainVisible = Convert.ToBoolean(((dynamic)mainWindow).Visible),
+                    DesignerType = Convert.ToInt32(((dynamic)window).Type),
+                    ActiveType = activeWindow == null ? -1 : Convert.ToInt32(((dynamic)activeWindow).Type),
+                    DesignerVisible = Convert.ToBoolean(((dynamic)window).Visible),
+                    MainVisible = Convert.ToBoolean(((dynamic)mainWindow).Visible),
                     ProjectIdentityMatches = VbeProjectHostPath.SameProject(project, activeProject),
                     DesignerIdentityMatches = VbeProjectHostPath.SameProject(window, activeWindow)
                 };
@@ -234,13 +246,22 @@ namespace VBAi.Tests.Integration
                 controls = ((dynamic)designer).Controls; label = ((dynamic)controls).Item("QualificationLabel"); button = ((dynamic)controls).Item("QualificationButton");
                 code = ((dynamic)component).CodeModule;
                 int lines = ((dynamic)code).CountOfLines;
-                return new Dictionary<string, object> {
-                    ["Name"] = ((dynamic)component).Name, ["Type"] = ((dynamic)component).Type,
-                    ["Caption"] = ((dynamic)designer).Caption, ["Width"] = ReadGitFormProperty(component, "Width"), ["Height"] = ReadGitFormProperty(component, "Height"),
+                return new Dictionary<string, object>
+                {
+                    ["Name"] = ((dynamic)component).Name,
+                    ["Type"] = ((dynamic)component).Type,
+                    ["Caption"] = ((dynamic)designer).Caption,
+                    ["Width"] = ReadGitFormProperty(component, "Width"),
+                    ["Height"] = ReadGitFormProperty(component, "Height"),
                     ["ControlCount"] = ((dynamic)controls).Count,
-                    ["LabelCaption"] = ((dynamic)label).Caption, ["LabelLeft"] = ((dynamic)label).Left, ["LabelTop"] = ((dynamic)label).Top,
-                    ["LabelWidth"] = ((dynamic)label).Width, ["LabelHeight"] = ((dynamic)label).Height,
-                    ["ButtonCaption"] = ((dynamic)button).Caption, ["ButtonLeft"] = ((dynamic)button).Left, ["ButtonTop"] = ((dynamic)button).Top,
+                    ["LabelCaption"] = ((dynamic)label).Caption,
+                    ["LabelLeft"] = ((dynamic)label).Left,
+                    ["LabelTop"] = ((dynamic)label).Top,
+                    ["LabelWidth"] = ((dynamic)label).Width,
+                    ["LabelHeight"] = ((dynamic)label).Height,
+                    ["ButtonCaption"] = ((dynamic)button).Caption,
+                    ["ButtonLeft"] = ((dynamic)button).Left,
+                    ["ButtonTop"] = ((dynamic)button).Top,
                     ["Code"] = lines == 0 ? "" : ((dynamic)code).Lines[1, lines]
                 };
             }

@@ -1,10 +1,9 @@
 namespace VBAi.Tests.Unit
 {
+    using Microsoft.VisualStudio.TestTools.UnitTesting;
     using System;
     using System.Collections;
     using System.Linq;
-    using VBAi;
-    using Microsoft.VisualStudio.TestTools.UnitTesting;
 
     public sealed partial class VbeFormsFrameDuplicationTests
     {
@@ -54,7 +53,7 @@ namespace VBAi.Tests.Unit
             dynamic collision = f.Service.FrameCopyPlan(request);
             Assert.IsFalse((bool)collision.EligibleForLimitedProbe);
             Assert.IsTrue(((IEnumerable)collision.Issues).Cast<string>().Any(issue => issue.Contains("already exists")));
-            request.NewName = new string ('F', 38);
+            request.NewName = new string('F', 38);
             dynamic longChild = f.Service.FrameSimpleCopyPlan(request);
             Assert.IsFalse((bool)longChild.EligibleForLimitedProbe);
             Assert.IsTrue(((IEnumerable)longChild.Issues).Cast<string>().Any(issue => issue.Contains("40 characters")));
@@ -85,56 +84,58 @@ namespace VBAi.Tests.Unit
 }
 namespace VBAi.Tests.Unit
 {
+    using Microsoft.VisualStudio.TestTools.UnitTesting;
     using System;
     using System.Collections;
     using System.Linq;
-    using Microsoft.VisualStudio.TestTools.UnitTesting;
     public sealed partial class VbeFormsFrameDuplicationTests
     {
         [TestMethod]
         public void FramePlansValidateRequiredPathsAndReportBothNameIssues()
         {
-            var f=Create();
-            foreach(var field in new[]{"ControlPath","ExpectedTreeVersion"}) {
-                var r=f.Request();typeof(VBAi.Request).GetProperty(field).SetValue(r,null);
-                Assert.ThrowsException<ArgumentException>(()=>f.Service.FrameCopyPlan(r));
+            var f = Create();
+            foreach (var field in new[] { "ControlPath", "ExpectedTreeVersion" })
+            {
+                var r = f.Request(); typeof(VBAi.Request).GetProperty(field).SetValue(r, null);
+                Assert.ThrowsException<ArgumentException>(() => f.Service.FrameCopyPlan(r));
             }
-            dynamic collision=f.Service.FrameCopyPlan(f.Request("Frame1"));
+            dynamic collision = f.Service.FrameCopyPlan(f.Request("Frame1"));
             Assert.IsFalse((bool)collision.EligibleForLimitedProbe);
-            StringAssert.Contains(((IEnumerable)collision.Issues).Cast<string>().Single(),"New Frame name already exists");
-            dynamic longName=f.Service.FrameSimpleCopyPlan(f.Request(new string('F',41)));
+            StringAssert.Contains(((IEnumerable)collision.Issues).Cast<string>().Single(), "New Frame name already exists");
+            dynamic longName = f.Service.FrameSimpleCopyPlan(f.Request(new string('F', 41)));
             Assert.IsFalse((bool)longName.EligibleForLimitedProbe);
-            StringAssert.Contains(((IEnumerable)longName.Issues).Cast<string>().Single(),"exceeds 40 characters");
-            f.Frame.Controls.AddExisting("CheckBox","Unsupported");
-            dynamic simple=f.Service.FrameSimpleCopyPlan(f.Request());
-            StringAssert.Contains(((IEnumerable)simple.Issues).Cast<string>().Single(),"Label or TextBox");
+            StringAssert.Contains(((IEnumerable)longName.Issues).Cast<string>().Single(), "exceeds 40 characters");
+            f.Frame.Controls.AddExisting("CheckBox", "Unsupported");
+            dynamic simple = f.Service.FrameSimpleCopyPlan(f.Request());
+            StringAssert.Contains(((IEnumerable)simple.Issues).Cast<string>().Single(), "Label or TextBox");
         }
 
         [TestMethod]
         public void FramePlanSkipsNonDirectControlsAndBoundsChangesAfterTreeRead()
         {
-            var f=Create();
-            var child=f.Frame.Controls.AddExisting("Label","OtherParent");
-            child.Parent=f.Form.Designer;
-            dynamic plan=f.Service.FrameCopyPlan(f.Request());
-            Assert.AreEqual(0,(int)plan.DirectChildCount);
-            Assert.AreEqual(1,(int)plan.CollectionCount);
-            child.Parent=f.Frame;
-            var r=f.Request();int reads=0;
-            f.Frame.Controls.BeforeEnumeration=()=>{
-                if(++reads==2) for(int i=0;i<512;i++) f.Frame.Controls.AddExisting("Label","L"+i);
+            var f = Create();
+            var child = f.Frame.Controls.AddExisting("Label", "OtherParent");
+            child.Parent = f.Form.Designer;
+            dynamic plan = f.Service.FrameCopyPlan(f.Request());
+            Assert.AreEqual(0, (int)plan.DirectChildCount);
+            Assert.AreEqual(1, (int)plan.CollectionCount);
+            child.Parent = f.Frame;
+            var r = f.Request(); int reads = 0;
+            f.Frame.Controls.BeforeEnumeration = () =>
+            {
+                if (++reads == 2) for (int i = 0; i < 512; i++) f.Frame.Controls.AddExisting("Label", "L" + i);
             };
-            var error=Assert.ThrowsException<InvalidOperationException>(()=>f.Service.FrameCopyPlan(r));
-            StringAssert.Contains(error.Message,"more than 512 direct controls");
-            Assert.AreEqual(1,f.Form.Designer.Controls.Count);
+            var error = Assert.ThrowsException<InvalidOperationException>(() => f.Service.FrameCopyPlan(r));
+            StringAssert.Contains(error.Message, "more than 512 direct controls");
+            Assert.AreEqual(1, f.Form.Designer.Controls.Count);
         }
 
         [TestMethod]
         public void FramePlanRejectsCanonicalPageRatherThanControl()
         {
-            var f=Create(); var page=f.Frame.Pages.Add("Page1","Page");
-            var r=f.Request();r.ControlPath="Controls/Frame1/Pages/Page1";
-            Assert.ThrowsException<ArgumentException>(()=>f.Service.FrameCopyPlan(r));
+            var f = Create(); var page = f.Frame.Pages.Add("Page1", "Page");
+            var r = f.Request(); r.ControlPath = "Controls/Frame1/Pages/Page1";
+            Assert.ThrowsException<ArgumentException>(() => f.Service.FrameCopyPlan(r));
         }
     }
 }

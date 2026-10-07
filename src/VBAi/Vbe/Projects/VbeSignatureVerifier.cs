@@ -1,8 +1,8 @@
+using Microsoft.Win32;
 using System;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
-using Microsoft.Win32;
 
 namespace VBAi
 {
@@ -117,13 +117,37 @@ namespace VBAi
             string library;
             switch (extension)
             {
-                case ".xlam": case ".xlsb": case ".xlsm": case ".xltm":
-                case ".potm": case ".ppam": case ".ppsm": case ".pptm":
-                case ".vsdm": case ".vssm": case ".vstm": case ".docm": case ".dotm":
+                case ".xlam":
+                case ".xlsb":
+                case ".xlsm":
+                case ".xltm":
+                case ".potm":
+                case ".ppam":
+                case ".ppsm":
+                case ".pptm":
+                case ".vsdm":
+                case ".vssm":
+                case ".vstm":
+                case ".docm":
+                case ".dotm":
                     subject = XmlSubject; library = "msosipx.dll"; break;
-                case ".xla": case ".xls": case ".xlt": case ".pot": case ".ppa": case ".pps": case ".ppt":
-                case ".mpp": case ".mpt": case ".pub": case ".vdw": case ".vsd": case ".vss": case ".vst":
-                case ".doc": case ".dot": case ".wiz":
+                case ".xla":
+                case ".xls":
+                case ".xlt":
+                case ".pot":
+                case ".ppa":
+                case ".pps":
+                case ".ppt":
+                case ".mpp":
+                case ".mpt":
+                case ".pub":
+                case ".vdw":
+                case ".vsd":
+                case ".vss":
+                case ".vst":
+                case ".doc":
+                case ".dot":
+                case ".wiz":
                     subject = LegacySubject; library = "msosip.dll"; break;
                 default: throw new NotSupportedException("The Microsoft Office VBA SIP does not support this format; standalone SWP and Access are not treated as Office signatures.");
             }
@@ -137,16 +161,35 @@ namespace VBAi
                 string provider = Provider(subject);
                 if (string.IsNullOrWhiteSpace(provider) || !System.IO.Path.IsPathRooted(provider) ||
                     !System.IO.Path.GetFileName(provider).Equals(library, StringComparison.OrdinalIgnoreCase) || !File.Exists(provider))
-                    return new { Path = path, FileSha256 = hash, Available = false, Status = "VerifierUnavailable",
-                        Trusted = (bool?)null, SignatureValid = (bool?)null, SipSubject = subject.ToString("B"),
-                        RequiredComponent = library, Reason = "Register the Microsoft Office x64 Subject Interface Package before VBA signature verification. No certificate-only check is substituted." };
+                    return new
+                    {
+                        Path = path,
+                        FileSha256 = hash,
+                        Available = false,
+                        Status = "VerifierUnavailable",
+                        Trusted = (bool?)null,
+                        SignatureValid = (bool?)null,
+                        SipSubject = subject.ToString("B"),
+                        RequiredComponent = library,
+                        Reason = "Register the Microsoft Office x64 Subject Interface Package before VBA signature verification. No certificate-only check is substituted."
+                    };
                 int code = VerifyNative(path, stream.SafeFileHandle.DangerousGetHandle(), subject);
                 bool? valid = code == 0 ? true : code == unchecked((int)0x80096010) || code == unchecked((int)0x80096004) ? (bool?)false : null;
-                return new { Path = path, FileSha256 = hash, Available = true, Status = Status(code),
-                    Trusted = code == 0, SignatureValid = valid, NativeStatus = "0x" + unchecked((uint)code).ToString("X8"),
-                    SipSubject = subject.ToString("B"), Provider = provider, NetworkRetrieval = false,
+                return new
+                {
+                    Path = path,
+                    FileSha256 = hash,
+                    Available = true,
+                    Status = Status(code),
+                    Trusted = code == 0,
+                    SignatureValid = valid,
+                    NativeStatus = "0x" + unchecked((uint)code).ToString("X8"),
+                    SipSubject = subject.ToString("B"),
+                    Provider = provider,
+                    NetworkRetrieval = false,
                     Verification = "Windows Authenticode policy with Microsoft Office VBA SIP; strongest present VBA signature",
-                    Limit = "Saved disk file only; unsaved VBE edits are not verified. Microsoft SIP selects V3, then agile, then legacy. A nonzero policy result is never reported as valid or trusted; cached revocation may be indeterminate." };
+                    Limit = "Saved disk file only; unsaved VBE edits are not verified. Microsoft SIP selects V3, then agile, then legacy. A nonzero policy result is never reported as valid or trusted; cached revocation may be indeterminate."
+                };
             }
         }
 
@@ -162,8 +205,15 @@ namespace VBAi
             var file = new TrustFile { Size = (uint)Marshal.SizeOf(typeof(TrustFile)), Path = path, Handle = handle, Subject = subjectBuffer };
             Marshal.StructureToPtr(subject, subjectBuffer, false);
             Marshal.StructureToPtr(file, fileBuffer, false);
-            var data = new TrustData { Size = (uint)Marshal.SizeOf(typeof(TrustData)), Ui = 2, Choice = 1,
-                File = fileBuffer, Action = 1, Flags = 0x1000 | 0x80 };
+            var data = new TrustData
+            {
+                Size = (uint)Marshal.SizeOf(typeof(TrustData)),
+                Ui = 2,
+                Choice = 1,
+                File = fileBuffer,
+                Action = 1,
+                Flags = 0x1000 | 0x80
+            };
             var policy = Policy;
             try { return Native(new IntPtr(-1), ref policy, ref data); }
             finally

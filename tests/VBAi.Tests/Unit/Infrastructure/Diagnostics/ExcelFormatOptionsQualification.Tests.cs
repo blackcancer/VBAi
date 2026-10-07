@@ -1,3 +1,4 @@
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -5,7 +6,6 @@ using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
 using System.Web.Script.Serialization;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 using VBAi.Tests.Integration;
 
 namespace VBAi.Tests.Unit
@@ -189,10 +189,18 @@ namespace VBAi.Tests.Unit
             internal readonly List<string> Phases = new List<string>();
             internal readonly List<IDictionary<string, object>> Requests = new List<IDictionary<string, object>>();
             internal readonly List<Tuple<string, object>> Evidence = new List<Tuple<string, object>>();
-            internal readonly Dictionary<string, object> Values = new Dictionary<string, object> {
-                ["Font"] = "Courier New", ["Size"] = "12", ["Margin Indicator Bar"] = "On",
-                ["Normal Text.Foreground"] = "Black", ["Normal Text.Background"] = "White", ["Normal Text.Indicator"] = "Blue",
-                ["Keyword Text.Foreground"] = "Black", ["Keyword Text.Background"] = "White", ["Keyword Text.Indicator"] = "Blue" };
+            internal readonly Dictionary<string, object> Values = new Dictionary<string, object>
+            {
+                ["Font"] = "Courier New",
+                ["Size"] = "12",
+                ["Margin Indicator Bar"] = "On",
+                ["Normal Text.Foreground"] = "Black",
+                ["Normal Text.Background"] = "White",
+                ["Normal Text.Indicator"] = "Blue",
+                ["Keyword Text.Foreground"] = "Black",
+                ["Keyword Text.Background"] = "White",
+                ["Keyword Text.Indicator"] = "Blue"
+            };
             internal string Category = "Normal Text", BaselineVersion;
             internal ExcelFormatOptionsQualification Create(bool verifyReadStability = false, bool marginOnly = false, bool historicalPalettePrefix = false, bool fontSizeOnly = false, bool historicalFullMatrix = false)
             {
@@ -200,10 +208,12 @@ namespace VBAi.Tests.Unit
                 return new ExcelFormatOptionsQualification(42, Dispatch, ObserveClosure,
                     () => { Preserved++; if (PreservationFault) throw new IOException("retention failed"); },
                     () => { Cleanup++; if (CleanupFault) throw new IOException("cleanup failed"); },
-                    (phase, data) => {
+                    (phase, data) =>
+                    {
                         Phases.Add(phase); Evidence.Add(Tuple.Create(phase, data));
                         if (EvidenceFault == phase) { EvidenceFault = null; throw new IOException("evidence failed at " + phase); }
-                    }, verifyReadStability, marginOnly, historicalPalettePrefix, () => {
+                    }, verifyReadStability, marginOnly, historicalPalettePrefix, () =>
+                    {
                         if (++ExclusiveGuardCalls == ExclusiveGuardFaultAt)
                             throw new InvalidOperationException("Another VBE host appeared during the campaign.");
                     }, fontSizeOnly, historicalFullMatrix);
@@ -219,7 +229,9 @@ namespace VBAi.Tests.Unit
                     Reads++;
                     if (Fault == "AlreadyBaseline" && phase == "BeforeRestorationIntent") Values["Font"] = "Courier New";
                     var state = State();
-                    if (SemanticFault == phase || (Fault == "RestorationMismatch" && phase == "RestorationReadbackIntent")) { SemanticFault = null;
+                    if (SemanticFault == phase || (Fault == "RestorationMismatch" && phase == "RestorationReadbackIntent"))
+                    {
+                        SemanticFault = null;
                         var format = (IDictionary<string, object>)((object[])state["Tabs"])[0];
                         ((IDictionary<string, object>)((object[])format["Controls"])[0])["Value"] = "unrequested font";
                     }
@@ -273,8 +285,14 @@ namespace VBAi.Tests.Unit
                 ClosureCalls++;
                 if (ClosureFault == "Throw") throw new IOException("native enumeration failed");
                 if (ClosureFault == "Null") return null;
-                var observation = new Dictionary<string, object> { ["ProcessId"] = 42, ["ProcessIdentityVerified"] = true,
-                    ["EnumerationSucceeded"] = true, ["OptionsDialogAbsent"] = true, ["ObservationOnly"] = true };
+                var observation = new Dictionary<string, object>
+                {
+                    ["ProcessId"] = 42,
+                    ["ProcessIdentityVerified"] = true,
+                    ["EnumerationSucceeded"] = true,
+                    ["OptionsDialogAbsent"] = true,
+                    ["ObservationOnly"] = true
+                };
                 if (ClosureFault == "ForeignPid") observation["ProcessId"] = 43;
                 else if (ClosureFault != null) observation[ClosureFault] = false;
                 return observation;
@@ -284,8 +302,10 @@ namespace VBAi.Tests.Unit
                 using (var hash = SHA256.Create()) return BitConverter.ToString(hash.ComputeHash(Encoding.UTF8.GetBytes(
                     new JavaScriptSerializer().Serialize(new { Values, Category })))).Replace("-", "").ToLowerInvariant();
             }
-            private IDictionary<string, object> State() => new Dictionary<string, object> {
-                ["OptionsVersion"] = Version(), ["DialogClosed"] = true,
+            private IDictionary<string, object> State() => new Dictionary<string, object>
+            {
+                ["OptionsVersion"] = Version(),
+                ["DialogClosed"] = true,
                 ["Tabs"] = new object[] { new Dictionary<string, object> { ["Tab"] = "Editor Format",
                     ["Controls"] = new object[] {
                         Control("Font", "ControlType.ComboBox", Values["Font"], "Consolas", "Courier New"),
@@ -295,20 +315,28 @@ namespace VBAi.Tests.Unit
                         Control("Foreground", "ControlType.ComboBox", Values[Category + ".Foreground"], "Black", "Red"),
                         Control("Background", "ControlType.ComboBox", Values[Category + ".Background"], "White", "Yellow"),
                         Control("Indicator", "ControlType.ComboBox", Values[Category + ".Indicator"], "Blue", "Green") },
-                    ["FormatCategories"] = new object[] { CategoryState("Normal Text"), CategoryState("Keyword Text") } } } };
-            private IDictionary<string, object> CategoryState(string category) => new Dictionary<string, object> { ["Category"] = category,
+                    ["FormatCategories"] = new object[] { CategoryState("Normal Text"), CategoryState("Keyword Text") } } }
+            };
+            private IDictionary<string, object> CategoryState(string category) => new Dictionary<string, object>
+            {
+                ["Category"] = category,
                 ["Palettes"] = new object[] { Control("Foreground", "ControlType.ComboBox", Values[category + ".Foreground"], "Black", "Red"),
                     Control("Background", "ControlType.ComboBox", Values[category + ".Background"], "White", "Yellow"),
-                    Control("Indicator", "ControlType.ComboBox", Values[category + ".Indicator"], "Blue", "Green") } };
+                    Control("Indicator", "ControlType.ComboBox", Values[category + ".Indicator"], "Blue", "Green") }
+            };
         }
         private static IDictionary<string, object> Control(string name, string type, object value, params string[] choices) =>
             new Dictionary<string, object> { ["Name"] = name, ["Type"] = type, ["Value"] = value, ["Choices"] = choices.Cast<object>().ToArray(), ["Error"] = null };
         private static IDictionary<string, object> Reply(object data) => new Dictionary<string, object> { ["Ok"] = true, ["Data"] = data };
         private static IDictionary<string, object> Refused(string error) => new Dictionary<string, object> { ["Ok"] = false, ["Error"] = error, ["Data"] = null };
         private static Dictionary<string, object> Copy(object value) { var json = new JavaScriptSerializer(); return json.Deserialize<Dictionary<string, object>>(json.Serialize(value)); }
-        private static Exception Failure(Action action) { try { action(); Assert.Fail("The original failure must not become acceptance."); }
+        private static Exception Failure(Action action)
+        {
+            try { action(); Assert.Fail("The original failure must not become acceptance."); }
             catch (AssertFailedException error) when (error.Message == "The original failure must not become acceptance.") { throw; }
-            catch (Exception error) { return error; } return null; }
+            catch (Exception error) { return error; }
+            return null;
+        }
 
         [TestMethod]
         public void DisabledOwnedFormatBootstrapSkipsBeforeValidatingPathsPreparingFilesOrDispatching()
@@ -381,7 +409,8 @@ namespace VBAi.Tests.Unit
         {
             var probe = new Probe(); int prepared = 0, starts = 0, qualified = 0;
             string root = Path.Combine(Path.GetTempPath(), "VBAi-format-contract-" + Guid.NewGuid().ToString("N"));
-            ExcelFormatOptionsQualification.RunOwned(true, Path.GetTempPath(), root, manifest, () => prepared++, trace => {
+            ExcelFormatOptionsQualification.RunOwned(true, Path.GetTempPath(), root, manifest, () => prepared++, trace =>
+            {
                 starts++; Assert.AreEqual(1, prepared); Assert.AreEqual(Path.Combine(Path.GetFullPath(root), "owned-bootstrap-phases.jsonl"), trace);
                 return probe;
             }, host => { qualified++; Assert.AreSame(probe, host); host.Create().Run(); });

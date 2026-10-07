@@ -1,15 +1,10 @@
 namespace VBAi.Tests.Unit
 {
-    using System;
     using System.Collections.Generic;
     using System.IO;
     using System.Linq;
     using System.Text;
-    using System.Threading;
-    using System.Threading.Tasks;
     using System.Web.Script.Serialization;
-    using Microsoft.VisualStudio.TestTools.UnitTesting;
-    using VBAi;
 
     public sealed partial class StreamTests
     {

@@ -1,18 +1,10 @@
 namespace VBAi.Tests.Unit
 {
-    using System;
-    using System.Collections;
-    using System.Collections.Generic;
-    using System.IO;
-    using System.Net;
-    using System.Net.Http;
-    using System.Reflection;
-    using System.Threading;
-    using System.Threading.Tasks;
-    using System.Web.Script.Serialization;
-    using System.Windows.Forms;
-    using VBAi;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
+    using System.Collections.Generic;
+    using System.Reflection;
+    using System.Threading.Tasks;
+    using VBAi;
 
     public sealed partial class ChatWindowStateTests
     {
@@ -94,6 +86,7 @@ namespace VBAi.Tests.Unit
 }
 namespace VBAi.Tests.Unit
 {
+    using Microsoft.VisualStudio.TestTools.UnitTesting;
     using System;
     using System.Collections.Generic;
     using System.IO;
@@ -101,7 +94,6 @@ namespace VBAi.Tests.Unit
     using System.Threading.Tasks;
     using System.Web.Script.Serialization;
     using VBAi;
-    using Microsoft.VisualStudio.TestTools.UnitTesting;
     public sealed partial class ChatWindowStateTests
     {
         [STATestMethod, TestCategory("Unit")]
@@ -164,12 +156,11 @@ namespace VBAi.Tests.Unit
 
 namespace VBAi.Tests.Unit
 {
+    using Microsoft.VisualStudio.TestTools.UnitTesting;
     using System;
     using System.Collections.Generic;
     using System.Linq;
     using VBAi;
-    using VBAi.Tests.Infrastructure;
-    using Microsoft.VisualStudio.TestTools.UnitTesting;
 
     public sealed partial class ChatWindowStateTests
     {
@@ -177,18 +168,26 @@ namespace VBAi.Tests.Unit
         public void MonacoAttachmentPreparationRejectsEveryMissingOrStaleOwnedDocument()
         {
             foreach (string state in new[] { "no-session", "no-factory", "no-window", "missing", "stale", "current" })
-            using (var runtime = new RuntimeScope())
-            using (var editor = new Editor.ModernEditorToolFixture())
-            using (var window = LoadedWindow(runtime.Session))
-            {
-                if (state == "no-session") Set(window, "scopeSession", null);
-                runtime.Session.ModernEditor = state == "no-factory" ? null : (Func<bool, ModernEditorWindow>)(create => state == "no-window" ? null : editor.Window);
-                var attachment = new ChatAttachment { Label = "Owned Monaco selection", Project = @"C:\Temp\P.xlsm", Module = "M", EditorDocumentId = state == "missing" ? "missing" : editor.Document.Id,
-                    Sha256 = state == "stale" ? "stale" : EditorDocument.Hash(editor.Document.Text), Text = "selected text", StartLine = 3 };
-                Get<List<ChatAttachment>>(window, "draftAttachments").Add(attachment);
-                if (state == "current") { var values = (ChatAttachment[])Call(window, "PrepareAttachments", "Question"); Assert.AreEqual(1, values.Length); Assert.AreSame(attachment, values[0]); }
-                else { var failure = Assert.ThrowsException<System.Reflection.TargetInvocationException>(() => Call(window, "PrepareAttachments", "Question")); StringAssert.Contains(failure.InnerException.Message, UiText.Get(" is stale. Remove it and attach the current selection.")); }
-            }
+                using (var runtime = new RuntimeScope())
+                using (var editor = new Editor.ModernEditorToolFixture())
+                using (var window = LoadedWindow(runtime.Session))
+                {
+                    if (state == "no-session") Set(window, "scopeSession", null);
+                    runtime.Session.ModernEditor = state == "no-factory" ? null : (Func<bool, ModernEditorWindow>)(create => state == "no-window" ? null : editor.Window);
+                    var attachment = new ChatAttachment
+                    {
+                        Label = "Owned Monaco selection",
+                        Project = @"C:\Temp\P.xlsm",
+                        Module = "M",
+                        EditorDocumentId = state == "missing" ? "missing" : editor.Document.Id,
+                        Sha256 = state == "stale" ? "stale" : EditorDocument.Hash(editor.Document.Text),
+                        Text = "selected text",
+                        StartLine = 3
+                    };
+                    Get<List<ChatAttachment>>(window, "draftAttachments").Add(attachment);
+                    if (state == "current") { var values = (ChatAttachment[])Call(window, "PrepareAttachments", "Question"); Assert.AreEqual(1, values.Length); Assert.AreSame(attachment, values[0]); }
+                    else { var failure = Assert.ThrowsException<System.Reflection.TargetInvocationException>(() => Call(window, "PrepareAttachments", "Question")); StringAssert.Contains(failure.InnerException.Message, UiText.Get(" is stale. Remove it and attach the current selection.")); }
+                }
             using (var runtime = new RuntimeScope())
             {
                 runtime.Host = request => Response.Success(request.Command == "list_projects" ? (object)new[] { new { Name = "P", FileName = "" } } : new { Code = "new", Sha256 = "sha" });
@@ -204,42 +203,49 @@ namespace VBAi.Tests.Unit
         public void MonacoAttachmentNavigationCapturesExactOwnedDraftAndClampsItsRevealLocation()
         {
             foreach (string state in new[] { "no-session", "no-factory", "no-window", "missing", "stale", "current", "clamped" })
-            using (var runtime = new RuntimeScope())
-            using (var editor = new Editor.ModernEditorToolFixture())
-            using (var window = LoadedWindow(runtime.Session))
-            using (var dispatcher = new Editor.OwnedEditorDispatcher())
-            {
-                int shown = 0;
-                runtime.Session.ModernEditor = state == "no-factory" ? null : (Func<bool, ModernEditorWindow>)(create => { if (create) shown++; return state == "no-window" ? null : editor.Window; });
-                if (state == "no-session") Set(window, "scopeSession", null);
-                var attachment = new ChatAttachment { Label = "Owned Monaco selection", Project = @"C:\Temp\P.xlsm", Module = "M", EditorDocumentId = state == "missing" ? "missing" : editor.Document.Id,
-                    Sha256 = state == "stale" ? "stale" : EditorDocument.Hash(editor.Document.Text), StartLine = state == "clamped" ? 0 : 3 };
-                editor.Base.Scripts.Clear(); Call(window, "NavigateAttachment", attachment); dispatcher.Drain();
-                bool valid = state == "current" || state == "clamped"; Assert.AreEqual(valid ? 1 : 0, shown, state);
-                var reveal = editor.Base.Scripts.Where(item => item.Item1 == "reveal").ToArray(); Assert.AreEqual(valid ? 1 : 0, reveal.Length, state);
-                if (valid) { Assert.AreEqual(state == "clamped" ? 1 : 3, reveal[0].Item2[0]); Assert.AreEqual(1, reveal[0].Item2[1]); Assert.AreEqual(1, editor.Captures); }
-                else StringAssert.Contains(Get<System.Windows.Forms.Label>(window, "status").Text, UiText.Get(state == "stale" ? " is stale. Remove it and attach the current selection." : "Select code in the VBE."));
-            }
+                using (var runtime = new RuntimeScope())
+                using (var editor = new Editor.ModernEditorToolFixture())
+                using (var window = LoadedWindow(runtime.Session))
+                using (var dispatcher = new Editor.OwnedEditorDispatcher())
+                {
+                    int shown = 0;
+                    runtime.Session.ModernEditor = state == "no-factory" ? null : (Func<bool, ModernEditorWindow>)(create => { if (create) shown++; return state == "no-window" ? null : editor.Window; });
+                    if (state == "no-session") Set(window, "scopeSession", null);
+                    var attachment = new ChatAttachment
+                    {
+                        Label = "Owned Monaco selection",
+                        Project = @"C:\Temp\P.xlsm",
+                        Module = "M",
+                        EditorDocumentId = state == "missing" ? "missing" : editor.Document.Id,
+                        Sha256 = state == "stale" ? "stale" : EditorDocument.Hash(editor.Document.Text),
+                        StartLine = state == "clamped" ? 0 : 3
+                    };
+                    editor.Base.Scripts.Clear(); Call(window, "NavigateAttachment", attachment); dispatcher.Drain();
+                    bool valid = state == "current" || state == "clamped"; Assert.AreEqual(valid ? 1 : 0, shown, state);
+                    var reveal = editor.Base.Scripts.Where(item => item.Item1 == "reveal").ToArray(); Assert.AreEqual(valid ? 1 : 0, reveal.Length, state);
+                    if (valid) { Assert.AreEqual(state == "clamped" ? 1 : 3, reveal[0].Item2[0]); Assert.AreEqual(1, reveal[0].Item2[1]); Assert.AreEqual(1, editor.Captures); }
+                    else StringAssert.Contains(Get<System.Windows.Forms.Label>(window, "status").Text, UiText.Get(state == "stale" ? " is stale. Remove it and attach the current selection." : "Select code in the VBE."));
+                }
         }
 
         [STATestMethod]
         public void MonacoActionPreparationHonorsBusyScopeAndReplacesOnlyItsDuplicateSelection()
         {
             foreach (string state in new[] { "busy", "foreign", "current" })
-            using (var runtime = new RuntimeScope())
-            using (var editor = new Editor.ModernEditorToolFixture())
-            using (var window = LoadedWindow(runtime.Session))
-            {
-                runtime.Session.ModernEditor = create => editor.Window;
-                if (state == "busy") Set(window, "busy", true);
-                var attachment = new ChatAttachment { Label = "Owned selection", Project = state == "foreign" ? "Foreign" : @"C:\Temp\P.xlsm", Module = "M", Text = "new selection", EditorDocumentId = editor.Document.Id, Sha256 = EditorDocument.Hash(editor.Document.Text) };
-                var drafts = Get<List<ChatAttachment>>(window, "draftAttachments"); if (state == "current") drafts.Add(new ChatAttachment { Label = attachment.Label, Text = "old selection" });
-                window.PrepareMonacoAction("/expliquer", attachment);
-                Assert.AreEqual(state == "current" ? 1 : 0, drafts.Count);
-                if (state == "current") { Assert.AreSame(attachment, drafts[0]); Assert.AreEqual("/expliquer ", Get<object>(window, "prompt").GetType().GetProperty("Text").GetValue(Get<object>(window, "prompt"))); }
-                else Assert.IsFalse(string.IsNullOrEmpty(Get<System.Windows.Forms.Label>(window, "status").Text));
-                Set(window, "busy", false);
-            }
+                using (var runtime = new RuntimeScope())
+                using (var editor = new Editor.ModernEditorToolFixture())
+                using (var window = LoadedWindow(runtime.Session))
+                {
+                    runtime.Session.ModernEditor = create => editor.Window;
+                    if (state == "busy") Set(window, "busy", true);
+                    var attachment = new ChatAttachment { Label = "Owned selection", Project = state == "foreign" ? "Foreign" : @"C:\Temp\P.xlsm", Module = "M", Text = "new selection", EditorDocumentId = editor.Document.Id, Sha256 = EditorDocument.Hash(editor.Document.Text) };
+                    var drafts = Get<List<ChatAttachment>>(window, "draftAttachments"); if (state == "current") drafts.Add(new ChatAttachment { Label = attachment.Label, Text = "old selection" });
+                    window.PrepareMonacoAction("/expliquer", attachment);
+                    Assert.AreEqual(state == "current" ? 1 : 0, drafts.Count);
+                    if (state == "current") { Assert.AreSame(attachment, drafts[0]); Assert.AreEqual("/expliquer ", Get<object>(window, "prompt").GetType().GetProperty("Text").GetValue(Get<object>(window, "prompt"))); }
+                    else Assert.IsFalse(string.IsNullOrEmpty(Get<System.Windows.Forms.Label>(window, "status").Text));
+                    Set(window, "busy", false);
+                }
         }
 
         [STATestMethod]
@@ -259,29 +265,31 @@ namespace VBAi.Tests.Unit
 }
 namespace VBAi.Tests.Unit
 {
+    using Microsoft.VisualStudio.TestTools.UnitTesting;
     using System.Linq;
     using System.Windows.Forms;
     using VBAi;
-    using Microsoft.VisualStudio.TestTools.UnitTesting;
     public sealed partial class ChatWindowStateTests
     {
         [STATestMethod, TestCategory("Unit")]
         public void ContextPreviewCountsAbsentEmptyProjectAndQueuedMemoryOnlyWhenAttached()
         {
-            using(var window=Surfaces()) {
-                var attach=Get<CheckBox>(window,"attachMemory"); var preview=Get<FlowLayoutPanel>(window,"contextPreview");
-                foreach(var memory in new[]{null,"","notes"})
-                foreach(var enabled in new[]{false,true}) {
-                    Set(window,"projectMemory",memory); Set(window,"queuedDraftMemory",null); attach.Checked=enabled;
-                    Call(window,"RefreshContextPreview"); int size=enabled?(memory?.Length??0):0;
-                    Assert.AreEqual(size>0?2:1,preview.Controls.Count);
-                    var summary=preview.Controls.OfType<ChatContextPreviewView>().Last();
-                    StringAssert.StartsWith(summary.Controls.Find("content",true).Single().Text,size.ToString());
-                }
-                Set(window,"projectMemory","project notes"); Set(window,"queuedDraftMemory","queued"); attach.Checked=true; Call(window,"RefreshContextPreview");
-                Assert.AreEqual(2,preview.Controls.Count);
-                Assert.AreEqual("queued",preview.Controls[0].Controls.Find("content",true).Single().Text);
-                StringAssert.StartsWith(preview.Controls[1].Controls.Find("content",true).Single().Text,"6");
+            using (var window = Surfaces())
+            {
+                var attach = Get<CheckBox>(window, "attachMemory"); var preview = Get<FlowLayoutPanel>(window, "contextPreview");
+                foreach (var memory in new[] { null, "", "notes" })
+                    foreach (var enabled in new[] { false, true })
+                    {
+                        Set(window, "projectMemory", memory); Set(window, "queuedDraftMemory", null); attach.Checked = enabled;
+                        Call(window, "RefreshContextPreview"); int size = enabled ? (memory?.Length ?? 0) : 0;
+                        Assert.AreEqual(size > 0 ? 2 : 1, preview.Controls.Count);
+                        var summary = preview.Controls.OfType<ChatContextPreviewView>().Last();
+                        StringAssert.StartsWith(summary.Controls.Find("content", true).Single().Text, size.ToString());
+                    }
+                Set(window, "projectMemory", "project notes"); Set(window, "queuedDraftMemory", "queued"); attach.Checked = true; Call(window, "RefreshContextPreview");
+                Assert.AreEqual(2, preview.Controls.Count);
+                Assert.AreEqual("queued", preview.Controls[0].Controls.Find("content", true).Single().Text);
+                StringAssert.StartsWith(preview.Controls[1].Controls.Find("content", true).Single().Text, "6");
             }
         }
     }

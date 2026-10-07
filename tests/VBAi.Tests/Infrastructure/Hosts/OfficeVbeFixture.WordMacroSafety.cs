@@ -1,6 +1,6 @@
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Threading;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace VBAi.Tests.Integration
 {
@@ -11,7 +11,8 @@ namespace VBAi.Tests.Integration
         {
             try
             {
-                SuppressWordAutoMacros(application, () => {
+                SuppressWordAutoMacros(application, () =>
+                {
                     RequireUsableOwnedHost();
                     Assert.AreEqual("Word", Kind);
                     Assert.AreEqual(shutdownOwnerThread, Thread.CurrentThread.ManagedThreadId);
@@ -22,8 +23,13 @@ namespace VBAi.Tests.Integration
                     Assert.AreEqual(shutdownEvidence.Record["OriginalProcessHandle"],
                         "0x" + unchecked((ulong)ownedProcess.Handle.ToInt64()).ToString("X16"));
                 }, Release, value => retainedDiagnosticReferences.Add(value));
-                steps.Add(new { WordAutoMacroSuppressionReturned = true, ProcessId,
-                    AutomationSecurity = 3, ReenabledBeforeQuit = false });
+                steps.Add(new
+                {
+                    WordAutoMacroSuppressionReturned = true,
+                    ProcessId,
+                    AutomationSecurity = 3,
+                    ReenabledBeforeQuit = false
+                });
             }
             catch
             {

@@ -48,7 +48,8 @@ namespace VBAi
                 string projectName = (string)project.Name, moduleName = (string)module.Parent.Name;
                 string expectedContext = projectName + "." + moduleName + "." + request.Procedure;
                 int ownerThread = System.Threading.Thread.CurrentThread.ManagedThreadId;
-                Action validate = () => {
+                void validate()
+                {
                     VbeInspectionTrace.Current?.Record(VbeInspectionTrace.Phase.ContextValidation);
                     if (System.Threading.Thread.CurrentThread.ManagedThreadId != ownerThread)
                         throw new InvalidOperationException("Local inspection left the owning VBE thread.");
@@ -61,7 +62,7 @@ namespace VBAi
                     if (!string.Equals(LocalContextReader(), expectedContext, StringComparison.OrdinalIgnoreCase))
                         throw new InvalidOperationException("The native Locals context differs from the requested procedure.");
                     VbeInspectionTrace.Current?.Record(VbeInspectionTrace.Phase.ContextValidated);
-                };
+                }
                 validate();
                 EnsureScalarDialogAbsent();
                 int start = (int)module.ProcStartLine[request.Procedure, 0];
@@ -92,9 +93,18 @@ namespace VBAi
                             try
                             {
                                 validate();
-                                var expression = new Request { Project = request.Project, Module = moduleName, Procedure = request.Procedure,
-                                    ExpectedMode = 1, ExpectedSha256 = request.ExpectedSha256, Expression = candidate.Expression,
-                                    StartLine = candidate.Line, StartColumn = candidate.Column, EndColumn = candidate.Column + candidate.Expression.Length };
+                                var expression = new Request
+                                {
+                                    Project = request.Project,
+                                    Module = moduleName,
+                                    Procedure = request.Procedure,
+                                    ExpectedMode = 1,
+                                    ExpectedSha256 = request.ExpectedSha256,
+                                    Expression = candidate.Expression,
+                                    StartLine = candidate.Line,
+                                    StartColumn = candidate.Column,
+                                    EndColumn = candidate.Column + candidate.Expression.Length
+                                };
                                 lastSelection = expression;
                                 dynamic observed = await (LocalScalarEvaluator == null ? EvaluateLocalScalarAsync(expression, validate, projectName) : LocalScalarEvaluator(expression));
                                 validate();
@@ -105,8 +115,19 @@ namespace VBAi
                             }
                             catch (Exception ex) { status = "Error"; error = interrupted = ex.Message; }
                         }
-                        rows.Add(new { candidate.Name, candidate.Expression, candidate.Kind, candidate.TypeName, candidate.Line, candidate.Column,
-                            Status = status, Value = value, Error = error, SkipReason = candidate.Reason });
+                        rows.Add(new
+                        {
+                            candidate.Name,
+                            candidate.Expression,
+                            candidate.Kind,
+                            candidate.TypeName,
+                            candidate.Line,
+                            candidate.Column,
+                            Status = status,
+                            Value = value,
+                            Error = error,
+                            SkipReason = candidate.Reason
+                        });
                         if (interrupted != null) break;
                     }
                 }
@@ -142,13 +163,26 @@ namespace VBAi
                 }
                 if (interrupted == null) validate();
                 VbeInspectionTrace.Current?.Record(VbeInspectionTrace.Phase.CoreTerminal);
-                return new { Project = projectName, Module = moduleName, request.Procedure, Context = expectedContext,
-                    Sha256 = request.ExpectedSha256, Coverage = "DeclaredScalarCandidatesOnly", RuntimeInventoryComplete = false,
-                    TotalCandidates = candidates.Length, EligibleCandidates = candidates.Count(c => c.Eligible), request.Offset,
+                return new
+                {
+                    Project = projectName,
+                    Module = moduleName,
+                    request.Procedure,
+                    Context = expectedContext,
+                    Sha256 = request.ExpectedSha256,
+                    Coverage = "DeclaredScalarCandidatesOnly",
+                    RuntimeInventoryComplete = false,
+                    TotalCandidates = candidates.Length,
+                    EligibleCandidates = candidates.Count(c => c.Eligible),
+                    request.Offset,
                     NextOffset = interrupted == null && request.Offset + page.Length < candidates.Length ? (int?)(request.Offset + page.Length) : null,
-                    Aborted = interrupted != null, Error = interrupted, Items = rows,
-                    SelectionRestored = selectionRestored, FocusRestored = focusRestored,
-                    Limit = "Sequential native values, not an atomic Locals snapshot. Undeclared variables, function results and module members are not enumerated. Arrays, Variant, objects, UDTs, ambiguous and conditional declarations are not evaluated. No expression is synthesized or inserted." };
+                    Aborted = interrupted != null,
+                    Error = interrupted,
+                    Items = rows,
+                    SelectionRestored = selectionRestored,
+                    FocusRestored = focusRestored,
+                    Limit = "Sequential native values, not an atomic Locals snapshot. Undeclared variables, function results and module members are not enumerated. Arrays, Variant, objects, UDTs, ambiguous and conditional declarations are not evaluated. No expression is synthesized or inserted."
+                };
             }
         }
 
@@ -165,12 +199,12 @@ namespace VBAi
             pane.Show();
             vbe.ActiveCodePane = pane;
             pane.Window.SetFocus();
-            var command = FindAvailableCommand(229, entry => {
+            var command = FindAvailableCommand(229, entry =>
+            {
                 string caption = (entry.Caption ?? "").Replace("&", "");
                 return caption.IndexOf("Espion express", StringComparison.OrdinalIgnoreCase) >= 0 ||
                     caption.IndexOf("Quick Watch", StringComparison.OrdinalIgnoreCase) >= 0;
-            });
-            if (command == null) throw new InvalidOperationException("Native Quick Watch is unavailable.");
+            }) ?? throw new InvalidOperationException("Native Quick Watch is unavailable.");
             validate();
             SelectCode(request);
             object active = vbe.ActiveCodePane;
@@ -178,8 +212,13 @@ namespace VBAi
                 throw new InvalidOperationException("The selected native code pane is no longer active.");
             // The observer runs off the UI thread so it can read and close the modal dialog.
             // Native captions use the resolved project name even when the request identifies it by path.
-            var dialogRequest = new Request { Project = projectName, Module = request.Module,
-                Procedure = request.Procedure, Expression = request.Expression };
+            var dialogRequest = new Request
+            {
+                Project = projectName,
+                Module = request.Module,
+                Procedure = request.Procedure,
+                Expression = request.Expression
+            };
             Task<object> reading = Task.Run(() => ReadScalarDialog(dialogRequest));
             Exception commandError = null;
             VbeInspectionTrace.Current?.Record(VbeInspectionTrace.Phase.Command229Before);

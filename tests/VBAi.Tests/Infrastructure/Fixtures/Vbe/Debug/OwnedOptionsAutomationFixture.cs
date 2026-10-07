@@ -1,10 +1,10 @@
 namespace VBAi.Tests.Unit
 {
+    using Microsoft.VisualStudio.TestTools.UnitTesting;
     using System;
     using System.Diagnostics;
     using System.Runtime.InteropServices;
     using System.Text;
-    using Microsoft.VisualStudio.TestTools.UnitTesting;
 
     public sealed partial class VbeDebugWindowsSystemTests
     {

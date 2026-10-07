@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.IO;
+using System.Linq;
 
 
 namespace VBAi
@@ -85,8 +85,7 @@ namespace VBAi
             }
             if (request.Action == "go")
             {
-                Location location;
-                if (!bookmarks.TryGetValue(key, out location)) throw new InvalidOperationException("Bookmark not found in this session.");
+                if (!bookmarks.TryGetValue(key, out Location location)) throw new InvalidOperationException("Bookmark not found in this session.");
                 return Navigate(location, true);
             }
             throw new ArgumentException("Use add, list, remove or go.");
@@ -113,8 +112,7 @@ namespace VBAi
                 }
                 if (request.Action == "go")
                 {
-                    var bookmark = store.ListBookmarks(scope).SingleOrDefault(x => string.Equals(x.Name, request.Query, StringComparison.OrdinalIgnoreCase));
-                    if (bookmark == null) throw new InvalidOperationException("Bookmark not found for this macro.");
+                    var bookmark = store.ListBookmarks(scope).SingleOrDefault(x => string.Equals(x.Name, request.Query, StringComparison.OrdinalIgnoreCase)) ?? throw new InvalidOperationException("Bookmark not found for this macro.");
                     return Navigate(new Location { Project = scope, Module = bookmark.Module, Sha256 = bookmark.Sha256, Line = bookmark.Line, Column = bookmark.Column }, true);
                 }
                 throw new ArgumentException("Use add, list, remove or go.");

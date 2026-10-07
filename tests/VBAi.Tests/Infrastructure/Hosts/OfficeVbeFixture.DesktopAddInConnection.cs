@@ -1,10 +1,10 @@
+using Microsoft.Win32;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
-using Microsoft.Win32;
 
 namespace VBAi.Tests.Integration
 {
@@ -34,7 +34,8 @@ namespace VBAi.Tests.Integration
             IntPtr originalWindow = IntPtr.Zero;
             uint originalWindowThread = 0;
             string appIdentity = null, editorIdentity = null, entryIdentity = null;
-            Action requireOwner = () => {
+            Action requireOwner = () =>
+            {
                 RequirePrivateAccessAddInFixtureThread(addInFixtureThread, Thread.CurrentThread.ManagedThreadId, Thread.CurrentThread.GetApartmentState());
                 if (Kind != "Access" || !owned || ProcessId != pid || !ReferenceEquals(child, privateDesktopChild) ||
                     !ReferenceEquals(app, application) || !ReferenceEquals(process, ownedProcess))
@@ -53,7 +54,8 @@ namespace VBAi.Tests.Integration
                     editorIdentity != PrivateAccessConnectionIdentity(editor) || (entryIdentity != null && entryIdentity != PrivateAccessConnectionIdentity(entry))))
                     throw new InvalidOperationException("The canonical original Access application/VBE/AddIn identity changed.");
             };
-            Action<IDictionary<string, object>> record = row => {
+            Action<IDictionary<string, object>> record = row =>
+            {
                 row["ProcessId"] = pid; row["Desktop"] = privateDesktop;
                 row["OriginalHandle"] = child.ProcessHandle.ToInt64();
                 row["StartedUtc"] = process.StartTime.ToUniversalTime().ToString("o");
@@ -116,7 +118,8 @@ namespace VBAi.Tests.Integration
             requireOwner();
             var rows = new List<PrivateAccessConnectionWindow>();
             var clock = Stopwatch.StartNew();
-            bool complete = EnumWindows((window, parameter) => {
+            bool complete = EnumWindows((window, parameter) =>
+            {
                 if (clock.ElapsedMilliseconds > 5000) return false;
                 uint owner; uint thread = GetWindowThreadProcessId(window, out owner);
                 if (owner != (uint)ProcessId) return true;
@@ -124,8 +127,14 @@ namespace VBAi.Tests.Integration
                 var text = new StringBuilder(256);
                 int count = GetClassName(window, text, text.Capacity);
                 if (count <= 0 || count >= text.Capacity - 1) return false;
-                rows.Add(new PrivateAccessConnectionWindow { Window = window.ToInt64(), ThreadId = thread,
-                    Class = text.ToString(), Visible = IsWindowVisible(window), Enabled = IsWindowEnabled(window) });
+                rows.Add(new PrivateAccessConnectionWindow
+                {
+                    Window = window.ToInt64(),
+                    ThreadId = thread,
+                    Class = text.ToString(),
+                    Visible = IsWindowVisible(window),
+                    Enabled = IsWindowEnabled(window)
+                });
                 return true;
             }, IntPtr.Zero);
             if (!complete || clock.ElapsedMilliseconds > 5000 || rows.Count == 0)
@@ -168,13 +177,13 @@ namespace VBAi.Tests.Integration
         {
             var rows = new List<string>();
             foreach (RegistryHive hive in new[] { RegistryHive.CurrentUser, RegistryHive.LocalMachine })
-            using (var root = RegistryKey.OpenBaseKey(hive, RegistryView.Registry64))
-            using (var key = root.OpenSubKey(@"Software\Microsoft\VBA\VBE\6.0\Addins64\VBAi.AddIn", false))
-            {
-                object value = key?.GetValue("LoadBehavior", null, RegistryValueOptions.DoNotExpandEnvironmentNames);
-                rows.Add(hive + "|" + (key == null ? "KEY_ABSENT" : value == null ? "VALUE_ABSENT" :
-                    key.GetValueKind("LoadBehavior") + "|" + Convert.ToString(value, System.Globalization.CultureInfo.InvariantCulture)));
-            }
+                using (var root = RegistryKey.OpenBaseKey(hive, RegistryView.Registry64))
+                using (var key = root.OpenSubKey(@"Software\Microsoft\VBA\VBE\6.0\Addins64\VBAi.AddIn", false))
+                {
+                    object value = key?.GetValue("LoadBehavior", null, RegistryValueOptions.DoNotExpandEnvironmentNames);
+                    rows.Add(hive + "|" + (key == null ? "KEY_ABSENT" : value == null ? "VALUE_ABSENT" :
+                        key.GetValueKind("LoadBehavior") + "|" + Convert.ToString(value, System.Globalization.CultureInfo.InvariantCulture)));
+                }
             return string.Join(";", rows);
         }
 
@@ -192,18 +201,29 @@ namespace VBAi.Tests.Integration
                 Consumed = true;
                 if (!string.Equals(progId, FixtureAddInProgId, StringComparison.Ordinal))
                     throw new InvalidOperationException("Only the exact VBAi.AddIn VBE entry may be connected.");
-                Action<string, object> receipt = (state, connect) => record(new Dictionary<string, object> {
-                    ["PrivateAccessAddInConnection"] = true, ["ProgId"] = progId, ["State"] = state,
-                    ["Connect"] = connect, ["SetterEntries"] = SetterEntries, ["DeliveryUncertain"] = DeliveryUncertain,
-                    ["AutomaticRetry"] = false, ["Utc"] = DateTime.UtcNow.ToString("o") });
+                Action<string, object> receipt = (state, connect) => record(new Dictionary<string, object>
+                {
+                    ["PrivateAccessAddInConnection"] = true,
+                    ["ProgId"] = progId,
+                    ["State"] = state,
+                    ["Connect"] = connect,
+                    ["SetterEntries"] = SetterEntries,
+                    ["DeliveryUncertain"] = DeliveryUncertain,
+                    ["AutomaticRetry"] = false,
+                    ["Utc"] = DateTime.UtcNow.ToString("o")
+                });
                 try
                 {
                     receipt("OBSERVATION_PENDING", null);
                     requireOwner();
                     string registration = readRegistration();
                     if (string.IsNullOrEmpty(registration)) throw new InvalidOperationException("Add-in registration observation is incomplete.");
-                    record(new Dictionary<string, object> { ["PrivateAccessAddInLoadBehavior"] = "BeforeConnect",
-                        ["Snapshot"] = registration, ["RegistryWrites"] = 0 });
+                    record(new Dictionary<string, object>
+                    {
+                        ["PrivateAccessAddInLoadBehavior"] = "BeforeConnect",
+                        ["Snapshot"] = registration,
+                        ["RegistryWrites"] = 0
+                    });
                     object before = readConnect();
                     if (!(before is bool connected)) throw new InvalidOperationException("The native AddIn.Connect getter did not return an exact Boolean.");
                     receipt("OBSERVED", connected);
@@ -211,8 +231,12 @@ namespace VBAi.Tests.Integration
                     {
                         requireOwner();
                         string noopRegistration = readRegistration();
-                        record(new Dictionary<string, object> { ["PrivateAccessAddInLoadBehavior"] = "AfterNoop",
-                            ["Snapshot"] = noopRegistration, ["RegistryWrites"] = 0 });
+                        record(new Dictionary<string, object>
+                        {
+                            ["PrivateAccessAddInLoadBehavior"] = "AfterNoop",
+                            ["Snapshot"] = noopRegistration,
+                            ["RegistryWrites"] = 0
+                        });
                         if (registration != noopRegistration) throw new InvalidOperationException("Add-in LoadBehavior changed during the connection observation.");
                         receipt("NOOP_ALREADY_CONNECTED", true);
                         return;
@@ -229,8 +253,12 @@ namespace VBAi.Tests.Integration
                     if (!(after is bool verified) || !verified)
                         throw new InvalidOperationException("The one Access connection setter was not verified by an exact true Boolean readback.");
                     string afterRegistration = readRegistration();
-                    record(new Dictionary<string, object> { ["PrivateAccessAddInLoadBehavior"] = "AfterConnect",
-                        ["Snapshot"] = afterRegistration, ["RegistryWrites"] = 0 });
+                    record(new Dictionary<string, object>
+                    {
+                        ["PrivateAccessAddInLoadBehavior"] = "AfterConnect",
+                        ["Snapshot"] = afterRegistration,
+                        ["RegistryWrites"] = 0
+                    });
                     if (registration != afterRegistration) throw new InvalidOperationException("Add-in LoadBehavior unexpectedly changed after connection; no registry repair is permitted.");
                     requireOwner();
                     DeliveryUncertain = false;

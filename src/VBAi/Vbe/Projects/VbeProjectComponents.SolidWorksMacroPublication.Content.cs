@@ -34,8 +34,7 @@ namespace VBAi
             var x = PublicationDesignerRootProperties(a, left);
             var y = PublicationDesignerRootProperties(b, right);
             if (!x.Keys.SequenceEqual(y.Keys) || x.Any(p => p.Value != y[p.Key])) return false;
-            object ac, bc;
-            if (!a.TryGetValue("Controls", out ac) || !b.TryGetValue("Controls", out bc) ||
+            if (!a.TryGetValue("Controls", out object ac) || !b.TryGetValue("Controls", out object bc) ||
                 !(ac is IEnumerable) || ac is string || !(bc is IEnumerable) || bc is string)
                 throw new InvalidOperationException("Complete persisted control inventories are required.");
             return serializer.Serialize(ac) == serializer.Serialize(bc);
@@ -77,28 +76,30 @@ namespace VBAi
         private static SortedDictionary<string, string> PublicationDesignerRootProperties(
             Dictionary<string, object> tree, string header)
         {
-            object raw;
-            if (!tree.TryGetValue("Properties", out raw) || !(raw is IEnumerable) || raw is string)
+            if (!tree.TryGetValue("Properties", out object raw) || !(raw is IEnumerable) || raw is string)
                 throw new InvalidOperationException("Complete persisted root properties are required.");
             var serializer = new JavaScriptSerializer { MaxJsonLength = 16 * 1024 * 1024 };
             var result = new SortedDictionary<string, string>(StringComparer.Ordinal);
             var seen = new HashSet<string>(StringComparer.Ordinal);
-            var defaults = new Dictionary<string, object>(StringComparer.Ordinal) {
-                ["HelpContextID"] = 0, ["ShowModal"] = true, ["WhatsThisButton"] = false,
-                ["WhatsThisHelp"] = false, ["Visible"] = true };
+            var defaults = new Dictionary<string, object>(StringComparer.Ordinal)
+            {
+                ["HelpContextID"] = 0,
+                ["ShowModal"] = true,
+                ["WhatsThisButton"] = false,
+                ["WhatsThisHelp"] = false,
+                ["Visible"] = true
+            };
             foreach (object item in (IEnumerable)raw)
             {
-                var property = item as IDictionary<string, object>; object propertyName;
-                if (property == null || !property.TryGetValue("Name", out propertyName) || !(propertyName is string) ||
-                    !seen.Add((string)propertyName)) throw new InvalidOperationException("Root property identity is incomplete or duplicated.");
+                if (!(item is IDictionary<string, object> property) || !property.TryGetValue("Name", out object propertyName) || !(propertyName is string v) ||
+                    !seen.Add(v)) throw new InvalidOperationException("Root property identity is incomplete or duplicated.");
                 string name = (string)propertyName;
                 // These public API properties describe the live undo/clipboard state, never persisted form contents.
                 if (name == "CanUndo" || name == "CanRedo" || name == "CanPaste") continue;
                 if (defaults.ContainsKey(name))
                 {
-                    object value, kind, error;
-                    if (!property.TryGetValue("Value", out value) || !property.TryGetValue("Kind", out kind) ||
-                        (string)kind != "scalar" || !property.TryGetValue("Error", out error) || error != null ||
+                    if (!property.TryGetValue("Value", out object value) || !property.TryGetValue("Kind", out object kind) ||
+                        (string)kind != "scalar" || !property.TryGetValue("Error", out object error) || error != null ||
                         (name == "HelpContextID" ? !(value is int) : !(value is bool)))
                         throw new InvalidOperationException("A normative persisted root property is unreadable.");
                     object stored = PublicationRootHeaderValue(header, name, defaults[name]);
@@ -136,8 +137,7 @@ namespace VBAi
             }
             else
             {
-                int value;
-                if (int.TryParse(token, System.Globalization.NumberStyles.None, System.Globalization.CultureInfo.InvariantCulture, out value) && value >= 0) return value;
+                if (int.TryParse(token, System.Globalization.NumberStyles.None, System.Globalization.CultureInfo.InvariantCulture, out int value) && value >= 0) return value;
             }
             throw new InvalidOperationException("A persisted root setting has an unsupported encoding.");
         }

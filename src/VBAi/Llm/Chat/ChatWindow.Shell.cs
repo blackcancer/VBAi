@@ -1,9 +1,5 @@
-﻿using System;
+using System;
 using System.Runtime.InteropServices;
-using System.Windows;
-using System.Windows.Automation;
-using System.Windows.Controls;
-using System.Windows.Input;
 using System.Windows.Media;
 
 namespace VBAi
@@ -173,30 +169,29 @@ namespace VBAi
                 var owner = GitModalOwner();
                 using (var lease = GitModalSession.TryAcquire(owner))
                 {
-                if (lease == null) return;
-                EnsureCurrentScope();
-                var scope = scopePicker.SelectedItem as MacroScope;
-                if (scope == null || scope.Key.StartsWith("temporary:", StringComparison.Ordinal))
-                    throw new InvalidOperationException(UiText.Get("Save the document before linking it to GitHub."));
-                string nativeScope = scopeSession.GitScope(scope.Project);
-                diagnostic = ChatGitModalDiagnostic.BeginFromEnvironment(this, nativeScope);
-                var window = new GitWindow(scopeSession.GitProject(scope.Project, nativeScope), nativeScope, scope.Label, settings.GitHubAccount);
-                if (diagnostic == null)
-                {
-                    using (window) await lease.ShowAsync(window, ShowModal);
-                }
-                else await diagnostic.RunModalAsync(() => lease.ShowAsync(window, ShowModal), window.Dispose);
+                    if (lease == null) return;
+                    EnsureCurrentScope();
+                    if (!(scopePicker.SelectedItem is MacroScope scope) || scope.Key.StartsWith("temporary:", StringComparison.Ordinal))
+                        throw new InvalidOperationException(UiText.Get("Save the document before linking it to GitHub."));
+                    string nativeScope = scopeSession.GitScope(scope.Project);
+                    diagnostic = ChatGitModalDiagnostic.BeginFromEnvironment(this, nativeScope);
+                    var window = new GitWindow(scopeSession.GitProject(scope.Project, nativeScope), nativeScope, scope.Label, settings.GitHubAccount);
+                    if (diagnostic == null)
+                    {
+                        using (window) await lease.ShowAsync(window, ShowModal);
+                    }
+                    else await diagnostic.RunModalAsync(() => lease.ShowAsync(window, ShowModal), window.Dispose);
                 }
             }
             catch (Exception ex)
             {
-                if (diagnostic != null) diagnostic.Fail(ex);
+                diagnostic?.Fail(ex);
                 SetStatus(UiText.Get("GitHub: ") + ex.Message);
             }
             finally
             {
                 // Last handler operation. No message pumping or reentrant work follows this post.
-                if (diagnostic != null) diagnostic.SchedulePostHandler(callback => BeginInvoke(callback));
+                diagnostic?.SchedulePostHandler(callback => BeginInvoke(callback));
             }
         }
 
@@ -207,9 +202,8 @@ namespace VBAi
             if (IsDisposed) throw new ObjectDisposedException(nameof(ChatWindow));
             if (!IsHandleCreated) return this;
             IntPtr root = GitOwnerAncestor(Handle, 2);
-            uint chatProcess, rootProcess;
-            uint chatThread = GitOwnerThread(Handle, out chatProcess);
-            uint rootThread = GitOwnerThread(root, out rootProcess);
+            uint chatThread = GitOwnerThread(Handle, out uint chatProcess);
+            uint rootThread = GitOwnerThread(root, out uint rootProcess);
             if (root == IntPtr.Zero || chatThread == 0 || chatThread != rootThread || chatProcess != rootProcess)
                 throw new InvalidOperationException("The chat Git dialog has no verified owning window.");
             return root == Handle ? (System.Windows.Forms.IWin32Window)this : new ChatGitWindowOwner(root);

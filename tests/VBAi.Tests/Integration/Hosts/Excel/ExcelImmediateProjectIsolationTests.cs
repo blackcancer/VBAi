@@ -1,3 +1,4 @@
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -6,7 +7,6 @@ using System.Linq;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Web.Script.Serialization;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 using VBAi.Tests.Infrastructure;
 
 namespace VBAi.Tests.Integration
@@ -27,14 +27,16 @@ namespace VBAi.Tests.Integration
             string firstPath = host.File("ImmediateFirst.xlsm"), secondPath = host.File("ImmediateSecond.xlsm");
             const string module = "ImmediateIsolation";
             const string statement = "ThisWorkbook.Worksheets(1).Range(\"A1\").Value2 = ThisWorkbook.Worksheets(1).Range(\"A1\").Value2 + 1";
-            Func<object, IDictionary<string, object>> request = value => {
+            Func<object, IDictionary<string, object>> request = value =>
+            {
                 var timer = Stopwatch.StartNew();
                 var response = VbeBridgeClient.Read("VBAi." + host.ProcessId, value, 20000);
                 evidence.Add(new { Request = value, Response = response, ElapsedMilliseconds = timer.ElapsedMilliseconds });
                 Assert.IsNotNull(response, "The owned Excel bridge did not respond.");
                 return response;
             };
-            Func<object, IDictionary<string, object>> success = value => {
+            Func<object, IDictionary<string, object>> success = value =>
+            {
                 var response = request(value);
                 Assert.AreEqual(true, response["Ok"], json.Serialize(response));
                 return response;
@@ -58,15 +60,29 @@ namespace VBAi.Tests.Integration
                 {
                     success(new { Command = "create_module", Project = path, Module = module, ExpectedMode = 2 });
                     var empty = VbeBridgeClient.Object(success(new { Command = "read_module", Project = path, Module = module })["Data"]);
-                    success(new { Command = "replace_lines", Project = path, Module = module,
-                        ExpectedSha256 = empty["Sha256"], StartLine = 1, Count = 0,
-                        Text = "Option Explicit\r\n' Disposable Immediate project isolation fixture." });
+                    success(new
+                    {
+                        Command = "replace_lines",
+                        Project = path,
+                        Module = module,
+                        ExpectedSha256 = empty["Sha256"],
+                        StartLine = 1,
+                        Count = 0,
+                        Text = "Option Explicit\r\n' Disposable Immediate project isolation fixture."
+                    });
                     hashes[path] = VbeBridgeClient.Object(success(new { Command = "read_module", Project = path, Module = module })["Data"])["Sha256"];
                 }
                 success(new { Command = "open_debug_pane", Action = "immediate" });
-                Action<string> select = path => {
-                    success(new { Command = "select_code", Project = path, Module = module,
-                        StartLine = 1, ExpectedSha256 = hashes[path] });
+                Action<string> select = path =>
+                {
+                    success(new
+                    {
+                        Command = "select_code",
+                        Project = path,
+                        Module = module,
+                        StartLine = 1,
+                        ExpectedSha256 = hashes[path]
+                    });
                     var timer = Stopwatch.StartNew();
                     while (true)
                     {
@@ -77,7 +93,8 @@ namespace VBAi.Tests.Integration
                         Thread.Sleep(50); // Read-only observation; native navigation is never replayed.
                     }
                 };
-                Action<string, int, int> reject = (path, expectedFirst, expectedSecond) => {
+                Action<string, int, int> reject = (path, expectedFirst, expectedSecond) =>
+                {
                     var state = VbeBridgeClient.Object(success(new { Command = "debug_state", Project = path })["Data"]);
                     Assert.IsNull(state["SelectedProjectPath"], "The requested project must differ from the active code pane by COM identity.");
                     var denied = request(new { Command = "immediate_execute", Project = path, ExpectedMode = 2, Text = statement });
@@ -93,9 +110,15 @@ namespace VBAi.Tests.Integration
                     } while (observation.ElapsedMilliseconds < 500);
                     evidence.Add(new { RejectedProject = path, FirstCell = host.ReadCell("A1"), SecondCell = ReadCell(second) });
                 };
-                Action<string, object, int> execute = (path, book, expected) => {
-                    var data = VbeBridgeClient.Object(success(new { Command = "immediate_execute", Project = path,
-                        ExpectedMode = 2, Text = statement })["Data"]);
+                Action<string, object, int> execute = (path, book, expected) =>
+                {
+                    var data = VbeBridgeClient.Object(success(new
+                    {
+                        Command = "immediate_execute",
+                        Project = path,
+                        ExpectedMode = 2,
+                        Text = statement
+                    })["Data"]);
                     Assert.AreEqual(true, data["CommandEchoObserved"]);
                     var timer = Stopwatch.StartNew();
                     while (Convert.ToInt32(ReadCell(book)) != expected)
@@ -144,10 +167,13 @@ namespace VBAi.Tests.Integration
                     {
                         Directory.CreateDirectory(TestContext.TestResultsDirectory);
                         string report = Path.Combine(TestContext.TestResultsDirectory, "excel-immediate-isolation-" + host.ProcessId + ".json");
-                        File.WriteAllText(report, json.Serialize(new { HostProcessId = host.ProcessId,
+                        File.WriteAllText(report, json.Serialize(new
+                        {
+                            HostProcessId = host.ProcessId,
                             AssemblyMvid = typeof(VBAi.VbeSession).Module.ModuleVersionId,
                             Scope = "Installed native bridge, same-name disposable Excel projects, independent worksheet side effects. Chat UI is not exercised.",
-                            Evidence = evidence }));
+                            Evidence = evidence
+                        }));
                         TestContext.AddResultFile(report);
                     }
                 }

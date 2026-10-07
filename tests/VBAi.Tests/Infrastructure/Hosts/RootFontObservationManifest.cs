@@ -80,11 +80,17 @@ namespace VBAi.Tests.Integration
             if (configuration.SeedProfile == RetainedSyntheticTahoma825)
                 RetainedRootFontWorkbook.RequirePinnedBaseline(baseline);
             byte[] descriptor = RequireRoot(baseline.FormFonts(forms[0]), configuration.Mode, configuration.SeedProfile);
-            return new Dictionary<string, object> {
-                ["ProjectPath"] = projectPath, ["FormName"] = "EmbeddedForm", ["TargetFormSha256"] = Sha(source),
-                ["TargetDescriptorHex"] = Hex(descriptor), ["CandidateMvid"] = expectedCandidate.ToString("D"),
-                ["OutputRoot"] = System.IO.Path.Combine(evidenceRoot, nonce.ToString("N")), ["Nonce"] = nonce.ToString("N"),
-                ["Mode"] = configuration.Mode, ["TemporaryName"] = configuration.Mode == "DistinctChildName" ? "Arial" : ""
+            return new Dictionary<string, object>
+            {
+                ["ProjectPath"] = projectPath,
+                ["FormName"] = "EmbeddedForm",
+                ["TargetFormSha256"] = Sha(source),
+                ["TargetDescriptorHex"] = Hex(descriptor),
+                ["CandidateMvid"] = expectedCandidate.ToString("D"),
+                ["OutputRoot"] = System.IO.Path.Combine(evidenceRoot, nonce.ToString("N")),
+                ["Nonce"] = nonce.ToString("N"),
+                ["Mode"] = configuration.Mode,
+                ["TemporaryName"] = configuration.Mode == "DistinctChildName" ? "Arial" : ""
             };
         }
 
@@ -111,10 +117,14 @@ namespace VBAi.Tests.Integration
         {
             if (profile != SyntheticExplicitArial9)
                 throw new InvalidOperationException("Unknown synthetic root font seed profile.");
-            return new Dictionary<string, object> {
-                ["Form.Font.Name"] = "Arial", ["Form.Font.Size"] = 9.00m,
-                ["Form.Font.Weight"] = (short)400, ["Form.Font.Charset"] = (short)0,
-                ["Form.Font.Italic"] = false, ["Form.Font.Underline"] = false,
+            return new Dictionary<string, object>
+            {
+                ["Form.Font.Name"] = "Arial",
+                ["Form.Font.Size"] = 9.00m,
+                ["Form.Font.Weight"] = (short)400,
+                ["Form.Font.Charset"] = (short)0,
+                ["Form.Font.Italic"] = false,
+                ["Form.Font.Underline"] = false,
                 ["Form.Font.Strikethrough"] = false
             };
         }

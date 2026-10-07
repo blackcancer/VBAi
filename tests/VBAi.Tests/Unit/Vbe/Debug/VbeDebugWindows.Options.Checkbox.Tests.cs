@@ -1,6 +1,5 @@
-using System;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
-using VBAi;
+using System;
 
 namespace VBAi.Tests.Unit
 {

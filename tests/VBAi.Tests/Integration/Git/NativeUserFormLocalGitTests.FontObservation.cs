@@ -1,7 +1,7 @@
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Collections.Generic;
 using System.IO;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace VBAi.Tests.Integration
 {
@@ -59,9 +59,14 @@ namespace VBAi.Tests.Integration
             string output = Path.Combine(root, "font-" + layout + "-" + Guid.NewGuid().ToString("N"));
             Directory.CreateDirectory(output);
             const string form = "QualificationForm";
-            var report = new Dictionary<string, object> {
-                ["Layout"] = layout, ["Stage"] = "STARTED", ["NativeImports"] = 0,
-                ["FontAssignmentsRequestedAfterImport"] = 0, ["MacroExecutions"] = 0, ["RemoteOperations"] = 0,
+            var report = new Dictionary<string, object>
+            {
+                ["Layout"] = layout,
+                ["Stage"] = "STARTED",
+                ["NativeImports"] = 0,
+                ["FontAssignmentsRequestedAfterImport"] = 0,
+                ["MacroExecutions"] = 0,
+                ["RemoteOperations"] = 0,
                 ["AssemblyMvid"] = typeof(VbeSession).Module.ModuleVersionId.ToString("D"),
                 ["RestoreFontsRequested"] = restoreFonts,
                 ["AssignNativeFontOwnerRequested"] = assignOwner,
@@ -76,7 +81,8 @@ namespace VBAi.Tests.Integration
             Action write = () => File.WriteAllText(evidence, Json.Serialize(report));
             try
             {
-                RunExplicit(host => {
+                RunExplicit(host =>
+                {
                     report["HostProcessId"] = host.ProcessId;
                     report["HostStatus"] = host.Command("status");
                     string path = host.File("font-observation.xlsm");
@@ -87,7 +93,8 @@ namespace VBAi.Tests.Integration
                     report["NativeFontsBefore"] = fontBefore;
                     using (var sourceFonts = retainSource ? host.CaptureGitSourceFonts(form, layout, report) : null)
                     {
-                        host.WithGitProject(path, project => {
+                        host.WithGitProject(path, project =>
+                        {
                             var before = Capture(project, host, layout, output, "before");
                             host.MutateGitLayout(form, layout, persistedBaseline: true);
                             var changed = Capture(project, host, layout, output, "changed");

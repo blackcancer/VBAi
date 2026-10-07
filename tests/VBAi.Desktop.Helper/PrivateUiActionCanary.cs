@@ -1,3 +1,4 @@
+using Accessibility;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -7,7 +8,6 @@ using System.Text;
 using System.Threading;
 using System.Windows.Automation;
 using System.Windows.Forms;
-using Accessibility;
 
 namespace VBAi.Desktop.Helper
 {
@@ -144,29 +144,44 @@ namespace VBAi.Desktop.Helper
                             pending.Enqueue(child);
                         }
                     }
-                    var shapes = nodes.Select(node => new {
+                    var shapes = nodes.Select(node => new
+                    {
                         Role = node.Current.ControlType.ProgrammaticName,
                         ExactLabel = string.Equals(node.Current.Name, GitLabel, StringComparison.Ordinal),
-                        Pid = node.Current.ProcessId, Hwnd = node.Current.NativeWindowHandle,
+                        Pid = node.Current.ProcessId,
+                        Hwnd = node.Current.NativeWindowHandle,
                         NativeAncestor = NativeAncestor(node).ToInt64(),
-                        Enabled = node.Current.IsEnabled, Offscreen = node.Current.IsOffscreen
+                        Enabled = node.Current.IsEnabled,
+                        Offscreen = node.Current.IsOffscreen
                     }).ToArray();
                     var exact = nodes.Where(node => node.Current.ControlType == ControlType.MenuItem &&
                         node.Current.Name == GitLabel && node.Current.ProcessId == processId &&
                         node.Current.IsEnabled && !node.Current.IsOffscreen &&
                         node.Current.NativeWindowHandle == 0 && NativeAncestor(node) == popup).ToArray();
-                    last = new { Popup = popup.ToInt64(), NativeClass = nativeClass.ToString(), RootRole = root.Current.ControlType.ProgrammaticName,
-                        RootPid = root.Current.ProcessId, RawCount = nodes.Count,
+                    last = new
+                    {
+                        Popup = popup.ToInt64(),
+                        NativeClass = nativeClass.ToString(),
+                        RootRole = root.Current.ControlType.ProgrammaticName,
+                        RootPid = root.Current.ProcessId,
+                        RawCount = nodes.Count,
                         Roles = shapes.GroupBy(shape => shape.Role).Select(group => new { Role = group.Key, Count = group.Count() }).ToArray(),
-                        ExactLabelCount = shapes.Count(shape => shape.ExactLabel), EligibleCount = exact.Length,
-                        ExactShapes = shapes.Where(shape => shape.ExactLabel).ToArray() };
+                        ExactLabelCount = shapes.Count(shape => shape.ExactLabel),
+                        EligibleCount = exact.Length,
+                        ExactShapes = shapes.Where(shape => shape.ExactLabel).ToArray()
+                    };
                     if (NativeToolStripPopupIdentity.Matches(root.Current.ControlType.ProgrammaticName, nativeClass.ToString()) && root.Current.ProcessId == processId && exact.Length == 1)
                     { selected = exact[0]; break; }
                 }
                 catch (Exception error)
                 {
-                    last = new { Popup = popup.ToInt64(), ErrorType = error.GetType().FullName, Error = error.Message,
-                        HResult = "0x" + unchecked((uint)error.HResult).ToString("X8") };
+                    last = new
+                    {
+                        Popup = popup.ToInt64(),
+                        ErrorType = error.GetType().FullName,
+                        Error = error.Message,
+                        HResult = "0x" + unchecked((uint)error.HResult).ToString("X8")
+                    };
                 }
                 Thread.Sleep(25); // Read-only UIA settlement; no default action is issued here.
             }
@@ -186,8 +201,12 @@ namespace VBAi.Desktop.Helper
                         try { name = accessibility.get_accName(child); role = accessibility.get_accRole(child); }
                         catch (COMException error)
                         { children.Add(new { Child = child, ErrorHResult = "0x" + unchecked((uint)error.ErrorCode).ToString("X8") }); continue; }
-                        children.Add(new { Child = child, Role = Convert.ToString(role),
-                            ExactLabel = string.Equals(name, GitLabel, StringComparison.Ordinal) });
+                        children.Add(new
+                        {
+                            Child = child,
+                            Role = Convert.ToString(role),
+                            ExactLabel = string.Equals(name, GitLabel, StringComparison.Ordinal)
+                        });
                     }
                     msaa = new { HResult = "0x00000000", ChildCount = count, Children = children.ToArray() };
                 }
@@ -196,8 +215,14 @@ namespace VBAi.Desktop.Helper
             catch (Exception error)
             { msaa = new { ErrorType = error.GetType().FullName, Error = error.Message, HResult = "0x" + unchecked((uint)error.HResult).ToString("X8") }; }
             finally { if (accessibility != null && Marshal.IsComObject(accessibility)) Marshal.ReleaseComObject(accessibility); }
-            receipt(new { Phase = "VirtualPopupDiscovery", UiA = last, Msaa = msaa,
-                Selected = selected != null, ActionDelivered = false });
+            receipt(new
+            {
+                Phase = "VirtualPopupDiscovery",
+                UiA = last,
+                Msaa = msaa,
+                Selected = selected != null,
+                ActionDelivered = false
+            });
             return selected;
         }
 
@@ -222,11 +247,20 @@ namespace VBAi.Desktop.Helper
                 string readbackErrorType = null;
                 try { immediate = readback(); }
                 catch (Exception readbackError) { readbackErrorType = readbackError.GetType().FullName; }
-                receipt(new { Phase = "ActionFailedOrUncertain", Name = name, Method = method,
-                    ErrorType = error.GetType().FullName, Error = error.Message, HResult = "0x" + unchecked((uint)error.HResult).ToString("X8"),
+                receipt(new
+                {
+                    Phase = "ActionFailedOrUncertain",
+                    Name = name,
+                    Method = method,
+                    ErrorType = error.GetType().FullName,
+                    Error = error.Message,
+                    HResult = "0x" + unchecked((uint)error.HResult).ToString("X8"),
                     ImmediateState = immediate == null ? null : immediate.State,
                     ImmediateReadbackProven = immediate != null && immediate.Proven,
-                    ReadbackErrorType = readbackErrorType, Attempts = 1, Replay = false });
+                    ReadbackErrorType = readbackErrorType,
+                    Attempts = 1,
+                    Replay = false
+                });
                 return false;
             }
             try
@@ -237,14 +271,27 @@ namespace VBAi.Desktop.Helper
                 {
                     Thread.Sleep(25); observation = readback(); // Read-only settlement; delivery is never repeated.
                 }
-                receipt(new { Phase = "ActionReadback", Name = name, observation.Proven, observation.State,
-                    Replay = false });
+                receipt(new
+                {
+                    Phase = "ActionReadback",
+                    Name = name,
+                    observation.Proven,
+                    observation.State,
+                    Replay = false
+                });
                 return observation.Proven;
             }
             catch (Exception error)
             {
-                receipt(new { Phase = "ReadbackUnavailable", Name = name, ErrorType = error.GetType().FullName, Error = error.Message,
-                    HResult = "0x" + unchecked((uint)error.HResult).ToString("X8"), Replay = false });
+                receipt(new
+                {
+                    Phase = "ReadbackUnavailable",
+                    Name = name,
+                    ErrorType = error.GetType().FullName,
+                    Error = error.Message,
+                    HResult = "0x" + unchecked((uint)error.HResult).ToString("X8"),
+                    Replay = false
+                });
                 return false;
             }
         }
@@ -317,7 +364,8 @@ namespace VBAi.Desktop.Helper
             CanaryForm form = null; Exception uiError = null;
             using (var ready = new ManualResetEventSlim())
             {
-                var ui = new Thread(() => {
+                var ui = new Thread(() =>
+                {
                     try
                     {
                         RequireInactiveDesktop(expectedDesktop);
@@ -330,7 +378,8 @@ namespace VBAi.Desktop.Helper
                         }
                     }
                     catch (Exception error) { uiError = error; ready.Set(); }
-                }) { IsBackground = true };
+                })
+                { IsBackground = true };
                 ui.SetApartmentState(ApartmentState.STA); ui.Start();
                 try
                 {
@@ -341,10 +390,16 @@ namespace VBAi.Desktop.Helper
                     if (process != Process.GetCurrentProcess().Id || !IsWindowVisible(rootHandle))
                         throw new InvalidOperationException("Synthetic root visibility or PID differs.");
                     var root = AutomationElement.FromHandle(rootHandle);
-                    receipt(new { Phase = "CanaryReady", ProcessId = process, UiThreadId = uiThread,
-                        RootHandle = rootHandle.ToInt64(), Desktop = expectedDesktop,
+                    receipt(new
+                    {
+                        Phase = "CanaryReady",
+                        ProcessId = process,
+                        UiThreadId = uiThread,
+                        RootHandle = rootHandle.ToInt64(),
+                        Desktop = expectedDesktop,
                         RootExStyle = GetWindowLong(rootHandle, -20),
-                        Actions = ActionMap });
+                        Actions = ActionMap
+                    });
                     RunActions(form, root, rootHandle, uiThread, (int)process, expectedDesktop, receipt);
                 }
                 finally
@@ -356,8 +411,14 @@ namespace VBAi.Desktop.Helper
                     }
                     catch (Exception error)
                     {
-                        receipt(new { Phase = "CanaryCleanupFailed", ErrorType = error.GetType().FullName, Error = error.Message,
-                            HResult = "0x" + unchecked((uint)error.HResult).ToString("X8"), ForceTermination = false });
+                        receipt(new
+                        {
+                            Phase = "CanaryCleanupFailed",
+                            ErrorType = error.GetType().FullName,
+                            Error = error.Message,
+                            HResult = "0x" + unchecked((uint)error.HResult).ToString("X8"),
+                            ForceTermination = false
+                        });
                     }
                     if (!ui.Join(TimeSpan.FromSeconds(10)))
                         receipt(new { Phase = "CanaryUiThreadPending", Retain = true, ForceTermination = false });
@@ -368,114 +429,153 @@ namespace VBAi.Desktop.Helper
         private static void RunActions(CanaryForm form, AutomationElement root, IntPtr rootHandle,
             uint uiThread, int processId, string expectedDesktop, Action<object> receipt)
         {
-            Probe(receipt, "TextBox", () => {
-            var text = One(root, "CanaryText", processId);
-            var textPattern = Pattern<ValuePattern>(text, ValuePattern.Pattern);
-            Guard(rootHandle, new IntPtr(text.Current.NativeWindowHandle), uiThread, processId);
-            Once(receipt, "TextBox", "ValuePattern.SetValue", () => textPattern.SetValue("after"),
-                () => new Observation(textPattern.Current.Value == "after", new { Value = textPattern.Current.Value }));
-            });
-
-            Probe(receipt, "TabControl", () => {
-            var tabs = One(root, "CanaryTabs", processId);
-            IntPtr tabsHandle = new IntPtr(tabs.Current.NativeWindowHandle);
-            Guard(rootHandle, tabsHandle, uiThread, processId);
-            var matches = tabs.FindAll(TreeScope.Children,
-                new PropertyCondition(AutomationElement.ControlTypeProperty, ControlType.TabItem))
-                .Cast<AutomationElement>().Where(item => item.Current.Name == "Second" && item.Current.ProcessId == processId).ToArray();
-            if (matches.Length != 1 || NativeAncestor(matches[0]) != tabsHandle)
-                throw new InvalidOperationException("The exact virtual second tab is absent or ambiguous.");
-            var tab = matches[0];
-            Once(receipt, "TabControl", "SelectionItemPattern.Select",
-                () => Pattern<SelectionItemPattern>(tab, SelectionItemPattern.Pattern).Select(),
-                () => { bool selected = (bool)form.Invoke((Func<bool>)(() => form.Tabs.SelectedIndex == 1));
-                    return new Observation(selected, new { Selected = selected }); });
-            });
-
-            Probe(receipt, "ComboBox", () => {
-            var combo = One(root, "CanaryCombo", processId);
-            Guard(rootHandle, new IntPtr(combo.Current.NativeWindowHandle), uiThread, processId);
-            var expand = Pattern<ExpandCollapsePattern>(combo, ExpandCollapsePattern.Pattern);
-            if (Once(receipt, "ComboBoxExpand", "ExpandCollapsePattern.Expand", expand.Expand,
-                () => new Observation(expand.Current.ExpandCollapseState == ExpandCollapseState.Expanded,
-                    new { State = expand.Current.ExpandCollapseState.ToString() })))
+            Probe(receipt, "TextBox", () =>
             {
-                try
-                {
-                    AutomationElement entry = NativeComboListDiscovery.RequireExactItem(
-                        new IntPtr(combo.Current.NativeWindowHandle), "Scope B", processId, uiThread,
-                        expectedDesktop, thread => ObjectName(GetThreadDesktop(thread)), receipt);
-                    Once(receipt, "ComboBoxSelect", "SelectionItemPattern.Select",
-                        () => Pattern<SelectionItemPattern>(entry, SelectionItemPattern.Pattern).Select(),
-                        () => { int selected = (int)form.Invoke((Func<int>)(() => form.Combo.SelectedIndex));
-                            return new Observation(selected == 1, new { SelectedIndex = selected }); });
-                }
-                finally
-                {
-                    Once(receipt, "ComboBoxCollapse", "ExpandCollapsePattern.Collapse", expand.Collapse,
-                        () => new Observation(expand.Current.ExpandCollapseState == ExpandCollapseState.Collapsed,
-                            new { State = expand.Current.ExpandCollapseState.ToString() }));
-                }
-            }
-            else receipt(new { Phase = "ActionGap", Name = "ComboBoxSelectAndCollapse", Reason = "Expand not proved; no dependent action." });
+                var text = One(root, "CanaryText", processId);
+                var textPattern = Pattern<ValuePattern>(text, ValuePattern.Pattern);
+                Guard(rootHandle, new IntPtr(text.Current.NativeWindowHandle), uiThread, processId);
+                Once(receipt, "TextBox", "ValuePattern.SetValue", () => textPattern.SetValue("after"),
+                    () => new Observation(textPattern.Current.Value == "after", new { Value = textPattern.Current.Value }));
             });
 
-            Probe(receipt, "NativeButton", () => {
-            var native = One(root, "CanaryNativeButton", processId);
-            IntPtr nativeHandle = new IntPtr(native.Current.NativeWindowHandle);
-            Once(receipt, "NativeButton", "SendMessageTimeout(BM_CLICK)",
-                () => ClickOnce(rootHandle, nativeHandle, uiThread, processId),
-                () => { int count = (int)form.Invoke((Func<int>)(() => form.NativeClicks));
-                    return new Observation(count == 1, new { Clicks = count }); });
-            });
-
-            Probe(receipt, "ChatOptionsAndVirtualGit", () => {
-            // Let ordinary Form startup establish this private thread's active window.
-            // Read it once; never activate/focus a window or manufacture a popup owner.
-            IntPtr active = (IntPtr)form.Invoke((Func<IntPtr>)GetActiveWindow);
-            IntPtr picker = form.Combo.Handle;
-            Guard(rootHandle, active, uiThread, processId);
-            if ((active != rootHandle && active != picker) || !IsWindowVisible(active))
-                throw new InvalidOperationException("The private canary has no exact owned active root or scope picker before Options.");
-            receipt(new { Phase = "SyntheticActiveWindowObserved", Root = rootHandle.ToInt64(),
-                Active = active.ToInt64(), ScopePicker = picker.ToInt64(),
-                Desktop = expectedDesktop, ExplicitActivation = false, NativeOwnerChanged = false });
-            var options = One(root, "CanaryOptions", processId);
-            IntPtr optionsHandle = new IntPtr(options.Current.NativeWindowHandle);
-            bool opened = Once(receipt, "ChatActionButtonOptions", "SendMessageTimeout(BM_CLICK)",
-                () => ClickOnce(rootHandle, optionsHandle, uiThread, processId),
-                () => { int count = (int)form.Invoke((Func<int>)(() => form.OptionsClicks));
-                    bool visible = (bool)form.Invoke((Func<bool>)(() => form.OptionsMenu.Visible));
-                    return new Observation(count == 1 && visible, new { Clicks = count, PopupVisible = visible }); });
-            if (opened && (bool)form.Invoke((Func<bool>)(() => form.OptionsMenu.Visible)))
+            Probe(receipt, "TabControl", () =>
             {
-                IntPtr popup = (IntPtr)form.Invoke((Func<IntPtr>)(() => form.OptionsMenu.Handle));
-                IntPtr owner = GetWindow(popup, GwOwner);
-                var popupClass = new StringBuilder(128); var ownerClass = new StringBuilder(128);
-                GetClassName(popup, popupClass, popupClass.Capacity); GetClassName(owner, ownerClass, ownerClass.Capacity);
-                uint ownerPid; uint ownerThread = GetWindowThreadProcessId(owner, out ownerPid);
-                receipt(new { Phase = "SyntheticPopupOwnerObserved", Root = rootHandle.ToInt64(),
-                    Popup = popup.ToInt64(), PopupClass = popupClass.ToString(), Owner = owner.ToInt64(),
-                    OwnerClass = ownerClass.ToString(), OwnerPid = ownerPid, OwnerThread = ownerThread,
-                    OwnerLive = IsWindow(owner), OwnerVisible = IsWindowVisible(owner),
-                    OwnerParent = GetParent(owner).ToInt64(), OwnerOwner = GetWindow(owner, GwOwner).ToInt64(),
-                    OwnerStyle = GetWindowLong(owner, -16), OwnerExStyle = GetWindowLong(owner, -20) });
-                var gitItem = ObserveExactPopupItem(popup, processId, receipt);
-                if (gitItem == null)
-                    receipt(new { Phase = "ActionGap", Name = "VirtualGitItem", Reason = "Exact popup/menu item absent or ambiguous." });
-                else Once(receipt, "VirtualGitItem", "IAccessible.accDoDefaultAction",
-                    () => DefaultActionOnce(rootHandle, form.Combo.Handle, popup, gitItem, uiThread, processId),
-                    () => { int count = (int)form.Invoke((Func<int>)(() => form.GitClicks));
-                        return new Observation(count == 1, new { Clicks = count }); });
-            }
-            else receipt(new { Phase = "ActionGap", Name = "VirtualGitItem", Reason = "Options popup not proved." });
+                var tabs = One(root, "CanaryTabs", processId);
+                IntPtr tabsHandle = new IntPtr(tabs.Current.NativeWindowHandle);
+                Guard(rootHandle, tabsHandle, uiThread, processId);
+                var matches = tabs.FindAll(TreeScope.Children,
+                    new PropertyCondition(AutomationElement.ControlTypeProperty, ControlType.TabItem))
+                    .Cast<AutomationElement>().Where(item => item.Current.Name == "Second" && item.Current.ProcessId == processId).ToArray();
+                if (matches.Length != 1 || NativeAncestor(matches[0]) != tabsHandle)
+                    throw new InvalidOperationException("The exact virtual second tab is absent or ambiguous.");
+                var tab = matches[0];
+                Once(receipt, "TabControl", "SelectionItemPattern.Select",
+                    () => Pattern<SelectionItemPattern>(tab, SelectionItemPattern.Pattern).Select(),
+                    () =>
+                    {
+                        bool selected = (bool)form.Invoke((Func<bool>)(() => form.Tabs.SelectedIndex == 1));
+                        return new Observation(selected, new { Selected = selected });
+                    });
             });
 
-            Probe(receipt, "OwnedForm", () => {
-            var window = Pattern<WindowPattern>(root, WindowPattern.Pattern);
-            Once(receipt, "OwnedForm", "WindowPattern.Close", window.Close,
-                () => new Observation(!IsWindow(rootHandle) && form.ClosedEvents == 1,
-                    new { Destroyed = !IsWindow(rootHandle), ClosedEvents = form.ClosedEvents }));
+            Probe(receipt, "ComboBox", () =>
+            {
+                var combo = One(root, "CanaryCombo", processId);
+                Guard(rootHandle, new IntPtr(combo.Current.NativeWindowHandle), uiThread, processId);
+                var expand = Pattern<ExpandCollapsePattern>(combo, ExpandCollapsePattern.Pattern);
+                if (Once(receipt, "ComboBoxExpand", "ExpandCollapsePattern.Expand", expand.Expand,
+                    () => new Observation(expand.Current.ExpandCollapseState == ExpandCollapseState.Expanded,
+                        new { State = expand.Current.ExpandCollapseState.ToString() })))
+                {
+                    try
+                    {
+                        AutomationElement entry = NativeComboListDiscovery.RequireExactItem(
+                            new IntPtr(combo.Current.NativeWindowHandle), "Scope B", processId, uiThread,
+                            expectedDesktop, thread => ObjectName(GetThreadDesktop(thread)), receipt);
+                        Once(receipt, "ComboBoxSelect", "SelectionItemPattern.Select",
+                            () => Pattern<SelectionItemPattern>(entry, SelectionItemPattern.Pattern).Select(),
+                            () =>
+                            {
+                                int selected = (int)form.Invoke((Func<int>)(() => form.Combo.SelectedIndex));
+                                return new Observation(selected == 1, new { SelectedIndex = selected });
+                            });
+                    }
+                    finally
+                    {
+                        Once(receipt, "ComboBoxCollapse", "ExpandCollapsePattern.Collapse", expand.Collapse,
+                            () => new Observation(expand.Current.ExpandCollapseState == ExpandCollapseState.Collapsed,
+                                new { State = expand.Current.ExpandCollapseState.ToString() }));
+                    }
+                }
+                else receipt(new { Phase = "ActionGap", Name = "ComboBoxSelectAndCollapse", Reason = "Expand not proved; no dependent action." });
+            });
+
+            Probe(receipt, "NativeButton", () =>
+            {
+                var native = One(root, "CanaryNativeButton", processId);
+                IntPtr nativeHandle = new IntPtr(native.Current.NativeWindowHandle);
+                Once(receipt, "NativeButton", "SendMessageTimeout(BM_CLICK)",
+                    () => ClickOnce(rootHandle, nativeHandle, uiThread, processId),
+                    () =>
+                    {
+                        int count = (int)form.Invoke((Func<int>)(() => form.NativeClicks));
+                        return new Observation(count == 1, new { Clicks = count });
+                    });
+            });
+
+            Probe(receipt, "ChatOptionsAndVirtualGit", () =>
+            {
+                // Let ordinary Form startup establish this private thread's active window.
+                // Read it once; never activate/focus a window or manufacture a popup owner.
+                IntPtr active = (IntPtr)form.Invoke((Func<IntPtr>)GetActiveWindow);
+                IntPtr picker = form.Combo.Handle;
+                Guard(rootHandle, active, uiThread, processId);
+                if ((active != rootHandle && active != picker) || !IsWindowVisible(active))
+                    throw new InvalidOperationException("The private canary has no exact owned active root or scope picker before Options.");
+                receipt(new
+                {
+                    Phase = "SyntheticActiveWindowObserved",
+                    Root = rootHandle.ToInt64(),
+                    Active = active.ToInt64(),
+                    ScopePicker = picker.ToInt64(),
+                    Desktop = expectedDesktop,
+                    ExplicitActivation = false,
+                    NativeOwnerChanged = false
+                });
+                var options = One(root, "CanaryOptions", processId);
+                IntPtr optionsHandle = new IntPtr(options.Current.NativeWindowHandle);
+                bool opened = Once(receipt, "ChatActionButtonOptions", "SendMessageTimeout(BM_CLICK)",
+                    () => ClickOnce(rootHandle, optionsHandle, uiThread, processId),
+                    () =>
+                    {
+                        int count = (int)form.Invoke((Func<int>)(() => form.OptionsClicks));
+                        bool visible = (bool)form.Invoke((Func<bool>)(() => form.OptionsMenu.Visible));
+                        return new Observation(count == 1 && visible, new { Clicks = count, PopupVisible = visible });
+                    });
+                if (opened && (bool)form.Invoke((Func<bool>)(() => form.OptionsMenu.Visible)))
+                {
+                    IntPtr popup = (IntPtr)form.Invoke((Func<IntPtr>)(() => form.OptionsMenu.Handle));
+                    IntPtr owner = GetWindow(popup, GwOwner);
+                    var popupClass = new StringBuilder(128); var ownerClass = new StringBuilder(128);
+                    GetClassName(popup, popupClass, popupClass.Capacity); GetClassName(owner, ownerClass, ownerClass.Capacity);
+                    uint ownerPid; uint ownerThread = GetWindowThreadProcessId(owner, out ownerPid);
+                    receipt(new
+                    {
+                        Phase = "SyntheticPopupOwnerObserved",
+                        Root = rootHandle.ToInt64(),
+                        Popup = popup.ToInt64(),
+                        PopupClass = popupClass.ToString(),
+                        Owner = owner.ToInt64(),
+                        OwnerClass = ownerClass.ToString(),
+                        OwnerPid = ownerPid,
+                        OwnerThread = ownerThread,
+                        OwnerLive = IsWindow(owner),
+                        OwnerVisible = IsWindowVisible(owner),
+                        OwnerParent = GetParent(owner).ToInt64(),
+                        OwnerOwner = GetWindow(owner, GwOwner).ToInt64(),
+                        OwnerStyle = GetWindowLong(owner, -16),
+                        OwnerExStyle = GetWindowLong(owner, -20)
+                    });
+                    var gitItem = ObserveExactPopupItem(popup, processId, receipt);
+                    if (gitItem == null)
+                        receipt(new { Phase = "ActionGap", Name = "VirtualGitItem", Reason = "Exact popup/menu item absent or ambiguous." });
+                    else Once(receipt, "VirtualGitItem", "IAccessible.accDoDefaultAction",
+                        () => DefaultActionOnce(rootHandle, form.Combo.Handle, popup, gitItem, uiThread, processId),
+                        () =>
+                        {
+                            int count = (int)form.Invoke((Func<int>)(() => form.GitClicks));
+                            return new Observation(count == 1, new { Clicks = count });
+                        });
+                }
+                else receipt(new { Phase = "ActionGap", Name = "VirtualGitItem", Reason = "Options popup not proved." });
+            });
+
+            Probe(receipt, "OwnedForm", () =>
+            {
+                var window = Pattern<WindowPattern>(root, WindowPattern.Pattern);
+                Once(receipt, "OwnedForm", "WindowPattern.Close", window.Close,
+                    () => new Observation(!IsWindow(rootHandle) && form.ClosedEvents == 1,
+                        new { Destroyed = !IsWindow(rootHandle), ClosedEvents = form.ClosedEvents }));
             });
         }
 
@@ -484,10 +584,16 @@ namespace VBAi.Desktop.Helper
             try { action(); }
             catch (Exception error)
             {
-                receipt(new { Phase = "ActionPreflightGap", Name = name,
-                    ErrorType = error.GetType().FullName, Error = error.Message,
+                receipt(new
+                {
+                    Phase = "ActionPreflightGap",
+                    Name = name,
+                    ErrorType = error.GetType().FullName,
+                    Error = error.Message,
                     HResult = "0x" + unchecked((uint)error.HResult).ToString("X8"),
-                    ActionDelivered = false, Replay = false });
+                    ActionDelivered = false,
+                    Replay = false
+                });
             }
         }
 

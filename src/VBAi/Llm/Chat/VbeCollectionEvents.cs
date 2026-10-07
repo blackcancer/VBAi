@@ -44,14 +44,14 @@ namespace VBAi
             iid = new Guid(components ? "0002E116-0000-0000-C000-000000000046" : "0002E103-0000-0000-C000-000000000046");
             this.add = add ?? Connect;
             this.remove = remove ?? ((target, id, member, callback) => ComEventsHelper.Remove(target, id, member, callback));
-            Action<object> item = value => { if (!disposed) changed(); };
-            Action<object, string> renamed = (value, oldName) => { if (!disposed) changed(); };
-            handlers.Add(Tuple.Create(1, (Delegate)item));
-            handlers.Add(Tuple.Create(2, (Delegate)item));
-            handlers.Add(Tuple.Create(3, (Delegate)renamed));
+            void item(object value) { if (!disposed) changed(); }
+            void renamed(object value, string oldName) { if (!disposed) changed(); }
+            handlers.Add(Tuple.Create(1, (Delegate)(Action<object>)item));
+            handlers.Add(Tuple.Create(2, (Delegate)(Action<object>)item));
+            handlers.Add(Tuple.Create(3, (Delegate)(Action<object, string>)renamed));
             // Reloaded for components, activated for projects. Selection/activation
             // of individual components does not invalidate the symbol inventory.
-            handlers.Add(Tuple.Create(components ? 6 : 4, (Delegate)item));
+            handlers.Add(Tuple.Create(components ? 6 : 4, (Delegate)(Action<object>)item));
         }
 
         /// <summary>Vérifie le point de connexion natif avant d’enregistrer le délégué COM.</summary>
@@ -59,12 +59,10 @@ namespace VBAi
         /// <param name="member">Identifiant du membre événementiel.</param><param name="handler">Délégué à connecter.</param>
         private static void Connect(object target, Guid iid, int member, Delegate handler)
         {
-            var container = target as IConnectionPointContainer;
-            if (container == null) throw new InvalidOperationException("No native collection event container.");
-            IConnectionPoint point;
-            container.FindConnectionPoint(ref iid, out point);
+            if (!(target is IConnectionPointContainer container)) throw new InvalidOperationException("No native collection event container.");
+            container.FindConnectionPoint(ref iid, out IConnectionPoint point);
             if (point == null) throw new InvalidOperationException("The native event connection point is absent.");
-            Guid actual; point.GetConnectionInterface(out actual);
+            point.GetConnectionInterface(out Guid actual);
             if (actual != iid) throw new InvalidOperationException("The native event connection interface does not match.");
             CombineNative(target, iid, member, handler);
         }

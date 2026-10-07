@@ -1,3 +1,6 @@
+using Microsoft.VisualStudio.TestTools.UnitTesting;
+using Microsoft.Web.WebView2.Core;
+using Microsoft.Web.WebView2.WinForms;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -5,11 +8,7 @@ using System.Reflection;
 using System.Runtime.Remoting.Messaging;
 using System.Runtime.Remoting.Proxies;
 using System.Threading.Tasks;
-using VBAi;
 using VBAi.Tests.Infrastructure;
-using Microsoft.Web.WebView2.Core;
-using Microsoft.Web.WebView2.WinForms;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 namespace VBAi.Tests.Unit.Editor
 {
     internal sealed class OwnedWebRaw : RealProxy
@@ -78,7 +77,8 @@ namespace VBAi.Tests.Unit.Editor
             Environment.Operation = (name, values) => { if (name != "CreateWebResourceResponse") throw new AssertFailedException("Unexpected owned environment " + name); Assert.AreEqual(403, values[1]); Assert.AreEqual("Forbidden", values[2]); CreatedResponse = new OwnedWebRaw(OwnedWebRaw.Raw("ICoreWebView2WebResourceResponse")); CreatedResponse.Values["StatusCode"] = values[1]; return CreatedResponse.Proxy; };
             Controller.Values["CoreWebView2"] = Core.Proxy; Controller.Values["IsVisible"] = 0; Controller.Values["Bounds"] = Activator.CreateInstance(OwnedWebRaw.Raw("tagRECT")); Controller.Values["ZoomFactor"] = 1d; Controller.Values["ParentWindow"] = IntPtr.Zero;
             Controller.Operation = (name, values) => { if (name == "Close") { NativeCloses++; return null; } if (name == "NotifyParentWindowPositionChanged" || name == "SetBoundsAndZoomFactor") return null; throw new AssertFailedException("Unexpected owned controller operation " + name); };
-            Window.CreateBrowserEnvironment = cache => {
+            Window.CreateBrowserEnvironment = cache =>
+            {
                 string root = System.IO.Path.Combine(System.Environment.GetFolderPath(System.Environment.SpecialFolder.LocalApplicationData),
                     "VBAi", "EditorWebView", System.Diagnostics.Process.GetCurrentProcess().Id.ToString());
                 Assert.AreEqual(root, System.IO.Path.GetDirectoryName(cache));

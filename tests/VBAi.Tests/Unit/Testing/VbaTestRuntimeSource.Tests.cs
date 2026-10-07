@@ -1,8 +1,8 @@
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text.RegularExpressions;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace VBAi.Tests.Unit
 {
@@ -77,7 +77,8 @@ namespace VBAi.Tests.Unit
             });
             catalog.Modules.Add(new VbaTestModule
             {
-                Name = "BlockedModule", Diagnostic = "Invalid fixtures",
+                Name = "BlockedModule",
+                Diagnostic = "Invalid fixtures",
                 Tests = { Descriptor("BlockedModule", "DoTest") }
             });
             var source = VbaTestRuntimeSource.Generate(catalog);
@@ -119,7 +120,8 @@ namespace VBAi.Tests.Unit
             var catalog = new VbaTestCatalog();
             catalog.Modules.Add(new VbaTestModule
             {
-                Name = "Échangeur", Tests = { Descriptor("Échangeur", "Température") }
+                Name = "Échangeur",
+                Tests = { Descriptor("Échangeur", "Température") }
             });
             var source = VbaTestRuntimeSource.Generate(catalog);
             StringAssert.Contains(source, "Case LCase$(\"Échangeur.Température\")");
@@ -312,9 +314,12 @@ namespace VBAi.Tests.Unit
         {
             var catalog = Catalog(Descriptor("TestsMath", "Good"));
             string source = VbaTestRuntimeSource.Generate(catalog);
-            catalog.Project = new VbaTestProjectSnapshot { Modules = new[] {
+            catalog.Project = new VbaTestProjectSnapshot
+            {
+                Modules = new[] {
                 new VbaTestModuleSnapshot { Name = VbaTestRuntimeSource.ModuleName, Source = source },
-                new VbaTestModuleSnapshot { Name = VbaTestRuntimeSource.ModuleName, Source = source } } };
+                new VbaTestModuleSnapshot { Name = VbaTestRuntimeSource.ModuleName, Source = source } }
+            };
             Assert.ThrowsException<InvalidOperationException>(() => VbaTestRuntimeSource.Generate(catalog));
         }
 
@@ -322,18 +327,18 @@ namespace VBAi.Tests.Unit
         public void DecoderRejectsNullTestAndExcessiveStatusOrErrorText()
         {
             Assert.ThrowsException<ArgumentNullException>(() => VbaTestRuntimeSource.Decode(null, null));
-            foreach (var envelope in new[] { new object[] { null, "", "0" }, new object[] { new string('x',33), "", "0" }, new object[] { "Error", "", new string('1',13) } })
+            foreach (var envelope in new[] { new object[] { null, "", "0" }, new object[] { new string('x', 33), "", "0" }, new object[] { "Error", "", new string('1', 13) } })
                 Assert.ThrowsException<InvalidOperationException>(() => VbaTestRuntimeSource.Decode(Descriptor("TestsMath", "Good"), envelope));
         }
         [TestMethod]
         public void ShortSubCasesPartitionAtTheExactCaseCountBoundBeforeTheSourceBudget()
         {
-            var catalog = Catalog(Enumerable.Range(0,129).Select(index => Descriptor("TestsMath","T" + index)).ToArray());
-            var leaves = DispatchHelpers(VbaTestRuntimeSource.Generate(catalog)).Where(pair => pair.Key.StartsWith("VBAiDispatchLeaf",StringComparison.Ordinal)).OrderBy(pair=>pair.Key).ToArray();
-            Assert.AreEqual(2,leaves.Length);
-            Assert.AreEqual(128,Regex.Matches(leaves[0].Value,@"Case LCase\$").Count);
-            Assert.AreEqual(1,Regex.Matches(leaves[1].Value,@"Case LCase\$").Count);
-            Assert.AreEqual(129,leaves.Sum(leaf=>Regex.Matches(leaf.Value,@"Case LCase\$").Count));
+            var catalog = Catalog(Enumerable.Range(0, 129).Select(index => Descriptor("TestsMath", "T" + index)).ToArray());
+            var leaves = DispatchHelpers(VbaTestRuntimeSource.Generate(catalog)).Where(pair => pair.Key.StartsWith("VBAiDispatchLeaf", StringComparison.Ordinal)).OrderBy(pair => pair.Key).ToArray();
+            Assert.AreEqual(2, leaves.Length);
+            Assert.AreEqual(128, Regex.Matches(leaves[0].Value, @"Case LCase\$").Count);
+            Assert.AreEqual(1, Regex.Matches(leaves[1].Value, @"Case LCase\$").Count);
+            Assert.AreEqual(129, leaves.Sum(leaf => Regex.Matches(leaf.Value, @"Case LCase\$").Count));
         }
     }
 }

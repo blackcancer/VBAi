@@ -29,7 +29,7 @@ namespace VBAi
         private static readonly ConcurrentBag<object> retainedReferences = new ConcurrentBag<object>();
 
         /// <summary>Reads the owning process ID for Word's application-window HWND.</summary>
-        internal Func<IntPtr, uint> ReadWindowOwner = hwnd => { uint owner; VbeDebugWindows.GetWindowThreadProcessId(hwnd, out owner); return owner; };
+        internal Func<IntPtr, uint> ReadWindowOwner = hwnd => { VbeDebugWindows.GetWindowThreadProcessId(hwnd, out uint owner); return owner; };
 
         /// <summary>Compares managed identity first, then native COM identity.</summary>
         internal Func<object, object, bool> SameIdentity = (first, second) => ReferenceEquals(first, second) || VbeDebug.NativeProcedureValuesHost.SameComIdentity(first, second);
@@ -179,9 +179,15 @@ namespace VBAi
             var application = ResolveApplicationLease();
             try
             {
-                return new OwnedTarget { Owner = this, Application = application.Application,
+                return new OwnedTarget
+                {
+                    Owner = this,
+                    Application = application.Application,
                     Document = FindDocument(application.Application, project, normalizedPath),
-                    Project = project, Path = normalizedPath, ApplicationOwnership = application };
+                    Project = project,
+                    Path = normalizedPath,
+                    ApplicationOwnership = application
+                };
             }
             catch { application.Dispose(); throw; }
         }
@@ -237,8 +243,7 @@ namespace VBAi
         internal OwnedTarget ValidateTarget(object target)
         {
             RequireOwner();
-            var owned = target as OwnedTarget;
-            if (owned == null || !ReferenceEquals(owned.Owner, this)) throw new InvalidOperationException("An owned Word target is required.");
+            if (!(target is OwnedTarget owned) || !ReferenceEquals(owned.Owner, this)) throw new InvalidOperationException("An owned Word target is required.");
             owned.RequireUsable();
             using (var application = ResolveApplicationLease())
             {
@@ -284,8 +289,7 @@ namespace VBAi
             object window = null;
             try
             {
-                window = ((dynamic)application).ActiveWindow;
-                if (window == null) throw new InvalidOperationException("The registered Word application has no active document window.");
+                window = ((dynamic)application).ActiveWindow ?? throw new InvalidOperationException("The registered Word application has no active document window.");
                 var handle = new IntPtr(Convert.ToInt64(((dynamic)window).Hwnd));
                 if (handle == IntPtr.Zero) throw new InvalidOperationException("The active Word document window has no native handle.");
                 return handle;

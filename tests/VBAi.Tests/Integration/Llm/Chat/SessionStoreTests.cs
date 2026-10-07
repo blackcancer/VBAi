@@ -1,7 +1,6 @@
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.IO;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
-using VBAi;
 
 namespace VBAi.Tests.Integration
 {
@@ -18,7 +17,8 @@ namespace VBAi.Tests.Integration
             string root = Path.Combine(Path.GetTempPath(), "VBAi-VSTest", Guid.NewGuid().ToString("N"));
             string database = Path.Combine(root, "bookmarks.sqlite"), macro = Path.Combine(root, "été.xlsm"), other = Path.Combine(root, "other.xlsm");
             string sha = "original"; Request selected = null;
-            Func<Request, Response> execute = r => {
+            Func<Request, Response> execute = r =>
+            {
                 if (r.Command == "read_module") return Response.Success(new BookmarkCodeSnapshot { Code = "abc", Sha256 = sha });
                 selected = r; return Response.Success(new { Selected = true });
             };

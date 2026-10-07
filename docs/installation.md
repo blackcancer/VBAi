@@ -1,10 +1,54 @@
-# Source-build setup
+# Installation and source-build setup
 
 [Documentation](README.md)
 
-The standalone installer is planned for a later milestone. This page describes
-**developer registration of the current preview**, not an end-user installation
-experience or an installer implementation task.
+## Install version 1.0.0
+
+Download `VBAi-Setup-win-x64.exe` and `SHA256SUMS.txt` from the
+[GitHub release](https://github.com/blackcancer/VBAi/releases/tag/v1.0.0).
+Version 1.0.0 is **unsigned**, including its uninstaller. The checksum verifies
+file integrity against the downloaded checksum; it does not authenticate the
+publisher. Windows may display an unknown-publisher or SmartScreen warning.
+
+Save your work and close all VBA host applications before starting Setup. VBAi
+requires Windows x64 and .NET Framework 4.8. The wizard installs for the current
+user under `%LOCALAPPDATA%\Programs\VBAi`, registers the existing COM identities
+and supplies the offline manuals. A UAC prompt may be needed once for the shared
+chat-control ProgID mapping; it does not install VBAi for other users. Use the same
+Windows account when approving this mapping.
+
+Restart the host, open its VBE and configure your provider through VBAi settings.
+Monaco needs WebView2; Git operations need Git for Windows. Setup does not change
+Office macro policies or install provider accounts. See [providers](providers.md).
+
+The setup/uninstaller compile successfully. The current-user installation,
+same-version repair, removal and reinstallation were exercised on Windows.
+See [recorded validation](test-coverage.md#installer-lifecycle) for the candidate
+and observed scope. Upgrade to another version, failure recovery and fresh-host
+loading remain separate qualification work.
+
+## Upgrade and uninstall
+
+Run a newer Setup after closing the hosts. Registration checks its target paths
+and preserves the installation identity used by the updater. Logs are stored in
+`%LOCALAPPDATA%\VBAi\SetupLogs`; registry snapshots are stored in
+`%LOCALAPPDATA%\VBAi\SetupBackups`. A registration failure requests restoration
+of the prior HKCU trees and verifies readback. File-level interrupted-upgrade
+recovery still needs native qualification.
+
+Use **Windows Settings → Apps → Installed apps → VBAi → Uninstall**, or the
+VBAi Start menu uninstall entry. Removal checks that this deployment still owns
+its COM registration before deleting installed files. Configuration, conversations,
+recovery data and user repositories are preserved. The path-independent machine
+chat ProgID mapping is retained because another user's deployment can use it.
+
+Unsigned 1.0.0 cannot be installed by the automatic updater, whose signature
+verification remains enabled. Use manual installation for this version. See
+[updates](updates.md) and [code signing](code-signing.md).
+
+## Build from source
+
+The following sections describe developer registration and build prerequisites.
 
 ## Requirements
 
@@ -106,4 +150,4 @@ manual maintenance.
 To unregister, close the hosts and run `tools/Uninstall-VBAi.ps1`. Do not delete
 history, recovery folders or unpushed Git objects as a generic cleanup step.
 See [troubleshooting](troubleshooting.md) for diagnostic paths and
-[updates](updates.md) for the future distribution contract.
+[updates](updates.md) for the distribution contract.

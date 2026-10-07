@@ -1,3 +1,4 @@
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
@@ -9,7 +10,6 @@ using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Windows.Forms;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace VBAi.Tests.Integration
 {
@@ -25,10 +25,15 @@ namespace VBAi.Tests.Integration
             Assert.IsTrue(!string.IsNullOrWhiteSpace(root) && Path.IsPathRooted(root));
             string output = Path.Combine(root, "corruption-" + corruption + "-" + Guid.NewGuid().ToString("N"));
             Directory.CreateDirectory(output);
-            var report = new Dictionary<string, object> {
-                ["Stage"] = "STARTED", ["Corruption"] = corruption, ["RemoteMutation"] = false,
+            var report = new Dictionary<string, object>
+            {
+                ["Stage"] = "STARTED",
+                ["Corruption"] = corruption,
+                ["RemoteMutation"] = false,
                 ["AssemblyMvid"] = typeof(VbeSession).Module.ModuleVersionId.ToString("D"),
-                ["NativeImportAttempts"] = 0, ["RecoveryAttempts"] = 0, ["MacroExecutions"] = 0
+                ["NativeImportAttempts"] = 0,
+                ["RecoveryAttempts"] = 0,
+                ["MacroExecutions"] = 0
             };
             string sentinelPath = null, sentinelHash = null;
             var previousContext = SynchronizationContext.Current;
@@ -39,7 +44,8 @@ namespace VBAi.Tests.Integration
                 SynchronizationContext.SetSynchronizationContext(new WindowsFormsSynchronizationContext());
                 try
                 {
-                    ExcelVbeFixture.Run(host => {
+                    ExcelVbeFixture.Run(host =>
+                    {
                         report["HostProcessId"] = host.ProcessId;
                         const string form = "QualificationForm";
                         const string layout = "LabelButton";
@@ -52,7 +58,8 @@ namespace VBAi.Tests.Integration
                         string diskBefore = CorruptCompanionFileHash(path);
                         sentinelHash = diskBefore;
                         File.Copy(path, Path.Combine(output, "sentinel-before-restore.xlsm"));
-                        host.WithGitProject(path, project => {
+                        host.WithGitProject(path, project =>
+                        {
                             var before = project.Capture();
                             SaveSnapshot(output, "sentinel-snapshot", before);
                             Assert.IsTrue(before.Manifest.Components.Single(x => x.Name == form).HasResources);
@@ -113,7 +120,8 @@ namespace VBAi.Tests.Integration
                             report["Stage"] = "REFUSED_BEFORE_MUTATION_AWAITING_NORMAL_EXIT";
                             WriteReport(output, report);
                         });
-                    }, host => {
+                    }, host =>
+                    {
                         report["Shutdown"] = host.ShutdownDiagnostics;
                         Assert.IsNotNull(host.ShutdownDiagnostics);
                         Assert.AreEqual(true, host.ShutdownDiagnostics["Exited"]);

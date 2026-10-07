@@ -29,18 +29,16 @@ namespace VBAi
         internal static void RequireProject(string project, object state)
         {
             var serializer = new JavaScriptSerializer();
-            var fields = serializer.DeserializeObject(serializer.Serialize(state)) as IDictionary<string, object>;
-            object selected, path, resolved, module;
-            if (string.IsNullOrWhiteSpace(project) || fields == null ||
-                !fields.TryGetValue("Project", out resolved) || !(resolved is string) ||
-                !fields.TryGetValue("SelectedProject", out selected) || !(selected is string) ||
-                !fields.TryGetValue("ActiveModule", out module) || !(module is string) || string.IsNullOrWhiteSpace((string)module) ||
-                !string.Equals((string)resolved, (string)selected, StringComparison.OrdinalIgnoreCase) ||
+            if (string.IsNullOrWhiteSpace(project) || !(serializer.DeserializeObject(serializer.Serialize(state)) is IDictionary<string, object> fields) ||
+                !fields.TryGetValue("Project", out object resolved) || !(resolved is string v) ||
+                !fields.TryGetValue("SelectedProject", out object selected) || !(selected is string v1) ||
+                !fields.TryGetValue("ActiveModule", out object module) || !(module is string v2) || string.IsNullOrWhiteSpace(v2) ||
+                !string.Equals(v, v1, StringComparison.OrdinalIgnoreCase) ||
                 (Path.IsPathRooted(project)
-                    ? !(fields.TryGetValue("SelectedHostPath", out path) ||
-                        (!fields.ContainsKey("SelectedHostPath") && VbeProjectHostPath.AllowsLegacyPath && fields.TryGetValue("SelectedProjectPath", out path))) || !(path is string) ||
-                        !string.Equals(project, (string)path, StringComparison.OrdinalIgnoreCase)
-                    : !string.Equals(project, (string)selected, StringComparison.OrdinalIgnoreCase)))
+                    ? !(fields.TryGetValue("SelectedHostPath", out object path) ||
+                        (!fields.ContainsKey("SelectedHostPath") && VbeProjectHostPath.AllowsLegacyPath && fields.TryGetValue("SelectedProjectPath", out path))) || !(path is string v3) ||
+                        !string.Equals(project, v3, StringComparison.OrdinalIgnoreCase)
+                    : !string.Equals(project, v1, StringComparison.OrdinalIgnoreCase)))
                 throw new InvalidOperationException("The requested project must be active in the VBE before Immediate execution. Select its code pane and read debug_state again.");
         }
     }

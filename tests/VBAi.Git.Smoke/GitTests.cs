@@ -44,7 +44,8 @@ internal static partial class GitTests
             Snapshots(); Repositories(); ProjectImport(); Workflow(); Advanced(); Designer();
             if (uiError != null) throw new Exception("WinForms drawing failed during Git tests.", uiError);
         }
-        finally {
+        finally
+        {
             System.Windows.Forms.Application.ThreadException -= onUiError;
             System.Threading.SynchronizationContext.SetSynchronizationContext(previousContext);
         }
@@ -58,16 +59,21 @@ internal static partial class GitTests
     /// <param name="message">Message d’échec si aucune exception n’est levée.</param>
     private static void Reject(Action action, string message)
     {
-        bool rejected = false; try { action(); } catch { rejected = true; } Assert(rejected, message);
+        bool rejected = false; try { action(); } catch { rejected = true; }
+        Assert(rejected, message);
     }
     /// <summary>Crée un snapshot de test à un module dont la constante peut être changée.</summary>
     /// <param name="value">Valeur écrite dans la constante VBA.</param>
     /// <returns>Snapshot minimal du module Module1.</returns>
     private static VbaGitSnapshot Snapshot(string value = "1")
     {
-        return new VbaGitSnapshot(new VbaGitManifest { References = "test-reference:1:0", Components = new[] {
+        return new VbaGitSnapshot(new VbaGitManifest
+        {
+            References = "test-reference:1:0",
+            Components = new[] {
             new VbaGitComponent { Name = "Module1", Type = 1 }
-        } }, new Dictionary<string, byte[]> { { "Module1.bas", Encoding.UTF8.GetBytes("Attribute VB_Name = \"Module1\"\nOption Explicit\nPublic Const Value = " + value + "\n") } });
+        }
+        }, new Dictionary<string, byte[]> { { "Module1.bas", Encoding.UTF8.GetBytes("Attribute VB_Name = \"Module1\"\nOption Explicit\nPublic Const Value = " + value + "\n") } });
     }
     /// <summary>Vérifie la sérialisation, les différences et le rejet des snapshots mal formés.</summary>
     private static void Snapshots()
@@ -137,8 +143,14 @@ internal static partial class GitTests
     /// <exception cref="Exception">Git échoue ou dépasse le délai d’attente.</exception>
     private static string Git(string cwd, string args)
     {
-        using (var p = Process.Start(new ProcessStartInfo("git.exe", args) { WorkingDirectory = cwd, UseShellExecute = false,
-            CreateNoWindow = true, RedirectStandardOutput = true, RedirectStandardError = true }))
+        using (var p = Process.Start(new ProcessStartInfo("git.exe", args)
+        {
+            WorkingDirectory = cwd,
+            UseShellExecute = false,
+            CreateNoWindow = true,
+            RedirectStandardOutput = true,
+            RedirectStandardError = true
+        }))
         {
             var stdout = p.StandardOutput.ReadToEndAsync(); var stderr = p.StandardError.ReadToEndAsync();
             if (!p.WaitForExit(30000)) throw new Exception("Git fixture timeout");
@@ -194,7 +206,8 @@ internal static partial class GitTests
             write(24 + 512 + i * 4, i == 0 ? 0xfffffffd : i < 4 ? end : free);
             write(24 + 1536 + i * 4, i == 0 ? end : free);
         }
-        Action<int, string, byte, uint, uint, uint, uint> entry = (index, name, kind, child, right, start, size) => {
+        Action<int, string, byte, uint, uint, uint, uint> entry = (index, name, kind, child, right, start, size) =>
+        {
             int position = 24 + 1024 + index * 128;
             byte[] text = Encoding.Unicode.GetBytes(name + "\0");
             Buffer.BlockCopy(text, 0, resource, position, text.Length);
@@ -262,11 +275,13 @@ internal static partial class GitTests
         {
             Set(form, "project", project); Set(form, "repository", a);
             ((System.Windows.Forms.TextBox)form.Controls.Find("commitMessage", true)[0]).Text = "Initial local commit";
-            Action<string> run = method => {
+            Action<string> run = method =>
+            {
                 Console.WriteLine("Git UI: " + method);
                 typeof(GitWindow).GetMethod(method, System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic).Invoke(form, new object[] { null, EventArgs.Empty });
                 var clock = Stopwatch.StartNew();
-                while ((bool)Get(form, "running")) {
+                while ((bool)Get(form, "running"))
+                {
                     if (clock.ElapsedMilliseconds > 30000) throw new Exception("Workflow timeout: " + method);
                     System.Windows.Forms.Application.DoEvents(); System.Threading.Thread.Sleep(5);
                 }

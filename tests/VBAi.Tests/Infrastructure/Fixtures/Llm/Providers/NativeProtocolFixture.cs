@@ -1,10 +1,10 @@
+using Microsoft.CSharp;
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.CodeDom.Compiler;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using Microsoft.CSharp;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace VBAi.Tests.Infrastructure
 {

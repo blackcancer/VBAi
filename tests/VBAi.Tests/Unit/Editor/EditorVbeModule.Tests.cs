@@ -1,6 +1,5 @@
-using System;
-using VBAi;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+using System;
 namespace VBAi.Tests.Unit.Editor
 {
     [TestClass, TestCategory("Unit")]
@@ -27,9 +26,7 @@ namespace VBAi.Tests.Unit.Editor
 
 namespace VBAi.Tests.Unit.Editor
 {
-    using System.Collections.Generic;
     using System.IO;
-    using System.Linq;
     using System.Runtime.InteropServices;
     using System.Text;
     using System.Threading.Tasks;
@@ -232,7 +229,8 @@ namespace VBAi.Tests.Unit.Editor
             foreach (var kind in new[] { "load", "source", "metadata", "rollback", "rollback-source", "rollback-metadata" })
             {
                 var f = new EditorVbeContract(1, Single); string before = Read(f); int adds = 0;
-                f.Original.CodeModule.AfterOperation = op => {
+                f.Original.CodeModule.AfterOperation = op =>
+                {
                     if (op != "add") return; adds++;
                     if (adds == 1 && (kind == "load" || kind == "rollback")) throw new IOException("Load failed");
                     if (adds == 1 && (kind == "source" || kind == "rollback-source")) f.Original.CodeModule.Raw += "\n' mismatch";
@@ -273,10 +271,13 @@ namespace VBAi.Tests.Unit.Editor
             foreach (var fault in new[] { "type", "code", "attributes", "designer", "empty", "separator-only" })
             {
                 var f = new EditorVbeContract(fault == "designer" || fault == "separator-only" ? 3 : 1, Multi); string before = Read(f);
-                f.Project.VBComponents.AfterImport = (candidate, path) => { if (!Path.GetFileName(path).StartsWith("candidate")) return;
+                f.Project.VBComponents.AfterImport = (candidate, path) =>
+                {
+                    if (!Path.GetFileName(path).StartsWith("candidate")) return;
                     if (fault == "type") candidate.Type = 99; if (fault == "code") candidate.CodeModule.Raw += "\n' wrong";
                     if (fault == "attributes") candidate.CodeModule.Raw = candidate.CodeModule.Raw.Replace("Keep", "Lost");
-                    if (fault == "designer") candidate.Designer.Caption = "Different"; if (fault == "empty") candidate.CodeModule.Raw = ""; };
+                    if (fault == "designer") candidate.Designer.Caption = "Different"; if (fault == "empty") candidate.CodeModule.Raw = "";
+                };
                 if (fault == "separator-only") f.Project.VBComponents.AfterImport = (candidate, path) => { if (Path.GetFileName(path).StartsWith("candidate")) candidate.CodeModule.Raw = "\n"; };
                 Assert.ThrowsException<InvalidOperationException>(() => f.Adapter.Write(before, Changed(before)));
                 Assert.AreSame(f.Original, f.Adapter.Component); Assert.AreEqual(before, Read(f)); Assert.AreEqual(1, f.Project.VBComponents.Items.Count);
@@ -289,16 +290,22 @@ namespace VBAi.Tests.Unit.Editor
             foreach (var fault in new[] { "mode-prepared", "code-prepared", "name-prepared", "mode-retired", "code-retired", "name-retired", "candidate-name", "designer-retired", "candidate-code", "candidate-attributes" })
             {
                 var f = new EditorVbeContract(fault == "designer-retired" ? 3 : 1, Multi); string before = Read(f);
-                f.Adapter.AttributeRewriteCheckpoint = phase => { if (phase != "prepared") return;
+                f.Adapter.AttributeRewriteCheckpoint = phase =>
+                {
+                    if (phase != "prepared") return;
                     if (fault == "mode-prepared") f.Project.Mode = 1; if (fault == "code-prepared") f.Original.CodeModule.Raw += "\n' concurrent";
-                    if (fault == "name-prepared") f.Original.Name = "External"; };
-                f.Project.VBComponents.AfterImport = (candidate, path) => candidate.AfterName = name => { if (name != "Module1") return;
+                    if (fault == "name-prepared") f.Original.Name = "External";
+                };
+                f.Project.VBComponents.AfterImport = (candidate, path) => candidate.AfterName = name =>
+                {
+                    if (name != "Module1") return;
                     if (fault == "mode-retired") f.Project.Mode = 1; if (fault == "code-retired") f.Original.CodeModule.Raw += "\n' concurrent";
                     if (fault == "name-retired") f.Original.Name = "External";
                     if (fault == "candidate-name") { candidate.AfterName = null; candidate.Name = "ChangedName"; }
                     if (fault == "designer-retired") f.Original.Designer.Caption = "External caption";
                     if (fault == "candidate-code") candidate.CodeModule.Raw += "\n' wrong";
-                    if (fault == "candidate-attributes") candidate.CodeModule.Raw = candidate.CodeModule.Raw.Replace("Keep", "Lost"); };
+                    if (fault == "candidate-attributes") candidate.CodeModule.Raw = candidate.CodeModule.Raw.Replace("Keep", "Lost");
+                };
                 Assert.ThrowsException<InvalidOperationException>(() => f.Adapter.Write(before, Changed(before)));
                 Assert.AreSame(f.Original, f.Adapter.Component); Assert.AreEqual(1, f.Project.VBComponents.Items.Count);
                 Assert.AreEqual(fault.StartsWith("name-") ? "External" : "Module1", f.Original.Name);
@@ -314,15 +321,28 @@ namespace VBAi.Tests.Unit.Editor
             {
                 var f = new EditorVbeContract(1, Multi); string before = Read(f); int removes = 0;
                 f.Project.VBComponents.ImportThrowsBefore = fault == "import-before"; f.Project.VBComponents.ImportThrowsAfter = fault == "import-after";
-                f.Project.VBComponents.BeforeRemove = component => { if (fault == "remove-before" && ReferenceEquals(component, f.Original)) throw new IOException("Before remove");
-                    if (fault == "candidate-remove" && !ReferenceEquals(component, f.Original)) throw new IOException("Candidate cleanup"); };
+                f.Project.VBComponents.BeforeRemove = component =>
+                {
+                    if (fault == "remove-before" && ReferenceEquals(component, f.Original)) throw new IOException("Before remove");
+                    if (fault == "candidate-remove" && !ReferenceEquals(component, f.Original)) throw new IOException("Candidate cleanup");
+                };
                 f.Project.VBComponents.AfterRemove = component => { removes++; if (fault == "remove-after" && ReferenceEquals(component, f.Original)) throw new IOException("After remove"); };
-                f.Project.VBComponents.AfterImport = (candidate, path) => { if (Path.GetFileName(path).StartsWith("candidate")) {
-                    if (fault == "open") candidate.CodeModule.CodePane.Window.OnVisible = () => { throw new IOException("Window reopen"); };
-                    if (fault == "candidate-remove") candidate.Type = 99;
-                } else if (fault == "restore-code") candidate.CodeModule.Raw += "\n' wrong"; };
-                f.Adapter.AttributeRewriteCheckpoint = phase => { if (phase == "removed" && (fault == "removed-checkpoint" || fault.StartsWith("restore-"))) {
-                    if (fault == "restore-import") f.Project.VBComponents.ImportThrowsBefore = true; throw new IOException("After removal"); } };
+                f.Project.VBComponents.AfterImport = (candidate, path) =>
+                {
+                    if (Path.GetFileName(path).StartsWith("candidate"))
+                    {
+                        if (fault == "open") candidate.CodeModule.CodePane.Window.OnVisible = () => { throw new IOException("Window reopen"); };
+                        if (fault == "candidate-remove") candidate.Type = 99;
+                    }
+                    else if (fault == "restore-code") candidate.CodeModule.Raw += "\n' wrong";
+                };
+                f.Adapter.AttributeRewriteCheckpoint = phase =>
+                {
+                    if (phase == "removed" && (fault == "removed-checkpoint" || fault.StartsWith("restore-")))
+                    {
+                        if (fault == "restore-import") f.Project.VBComponents.ImportThrowsBefore = true; throw new IOException("After removal");
+                    }
+                };
                 var failure = Assert.ThrowsException<Exception>(() => { try { f.Adapter.Write(before, Changed(before)); } catch (Exception error) { throw new Exception("Captured", error); } }).InnerException;
                 if (fault == "candidate-remove" || fault.StartsWith("restore-")) { Assert.IsInstanceOfType(failure, typeof(AggregateException)); CleanupRecovery(failure); }
                 else { Assert.AreEqual(before, Read(f)); Assert.AreEqual(1, f.Project.VBComponents.Items.Count); }

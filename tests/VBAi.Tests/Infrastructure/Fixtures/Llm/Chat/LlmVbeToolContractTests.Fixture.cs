@@ -1,11 +1,9 @@
 namespace VBAi.Tests.Unit
 {
-    using System;
+    using Microsoft.VisualStudio.TestTools.UnitTesting;
     using System.Collections.Generic;
-    using System.Linq;
     using System.Web.Script.Serialization;
     using VBAi;
-    using Microsoft.VisualStudio.TestTools.UnitTesting;
 
     /// <summary>Fournit les utilitaires JSON communs aux tests de contrat des outils VBE.</summary>
     public sealed partial class LlmVbeToolContractTests

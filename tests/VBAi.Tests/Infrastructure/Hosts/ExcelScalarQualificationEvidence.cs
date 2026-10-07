@@ -28,9 +28,12 @@ namespace VBAi.Tests.Integration
         internal IDictionary<string, object> Send(object request, Func<IDictionary<string, object>> execute,
             Action<IDictionary<string, object>> validate)
         {
-            var record = new Dictionary<string, object> {
-                ["Sequence"] = commands.Count + 1, ["Request"] = request,
-                ["StartedUtc"] = DateTime.UtcNow.ToString("o"), ["State"] = "Prepared; delivery outcome has not been recorded"
+            var record = new Dictionary<string, object>
+            {
+                ["Sequence"] = commands.Count + 1,
+                ["Request"] = request,
+                ["StartedUtc"] = DateTime.UtcNow.ToString("o"),
+                ["State"] = "Prepared; delivery outcome has not been recorded"
             };
             commands.Add(record);
             Save(); // An evidence failure prevents emission; it never causes another send.
@@ -72,11 +75,19 @@ namespace VBAi.Tests.Integration
         private void Save()
         {
             Directory.CreateDirectory(Path.GetDirectoryName(report));
-            var payload = new {
-                HostProcessId = processId, FixtureRoot = fixtureRoot,
+            var payload = new
+            {
+                HostProcessId = processId,
+                FixtureRoot = fixtureRoot,
                 AssemblyMvid = typeof(VbeSession).Module.ModuleVersionId,
-                ObservedUtc = DateTime.UtcNow.ToString("o"), Scope = scope,
-                Evidence = commands, PhaseTracePath, PhaseEvidence, Shutdown, PrimaryError = primaryFailure?.ToString(), CleanupError = cleanupFailure?.ToString()
+                ObservedUtc = DateTime.UtcNow.ToString("o"),
+                Scope = scope,
+                Evidence = commands,
+                PhaseTracePath,
+                PhaseEvidence,
+                Shutdown,
+                PrimaryError = primaryFailure?.ToString(),
+                CleanupError = cleanupFailure?.ToString()
             };
             System.IO.File.WriteAllText(report, new JavaScriptSerializer { MaxJsonLength = 4 * 1024 * 1024 }.Serialize(payload), new UTF8Encoding(false));
         }

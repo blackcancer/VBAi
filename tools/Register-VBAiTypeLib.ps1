@@ -1,10 +1,10 @@
-param([switch] $Unregister)
+param([switch] $Unregister, [string]$TypeLibPath)
 
 $ErrorActionPreference = 'Stop'
 if (-not [Environment]::Is64BitProcess) { throw 'Use 64-bit PowerShell.' }
 
 $root = Split-Path -Parent $PSScriptRoot
-$typeLibPath = Join-Path $root 'bin\Debug\net48\VBAi.tlb'
+if (-not $TypeLibPath) { $TypeLibPath = Join-Path $root 'bin\Debug\net48\VBAi.tlb' }
 if (-not (Test-Path -LiteralPath $typeLibPath)) { throw "Missing type library: $typeLibPath" }
 $typeLibPath = (Resolve-Path -LiteralPath $typeLibPath).Path
 

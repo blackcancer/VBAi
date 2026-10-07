@@ -1,9 +1,9 @@
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Security.Cryptography;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 using VBAi.Tests.Integration;
 
 namespace VBAi.Tests.Unit
@@ -46,7 +46,8 @@ namespace VBAi.Tests.Unit
         [TestMethod]
         public void CopyCreatesOneExactDisposableFileAndRefusesCollisionOrDrift()
         {
-            WithRoot(root => {
+            WithRoot(root =>
+            {
                 string source = Path.Combine(root, "source.xlsm");
                 string destination = Path.Combine(root, "EmbeddedGit.xlsm");
                 byte[] bytes = { 1, 2, 3, 4, 5 };
@@ -68,7 +69,8 @@ namespace VBAi.Tests.Unit
         [TestMethod]
         public void CopyRefusesReparseSourceAndDestinationOutsideFixture()
         {
-            WithRoot(root => {
+            WithRoot(root =>
+            {
                 string source = Path.Combine(root, "source.xlsm");
                 string destination = Path.Combine(root, "EmbeddedGit.xlsm");
                 File.WriteAllBytes(source, new byte[] { 1 });

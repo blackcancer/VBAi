@@ -81,8 +81,7 @@ namespace VBAi
         {
             try
             {
-                var values = json.DeserializeObject(arguments) as IDictionary<string, object>;
-                if (values == null) throw new ArgumentException("Tool arguments must be an object.");
+                if (!(json.DeserializeObject(arguments) is IDictionary<string, object> values)) throw new ArgumentException("Tool arguments must be an object.");
                 if (name == "discover_tools")
                 {
                     if (values.Count != 1 || !values.TryGetValue("Family", out var value) || !(value is string)) throw new ArgumentException("Family is required.");
@@ -90,12 +89,19 @@ namespace VBAi
                     if (family != "all" && !Families.Contains(family)) throw new ArgumentException("Unknown tool family. Use code, forms, debug, git, environment, testing or all.");
                     var selected = family == "all" ? Families : new[] { family };
                     foreach (string item in selected) { loadedFamilies.Add(item); familyPriority[item] = ++nextFamilyPriority; }
-                    var definitions = Definitions.Where(raw => {
+                    var definitions = Definitions.Where(raw =>
+                    {
                         string tool = (string)((dynamic)raw).function.name;
                         return !IsCatalogTool(tool) && selected.Contains(ToolFamily(tool)) && (Mode == ChatMode.Agent || ReadOnlyTools.Contains(tool));
                     }).ToArray();
-                    return json.Serialize(Response.Success(new { Mode = Mode.ToString(), Families = selected, Tools = definitions,
-                        EditingAvailable = Mode == ChatMode.Agent, Instruction = "Use invoke_tool or the loaded exact tool. Runtime project and privacy guards still apply." }));
+                    return json.Serialize(Response.Success(new
+                    {
+                        Mode = Mode.ToString(),
+                        Families = selected,
+                        Tools = definitions,
+                        EditingAvailable = Mode == ChatMode.Agent,
+                        Instruction = "Use invoke_tool or the loaded exact tool. Runtime project and privacy guards still apply."
+                    }));
                 }
                 if (values.Count != 2 || !values.TryGetValue("ToolName", out var target) || !(target is string) ||
                     !values.TryGetValue("ArgumentsJson", out var args) || !(args is string)) throw new ArgumentException("ToolName and ArgumentsJson are required strings.");

@@ -1,5 +1,4 @@
 using System;
-using VBAi;
 
 namespace VBAi.Tests.Unit
 {
@@ -15,9 +14,18 @@ namespace VBAi.Tests.Unit
             "procedure collision", "new procedure collision", "local shadow", "qualifier shadow", "new implicit binding", "no explicit", "conditional", "dynamic call",
             "callback", "interface", "bracket expression", "unterminated", "external qualification", "private caller", "new callback", "reserved name" };
         /// <summary>Prépare l'identité de déclaration et les gardes de version du module.</summary>
-        internal static Request Request(string source = Target) => new Request { Project = "P", Module = "MathModule", Query = "Calc", Procedure = "Calc", NewName = "Compute",
-            StartLine = 2, StartColumn = source.Split('\n')[1].IndexOf("Calc", StringComparison.Ordinal) + 1,
-            ExpectedSha256 = VbaProcedureRename.Digest(source), ExpectedMode = 2 };
+        internal static Request Request(string source = Target) => new Request
+        {
+            Project = "P",
+            Module = "MathModule",
+            Query = "Calc",
+            Procedure = "Calc",
+            NewName = "Compute",
+            StartLine = 2,
+            StartColumn = source.Split('\n')[1].IndexOf("Calc", StringComparison.Ordinal) + 1,
+            ExpectedSha256 = VbaProcedureRename.Digest(source),
+            ExpectedMode = 2
+        };
         /// <summary>Construit l'instantané minimal avec un module standard et un appelant classe.</summary>
         internal static VbaProcedureRename.ModuleSnapshot[] Project(string target = Target, string caller = Caller, int targetType = 1) =>
             new[] { new VbaProcedureRename.ModuleSnapshot("MathModule", targetType, target), new VbaProcedureRename.ModuleSnapshot("Caller", 2, caller) };

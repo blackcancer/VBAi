@@ -40,7 +40,7 @@ namespace VBAi
             internal Func<int, object> ResolveExcel = pid => ExcelOwnedApplication.Resolve(pid, () => Marshal.GetActiveObject("Excel.Application"));
 
             /// <summary>Reads the owning process ID of a native application window.</summary>
-            internal Func<IntPtr, uint> ReadWindowOwner = hwnd => { uint owner; VbeDebugWindows.GetWindowThreadProcessId(hwnd, out owner); return owner; };
+            internal Func<IntPtr, uint> ReadWindowOwner = hwnd => { VbeDebugWindows.GetWindowThreadProcessId(hwnd, out uint owner); return owner; };
 
             /// <summary>Compares COM object identity rather than display names or paths.</summary>
             internal Func<object, object, bool> SameIdentity = VbeDebug.NativeProcedureValuesHost.SameComIdentity;
@@ -121,10 +121,15 @@ namespace VBAi
                     copy = application.Workbooks.Open(copyPath, UpdateLinks: 0, ReadOnly: false, AddToMru: false);
                     if (boundary.SameIdentity(project, (object)((dynamic)copy).VBProject))
                         throw new InvalidOperationException("Excel did not create a distinct coverage project.");
-                    return new VbaTestCoverageClone { Project = ((dynamic)copy).VBProject, Path = copyPath,
-                        Close = () => {
+                    return new VbaTestCoverageClone
+                    {
+                        Project = ((dynamic)copy).VBProject,
+                        Path = copyPath,
+                        Close = () =>
+                        {
                             bool previous = (bool)application.EnableEvents;
-                            try {
+                            try
+                            {
                                 application.EnableEvents = false;
                                 if ((bool)application.EnableEvents) throw new InvalidOperationException("Excel events could not be disabled before closing the coverage copy.");
                                 ((dynamic)copy).Close(false);
@@ -134,7 +139,8 @@ namespace VBAi
                             }
                             catch (Exception error) { throw new VbaTestInvocationException("Closing the owned workbook copy is uncertain. Retained path: " + copyPath + ". " + error.Message, true, error); }
                             finally { RestoreEvents((object)application, previous, copyPath); }
-                        } };
+                        }
+                    };
                 }
                 catch (Exception error)
                 {
@@ -150,7 +156,8 @@ namespace VBAi
         /// <param name="retainedPath">Copy path to include in any recovery diagnostic.</param>
         private static void RestoreEvents(dynamic application, bool expected, string retainedPath)
         {
-            try {
+            try
+            {
                 application.EnableEvents = expected;
                 if ((bool)application.EnableEvents != expected) throw new InvalidOperationException("Excel event state did not match its original value.");
             }

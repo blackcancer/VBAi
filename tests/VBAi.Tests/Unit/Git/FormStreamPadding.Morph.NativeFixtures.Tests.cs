@@ -1,6 +1,6 @@
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Collections.Generic;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 namespace VBAi.Tests.Unit
 {
     public sealed partial class FormStreamPaddingTests
@@ -65,7 +65,8 @@ namespace VBAi.Tests.Unit
             switch (layout)
             {
                 // Original FRX SHA-256: C2F20A04D3C0114CCCC39A9FF13156009AA35EBADC0F31A337ED1D81EED977DF.
-                case "CheckBox": return new[]
+                case "CheckBox":
+                    return new[]
                 {
                     Hex(
                         "00043c00080c180c0300000012000080ffff000003000000007d00009d2e00003c2c000000000000000000004c6f6361" +
@@ -83,7 +84,8 @@ namespace VBAi.Tests.Unit
                         "000218003500000006000080a5000000000200005461686f6d610000"),
                 };
                 // Original FRX SHA-256: 5FE509F6BB12D9E9CD553C9EB8F68EE9A718BB02C87ED2FE3912E31B5A5B372F.
-                case "ComboBox": return new[]
+                case "ComboBox":
+                    return new[]
                 {
                     Hex(
                         "00043c00080c180c0300000012000080ffff000003000000007d00009d2e00003c2c000000000000000000004c6f6361" +
@@ -101,7 +103,8 @@ namespace VBAi.Tests.Unit
                         "06000080a5000000000200005461686f6d610000"),
                 };
                 // Original FRX SHA-256: 12B857EBCB10487356F0EF2E2D37859E02A08CBC50D627881BD6E65AE4763AF8.
-                case "ListBox": return new[]
+                case "ListBox":
+                    return new[]
                 {
                     Hex(
                         "00043c00080c180c0300000011000080ffff000003000000007d00009d2e00003c2c000000000000000000004c6f6361" +
@@ -119,7 +122,8 @@ namespace VBAi.Tests.Unit
                         "a5000000000200005461686f6d610000"),
                 };
                 // Original FRX SHA-256: 4FE6A66D43978613A2D49969AD29658A1B0622236F9ADD875AE59B4A2D1C8342.
-                case "OptionButton": return new[]
+                case "OptionButton":
+                    return new[]
                 {
                     Hex(
                         "00044000080c180c0300000016000080ffff000003000000007d00009d2e00003c2c000000000000000000004c6f6361" +
@@ -137,7 +141,8 @@ namespace VBAi.Tests.Unit
                         "6f696365000218003500000006000080a5000000000200005461686f6d610000"),
                 };
                 // Original FRX SHA-256: 3B559063D761CEBD8E143C5AAB132B5686112D4F72CE1A3F004E9C4DAA32FE98.
-                case "TextBox": return new[]
+                case "TextBox":
+                    return new[]
                 {
                     Hex(
                         "00043c00080c180c0300000011000080ffff000003000000007d00009d2e00003c2c000000000000000000004c6f6361" +
@@ -155,7 +160,8 @@ namespace VBAi.Tests.Unit
                         "000200005461686f6d616500"),
                 };
                 // Original FRX SHA-256: B4A98476A993613CE4178E6F79EA5B13379BF5D177C0AFF945FB8CAD9588FE3B.
-                case "ToggleButton": return new[]
+                case "ToggleButton":
+                    return new[]
                 {
                     Hex(
                         "00044000080c180c0300000016000080ffff000003000000007d00009d2e00003c2c000000000000000000004c6f6361" +

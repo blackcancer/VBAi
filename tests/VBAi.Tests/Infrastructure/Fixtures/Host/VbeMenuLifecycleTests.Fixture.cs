@@ -3,8 +3,6 @@ namespace VBAi.Tests.Unit
     using System;
     using System.Collections;
     using System.Collections.Generic;
-    using VBAi;
-    using Microsoft.VisualStudio.TestTools.UnitTesting;
 
     /// <summary>Construit un hôte et des menus simulés pour tester le cycle de vie des commandes VBE.</summary>
     public sealed partial class VbeMenuLifecycleTests

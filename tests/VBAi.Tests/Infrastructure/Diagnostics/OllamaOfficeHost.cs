@@ -1,8 +1,8 @@
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Threading;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace VBAi.Tests.Integration
 {
@@ -29,7 +29,8 @@ namespace VBAi.Tests.Integration
         {
             if (OllamaOfficeDesktop.MainEnabled) OllamaOfficeDesktop.Require(null);
             var result = new OllamaOfficeHost();
-            Action<OllamaOfficeHost> publish = value => {
+            Action<OllamaOfficeHost> publish = value =>
+            {
                 var retainFixture = value.Retain;
                 value.Retain = () => { if (value.retained) return; value.retained = true; Retained.Add(value); retainFixture(); };
                 assigned(value); // Transfer exact fixture ownership before any structural validation.
@@ -40,7 +41,8 @@ namespace VBAi.Tests.Integration
                 result.fixture = excel; result.Root = excel.Root; result.ProcessId = excel.ProcessId;
                 result.Retain = () => excel.PreserveForDiagnosticRecovery = true;
                 publish(result);
-                result.Data = (command, pairs) => {
+                result.Data = (command, pairs) =>
+                {
                     var request = new Dictionary<string, object> { ["Command"] = command };
                     if (result.Project != null) request["Project"] = result.Project;
                     for (int i = 0; i < pairs.Length; i += 2) request[(string)pairs[i]] = pairs[i + 1];
@@ -61,16 +63,23 @@ namespace VBAi.Tests.Integration
                         Convert.ToInt32(identity["OwnedIdentityMatches"]) == 1 && rows.Length == 1 &&
                         Convert.ToString(VbeBridgeClient.Object(rows[0])["Name"]) == name;
                     bool expired = watch.Elapsed.TotalSeconds >= 30 || observations + 1 >= 128;
-                    excel.WriteQualificationEvidence("q028-project-readiness.json", new {
-                        State = ready && !expired ? "READY" : (expired ? "FAILED_TIMEOUT" : "OBSERVING"), excel.ProcessId, Identity = identity,
-                        BridgeProjectCount = rows.Length, ObservationCount = ++observations,
-                        ElapsedMilliseconds = watch.ElapsedMilliseconds, CloseOrAddReplayed = false });
+                    excel.WriteQualificationEvidence("q028-project-readiness.json", new
+                    {
+                        State = ready && !expired ? "READY" : (expired ? "FAILED_TIMEOUT" : "OBSERVING"),
+                        excel.ProcessId,
+                        Identity = identity,
+                        BridgeProjectCount = rows.Length,
+                        ObservationCount = ++observations,
+                        ElapsedMilliseconds = watch.ElapsedMilliseconds,
+                        CloseOrAddReplayed = false
+                    });
                     if (ready && !expired) { result.Project = name; break; }
                     if (expired)
                         throw new TimeoutException("The exact owned workbook's native project did not become unambiguous; no Close/Add or source mutation will be replayed.");
                     System.Windows.Forms.Application.DoEvents(); Thread.Sleep(100);
                 }
-                result.Items = command => {
+                result.Items = command =>
+                {
                     var reply = result.TerminalExcel(excel, new Dictionary<string, object> { ["Command"] = command, ["Project"] = result.Project });
                     Assert.IsNotNull(reply); Assert.AreEqual(true, reply["Ok"]);
                     return Array.ConvertAll((object[])reply["Data"], VbeBridgeClient.Object);

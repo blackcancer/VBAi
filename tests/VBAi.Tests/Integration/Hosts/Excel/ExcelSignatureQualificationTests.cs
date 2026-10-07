@@ -1,3 +1,4 @@
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -5,7 +6,6 @@ using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
 using System.Web.Script.Serialization;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace VBAi.Tests.Integration.Hosts.Excel
 {
@@ -21,7 +21,8 @@ namespace VBAi.Tests.Integration.Hosts.Excel
         {
             RequireOptIn();
             string path = null, sourceHash = null;
-            ExcelVbeFixture.Run(host => {
+            ExcelVbeFixture.Run(host =>
+            {
                 Prepare(host, out path, out sourceHash);
                 Assert.AreEqual(false, Data(host.Command(new { Command = "project_signature_status", Project = path }))["Signed"]);
                 Assert.AreEqual(sourceHash, Data(host.Command(new { Command = "read_module", Project = path, Module }))["Sha256"]);
@@ -50,14 +51,21 @@ namespace VBAi.Tests.Integration.Hosts.Excel
             Assert.IsTrue(System.Text.RegularExpressions.Regex.IsMatch(thumbprint, "^[A-F0-9]{40}$"));
             string path = null, sourceHash = null;
             int signedPid = 0;
-            ExcelVbeFixture.Run(host => {
+            ExcelVbeFixture.Run(host =>
+            {
                 signedPid = host.ProcessId;
                 Prepare(host, out path, out sourceHash);
                 var unsigned = Data(host.Command(new { Command = "project_signature_status", Project = path }));
                 Assert.AreEqual(true, unsigned["Available"]); Assert.AreEqual(false, unsigned["Signed"]);
                 var properties = Data(host.Command(new { Command = "project_properties", Project = path }));
-                var signed = Data(host.SignOnce(new { Command = "sign_project", Project = path,
-                    ExpectedProjectVersion = properties["Version"], ExpectedMode = 2, CertificateThumbprint = thumbprint }));
+                var signed = Data(host.SignOnce(new
+                {
+                    Command = "sign_project",
+                    Project = path,
+                    ExpectedProjectVersion = properties["Version"],
+                    ExpectedMode = 2,
+                    CertificateThumbprint = thumbprint
+                }));
                 Write(host.File("signing-result.json"), signed);
                 Assert.AreEqual(true, VbeBridgeClient.Object(signed["Signature"])["SignatureAssigned"]);
                 Assert.AreEqual(true, VbeBridgeClient.Object(signed["Persistence"])["Saved"]);
@@ -71,15 +79,23 @@ namespace VBAi.Tests.Integration.Hosts.Excel
             Assert.AreEqual("UntrustedRoot", verification["Status"], "The test certificate is deliberately absent from trusted roots.");
             Assert.AreEqual(false, verification["Trusted"]);
             Assert.IsNull(verification["SignatureValid"], "A trust failure must not be promoted to a valid signature result.");
-            ExcelVbeFixture.Run(host => {
+            ExcelVbeFixture.Run(host =>
+            {
                 Assert.AreNotEqual(signedPid, host.ProcessId, "Reopen requires a new owned native process.");
                 host.OpenOwnedReadOnlyWorkbook(path);
                 var status = Data(host.Command(new { Command = "project_signature_status", Project = path }));
                 Assert.AreEqual(true, status["Available"]); Assert.AreEqual(true, status["Signed"]);
                 Assert.AreEqual(sourceHash, Data(host.Command(new { Command = "read_module", Project = path, Module }))["Sha256"]);
                 Assert.AreEqual(2, Convert.ToInt32(Data(host.Command(new { Command = "debug_state", Project = path }))["Mode"]));
-                Write(host.File("signature-reopened.json"), new { Signed = status, SourceSha256 = sourceHash,
-                    host.ProcessId, OriginalSignedPid = signedPid, HelperSaveInvoked = false, MacroExecuted = false });
+                Write(host.File("signature-reopened.json"), new
+                {
+                    Signed = status,
+                    SourceSha256 = sourceHash,
+                    host.ProcessId,
+                    OriginalSignedPid = signedPid,
+                    HelperSaveInvoked = false,
+                    MacroExecuted = false
+                });
             });
             Assert.AreEqual(savedFileHash, FileHash(path), "Read-only reopen and Close(false) must preserve the exact saved signed file.");
         }
@@ -97,8 +113,16 @@ namespace VBAi.Tests.Integration.Hosts.Excel
             var created = Data(host.Command(new { Command = "create_module", Project = project, Module, ExpectedMode = 2 }));
             var initial = Data(host.Command(new { Command = "read_module", Project = project, Module }));
             string code = "Option Explicit\r\nPrivate Const Marker As String = \"SIGNATURE_" + Guid.NewGuid().ToString("N") + "\"\r\nPublic Sub NeverExecuted()\r\nEnd Sub";
-            Data(host.Command(new { Command = "replace_lines", Project = project, Module,
-                ExpectedSha256 = initial["Sha256"], StartLine = 1, Count = created["Lines"], Text = code }));
+            Data(host.Command(new
+            {
+                Command = "replace_lines",
+                Project = project,
+                Module,
+                ExpectedSha256 = initial["Sha256"],
+                StartLine = 1,
+                Count = created["Lines"],
+                Text = code
+            }));
             sourceHash = Convert.ToString(Data(host.Command(new { Command = "read_module", Project = project, Module }))["Sha256"]);
             var properties = Data(host.Command(new { Command = "project_properties", Project = project }));
             path = host.File("SyntheticSignature.xlsm");

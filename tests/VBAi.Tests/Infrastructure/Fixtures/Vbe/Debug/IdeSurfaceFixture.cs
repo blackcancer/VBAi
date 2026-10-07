@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using VBAi;
 
 namespace VBAi.Tests.Infrastructure
 {
@@ -10,10 +9,15 @@ namespace VBAi.Tests.Infrastructure
     {
         internal sealed class NavigationProbe : VbeDebugWindows.INavigationSurfaceProbe
         {
-            internal VbeDebugWindows.NavigationSurface State = new VbeDebugWindows.NavigationSurface {
-                Available = true, Identity = "tree-1", Caption = "Project", Nodes = new[] {
+            internal VbeDebugWindows.NavigationSurface State = new VbeDebugWindows.NavigationSurface
+            {
+                Available = true,
+                Identity = "tree-1",
+                Caption = "Project",
+                Nodes = new[] {
                     new VbeDebugWindows.NavigationNode { Token = "1", Name = "VBAProject", Enabled = true, Expansion = "Collapsed", Selected = false },
-                    new VbeDebugWindows.NavigationNode { Token = "2", ParentToken = "1", Name = "Module1", Enabled = true, Selected = false } } };
+                    new VbeDebugWindows.NavigationNode { Token = "2", ParentToken = "1", Name = "Module1", Enabled = true, Selected = false } }
+            };
             internal Action BeforeRead, AfterAction;
             internal int Reads, Actions;
             public VbeDebugWindows.NavigationSurface Read(string pane) { Reads++; BeforeRead?.Invoke(); return State; }

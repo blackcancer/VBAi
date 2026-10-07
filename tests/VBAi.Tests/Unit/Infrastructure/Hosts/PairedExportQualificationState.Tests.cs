@@ -1,7 +1,7 @@
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 using VBAi.Tests.Integration;
 
 namespace VBAi.Tests.Unit
@@ -11,13 +11,25 @@ namespace VBAi.Tests.Unit
     {
         private static readonly string[] Paths = { "local-guid", "local-guid/synthetic", "temp-guid", "temp-guid/synthetic" };
         private static IDictionary<string, object> Response(bool ok) => new Dictionary<string, object> { ["Ok"] = ok, ["Error"] = ok ? null : "Original native PATH_NOT_FOUND" };
-        private static IDictionary<string, object> Observation() => new Dictionary<string, object> {
-            ["ProcessId"] = 10, ["FinalProcessId"] = 10, ["NativeThreadId"] = 20u, ["FinalNativeThreadId"] = 20u,
-            ["Apartment"] = "STA", ["AssemblyMvid"] = "candidate", ["EffectiveTokenBefore"] = new Dictionary<string, object> { ["State"] = "READ" },
+        private static IDictionary<string, object> Observation() => new Dictionary<string, object>
+        {
+            ["ProcessId"] = 10,
+            ["FinalProcessId"] = 10,
+            ["NativeThreadId"] = 20u,
+            ["FinalNativeThreadId"] = 20u,
+            ["Apartment"] = "STA",
+            ["AssemblyMvid"] = "candidate",
+            ["EffectiveTokenBefore"] = new Dictionary<string, object> { ["State"] = "READ" },
             ["EffectiveTokenAfter"] = new Dictionary<string, object> { ["State"] = "READ" },
-            ["Paths"] = Paths.Select(path => (object)new Dictionary<string, object> { ["Path"] = path,
-                ["NativeAttributes"] = uint.MaxValue, ["NativeLastError"] = 3, ["NativeSucceeded"] = false,
-                ["ManagedAttributesError"] = new Dictionary<string, object> { ["Type"] = "FileNotFoundException", ["HResult"] = unchecked((int)0x80070002) } }).ToArray() };
+            ["Paths"] = Paths.Select(path => (object)new Dictionary<string, object>
+            {
+                ["Path"] = path,
+                ["NativeAttributes"] = uint.MaxValue,
+                ["NativeLastError"] = 3,
+                ["NativeSucceeded"] = false,
+                ["ManagedAttributesError"] = new Dictionary<string, object> { ["Type"] = "FileNotFoundException", ["HResult"] = unchecked((int)0x80070002) }
+            }).ToArray()
+        };
         private static PairedExportQualificationState Ready()
         {
             var state = new PairedExportQualificationState(); state.Begin(PathVisibilityDiagnostic.CommandName);

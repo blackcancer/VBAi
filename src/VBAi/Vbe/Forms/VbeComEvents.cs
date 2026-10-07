@@ -2,10 +2,10 @@ using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.ComTypes;
+using FUNCDESC = System.Runtime.InteropServices.ComTypes.FUNCDESC;
 using IMPLTYPEFLAGS = System.Runtime.InteropServices.ComTypes.IMPLTYPEFLAGS;
 using TYPEATTR = System.Runtime.InteropServices.ComTypes.TYPEATTR;
 using TYPEKIND = System.Runtime.InteropServices.ComTypes.TYPEKIND;
-using FUNCDESC = System.Runtime.InteropServices.ComTypes.FUNCDESC;
 
 namespace VBAi
 {
@@ -33,20 +33,24 @@ namespace VBAi
             var events = new List<object>();
             var sources = new List<object>();
             var errors = new List<string>();
-            var provider = target as IProvideClassInfo;
-            if (provider == null)
-                return new { Discovery = "IProvideClassInfo", SourceInterfacesComplete = false,
+            if (!(target is IProvideClassInfo provider))
+                return new
+                {
+                    Discovery = "IProvideClassInfo",
+                    SourceInterfacesComplete = false,
                     VbeEventCatalogComplete = false,
                     Scope = "COM source interfaces only; VBE and VBA runtime events may be absent.",
                     Reason = "The COM object does not expose IProvideClassInfo.",
-                    Sources = sources, Events = events, Errors = errors };
-
-            // The runtime owns returned COM interfaces. Only GetTypeAttr/GetFuncDesc
-            // descriptors require explicit ReleaseTypeAttr/ReleaseFuncDesc calls.
-            ITypeInfo classInfo = null;
+                    Sources = sources,
+                    Events = events,
+                    Errors = errors
+                };
             try
             {
-                provider.GetClassInfo(out classInfo);
+
+                // The runtime owns returned COM interfaces. Only GetTypeAttr/GetFuncDesc
+                // descriptors require explicit ReleaseTypeAttr/ReleaseFuncDesc calls.
+                provider.GetClassInfo(out ITypeInfo classInfo);
                 if (classInfo == null)
                     throw new InvalidOperationException("GetClassInfo returned no type information.");
                 ReadClass(classInfo, events, sources, errors);
@@ -56,11 +60,17 @@ namespace VBAi
                 errors.Add(ex.GetType().Name + ": " + ex.Message);
             }
             bool complete = errors.Count == 0 && sources.Count > 0;
-            return new { Discovery = "IProvideClassInfo/ITypeInfo source interfaces",
-                SourceInterfacesComplete = complete, VbeEventCatalogComplete = false,
+            return new
+            {
+                Discovery = "IProvideClassInfo/ITypeInfo source interfaces",
+                SourceInterfacesComplete = complete,
+                VbeEventCatalogComplete = false,
                 Scope = "COM source interfaces only; VBE and VBA runtime events may be absent (for example UserForm.Initialize).",
                 Reason = complete ? null : "No complete COM source event interface was read.",
-                Sources = sources, Events = events, Errors = errors };
+                Sources = sources,
+                Events = events,
+                Errors = errors
+            };
         }
 
         /// <summary>Vérifie la coclasse et parcourt ses interfaces source COM dans la limite de 64 interfaces.</summary>
@@ -82,11 +92,9 @@ namespace VBAi
                     throw new InvalidOperationException("Coclass exposes more than 64 interfaces.");
                 for (int index = 0; index < classAttr.cImplTypes; index++)
                 {
-                    IMPLTYPEFLAGS flags;
-                    classInfo.GetImplTypeFlags(index, out flags);
+                    classInfo.GetImplTypeFlags(index, out IMPLTYPEFLAGS flags);
                     if ((flags & IMPLTYPEFLAGS.IMPLTYPEFLAG_FSOURCE) == 0) continue;
-                    int href;
-                    classInfo.GetRefTypeOfImplType(index, out href);
+                    classInfo.GetRefTypeOfImplType(index, out int href);
                     ITypeInfo source = null;
                     try
                     {
@@ -120,14 +128,16 @@ namespace VBAi
                 var attr = (TYPEATTR)Marshal.PtrToStructure(sourceAttrPointer, typeof(TYPEATTR));
                 if (attr.cFuncs > 256 || events.Count + attr.cFuncs > 512)
                     throw new InvalidOperationException("Event interface exceeds catalog limit.");
-                string interfaceName;
-                string description;
-                int helpContext;
-                string helpFile;
-                source.GetDocumentation(-1, out interfaceName, out description,
-                    out helpContext, out helpFile);
-                sources.Add(new { Name = interfaceName, Guid = attr.guid.ToString("D"),
-                    Kind = attr.typekind.ToString(), Flags = flags.ToString(), Count = attr.cFuncs });
+                source.GetDocumentation(-1, out string interfaceName, out string description,
+                    out int helpContext, out string helpFile);
+                sources.Add(new
+                {
+                    Name = interfaceName,
+                    Guid = attr.guid.ToString("D"),
+                    Kind = attr.typekind.ToString(),
+                    Flags = flags.ToString(),
+                    Count = attr.cFuncs
+                });
                 for (int index = 0; index < attr.cFuncs; index++)
                 {
                     IntPtr functionPointer = IntPtr.Zero;
@@ -136,14 +146,18 @@ namespace VBAi
                         source.GetFuncDesc(index, out functionPointer);
                         var function = (FUNCDESC)Marshal.PtrToStructure(functionPointer, typeof(FUNCDESC));
                         var names = new string[Math.Min(function.cParams + 1, 64)];
-                        int namesCount;
-                        source.GetNames(function.memid, names, names.Length, out namesCount);
+                        source.GetNames(function.memid, names, names.Length, out int namesCount);
                         if (namesCount == 0 || string.IsNullOrWhiteSpace(names[0]))
                             throw new InvalidOperationException("Event name is absent for member " + function.memid + ".");
-                        events.Add(new { Name = names[0], DispId = function.memid,
-                            SourceInterface = interfaceName, SourceGuid = attr.guid.ToString("D"),
+                        events.Add(new
+                        {
+                            Name = names[0],
+                            DispId = function.memid,
+                            SourceInterface = interfaceName,
+                            SourceGuid = attr.guid.ToString("D"),
                             ParameterCount = (int)function.cParams,
-                            InvocationKind = function.invkind.ToString() });
+                            InvocationKind = function.invkind.ToString()
+                        });
                     }
                     finally
                     {

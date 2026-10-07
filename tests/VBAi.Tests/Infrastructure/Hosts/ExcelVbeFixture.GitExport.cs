@@ -1,8 +1,8 @@
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Threading;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace VBAi.Tests.Integration
 {
@@ -27,11 +27,16 @@ namespace VBAi.Tests.Integration
                 Assert.AreEqual(0, Convert.ToInt32(((dynamic)project).Protection));
                 components = ((dynamic)project).VBComponents; component = ((dynamic)components).Item(form);
                 Assert.AreEqual(form, ((dynamic)component).Name); Assert.AreEqual(3, Convert.ToInt32(((dynamic)component).Type));
-                return new Dictionary<string, object> {
-                    ["HostProcessId"] = ProcessId, ["EditorProcessId"] = editorPid,
-                    ["ProjectName"] = ((dynamic)project).Name, ["HostPath"] = hostPath,
-                    ["ComponentName"] = ((dynamic)component).Name, ["ComponentType"] = ((dynamic)component).Type,
-                    ["Mode"] = ((dynamic)project).Mode, ["Protection"] = ((dynamic)project).Protection,
+                return new Dictionary<string, object>
+                {
+                    ["HostProcessId"] = ProcessId,
+                    ["EditorProcessId"] = editorPid,
+                    ["ProjectName"] = ((dynamic)project).Name,
+                    ["HostPath"] = hostPath,
+                    ["ComponentName"] = ((dynamic)component).Name,
+                    ["ComponentType"] = ((dynamic)component).Type,
+                    ["Mode"] = ((dynamic)project).Mode,
+                    ["Protection"] = ((dynamic)project).Protection,
                     ["HasOpenDesigner"] = ((dynamic)component).HasOpenDesigner,
                     ["Apartment"] = Thread.CurrentThread.GetApartmentState().ToString()
                 };

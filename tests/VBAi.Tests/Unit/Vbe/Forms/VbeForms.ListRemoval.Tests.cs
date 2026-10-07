@@ -1,12 +1,9 @@
 namespace VBAi.Tests.Unit
 {
+    using Microsoft.VisualStudio.TestTools.UnitTesting;
     using System;
-    using System.Collections;
-    using System.Collections.Generic;
     using System.ComponentModel;
     using System.Linq;
-    using System.Runtime.CompilerServices;
-    using Microsoft.VisualStudio.TestTools.UnitTesting;
     using VBAi;
 
     public sealed partial class VbeFormsTests
@@ -110,9 +107,9 @@ namespace VBAi.Tests.Unit
 }
 namespace VBAi.Tests.Unit
 {
+    using Microsoft.VisualStudio.TestTools.UnitTesting;
     using System;
     using VBAi;
-    using Microsoft.VisualStudio.TestTools.UnitTesting;
     public sealed partial class VbeFormsTests
     {
         [TestMethod]
@@ -120,33 +117,35 @@ namespace VBAi.Tests.Unit
         {
             var service = new VbeForms(new FakeVbe());
             MissingFields(request => service.RemoveListItem(request), "Project", "Form", "ControlPath", "ExpectedTreeVersion", "ExpectedListVersion", "RowIndex");
-            var f=NewFixture(); f.Form.Designer.Controls.AddExisting("Choices");
-            var r=RequiredListRequest(); r.Project=f.Project.Name; r.Form=f.Form.Name; r.ControlPath="Controls/Choices";
-            Assert.ThrowsException<InvalidOperationException>(()=>f.Service.RemoveListItem(r));
-            WithList("ListBox",(fixture,c,request)=>{
-                c.ThrowOnCell=true;
-                Assert.ThrowsException<InvalidOperationException>(()=>fixture.Service.RemoveListItem(request));
-                c.ThrowOnCell=false;
-                request.ExpectedTreeVersion="stale";
-                Assert.ThrowsException<InvalidOperationException>(()=>fixture.Service.RemoveListItem(request));
-                Assert.AreEqual(0,c.RemoveAttempts);
+            var f = NewFixture(); f.Form.Designer.Controls.AddExisting("Choices");
+            var r = RequiredListRequest(); r.Project = f.Project.Name; r.Form = f.Form.Name; r.ControlPath = "Controls/Choices";
+            Assert.ThrowsException<InvalidOperationException>(() => f.Service.RemoveListItem(r));
+            WithList("ListBox", (fixture, c, request) =>
+            {
+                c.ThrowOnCell = true;
+                Assert.ThrowsException<InvalidOperationException>(() => fixture.Service.RemoveListItem(request));
+                c.ThrowOnCell = false;
+                request.ExpectedTreeVersion = "stale";
+                Assert.ThrowsException<InvalidOperationException>(() => fixture.Service.RemoveListItem(request));
+                Assert.AreEqual(0, c.RemoveAttempts);
             });
         }
 
         [TestMethod]
         public void ListRemovalDetectsUnavailableOrChangedReadbackAndReportsNativeReadError()
         {
-            foreach(var type in new[]{"ListBox","ComboBox"})
-                for(int scenario=0;scenario<3;scenario++) WithList(type,(f,c,r)=>{
-                    if(scenario==0) c.AfterRemove=control=>control.ThrowOnCell=true;
-                    if(scenario==1) c.AfterRemove=control=>control.ListRows[0][0]="changed";
-                    if(scenario==2) c.AfterRemove=control=>control.ThrowListCount=true;
-                    r.ExpectedTreeVersion=((dynamic)f.Service.Tree(r.Project,r.Form)).TreeVersion; dynamic result=f.Service.RemoveListItem(r);
+            foreach (var type in new[] { "ListBox", "ComboBox" })
+                for (int scenario = 0; scenario < 3; scenario++) WithList(type, (f, c, r) =>
+                {
+                    if (scenario == 0) c.AfterRemove = control => control.ThrowOnCell = true;
+                    if (scenario == 1) c.AfterRemove = control => control.ListRows[0][0] = "changed";
+                    if (scenario == 2) c.AfterRemove = control => control.ThrowListCount = true;
+                    r.ExpectedTreeVersion = ((dynamic)f.Service.Tree(r.Project, r.Form)).TreeVersion; dynamic result = f.Service.RemoveListItem(r);
                     Assert.IsTrue((bool)result.Applied);
                     Assert.IsFalse((bool)result.Verified);
                     Assert.IsTrue((bool)result.VerificationPending);
-                    if(scenario==2) StringAssert.Contains((string)result.NativeError,"ListCount unavailable");
-                    Assert.AreEqual(1,c.RemoveAttempts);
+                    if (scenario == 2) StringAssert.Contains((string)result.NativeError, "ListCount unavailable");
+                    Assert.AreEqual(1, c.RemoveAttempts);
                 });
         }
     }

@@ -1,9 +1,8 @@
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
-using VBAi;
 
 namespace VBAi.Tests.Unit
 {
@@ -19,10 +18,15 @@ namespace VBAi.Tests.Unit
         {
             var fixture = new ScalarFixture(Source);
             var expressions = new List<string>();
-            fixture.Service.LocalScalarEvaluator = request => {
+            fixture.Service.LocalScalarEvaluator = request =>
+            {
                 expressions.Add(request.Expression);
-                return Task.FromResult<object>(new ScalarReadback { Expression = request.Expression,
-                    Context = fixture.Context, Value = "value:" + request.Expression });
+                return Task.FromResult<object>(new ScalarReadback
+                {
+                    Expression = request.Expression,
+                    Context = fixture.Context,
+                    Value = "value:" + request.Expression
+                });
             };
             dynamic first = fixture.Service.InspectLocalScalarsAsync(fixture.Request(0, 2)).GetAwaiter().GetResult();
             Assert.AreEqual("DeclaredScalarCandidatesOnly", (string)first.Coverage);
@@ -47,13 +51,18 @@ namespace VBAi.Tests.Unit
             {
                 var fixture = new ScalarFixture(Source);
                 var expressions = new List<string>();
-                fixture.Service.LocalScalarEvaluator = request => {
+                fixture.Service.LocalScalarEvaluator = request =>
+                {
                     expressions.Add(request.Expression);
                     if (mutation == "mode") fixture.Project.Mode = 2;
                     if (mutation == "source") fixture.Module.Code += "\r\n' changed";
                     if (mutation == "context") fixture.CurrentContext = "VBAProject.Module1.Other";
-                    return Task.FromResult<object>(new ScalarReadback { Expression = mutation == "readback" ? "other" : request.Expression,
-                        Context = fixture.Context, Value = "1" });
+                    return Task.FromResult<object>(new ScalarReadback
+                    {
+                        Expression = mutation == "readback" ? "other" : request.Expression,
+                        Context = fixture.Context,
+                        Value = "1"
+                    });
                 };
                 dynamic result = fixture.Service.InspectLocalScalarsAsync(fixture.Request(0, 4)).GetAwaiter().GetResult();
                 Assert.IsTrue((bool)result.Aborted, mutation);
@@ -90,7 +99,8 @@ namespace VBAi.Tests.Unit
             {
                 var fixture = new ScalarFixture(source);
                 int evaluations = 0;
-                fixture.Service.LocalScalarEvaluator = request => {
+                fixture.Service.LocalScalarEvaluator = request =>
+                {
                     evaluations++;
                     return Task.FromResult<object>(null);
                 };
@@ -125,12 +135,23 @@ namespace VBAi.Tests.Unit
                 Project.VBComponents.Add(component);
                 var vbe = new ScalarVbe { ActiveVBProject = Project, ActiveCodePane = Module.CodePane };
                 vbe.VBProjects.Add(Project);
-                Service = new VbeDebug(vbe) { LocalContextReader = () => CurrentContext ?? Context,
-                    EnsureScalarDialogAbsent = () => { } };
+                Service = new VbeDebug(vbe)
+                {
+                    LocalContextReader = () => CurrentContext ?? Context,
+                    EnsureScalarDialogAbsent = () => { }
+                };
             }
 
-            internal Request Request(int offset, int limit) => new Request { Project = Project.Name, Module = "Module1",
-                Procedure = "Inspect", ExpectedMode = 1, ExpectedSha256 = VbeDebugTestsHash(Module.Code), Offset = offset, Limit = limit };
+            internal Request Request(int offset, int limit) => new Request
+            {
+                Project = Project.Name,
+                Module = "Module1",
+                Procedure = "Inspect",
+                ExpectedMode = 1,
+                ExpectedSha256 = VbeDebugTestsHash(Module.Code),
+                Offset = offset,
+                Limit = limit
+            };
         }
 
         private static string VbeDebugTestsHash(string source)

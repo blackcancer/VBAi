@@ -26,10 +26,15 @@ namespace VBAi
         public object NativeCodeHistoryState(Request request)
         {
             var snapshot = CaptureCodeHistory(request.Project);
-            return new { request.Project, HistoryVersion = snapshot.Version,
+            return new
+            {
+                request.Project,
+                HistoryVersion = snapshot.Version,
                 Modules = snapshot.Modules.Select(x => new { x.Module, x.Sha256 }).ToArray(),
-                Commands = snapshot.Commands, Scope = "Native shared code history of the only open project; may change another module.",
-                Limit = "Projects containing UserForms and multiple open projects are refused. Native stack entries are not exposed." };
+                snapshot.Commands,
+                Scope = "Native shared code history of the only open project; may change another module.",
+                Limit = "Projects containing UserForms and multiple open projects are refused. Native stack entries are not exposed."
+            };
         }
 
         /// <summary>Exécute une seule commande native Undo ou Redo après vérification du projet et de la commande.</summary>
@@ -48,8 +53,7 @@ namespace VBAi
             if (!HistoryWindowEnabled(new IntPtr(Convert.ToInt64(vbe.MainWindow.HWnd))))
                 throw new InvalidOperationException("The VBE is disabled by a modal window.");
             var command = EnumerateCommands().FirstOrDefault(x => x.Id == id && x.Enabled &&
-                string.Equals(x.Caption, request.ControlCaption, StringComparison.Ordinal));
-            if (command == null) throw new InvalidOperationException("The exact native history command is absent or disabled.");
+                string.Equals(x.Caption, request.ControlCaption, StringComparison.Ordinal)) ?? throw new InvalidOperationException("The exact native history command is absent or disabled.");
             string error = null; HistorySnapshot after = null;
             try { ((dynamic)command.Control).Execute(); }
             catch (Exception ex) { error = ex.Message; }
@@ -65,12 +69,20 @@ namespace VBAi
                         changes.Add(new CodeChange(request.Project, old.Module, old.Code, old.Sha256,
                             current.Code, current.Sha256, CodeRollback.Lines(current.Code).Length));
                 }
-            return new { request.Project, request.Action, ControlId = id, Executed = error == null,
-                Changes = changes, TopologyChanged = topologyChanged,
+            return new
+            {
+                request.Project,
+                request.Action,
+                ControlId = id,
+                Executed = error == null,
+                Changes = changes,
+                TopologyChanged = topologyChanged,
                 Verified = error == null && changes.Count > 0 && !topologyChanged,
                 VerificationPending = after == null || (changes.Count == 0 && !topologyChanged),
-                NativeError = error, NextRead = "native_code_history_state, read_module",
-                Limit = "One shared native history action. No stack inventory or persistence guarantee. Do not retry automatically. Changes may affect a different module than the active one." };
+                NativeError = error,
+                NextRead = "native_code_history_state, read_module",
+                Limit = "One shared native history action. No stack inventory or persistence guarantee. Do not retry automatically. Changes may affect a different module than the active one."
+            };
         }
 
         /// <summary>Code et empreinte d’un module capturé dans l’instantané d’historique.</summary>

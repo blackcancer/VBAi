@@ -48,17 +48,29 @@ namespace VBAi
                     try { selectedHostPath = VbeProjectHostPath.Read((object)project); } catch { }
                     int startLine = 0, startColumn = 0, endLine = 0, endColumn = 0;
                     pane.GetSelection(ref startLine, ref startColumn, ref endLine, ref endColumn);
-                    selection = new { StartLine = startLine, StartColumn = startColumn,
-                        EndLine = endLine, EndColumn = endColumn };
+                    selection = new
+                    {
+                        StartLine = startLine,
+                        StartColumn = startColumn,
+                        EndLine = endLine,
+                        EndColumn = endColumn
+                    };
                 }
             }
             catch (Exception ex)
             {
                 selection = new { Error = ex.Message };
             }
-            return new { Project = (string)project.Name, Mode = (int)project.Mode,
-                SelectedProject = selectedProject, SelectedProjectPath = selectedProjectPath, SelectedHostPath = selectedHostPath,
-                ActiveModule = activeModule, Selection = selection };
+            return new
+            {
+                Project = (string)project.Name,
+                Mode = (int)project.Mode,
+                SelectedProject = selectedProject,
+                SelectedProjectPath = selectedProjectPath,
+                SelectedHostPath = selectedHostPath,
+                ActiveModule = activeModule,
+                Selection = selection
+            };
         }
 
         /// <summary>Retourne une page de contrôles CommandBars correspondant éventuellement au texte recherché.</summary>
@@ -89,8 +101,14 @@ namespace VBAi
                     dynamic control = vbe.CommandBars.FindControl(1, id);
                     if (control != null)
                     {
-                        var entry = new CommandEntry { Control = control, Id = (int)control.Id, Caption = (string)control.Caption,
-                            Enabled = (bool)control.Enabled, Path = (string)control.Caption };
+                        var entry = new CommandEntry
+                        {
+                            Control = control,
+                            Id = (int)control.Id,
+                            Caption = (string)control.Caption,
+                            Enabled = (bool)control.Enabled,
+                            Path = (string)control.Caption
+                        };
                         if (entry.Id == id && entry.Enabled && allowed(entry)) return entry;
                     }
                 }
@@ -128,13 +146,19 @@ namespace VBAi
             ((dynamic)selected.Control).Execute();
             object after = windows.Windows();
             bool visibleAfter = HasVisibleObjectBrowser(after);
-            return new { Executed = true, Control = selected.Path, ControlId = selected.Id,
+            return new
+            {
+                Executed = true,
+                Control = selected.Path,
+                ControlId = selected.Id,
                 AlreadyVisible = visibleBefore,
                 Verification = visibleAfter ? "Visible" : "Pending",
                 VerificationPending = !visibleAfter,
                 NextRead = visibleAfter ? null : "Call vbe_windows in a separate request; the VBE may open the browser after Execute returns.",
                 VerificationLimit = "Only the native Object Browser window is observed; its classes and members are not read structurally.",
-                WindowsBefore = before, WindowsAfter = after };
+                WindowsBefore = before,
+                WindowsAfter = after
+            };
         }
 
         /// <summary>Ouvre le volet natif Locals, Watches ou Immediate et lit les fenêtres ensuite.</summary>
@@ -155,11 +179,17 @@ namespace VBAi
             }
             var command = EnumerateCommands().FirstOrDefault(entry => entry.Id == id && entry.Enabled &&
                 captions.Any(caption => (entry.Caption ?? "").Replace("&", "")
-                    .IndexOf(caption, StringComparison.OrdinalIgnoreCase) >= 0));
-            if (command == null) throw new InvalidOperationException("The requested VBE debug pane command is absent or disabled.");
+                    .IndexOf(caption, StringComparison.OrdinalIgnoreCase) >= 0)) ?? throw new InvalidOperationException("The requested VBE debug pane command is absent or disabled.");
             ((dynamic)command.Control).Execute();
-            return new { Pane = paneName, Executed = true, ControlId = id, Control = command.Path,
-                VerificationPending = true, NextRead = "Call vbe_windows or debug_windows in a separate request to confirm the pane is visible." };
+            return new
+            {
+                Pane = paneName,
+                Executed = true,
+                ControlId = id,
+                Control = command.Path,
+                VerificationPending = true,
+                NextRead = "Call vbe_windows or debug_windows in a separate request to confirm the pane is visible."
+            };
         }
 
         /// <summary>Prépare l’ouverture native de la boîte d’ajout d’une expression surveillée.</summary>
@@ -183,16 +213,21 @@ namespace VBAi
                 throw new InvalidOperationException("The requested project/module must be active in break mode before adding a watch.");
             var command = EnumerateCommands().FirstOrDefault(entry => entry.Id == 1820 && entry.Enabled &&
                 ((entry.Caption ?? "").Replace("&", "").IndexOf("espion", StringComparison.OrdinalIgnoreCase) >= 0 ||
-                 (entry.Caption ?? "").IndexOf("Add Watch", StringComparison.OrdinalIgnoreCase) >= 0));
-            if (command == null) throw new InvalidOperationException("The native Add Watch command is unavailable.");
-            SynchronizationContext context = SynchronizationContext.Current;
-            if (context == null) throw new InvalidOperationException("The VBE UI context is unavailable.");
-            context.Post(_ => {
+                 (entry.Caption ?? "").IndexOf("Add Watch", StringComparison.OrdinalIgnoreCase) >= 0)) ?? throw new InvalidOperationException("The native Add Watch command is unavailable.");
+            SynchronizationContext context = SynchronizationContext.Current ?? throw new InvalidOperationException("The VBE UI context is unavailable.");
+            context.Post(_ =>
+            {
                 try { ((dynamic)command.Control).Execute(); }
                 catch (Exception ex) { LoadLog.Write("Add Watch dialog failed: " + ex.Message); }
             }, null);
-            return new { Scheduled = true, ControlId = command.Id, request.Project, request.Module,
-                NextRead = "Complete the native Add Watch dialog after this command returns." };
+            return new
+            {
+                Scheduled = true,
+                ControlId = command.Id,
+                request.Project,
+                request.Module,
+                NextRead = "Complete the native Add Watch dialog after this command returns."
+            };
         }
 
         /// <summary>Prépare l’édition d’une expression de surveillance sélectionnée.</summary>
@@ -212,11 +247,10 @@ namespace VBAi
                 throw new InvalidOperationException("Project mode changed before editing the watch.");
             var command = EnumerateCommands().FirstOrDefault(entry => entry.Id == 940 && entry.Enabled &&
                 ((entry.Caption ?? "").Replace("&", "").IndexOf("Modifier un espion", StringComparison.OrdinalIgnoreCase) >= 0 ||
-                 (entry.Caption ?? "").IndexOf("Edit Watch", StringComparison.OrdinalIgnoreCase) >= 0));
-            if (command == null) throw new InvalidOperationException("The native Edit Watch command is unavailable.");
-            SynchronizationContext context = SynchronizationContext.Current;
-            if (context == null) throw new InvalidOperationException("The VBE UI context is unavailable.");
-            context.Post(_ => {
+                 (entry.Caption ?? "").IndexOf("Edit Watch", StringComparison.OrdinalIgnoreCase) >= 0)) ?? throw new InvalidOperationException("The native Edit Watch command is unavailable.");
+            SynchronizationContext context = SynchronizationContext.Current ?? throw new InvalidOperationException("The VBE UI context is unavailable.");
+            context.Post(_ =>
+            {
                 try { ((dynamic)command.Control).Execute(); }
                 catch (Exception ex) { LoadLog.Write("Edit Watch dialog failed: " + ex.Message); }
             }, null);
@@ -238,16 +272,24 @@ namespace VBAi
             SelectCode(request);
             var command = EnumerateCommands().FirstOrDefault(entry => entry.Id == 229 && entry.Enabled &&
                 ((entry.Caption ?? "").Replace("&", "").IndexOf("Espion express", StringComparison.OrdinalIgnoreCase) >= 0 ||
-                 (entry.Caption ?? "").IndexOf("Quick Watch", StringComparison.OrdinalIgnoreCase) >= 0));
-            if (command == null) throw new InvalidOperationException("The native Quick Watch command is unavailable.");
-            SynchronizationContext context = SynchronizationContext.Current;
-            if (context == null) throw new InvalidOperationException("The VBE UI context is unavailable.");
-            context.Post(_ => {
+                 (entry.Caption ?? "").IndexOf("Quick Watch", StringComparison.OrdinalIgnoreCase) >= 0)) ?? throw new InvalidOperationException("The native Quick Watch command is unavailable.");
+            SynchronizationContext context = SynchronizationContext.Current ?? throw new InvalidOperationException("The VBE UI context is unavailable.");
+            context.Post(_ =>
+            {
                 try { ((dynamic)command.Control).Execute(); }
                 catch (Exception ex) { LoadLog.Write("Quick Watch dialog failed: " + ex.Message); }
             }, null);
-            return new { Scheduled = true, ControlId = command.Id, request.Project, request.Module,
-                request.Expression, request.StartLine, request.StartColumn, request.EndColumn };
+            return new
+            {
+                Scheduled = true,
+                ControlId = command.Id,
+                request.Project,
+                request.Module,
+                request.Expression,
+                request.StartLine,
+                request.StartColumn,
+                request.EndColumn
+            };
         }
 
         /// <summary>Lit la boîte native des options de débogage sans enregistrer de préférence.</summary>
@@ -256,11 +298,10 @@ namespace VBAi
         {
             var command = EnumerateCommands().FirstOrDefault(entry => entry.Id == 522 && entry.Enabled &&
                 string.Equals((entry.Caption ?? "").Replace("&", "").TrimEnd('.'),
-                    "Options", StringComparison.OrdinalIgnoreCase));
-            if (command == null) throw new InvalidOperationException("The native VBE Tools > Options command is unavailable.");
-            SynchronizationContext context = SynchronizationContext.Current;
-            if (context == null) throw new InvalidOperationException("The VBE UI context is unavailable.");
-            context.Post(_ => {
+                    "Options", StringComparison.OrdinalIgnoreCase)) ?? throw new InvalidOperationException("The native VBE Tools > Options command is unavailable.");
+            SynchronizationContext context = SynchronizationContext.Current ?? throw new InvalidOperationException("The VBE UI context is unavailable.");
+            context.Post(_ =>
+            {
                 try { ((dynamic)command.Control).Execute(); }
                 catch (Exception ex) { LoadLog.Write("VBE Options dialog failed: " + ex.Message); }
             }, null);
@@ -280,11 +321,17 @@ namespace VBAi
                 throw new InvalidOperationException("Project mode changed before removing the watch.");
             var command = EnumerateCommands().FirstOrDefault(entry => entry.Id == 1083 && entry.Enabled &&
                 ((entry.Caption ?? "").Replace("&", "").IndexOf("Supprimer un espion", StringComparison.OrdinalIgnoreCase) >= 0 ||
-                 (entry.Caption ?? "").IndexOf("Delete Watch", StringComparison.OrdinalIgnoreCase) >= 0));
-            if (command == null) throw new InvalidOperationException("The native Delete Watch command is unavailable.");
+                 (entry.Caption ?? "").IndexOf("Delete Watch", StringComparison.OrdinalIgnoreCase) >= 0)) ?? throw new InvalidOperationException("The native Delete Watch command is unavailable.");
             ((dynamic)command.Control).Execute();
-            return new { Executed = true, ControlId = command.Id, request.Expression, request.Context,
-                VerificationPending = true, NextRead = "Read debug_windows in a separate request to verify the selected watch is absent." };
+            return new
+            {
+                Executed = true,
+                ControlId = command.Id,
+                request.Expression,
+                request.Context,
+                VerificationPending = true,
+                NextRead = "Read debug_windows in a separate request to verify the selected watch is absent."
+            };
         }
 
         /// <summary>Exécute une commande de débogage globale après contrôle du mode et du libellé exact.</summary>
@@ -320,9 +367,7 @@ namespace VBAi
                     if (activeProject == null ||
                         !SameComObject((object)activeProject, (object)project))
                         throw new InvalidOperationException("Show Next Statement requires the requested project to be active in the VBE.");
-                    dynamic activePane = vbe.ActiveCodePane;
-                    if (activePane == null)
-                        throw new InvalidOperationException("Show Next Statement requires an active code pane in the requested project.");
+                    dynamic activePane = vbe.ActiveCodePane ?? throw new InvalidOperationException("Show Next Statement requires an active code pane in the requested project.");
                     dynamic activeComponent = activePane.CodeModule.Parent;
                     dynamic requestedComponent;
                     try { requestedComponent = activeProject.VBComponents.Item((string)activeComponent.Name); }
@@ -335,15 +380,21 @@ namespace VBAi
             }
             var command = FindAvailableCommand(id, entry =>
                 captions.Any(caption => (entry.Caption ?? "").Replace("&", "")
-                    .IndexOf(caption, StringComparison.OrdinalIgnoreCase) >= 0));
-            if (command == null) throw new InvalidOperationException("The native VBE debug command is absent or disabled.");
+                    .IndexOf(caption, StringComparison.OrdinalIgnoreCase) >= 0)) ?? throw new InvalidOperationException("The native VBE debug command is absent or disabled.");
             ((dynamic)command.Control).Execute();
             int afterMode = (int)project.Mode;
             bool verifiedBreak = request.Action == "break" && afterMode == 1;
             bool verifiedReset = request.Action == "reset" && afterMode == 2;
-            return new { request.Action, request.Project, Scope = request.Action == "clear_all_breakpoints" || request.Action == "break" ? "Entire VBE" : "Active project",
-                Executed = true, ControlId = id, Control = command.Path,
-                ModeBefore = beforeMode, ModeAfter = afterMode,
+            return new
+            {
+                request.Action,
+                request.Project,
+                Scope = request.Action == "clear_all_breakpoints" || request.Action == "break" ? "Entire VBE" : "Active project",
+                Executed = true,
+                ControlId = id,
+                Control = command.Path,
+                ModeBefore = beforeMode,
+                ModeAfter = afterMode,
                 Verification = verifiedBreak || verifiedReset ? "Verified" : "Unverified",
                 VerificationPending = (request.Action == "break" && !verifiedBreak) ||
                     (request.Action == "reset" && !verifiedReset) ||
@@ -355,7 +406,8 @@ namespace VBAi
                 NextRead = request.Action == "break" ? "Call debug_state in a separate request to confirm break mode."
                     : request.Action == "reset" ? "Call debug_state in a separate request to confirm design mode."
                     : request.Action == "show_next_statement" ? "Call debug_state in a separate request to read the resulting code selection."
-                    : "Run a disposable procedure or inspect the native editor to verify breakpoint behavior." };
+                    : "Run a disposable procedure or inspect the native editor to verify breakpoint behavior."
+            };
         }
 
         /// <summary>Compile le projet dans le VBE en mode conception et observe les diagnostics natifs.</summary>
@@ -371,14 +423,12 @@ namespace VBAi
                 throw new InvalidOperationException("Compilation requires the selected project in design mode.");
             var command = EnumerateCommands().FirstOrDefault(entry => entry.Id == 578 && entry.Enabled &&
                 (((entry.Caption ?? "").Replace("&", "").IndexOf("Compiler ", StringComparison.OrdinalIgnoreCase) >= 0) ||
-                 ((entry.Caption ?? "").Replace("&", "").IndexOf("Compile ", StringComparison.OrdinalIgnoreCase) >= 0)));
-            if (command == null)
-                throw new InvalidOperationException("The native Compile command is absent or disabled.");
+                 ((entry.Caption ?? "").Replace("&", "").IndexOf("Compile ", StringComparison.OrdinalIgnoreCase) >= 0))) ?? throw new InvalidOperationException("The native Compile command is absent or disabled.");
             string caption = command.Caption.Replace("&", "");
             if (caption.IndexOf((string)project.Name, StringComparison.OrdinalIgnoreCase) < 0)
                 throw new InvalidOperationException("The native Compile command targets a different project: " + caption);
             ((dynamic)command.Control).Execute();
-            return new { Executed = true, Project = request.Project, ControlId = command.Id, Control = command.Path };
+            return new { Executed = true, request.Project, ControlId = command.Id, Control = command.Path };
         }
 
         /// <summary>Reconnaît une légende localisée de l’Explorateur d’objets.</summary>
@@ -400,9 +450,8 @@ namespace VBAi
             foreach (dynamic item in ((dynamic)windowState).Windows)
             {
                 var properties = (IDictionary<string, object>)item.Properties;
-                object type, visible;
-                if (properties.TryGetValue("Type", out type) && Convert.ToInt32(type) == 2 &&
-                    properties.TryGetValue("Visible", out visible) && Convert.ToBoolean(visible))
+                if (properties.TryGetValue("Type", out object type) && Convert.ToInt32(type) == 2 &&
+                    properties.TryGetValue("Visible", out object visible) && Convert.ToBoolean(visible))
                     return true;
             }
             return false;
@@ -438,9 +487,14 @@ namespace VBAi
             {
                 request.Project,
                 request.Module,
-                Line = request.StartLine, Text = line, SelectedText = selectedText,
-                StartColumn = startColumn, EndColumn = endColumn, Mode = (int)project.Mode,
-                State = State(request.Project) };
+                Line = request.StartLine,
+                Text = line,
+                SelectedText = selectedText,
+                StartColumn = startColumn,
+                EndColumn = endColumn,
+                Mode = (int)project.Mode,
+                State = State(request.Project)
+            };
         }
 
         /// <summary>Exécute une commande VBE listée précédemment après vérification de son identifiant et de son état.</summary>
@@ -495,8 +549,10 @@ namespace VBAi
                 Control = selected.Path,
                 request.Project,
                 request.Module,
-                Line = request.StartLine, Text = line,
-                ModeBefore = mode, Executed = true,
+                Line = request.StartLine,
+                Text = line,
+                ModeBefore = mode,
+                Executed = true,
                 Verification = evidence == null ? "Unverified" : "Verified",
                 VerificationPending = pending,
                 Evidence = evidence,
@@ -504,7 +560,10 @@ namespace VBAi
                 VerificationLimit = request.Action == "toggle_breakpoint"
                     ? "VBIDE exposes no breakpoint inventory through this command; toggle effect was not verified."
                     : pending ? "The VBE may process this command asynchronously; immediate state did not yet prove an effect." : null,
-                StateBefore = before, StateAfter = after, StateAfterError = afterError };
+                StateBefore = before,
+                StateAfter = after,
+                StateAfterError = afterError
+            };
         }
 
         /// <summary>Sélectionne une plage multi-ligne exacte dans un volet de code en contrôlant l’empreinte source.</summary>
@@ -533,9 +592,18 @@ namespace VBAi
             if (actualStartLine != request.StartLine || actualStartColumn != request.StartColumn ||
                 actualEndLine != request.EndLine || actualEndColumn != request.EndColumn)
                 throw new InvalidOperationException("The native code pane did not retain the requested range.");
-            return new { request.Project, request.Module, request.StartLine, request.StartColumn,
-                request.EndLine, request.EndColumn, Sha256 = request.ExpectedSha256,
-                Verified = true, Mode = (int)project.Mode };
+            return new
+            {
+                request.Project,
+                request.Module,
+                request.StartLine,
+                request.StartColumn,
+                request.EndLine,
+                request.EndColumn,
+                Sha256 = request.ExpectedSha256,
+                Verified = true,
+                Mode = (int)project.Mode
+            };
         }
 
         /// <summary>Ouvre ou inspecte la boîte de signature du projet sélectionné.</summary>
@@ -572,14 +640,19 @@ namespace VBAi
             if (command == null || (command.Caption ?? "").Replace("&", "")
                 .IndexOf("Signature", StringComparison.OrdinalIgnoreCase) < 0)
                 throw new InvalidOperationException("The native VBE Digital Signature command is unavailable.");
-            SynchronizationContext context = SynchronizationContext.Current;
-            if (context == null) throw new InvalidOperationException("The VBE UI context is unavailable.");
-            context.Post(_ => {
+            SynchronizationContext context = SynchronizationContext.Current ?? throw new InvalidOperationException("The VBE UI context is unavailable.");
+            context.Post(_ =>
+            {
                 try { ((dynamic)command.Control).Execute(); }
                 catch (Exception ex) { LoadLog.Write("VBE Digital Signature dialog failed: " + ex.Message); }
             }, null);
-            return new { Scheduled = true, Project = request.Project, ControlId = command.Id,
-                Control = command.Path };
+            return new
+            {
+                Scheduled = true,
+                request.Project,
+                ControlId = command.Id,
+                Control = command.Path
+            };
         }
 
         /// <summary>Indique si la commande VBE de suppression de surveillance est disponible.</summary>
@@ -629,9 +702,7 @@ namespace VBAi
             vbe.ActiveCodePane = pane;
             pane.SetSelection(body, 1, body, 1);
             var command = EnumerateCommands().FirstOrDefault(entry => entry.Id == 186 &&
-                entry.Enabled && IsAllowed("run", entry.Caption, 2));
-            if (command == null)
-                throw new InvalidOperationException("The native Run Sub command is absent or disabled.");
+                entry.Enabled && IsAllowed("run", entry.Caption, 2)) ?? throw new InvalidOperationException("The native Run Sub command is absent or disabled.");
             request.StartLine = body;
             request.Action = "run";
             request.ControlId = command.Id;
@@ -866,8 +937,14 @@ namespace VBAi
                 {
                     string caption = (string)control.Caption;
                     string currentPath = path + " > " + caption;
-                    entries.Add(new CommandEntry { Control = control, Caption = caption,
-                        Id = (int)control.Id, Enabled = (bool)control.Enabled, Path = currentPath });
+                    entries.Add(new CommandEntry
+                    {
+                        Control = control,
+                        Caption = caption,
+                        Id = (int)control.Id,
+                        Enabled = (bool)control.Enabled,
+                        Path = currentPath
+                    });
                     try { AddControls(entries, control.Controls, currentPath, depth + 1); }
                     catch { /* Buttons do not have child controls. */ }
                 }

@@ -78,7 +78,8 @@ namespace VBAi
         {
             if (!retired || (requested && !exited) || scheduled) return;
             scheduled = true;
-            Cleanup = Task.Run(() => {
+            Cleanup = Task.Run(() =>
+            {
                 try
                 {
                     if (!Directory.Exists(Path)) return;

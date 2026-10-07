@@ -1,4 +1,3 @@
-using System;
 using System.IO;
 using System.Web.Script.Serialization;
 
@@ -74,8 +73,7 @@ namespace VBAi
             string path = Path.Combine(root, "pending.json");
             if (!File.Exists(path)) return null;
             if (new FileInfo(path).Length > 16384) throw new InvalidDataException("Invalid update job size.");
-            var job = new JavaScriptSerializer().Deserialize<UpdateInstallJob>(File.ReadAllText(path));
-            if (job == null) throw new InvalidDataException("Missing update job.");
+            var job = new JavaScriptSerializer().Deserialize<UpdateInstallJob>(File.ReadAllText(path)) ?? throw new InvalidDataException("Missing update job.");
             job.Validate(root); return job;
         }
     }

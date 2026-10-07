@@ -41,9 +41,7 @@ namespace VBAi
                 throw new InvalidOperationException("Only native MSForms CheckBox controls are supported by this probe.");
             object owner = parts.Length == 2 ? (object)form.Designer :
                 ResolveTreeItem(form.Designer, string.Join("/", parts.Take(parts.Length - 2)));
-            PropertyDescriptor controlsProperty = TypeDescriptor.GetProperties(owner).Find("Controls", true);
-            if (controlsProperty == null)
-                throw new InvalidOperationException("The parent has no Controls collection.");
+            PropertyDescriptor controlsProperty = TypeDescriptor.GetProperties(owner).Find("Controls", true) ?? throw new InvalidOperationException("The parent has no Controls collection.");
             dynamic controls = controlsProperty.GetValue(owner);
             foreach (dynamic existing in controls)
                 if (string.Equals((string)existing.Name, request.NewName, StringComparison.OrdinalIgnoreCase))
@@ -85,15 +83,21 @@ namespace VBAi
                     throw new InvalidOperationException("The duplicate was not reflected in form_tree.");
                 dynamic installed = ResolveTreeItem(form.Designer, newPath);
                 if ((string)installed.Caption != caption ||
-                    !(installed.Value is bool) || (bool)installed.Value != value ||
+                    !(installed.Value is bool v) || v != value ||
                     Math.Abs(Convert.ToDouble(installed.Left, CultureInfo.InvariantCulture) - left) > 0.01 ||
                     Math.Abs(Convert.ToDouble(installed.Top, CultureInfo.InvariantCulture) - top) > 0.01 ||
                     Math.Abs(Convert.ToDouble(installed.Width, CultureInfo.InvariantCulture) - width) > 0.01 ||
                     Math.Abs(Convert.ToDouble(installed.Height, CultureInfo.InvariantCulture) - height) > 0.01)
                     throw new InvalidOperationException("The duplicate did not retain the supported CheckBox properties.");
-                return new { SourcePath = request.ControlPath, NewPath = newPath,
+                return new
+                {
+                    SourcePath = request.ControlPath,
+                    NewPath = newPath,
                     CopiedProperties = new[] { "Name", "Caption", "Left", "Top", "Width", "Height",
-                        "Value (Boolean only)" }, Completeness = "Partial", Tree = after };
+                        "Value (Boolean only)" },
+                    Completeness = "Partial",
+                    Tree = after
+                };
             }
             catch
             {

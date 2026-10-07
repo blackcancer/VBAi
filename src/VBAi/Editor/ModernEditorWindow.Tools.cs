@@ -33,8 +33,7 @@ namespace VBAi
         internal EditorDocument FindToolDocument(IEditorModule module)
         {
             var doc = documents.Values.FirstOrDefault(d => ReferenceEquals(d.Module, module) ||
-                (d.Module is EditorVbeModule vm && module is EditorVbeModule other && vm.IsComponent(other.Component)));
-            if (doc == null) throw new InvalidOperationException("Open this exact module with monaco_open first.");
+                (d.Module is EditorVbeModule vm && module is EditorVbeModule other && vm.IsComponent(other.Component))) ?? throw new InvalidOperationException("Open this exact module with monaco_open first.");
             return doc;
         }
 
@@ -50,16 +49,26 @@ namespace VBAi
             {
                 selected = doc.Id; SelectTab(doc.Id); await SelectEditorDocument(doc.Id);
                 // Chromium captures text, selection and revision together, without another UI await.
-                var snapshot = json.Deserialize<Dictionary<string, object>>(await Script("read", doc.Id));
-                if (snapshot == null) throw new InvalidOperationException("The Monaco document was closed.");
+                var snapshot = json.Deserialize<Dictionary<string, object>>(await Script("read", doc.Id)) ?? throw new InvalidOperationException("The Monaco document was closed.");
                 string text = (string)snapshot["text"]; int version = (int)snapshot["version"];
                 if (version >= versions[doc.Id]) { doc.Edit(text); versions[doc.Id] = version; }
                 bool dirty = text != doc.Baseline;
-                return new { DocumentId = doc.Id, Version = version, Draft = text, Baseline = doc.Baseline,
-                    Native = doc.Native, NativeSha256 = EditorDocument.Hash(doc.Native), Dirty = dirty,
+                return new
+                {
+                    DocumentId = doc.Id,
+                    Version = version,
+                    Draft = text,
+                    doc.Baseline,
+                    doc.Native,
+                    NativeSha256 = EditorDocument.Hash(doc.Native),
+                    Dirty = dirty,
                     Conflict = dirty && doc.Native != doc.Baseline && doc.Native != text,
-                    Writable = doc.Writable, Selection = snapshot["selection"],
-                    AutomaticSynchronization = true, HostDocumentSaveInvoked = false, HostDocumentSaved = ReadDocumentHostSaved(doc) };
+                    doc.Writable,
+                    Selection = snapshot["selection"],
+                    AutomaticSynchronization = true,
+                    HostDocumentSaveInvoked = false,
+                    HostDocumentSaved = ReadDocumentHostSaved(doc)
+                };
             }
             finally { busy = false; }
         }
@@ -116,8 +125,7 @@ namespace VBAi
             busy = true;
             try
             {
-                int applied;
-                if (!int.TryParse(await Script("apply", doc.Id, version, EditorDocument.Normalize(text)), out applied) || applied <= 0)
+                if (!int.TryParse(await Script("apply", doc.Id, version, EditorDocument.Normalize(text)), out int applied) || applied <= 0)
                     throw new InvalidOperationException("The Monaco draft changed during the edit. Nothing was replaced.");
                 if (versions[doc.Id] <= applied) { doc.Edit(text); versions[doc.Id] = applied; }
                 await CaptureDocuments();
@@ -126,8 +134,14 @@ namespace VBAi
                 if (versions[doc.Id] != applied)
                 {
                     await PrepareSynchronization(doc);
-                    return new { AppliedToDraft = true, Synchronized = false, Version = versions[doc.Id], doc.Dirty,
-                        Reason = "Newer user typing was preserved. Continuous synchronization will handle it separately." };
+                    return new
+                    {
+                        AppliedToDraft = true,
+                        Synchronized = false,
+                        Version = versions[doc.Id],
+                        doc.Dirty,
+                        Reason = "Newer user typing was preserved. Continuous synchronization will handle it separately."
+                    };
                 }
                 RequireVersion(doc, applied);
                 if (doc.Text != plan.After || doc.Baseline != plan.Before)
@@ -137,13 +151,21 @@ namespace VBAi
                 try { synchronized = doc.Synchronize(plan); }
                 catch (Exception error) { SetStatus(); return new { AppliedToDraft = true, Synchronized = false, Version = versions[doc.Id], doc.Dirty, Error = error.Message }; }
                 synchronizedSource?.Invoke();
-                int reconciled;
                 // COM can pump UI messages: never replace text against a newer received revision.
-                if (int.TryParse(await Script("apply", doc.Id, applied, synchronized), out reconciled) && reconciled > 0)
+                if (int.TryParse(await Script("apply", doc.Id, applied, synchronized), out int reconciled) && reconciled > 0)
                 { doc.Acknowledge(synchronized, captured); versions[doc.Id] = Math.Max(versions[doc.Id], reconciled); }
                 await CaptureDocuments(); if (doc.Dirty) await PrepareSynchronization(doc); else Drafts.ClearOwn(doc); SetStatus();
-                return new { AppliedToDraft = true, Synchronized = true, AppliedVersion = applied, Version = versions[doc.Id], doc.Dirty,
-                    AutomaticSynchronization = true, HostDocumentSaveInvoked = false, HostDocumentSaved = ReadDocumentHostSaved(doc) };
+                return new
+                {
+                    AppliedToDraft = true,
+                    Synchronized = true,
+                    AppliedVersion = applied,
+                    Version = versions[doc.Id],
+                    doc.Dirty,
+                    AutomaticSynchronization = true,
+                    HostDocumentSaveInvoked = false,
+                    HostDocumentSaved = ReadDocumentHostSaved(doc)
+                };
             }
             finally { busy = false; }
         }
@@ -174,14 +196,21 @@ namespace VBAi
                 string captured = doc.Text;
                 string actual = doc.Synchronize(plan);
                 synchronizedSource?.Invoke();
-                int applied;
-                if (int.TryParse(await Script("apply", doc.Id, version, actual), out applied) && applied > 0)
+                if (int.TryParse(await Script("apply", doc.Id, version, actual), out int applied) && applied > 0)
                 { doc.Acknowledge(actual, captured); versions[doc.Id] = Math.Max(versions[doc.Id], applied); }
                 await CaptureDocuments();
                 if (doc.Dirty) await PrepareSynchronization(doc); else Drafts.ClearOwn(doc);
                 SetStatus();
-                return new { Synchronized = true, Version = versions[doc.Id], doc.Dirty, Native = doc.Native,
-                    NativeSha256 = EditorDocument.Hash(doc.Native), HostDocumentSaveInvoked = false, HostDocumentSaved = ReadDocumentHostSaved(doc) };
+                return new
+                {
+                    Synchronized = true,
+                    Version = versions[doc.Id],
+                    doc.Dirty,
+                    doc.Native,
+                    NativeSha256 = EditorDocument.Hash(doc.Native),
+                    HostDocumentSaveInvoked = false,
+                    HostDocumentSaved = ReadDocumentHostSaved(doc)
+                };
             }
             finally { busy = false; }
         }

@@ -23,8 +23,14 @@ namespace VBAi
             }
             string collectionVersion = null;
             try { collectionVersion = ToolbarCollectionVersion(); } catch (Exception ex) { errors.Add(ex.Message); }
-            return new { Toolbars = bars, Errors = errors, ProfileErrors = ToolbarProfileErrors.ToArray(), ToolbarCollectionVersion = collectionVersion,
-                Scope = "Normal VBE command bars only; menu bars and shortcut menus are excluded." };
+            return new
+            {
+                Toolbars = bars,
+                Errors = errors,
+                ProfileErrors = ToolbarProfileErrors.ToArray(),
+                ToolbarCollectionVersion = collectionVersion,
+                Scope = "Normal VBE command bars only; menu bars and shortcut menus are excluded."
+            };
         }
 
         /// <summary>Capture les propriétés et la géométrie accessibles d’une barre, avec des empreintes distinctes.</summary>
@@ -54,8 +60,16 @@ namespace VBAi
             if (version != null && geometryErrors.Count == 0)
                 using (var sha = SHA256.Create())
                     layoutVersion = BitConverter.ToString(sha.ComputeHash(Encoding.UTF8.GetBytes(new JavaScriptSerializer().Serialize(new { State = state, Geometry = geometry })))).Replace("-", "").ToLowerInvariant();
-            return new { Properties = state, Errors = errors, Geometry = geometry, GeometryErrors = geometryErrors,
-                ToolbarLayoutVersion = layoutVersion, WindowVersion = version, VersionScope = "Toolbar identity, visibility, enabled state and protection; geometry is observational." };
+            return new
+            {
+                Properties = state,
+                Errors = errors,
+                Geometry = geometry,
+                GeometryErrors = geometryErrors,
+                ToolbarLayoutVersion = layoutVersion,
+                WindowVersion = version,
+                VersionScope = "Toolbar identity, visibility, enabled state and protection; geometry is observational."
+            };
         }
 
         /// <summary>Affiche ou masque une barre après contrôle de l’empreinte de son état.</summary>
@@ -81,9 +95,16 @@ namespace VBAi
             catch (Exception ex) { error = ex.Message; }
             try { after = ToolbarSnapshot(target); actual = (bool)selected.Visible; }
             catch (Exception ex) { error = error ?? ex.Message; }
-            return new { Applied = actual.HasValue ? (bool?)(actual.Value != (bool)before.Properties["Visible"]) : null,
-                Verified = error == null && actual == desired, Before = (object)before, After = after,
-                NativeError = error, PersistenceVerified = false, NextRead = "list_toolbars" };
+            return new
+            {
+                Applied = actual.HasValue ? (bool?)(actual.Value != (bool)before.Properties["Visible"]) : null,
+                Verified = error == null && actual == desired,
+                Before = (object)before,
+                After = after,
+                NativeError = error,
+                PersistenceVerified = false,
+                NextRead = "list_toolbars"
+            };
         }
 
         /// <summary>Résout une barre par son nom et refuse les menus, ambiguïtés et disparitions.</summary>
@@ -148,9 +169,17 @@ namespace VBAi
                 }
             }
             catch (Exception ex) { error = error ?? ex.Message; }
-            return new { Applied = applied, Verified = verified, Before = (object)before, After = after,
-                NativeError = error, PersistenceVerified = false, NextRead = "list_toolbars",
-                Limit = "VBE may normalize placement or rearrange neighbors. Partial changes are reported, not retried or implicitly rolled back." };
+            return new
+            {
+                Applied = applied,
+                Verified = verified,
+                Before = (object)before,
+                After = after,
+                NativeError = error,
+                PersistenceVerified = false,
+                NextRead = "list_toolbars",
+                Limit = "VBE may normalize placement or rearrange neighbors. Partial changes are reported, not retried or implicitly rolled back."
+            };
         }
 
         /// <summary>Ancre ou détache une barre selon l’action demandée, après contrôle de sa disposition.</summary>
@@ -187,10 +216,18 @@ namespace VBAi
             try { after = ToolbarSnapshot(target); actual = (int)selected.Position; visible = (bool)selected.Visible; }
             catch (Exception ex) { error = error ?? ex.Message; }
             bool visibilityPreserved = visible == (bool)before.Properties["Visible"];
-            return new { Applied = actual.HasValue ? (bool?)(actual.Value != original) : null,
-                Verified = error == null && actual == desired && visibilityPreserved, VisibilityPreserved = visibilityPreserved,
-                Before = (object)before, After = after, NativeError = error, PersistenceVerified = false,
-                NextRead = "list_toolbars", Limit = "Native docking can rearrange neighboring toolbars; exact floating coordinates and row placement are not set." };
+            return new
+            {
+                Applied = actual.HasValue ? (bool?)(actual.Value != original) : null,
+                Verified = error == null && actual == desired && visibilityPreserved,
+                VisibilityPreserved = visibilityPreserved,
+                Before = (object)before,
+                After = after,
+                NativeError = error,
+                PersistenceVerified = false,
+                NextRead = "list_toolbars",
+                Limit = "Native docking can rearrange neighboring toolbars; exact floating coordinates and row placement are not set."
+            };
         }
     }
 }

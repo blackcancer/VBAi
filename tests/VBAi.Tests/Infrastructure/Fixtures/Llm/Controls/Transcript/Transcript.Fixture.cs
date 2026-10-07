@@ -1,10 +1,9 @@
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.ComponentModel;
 using System.ComponentModel.Design;
 using System.Reflection;
 using System.Windows.Forms;
-using VBAi;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 namespace VBAi.Tests.Infrastructure
 {
     internal static class TranscriptFixture
@@ -25,7 +24,7 @@ namespace VBAi.Tests.Infrastructure
                 var containerField = typeof(T).GetField("components", BindingFlags.Instance | BindingFlags.NonPublic);
                 var container = (IContainer)containerField.GetValue(view);
                 Assert.IsNotNull(container);
-                var component = new Component(); bool disposed = false; component.Disposed += (s,e) => disposed = true; container.Add(component);
+                var component = new Component(); bool disposed = false; component.Disposed += (s, e) => disposed = true; container.Add(component);
                 Dispose(view, false); Assert.IsFalse(disposed);
                 view.Dispose(); Assert.IsTrue(disposed); Assert.IsTrue(view.IsDisposed);
                 var absent = new T(); var owned = (IContainer)containerField.GetValue(absent); containerField.SetValue(absent, null);

@@ -1,6 +1,6 @@
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Linq;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace VBAi.Tests.Unit
 {
@@ -213,7 +213,10 @@ namespace VBAi.Tests.Unit
         private static VbaTestCatalog Discover(string source, int type = 1) => VbaTestDiscovery.Discover(Snapshot(source, type));
         private static VbaTestProjectSnapshot Snapshot(string source, int type = 1) => new VbaTestProjectSnapshot
         {
-            Id = "session/project", Selector = "path", Name = "Project", Revision = "revision",
+            Id = "session/project",
+            Selector = "path",
+            Name = "Project",
+            Revision = "revision",
             Modules = new[] { new VbaTestModuleSnapshot { Name = "Tests", Source = source, Hash = "hash", ComponentType = type } }
         };
         [TestMethod]
@@ -252,7 +255,7 @@ namespace VBAi.Tests.Unit
         public void MalformedDirectivesPtrSafeDeclarationsAndPropertyTerminatorsDoNotAuthorizeCalls()
         {
             var catalog = Discover("'@TestModule\n#\nEnd\nEnd Property\n'@TestMethod\nPublic Declare PtrSafe Function Native Lib \"x\" () As Boolean\n");
-            Assert.AreEqual(1,catalog.Tests.Count()); StringAssert.Contains(catalog.Tests.Single().Diagnostic,"require");
+            Assert.AreEqual(1, catalog.Tests.Count()); StringAssert.Contains(catalog.Tests.Single().Diagnostic, "require");
         }
     }
 }

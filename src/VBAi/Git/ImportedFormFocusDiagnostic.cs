@@ -43,8 +43,10 @@ namespace VBAi
             bool rootPresent, int expectedType, long expectedHandle, Func<int> activeType, Func<long> activeHandle,
             Func<string> activeCaption, Func<string> expectedCaption, Func<bool> rootEnabled, Func<bool> activeMatchesPrevious)
         {
-            var value = new Snapshot {
-                State = "observed-after-refusal", ActiveIdentity = !activePresent ? "null" : activeMatchesExpected ? "expected" : "different",
+            var value = new Snapshot
+            {
+                State = "observed-after-refusal",
+                ActiveIdentity = !activePresent ? "null" : activeMatchesExpected ? "expected" : "different",
                 PreviousPresent = previousPresent
             };
             if (Thread.CurrentThread.GetApartmentState() != ApartmentState.STA)

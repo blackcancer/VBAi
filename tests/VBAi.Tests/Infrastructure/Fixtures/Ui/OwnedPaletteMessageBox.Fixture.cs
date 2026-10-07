@@ -1,9 +1,9 @@
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Windows.Forms;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace VBAi.Tests.Unit
 {
@@ -11,7 +11,8 @@ namespace VBAi.Tests.Unit
     {
         private delegate bool EnumProc(IntPtr window, IntPtr parameter);
         private delegate IntPtr HookProc(int code, IntPtr first, IntPtr second);
-        [StructLayout(LayoutKind.Sequential)] private struct WindowMessage
+        [StructLayout(LayoutKind.Sequential)]
+        private struct WindowMessage
         { internal IntPtr Parameter, First; internal uint Message; internal IntPtr Window; }
         [DllImport("kernel32.dll")] private static extern uint GetCurrentThreadId();
         [DllImport("user32.dll")] private static extern bool EnumThreadWindows(uint thread, EnumProc callback, IntPtr parameter);

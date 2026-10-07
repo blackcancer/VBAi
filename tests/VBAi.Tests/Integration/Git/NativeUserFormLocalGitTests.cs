@@ -1,3 +1,4 @@
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -9,7 +10,6 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Web.Script.Serialization;
 using System.Windows.Forms;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace VBAi.Tests.Integration
 {
@@ -51,11 +51,15 @@ namespace VBAi.Tests.Integration
             string output = Path.Combine(root, layout + "-" + Guid.NewGuid().ToString("N"));
             Assert.IsFalse(Directory.Exists(output));
             Directory.CreateDirectory(output);
-            var report = new Dictionary<string, object> {
-                ["Stage"] = "STARTED", ["Layout"] = layout, ["RemoteOperations"] = 0,
+            var report = new Dictionary<string, object>
+            {
+                ["Stage"] = "STARTED",
+                ["Layout"] = layout,
+                ["RemoteOperations"] = 0,
                 ["LaunchContext"] = launchContext,
                 ["EvidenceDirectory"] = output,
-                ["MacroExecutions"] = 0, ["ForcedTermination"] = false,
+                ["MacroExecutions"] = 0,
+                ["ForcedTermination"] = false,
                 ["AssemblyMvid"] = typeof(VbeSession).Module.ModuleVersionId.ToString("D"),
                 ["StartedUtc"] = DateTime.UtcNow.ToString("o"),
                 ["Scope"] = "Owned Excel; production Git mutations on the actual installed VBE owner STA; external readback and normal shutdown. No GitHub or embedded Git UI claim."
@@ -68,7 +72,8 @@ namespace VBAi.Tests.Integration
                 SynchronizationContext.SetSynchronizationContext(new WindowsFormsSynchronizationContext());
                 try
                 {
-                    run(host => {
+                    run(host =>
+                    {
                         report["HostProcessId"] = host.ProcessId;
                         report["FixtureRoot"] = host.Root;
                         report["HostStatus"] = host.Command("status");
@@ -108,7 +113,8 @@ namespace VBAi.Tests.Integration
                         }
                         host.CaptureGitFormDesigner(form, Path.Combine(output, "source-designer.png"));
                         report["DesignerCaptureAcceptance"] = "CAPTURED_PENDING_VISUAL_REVIEW";
-                        host.WithGitProject(path, project => {
+                        host.WithGitProject(path, project =>
+                        {
                             Phase(output, report, "repeat-unchanged-native-captures");
                             var before = Capture(project, host, layout, output, "before");
                             Assert.IsTrue(before.Manifest.Components.Single(c => c.Name == form).HasResources);
@@ -175,8 +181,12 @@ namespace VBAi.Tests.Integration
                                             report["NativeAfterRefusedImport"] = observed;
                                             report["NativeAfterRefusedImportDifferences"] = nativeBefore.Keys.Union(observed.Keys)
                                                 .Where(key => !nativeBefore.ContainsKey(key) || !observed.ContainsKey(key) || !Equals(nativeBefore[key], observed[key]))
-                                                .Select(key => new { Property = key, Expected = nativeBefore.ContainsKey(key) ? nativeBefore[key] : null,
-                                                    Actual = observed.ContainsKey(key) ? observed[key] : null }).ToArray();
+                                                .Select(key => new
+                                                {
+                                                    Property = key,
+                                                    Expected = nativeBefore.ContainsKey(key) ? nativeBefore[key] : null,
+                                                    Actual = observed.ContainsKey(key) ? observed[key] : null
+                                                }).ToArray();
                                             WriteReport(output, report);
                                         }
                                         catch (Exception observationError)
@@ -239,7 +249,8 @@ namespace VBAi.Tests.Integration
                         var reopened = host.ReadGitLayout(form, layout);
                         AssertNativeState(nativeBefore, reopened, "save/reopen");
                         report["NativeReopened"] = reopened;
-                        host.WithGitProject(path, project => {
+                        host.WithGitProject(path, project =>
+                        {
                             var expected = VbaGitSnapshot.Read(Directory.GetFiles(Path.Combine(output, "expected-reopened"))
                                 .ToDictionary(file => Path.GetFileName(file), file => File.ReadAllBytes(file), StringComparer.Ordinal));
                             Assert.IsTrue(Capture(project, host, layout, output, "reopened").SameAs(expected));
@@ -293,9 +304,12 @@ namespace VBAi.Tests.Integration
 
         private static object[] Describe(VbaGitSnapshot snapshot)
         {
-            return snapshot.Serialize().Select(file => {
-                using (var hash = SHA256.Create()) return (object)new {
-                    Path = file.Key, Bytes = file.Value.Length,
+            return snapshot.Serialize().Select(file =>
+            {
+                using (var hash = SHA256.Create()) return (object)new
+                {
+                    Path = file.Key,
+                    Bytes = file.Value.Length,
                     Sha256 = BitConverter.ToString(hash.ComputeHash(file.Value)).Replace("-", "")
                 };
             }).ToArray();

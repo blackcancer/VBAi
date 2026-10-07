@@ -68,6 +68,7 @@ not imply endorsement or affiliation.
 
 ## VBAi licensing
 
-The repository does not yet contain a selected license for VBAi itself. A project
-license must be handled explicitly by the maintainer. Copying upstream notices does
-not select a VBAi license or constitute legal clearance for a release.
+Original VBAi code uses MPL-2.0. Original VBA templates and support runtimes
+intended for user projects use MIT. See [licensing scope](LICENSING.md).
+Third-party components retain their original terms; the project license does not
+relicense them or grant rights to external trademarks.

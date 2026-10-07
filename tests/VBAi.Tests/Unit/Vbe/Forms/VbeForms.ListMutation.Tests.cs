@@ -1,13 +1,9 @@
 namespace VBAi.Tests.Unit
 {
-    using System;
-    using System.Collections;
-    using System.Collections.Generic;
-    using System.ComponentModel;
-    using System.Linq;
-    using System.Reflection;
-    using VBAi;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
+    using System;
+    using System.Linq;
+    using VBAi;
 
     public sealed partial class VbeFormsPartialTests
     {
@@ -73,9 +69,9 @@ namespace VBAi.Tests.Unit
 }
 namespace VBAi.Tests.Unit
 {
+    using Microsoft.VisualStudio.TestTools.UnitTesting;
     using System;
     using VBAi;
-    using Microsoft.VisualStudio.TestTools.UnitTesting;
     public sealed partial class VbeFormsTests
     {
         [TestMethod]
@@ -95,7 +91,8 @@ namespace VBAi.Tests.Unit
             var f = NewFixture(); f.Form.Designer.Controls.AddExisting("Choices");
             var r = RequiredListRequest(); r.Project = f.Project.Name; r.Form = f.Form.Name; r.ControlPath = "Controls/Choices";
             Assert.ThrowsException<InvalidOperationException>(() => f.Service.AddListItem(r));
-            foreach (var type in new[] { "ComboBox", "ListBox" }) WithList(type, (fixture,c,request) => {
+            foreach (var type in new[] { "ComboBox", "ListBox" }) WithList(type, (fixture, c, request) =>
+            {
                 c.ColumnCount = 2;
                 Assert.ThrowsException<InvalidOperationException>(() => fixture.Service.AddListItem(request));
                 c.ColumnCount = 1; c.ThrowOnCell = true;
@@ -108,7 +105,8 @@ namespace VBAi.Tests.Unit
                 Assert.ThrowsException<InvalidOperationException>(() => fixture.Service.AddListItem(request));
                 Assert.AreEqual(0, c.AddAttempts);
             });
-            WithList("ComboBox", (fixture,c,request) => {
+            WithList("ComboBox", (fixture, c, request) =>
+            {
                 request.ExpectedListVersion = "version";
                 Assert.ThrowsException<InvalidOperationException>(() => fixture.Service.AddListItem(request));
             }, 64);
@@ -117,14 +115,16 @@ namespace VBAi.Tests.Unit
         [TestMethod]
         public void ListAddReportsNativeAndReadbackOutcomesWithoutAssumingSuccess()
         {
-            foreach (var type in new[] { "ComboBox", "ListBox" }) {
-                for (int scenario=0; scenario<6; scenario++) WithList(type, (f,c,r) => {
+            foreach (var type in new[] { "ComboBox", "ListBox" })
+            {
+                for (int scenario = 0; scenario < 6; scenario++) WithList(type, (f, c, r) =>
+                {
                     if (scenario == 1) c.ThrowAdd = true;
                     if (scenario == 2) c.SkipAdd = true;
                     if (scenario == 3) c.AfterAdd = control => control.ThrowOnCell = true;
                     if (scenario == 4) c.AfterAdd = control => control.ListRows[0][0] = "changed";
                     if (scenario == 5) c.AfterAdd = control => control.ThrowListCount = true;
-                    r.ExpectedTreeVersion=((dynamic)f.Service.Tree(r.Project,r.Form)).TreeVersion; dynamic result = f.Service.AddListItem(r);
+                    r.ExpectedTreeVersion = ((dynamic)f.Service.Tree(r.Project, r.Form)).TreeVersion; dynamic result = f.Service.AddListItem(r);
                     Assert.AreEqual(scenario == 1 ? (bool?)null : true, (bool?)result.Applied);
                     Assert.AreEqual(scenario == 0, (bool)result.Verified);
                     Assert.AreEqual(scenario != 0, (bool)result.VerificationPending);
@@ -138,34 +138,37 @@ namespace VBAi.Tests.Unit
         [TestMethod]
         public void ListAppendRejectsNoncanonicalWrongTypeAndCountBounds()
         {
-            WithList("ComboBox", (fixture,c,request) => {
+            WithList("ComboBox", (fixture, c, request) =>
+            {
                 request.ControlPath = "Controls/missing";
                 Assert.ThrowsException<InvalidOperationException>(() => fixture.Service.AppendListItem(request));
             });
             var f = NewFixture(); f.Form.Designer.Controls.AddExisting("Choices");
-            var r = RequiredListRequest(); r.Project=f.Project.Name; r.Form=f.Form.Name; r.ControlPath="Controls/Choices";
-            r.ExpectedTreeVersion = ((dynamic)f.Service.Tree(r.Project,r.Form)).TreeVersion;
+            var r = RequiredListRequest(); r.Project = f.Project.Name; r.Form = f.Form.Name; r.ControlPath = "Controls/Choices";
+            r.ExpectedTreeVersion = ((dynamic)f.Service.Tree(r.Project, r.Form)).TreeVersion;
             Assert.ThrowsException<InvalidOperationException>(() => f.Service.AppendListItem(r));
-            foreach (int count in new[] { -1, 1024 }) WithList("ListBox", (fixture,c,request) => {
-                c.ListCountOverride=count;
-                request.ExpectedTreeVersion=((dynamic)fixture.Service.Tree(request.Project, request.Form)).TreeVersion;
+            foreach (int count in new[] { -1, 1024 }) WithList("ListBox", (fixture, c, request) =>
+            {
+                c.ListCountOverride = count;
+                request.ExpectedTreeVersion = ((dynamic)fixture.Service.Tree(request.Project, request.Form)).TreeVersion;
                 Assert.ThrowsException<InvalidOperationException>(() => fixture.Service.AppendListItem(request));
-                Assert.AreEqual(0,c.AddAttempts);
+                Assert.AreEqual(0, c.AddAttempts);
             });
         }
 
         [TestMethod]
         public void ListAppendReturnsVerifiedMismatchAndReadbackFailure()
         {
-            for (int scenario=0; scenario<3; scenario++) WithList("ListBox", (f,c,r) => {
-                if(scenario==1) c.SkipAdd=true;
-                if(scenario==2) c.AfterAdd=control=>control.ThrowListCount=true;
-                r.ExpectedTreeVersion=((dynamic)f.Service.Tree(r.Project,r.Form)).TreeVersion; dynamic result=f.Service.AppendListItem(r);
+            for (int scenario = 0; scenario < 3; scenario++) WithList("ListBox", (f, c, r) =>
+            {
+                if (scenario == 1) c.SkipAdd = true;
+                if (scenario == 2) c.AfterAdd = control => control.ThrowListCount = true;
+                r.ExpectedTreeVersion = ((dynamic)f.Service.Tree(r.Project, r.Form)).TreeVersion; dynamic result = f.Service.AppendListItem(r);
                 Assert.IsTrue((bool)result.Applied);
-                Assert.AreEqual(scenario==0,(bool)result.Verified);
-                Assert.AreEqual(scenario!=0,(bool)result.VerificationPending);
-                if(scenario==2) { Assert.IsNull((object)result.CountAfter); Assert.IsNotNull((string)result.ReadbackError); }
-                else Assert.AreEqual(scenario==0?3:2,(int)result.CountAfter);
+                Assert.AreEqual(scenario == 0, (bool)result.Verified);
+                Assert.AreEqual(scenario != 0, (bool)result.VerificationPending);
+                if (scenario == 2) { Assert.IsNull((object)result.CountAfter); Assert.IsNotNull((string)result.ReadbackError); }
+                else Assert.AreEqual(scenario == 0 ? 3 : 2, (int)result.CountAfter);
             });
         }
     }

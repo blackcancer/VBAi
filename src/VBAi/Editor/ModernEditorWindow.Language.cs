@@ -95,10 +95,19 @@ namespace VBAi
                 if (!documents.ContainsKey(id) || versions[id] != message.version || closing || IsDisposed) return;
                 string key = doc.Id + ":" + snapshot.Key + (message.includeSources ? ":sources" : "");
                 if (message.compact && message.knownLanguage == key) response = new { unchanged = true, key };
-                else if (message.compact) response = new { id = doc.Id, module = native?.ModuleName ?? doc.Module.Name, key,
-                    parts = snapshot.Parts.Select(part => new { name = part.Name, key = part.Key,
-                        symbols = message.knownParts != null && message.knownParts.TryGetValue(part.Name, out var known) && known == part.Key ? null : part.Symbols }).ToArray(),
-                    sources = message.includeSources ? sources : Array.Empty<EditorSource>() };
+                else if (message.compact) response = new
+                {
+                    id = doc.Id,
+                    module = native?.ModuleName ?? doc.Module.Name,
+                    key,
+                    parts = snapshot.Parts.Select(part => new
+                    {
+                        name = part.Name,
+                        key = part.Key,
+                        symbols = message.knownParts != null && message.knownParts.TryGetValue(part.Name, out var known) && known == part.Key ? null : part.Symbols
+                    }).ToArray(),
+                    sources = message.includeSources ? sources : Array.Empty<EditorSource>()
+                };
                 else response = new { id = doc.Id, module = native?.ModuleName ?? doc.Module.Name, key, symbols = snapshot.Symbols, sources };
             }
             catch (OperationCanceledException) { }

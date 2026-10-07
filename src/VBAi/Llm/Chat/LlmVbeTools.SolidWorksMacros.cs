@@ -26,7 +26,8 @@ namespace VBAi
             string binding = BoundProject;
             string[] grants = readProjectGrants.ToArray();
             bool shared = sharedContextReadAllowed;
-            request.RevalidateMacroAuthorization = live => {
+            request.RevalidateMacroAuthorization = live =>
+            {
                 if (live) ValidateScope?.Invoke(); else ValidateCachedScope?.Invoke();
                 GuardModeLocal(name);
                 if (!SameProject(binding, BoundProject) || !readProjectGrants.SetEquals(grants) || sharedContextReadAllowed != shared)
@@ -46,11 +47,17 @@ namespace VBAi
                 catch
                 {
                     var fields = Fields(result);
-                    bool invoked = fields != null && ((fields.TryGetValue("MutationInvoked", out object m) && m is bool && (bool)m) ||
-                        (fields.TryGetValue("CommandEntered", out object c) && c is bool && (bool)c));
-                    return Response.Success(new { Available = false, Verified = false, MutationInvoked = invoked,
-                        Uncertain = invoked, RetryAllowed = false,
-                        Reason = "Project access changed during native macro creation/publication. Inspect locally; do not retry." });
+                    bool invoked = fields != null && ((fields.TryGetValue("MutationInvoked", out object m) && m is bool v && v) ||
+                        (fields.TryGetValue("CommandEntered", out object c) && c is bool v1 && v1));
+                    return Response.Success(new
+                    {
+                        Available = false,
+                        Verified = false,
+                        MutationInvoked = invoked,
+                        Uncertain = invoked,
+                        RetryAllowed = false,
+                        Reason = "Project access changed during native macro creation/publication. Inspect locally; do not retry."
+                    });
                 }
                 return Response.Success(result);
             }

@@ -31,10 +31,19 @@ namespace VBAi
         {
             var snapshot = CaptureProcedureProject(request);
             var plan = VbaProcedureRename.Prepare(snapshot.CanonicalProjectName, snapshot.Modules, request);
-            return new { snapshot.Project, snapshot.CanonicalProjectName, request.Module, request.Query, request.NewName,
-                ExpectedProjectVersion = snapshot.Version, Edits = plan.Edits, Changed = plan.Edits.Count > 0,
+            return new
+            {
+                snapshot.Project,
+                snapshot.CanonicalProjectName,
+                request.Module,
+                request.Query,
+                request.NewName,
+                ExpectedProjectVersion = snapshot.Version,
+                plan.Edits,
+                Changed = plan.Edits.Count > 0,
                 Modules = snapshot.Modules.Select(x => new { x.Name, x.Type, Sha256 = VbaProcedureRename.Digest(x.Source) }).ToArray(),
-                Scope = "One standard-module Sub/Function and resolved direct or project/module-qualified calls in this complete project. Other projects, external consumers and strings are not rewritten. Conditional, callback, dynamic and shadowed binding is refused." };
+                Scope = "One standard-module Sub/Function and resolved direct or project/module-qualified calls in this complete project. Other projects, external consumers and strings are not rewritten. Conditional, callback, dynamic and shadowed binding is refused."
+            };
         }
 
         /// <summary>Vérifie tout le projet, puis écrit et relit chaque module; les éditions validées restent dans l'historique par module.</summary>
@@ -60,8 +69,14 @@ namespace VBAi
                     currentModule = edit.Module;
                     // replace_lines guards this module's SHA again and records its existing session history.
                     Write(snapshot.Project, edit.Module, edit.Before, edit.After);
-                    completed.Add(new { edit.Module, BeforeSha256 = edit.ExpectedSha256,
-                        AfterSha256 = VbaProcedureRename.Digest(edit.After), edit.Replacements, ReadbackVerified = true });
+                    completed.Add(new
+                    {
+                        edit.Module,
+                        BeforeSha256 = edit.ExpectedSha256,
+                        AfterSha256 = VbaProcedureRename.Digest(edit.After),
+                        edit.Replacements,
+                        ReadbackVerified = true
+                    });
                 }
             }
             catch (Exception ex)
@@ -71,10 +86,18 @@ namespace VBAi
                     "Read every module before continuing; completed edits use the existing per-module history. " +
                     "No automatic rollback or retry was attempted. " + ex.Message, ex);
             }
-            return new { snapshot.Project, request.Query, request.NewName, Modules = completed,
-                ReadbackVerified = true, Atomic = false, MultiModuleUndoAvailable = false,
+            return new
+            {
+                snapshot.Project,
+                request.Query,
+                request.NewName,
+                Modules = completed,
+                ReadbackVerified = true,
+                Atomic = false,
+                MultiModuleUndoAvailable = false,
                 History = "Existing session history per module; undo each module after inspecting its current SHA.",
-                Limit = "Other projects and external/string consumers are outside this plan. No compile or host runtime acceptance is implied." };
+                Limit = "Other projects and external/string consumers are outside this plan. No compile or host runtime acceptance is implied."
+            };
         }
 
         /// <summary>Collecte toutes les sources et vérifie la stabilité du catalogue et des références pendant cette lecture.</summary>
@@ -88,13 +111,11 @@ namespace VBAi
             var metadata = ProcedureMetadata(request.Project, serializer);
             var response = execute(new Request { Command = "list_modules", Project = request.Project });
             if (!response.Ok) throw new InvalidOperationException(response.Error);
-            var rows = serializer.DeserializeObject(serializer.Serialize(response.Data)) as object[];
-            if (rows == null || rows.Length < 1 || rows.Length > 1000) throw new InvalidOperationException("The complete component catalogue is unavailable.");
+            if (!(serializer.DeserializeObject(serializer.Serialize(response.Data)) is object[] rows) || rows.Length < 1 || rows.Length > 1000) throw new InvalidOperationException("The complete component catalogue is unavailable.");
             var modules = new List<VbaProcedureRename.ModuleSnapshot>();
             foreach (object item in rows)
             {
-                var row = item as IDictionary<string, object>;
-                if (row == null || !row.ContainsKey("Name") || !row.ContainsKey("Type"))
+                if (!(item is IDictionary<string, object> row) || !row.ContainsKey("Name") || !row.ContainsKey("Type"))
                     throw new InvalidOperationException("A component identity or type is unreadable.");
                 string name = Convert.ToString(row["Name"]);
                 if (string.IsNullOrWhiteSpace(name) || modules.Any(x => string.Equals(x.Name, name, StringComparison.OrdinalIgnoreCase)))
@@ -107,8 +128,14 @@ namespace VBAi
                 throw new InvalidOperationException("Project metadata or component catalogue changed during inspection.");
             string project = Convert.ToString(metadata["Project"]);
             if (string.IsNullOrWhiteSpace(project)) throw new InvalidOperationException("The native project name is unreadable.");
-            return new ProcedureProjectSnapshot { Project = request.Project, CanonicalProjectName = project, Mode = Convert.ToInt32(metadata["Mode"]), Modules = modules.ToArray(),
-                Version = VbaProcedureRename.Digest((string)metadata["Version"] + ":" + VbaProcedureRename.Version(project, modules)) };
+            return new ProcedureProjectSnapshot
+            {
+                Project = request.Project,
+                CanonicalProjectName = project,
+                Mode = Convert.ToInt32(metadata["Mode"]),
+                Modules = modules.ToArray(),
+                Version = VbaProcedureRename.Digest((string)metadata["Version"] + ":" + VbaProcedureRename.Version(project, modules))
+            };
         }
 
         /// <summary>Lit la version VBIDE des propriétés, références, types et identités de composants.</summary>
@@ -119,8 +146,7 @@ namespace VBAi
         {
             var response = execute(new Request { Command = "project_properties", Project = project });
             if (!response.Ok) throw new InvalidOperationException(response.Error);
-            var fields = serializer.DeserializeObject(serializer.Serialize(response.Data)) as IDictionary<string, object>;
-            if (fields == null || !fields.ContainsKey("Project") || !fields.ContainsKey("Mode") || !fields.ContainsKey("Version") ||
+            if (!(serializer.DeserializeObject(serializer.Serialize(response.Data)) is IDictionary<string, object> fields) || !fields.ContainsKey("Project") || !fields.ContainsKey("Mode") || !fields.ContainsKey("Version") ||
                 string.IsNullOrWhiteSpace(Convert.ToString(fields["Version"])))
                 throw new InvalidOperationException("The project metadata snapshot is incomplete.");
             return fields;

@@ -1,8 +1,8 @@
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.InteropServices;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 using VBAi.Tests.Integration;
 
 namespace VBAi.Tests.Unit
@@ -62,7 +62,8 @@ namespace VBAi.Tests.Unit
         {
             var receipts = new List<IDictionary<string, object>>();
             int calls = 0;
-            bool observed = OfficeVbeFixture.ObservePrivateAccessAutomationGetter(property, () => {
+            bool observed = OfficeVbeFixture.ObservePrivateAccessAutomationGetter(property, () =>
+            {
                 Assert.AreEqual(1, receipts.Count);
                 Assert.AreEqual("PENDING", receipts[0]["State"]);
                 calls++;
@@ -112,7 +113,8 @@ namespace VBAi.Tests.Unit
             Assert.AreEqual(0, calls);
             var original = new COMException("Synthetic getter failure", unchecked((int)0x800A0997));
             var aggregate = Assert.ThrowsException<AggregateException>(() => OfficeVbeFixture.ObservePrivateAccessAutomationGetter(
-                "Visible", () => { throw original; }, row => {
+                "Visible", () => { throw original; }, row =>
+                {
                     if (Equals(row["State"], "FAILED")) throw evidenceFailure;
                 }));
             Assert.AreSame(original, aggregate.InnerExceptions[0]);
@@ -148,7 +150,8 @@ namespace VBAi.Tests.Unit
             var decision = new OfficeVbeFixture.PrivateAccessVisibilityDecision(false, false);
             var receipts = new List<IDictionary<string, object>>();
             int guards = 0, setters = 0;
-            decision.Apply(() => guards++, () => {
+            decision.Apply(() => guards++, () =>
+            {
                 Assert.AreEqual(1, guards);
                 Assert.AreEqual(1, receipts.Count);
                 Assert.AreEqual("PENDING", receipts[0]["State"]);
@@ -217,7 +220,8 @@ namespace VBAi.Tests.Unit
             var evidence = new InvalidOperationException("Synthetic completion evidence refusal");
             int setters = 0;
             Action setter = () => { setters++; if (setterFails) throw original; };
-            Action<IDictionary<string, object>> record = row => {
+            Action<IDictionary<string, object>> record = row =>
+            {
                 if (!Equals(row["State"], "PENDING")) throw evidence;
             };
             if (setterFails)

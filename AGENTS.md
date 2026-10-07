@@ -12,8 +12,9 @@ before editing. Do not change repository visibility, release a package, push cod
 from a user's macro, choose a software license or configure a donation recipient
 without an explicit maintainer decision.
 
-The standalone installer is a later milestone. Do not add an installer or claim
-that a signed installer is available as part of unrelated documentation work.
+The maintainer authorized a public, unsigned 1.0.0 installer on 2026-10-07.
+Do not claim signed distribution or installer lifecycle qualification without
+current evidence. Keep the automatic updater's Authenticode trust checks intact.
 
 Do not rename COM GUIDs, ProgIDs, public protocol fields, environment variables or
 persisted formats without a migration plan. Use the current VBAi identity; legacy

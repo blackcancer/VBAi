@@ -1,9 +1,8 @@
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Drawing;
 using System.Windows.Forms;
-using VBAi;
 using VBAi.Tests.Infrastructure;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace VBAi.Tests.Unit
 {
@@ -24,21 +23,21 @@ namespace VBAi.Tests.Unit
             {
                 form.Controls.Add(button); form.Show(); button.Focus();
                 foreach (bool contrast in new[] { false, true })
-                foreach (bool primary in new[] { false, true })
-                foreach (bool enabled in new[] { false, true })
-                foreach (bool pressed in new[] { false, true })
-                {
-                    UiTheme.HighContrast = () => contrast;
-                    button.Primary = primary; button.Enabled = enabled;
-                    if (enabled) { button.Focus(); Assert.IsTrue(button.Focused); }
-                    NativeUiState.SendMessage(button.Handle, 0x128, new IntPtr(0x10002), IntPtr.Zero);
-                    UiInvoke.Call(typeof(UiActionButton), "OnMouseLeave", button, EventArgs.Empty);
-                    UiInvoke.Call(typeof(UiActionButton), "OnMouseEnter", button, EventArgs.Empty);
-                    if (pressed) UiInvoke.Call(typeof(UiActionButton), "OnMouseDown", button, new MouseEventArgs(MouseButtons.Left, 1, 0, 0, 0));
-                    UiInvoke.Call(typeof(UiActionButton), "OnPaint", button, new PaintEventArgs(graphics, button.ClientRectangle));
-                    if (contrast) Assert.AreEqual((enabled ? SystemColors.Highlight : form.BackColor).ToArgb(), image.GetPixel(15, 20).ToArgb());
-                    Assert.AreEqual("Save", button.AccessibilityObject.Name);
-                }
+                    foreach (bool primary in new[] { false, true })
+                        foreach (bool enabled in new[] { false, true })
+                            foreach (bool pressed in new[] { false, true })
+                            {
+                                UiTheme.HighContrast = () => contrast;
+                                button.Primary = primary; button.Enabled = enabled;
+                                if (enabled) { button.Focus(); Assert.IsTrue(button.Focused); }
+                                NativeUiState.SendMessage(button.Handle, 0x128, new IntPtr(0x10002), IntPtr.Zero);
+                                UiInvoke.Call(typeof(UiActionButton), "OnMouseLeave", button, EventArgs.Empty);
+                                UiInvoke.Call(typeof(UiActionButton), "OnMouseEnter", button, EventArgs.Empty);
+                                if (pressed) UiInvoke.Call(typeof(UiActionButton), "OnMouseDown", button, new MouseEventArgs(MouseButtons.Left, 1, 0, 0, 0));
+                                UiInvoke.Call(typeof(UiActionButton), "OnPaint", button, new PaintEventArgs(graphics, button.ClientRectangle));
+                                if (contrast) Assert.AreEqual((enabled ? SystemColors.Highlight : form.BackColor).ToArgb(), image.GetPixel(15, 20).ToArgb());
+                                Assert.AreEqual("Save", button.AccessibilityObject.Name);
+                            }
                 button.IconOnly = true; button.Symbol = UiSymbol.None;
                 button.Text = null; Assert.AreEqual(string.Empty, button.Text);
                 button.Text = "Save";
@@ -58,28 +57,28 @@ namespace VBAi.Tests.Unit
             {
                 form.Controls.Add(button); form.Show(); button.Focus();
                 foreach (var background in new[] { Color.White, Color.FromArgb(22, 26, 33) })
-                foreach (bool primary in new[] { false, true })
-                foreach (bool enabled in new[] { false, true })
-                foreach (var symbol in new[] { UiSymbol.None, UiSymbol.Copy, (UiSymbol)'!' })
-                foreach (bool iconOnly in new[] { false, true })
-                foreach (var direction in new[] { RightToLeft.No, RightToLeft.Yes })
-                {
-                    form.BackColor = background; button.ForeColor = background == Color.White ? Color.Black : Color.White;
-                    button.Primary = primary; button.Enabled = enabled; button.Symbol = symbol; button.IconOnly = iconOnly; button.RightToLeft = direction;
-                    var expected = button.GetPreferredSize(Size.Empty);
-                    foreach (int state in new[] { 0, 1, 2, 3 })
-                    {
-                        UiInvoke.Call(typeof(UiActionButton), "OnMouseLeave", button, EventArgs.Empty);
-                        if (state == 1) UiInvoke.Call(typeof(UiActionButton), "OnMouseEnter", button, EventArgs.Empty);
-                        if (state == 2 || state == 3) UiInvoke.Call(typeof(UiActionButton), "OnMouseDown", button, new MouseEventArgs(state == 2 ? MouseButtons.Left : MouseButtons.Right, 1, 0, 0, 0));
-                        Assert.AreEqual(state == 2, UiInvoke.Field<bool>(button, "pressed"));
-                        UiInvoke.Call(typeof(UiActionButton), "OnPaint", button, new PaintEventArgs(graphics, button.ClientRectangle));
-                        Assert.AreEqual("Save document", button.AccessibilityObject.Name);
-                        Assert.AreEqual(expected, button.GetPreferredSize(Size.Empty));
-                        UiInvoke.Call(typeof(UiActionButton), "OnMouseUp", button, new MouseEventArgs(MouseButtons.Left, 1, 0, 0, 0));
-                        Assert.IsFalse(UiInvoke.Field<bool>(button, "pressed"));
-                    }
-                }
+                    foreach (bool primary in new[] { false, true })
+                        foreach (bool enabled in new[] { false, true })
+                            foreach (var symbol in new[] { UiSymbol.None, UiSymbol.Copy, (UiSymbol)'!' })
+                                foreach (bool iconOnly in new[] { false, true })
+                                    foreach (var direction in new[] { RightToLeft.No, RightToLeft.Yes })
+                                    {
+                                        form.BackColor = background; button.ForeColor = background == Color.White ? Color.Black : Color.White;
+                                        button.Primary = primary; button.Enabled = enabled; button.Symbol = symbol; button.IconOnly = iconOnly; button.RightToLeft = direction;
+                                        var expected = button.GetPreferredSize(Size.Empty);
+                                        foreach (int state in new[] { 0, 1, 2, 3 })
+                                        {
+                                            UiInvoke.Call(typeof(UiActionButton), "OnMouseLeave", button, EventArgs.Empty);
+                                            if (state == 1) UiInvoke.Call(typeof(UiActionButton), "OnMouseEnter", button, EventArgs.Empty);
+                                            if (state == 2 || state == 3) UiInvoke.Call(typeof(UiActionButton), "OnMouseDown", button, new MouseEventArgs(state == 2 ? MouseButtons.Left : MouseButtons.Right, 1, 0, 0, 0));
+                                            Assert.AreEqual(state == 2, UiInvoke.Field<bool>(button, "pressed"));
+                                            UiInvoke.Call(typeof(UiActionButton), "OnPaint", button, new PaintEventArgs(graphics, button.ClientRectangle));
+                                            Assert.AreEqual("Save document", button.AccessibilityObject.Name);
+                                            Assert.AreEqual(expected, button.GetPreferredSize(Size.Empty));
+                                            UiInvoke.Call(typeof(UiActionButton), "OnMouseUp", button, new MouseEventArgs(MouseButtons.Left, 1, 0, 0, 0));
+                                            Assert.IsFalse(UiInvoke.Field<bool>(button, "pressed"));
+                                        }
+                                    }
                 button.Size = new Size(1, 1);
                 UiInvoke.Call(typeof(UiActionButton), "OnPaint", button, new PaintEventArgs(graphics, button.ClientRectangle));
                 button.Size = new Size(160, 1);
@@ -94,15 +93,15 @@ namespace VBAi.Tests.Unit
             {
                 if (symbol == UiSymbol.None) continue;
                 foreach (int dpi in new[] { 96, 192 })
-                using (var image = new Bitmap(64,64))
-                using (var graphics = Graphics.FromImage(image))
-                {
-                    graphics.Clear(Color.Black);
-                    Assert.IsTrue(UiCommandIcons.Draw(graphics,symbol,new Rectangle(0,0,64,64),Color.White,dpi),symbol.ToString());
-                    int pixels = 0;
-                    for (int y=0;y<64;y++) for (int x=0;x<64;x++) if (image.GetPixel(x,y).R>0) pixels++;
-                    Assert.IsTrue(pixels>0,symbol.ToString());
-                }
+                    using (var image = new Bitmap(64, 64))
+                    using (var graphics = Graphics.FromImage(image))
+                    {
+                        graphics.Clear(Color.Black);
+                        Assert.IsTrue(UiCommandIcons.Draw(graphics, symbol, new Rectangle(0, 0, 64, 64), Color.White, dpi), symbol.ToString());
+                        int pixels = 0;
+                        for (int y = 0; y < 64; y++) for (int x = 0; x < 64; x++) if (image.GetPixel(x, y).R > 0) pixels++;
+                        Assert.IsTrue(pixels > 0, symbol.ToString());
+                    }
             }
         }
 
@@ -129,8 +128,8 @@ namespace VBAi.Tests.Unit
                 button.Text = "Arrêter"; button.Symbol = UiSymbol.Stop;
                 Assert.AreEqual("Arrêter", button.AccessibilityObject.Name);
                 Assert.IsTrue(button.GetPreferredSize(Size.Empty).Width >= 30);
-                button.Enabled=false;
-                using(var image = new Bitmap(32,30)) button.DrawToBitmap(image,new Rectangle(0,0,32,30));
+                button.Enabled = false;
+                using (var image = new Bitmap(32, 30)) button.DrawToBitmap(image, new Rectangle(0, 0, 32, 30));
             }
         }
     }

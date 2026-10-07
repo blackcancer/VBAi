@@ -380,8 +380,14 @@ namespace VBAi
             var test = node.Tag as VbaTestDescriptor;
             var module = node.Tag as VbaTestModule;
             var group = node.Tag as TestGroup ?? node.Parent?.Tag as TestGroup;
-            return new TreeSelection { ProjectId = project.Project.Id, Module = module?.Name,
-                TestId = test?.Id, Grouping = group?.Grouping ?? 0, GroupKey = group?.Key };
+            return new TreeSelection
+            {
+                ProjectId = project.Project.Id,
+                Module = module?.Name,
+                TestId = test?.Id,
+                Grouping = group?.Grouping ?? 0,
+                GroupKey = group?.Key
+            };
         }
 
         /// <summary>Finds the closest rebuilt node matching a saved test, module, or group identity.</summary>

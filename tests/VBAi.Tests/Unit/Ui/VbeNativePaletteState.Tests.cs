@@ -1,8 +1,7 @@
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.IO;
 using System.Linq;
-using VBAi;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Row = VBAi.VbeNativePaletteState.ColorRow;
 
 namespace VBAi.Tests.Unit
@@ -14,27 +13,27 @@ namespace VBAi.Tests.Unit
         public void RebasePreservesEveryManualFieldAndRestoresOnlyOwnedAppliedValues()
         {
             foreach (bool startApplied in new[] { false, true })
-            foreach (string field in new[] { "Foreground", "Background", "Indicator" })
-            for (int index = 0; index < 10; index++)
-            {
-                var state = NativePaletteFixture.State();
-                var current = (startApplied ? state.Applied : state.Original).Select(r => new Row { Name=r.Name, Foreground=r.Foreground, Background=r.Background, Indicator=r.Indicator }).ToArray();
-                var property = typeof(Row).GetProperty(field);
-                int original = (int)property.GetValue(state.Original[index]);
-                int applied = (int)property.GetValue(state.Applied[index]);
-                int manual = Enumerable.Range(0, 17).First(value => value != original && value != applied);
-                property.SetValue(current[index], manual);
-                var rebased = state.Rebase(current);
-                Assert.AreEqual(manual, property.GetValue(rebased.Original[index]));
-                for (int row = 0; row < 10; row++)
-                foreach (string component in new[] { "Foreground", "Background", "Indicator" })
-                {
-                    var value = typeof(Row).GetProperty(component);
-                    Assert.AreEqual(row == index && component == field ? manual : (int)value.GetValue(state.Original[row]), value.GetValue(rebased.Original[row]));
-                }
-                rebased.Validate("7.1");
-                Assert.IsTrue(VbeNativePaletteState.Equal(NativePaletteFixture.Rows(), state.Original));
-            }
+                foreach (string field in new[] { "Foreground", "Background", "Indicator" })
+                    for (int index = 0; index < 10; index++)
+                    {
+                        var state = NativePaletteFixture.State();
+                        var current = (startApplied ? state.Applied : state.Original).Select(r => new Row { Name = r.Name, Foreground = r.Foreground, Background = r.Background, Indicator = r.Indicator }).ToArray();
+                        var property = typeof(Row).GetProperty(field);
+                        int original = (int)property.GetValue(state.Original[index]);
+                        int applied = (int)property.GetValue(state.Applied[index]);
+                        int manual = Enumerable.Range(0, 17).First(value => value != original && value != applied);
+                        property.SetValue(current[index], manual);
+                        var rebased = state.Rebase(current);
+                        Assert.AreEqual(manual, property.GetValue(rebased.Original[index]));
+                        for (int row = 0; row < 10; row++)
+                            foreach (string component in new[] { "Foreground", "Background", "Indicator" })
+                            {
+                                var value = typeof(Row).GetProperty(component);
+                                Assert.AreEqual(row == index && component == field ? manual : (int)value.GetValue(state.Original[row]), value.GetValue(rebased.Original[row]));
+                            }
+                        rebased.Validate("7.1");
+                        Assert.IsTrue(VbeNativePaletteState.Equal(NativePaletteFixture.Rows(), state.Original));
+                    }
             var invalid = NativePaletteFixture.State();
             Assert.ThrowsException<InvalidDataException>(() => invalid.Rebase(null));
             var renamed = NativePaletteFixture.Rows(); renamed[0].Name = "Different category";

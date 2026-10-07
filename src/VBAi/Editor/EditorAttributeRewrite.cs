@@ -43,8 +43,13 @@ namespace VBAi
                 int name = p + (kind == "property" ? 2 : 1);
                 if (name >= tokens.Count || !Regex.IsMatch(tokens[name].Text, @"^[A-Za-z_][A-Za-z0-9_]*$")) continue;
                 if (!tokens.Any(t => t.Text == "(") || !tokens.Any(t => t.Text == ")")) return null;
-                result.Add(new Procedure { Name = tokens[name].Text, Kind = kind == "property" ? kind + ":" + tokens[p + 1].Text.ToLowerInvariant() : kind,
-                    First = tokens[0].Line, Last = tokens[tokens.Count - 1].Line });
+                result.Add(new Procedure
+                {
+                    Name = tokens[name].Text,
+                    Kind = kind == "property" ? kind + ":" + tokens[p + 1].Text.ToLowerInvariant() : kind,
+                    First = tokens[0].Line,
+                    Last = tokens[tokens.Count - 1].Line
+                });
             }
             return result;
         }

@@ -1,10 +1,10 @@
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Diagnostics;
 using System.IO;
 using System.IO.Packaging;
 using System.Linq;
 using System.Xml;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 using VBAi.Tests.Integration;
 
 namespace VBAi.Tests.Unit
@@ -16,7 +16,8 @@ namespace VBAi.Tests.Unit
         [TestMethod]
         public void SeedContainsOnlyEmptyWorkbookAndWorksheetWithInternalRelationships()
         {
-            InScratch(root => {
+            InScratch(root =>
+            {
                 string seed = Path.Combine(root, "Seed.xlsx");
                 ExcelOwnedBootstrapPlan.WriteSeed(seed);
                 using (var package = Package.Open(seed, FileMode.Open, FileAccess.Read))
@@ -50,7 +51,8 @@ namespace VBAi.Tests.Unit
         [TestMethod]
         public void LaunchUsesSeparateProcessAutomationOwnedSeedAndExplicitTraceWithoutChangingParentEnvironment()
         {
-            InScratch(root => {
+            InScratch(root =>
+            {
                 string seed = Path.Combine(root, "Owned seed.xlsx"), trace = Path.Combine(root, "phases.jsonl");
                 ExcelOwnedBootstrapPlan.WriteSeed(seed);
                 string inherited = Environment.GetEnvironmentVariable(VbeInspectionTrace.EnvironmentName);
@@ -78,7 +80,8 @@ namespace VBAi.Tests.Unit
         [TestMethod]
         public void MissingSeedWrongFormatAndMissingTraceParentRefuseLaunchPlan()
         {
-            InScratch(root => {
+            InScratch(root =>
+            {
                 string exe = Path.Combine(root, "EXCEL.EXE"), trace = Path.Combine(root, "phases.jsonl");
                 Assert.ThrowsException<ArgumentException>(() => ExcelOwnedBootstrapPlan.CreateStartInfo(exe, Path.Combine(root, "missing.xlsx"), trace));
                 string seed = Path.Combine(root, "seed.xlsm");
@@ -108,7 +111,8 @@ namespace VBAi.Tests.Unit
         [TestMethod]
         public void WrongNameMissingImageInvalidPeAndNonX64ExecutablesAreRejectedWithoutExecution()
         {
-            InScratch(root => {
+            InScratch(root =>
+            {
                 string exe = Path.Combine(root, "EXCEL.EXE");
                 Assert.ThrowsException<InvalidOperationException>(() => ExcelOwnedBootstrapPlan.ValidateExecutable(exe));
                 File.WriteAllText(Path.Combine(root, "other.exe"), "Synthetic");

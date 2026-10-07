@@ -14,8 +14,8 @@ namespace VBAi.Tests.Unit
             internal readonly NativeDebugScene Native = new NativeDebugScene();
             internal readonly NativeDebugScene.Window Root, Pane;
             private readonly List<AutomationHost> hosts = new List<AutomationHost>();
-            private readonly Dictionary<System.Reflection.FieldInfo,object> saved = new Dictionary<System.Reflection.FieldInfo,object>();
-            internal readonly List<Tuple<IntPtr,int,IntPtr,IntPtr>> Notifications = new List<Tuple<IntPtr,int,IntPtr,IntPtr>>();
+            private readonly Dictionary<System.Reflection.FieldInfo, object> saved = new Dictionary<System.Reflection.FieldInfo, object>();
+            internal readonly List<Tuple<IntPtr, int, IntPtr, IntPtr>> Notifications = new List<Tuple<IntPtr, int, IntPtr, IntPtr>>();
             internal bool PostSucceeded = true;
             internal Action<int> OnPause;
             internal int Pauses;
@@ -24,14 +24,15 @@ namespace VBAi.Tests.Unit
             {
                 foreach (string name in new[] { "ObjectBrowserElement", "PostMessage", "PauseNative", "GetDlgCtrlID" })
                 {
-                    var field = typeof(VbeDebugWindows).GetField(name, BindingFlags.NonPublic|BindingFlags.Static); saved.Add(field,field.GetValue(null));
+                    var field = typeof(VbeDebugWindows).GetField(name, BindingFlags.NonPublic | BindingFlags.Static); saved.Add(field, field.GetValue(null));
                 }
                 var acquire = VbeDebugWindows.ObjectBrowserElement;
-                VbeDebugWindows.ObjectBrowserElement = handle => {
+                VbeDebugWindows.ObjectBrowserElement = handle =>
+                {
                     if (Unreadable.Contains(handle)) throw new ElementNotAvailableException();
                     return acquire(handle);
                 };
-                VbeDebugWindows.PostMessage = (handle,message,w,l) => { Notifications.Add(Tuple.Create(handle,message,w,l)); return PostSucceeded; };
+                VbeDebugWindows.PostMessage = (handle, message, w, l) => { Notifications.Add(Tuple.Create(handle, message, w, l)); return PostSucceeded; };
                 VbeDebugWindows.GetDlgCtrlID = handle => 42;
                 VbeDebugWindows.PauseNative = milliseconds => { Pauses++; OnPause?.Invoke(Pauses); };
                 Root = Native.Add("wndclass_desked_gsk", "VBE");
@@ -44,7 +45,7 @@ namespace VBAi.Tests.Unit
             }
             public void Dispose()
             {
-                try { foreach (var pair in saved) pair.Key.SetValue(null,pair.Value); }
+                try { foreach (var pair in saved) pair.Key.SetValue(null, pair.Value); }
                 finally { try { foreach (var host in hosts) host.Dispose(); } finally { Native.Dispose(); } }
             }
         }
@@ -56,7 +57,7 @@ namespace VBAi.Tests.Unit
         }
         private static AutomationNode BrowserLibraries(string name = "Libraries", params string[] labels)
         {
-            var combo = new AutomationNode { Name = name, Kind = ControlType.ComboBox }.With(SelectionPattern.Pattern,ValuePattern.Pattern);
+            var combo = new AutomationNode { Name = name, Kind = ControlType.ComboBox }.With(SelectionPattern.Pattern, ValuePattern.Pattern);
             foreach (string label in labels) combo.Add(new AutomationNode { Name = label }.With(SelectionItemPattern.Pattern));
             return combo;
         }

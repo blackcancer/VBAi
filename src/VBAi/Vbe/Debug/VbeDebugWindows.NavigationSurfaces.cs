@@ -86,13 +86,24 @@ namespace VBAi
             var all = state.Nodes;
             var filtered = all.Where(n => string.IsNullOrEmpty(request.Query) || (n.Name ?? "").IndexOf(request.Query, StringComparison.OrdinalIgnoreCase) >= 0).ToArray();
             int limit = request.Limit == 0 ? 100 : request.Limit;
-            return new { request.Pane, state.Available, state.Caption, state.Error,
+            return new
+            {
+                request.Pane,
+                state.Available,
+                state.Caption,
+                state.Error,
                 WindowVersion = state.Available ? NavigationRevision(state) : null,
-                Nodes = filtered.Skip(request.Offset).Take(limit).ToArray(), Total = filtered.Length,
-                request.Offset, Limit = limit, HasMore = request.Offset + limit < filtered.Length,
+                Nodes = filtered.Skip(request.Offset).Take(limit).ToArray(),
+                Total = filtered.Length,
+                request.Offset,
+                Limit = limit,
+                HasMore = request.Offset + limit < filtered.Length,
                 Coverage = state.Coverage ?? "Native exposed nodes only; collapsed or inaccessible descendants are not assumed absent.",
-                state.Provider, state.ButtonsExposed, state.MSAAContainerState,
-                ProjectBindingVerified = false };
+                state.Provider,
+                state.ButtonsExposed,
+                state.MSAAContainerState,
+                ProjectBindingVerified = false
+            };
         }
 
         /// <summary>Sélectionne, développe ou replie un nœud exact après contrôle de l'ensemble de la surface.</summary>
@@ -132,11 +143,22 @@ namespace VBAi
             var observed = after == null ? new NavigationNode[0] : after.Nodes.Where(n => n.Token == request.Control).ToArray();
             bool verified = deliveryError == null && readError == null && after.Available && after.Identity == beforeIdentity &&
                 observed.Length == 1 && string.IsNullOrEmpty(observed[0].Error) && NavigationDesired(observed[0], request.Action);
-            return new { request.Pane, request.Control, request.Action, Applied = already ? (bool?)false : deliveryError == null ? (bool?)true : null,
-                Verified = verified, VerificationPending = !verified, DeliveryError = deliveryError, ReadbackError = readError,
+            return new
+            {
+                request.Pane,
+                request.Control,
+                request.Action,
+                Applied = already ? (bool?)false : deliveryError == null ? (bool?)true : null,
+                Verified = verified,
+                VerificationPending = !verified,
+                DeliveryError = deliveryError,
+                ReadbackError = readError,
                 Node = observed.Length == 1 ? observed[0] : null,
                 WindowVersion = after != null && after.Available ? NavigationRevision(after) : null,
-                NextRead = "read_navigation_surface", SourceEdited = false, PersistenceVerified = false };
+                NextRead = "read_navigation_surface",
+                SourceEdited = false,
+                PersistenceVerified = false
+            };
         }
 
         /// <summary>Valide les actions de navigation et les limites de pagination.</summary>
@@ -202,7 +224,8 @@ namespace VBAi
                     if (root == IntPtr.Zero) { result.Error = "The VBE window is unavailable."; return result; }
                     GetWindowThreadProcessId(root, out uint rootOwner);
                     var windows = new List<IntPtr>();
-                    EnumChildWindows(root, (h, p) => {
+                    EnumChildWindows(root, (h, p) =>
+                    {
                         if (!IsWindowVisible(h)) return true;
                         string caption = WindowText(h), kind = ClassName(h);
                         if (pane == "project" && kind == "SysTreeView32") windows.Add(h);
@@ -217,7 +240,8 @@ namespace VBAi
                     }
                     if (pane == "toolbox")
                     {
-                        EnumWindows((h, p) => {
+                        EnumWindows((h, p) =>
+                        {
                             GetWindowThreadProcessId(h, out uint pid);
                             if (pid == rootOwner && rootOwner != 0 && IsWindowVisible(h) && ClassName(h).StartsWith("F3 MinFrame ", StringComparison.Ordinal) &&
                                 (WindowText(h) == "Toolbox" || WindowText(h) == "Boîte à outils") && !windows.Contains(h)) windows.Add(h);
@@ -247,8 +271,13 @@ namespace VBAi
                         foreach (AutomationElement element in nodes)
                         {
                             string token = Token(element);
-                            var node = new NavigationNode { Token = token, Name = element.Current.Name,
-                                Kind = element.Current.ControlType.ProgrammaticName, Enabled = element.Current.IsEnabled };
+                            var node = new NavigationNode
+                            {
+                                Token = token,
+                                Name = element.Current.Name,
+                                Kind = element.Current.ControlType.ProgrammaticName,
+                                Enabled = element.Current.IsEnabled
+                            };
                             if (elements.ContainsKey(token)) throw new InvalidOperationException("Duplicate native node identity.");
                             elements.Add(token, element);
                             try
@@ -269,7 +298,7 @@ namespace VBAi
                         result.Available = list.Count > 0;
                         if (!result.Available && pane == "toolbox") return ReadNativeToolboxPages(handle, rootOwner);
                         if (!result.Available) result.Error = "No native nodes are exposed; the surface is not certified empty.";
-                        }
+                    }
                     catch (Exception) when (pane == "toolbox") { return ReadNativeToolboxPages(handle, rootOwner); }
                 }
                 catch (Exception) { result.Available = false; result.Error = "The native navigation surface is inaccessible."; }

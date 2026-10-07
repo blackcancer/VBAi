@@ -1,11 +1,11 @@
 namespace VBAi.Tests.Unit
 {
+    using Microsoft.VisualStudio.TestTools.UnitTesting;
     using System;
     using System.Collections;
     using System.Collections.Generic;
     using System.IO;
     using System.Linq;
-    using Microsoft.VisualStudio.TestTools.UnitTesting;
     using VBAi;
 
     public sealed partial class VbeProjectExcelHostTests
@@ -14,24 +14,26 @@ namespace VBAi.Tests.Unit
         public void ExcelSaveReadbackRejectsChangedPathsFormatsAndUnsavedStateWithoutReplay()
         {
             foreach (bool signature in new[] { false, true })
-            foreach (int fault in new[] { 0, 1, 2, 3, 4 })
-            {
-                var fixture = Create(); fixture.Workbook.VBASigned = true;
-                dynamic before = fixture.Service.ProjectProperties(fixture.Project.Name);
-                var request = new Request { Project = fixture.Project.Name, ExpectedHostPath = fixture.Project.FileName, ExpectedProjectVersion = before.Version };
-                fixture.Workbook.AfterSave = () => {
-                    if (fault == 0) fixture.Workbook.FullName = Path.Combine(Path.GetTempPath(), "redirected.xlsm");
-                    if (fault == 1) fixture.Project.FileName = Path.Combine(Path.GetTempPath(), "redirected.xlsm");
-                    if (fault == 2) fixture.Workbook.FileFormat = 51;
-                    if (fault == 3) fixture.Workbook.Saved = false;
-                    if (fault == 4) fixture.Project.Saved = false;
-                };
-                Assert.ThrowsException<InvalidOperationException>(() => {
-                    if (signature) fixture.Service.PersistExcelSignature(fixture.Project.Name);
-                    else fixture.Service.SaveHostDocument(request);
-                });
-                Assert.AreEqual(1, fixture.Workbook.SaveAttempts, "A failed readback must not replay Save.");
-            }
+                foreach (int fault in new[] { 0, 1, 2, 3, 4 })
+                {
+                    var fixture = Create(); fixture.Workbook.VBASigned = true;
+                    dynamic before = fixture.Service.ProjectProperties(fixture.Project.Name);
+                    var request = new Request { Project = fixture.Project.Name, ExpectedHostPath = fixture.Project.FileName, ExpectedProjectVersion = before.Version };
+                    fixture.Workbook.AfterSave = () =>
+                    {
+                        if (fault == 0) fixture.Workbook.FullName = Path.Combine(Path.GetTempPath(), "redirected.xlsm");
+                        if (fault == 1) fixture.Project.FileName = Path.Combine(Path.GetTempPath(), "redirected.xlsm");
+                        if (fault == 2) fixture.Workbook.FileFormat = 51;
+                        if (fault == 3) fixture.Workbook.Saved = false;
+                        if (fault == 4) fixture.Project.Saved = false;
+                    };
+                    Assert.ThrowsException<InvalidOperationException>(() =>
+                    {
+                        if (signature) fixture.Service.PersistExcelSignature(fixture.Project.Name);
+                        else fixture.Service.SaveHostDocument(request);
+                    });
+                    Assert.AreEqual(1, fixture.Workbook.SaveAttempts, "A failed readback must not replay Save.");
+                }
             var unsupported = Create(); unsupported.Workbook.VBASigned = true; unsupported.Workbook.FileFormat = 51;
             Assert.ThrowsException<InvalidOperationException>(() => unsupported.Service.PersistExcelSignature(unsupported.Project.Name));
             Assert.AreEqual(0, unsupported.Workbook.SaveAttempts);
@@ -745,11 +747,9 @@ namespace VBAi.Tests.Unit
 
 namespace VBAi.Tests.Unit
 {
-    using System;
-    using System.Collections;
-    using System.Collections.Generic;
-    using System.IO;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
+    using System;
+    using System.IO;
     using VBAi;
 
     [TestClass]
@@ -765,11 +765,11 @@ namespace VBAi.Tests.Unit
             fixture.Workbook.Saved = false;
             dynamic signature = fixture.Service.SignatureStatus(fixture.Project.Name);
             Assert.IsTrue((bool)signature.Available);
-            Assert.AreEqual(true, (bool? )signature.Signed);
+            Assert.AreEqual(true, (bool?)signature.Signed);
             dynamic persistence = fixture.Service.PersistenceStatus(fixture.Project.Name);
             Assert.IsTrue((bool)persistence.HostAvailable);
             Assert.IsFalse((bool)persistence.ProjectSaved);
-            Assert.AreEqual(false, (bool? )persistence.HostSaved);
+            Assert.AreEqual(false, (bool?)persistence.HostSaved);
             Assert.AreEqual(fixture.Project.FileName, (string)persistence.HostPath);
             fixture.Workbook.FullName = Path.Combine(Path.GetTempPath(), "different.xlsm");
             signature = fixture.Service.SignatureStatus(fixture.Project.Name);
@@ -805,7 +805,7 @@ namespace VBAi.Tests.Unit
             fixture.Workbook.Path = "";
             dynamic status = fixture.Service.PersistenceStatus(fixture.Project.Name);
             Assert.IsTrue((bool)status.HostAvailable);
-            Assert.AreEqual(false, (bool? )status.HostHasPath);
+            Assert.AreEqual(false, (bool?)status.HostHasPath);
             Assert.IsNull((object)status.HostPath);
             dynamic signature = fixture.Service.SignatureStatus(fixture.Project.Name);
             Assert.IsTrue((bool)signature.Available);
@@ -850,8 +850,12 @@ namespace VBAi.Tests.Unit
                 fixture.Workbook.Saved = false;
                 fixture.Project.Saved = false;
                 dynamic state = fixture.Service.ProjectProperties(fixture.Project.Name);
-                var request = new Request { Project = fixture.Project.Name,
-                    ExpectedHostPath = fixture.Project.FileName, ExpectedProjectVersion = state.Version };
+                var request = new Request
+                {
+                    Project = fixture.Project.Name,
+                    ExpectedHostPath = fixture.Project.FileName,
+                    ExpectedProjectVersion = state.Version
+                };
 
                 var error = Assert.ThrowsException<InvalidOperationException>(() => fixture.Service.SaveHostDocument(request));
                 StringAssert.Contains(error.Message, "Excel Save As");
@@ -872,8 +876,12 @@ namespace VBAi.Tests.Unit
                 fixture.Workbook.Saved = false;
                 fixture.Project.Saved = false;
                 dynamic state = fixture.Service.ProjectProperties(fixture.Project.Name);
-                var request = new Request { Project = fixture.Project.Name,
-                    ExpectedHostPath = fixture.Project.FileName, ExpectedProjectVersion = state.Version };
+                var request = new Request
+                {
+                    Project = fixture.Project.Name,
+                    ExpectedHostPath = fixture.Project.FileName,
+                    ExpectedProjectVersion = state.Version
+                };
 
                 dynamic result = fixture.Service.SaveHostDocument(request);
                 Assert.IsTrue((bool)result.SaveInvoked);

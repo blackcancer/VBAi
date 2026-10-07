@@ -1,13 +1,12 @@
 using System;
 using System.IO;
-using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Net.Http.Headers;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Web.Script.Serialization;
-using System.Text;
 
 namespace VBAi
 {
@@ -133,20 +132,20 @@ namespace VBAi
             UpdateRelease best = null;
             // Bounded pagination, independent of release date and GitHub's manually selected 'latest'.
             for (int page = 1; page <= 10; page++)
-            using (var response = await AuthenticatedRequest(ApiRoot + "/releases?per_page=100&page=" + page, false, ct))
-            {
-                response.EnsureSuccessStatusCode();
-                var releases = json.Deserialize<UpdateRelease[]>(await ReadJson(response.Content, ct)) ?? new UpdateRelease[0];
-                ct.ThrowIfCancellationRequested();
-                foreach (var release in releases)
+                using (var response = await AuthenticatedRequest(ApiRoot + "/releases?per_page=100&page=" + page, false, ct))
                 {
-                    var version = release.Version;
-                    if (release.draft || version == null || (!previews && (release.prerelease || version.IsPreview)) ||
-                        version.CompareTo(current) <= 0 || (UpdateVersion.Parse(skipped)?.CompareTo(version) == 0)) continue;
-                    if (best == null || version.CompareTo(best.Version) > 0) best = release;
+                    response.EnsureSuccessStatusCode();
+                    var releases = json.Deserialize<UpdateRelease[]>(await ReadJson(response.Content, ct)) ?? new UpdateRelease[0];
+                    ct.ThrowIfCancellationRequested();
+                    foreach (var release in releases)
+                    {
+                        var version = release.Version;
+                        if (release.draft || version == null || (!previews && (release.prerelease || version.IsPreview)) ||
+                            version.CompareTo(current) <= 0 || (UpdateVersion.Parse(skipped)?.CompareTo(version) == 0)) continue;
+                        if (best == null || version.CompareTo(best.Version) > 0) best = release;
+                    }
+                    if (releases.Length < 100) break;
                 }
-                if (releases.Length < 100) break;
-            }
             return best;
         }
 
@@ -167,36 +166,36 @@ namespace VBAi
             {
                 string url = ApiRoot + "/releases/assets/" + asset.id;
                 for (int redirects = 0; redirects <= 5; redirects++)
-                using (var response = redirects == 0 ? await AuthenticatedRequest(url, true, ct) : await Request(url, true, ct))
-                {
-                    int status = (int)response.StatusCode;
-                    if (status >= 300 && status < 400)
+                    using (var response = redirects == 0 ? await AuthenticatedRequest(url, true, ct) : await Request(url, true, ct))
                     {
-                        var location = response.Headers.Location;
-                        var next = location == null ? null : location.IsAbsoluteUri ? location : new Uri(new Uri(url), location);
-                        if (next == null || next.Scheme != "https" || !string.IsNullOrEmpty(next.UserInfo) || !next.IsDefaultPort ||
-                            (next.Host != "release-assets.githubusercontent.com" && next.Host != "objects.githubusercontent.com"))
-                            throw new InvalidDataException("Unexpected GitHub asset redirect.");
-                        url = next.AbsoluteUri; continue; // No GitHub token goes to the asset CDN.
-                    }
-                    response.EnsureSuccessStatusCode();
-                    if (response.Content.Headers.ContentLength.HasValue && response.Content.Headers.ContentLength != asset.size) throw new InvalidDataException("Invalid installer size.");
-                    using (var source = await response.Content.ReadAsStreamAsync())
-                    using (var target = new FileStream(temporary, FileMode.CreateNew, FileAccess.Write, FileShare.None, 81920, true))
-                    {
-                        var buffer = new byte[81920]; long total = 0; int count;
-                        while ((count = await source.ReadAsync(buffer, 0, buffer.Length, ct)) > 0)
+                        int status = (int)response.StatusCode;
+                        if (status >= 300 && status < 400)
                         {
-                            total += count; if (total > asset.size) throw new InvalidDataException("Installer exceeds declared size.");
-                            await target.WriteAsync(buffer, 0, count, ct); progress?.Report((int)(total * 100 / asset.size));
+                            var location = response.Headers.Location;
+                            var next = location == null ? null : location.IsAbsoluteUri ? location : new Uri(new Uri(url), location);
+                            if (next == null || next.Scheme != "https" || !string.IsNullOrEmpty(next.UserInfo) || !next.IsDefaultPort ||
+                                (next.Host != "release-assets.githubusercontent.com" && next.Host != "objects.githubusercontent.com"))
+                                throw new InvalidDataException("Unexpected GitHub asset redirect.");
+                            url = next.AbsoluteUri; continue; // No GitHub token goes to the asset CDN.
                         }
-                        if (total != asset.size) throw new InvalidDataException("Incomplete installer.");
+                        response.EnsureSuccessStatusCode();
+                        if (response.Content.Headers.ContentLength.HasValue && response.Content.Headers.ContentLength != asset.size) throw new InvalidDataException("Invalid installer size.");
+                        using (var source = await response.Content.ReadAsStreamAsync())
+                        using (var target = new FileStream(temporary, FileMode.CreateNew, FileAccess.Write, FileShare.None, 81920, true))
+                        {
+                            var buffer = new byte[81920]; long total = 0; int count;
+                            while ((count = await source.ReadAsync(buffer, 0, buffer.Length, ct)) > 0)
+                            {
+                                total += count; if (total > asset.size) throw new InvalidDataException("Installer exceeds declared size.");
+                                await target.WriteAsync(buffer, 0, count, ct); progress?.Report((int)(total * 100 / asset.size));
+                            }
+                            if (total != asset.size) throw new InvalidDataException("Incomplete installer.");
+                        }
+                        ct.ThrowIfCancellationRequested();
+                        if (UpdatePaths.Hash(temporary) != asset.Hash) throw new InvalidDataException("Installer checksum mismatch.");
+                        if (File.Exists(path)) File.Replace(temporary, path, null); else File.Move(temporary, path);
+                        return path;
                     }
-                    ct.ThrowIfCancellationRequested();
-                    if (UpdatePaths.Hash(temporary) != asset.Hash) throw new InvalidDataException("Installer checksum mismatch.");
-                    if (File.Exists(path)) File.Replace(temporary, path, null); else File.Move(temporary, path);
-                    return path;
-                }
                 throw new InvalidDataException("Too many asset redirects.");
             }
             finally { if (File.Exists(temporary)) File.Delete(temporary); }

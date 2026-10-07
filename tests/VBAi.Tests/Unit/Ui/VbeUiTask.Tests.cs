@@ -1,3 +1,4 @@
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -5,10 +6,8 @@ using System.Diagnostics;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Windows.Forms;
 using System.Web.Script.Serialization;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
-using VBAi;
+using System.Windows.Forms;
 
 namespace VBAi.Tests.Unit
 {
@@ -60,15 +59,18 @@ namespace VBAi.Tests.Unit
             var events = new ConcurrentQueue<string>();
             var trace = new VbeInspectionTrace(events.Enqueue);
             var gate = new TaskCompletionSource<int>(TaskCreationOptions.RunContinuationsAsynchronously);
-            var run = AccessStaTestMethodAttribute.RunOnFreshSta(() => {
+            var run = AccessStaTestMethodAttribute.RunOnFreshSta(() =>
+            {
                 int ownerThread = Thread.CurrentThread.ManagedThreadId;
                 var ambient = SynchronizationContext.Current;
                 using (trace.Enter())
                 {
-                    Task<object> first = AccessStaTestMethodAttribute.StartSave(() => {
+                    Task<object> first = AccessStaTestMethodAttribute.StartSave(() =>
+                    {
                         // StartSave enters its own diagnostic scope; select this test's writer
                         // at admission, when VbeUiTask captures the continuation trace.
-                        using (trace.Enter()) return VbeUiTask.Run(async () => {
+                        using (trace.Enter()) return VbeUiTask.Run(async () =>
+                        {
                             int value = await gate.Task;
                             Assert.AreEqual(ownerThread, Thread.CurrentThread.ManagedThreadId);
                             Assert.AreEqual(ApartmentState.STA, Thread.CurrentThread.GetApartmentState());
@@ -115,7 +117,8 @@ namespace VBAi.Tests.Unit
             var trace = new VbeInspectionTrace(events.Enqueue);
             using (trace.Enter())
             {
-                Task<int> completed = VbeUiTask.Run(() => {
+                Task<int> completed = VbeUiTask.Run(() =>
+                {
                     captured = SynchronizationContext.Current;
                     return Task.FromResult(1);
                 });
@@ -143,7 +146,8 @@ namespace VBAi.Tests.Unit
             SynchronizationContext captured = null;
             using (trace.Enter())
             {
-                Task<int> first = VbeUiTask.Run(async () => {
+                Task<int> first = VbeUiTask.Run(async () =>
+                {
                     captured = SynchronizationContext.Current;
                     return await gate.Task;
                 });
@@ -171,8 +175,13 @@ namespace VBAi.Tests.Unit
         {
             var row = new JavaScriptSerializer().DeserializeObject(line) as IDictionary<string, object>;
             Assert.IsNotNull(row);
-            return new TraceRow { Phase = Convert.ToString(row["Phase"]), ThreadId = Convert.ToInt32(row["ThreadId"]),
-                Apartment = Convert.ToString(row["Apartment"]), ErrorType = Convert.ToString(row["ErrorType"]) };
+            return new TraceRow
+            {
+                Phase = Convert.ToString(row["Phase"]),
+                ThreadId = Convert.ToInt32(row["ThreadId"]),
+                Apartment = Convert.ToString(row["Apartment"]),
+                ErrorType = Convert.ToString(row["ErrorType"])
+            };
         }
 
         private static void VerifyStaContinuation(SynchronizationContext ambient)

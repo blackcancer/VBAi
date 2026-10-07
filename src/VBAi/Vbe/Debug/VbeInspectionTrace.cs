@@ -44,91 +44,97 @@ namespace VBAi
         internal static VbeInspectionTrace Current => ambient.Value;
 
         /// <summary>Fixed phase vocabulary prevents request content from becoming diagnostic text.</summary>
-        internal enum Phase {
+        internal enum Phase
+        {
 
-/// <summary>Identifies the enqueue case of phase.</summary>
-Enqueue,
+            /// <summary>Identifies the enqueue case of phase.</summary>
+            Enqueue,
 
-/// <summary>Identifies the callback entered case of phase.</summary>
-CallbackEntered,
+            /// <summary>Identifies the callback entered case of phase.</summary>
+            CallbackEntered,
 
-/// <summary>Identifies the owner sta case of phase.</summary>
-OwnerSta,
+            /// <summary>Identifies the owner sta case of phase.</summary>
+            OwnerSta,
 
-/// <summary>Identifies the context validation case of phase.</summary>
-ContextValidation,
+            /// <summary>Identifies the context validation case of phase.</summary>
+            ContextValidation,
 
-/// <summary>Identifies the context validated case of phase.</summary>
-ContextValidated,
+            /// <summary>Identifies the context validated case of phase.</summary>
+            ContextValidated,
 
             /// <summary>Identifies the command229 before case of phase.</summary>
             Command229Before,
 
-/// <summary>Identifies the command229 returned case of phase.</summary>
-Command229Returned,
+            /// <summary>Identifies the command229 returned case of phase.</summary>
+            Command229Returned,
 
-/// <summary>Identifies the observer entered case of phase.</summary>
-ObserverEntered,
+            /// <summary>Identifies the observer entered case of phase.</summary>
+            ObserverEntered,
 
-/// <summary>Identifies the observer dialog found case of phase.</summary>
-ObserverDialogFound,
+            /// <summary>Identifies the observer dialog found case of phase.</summary>
+            ObserverDialogFound,
 
-/// <summary>Identifies the observer read complete case of phase.</summary>
-ObserverReadComplete,
+            /// <summary>Identifies the observer read complete case of phase.</summary>
+            ObserverReadComplete,
 
             /// <summary>Identifies the observer terminal case of phase.</summary>
             ObserverTerminal,
 
-/// <summary>Identifies the continuation enqueued case of phase.</summary>
-ContinuationEnqueued,
+            /// <summary>Identifies the continuation enqueued case of phase.</summary>
+            ContinuationEnqueued,
 
-/// <summary>Identifies the continuation entered case of phase.</summary>
-ContinuationEntered,
+            /// <summary>Identifies the continuation entered case of phase.</summary>
+            ContinuationEntered,
 
-/// <summary>Identifies the continuation returned case of phase.</summary>
-ContinuationReturned,
+            /// <summary>Identifies the continuation returned case of phase.</summary>
+            ContinuationReturned,
 
             /// <summary>Identifies the core entered case of phase.</summary>
             CoreEntered,
 
-/// <summary>Identifies the core terminal case of phase.</summary>
-CoreTerminal,
+            /// <summary>Identifies the core terminal case of phase.</summary>
+            CoreTerminal,
 
-/// <summary>Identifies the terminal case of phase.</summary>
-Terminal,
+            /// <summary>Identifies the terminal case of phase.</summary>
+            Terminal,
 
-/// <summary>Identifies the options combo inspection case of phase.</summary>
-OptionsComboInspection,
+            /// <summary>Identifies the options combo inspection case of phase.</summary>
+            OptionsComboInspection,
 
             /// <summary>Identifies the continuation post returned case of phase.</summary>
             ContinuationPostReturned,
 
-/// <summary>Identifies the continuation post failed case of phase.</summary>
-ContinuationPostFailed }
+            /// <summary>Identifies the continuation post failed case of phase.</summary>
+            ContinuationPostFailed
+        }
 
         /// <summary>Lists the supported options reader values.</summary>
-        internal enum OptionsReader {
+        internal enum OptionsReader
+        {
 
-/// <summary>Identifies the native combo case of options reader.</summary>
-NativeCombo,
+            /// <summary>Identifies the native combo case of options reader.</summary>
+            NativeCombo,
 
-/// <summary>Identifies the ui automation combo case of options reader.</summary>
-UiAutomationCombo }
+            /// <summary>Identifies the ui automation combo case of options reader.</summary>
+            UiAutomationCombo
+        }
 
         /// <summary>Lists the supported options role values.</summary>
-        internal enum OptionsRole {
+        internal enum OptionsRole
+        {
 
-/// <summary>Identifies the other case of options role.</summary>
-Other,
+            /// <summary>Identifies the other case of options role.</summary>
+            Other,
 
-/// <summary>Identifies the font case of options role.</summary>
-Font,
+            /// <summary>Identifies the font case of options role.</summary>
+            Font,
 
-/// <summary>Identifies the size case of options role.</summary>
-Size,
+            /// <summary>Identifies the size case of options role.</summary>
+            Size,
 
-/// <summary>Identifies the palette case of options role.</summary>
-Palette }
+            /// <summary>Identifies the palette case of options role.</summary>
+            Palette
+        }
 
         /// <summary>Numeric native observations only; no labels, values or request text.</summary>
         internal sealed class OptionsComboEvidence
@@ -214,7 +220,8 @@ Palette }
             if (drive.DriveType != DriveType.Fixed && drive.DriveType != DriveType.Removable && drive.DriveType != DriveType.Ram) return null;
             for (string ancestor = destination; !string.IsNullOrEmpty(ancestor); ancestor = Path.GetDirectoryName(ancestor))
                 if ((File.Exists(ancestor) || Directory.Exists(ancestor)) && (File.GetAttributes(ancestor) & FileAttributes.ReparsePoint) != 0) return null;
-            return new VbeInspectionTrace(line => {
+            return new VbeInspectionTrace(line =>
+            {
                 lock (fileGate)
                 {
                     byte[] bytes = new UTF8Encoding(false).GetBytes(line + "\n");
@@ -247,10 +254,18 @@ Palette }
             {
                 int sequence = Interlocked.Increment(ref count);
                 if (sequence > MaximumEvents || !Enum.IsDefined(typeof(Phase), phase)) return;
-                var row = new { Correlation = correlation, Sequence = sequence, Utc = DateTime.UtcNow.ToString("o"),
-                    HostProcessId = Process.GetCurrentProcess().Id, ThreadId = Thread.CurrentThread.ManagedThreadId,
-                    Apartment = Thread.CurrentThread.GetApartmentState().ToString(), ElapsedMilliseconds = clock.ElapsedMilliseconds,
-                    Phase = phase.ToString(), ErrorType = error == null ? null : error.GetType().Name };
+                var row = new
+                {
+                    Correlation = correlation,
+                    Sequence = sequence,
+                    Utc = DateTime.UtcNow.ToString("o"),
+                    HostProcessId = Process.GetCurrentProcess().Id,
+                    ThreadId = Thread.CurrentThread.ManagedThreadId,
+                    Apartment = Thread.CurrentThread.GetApartmentState().ToString(),
+                    clock.ElapsedMilliseconds,
+                    Phase = phase.ToString(),
+                    ErrorType = error?.GetType().Name
+                };
                 write?.Invoke(new JavaScriptSerializer().Serialize(row));
             }
             catch { /* Evidence is optional and must not affect a native operation or its original failure. */ }
@@ -267,11 +282,21 @@ Palette }
                 if (sequence > MaximumEvents || observed == null ||
                     !Enum.IsDefined(typeof(OptionsReader), observed.Reader) ||
                     !Enum.IsDefined(typeof(OptionsRole), observed.Role)) return;
-                var row = new { Correlation = correlation, Sequence = sequence, Utc = DateTime.UtcNow.ToString("o"),
-                    HostProcessId = Process.GetCurrentProcess().Id, ThreadId = Thread.CurrentThread.ManagedThreadId,
-                    Apartment = Thread.CurrentThread.GetApartmentState().ToString(), ElapsedMilliseconds = clock.ElapsedMilliseconds,
-                    Phase = Phase.OptionsComboInspection.ToString(), ErrorType = error?.GetType().Name,
-                    Reader = observed.Reader.ToString(), Role = observed.Role.ToString(), Native = observed };
+                var row = new
+                {
+                    Correlation = correlation,
+                    Sequence = sequence,
+                    Utc = DateTime.UtcNow.ToString("o"),
+                    HostProcessId = Process.GetCurrentProcess().Id,
+                    ThreadId = Thread.CurrentThread.ManagedThreadId,
+                    Apartment = Thread.CurrentThread.GetApartmentState().ToString(),
+                    clock.ElapsedMilliseconds,
+                    Phase = Phase.OptionsComboInspection.ToString(),
+                    ErrorType = error?.GetType().Name,
+                    Reader = observed.Reader.ToString(),
+                    Role = observed.Role.ToString(),
+                    Native = observed
+                };
                 write?.Invoke(new JavaScriptSerializer().Serialize(row));
             }
             catch { /* Diagnostics cannot alter a native read, closure or original exception. */ }

@@ -72,7 +72,8 @@ namespace VBAi
             Exception failure = null;
             try
             {
-                await modalSession.Queue(request, () => {
+                await modalSession.Queue(request, () =>
+                {
                     leavingForImport = true; PublishHandoffState(); DialogResult = DialogResult.OK;
                 });
             }

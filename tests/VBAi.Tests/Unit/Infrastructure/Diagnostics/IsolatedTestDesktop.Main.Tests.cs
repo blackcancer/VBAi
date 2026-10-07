@@ -1,7 +1,6 @@
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Collections.Generic;
-using System.IO;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 using VBAi.Tests.Integration;
 
 namespace VBAi.Tests.Unit
@@ -26,7 +25,13 @@ namespace VBAi.Tests.Unit
         }
 
         [DataTestMethod]
-        [DataRow(0)] [DataRow(1)] [DataRow(2)] [DataRow(3)] [DataRow(4)] [DataRow(5)] [DataRow(6)]
+        [DataRow(0)]
+        [DataRow(1)]
+        [DataRow(2)]
+        [DataRow(3)]
+        [DataRow(4)]
+        [DataRow(5)]
+        [DataRow(6)]
         public void MainLaunchChecksBeforeOneCreateAndNeverReplaysAnUncertainFailure(int failure)
         {
             var log = new List<string>(); var error = new InvalidOperationException("same native/guard failure");
@@ -35,23 +40,47 @@ namespace VBAi.Tests.Unit
                 new[] { "/a", @"C:\Owned\seed.docx" }, failure == 2 ? "relative" : @"C:\Owned",
                 () => { log.Add("guard"); if (failure == 5) throw error; },
                 path => { log.Add("file"); return failure != 3; }, path => { log.Add("directory"); return failure != 4; },
-                (path, args, directory) => { log.Add("create"); CollectionAssert.AreEqual(new[] { "/a", @"C:\Owned\seed.docx" }, args);
-                    Assert.AreEqual(@"C:\Owned", directory); if (failure == 6) throw error; return originalHandleOwner; });
+                (path, args, directory) =>
+                {
+                    log.Add("create"); CollectionAssert.AreEqual(new[] { "/a", @"C:\Owned\seed.docx" }, args);
+                    Assert.AreEqual(@"C:\Owned", directory); if (failure == 6) throw error; return originalHandleOwner;
+                });
             if (failure == 0) { Assert.AreSame(originalHandleOwner, run()); CollectionAssert.AreEqual(new[] { "file", "directory", "guard", "create" }, log); }
             else if (failure < 5) { Assert.ThrowsException<ArgumentException>(() => run()); Assert.IsFalse(log.Contains("guard")); Assert.IsFalse(log.Contains("create")); }
             else { Assert.AreSame(error, Assert.ThrowsException<InvalidOperationException>(() => run())); Assert.AreEqual(failure == 6 ? 1 : 0, log.FindAll(x => x == "create").Count); }
         }
 
-        internal static IsolatedTestDesktop.MainInventory Inventory() => new IsolatedTestDesktop.MainInventory {
-            Desktop = "Default", Complete = true, Visited = 4, Windows = new[] {
+        internal static IsolatedTestDesktop.MainInventory Inventory() => new IsolatedTestDesktop.MainInventory
+        {
+            Desktop = "Default",
+            Complete = true,
+            Visited = 4,
+            Windows = new[] {
                 new IsolatedTestDesktop.MainWindow { Handle = 11, ProcessId = 42, ThreadId = 7, ClassName = "OpusApp", Visible = true },
                 new IsolatedTestDesktop.MainWindow { Handle = 12, ProcessId = 42, ThreadId = 7, ClassName = "wndclass_desked_gsk", Visible = true }
-            } };
+            }
+        };
 
         [DataTestMethod]
-        [DataRow(0)] [DataRow(1)] [DataRow(2)] [DataRow(3)] [DataRow(4)] [DataRow(5)] [DataRow(6)]
-        [DataRow(7)] [DataRow(8)] [DataRow(9)] [DataRow(10)] [DataRow(11)] [DataRow(12)] [DataRow(13)]
-        [DataRow(14)] [DataRow(15)] [DataRow(16)] [DataRow(17)] [DataRow(18)]
+        [DataRow(0)]
+        [DataRow(1)]
+        [DataRow(2)]
+        [DataRow(3)]
+        [DataRow(4)]
+        [DataRow(5)]
+        [DataRow(6)]
+        [DataRow(7)]
+        [DataRow(8)]
+        [DataRow(9)]
+        [DataRow(10)]
+        [DataRow(11)]
+        [DataRow(12)]
+        [DataRow(13)]
+        [DataRow(14)]
+        [DataRow(15)]
+        [DataRow(16)]
+        [DataRow(17)]
+        [DataRow(18)]
         public void MainInventoryRejectsPartialForeignHiddenMissingOrAmbiguousEvidence(int fault)
         {
             var data = Inventory(); uint pid = 42; IntPtr root = new IntPtr(11);
@@ -74,7 +103,8 @@ namespace VBAi.Tests.Unit
                 case 15: data.Windows[1].Visible = false; break;
                 case 16: root = new IntPtr(13); break;
                 case 17: pid = 0; break;
-                case 18: data.Windows = new[] { data.Windows[0], data.Windows[1],
+                case 18:
+                    data.Windows = new[] { data.Windows[0], data.Windows[1],
                     new IsolatedTestDesktop.MainWindow { Handle = 13, ProcessId = 42, ThreadId = 7, ClassName = "wndclass_desked_gsk", Visible = true } }; break;
             }
             if (fault == 0) IsolatedTestDesktop.RequireMainInventory(data, pid, root, true, true);

@@ -1,7 +1,6 @@
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System.Collections.Generic;
 using System.Web.Script.Serialization;
-using VBAi;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace VBAi.Tests.Unit
 {
@@ -13,10 +12,22 @@ namespace VBAi.Tests.Unit
         {
             foreach (var kind in new[] { "commandExecution", "fileChange", "dynamicToolCall", "mcpToolCall", "webSearch", "imageView", "collabToolCall" })
             {
-                var item = new Dictionary<string, object> { ["id"] = "action", ["type"] = kind, ["command"] = "dotnet test", ["cwd"] = "C:/test", ["aggregatedOutput"] = "passed",
-                    ["server"] = "service", ["tool"] = "read_module", ["query"] = "documentation", ["path"] = "image.png", ["receiverThreadId"] = "worker",
-                    ["durationMs"] = 1200, ["arguments"] = new Dictionary<string, object> { ["Project"] = "Book", ["Module"] = "Module1", ["ApiKey"] = "SECRET" },
-                    ["changes"] = new object[] { new Dictionary<string, object> { ["path"] = "module.bas" }, null } };
+                var item = new Dictionary<string, object>
+                {
+                    ["id"] = "action",
+                    ["type"] = kind,
+                    ["command"] = "dotnet test",
+                    ["cwd"] = "C:/test",
+                    ["aggregatedOutput"] = "passed",
+                    ["server"] = "service",
+                    ["tool"] = "read_module",
+                    ["query"] = "documentation",
+                    ["path"] = "image.png",
+                    ["receiverThreadId"] = "worker",
+                    ["durationMs"] = 1200,
+                    ["arguments"] = new Dictionary<string, object> { ["Project"] = "Book", ["Module"] = "Module1", ["ApiKey"] = "SECRET" },
+                    ["changes"] = new object[] { new Dictionary<string, object> { ["path"] = "module.bas" }, null }
+                };
                 var started = CodexAgentActivity.FromItem(item, false);
                 Assert.AreEqual("inProgress", started.Status); Assert.AreEqual(1200L, started.DurationMs); Assert.IsFalse(started.Append);
                 Assert.IsFalse(started.Detail.Contains("SECRET"));
@@ -35,8 +46,20 @@ namespace VBAi.Tests.Unit
         public void DetailedStepsRoundTripInSessionAndLegacyEntriesRemainReadable()
         {
             var json = new JavaScriptSerializer();
-            var entry = new ChatEntry { Speaker = "Outil", Text = "target", Activity = new CodexAgentActivity {
-                Id = "tool", Kind = "dynamicToolCall", Title = "read_module", Detail = "Book · Module1", Status = "completed", DurationMs = 42 } };
+            var entry = new ChatEntry
+            {
+                Speaker = "Outil",
+                Text = "target",
+                Activity = new CodexAgentActivity
+                {
+                    Id = "tool",
+                    Kind = "dynamicToolCall",
+                    Title = "read_module",
+                    Detail = "Book · Module1",
+                    Status = "completed",
+                    DurationMs = 42
+                }
+            };
             var restored = json.Deserialize<ChatEntry>(json.Serialize(entry));
             Assert.AreEqual("Book · Module1", restored.Activity.Detail); Assert.AreEqual("completed", restored.Activity.Status); Assert.AreEqual(42L, restored.Activity.DurationMs);
             Assert.IsNull(json.Deserialize<ChatEntry>("{\"Speaker\":\"Outil\",\"Text\":\"Legacy\"}").Activity);

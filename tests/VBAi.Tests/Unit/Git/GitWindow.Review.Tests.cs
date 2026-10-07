@@ -1,13 +1,8 @@
 namespace VBAi.Tests.Unit
 {
-    using System;
-    using System.Drawing;
-    using System.Reflection;
-    using System.Runtime.Serialization;
-    using System.Threading.Tasks;
-    using System.Windows.Forms;
-    using VBAi;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
+    using System;
+    using VBAi;
 
     /// <summary>Vérifie l’état de prévisualisation de la revue dans GitWindow.</summary>
     [TestClass]
@@ -34,21 +29,20 @@ namespace VBAi.Tests.Unit
 
 namespace VBAi.Tests.Unit
 {
+    using Microsoft.VisualStudio.TestTools.UnitTesting;
     using System;
     using System.Collections.Generic;
     using System.Reflection;
     using System.Text;
-    using System.Threading;
     using System.Threading.Tasks;
     using System.Windows.Forms;
     using VBAi;
-    using Microsoft.VisualStudio.TestTools.UnitTesting;
 
     /// <summary>Vérifie l’historique, les aperçus et les actions de revue du dépôt.</summary>
     public sealed partial class GitWindowCoverageTests
     {
-                /// <summary>Compare des instantanés avec références modifiées et vérifie les ressources du formulaire.</summary>
-[WinFormsTestMethod]
+        /// <summary>Compare des instantanés avec références modifiées et vérifie les ressources du formulaire.</summary>
+        [WinFormsTestMethod]
         public void ReviewSnapshotsCoverAddedRemovedUnchangedReferencesAndFormResources()
         {
             using (var f = new Fixture())
@@ -73,8 +67,8 @@ namespace VBAi.Tests.Unit
             }
         }
 
-                /// <summary>Restaure un module depuis des snapshots de commit et vérifie la navigation dans l’historique.</summary>
-[WinFormsTestMethod]
+        /// <summary>Restaure un module depuis des snapshots de commit et vérifie la navigation dans l’historique.</summary>
+        [WinFormsTestMethod]
         public void HistoryCheckpointAndModuleRestoreNavigateActualCommitSnapshots()
         {
             using (var f = new Fixture())
@@ -97,8 +91,8 @@ namespace VBAi.Tests.Unit
             }
         }
 
-                /// <summary>Vérifie l’aperçu, sa progression et son annulation ainsi que le refus d’une sélection vide.</summary>
-[WinFormsTestMethod]
+        /// <summary>Vérifie l’aperçu, sa progression et son annulation ainsi que le refus d’une sélection vide.</summary>
+        [WinFormsTestMethod]
         public void PreviewProgressCancellationAndEmptySelectionGuardsMatrix()
         {
             using (var f = new Fixture())
@@ -120,8 +114,8 @@ namespace VBAi.Tests.Unit
             }
         }
 
-                /// <summary>Vérifie la disposition de revue et les callbacks GitHub avec et sans document lié.</summary>
-[WinFormsTestMethod]
+        /// <summary>Vérifie la disposition de revue et les callbacks GitHub avec et sans document lié.</summary>
+        [WinFormsTestMethod]
         public void ReviewLayoutAndGitHubCallbacksCoverBoundAndUnboundDocuments()
         {
             using (var f = new Fixture(false))

@@ -1,8 +1,8 @@
 using System;
 using System.Collections;
+using System.Collections.Generic;
 using System.ComponentModel;
 using System.Globalization;
-using System.Collections.Generic;
 using System.Linq;
 
 namespace VBAi
@@ -41,8 +41,14 @@ namespace VBAi
             if (Convert.ToInt32(list.ColumnCount, CultureInfo.InvariantCulture) != 1)
                 throw new InvalidOperationException("AddItem is restricted to one-column lists after an Excel crash in a multicolumn sequence.");
 
-            dynamic before = ListItems(new Request { Project = request.Project,
-                Form = request.Form, ControlPath = request.ControlPath, Offset = 0, Limit = 64 });
+            dynamic before = ListItems(new Request
+            {
+                Project = request.Project,
+                Form = request.Form,
+                ControlPath = request.ControlPath,
+                Offset = 0,
+                Limit = 64
+            });
             int count = (int)before.TotalRows;
             if (count >= 64 || before.ListVersion == null)
                 throw new InvalidOperationException("AddItem requires fewer than 64 readable one-column items; read the full list first.");
@@ -57,28 +63,54 @@ namespace VBAi
             try { list.AddItem(request.Text); }
             catch (Exception ex)
             {
-                return new { ControlPath = request.ControlPath, Applied = (bool?)null,
-                    Verified = false, VerificationPending = true,
-                    NativeError = ex.Message, NextRead = "form_list_items" };
+                return new
+                {
+                    request.ControlPath,
+                    Applied = (bool?)null,
+                    Verified = false,
+                    VerificationPending = true,
+                    NativeError = ex.Message,
+                    NextRead = "form_list_items"
+                };
             }
             try
             {
-                dynamic after = ListItems(new Request { Project = request.Project,
-                    Form = request.Form, ControlPath = request.ControlPath, Offset = 0, Limit = 64 });
+                dynamic after = ListItems(new Request
+                {
+                    Project = request.Project,
+                    Form = request.Form,
+                    ControlPath = request.ControlPath,
+                    Offset = 0,
+                    Limit = 64
+                });
                 List<object> actual = OneColumnValues((IEnumerable)after.Rows);
                 bool verified = after.ListVersion != null && (int)after.TotalRows == count + 1 &&
                     expected.SequenceEqual(actual);
-                return new { ControlPath = request.ControlPath, AddedValue = request.Text,
-                    Applied = (bool?)true, Verified = verified, VerificationPending = !verified,
-                    NativeError = (string)null, ListVersionBefore = (string)before.ListVersion,
+                return new
+                {
+                    request.ControlPath,
+                    AddedValue = request.Text,
+                    Applied = (bool?)true,
+                    Verified = verified,
+                    VerificationPending = !verified,
+                    NativeError = (string)null,
+                    ListVersionBefore = (string)before.ListVersion,
                     ListVersionAfter = (string)after.ListVersion,
-                    TreeVersionAfter = (string)after.TreeVersion, NextRead = "form_list_items" };
+                    TreeVersionAfter = (string)after.TreeVersion,
+                    NextRead = "form_list_items"
+                };
             }
             catch (Exception ex)
             {
-                return new { ControlPath = request.ControlPath, Applied = (bool?)true,
-                    Verified = false, VerificationPending = true,
-                    NativeError = ex.Message, NextRead = "form_list_items" };
+                return new
+                {
+                    request.ControlPath,
+                    Applied = (bool?)true,
+                    Verified = false,
+                    VerificationPending = true,
+                    NativeError = ex.Message,
+                    NextRead = "form_list_items"
+                };
             }
         }
 
@@ -128,16 +160,29 @@ namespace VBAi
             try { afterCount = Convert.ToInt32(list.ListCount, CultureInfo.InvariantCulture); }
             catch (Exception ex)
             {
-                return new { ControlPath = request.ControlPath, Applied = true,
-                    Verified = false, VerificationPending = true, CountBefore = beforeCount,
-                    CountAfter = (int?)null, ReadbackError = ex.Message,
-                    NextRead = "form_list_items" };
+                return new
+                {
+                    request.ControlPath,
+                    Applied = true,
+                    Verified = false,
+                    VerificationPending = true,
+                    CountBefore = beforeCount,
+                    CountAfter = (int?)null,
+                    ReadbackError = ex.Message,
+                    NextRead = "form_list_items"
+                };
             }
-            return new { ControlPath = request.ControlPath, Applied = true,
+            return new
+            {
+                request.ControlPath,
+                Applied = true,
                 Verified = afterCount == beforeCount + 1,
                 VerificationPending = afterCount != beforeCount + 1,
-                CountBefore = beforeCount, CountAfter = (int?)afterCount,
-                ReadbackError = (string)null, NextRead = "form_list_items" };
+                CountBefore = beforeCount,
+                CountAfter = (int?)afterCount,
+                ReadbackError = (string)null,
+                NextRead = "form_list_items"
+            };
         }
     }
 }

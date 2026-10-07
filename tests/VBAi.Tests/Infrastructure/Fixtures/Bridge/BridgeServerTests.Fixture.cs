@@ -1,5 +1,6 @@
 namespace VBAi.Tests.Unit
 {
+    using Microsoft.VisualStudio.TestTools.UnitTesting;
     using System;
     using System.Collections.Generic;
     using System.IO;
@@ -9,8 +10,6 @@ namespace VBAi.Tests.Unit
     using System.Threading.Tasks;
     using System.Web.Script.Serialization;
     using System.Windows.Forms;
-    using VBAi;
-    using Microsoft.VisualStudio.TestTools.UnitTesting;
 
     /// <summary>Helpers partagés par les tests du serveur de pont IPC.</summary>
     public sealed partial class BridgeServerTests

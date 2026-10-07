@@ -49,8 +49,10 @@ namespace VBAi
             IntPtr token = IntPtr.Zero;
             try
             {
-                int error;
-                if (reader.OpenThread(out token, out error)) result["Source"] = "Thread";
+                if (reader.OpenThread(out token, out int error))
+                {
+                    result["Source"] = "Thread";
+                }
                 else
                 {
                     result["OpenThreadTokenError"] = error;
@@ -140,15 +142,13 @@ namespace VBAi
             /// <returns>Decoded value, or null when the query fails validation.</returns>
             private static object Information(IntPtr token, int kind, string name, IDictionary<string, int> errors, int minimum, Func<IntPtr, object> read)
             {
-                int size;
-                bool sized = GetTokenInformation(token, kind, IntPtr.Zero, 0, out size);
+                bool sized = GetTokenInformation(token, kind, IntPtr.Zero, 0, out int size);
                 int error = Marshal.GetLastWin32Error();
                 if (sized || error != 122 || size < minimum || size > 65536) { errors[name] = error; return null; }
                 IntPtr buffer = Marshal.AllocHGlobal(size);
                 try
                 {
-                    int returned;
-                    bool ok = GetTokenInformation(token, kind, buffer, size, out returned);
+                    bool ok = GetTokenInformation(token, kind, buffer, size, out int returned);
                     error = Marshal.GetLastWin32Error();
                     if (!ok || returned < minimum || returned > size) { errors[name] = error; return null; }
                     return read(buffer);
@@ -158,7 +158,8 @@ namespace VBAi
         }
 
         /// <summary>Native LUID layout used for token and authentication identifiers returned by TOKEN_STATISTICS.</summary>
-        [StructLayout(LayoutKind.Sequential)] private struct Luid
+        [StructLayout(LayoutKind.Sequential)]
+        private struct Luid
         {
 
             /// <summary>Unsigned low-order 32 bits of the LUID.</summary>
@@ -173,7 +174,8 @@ namespace VBAi
         }
 
         /// <summary>Native TOKEN_STATISTICS layout; only token ID and authentication ID are surfaced in the observation.</summary>
-        [StructLayout(LayoutKind.Sequential)] private struct TokenStatistics
+        [StructLayout(LayoutKind.Sequential)]
+        private struct TokenStatistics
         {
 
             /// <summary>Unique identifier assigned to this token.</summary>
@@ -203,7 +205,7 @@ namespace VBAi
         /// <summary>Releases an opened token handle.</summary>
         /// <param name="handle">Token handle returned by OpenThreadToken or OpenProcessToken.</param>
         /// <returns><see langword="true"/> when Windows closes the handle.</returns>
-        [DllImport("kernel32.dll", SetLastError = true)] [return: MarshalAs(UnmanagedType.Bool)] private static extern bool CloseHandle(IntPtr handle);
+        [DllImport("kernel32.dll", SetLastError = true)][return: MarshalAs(UnmanagedType.Bool)] private static extern bool CloseHandle(IntPtr handle);
 
         /// <summary>Opens a thread's effective token with the requested access and caller security context.</summary>
         /// <param name="thread">Thread whose effective token is queried; callers pass the current-thread pseudo-handle.</param>
@@ -211,14 +213,14 @@ namespace VBAi
         /// <param name="openAsSelf">When true, performs the access check using the process security context.</param>
         /// <param name="token">Receives the opened token handle.</param>
         /// <returns><see langword="true"/> on success; otherwise false and GetLastError identifies the failure.</returns>
-        [DllImport("advapi32.dll", SetLastError = true)] [return: MarshalAs(UnmanagedType.Bool)] private static extern bool OpenThreadToken(IntPtr thread, uint access, [MarshalAs(UnmanagedType.Bool)] bool openAsSelf, out IntPtr token);
+        [DllImport("advapi32.dll", SetLastError = true)][return: MarshalAs(UnmanagedType.Bool)] private static extern bool OpenThreadToken(IntPtr thread, uint access, [MarshalAs(UnmanagedType.Bool)] bool openAsSelf, out IntPtr token);
 
         /// <summary>Opens the process primary token with the requested access.</summary>
         /// <param name="process">Process whose primary token is queried; callers pass the current-process pseudo-handle.</param>
         /// <param name="access">Requested token rights; this observer passes TOKEN_QUERY only.</param>
         /// <param name="token">Receives the opened token handle.</param>
         /// <returns><see langword="true"/> on success; otherwise false and GetLastError identifies the failure.</returns>
-        [DllImport("advapi32.dll", SetLastError = true)] [return: MarshalAs(UnmanagedType.Bool)] private static extern bool OpenProcessToken(IntPtr process, uint access, out IntPtr token);
+        [DllImport("advapi32.dll", SetLastError = true)][return: MarshalAs(UnmanagedType.Bool)] private static extern bool OpenProcessToken(IntPtr process, uint access, out IntPtr token);
 
         /// <summary>Queries a selected TOKEN_INFORMATION_CLASS into a caller-owned buffer.</summary>
         /// <param name="token">Token handle opened with TOKEN_QUERY.</param>
@@ -227,11 +229,11 @@ namespace VBAi
         /// <param name="size">Buffer size in bytes.</param>
         /// <param name="returned">Receives required or actual bytes, depending on the query phase.</param>
         /// <returns><see langword="true"/> when the information is returned; otherwise false and GetLastError supplies the reason.</returns>
-        [DllImport("advapi32.dll", SetLastError = true)] [return: MarshalAs(UnmanagedType.Bool)] private static extern bool GetTokenInformation(IntPtr token, int kind, IntPtr information, int size, out int returned);
+        [DllImport("advapi32.dll", SetLastError = true)][return: MarshalAs(UnmanagedType.Bool)] private static extern bool GetTokenInformation(IntPtr token, int kind, IntPtr information, int size, out int returned);
 
         /// <summary>Checks whether Windows marks the token as restricted.</summary>
         /// <param name="token">Token handle to inspect.</param>
         /// <returns><see langword="true"/> when the token is restricted.</returns>
-        [DllImport("advapi32.dll")] [return: MarshalAs(UnmanagedType.Bool)] private static extern bool IsTokenRestricted(IntPtr token);
+        [DllImport("advapi32.dll")][return: MarshalAs(UnmanagedType.Bool)] private static extern bool IsTokenRestricted(IntPtr token);
     }
 }

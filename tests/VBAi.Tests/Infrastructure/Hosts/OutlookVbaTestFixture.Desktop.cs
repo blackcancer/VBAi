@@ -1,9 +1,9 @@
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Diagnostics;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Threading;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace VBAi.Tests.Integration
 {
@@ -56,8 +56,15 @@ namespace VBAi.Tests.Integration
                 catch (COMException error) when ((uint)error.ErrorCode == 0x800401E3) { Thread.Sleep(40); }
             }
             if (application == null) throw new TimeoutException("The sole explicitly launched Outlook is not in the ROT.");
-            Save("private-attachment.json", new { ProcessId, Window = hwnd.ToInt64(), NativeThread = thread, Desktop = desktop,
-                SoleProcessVerified = true, ComActivationInvocations = 0 });
+            Save("private-attachment.json", new
+            {
+                ProcessId,
+                Window = hwnd.ToInt64(),
+                NativeThread = thread,
+                Desktop = desktop,
+                SoleProcessVerified = true,
+                ComActivationInvocations = 0
+            });
         }
 
         private static void RequireNoForeignOutlook(int ownedPid)

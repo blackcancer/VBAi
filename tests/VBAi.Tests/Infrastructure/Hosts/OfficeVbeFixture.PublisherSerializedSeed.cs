@@ -1,3 +1,4 @@
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -5,7 +6,6 @@ using System.IO;
 using System.Linq;
 using System.Security.Cryptography;
 using System.Web.Script.Serialization;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace VBAi.Tests.Integration
 {
@@ -21,8 +21,9 @@ namespace VBAi.Tests.Integration
             string path = Environment.GetEnvironmentVariable("VBAi_TEST_PUBLISHER_SERIALIZED_SEED");
             if (path == null) Assert.Inconclusive("Set VBAi_TEST_PUBLISHER_SERIALIZED_SEED to the frozen owned Publisher qualification seed.");
             RequirePublisherSeedFile(path);
-            if (string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("VBAi_TEST_DESKTOP_NAME")))
-                throw new InvalidOperationException("Serialized Publisher qualification requires the guarded private desktop.");
+            // The selected desktop is checked before any host creation. Main requires its
+            // explicit opt-in and empty private descriptors; private keeps RequireCurrent.
+            NativeTestDesktop.Current();
             return Start("Publisher", false, serializedPublisherSeed: path);
         }
 
@@ -92,10 +93,20 @@ namespace VBAi.Tests.Integration
             Assert.AreEqual(PublisherSeedSha, SeedFileHash(DocumentPath));
             RequirePublisherSeedFile(source); RecheckPrivatePublisherBootstrap();
             PublisherSerializedSeed = true;
-            RecordAdapterStage("PublisherSerializedQualificationSeed", new { Source = source, SourceSha256 = PublisherSeedSha,
-                SourceBytes = 90624, OriginalProducerPid = 183824, Scope = "ExistingSerializedPublication",
-                NewPublicationQualified = false, FirstSaveAsQualified = false, CopyEntries = 1, OpenEntriesLimit = 1,
-                BootstrapSaveAllowed = false, MacroExecutionAllowed = false });
+            RecordAdapterStage("PublisherSerializedQualificationSeed", new
+            {
+                Source = source,
+                SourceSha256 = PublisherSeedSha,
+                SourceBytes = 90624,
+                OriginalProducerPid = 183824,
+                Scope = "ExistingSerializedPublication",
+                NewPublicationQualified = false,
+                FirstSaveAsQualified = false,
+                CopyEntries = 1,
+                OpenEntriesLimit = 1,
+                BootstrapSaveAllowed = false,
+                MacroExecutionAllowed = false
+            });
         }
 
         internal static void RequirePublisherSeedComponent(string name, int type, string code, string sha)
@@ -137,7 +148,8 @@ namespace VBAi.Tests.Integration
                 "Publisher|{0002123C-0000-0000-C000-000000000046}|2|3|True|C:\\Program Files\\Microsoft Office\\root\\Office16\\MSPUB.TLB",
                 "stdole|{00020430-0000-0000-C000-000000000046}|2|0|False|C:\\Windows\\System32\\stdole2.tlb",
                 "Office|{2DF8D04C-5BFA-101B-BDE5-00AA0044DE52}|2|8|False|C:\\Program Files\\Common Files\\Microsoft Shared\\OFFICE16\\MSO.DLL" };
-            var observedReferences = ((object[])references["References"]).Select(entry => {
+            var observedReferences = ((object[])references["References"]).Select(entry =>
+            {
                 var reference = VbeBridgeClient.Object(entry); Assert.AreEqual(false, reference["IsBroken"]);
                 return string.Join("|", new[] { "Name", "Guid", "Major", "Minor", "BuiltIn", "FullPath" }.Select(key => Convert.ToString(reference[key])));
             }).ToArray();
@@ -159,8 +171,16 @@ namespace VBAi.Tests.Integration
             RequirePublisherSeedGeneral(general);
             Assert.AreEqual(revision, Data("project_properties")["Version"]);
             RequirePublisherPublication("AfterSerializedSeedGeneralBaseline", true);
-            RecordAdapterStage("PublisherSerializedSeedAudit", new { Components = modules, References = references, ProjectVersion = revision,
-                General = general, ExecutableProcedures = 0, SourceMutationInvoked = false, AuditVerified = true });
+            RecordAdapterStage("PublisherSerializedSeedAudit", new
+            {
+                Components = modules,
+                References = references,
+                ProjectVersion = revision,
+                General = general,
+                ExecutableProcedures = 0,
+                SourceMutationInvoked = false,
+                AuditVerified = true
+            });
         }
 
         internal static void RequirePublisherSeedGeneral(IDictionary<string, object> general)

@@ -1,4 +1,3 @@
-using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -73,28 +72,26 @@ namespace VBAi
                 fields = serializer.Deserialize<Dictionary<string, object>>(serializer.Serialize(metadata));
             }
             catch { return false; }
-            object value;
-            if (fields == null || !fields.TryGetValue("Property", out value) ||
-                !(value is string) || (string)value != "_Font_Reserved" ||
-                !fields.TryGetValue("Discovery", out value) ||
-                !(value is string) || (string)value != "IProvideClassInfo/ITypeInfo" ||
-                !fields.TryGetValue("MetadataComplete", out value) || !(value is bool) || !(bool)value ||
-                !fields.TryGetValue("SetterDeclared", out value) || !(value is bool) || !(bool)value ||
-                !fields.TryGetValue("Errors", out value) || !(value is IList) || ((IList)value).Count != 0 ||
-                !fields.TryGetValue("Interfaces", out value) || !(value is IList) || ((IList)value).Count == 0)
+            if (fields == null || !fields.TryGetValue("Property", out object property) ||
+                !(property is string propertyName) || propertyName != "_Font_Reserved" ||
+                !fields.TryGetValue("Discovery", out object discovery) ||
+                !(discovery is string discoveryName) || discoveryName != "IProvideClassInfo/ITypeInfo" ||
+                !fields.TryGetValue("MetadataComplete", out object complete) || !(complete is bool metadataComplete) || !metadataComplete ||
+                !fields.TryGetValue("SetterDeclared", out object declared) || !(declared is bool setterDeclared) || !setterDeclared ||
+                !fields.TryGetValue("Errors", out object errorValue) || !(errorValue is IList errors) || errors.Count != 0 ||
+                !fields.TryGetValue("Interfaces", out object interfaceValue) || !(interfaceValue is IList interfaces) || interfaces.Count == 0)
                 return false;
-            foreach (object item in (IList)value)
-                if (!(item is string) || string.IsNullOrWhiteSpace((string)item)) return false;
-            if (!fields.TryGetValue("Accessors", out value) || !(value is IList) || ((IList)value).Count == 0)
+            foreach (object item in interfaces)
+                if (!(item is string interfaceName) || string.IsNullOrWhiteSpace(interfaceName)) return false;
+            if (!fields.TryGetValue("Accessors", out object accessorValue) || !(accessorValue is IList accessors) || accessors.Count == 0)
                 return false;
-            foreach (object item in (IList)value)
+            foreach (object item in accessors)
             {
-                var accessor = item as IDictionary<string, object>;
-                if (accessor == null || !accessor.TryGetValue("Name", out value) ||
-                    !(value is string) || (string)value != "_Font_Reserved" ||
-                    !accessor.TryGetValue("DispId", out value) || !(value is int) || (int)value != 0x7ffffdff ||
-                    !accessor.TryGetValue("InvocationKind", out value) || !(value is string) ||
-                    ((string)value != "INVOKE_PROPERTYPUT" && (string)value != "INVOKE_PROPERTYPUTREF"))
+                if (!(item is IDictionary<string, object> accessor) || !accessor.TryGetValue("Name", out object nameValue) ||
+                    !(nameValue is string accessorName) || accessorName != "_Font_Reserved" ||
+                    !accessor.TryGetValue("DispId", out object idValue) || !(idValue is int dispId) || dispId != 0x7ffffdff ||
+                    !accessor.TryGetValue("InvocationKind", out object kindValue) || !(kindValue is string invocationKind) ||
+                    (invocationKind != "INVOKE_PROPERTYPUT" && invocationKind != "INVOKE_PROPERTYPUTREF"))
                     return false;
             }
             return true;

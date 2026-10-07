@@ -1,10 +1,10 @@
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Web.Script.Serialization;
 using System.Windows.Forms;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 using VBAi.Tests.Integration;
 
 namespace VBAi.Tests.Unit
@@ -16,9 +16,19 @@ namespace VBAi.Tests.Unit
         private const string Nonce = "3dbce6bfb1dc49cb9b6c14c450b5e324";
         private static readonly JavaScriptSerializer Json = new JavaScriptSerializer();
         private static ChatGitModalDiagnostic.Identity Identity()
-        { return new ChatGitModalDiagnostic.Identity { DocumentPath = @"E:\Qualification\Disposable.docm", ProcessId = 71,
-            ProcessStartedUtc = "2026-10-05T16:19:22.8081032Z", ThreadId = 73, ChatHandle = 75, RootHandle = 77,
-            ProductMvid = "c4b7e1e3-dbf5-4dce-8498-1c0b7b45c973", ProductSha256 = new string('A', 64) }; }
+        {
+            return new ChatGitModalDiagnostic.Identity
+            {
+                DocumentPath = @"E:\Qualification\Disposable.docm",
+                ProcessId = 71,
+                ProcessStartedUtc = "2026-10-05T16:19:22.8081032Z",
+                ThreadId = 73,
+                ChatHandle = 75,
+                RootHandle = 77,
+                ProductMvid = "c4b7e1e3-dbf5-4dce-8498-1c0b7b45c973",
+                ProductSha256 = new string('A', 64)
+            };
+        }
         private static string Request(ChatGitModalDiagnostic.Identity identity = null)
         { return Json.Serialize(new { Version = 1, Nonce, Identity = identity ?? Identity() }); }
         private sealed class Observation
@@ -40,8 +50,11 @@ namespace VBAi.Tests.Unit
         public void DisabledDiagnosticDoesNotCreateAWindowOrReadAnyManifest()
         {
             string prior = Environment.GetEnvironmentVariable(ChatGitModalDiagnostic.EnvironmentName);
-            try { Environment.SetEnvironmentVariable(ChatGitModalDiagnostic.EnvironmentName, null);
-                using (var chat = new Form()) { Assert.IsNull(ChatGitModalDiagnostic.BeginFromEnvironment(chat, null)); Assert.IsFalse(chat.IsHandleCreated); } }
+            try
+            {
+                Environment.SetEnvironmentVariable(ChatGitModalDiagnostic.EnvironmentName, null);
+                using (var chat = new Form()) { Assert.IsNull(ChatGitModalDiagnostic.BeginFromEnvironment(chat, null)); Assert.IsFalse(chat.IsHandleCreated); }
+            }
             finally { Environment.SetEnvironmentVariable(ChatGitModalDiagnostic.EnvironmentName, prior); }
         }
 
@@ -58,7 +71,9 @@ namespace VBAi.Tests.Unit
         }
 
         [DataTestMethod]
-        [DataRow("Show")][DataRow("Dispose")][DataRow("Both")]
+        [DataRow("Show")]
+        [DataRow("Dispose")]
+        [DataRow("Both")]
         public void NativeModalAndDisposalFailuresRemainPrimaryAndNeverProduceADeferredSuccess(string which)
         {
             var o = new Observation(); var d = o.Begin(); int shows = 0, disposals = 0;
@@ -74,7 +89,11 @@ namespace VBAi.Tests.Unit
         }
 
         [DataTestMethod]
-        [DataRow("Started")][DataRow("ShowModalReturned")][DataRow("DisposeReturned")][DataRow("PostHandlerIntent")][DataRow("PostHandlerCallbackObserved")]
+        [DataRow("Started")]
+        [DataRow("ShowModalReturned")]
+        [DataRow("DisposeReturned")]
+        [DataRow("PostHandlerIntent")]
+        [DataRow("PostHandlerCallbackObserved")]
         public void EveryReceiptPublicationFailurePreventsSuccessWithoutRetryingShowDisposalOrPublication(string phase)
         {
             var o = new Observation { ThrowPhase = phase }; int shows = 0, disposals = 0;
@@ -97,7 +116,9 @@ namespace VBAi.Tests.Unit
             Assert.AreEqual(1, o.Attempts.Count(value => value == "Failed")); Assert.IsFalse(d.Completed);
         }
 
-        [DataTestMethod][DataRow(false)][DataRow(true)]
+        [DataTestMethod]
+        [DataRow(false)]
+        [DataRow(true)]
         public void FailedQueuePublicationCannotBeRehabilitatedByAQueuedCallback(bool acceptedBeforeThrow)
         {
             var o = new Observation(); var d = o.Begin(); d.RunModal(() => { }, () => { });
@@ -127,8 +148,14 @@ namespace VBAi.Tests.Unit
         }
 
         [DataTestMethod]
-        [DataRow("DocumentPath")][DataRow("ProcessId")][DataRow("ProcessStartedUtc")][DataRow("ThreadId")]
-        [DataRow("ChatHandle")][DataRow("RootHandle")][DataRow("ProductMvid")][DataRow("ProductSha256")]
+        [DataRow("DocumentPath")]
+        [DataRow("ProcessId")]
+        [DataRow("ProcessStartedUtc")]
+        [DataRow("ThreadId")]
+        [DataRow("ChatHandle")]
+        [DataRow("RootHandle")]
+        [DataRow("ProductMvid")]
+        [DataRow("ProductSha256")]
         public void EveryChangedIdentityRefusesBeforeStartedAndAlsoInTheDeferredCallback(string field)
         {
             var expected = Identity(); var changed = Json.Deserialize<ChatGitModalDiagnostic.Identity>(Json.Serialize(expected));
@@ -144,7 +171,12 @@ namespace VBAi.Tests.Unit
         }
 
         [DataTestMethod]
-        [DataRow("Version")][DataRow("Nonce")][DataRow("Extra")][DataRow("Missing")][DataRow("Integer")][DataRow("RelativePath")]
+        [DataRow("Version")]
+        [DataRow("Nonce")]
+        [DataRow("Extra")]
+        [DataRow("Missing")]
+        [DataRow("Integer")]
+        [DataRow("RelativePath")]
         public void InvalidManifestRefusesBeforeAnyReceiptPublication(string mutation)
         {
             var request = (IDictionary<string, object>)Json.DeserializeObject(Request());
@@ -158,7 +190,12 @@ namespace VBAi.Tests.Unit
         }
 
         [DataTestMethod]
-        [DataRow("Relative")][DataRow("Unc")][DataRow("Parent")][DataRow("Name")][DataRow("Nonce")][DataRow("Traversal")]
+        [DataRow("Relative")]
+        [DataRow("Unc")]
+        [DataRow("Parent")]
+        [DataRow("Name")]
+        [DataRow("Nonce")]
+        [DataRow("Traversal")]
         public void ManifestPathCannotEscapeTheFixedOwnedTemporaryChild(string mutation)
         {
             string temp = Path.GetTempPath(), root = Path.Combine(temp, ChatGitModalDiagnostic.DirectoryName, Nonce), path = Path.Combine(root, "request.json");

@@ -249,10 +249,16 @@ namespace VBAi
                     (File.GetAttributes(staging) & FileAttributes.ReparsePoint) != 0)
                     throw new IOException("Existing canonical owned staging is required.");
                 var serializer = new System.Web.Script.Serialization.JavaScriptSerializer { MaxJsonLength = 16 * 1024 * 1024 };
-                Func<PublicationComponent, string> observation = c => serializer.Serialize(new {
-                    c.Name, c.Type, c.Code, c.FormVersion, c.Version,
+                string observation(PublicationComponent c) => serializer.Serialize(new
+                {
+                    c.Name,
+                    c.Type,
+                    c.Code,
+                    c.FormVersion,
+                    c.Version,
                     ComponentSnapshot = c.ComponentSnapshotJson == null ? null : serializer.DeserializeObject(c.ComponentSnapshotJson),
-                    Designer = c.DesignerJson == null ? null : serializer.DeserializeObject(c.DesignerJson) });
+                    Designer = c.DesignerJson == null ? null : serializer.DeserializeObject(c.DesignerJson)
+                });
                 if (phase != null && phase != "BeforeSave" && phase != "AfterSave") throw new ArgumentException("Unsupported diagnostic phase.");
                 string prefix = (phase == null ? "import-mismatch-" : "final-mismatch-" + phase + "-") + ordinal.ToString("D4", System.Globalization.CultureInfo.InvariantCulture);
                 expectedFile = prefix + "-expected.json";
@@ -351,13 +357,18 @@ namespace VBAi
             string destinationPath = RequireFreshSolidWorksMacroPath(request.Path);
             Action<bool> authorize = authorization ?? (_ => { });
             Action context = requireNativeContext ?? (() => { });
-            Action guard = () => { context(); authorize(true); context(); };
+            void guard() { context(); authorize(true); context(); }
             guard();
             var owner = SolidWorksSaveProbe();
             if (!owner.IsSolidWorks) throw new InvalidOperationException("Publication requires the current SOLIDWORKS process.");
             owner.RequireOwner((object)vbe);
-            var frozen = new Request { Project = request.Project, ExpectedProjectVersion = request.ExpectedProjectVersion,
-                ExpectedMode = 2, Path = destinationPath };
+            var frozen = new Request
+            {
+                Project = request.Project,
+                ExpectedProjectVersion = request.ExpectedProjectVersion,
+                ExpectedMode = 2,
+                Path = destinationPath
+            };
             object canonical = (object)GetDesignProject(frozen.Project);
             AssertProjectVersion(frozen, canonical);
             var source = ReadPublicationSource(canonical);
@@ -370,16 +381,24 @@ namespace VBAi
             string targetName = Path.GetFileNameWithoutExtension(destinationPath);
             if (beforeCollection.Any(p => string.Equals(p.Name, targetName, StringComparison.OrdinalIgnoreCase)))
                 throw new InvalidOperationException("The destination basename collides with an existing project identity.");
-            var result = new SolidWorksMacroPublicationResult { OriginalProject = source.Name, OriginalHostPath = source.Path,
-                OriginalProjectVersion = source.Version, HostPath = destinationPath, OriginalPreserved = true };
+            var result = new SolidWorksMacroPublicationResult
+            {
+                OriginalProject = source.Name,
+                OriginalHostPath = source.Path,
+                OriginalProjectVersion = source.Version,
+                HostPath = destinationPath,
+                OriginalPreserved = true
+            };
             int ordinal = 0;
             bool callPending = false, sourceChecked = false;
-            Action<string> claim = phase => {
+            void claim(string phase)
+            {
                 var entry = new MacroMutationClaim(phase, destinationPath, ++ordinal);
                 result.AddClaim(entry); recordClaim?.Invoke(entry);
-            };
-            Action<Action> settledCall = action => { callPending = true; try { action(); } finally { callPending = false; } };
-            Action sourceGuard = () => {
+            }
+            void settledCall(Action action) { callPending = true; try { action(); } finally { callPending = false; } }
+            void sourceGuard()
+            {
                 sourceChecked = false; guard();
                 if (!GeneralProjectIdentity(source.Canonical, (object)GetDesignProject(source.Name)))
                     throw new InvalidOperationException("Original canonical source project changed.");
@@ -388,19 +407,25 @@ namespace VBAi
                     current.Components.Where((item, index) => !GeneralProjectIdentity(item.Canonical, source.Components[index].Canonical)).Any())
                     throw new InvalidOperationException("Original source contents, metadata, designer, references or persistence changed.");
                 authorize(false); context(); sourceChecked = true;
-            };
+            }
             string generalBaseline = null;
-            Func<Task> generalGuard = async () => {
+            async Task generalGuard()
+            {
                 sourceGuard(); sourceChecked = false;
-                var generalRequest = new Request { Command = "read_project_general", Project = source.Name,
-                    ExpectedProjectVersion = source.Version, ExpectedMode = 2 };
+                var generalRequest = new Request
+                {
+                    Command = "read_project_general",
+                    Project = source.Name,
+                    ExpectedProjectVersion = source.Version,
+                    ExpectedMode = 2
+                };
                 callPending = true;
                 object observed = await readGeneral(generalRequest);
                 var fields = json.Deserialize<Dictionary<string, object>>(json.Serialize(observed));
                 if (fields != null && (PublicationGeneralBoolean(fields, "MutationInvoked", true) ||
                     PublicationGeneralBoolean(fields, "CommittedRequested", true) ||
-                    fields.ContainsKey("FieldAttempts") && fields["FieldAttempts"] is int && (int)fields["FieldAttempts"] > 0 ||
-                    fields.ContainsKey("OkAttempts") && fields["OkAttempts"] is int && (int)fields["OkAttempts"] > 0))
+                    fields.ContainsKey("FieldAttempts") && fields["FieldAttempts"] is int v && v > 0 ||
+                    fields.ContainsKey("OkAttempts") && fields["OkAttempts"] is int v1 && v1 > 0))
                     result.MutationInvoked = true;
                 // A returned Task is insufficient: the original modal Execute and Cancel must both settle.
                 if (fields == null || !PublicationGeneralBoolean(fields, "Terminal", true) ||
@@ -421,8 +446,7 @@ namespace VBAi
                 var metadata = new Dictionary<string, object>();
                 foreach (string key in new[] { "OptionsVersion", "Name", "Description", "HelpFile", "HelpContextText", "ConditionalCompilation" })
                 {
-                    object value;
-                    if (!fields.TryGetValue(key, out value) || !(value is string))
+                    if (!fields.TryGetValue(key, out object value) || !(value is string))
                         throw new InvalidOperationException("Native General metadata is missing or unreadable.");
                     metadata.Add(key, value);
                 }
@@ -436,7 +460,7 @@ namespace VBAi
                     throw new InvalidOperationException("Original native General values or options version changed during publication.");
                 sourceGuard();
                 if (generalBaseline == null) generalBaseline = fingerprint;
-            };
+            }
             try
             {
                 await generalGuard();
@@ -472,7 +496,7 @@ namespace VBAi
                 RequireFreshSolidWorksMacroPath(destinationPath);
                 claim("BeforeNativeCreation");
                 var createRequest = new Request { Path = destinationPath, ExpectedMode = 2, ExpectedProjectVersion = collectionVersion };
-                Action<bool> creationAuthorization = shared => { if (shared) sourceGuard(); authorize(shared); context(); };
+                void creationAuthorization(bool shared) { if (shared) sourceGuard(); authorize(shared); context(); }
                 callPending = true; sourceChecked = false; result.OriginalPreserved = false;
                 var creation = await (PublicationCreate == null
                     ? CreateSolidWorksMacroAsync(createRequest, creationAuthorization, c => claim("NativeCreation"), context)
@@ -495,7 +519,8 @@ namespace VBAi
                 await generalGuard();
                 sourceGuard();
                 object destination = (object)GetDesignProject(creation.Project);
-                Action destinationGuard = () => {
+                void destinationGuard()
+                {
                     sourceGuard();
                     if (GeneralProjectIdentity(source.Canonical, destination) ||
                         !GeneralProjectIdentity(destination, (object)GetDesignProject(creation.Project)) ||
@@ -503,7 +528,7 @@ namespace VBAi
                         !string.Equals(StandaloneAwareProjectPath(destination), destinationPath, StringComparison.OrdinalIgnoreCase))
                         throw new InvalidOperationException("New native destination identity, type or path changed.");
                     authorize(false); context();
-                };
+                }
                 destinationGuard();
                 result.IdentityChanged = true;
                 if (!string.IsNullOrWhiteSpace(creation.CollectionVersion) &&
@@ -605,14 +630,15 @@ namespace VBAi
                     if (surplus > 0)
                     {
                         destinationGuard(); VerifyPublicationExport(component);
-                        Action requireImportedUnchanged = () => {
+                        void requireImportedUnchanged()
+                        {
                             destinationGuard();
                             object selected = (object)GetComponent(destination, component.Name);
                             var current = ReadPublicationComponent(creation.Project, selected);
                             if (!GeneralProjectIdentity(imported, selected) || current.Name != actual.Name || current.Type != actual.Type ||
                                 current.Code != actual.Code || current.Version != actual.Version || current.FormVersion != actual.FormVersion)
                                 throw new InvalidOperationException("Imported canonical form or revision changed before prefix reconciliation.");
-                        };
+                        }
                         requireImportedUnchanged();
                         claim("BeforeImportedCodePrefixReconciliation");
                         requireImportedUnchanged();
@@ -634,17 +660,25 @@ namespace VBAi
                     }
                     importedComponents.Add(actual);
                     // Verify semantic Designer/resource fidelity; retain original and verification hashes without claiming byte-identical FRX.
-                    published.Add(new { component.Name, component.Type, OriginalExportSha256 = component.ExportSha256,
-                        OriginalFrxSha256 = component.FrxSha256, VerifiedExportSha256 = PublicationFileHash(verifyPath),
+                    published.Add(new
+                    {
+                        component.Name,
+                        component.Type,
+                        OriginalExportSha256 = component.ExportSha256,
+                        OriginalFrxSha256 = component.FrxSha256,
+                        VerifiedExportSha256 = PublicationFileHash(verifyPath),
                         VerifiedFrxSha256 = component.Type == 3 ? PublicationFileHash(verifyFrx) : null,
-                        DesignerAndPictureStateVerified = component.Type == 3, HiddenAttributesVerified = true });
+                        DesignerAndPictureStateVerified = component.Type == 3,
+                        HiddenAttributesVerified = true
+                    });
                 }
                 destinationGuard();
                 claim("BeforeDescription");
                 result.MutationInvoked = true; settledCall(() => ((dynamic)destination).Description = source.Description);
                 if ((string)((dynamic)destination).Description != source.Description)
                     throw new InvalidOperationException("Published description readback differs.");
-                Action<bool> verifyPublished = afterSave => {
+                void verifyPublished(bool afterSave)
+                {
                     destinationGuard();
                     var inventory = ReadPublicationDestinationComponents(destination);
                     if (inventory.Count != source.Components.Count + 1 ||
@@ -669,7 +703,8 @@ namespace VBAi
                                 var original = source.Components.Single(c => c.Name == imported.Name);
                                 string verificationPath = Path.Combine(staging, "verified-after-save-" + imported.Name + PublicationExtension(imported.Type));
                                 var saveObservation = current;
-                                Action requireSavedObservationUnchanged = () => {
+                                void requireSavedObservationUnchanged()
+                                {
                                     destinationGuard();
                                     current = ReadPublicationComponent(creation.Project, (object)GetComponent(destination, imported.Name));
                                     canonicalEqual = GeneralProjectIdentity(current.Canonical, imported.Canonical);
@@ -677,7 +712,7 @@ namespace VBAi
                                         current.Type != saveObservation.Type || current.Code != saveObservation.Code || current.Version != saveObservation.Version ||
                                         current.FormVersion != saveObservation.FormVersion)
                                         throw new InvalidOperationException("Saved component changed around verification export.");
-                                };
+                                }
                                 destinationGuard(); claim("BeforePostSaveVerificationExport"); requireSavedObservationUnchanged();
                                 settledCall(() => ((dynamic)current.Canonical).Export(verificationPath));
                                 requireSavedObservationUnchanged();
@@ -693,13 +728,18 @@ namespace VBAi
                             throw;
                         }
                     }
-                };
+                }
                 verifyPublished(false);
                 await generalGuard();
                 destinationGuard();
                 dynamic destinationState = ProjectProperties(creation.Project);
-                var saveRequest = new Request { Project = creation.Project, ExpectedMode = 2,
-                    ExpectedProjectVersion = (string)destinationState.Version, ExpectedHostPath = destinationPath };
+                var saveRequest = new Request
+                {
+                    Project = creation.Project,
+                    ExpectedMode = 2,
+                    ExpectedProjectVersion = (string)destinationState.Version,
+                    ExpectedHostPath = destinationPath
+                };
                 claim("BeforeSave");
                 result.MutationInvoked = true; callPending = true;
                 object saved = await (PublicationSave == null
@@ -717,8 +757,14 @@ namespace VBAi
                 await generalGuard();
                 result.OriginalPreserved = true; sourceChecked = true;
                 result.Components = published; result.References = source.References.ToArray();
-                result.NativeGeneratedDefaults = defaults.Select(c => new { c.Name, c.Code, c.Version,
-                    OriginalExportSha256 = c.ExportSha256, HiddenAttributes = c.Attributes }).ToArray();
+                result.NativeGeneratedDefaults = defaults.Select(c => new
+                {
+                    c.Name,
+                    c.Code,
+                    c.Version,
+                    OriginalExportSha256 = c.ExportSha256,
+                    HiddenAttributes = c.Attributes
+                }).ToArray();
                 result.ProjectVersion = (string)((dynamic)ProjectProperties(creation.Project)).Version;
                 result.CollectionVersion = LifecycleVersion(ReadLifecycleCollection());
                 result.Verified = true; result.Terminal = true;
@@ -740,7 +786,7 @@ namespace VBAi
         /// <param name="expected">Required Boolean value.</param>
         /// <returns>True only when the field exists, is Boolean, and equals the expected value.</returns>
         private static bool PublicationGeneralBoolean(Dictionary<string, object> fields, string key, bool expected)
-        { object value; return fields.TryGetValue(key, out value) && value is bool && (bool)value == expected; }
+        { return fields.TryGetValue(key, out object value) && value is bool v && v == expected; }
 
         /// <summary>Checks that an asynchronous General report contains an exact integer attempt count.</summary>
         /// <param name="fields">Deserialized report fields.</param>
@@ -748,7 +794,7 @@ namespace VBAi
         /// <param name="expected">Required count, including zero when confirming no mutation.</param>
         /// <returns>True only when the field exists, is an integer, and equals the expected count.</returns>
         private static bool PublicationGeneralCount(Dictionary<string, object> fields, string key, int expected)
-        { object value; return fields.TryGetValue(key, out value) && value is int && (int)value == expected; }
+        { return fields.TryGetValue(key, out object value) && value is int v && v == expected; }
 
         /// <summary>Captures an eligible standalone Type101 design project, its disk hash, components, and references.</summary>
         /// <param name="canonical">Canonical source project COM object.</param>
@@ -776,12 +822,30 @@ namespace VBAi
             string diskSha = path == null ? null : PublicationFileHash(path);
             string description = (string)project.Description;
             string version = (string)((dynamic)ProjectProperties(name)).Version;
-            string fingerprint = Hash(json.Serialize(new { name, path, diskSha, version, Saved = (bool)project.Saved,
-                description, Components = components.Select(c => new { c.Name, c.Type, c.Code, c.FormVersion, c.Version }),
-                References = ReferenceSet(references) }));
-            return new PublicationSource { Canonical = canonical, Name = name, Path = path, DiskSha256 = diskSha,
-                Version = version, Saved = (bool)project.Saved, Description = description, Components = components,
-                References = references, Fingerprint = fingerprint };
+            string fingerprint = Hash(json.Serialize(new
+            {
+                name,
+                path,
+                diskSha,
+                version,
+                Saved = (bool)project.Saved,
+                description,
+                Components = components.Select(c => new { c.Name, c.Type, c.Code, c.FormVersion, c.Version }),
+                References = ReferenceSet(references)
+            }));
+            return new PublicationSource
+            {
+                Canonical = canonical,
+                Name = name,
+                Path = path,
+                DiskSha256 = diskSha,
+                Version = version,
+                Saved = (bool)project.Saved,
+                Description = description,
+                Components = components,
+                References = references,
+                Fingerprint = fingerprint
+            };
         }
 
         /// <summary>Reads one exportable component's code and canonical metadata, including a complete UserForm designer tree.</summary>
@@ -806,8 +870,8 @@ namespace VBAi
                 string serializedTree = json.Serialize(tree);
                 var fields = json.Deserialize<Dictionary<string, object>>(serializedTree);
                 RequirePublicationDesignerReadable(fields);
-                if (!fields.TryGetValue("TreeVersion", out var treeVersion) || !(treeVersion is string) ||
-                    string.IsNullOrWhiteSpace((string)treeVersion))
+                if (!fields.TryGetValue("TreeVersion", out var treeVersion) || !(treeVersion is string v) ||
+                    string.IsNullOrWhiteSpace(v))
                     throw new InvalidOperationException("A complete designer tree version is required.");
                 formVersion = (string)treeVersion;
                 designerJson = serializedTree;
@@ -817,8 +881,14 @@ namespace VBAi
             string version;
             if (type == 3)
             {
-                snapshot = new { Name = name, Type = type, Code = capturedCode,
-                    FormVersion = formVersion, Properties = ReadProperties(canonical) };
+                snapshot = new
+                {
+                    Name = name,
+                    Type = type,
+                    Code = capturedCode,
+                    FormVersion = formVersion,
+                    Properties = ReadProperties(canonical)
+                };
                 version = Hash(json.Serialize(snapshot));
             }
             else
@@ -826,17 +896,24 @@ namespace VBAi
                 snapshot = ComponentSnapshot(projectName, component);
                 version = (string)((dynamic)snapshot).Version;
             }
-            return new PublicationComponent { Canonical = canonical, Name = name, Type = type,
-                Code = capturedCode, FormVersion = formVersion, DesignerJson = designerJson,
-                Version = version, ComponentSnapshotJson = json.Serialize(snapshot) };
+            return new PublicationComponent
+            {
+                Canonical = canonical,
+                Name = name,
+                Type = type,
+                Code = capturedCode,
+                FormVersion = formVersion,
+                DesignerJson = designerJson,
+                Version = version,
+                ComponentSnapshotJson = json.Serialize(snapshot)
+            };
         }
 
         /// <summary>Rejects any recursively nested designer or resource observation containing a read error.</summary>
         /// <param name="value">Deserialized tree/object graph to inspect; strings are treated as scalar values.</param>
         internal static void RequirePublicationDesignerReadable(object value)
         {
-            var dictionary = value as IDictionary<string, object>;
-            if (dictionary != null)
+            if (value is IDictionary<string, object> dictionary)
             {
                 foreach (var pair in dictionary)
                 {
@@ -860,8 +937,13 @@ namespace VBAi
                 string guid = (string)reference.GUID;
                 if ((int)reference.Type != 0 || (bool)reference.IsBroken || !System.Guid.TryParse(guid, out var parsed))
                     throw new InvalidOperationException("Only identified, unbroken type-library references can be published; project references are unsupported.");
-                var item = new PublicationReference { Guid = parsed.ToString("B"), Major = (int)reference.Major,
-                    Minor = (int)reference.Minor, BuiltIn = (bool)reference.BuiltIn };
+                var item = new PublicationReference
+                {
+                    Guid = parsed.ToString("B"),
+                    Major = (int)reference.Major,
+                    Minor = (int)reference.Minor,
+                    BuiltIn = (bool)reference.BuiltIn
+                };
                 if (item.Major < 0 || item.Minor < 0 || !identities.Add(item.Guid))
                     throw new InvalidOperationException("Ambiguous reference identity.");
                 result.Add(item);

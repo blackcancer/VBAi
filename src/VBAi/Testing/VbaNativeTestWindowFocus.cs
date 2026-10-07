@@ -335,12 +335,20 @@ namespace VBAi
             /// <returns>Snapshot including existence, visibility, enabled state, ancestry, class, process, and thread.</returns>
             public Window Read(IntPtr handle)
             {
-                uint process;
-                uint thread = GetWindowThreadProcessId(handle, out process);
+                uint thread = GetWindowThreadProcessId(handle, out uint process);
                 var kind = new StringBuilder(256);
                 GetClassName(handle, kind, kind.Capacity);
-                return new Window { Handle = handle, Parent = GetParent(handle), Process = process, Thread = thread,
-                    Class = kind.ToString(), Exists = IsWindow(handle), Visible = IsWindowVisible(handle), Enabled = IsWindowEnabled(handle) };
+                return new Window
+                {
+                    Handle = handle,
+                    Parent = GetParent(handle),
+                    Process = process,
+                    Thread = thread,
+                    Class = kind.ToString(),
+                    Exists = IsWindow(handle),
+                    Visible = IsWindowVisible(handle),
+                    Enabled = IsWindowEnabled(handle)
+                };
             }
 
             /// <summary>Enumerates descendant HWNDs and refuses trees larger than the inspection cap.</summary>

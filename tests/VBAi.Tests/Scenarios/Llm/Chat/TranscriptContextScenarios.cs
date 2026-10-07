@@ -1,18 +1,10 @@
 namespace VBAi.Tests.Unit
 {
-    using System;
+    using Microsoft.VisualStudio.TestTools.UnitTesting;
     using System.Collections;
     using System.Collections.Generic;
-    using System.IO;
-    using System.Net;
-    using System.Net.Http;
-    using System.Reflection;
-    using System.Threading;
-    using System.Threading.Tasks;
-    using System.Web.Script.Serialization;
     using System.Windows.Forms;
     using VBAi;
-    using Microsoft.VisualStudio.TestTools.UnitTesting;
 
     /// <summary>Vérifie la conservation des entrées du transcript et de l’aperçu de contexte.</summary>
     public sealed partial class ChatWindowStateTests

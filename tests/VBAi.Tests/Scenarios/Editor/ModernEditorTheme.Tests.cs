@@ -1,10 +1,9 @@
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Drawing;
 using System.Threading;
 using System.Threading.Tasks;
-using VBAi;
 using VBAi.Tests.Infrastructure;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace VBAi.Tests.Unit
 {
@@ -26,20 +25,22 @@ namespace VBAi.Tests.Unit
                     {
                         if (method == "theme")
                         {
-                            try {
-                            Assert.AreEqual(owner, Thread.CurrentThread.ManagedThreadId);
-                            Assert.AreEqual(choice == ThemeChoice.Dark, values[0]);
-                            Assert.AreEqual(UiTheme.Surface.ToArgb(), ColorTranslator.FromHtml((string)values[2]).ToArgb());
-                            StringAssert.StartsWith((string)values[2], "#");
-                            using (var bitmap = new Bitmap(500, 60))
-                            using (var graphics = Graphics.FromImage(bitmap))
+                            try
                             {
-                                UiInvoke.Call(typeof(ThemedTabControl), "OnPaint", f.Get<ThemedTabControl>("tabs"),
-                                    new System.Windows.Forms.PaintEventArgs(graphics, new Rectangle(0, 0, 500, 60)));
-                                Assert.AreEqual(UiTheme.Background.ToArgb(), bitmap.GetPixel(499, 59).ToArgb());
+                                Assert.AreEqual(owner, Thread.CurrentThread.ManagedThreadId);
+                                Assert.AreEqual(choice == ThemeChoice.Dark, values[0]);
+                                Assert.AreEqual(UiTheme.Surface.ToArgb(), ColorTranslator.FromHtml((string)values[2]).ToArgb());
+                                StringAssert.StartsWith((string)values[2], "#");
+                                using (var bitmap = new Bitmap(500, 60))
+                                using (var graphics = Graphics.FromImage(bitmap))
+                                {
+                                    UiInvoke.Call(typeof(ThemedTabControl), "OnPaint", f.Get<ThemedTabControl>("tabs"),
+                                        new System.Windows.Forms.PaintEventArgs(graphics, new Rectangle(0, 0, 500, 60)));
+                                    Assert.AreEqual(UiTheme.Background.ToArgb(), bitmap.GetPixel(499, 59).ToArgb());
+                                }
+                                observed.SetResult(true);
                             }
-                            observed.SetResult(true);
-                            } catch (Exception error) { observed.TrySetException(error); }
+                            catch (Exception error) { observed.TrySetException(error); }
                         }
                         return Task.FromResult("null");
                     };

@@ -88,7 +88,8 @@ namespace VBAi
         /// <param name="e">Données de l’événement.</param>
         private async void Connect_Click(object sender, EventArgs e)
         {
-            await Perform(async () => {
+            await Perform(async () =>
+            {
                 string url = MacroGitRepository.ValidateRemote(remote.Text);
                 string bindingId;
                 using (var hash = System.Security.Cryptography.SHA256.Create())
@@ -166,49 +167,55 @@ namespace VBAi
             string[] selected = changes.CheckedItems.Cast<ModuleChange>().Where(x => x.Name != null).Select(x => x.Name).ToArray();
             bool references = changes.CheckedItems.Cast<ModuleChange>().Any(x => x.Name == null);
             GitModalSession.Request request = null;
-            Func<Task<bool>> execute = async () => {
-            try { await Perform(async () => {
-                var operations = new MacroGitOperations(project, repository) { ImportPreview = ShowImportSummary };
-                if (action == "commit_selected" && !repository.RecoveryPending && displayedLive != null && !project.Capture().SameAs(displayedLive))
-                    throw new InvalidOperationException(UiText.Get("The Git/VBA state changed. Read git_status again before making changes."));
-                repository.Progress = ReportProgress;
-                repository.Cancellation = action == "fetch" ? operationCancellation.Token : System.Threading.CancellationToken.None;
-                cancelOperation.Enabled = action == "fetch";
-                string expectedState = null;
-                if (GitModalSession.RequiresHandoff(action))
-                {
-                    if (Modal && modalSession == null) throw new InvalidOperationException("A modal import requires its owning Git session.");
-                    if (modalSession != null)
-                    {
-                        var live = project.Capture();
-                        expectedState = await Task.Run(() => operations.Revision(live));
-                        request = new GitModalSession.Request(action, name, text, choice, path, selected, references, expectedState, async () => {
-                            var observed = project.Capture();
-                            if (expectedState != await Task.Run(() => operations.Revision(observed)))
-                                throw new InvalidOperationException(UiText.Get("The Git/VBA state changed. Read git_status again before making changes."));
-                        });
-                        await AdmitImport(request);
-                        operations.ImportOwnerPreflight = () => modalSession.RequireImportOwner(request);
-                    }
-                }
-                object result = await operations.ExecuteAsync(action, expectedState, name: name, text: text, choice: choice, path: path,
-                    modules: request == null ? selected : request.Modules, references: references);
-                repository.Cancellation = System.Threading.CancellationToken.None;
-                await Compare();
-                status.Text = (action == "commit" || action == "commit_selected") ? UiText.Get("Local commit created. Use Push to publish it.") :
-                    action == "push" ? UiText.Get("Push complete.") : action == "pull" ? UiText.Get("Pull and import complete. Check and save the document.") :
-                    action == "rollback" || action == "checkpoint_restore" ? UiText.Get("VBA restored. Check and save the document.") :
-                    repository.PendingMerge != null ? UiText.Get("Merge prepared: resolve conflicts, then click Complete merge.") : UiText.Get("Operation complete: ") + action;
-                if (repository.PendingMerge != null) tabs.SelectedTab = conflictsTab;
-            }); }
-            catch (Exception error)
+            Func<Task<bool>> execute = async () =>
             {
-                operationFailure = operationFailure == null || ReferenceEquals(operationFailure, error) ? error :
-                    new AggregateException("The Git operation and its cleanup both failed.", operationFailure, error);
-                status.Text = operationFailure.Message + " [" + GitFailureDiagnostic.Describe(operationFailure) + "] · " +
-                    UiText.Get("Check the connection, account and Git state, then retry.");
-            }
-            return true;
+                try
+                {
+                    await Perform(async () =>
+                    {
+                        var operations = new MacroGitOperations(project, repository) { ImportPreview = ShowImportSummary };
+                        if (action == "commit_selected" && !repository.RecoveryPending && displayedLive != null && !project.Capture().SameAs(displayedLive))
+                            throw new InvalidOperationException(UiText.Get("The Git/VBA state changed. Read git_status again before making changes."));
+                        repository.Progress = ReportProgress;
+                        repository.Cancellation = action == "fetch" ? operationCancellation.Token : System.Threading.CancellationToken.None;
+                        cancelOperation.Enabled = action == "fetch";
+                        string expectedState = null;
+                        if (GitModalSession.RequiresHandoff(action))
+                        {
+                            if (Modal && modalSession == null) throw new InvalidOperationException("A modal import requires its owning Git session.");
+                            if (modalSession != null)
+                            {
+                                var live = project.Capture();
+                                expectedState = await Task.Run(() => operations.Revision(live));
+                                request = new GitModalSession.Request(action, name, text, choice, path, selected, references, expectedState, async () =>
+                                {
+                                    var observed = project.Capture();
+                                    if (expectedState != await Task.Run(() => operations.Revision(observed)))
+                                        throw new InvalidOperationException(UiText.Get("The Git/VBA state changed. Read git_status again before making changes."));
+                                });
+                                await AdmitImport(request);
+                                operations.ImportOwnerPreflight = () => modalSession.RequireImportOwner(request);
+                            }
+                        }
+                        object result = await operations.ExecuteAsync(action, expectedState, name: name, text: text, choice: choice, path: path,
+                            modules: request == null ? selected : request.Modules, references: references);
+                        repository.Cancellation = System.Threading.CancellationToken.None;
+                        await Compare();
+                        status.Text = (action == "commit" || action == "commit_selected") ? UiText.Get("Local commit created. Use Push to publish it.") :
+                            action == "push" ? UiText.Get("Push complete.") : action == "pull" ? UiText.Get("Pull and import complete. Check and save the document.") :
+                            action == "rollback" || action == "checkpoint_restore" ? UiText.Get("VBA restored. Check and save the document.") :
+                            repository.PendingMerge != null ? UiText.Get("Merge prepared: resolve conflicts, then click Complete merge.") : UiText.Get("Operation complete: ") + action;
+                        if (repository.PendingMerge != null) tabs.SelectedTab = conflictsTab;
+                    });
+                }
+                catch (Exception error)
+                {
+                    operationFailure = operationFailure == null || ReferenceEquals(operationFailure, error) ? error :
+                        new AggregateException("The Git operation and its cleanup both failed.", operationFailure, error);
+                    status.Text = operationFailure.Message + " [" + GitFailureDiagnostic.Describe(operationFailure) + "] · " +
+                        UiText.Get("Check the connection, account and Git state, then retry.");
+                }
+                return true;
             };
             try
             {
@@ -276,7 +283,8 @@ namespace VBAi
         /// <param name="e">Données de l’événement.</param>
         private async void RemoteBranches_Click(object sender, EventArgs e)
         {
-            await Perform(async () => {
+            await Perform(async () =>
+            {
                 string[] names = await Task.Run(() => repository.RemoteBranches());
                 branchName.Items.Clear(); branchName.Items.AddRange(names);
                 status.Text = names.Length + UiText.Get(" remote branch(es). Choose a name, then Track remote.");
@@ -335,7 +343,8 @@ namespace VBAi
             conflictDiff.Rows.Clear(); resolutionText.Clear();
             if (running || repository == null || conflictList.SelectedItem == null) return;
             string path = conflictList.SelectedItem.ToString();
-            await Perform(async () => {
+            await Perform(async () =>
+            {
                 var content = await Task.Run(() => repository.ConflictContent(path));
                 if (conflictList.SelectedItem?.ToString() != path) return;
                 baseContent.Text = content.Base;
@@ -359,10 +368,12 @@ namespace VBAi
             if (running || project == null) return;
             running = true; operationCancellation = new System.Threading.CancellationTokenSource(); operationProgress.Visible = true; cancelOperation.Visible = true; UpdateButtons(); status.Text = UiText.Get("Operation in progress…");
             operationFailure = null;
-            try {
+            try
+            {
                 // Lock only the transaction so the chat agent can use Git while this window is idle.
                 if (cache != null) cacheLock = new FileStream(Path.Combine(cache, "session.lock"), FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None);
-                if (repository != null && !string.IsNullOrWhiteSpace(remote.Text)) {
+                if (repository != null && !string.IsNullOrWhiteSpace(remote.Text))
+                {
                     string repositoryUrl = MacroGitRepository.ValidateRemote(remote.Text);
                     await Task.Run(() => repository.Initialize(repositoryUrl));
                     if (!refresh && displayedBranch != null && displayedBranch != repository.Branch)

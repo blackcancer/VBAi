@@ -1,9 +1,8 @@
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Globalization;
-using System.Linq;
 using System.Reflection;
 using System.Windows.Forms;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace VBAi.Tests.Unit
 {
@@ -63,8 +62,12 @@ namespace VBAi.Tests.Unit
                 property.SetValue(null, CultureInfo.GetCultureInfo("fr-FR"));
                 CultureInfo.CurrentCulture = CultureInfo.GetCultureInfo("fr-FR");
                 var run = new VbaTestRun { Id = "run", Revision = "revision" };
-                run.Results.Add(new VbaTestResult { Test = new VbaTestDescriptor { Id = "test", Module = "Tests", Procedure = "Adds" },
-                    Outcome = VbaTestOutcome.Passed, Duration = TimeSpan.FromTicks(125000) });
+                run.Results.Add(new VbaTestResult
+                {
+                    Test = new VbaTestDescriptor { Id = "test", Module = "Tests", Procedure = "Adds" },
+                    Outcome = VbaTestOutcome.Passed,
+                    Duration = TimeSpan.FromTicks(125000)
+                });
                 string report = VbaTestReports.Human(run);
                 StringAssert.Contains(report, "Résultats des tests VBA");
                 StringAssert.Contains(report, "Taux de réussite : 100%");

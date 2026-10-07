@@ -3,8 +3,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using System.Windows;
-using System.Windows.Controls;
 
 namespace VBAi
 {
@@ -46,8 +44,15 @@ namespace VBAi
             foreach (var reference in references)
             {
                 tools?.RequireProjectRead(reference.Project);
-                attachments.Add(new ChatAttachment { Label = reference.Token, Text = referenceIndex.Resolve(reference),
-                    Project = reference.Project, Module = reference.Module, Sha256 = reference.Sha256, StartLine = reference.StartLine });
+                attachments.Add(new ChatAttachment
+                {
+                    Label = reference.Token,
+                    Text = referenceIndex.Resolve(reference),
+                    Project = reference.Project,
+                    Module = reference.Module,
+                    Sha256 = reference.Sha256,
+                    StartLine = reference.StartLine
+                });
             }
             foreach (var attachment in drafts)
             {
@@ -96,8 +101,10 @@ namespace VBAi
         /// <param name="text">Texte de lecture seule à afficher.</param>
         private void AddContextPreview(string title, string text)
         {
-            var preview = new ChatContextPreviewView();
-            preview.Width = Math.Max(200, contextPreview.ClientSize.Width - 26);
+            var preview = new ChatContextPreviewView
+            {
+                Width = Math.Max(200, contextPreview.ClientSize.Width - 26)
+            };
             preview.ShowContent(title, text);
             UiTheme.Apply(preview);
             contextPreview.Controls.Add(preview);
@@ -124,8 +131,7 @@ namespace VBAi
             {
                 EnsureCurrentScope();
                 var pane = ReadWorkflow("code_panes")["ActiveCodePane"] as IDictionary<string, object>;
-                var properties = pane?["Properties"] as IDictionary<string, object>;
-                if (properties == null || !properties.ContainsKey("Selection")) throw new InvalidOperationException(UiText.Get("Select code in the VBE."));
+                if (!(pane?["Properties"] is IDictionary<string, object> properties) || !properties.ContainsKey("Selection")) throw new InvalidOperationException(UiText.Get("Select code in the VBE."));
                 string project = Convert.ToString(properties["Project"]), module = Convert.ToString(properties["Module"]);
                 var scope = scopePicker.SelectedItem as MacroScope;
                 string activeSelector = scope != null && !scope.Key.StartsWith("temporary:", StringComparison.Ordinal)
@@ -144,8 +150,15 @@ namespace VBAi
                     selected[selected.Length - 1] = selected.Last().Substring(0, Math.Min(selected.Last().Length, Math.Max(0, endColumn - 1)));
                     selected[0] = selected[0].Substring(Math.Min(selected[0].Length, Math.Max(0, startColumn - 1)));
                 }
-                var attachment = new ChatAttachment { Label = project + "." + module + UiText.Get(" · selection L") + start + "–" + end,
-                    Text = string.Join("\n", selected), Project = scope.Project, Module = module, StartLine = start, Sha256 = Convert.ToString(data["Sha256"]) };
+                var attachment = new ChatAttachment
+                {
+                    Label = project + "." + module + UiText.Get(" · selection L") + start + "–" + end,
+                    Text = string.Join("\n", selected),
+                    Project = scope.Project,
+                    Module = module,
+                    StartLine = start,
+                    Sha256 = Convert.ToString(data["Sha256"])
+                };
                 draftAttachments.RemoveAll(x => x.Label == attachment.Label); draftAttachments.Add(attachment);
                 RefreshContextChips(); RefreshContextPreview(); ScheduleSessionSave();
                 SetStatus(UiText.Get("Selection attached to the next message"));
@@ -187,10 +200,9 @@ namespace VBAi
             try
             {
                 EnsureCurrentScope();
-                var scope = scopePicker.SelectedItem as MacroScope;
-                if (scope == null || tools == null) throw new InvalidOperationException(UiText.Get("No connected project."));
+                if (!(scopePicker.SelectedItem is MacroScope scope) || tools == null) throw new InvalidOperationException(UiText.Get("No connected project."));
                 SetStatus(UiText.Get("Compiling VBA…"));
-                var response = json.Deserialize<Response>(await InvokeTool(tools, "compile_project", json.Serialize(new { Project = scope.Project, ExpectedMode = 2 })));
+                var response = json.Deserialize<Response>(await InvokeTool(tools, "compile_project", json.Serialize(new { scope.Project, ExpectedMode = 2 })));
                 if (response == null || !response.Ok) throw new InvalidOperationException(response?.Error ?? UiText.Get("Empty response."));
                 var data = json.DeserializeObject(json.Serialize(response.Data)) as IDictionary<string, object>;
                 bool compiled = data != null && data.ContainsKey("Compiled") && Convert.ToBoolean(data["Compiled"]);
@@ -198,20 +210,21 @@ namespace VBAi
                 ChatAttachment[] location = null;
                 if (!compiled)
                 {
-                    try {
+                    try
+                    {
                         var state = ReadWorkflow("debug_state", scope.Project);
                         string module = Convert.ToString(state["ActiveModule"]);
-                        var selection = state["Selection"] as IDictionary<string, object>;
                         string selectedSelector = scope.Key.StartsWith("temporary:", StringComparison.Ordinal)
                             ? Convert.ToString(state["SelectedProject"]) : Convert.ToString(state["SelectedProjectPath"]);
                         if (string.Equals(selectedSelector, scope.Project, StringComparison.OrdinalIgnoreCase) &&
-                            !string.IsNullOrEmpty(module) && selection != null)
+                            !string.IsNullOrEmpty(module) && state["Selection"] is IDictionary<string, object> selection)
                         {
                             var source = ReadWorkflow("read_module", scope.Project, module);
                             location = new[] { new ChatAttachment { Label = UiText.Get("Open ") + module + " L" + selection["StartLine"], Text = diagnostic,
                                 Project = scope.Project, Module = module, Sha256 = Convert.ToString(source["Sha256"]), StartLine = Convert.ToInt32(selection["StartLine"]) } };
                         }
-                    } catch (Exception ex) { diagnostic += UiText.Get("\nLocation unavailable: ") + ex.Message; }
+                    }
+                    catch (Exception ex) { diagnostic += UiText.Get("\nLocation unavailable: ") + ex.Message; }
                 }
                 AddEntry(new ChatEntry { Speaker = "Vérification", Text = diagnostic, Attachments = location });
                 SetStatus(compiled ? UiText.Get("VBA verification complete") : UiText.Get("Compilation error · see the diagnostic in the chat"));
@@ -226,7 +239,7 @@ namespace VBAi
             SaveCurrentSession();
             using (var dialog = new System.Windows.Forms.SaveFileDialog { Filter = "Markdown (*.md)|*.md", FileName = "conversation-vba.md" })
             {
-                if (ShowSaveDialog(dialog,this) != System.Windows.Forms.DialogResult.OK) return;
+                if (ShowSaveDialog(dialog, this) != System.Windows.Forms.DialogResult.OK) return;
                 try { System.IO.File.WriteAllText(dialog.FileName, ChatHistory.Export(currentSession), new UTF8Encoding(false)); SetStatus(UiText.Get("Conversation exported")); }
                 catch (Exception ex) { SetStatus(UiText.Get("Unable to export: ") + ex.Message); }
             }
@@ -246,9 +259,18 @@ namespace VBAi
             var entries = json.Deserialize<List<ChatEntry>>(json.Serialize(transcriptEntries.Skip(start).Take(index + 1 - start)));
             // A branch is conversational context, never a second owner of rollback controls.
             foreach (var entry in entries) if (entry.Change != null) { entry.Text = entry.Change.Label + "\n" + entry.Change.Diff; entry.Change = null; }
-            var fork = new ChatSessionState { Scope = currentSession.Scope, Title = currentSession.Title + UiText.Get(" · branch"),
-                Provider = currentSession.Provider, Model = currentSession.Model, Effort = currentSession.Effort, Mode = currentSession.Mode, Entries = entries,
-                ReadProjectGrants = currentSession.ReadProjectGrants?.ToArray(), SharedContextReadAllowed = currentSession.SharedContextReadAllowed };
+            var fork = new ChatSessionState
+            {
+                Scope = currentSession.Scope,
+                Title = currentSession.Title + UiText.Get(" · branch"),
+                Provider = currentSession.Provider,
+                Model = currentSession.Model,
+                Effort = currentSession.Effort,
+                Mode = currentSession.Mode,
+                Entries = entries,
+                ReadProjectGrants = currentSession.ReadProjectGrants?.ToArray(),
+                SharedContextReadAllowed = currentSession.SharedContextReadAllowed
+            };
             var history = new List<object> { new { role = "system", content = LlmVbeContext.DeveloperInstructions } };
             foreach (var entry in entries.Where(x => x.Speaker == "Vous" || x.Speaker == "Assistant"))
                 history.Add(new { role = entry.Speaker == "Vous" ? "user" : "assistant", content = entry.Text });
@@ -267,8 +289,7 @@ namespace VBAi
                 if (!string.IsNullOrEmpty(attachment.EditorDocumentId))
                 {
                     var editor = scopeSession?.ModernEditor?.Invoke(false);
-                    var document = editor?.Documents.FirstOrDefault(d => d.Id == attachment.EditorDocumentId);
-                    if (document == null) throw new InvalidOperationException(UiText.Get("Select code in the VBE."));
+                    var document = (editor?.Documents.FirstOrDefault(d => d.Id == attachment.EditorDocumentId)) ?? throw new InvalidOperationException(UiText.Get("Select code in the VBE."));
                     await editor.CaptureForTool();
                     if (EditorDocument.Hash(document.Text) != attachment.Sha256)
                         throw new InvalidOperationException(attachment.Label + UiText.Get(" is stale. Remove it and attach the current selection."));
@@ -277,8 +298,14 @@ namespace VBAi
                     await editor.Script("reveal", Math.Max(1, attachment.StartLine), 1);
                     return;
                 }
-                var result = ReadHost(scopeSession, new Request { Command = "select_code", Project = attachment.Project,
-                    Module = attachment.Module, StartLine = Math.Max(1, attachment.StartLine), ExpectedSha256 = attachment.Sha256 });
+                var result = ReadHost(scopeSession, new Request
+                {
+                    Command = "select_code",
+                    Project = attachment.Project,
+                    Module = attachment.Module,
+                    StartLine = Math.Max(1, attachment.StartLine),
+                    ExpectedSha256 = attachment.Sha256
+                });
                 if (!result.Ok) SetStatus(result.Error);
             }
             catch (Exception ex) { SetStatus(ex.Message); }

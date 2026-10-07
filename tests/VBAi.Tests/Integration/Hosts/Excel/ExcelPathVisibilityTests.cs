@@ -1,3 +1,4 @@
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -5,7 +6,6 @@ using System.Linq;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Web.Script.Serialization;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 using VBAi.Tests.Infrastructure;
 
 namespace VBAi.Tests.Integration
@@ -40,7 +40,8 @@ namespace VBAi.Tests.Integration
             Action save = () => File.WriteAllText(reportPath, json.Serialize(report), new System.Text.UTF8Encoding(false));
             var evidence = new ExcelScalarQualificationEvidence(Path.Combine(evidenceRoot, "scenario-lifecycle.json"), 0, evidenceRoot,
                 "Readonly synthetic path diagnostic; host identity is recorded after exact bootstrap attachment");
-            evidence.Run(() => {
+            evidence.Run(() =>
+            {
                 foreach (string directory in new[] { local, temp })
                 {
                     Assert.IsFalse(Directory.Exists(directory)); Directory.CreateDirectory(directory);
@@ -75,7 +76,8 @@ namespace VBAi.Tests.Integration
                 var commandEvidence = new ExcelScalarQualificationEvidence(Path.Combine(evidenceRoot, "request-ledger.json"), host.ProcessId, host.Root,
                     "One readonly fixed-allowlist owner-STA diagnostic; no source writes, export, macros or token manipulation");
                 var response = commandEvidence.Send(new { Command = PathVisibilityDiagnostic.CommandName },
-                    () => VbeBridgeClient.Read("VBAi." + host.ProcessId, new { Command = PathVisibilityDiagnostic.CommandName }, 20000), value => {
+                    () => VbeBridgeClient.Read("VBAi." + host.ProcessId, new { Command = PathVisibilityDiagnostic.CommandName }, 20000), value =>
+                    {
                         Assert.IsNotNull(value, "No response; retain host and synthetic read leases without replay.");
                         pending = false;
                         Assert.AreEqual(true, value["Ok"], json.Serialize(value));
@@ -100,12 +102,17 @@ namespace VBAi.Tests.Integration
                 Assert.AreEqual(before["ProcessId"], after["ProcessId"]); Assert.AreEqual(before["NativeThreadId"], after["NativeThreadId"]);
                 var beforeRows = ((IEnumerable<object>)before["Paths"]).Cast<IDictionary<string, object>>().ToArray();
                 var afterRows = ((IEnumerable<object>)after["Paths"]).Cast<IDictionary<string, object>>().ToArray();
-                report["VisibilityComparison"] = rows.Select((row, index) => new {
-                    Path = paths[index], TestHostBeforeExists = beforeRows[index]["DirectoryExists"],
-                    OwnerExists = row["DirectoryExists"], TestHostAfterExists = afterRows[index]["DirectoryExists"],
+                report["VisibilityComparison"] = rows.Select((row, index) => new
+                {
+                    Path = paths[index],
+                    TestHostBeforeExists = beforeRows[index]["DirectoryExists"],
+                    OwnerExists = row["DirectoryExists"],
+                    TestHostAfterExists = afterRows[index]["DirectoryExists"],
                     TestHostBeforeNativeAttributes = beforeRows[index]["NativeAttributes"],
-                    OwnerNativeAttributes = row["NativeAttributes"], TestHostAfterNativeAttributes = afterRows[index]["NativeAttributes"],
-                    OwnerNativeError = row["NativeLastError"], OwnerNativeErrorMeaningful = row["NativeErrorMeaningful"]
+                    OwnerNativeAttributes = row["NativeAttributes"],
+                    TestHostAfterNativeAttributes = afterRows[index]["NativeAttributes"],
+                    OwnerNativeError = row["NativeLastError"],
+                    OwnerNativeErrorMeaningful = row["NativeErrorMeaningful"]
                 }).ToArray();
                 foreach (var testRow in beforeRows.Concat(afterRows))
                     Assert.AreEqual(true, testRow["NativeSucceeded"], "The testhost itself must see every stable synthetic target.");
@@ -113,7 +120,8 @@ namespace VBAi.Tests.Integration
                 report["SyntheticSha256After"] = afterHashes;
                 CollectionAssert.AreEqual(beforeHashes, afterHashes, "Synthetic targets must remain byte-stable throughout the observation.");
                 report["State"] = "OwnerObservationRecorded; visibility differences are not asserted equal"; terminal = true; save();
-            }, () => {
+            }, () =>
+            {
                 if (pending || bootstrapPending)
                 {
                     report["State"] = "UncertainPreserved; no replay/Close/Quit or target deletion";
@@ -129,7 +137,8 @@ namespace VBAi.Tests.Integration
                 }
                 report["TerminalObservation"] = terminal; save();
                 // Keep both GUID directories, fixed synthetic files and manifest as durable qualification evidence.
-            }, () => {
+            }, () =>
+            {
                 save(); TestContext.AddResultFile(reportPath);
                 if (File.Exists(Path.Combine(evidenceRoot, "request-ledger.json"))) TestContext.AddResultFile(Path.Combine(evidenceRoot, "request-ledger.json"));
             });
@@ -137,7 +146,8 @@ namespace VBAi.Tests.Integration
 
         private static string[] SyntheticHashes(string[] paths)
         {
-            using (var sha = SHA256.Create()) return paths.Where((_, i) => i % 2 == 1).Select(path => {
+            using (var sha = SHA256.Create()) return paths.Where((_, i) => i % 2 == 1).Select(path =>
+            {
                 using (var stream = File.OpenRead(path)) return BitConverter.ToString(sha.ComputeHash(stream)).Replace("-", "");
             }).ToArray();
         }

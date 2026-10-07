@@ -1,3 +1,4 @@
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -7,7 +8,6 @@ using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Text;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 using VBAi.Tests.Integration;
 
 namespace VBAi.Tests.Unit
@@ -229,7 +229,8 @@ namespace VBAi.Tests.Unit
                     () => calls.Add("durable-launch"), () => calls.Add("capture-original"), () => calls.Add("inventory"),
                     () => { calls.Add("primary-read"); return observation; },
                     actual => { Assert.AreSame(observation, actual); calls.Add("durable-primary-diagnostic"); },
-                    () => {
+                    () =>
+                    {
                         calls.Add("actual-ui-proof");
                         Assert.ThrowsException<InvalidOperationException>(() => VerifyWindow(desktop, read: unused => "Default"));
                         VerifyWindow(desktop);
@@ -434,8 +435,11 @@ namespace VBAi.Tests.Unit
                 Assert.AreEqual(handle, OfficeVbeFixture.WaitForPrivateWordWindow(() => false,
                     () => { inventories++; return new[] { handle }; }, () => true, () => waits++,
                     actual => { Assert.AreEqual(2, readies); Assert.AreEqual(handle, actual); verifies++; },
-                    actual => { readies++; return ReadyWindow(desktop, handle: actual,
-                        visible: readies == 2 || hidden[0], rootVisible: readies == 2 || hidden[1]); }));
+                    actual =>
+                    {
+                        readies++; return ReadyWindow(desktop, handle: actual,
+                        visible: readies == 2 || hidden[0], rootVisible: readies == 2 || hidden[1]);
+                    }));
                 Assert.AreEqual(2, inventories); Assert.AreEqual(1, waits);
                 Assert.AreEqual(2, readies); Assert.AreEqual(1, verifies);
             }
@@ -480,7 +484,8 @@ namespace VBAi.Tests.Unit
                 int childrenReads = 0, classes = 0;
                 var actual = OfficeVbeFixture.CollectPrivateWordDocumentWindows(7,
                     visitor => { Assert.IsTrue(visitor(new IntPtr(1))); Assert.IsTrue(visitor(new IntPtr(2))); },
-                    (root, visitor) => {
+                    (root, visitor) =>
+                    {
                         Assert.AreEqual(new IntPtr(1), root); childrenReads++;
                         foreach (var child in expected) { Assert.IsTrue(visitor(child)); Assert.IsTrue(visitor(child)); }
                         Assert.IsTrue(visitor(new IntPtr(30))); Assert.IsTrue(visitor(new IntPtr(31)));
@@ -497,11 +502,13 @@ namespace VBAi.Tests.Unit
             foreach (int bound in new[] { 0, 1, 2 })
             {
                 Assert.ThrowsException<InvalidOperationException>(() => OfficeVbeFixture.CollectPrivateWordDocumentWindows(7,
-                    visitor => {
+                    visitor =>
+                    {
                         int roots = bound == 0 ? 4097 : 1;
                         for (int index = 1; index <= roots; index++) if (!visitor(new IntPtr(index))) break;
                     },
-                    (root, visitor) => {
+                    (root, visitor) =>
+                    {
                         if (bound == 0) return;
                         for (int index = 1; index <= (bound == 1 ? 2049 : 9); index++) if (!visitor(new IntPtr(10000 + index))) break;
                     }, unused => 7, unused => bound == 1 ? "Other" : "_WwG"));

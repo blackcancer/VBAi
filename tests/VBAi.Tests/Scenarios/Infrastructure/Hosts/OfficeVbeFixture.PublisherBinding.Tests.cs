@@ -1,9 +1,9 @@
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 using VBAi.Tests.Integration;
 
 namespace VBAi.Tests.Unit
@@ -30,7 +30,8 @@ namespace VBAi.Tests.Unit
         [TestMethod]
         public void DistinctWrappersForOneExactOwnedPublicationCanBindWithoutIUnknownEquality()
         {
-            InFixture("valid", (fixture, projects, sends) => {
+            InFixture("valid", (fixture, projects, sends) =>
+            {
                 fixture.BindStartupProject(projects); Assert.IsFalse(string.IsNullOrWhiteSpace(fixture.Project));
                 string evidence = File.ReadAllText(Path.Combine(fixture.Root, "adapter-only-progress.json"));
                 StringAssert.Contains(evidence, "\"ParentProcessId\":123");
@@ -42,7 +43,8 @@ namespace VBAi.Tests.Unit
         [TestMethod]
         public void ReturnedNewDocumentRequiresWindowOwnershipBeforeBootstrapSaveButNotItsFuturePath()
         {
-            InFixture("unsaved-new", (fixture, projects, sends) => {
+            InFixture("unsaved-new", (fixture, projects, sends) =>
+            {
                 fixture.RequirePublisherPublication("BeforeBootstrap", false);
                 Assert.IsNull(fixture.Project); Assert.AreEqual(0, sends[0]);
                 Assert.ThrowsException<AssertFailedException>(() => fixture.RequirePublisherPublication("AfterBootstrap", true));
@@ -52,7 +54,8 @@ namespace VBAi.Tests.Unit
         [TestMethod]
         public void SolePathlessVbeProjectBindsOnlyAfterExactNativePublicationAndAdapterProof()
         {
-            InFixture("pathless-valid", (fixture, projects, sends) => {
+            InFixture("pathless-valid", (fixture, projects, sends) =>
+            {
                 fixture.BindStartupProject(projects);
                 Assert.AreEqual("Project", fixture.Project);
                 Assert.AreEqual(123, fixture.ProcessId); Assert.AreEqual(0, sends[0]);
@@ -62,7 +65,8 @@ namespace VBAi.Tests.Unit
         [DataTestMethod, DataRow("pathless-no-pane-valid"), DataRow("mapped-no-pane-valid")]
         public void FreshSolePublicationWithoutCodePaneBindsOnlyThroughVerifiedNativeProjectAssociation(string state)
         {
-            InFixture(state, (fixture, projects, sends) => {
+            InFixture(state, (fixture, projects, sends) =>
+            {
                 fixture.BindStartupProject(projects);
                 Assert.IsFalse(string.IsNullOrWhiteSpace(fixture.Project));
                 Assert.AreEqual(0, sends[0]);
@@ -73,7 +77,8 @@ namespace VBAi.Tests.Unit
         [DataRow("doc-pid"), DataRow("app-pid"), DataRow("window-mismatch"), DataRow("multiple-documents"), DataRow("wrong-document")]
         public void UnsafeReturnedDocumentRefusesBeforeAnyBootstrapSaveOrBridgeCommand(string state)
         {
-            InFixture(state, (fixture, projects, sends) => {
+            InFixture(state, (fixture, projects, sends) =>
+            {
                 Assert.ThrowsException<AssertFailedException>(() => fixture.RequirePublisherPublication("BeforeBootstrap", false));
                 Assert.IsNull(fixture.Project); Assert.AreEqual(0, sends[0]);
                 Assert.IsTrue(File.ReadAllText(Path.Combine(fixture.Root, "adapter-only-progress.json")).Contains("\"Verified\":false"));
@@ -95,10 +100,11 @@ namespace VBAi.Tests.Unit
         [DataRow("pathless-no-pane-other-mode"), DataRow("pathless-no-pane-foreign-host"), DataRow("pathless-no-pane-catalog-changed")]
         public void WrongWindowPathRecoveredProjectAndUnverifiedNativeAssociationRefuseBeforeBaseline(string state)
         {
-            InFixture(state, (fixture, projects, sends) => {
-                    Assert.ThrowsException<AssertFailedException>(() => fixture.BindStartupProject(projects), state);
-                    Assert.IsNull(fixture.Project, "Refusal must leave the baseline unbound: " + state);
-                    Assert.AreEqual(0, sends[0], "No baseline mutation may reach the bridge: " + state);
+            InFixture(state, (fixture, projects, sends) =>
+            {
+                Assert.ThrowsException<AssertFailedException>(() => fixture.BindStartupProject(projects), state);
+                Assert.IsNull(fixture.Project, "Refusal must leave the baseline unbound: " + state);
+                Assert.AreEqual(0, sends[0], "No baseline mutation may reach the bridge: " + state);
             });
         }
 
@@ -119,11 +125,20 @@ namespace VBAi.Tests.Unit
                 var project = new Dictionary<string, object> { ["Name"] = "Project", ["FileName"] = path, ["HostPath"] = path, ["Mode"] = 2 };
                 var projects = new[] { (IDictionary<string, object>)project };
                 var persistence = new Dictionary<string, object> { ["HostAvailable"] = true, ["IdentityVerified"] = true, ["OwnerProcessId"] = 123, ["HostPath"] = path, ["Host"] = "Publisher" };
-                var selection = new Dictionary<string, object> { ["Project"] = "Project", ["SelectedProject"] = "Project", ["SelectedProjectPath"] = path,
-                    ["SelectedHostPath"] = path, ["ActiveModule"] = "InitialOwnedModule", ["Selection"] = new { StartLine = 1 }, ["Mode"] = 2 };
+                var selection = new Dictionary<string, object>
+                {
+                    ["Project"] = "Project",
+                    ["SelectedProject"] = "Project",
+                    ["SelectedProjectPath"] = path,
+                    ["SelectedHostPath"] = path,
+                    ["ActiveModule"] = "InitialOwnedModule",
+                    ["Selection"] = new { StartLine = 1 },
+                    ["Mode"] = 2
+                };
                 int[] mutations = { 0 };
                 int persistenceReads = 0;
-                fixture.Dispatch = (pid, request) => {
+                fixture.Dispatch = (pid, request) =>
+                {
                     var values = (IDictionary<string, object>)request;
                     string command = (string)values["Command"];
                     if (command != "project_persistence_status" && command != "debug_state" && command != "list_projects") { mutations[0]++; Assert.Fail("Unexpected mutation: " + command); }

@@ -1,3 +1,4 @@
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
@@ -6,7 +7,6 @@ using System.Linq;
 using System.Runtime.ExceptionServices;
 using System.Security.Cryptography;
 using System.Web.Script.Serialization;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace VBAi.Tests.Integration
 {
@@ -26,8 +26,13 @@ namespace VBAi.Tests.Integration
                 if (serializedPublisherSeed && host != "Publisher") throw new InvalidOperationException("Only Publisher has the explicit serialized qualification seed.");
                 fixture = serializedPublisherSeed ? OfficeVbeFixture.StartPublisherSerializedQualificationSeed() : OfficeVbeFixture.Start(host);
                 fixture.RequireAdapterOnlyCleanup();
-                fixture.RecordAdapterStage("ProjectQualificationScope", new { Scenario = scenario,
-                    NativeMutationRetryAllowed = false, CompileAllowed = false, PostAdapterHelperSaveAllowed = false });
+                fixture.RecordAdapterStage("ProjectQualificationScope", new
+                {
+                    Scenario = scenario,
+                    NativeMutationRetryAllowed = false,
+                    CompileAllowed = false,
+                    PostAdapterHelperSaveAllowed = false
+                });
                 var startup = fixture.RecordAdapterObservation("ProjectQualificationStartup");
                 if (host == "Access") Assert.IsTrue(Convert.ToString(startup["ApplicationVersion"]).StartsWith("16.", StringComparison.Ordinal), "Access 16 is required.");
                 foreach (string module in Modules)
@@ -39,8 +44,12 @@ namespace VBAi.Tests.Integration
                 fixture.SaveAdapterBaseline(Modules);
                 Assert.AreEqual(true, fixture.Data("project_persistence_status")["ProjectSaved"]);
                 var baselineHashes = ReadHashes(fixture);
-                fixture.RecordAdapterStage("ProjectBaseline", new { SourceHashes = baselineHashes,
-                    Properties = fixture.Data("project_properties"), References = fixture.Data("list_references") });
+                fixture.RecordAdapterStage("ProjectBaseline", new
+                {
+                    SourceHashes = baselineHashes,
+                    Properties = fixture.Data("project_properties"),
+                    References = fixture.Data("list_references")
+                });
                 if (scenario.StartsWith("Metadata.", StringComparison.Ordinal)) fixture.RecordMetadataGetterProbe("BeforeExistingMutation");
                 if (scenario.StartsWith("Metadata.", StringComparison.Ordinal))
                     OfficeMetadataMutationEvidence.Run(() => mutate(fixture), () => fixture.RecordMetadataGetterProbe("AfterExistingMutation"));
@@ -53,8 +62,13 @@ namespace VBAi.Tests.Integration
                 for (int index = 0; index < Modules.Length; index++) Assert.AreNotEqual(baselineHashes[index], expectedHashes[index]);
                 var expectedReferences = fixture.Data("list_references");
                 var expectedMetadata = ReadMetadata(fixture);
-                fixture.RecordAdapterStage("FinalPendingProjectState", new { SourceHashes = expectedHashes,
-                    Properties = fixture.Data("project_properties"), Metadata = expectedMetadata, References = expectedReferences });
+                fixture.RecordAdapterStage("FinalPendingProjectState", new
+                {
+                    SourceHashes = expectedHashes,
+                    Properties = fixture.Data("project_properties"),
+                    Metadata = expectedMetadata,
+                    References = expectedReferences
+                });
                 fixture.Data("select_code", "Module", Modules[0], "StartLine", 1,
                     "ExpectedSha256", fixture.Data("read_module", "Module", Modules[0])["Sha256"]);
                 var selected = fixture.RecordAdapterObservation("BeforeProjectAdapter");
@@ -63,9 +77,15 @@ namespace VBAi.Tests.Integration
                 int originalPid = fixture.ProcessId;
                 string path = fixture.DocumentPath, project = fixture.Project;
                 string version = (string)fixture.Data("project_properties")["Version"];
-                fixture.RecordAdapterStage("SingleProjectAdapterSaveStarting", new { Scenario = scenario, Project = project,
-                    HostPath = path, ProcessId = originalPid, ExpectedProjectVersion = version,
-                    ExpectedMvid = typeof(VbeSession).Module.ModuleVersionId.ToString("D") });
+                fixture.RecordAdapterStage("SingleProjectAdapterSaveStarting", new
+                {
+                    Scenario = scenario,
+                    Project = project,
+                    HostPath = path,
+                    ProcessId = originalPid,
+                    ExpectedProjectVersion = version,
+                    ExpectedMvid = typeof(VbeSession).Module.ModuleVersionId.ToString("D")
+                });
                 var response = fixture.Response("save_host_document", "ExpectedHostPath", path, "ExpectedProjectVersion", version);
                 fixture.RecordAdapterStage("OriginalProjectAdapterResponse", response);
                 try { AssertOriginalResponse(response, host); }
@@ -76,27 +96,51 @@ namespace VBAi.Tests.Integration
                 AssertReferencesEqual(expectedReferences, fixture.Data("list_references"));
                 CollectionAssert.AreEqual(expectedMetadata, ReadMetadata(fixture), "Save must preserve all project name/description/help metadata.");
                 verify(fixture);
-                fixture.ReopenFromDisk(() => {
+                fixture.ReopenFromDisk(() =>
+                {
                     using (var stream = File.OpenRead(path))
                     using (var hash = SHA256.Create())
-                        fixture.RecordAdapterStage("ClosedNativeFileEvidence", new { Path = path, Bytes = stream.Length,
+                        fixture.RecordAdapterStage("ClosedNativeFileEvidence", new
+                        {
+                            Path = path,
+                            Bytes = stream.Length,
                             Sha256 = BitConverter.ToString(hash.ComputeHash(stream)).Replace("-", "").ToLowerInvariant(),
-                            PreviousProcessId = originalPid, HostExitedBeforeHash = true });
+                            PreviousProcessId = originalPid,
+                            HostExitedBeforeHash = true
+                        });
                 });
                 var reopened = fixture.RecordAdapterObservation("ProjectFreshDiskReopen");
                 var freshMetadata = ReadMetadata(fixture);
-                var reopenIdentity = new OfficeProjectReopenIdentity.Evidence { Host = fixture.Kind,
-                    DocumentPath = fixture.DocumentPath, Selector = fixture.Project, ProcessId = fixture.ProcessId,
-                    Metadata = freshMetadata, Observation = reopened, Status = fixture.Data("status") };
-                fixture.RecordAdapterStage("ProjectSemanticReopenIdentity", new { PreviousSelector = project,
-                    PreviousProcessId = originalPid, ExpectedHost = host, ExpectedPath = path,
-                    ExpectedMetadata = expectedMetadata, Actual = reopenIdentity });
+                var reopenIdentity = new OfficeProjectReopenIdentity.Evidence
+                {
+                    Host = fixture.Kind,
+                    DocumentPath = fixture.DocumentPath,
+                    Selector = fixture.Project,
+                    ProcessId = fixture.ProcessId,
+                    Metadata = freshMetadata,
+                    Observation = reopened,
+                    Status = fixture.Data("status")
+                };
+                fixture.RecordAdapterStage("ProjectSemanticReopenIdentity", new
+                {
+                    PreviousSelector = project,
+                    PreviousProcessId = originalPid,
+                    ExpectedHost = host,
+                    ExpectedPath = path,
+                    ExpectedMetadata = expectedMetadata,
+                    Actual = reopenIdentity
+                });
                 OfficeProjectReopenIdentity.Require(host, path, project, originalPid, expectedMetadata,
                     typeof(VbeSession).Module.ModuleVersionId, reopenIdentity);
                 if (scenario.StartsWith("Metadata.", StringComparison.Ordinal)) fixture.RecordMetadataGetterProbe("FreshDiskReopen");
-                fixture.RecordAdapterStage("ProjectFreshDiskState", new { SourceHashes = ReadHashes(fixture),
-                    Properties = fixture.Data("project_properties"), References = fixture.Data("list_references"),
-                    PreviousProcessId = originalPid, ReopenProcessId = fixture.ProcessId });
+                fixture.RecordAdapterStage("ProjectFreshDiskState", new
+                {
+                    SourceHashes = ReadHashes(fixture),
+                    Properties = fixture.Data("project_properties"),
+                    References = fixture.Data("list_references"),
+                    PreviousProcessId = originalPid,
+                    ReopenProcessId = fixture.ProcessId
+                });
                 CollectionAssert.AreEqual(expectedHashes, ReadHashes(fixture), "Fresh disk readback must retain both final module/class hashes.");
                 AssertReferencesEqual(expectedReferences, fixture.Data("list_references"));
                 CollectionAssert.AreEqual(expectedMetadata, ReadMetadata(fixture), "Fresh native disk readback changed project metadata.");
@@ -163,7 +207,8 @@ namespace VBAi.Tests.Integration
         private static string[] ReadMetadata(OfficeVbeFixture fixture)
         {
             var properties = ((object[])fixture.Data("project_properties")["Properties"]).Select(VbeBridgeClient.Object).ToArray();
-            return new[] { "Name", "Description", "HelpFile", "HelpContextID" }.Select(name => {
+            return new[] { "Name", "Description", "HelpFile", "HelpContextID" }.Select(name =>
+            {
                 var property = properties.Single(item => string.Equals(Convert.ToString(item["Name"]), name, StringComparison.OrdinalIgnoreCase));
                 Assert.AreEqual("scalar", property["Kind"]); Assert.IsNull(property["Error"], Convert.ToString(property["Error"]));
                 return name + "=" + Convert.ToString(property["Value"], CultureInfo.InvariantCulture);

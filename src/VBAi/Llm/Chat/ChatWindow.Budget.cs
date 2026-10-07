@@ -25,8 +25,7 @@ namespace VBAi
             string label = name;
             if (name == "invoke_tool")
             {
-                var gateway = json.DeserializeObject(arguments) as IDictionary<string, object>;
-                if (gateway != null && gateway.TryGetValue("ToolName", out var target)) label = Convert.ToString(target);
+                if (json.DeserializeObject(arguments) is IDictionary<string, object> gateway && gateway.TryGetValue("ToolName", out var target)) label = Convert.ToString(target);
             }
             try
             {
@@ -59,8 +58,12 @@ namespace VBAi
             string actions = string.Join("\n", currentSession.CompletedToolActions ?? new List<string>());
             string remaining = verifyAfterEdit.Checked && codeChanges.Any(c => c.TurnId == activeTurnId)
                 ? UiText.Get("Pending: automatic verification and final response.") : UiText.Get("Pending: final response.");
-            AddEntry(new ChatEntry { Speaker = "Assistant", TurnId = activeTurnId,
-                Text = UiText.Get("Safety pause: repeated rounds without progress or the intervention ceiling was reached. Resume from saved results; completed actions will not be replayed.") + "\n" + remaining + "\n\n" + actions });
+            AddEntry(new ChatEntry
+            {
+                Speaker = "Assistant",
+                TurnId = activeTurnId,
+                Text = UiText.Get("Safety pause: repeated rounds without progress or the intervention ceiling was reached. Resume from saved results; completed actions will not be replayed.") + "\n" + remaining + "\n\n" + actions
+            });
             SetStatus(UiText.Get("Paused — resume when ready"));
         }
 
@@ -83,9 +86,7 @@ namespace VBAi
         private async Task ResumeBudgetAsync()
         {
             if (busy || currentSession?.BudgetPaused != true) return;
-            var provider = providerPicker.SelectedItem as LlmProvider;
-            var model = modelPicker.SelectedItem as LlmModelOption;
-            if (provider == null || model == null || provider.IsCodex || provider.Name != currentSession.PausedProvider || model.Id != currentSession.PausedModel ||
+            if (!(providerPicker.SelectedItem is LlmProvider provider) || !(modelPicker.SelectedItem is LlmModelOption model) || provider.IsCodex || provider.Name != currentSession.PausedProvider || model.Id != currentSession.PausedModel ||
                 currentSession.Mode != currentSession.PausedMode || (effortPicker.SelectedItem as LlmEffortOption)?.Id != currentSession.PausedEffort)
             { SetStatus(UiText.Get("Restore the paused provider, model, effort and mode before resuming.")); return; }
             try { EnsureCurrentScope(); }
@@ -111,8 +112,12 @@ namespace VBAi
                 if (!IsDisposed)
                 {
                     int applied = codeChanges.Skip(previousChanges).Count(c => c.TurnId == activeTurnId);
-                    if (applied > 0) AddEntry(new ChatEntry { Speaker = "Intervention", TurnId = activeTurnId,
-                        Text = applied + UiText.Get(" change(s) applied. Review the files and undo this turn below.") });
+                    if (applied > 0) AddEntry(new ChatEntry
+                    {
+                        Speaker = "Intervention",
+                        TurnId = activeTurnId,
+                        Text = applied + UiText.Get(" change(s) applied. Review the files and undo this turn below.")
+                    });
                     if (!currentSession.BudgetPaused && verifyAfterEdit.Checked && codeChanges.Any(c => c.TurnId == activeTurnId)) await VerifyProjectAsync();
                     activeTurnId = null; SetBusy(false); SaveCurrentSession();
                     await DispatchPendingAsync(completed);
@@ -140,84 +145,83 @@ namespace VBAi
         /// <returns>True after a final assistant response; false when the configured loop budget pauses the turn.</returns>
         private async Task<bool> RunHttpBudgetAsync(LlmProvider provider, string model)
         {
-                using (var client = new LlmChatClient(provider, settings,
-                    model, HttpHandlerOverride?.Invoke()))
+            using (var client = new LlmChatClient(provider, settings,
+                model, HttpHandlerOverride?.Invoke()))
+            {
+                activeHttpClient = client;
+                client.ToolHandler = async (name, arguments) =>
                 {
-                    activeHttpClient = client;
-                    client.ToolHandler = async (name, arguments) =>
+                    if (stopRequested) throw new OperationCanceledException();
+                    Append("Outil", name);
+                    return await ExecuteBudgetTool(name, arguments);
+                };
+                SetStatus(client.DisplayName + UiText.Get(" — working"));
+                var observedResults = new HashSet<string>(StringComparer.Ordinal);
+                int stalledRounds = 0;
+                // Eight rounds without new successful tool results are a fallback; progressing work continues.
+                // A separate ceiling keeps even continuously changing tool loops bounded.
+                for (int turn = 0; turn < 64; turn++)
+                {
+                    if (stopRequested) throw new OperationCanceledException();
+                    providerStreamId = "http-" + Guid.NewGuid().ToString("N");
+                    string streamId = providerStreamId;
+                    bool receivedText = false;
+                    client.TextDelta = fragment =>
                     {
-                        if (stopRequested) throw new OperationCanceledException();
-                        Append("Outil", name);
-                        return await ExecuteBudgetTool(name, arguments);
+                        if (stopRequested || IsDisposed) return;
+                        receivedText = true;
+                        ReceiveChatUpdate("final", streamId, fragment, false);
                     };
-                    SetStatus(client.DisplayName + UiText.Get(" — working"));
-                    var observedResults = new HashSet<string>(StringComparer.Ordinal);
-                    int stalledRounds = 0;
-                    // Eight rounds without new successful tool results are a fallback; progressing work continues.
-                    // A separate ceiling keeps even continuously changing tool loops bounded.
-                    for (int turn = 0; turn < 64; turn++)
+                    IDictionary<string, object> message;
+                    lastHttpStreamDiagnostics = null;
+                    try { message = await client.CompleteAsync(messages, tools.CatalogForProvider()); }
+                    finally { lastHttpStreamDiagnostics = client.LastStreamDiagnostics; }
+                    if (stopRequested) throw new OperationCanceledException();
+                    if (receivedText) ReceiveChatUpdate("final", streamId, Convert.ToString(message["content"]), true);
+                    providerStreamId = null;
+                    messages.Add(message);
+                    var calls = message.TryGetValue("tool_calls", out object rawCalls) ? rawCalls as object[] : null;
+                    if (calls == null || calls.Length == 0)
+                    {
+                        string answer = message.ContainsKey("content") ? Convert.ToString(message["content"]) : "";
+                        CompleteAssistantResponse(string.IsNullOrWhiteSpace(answer) ? UiText.Get("No text response.") : answer);
+                        currentSession.ResumeContext = null;
+                        currentSession.BudgetPaused = false;
+                        SetStatus(client.DisplayName + UiText.Get(" — ready"));
+                        return true;
+                    }
+                    bool progressed = false;
+                    foreach (object rawCall in calls)
                     {
                         if (stopRequested) throw new OperationCanceledException();
-                        providerStreamId = "http-" + Guid.NewGuid().ToString("N");
-                        string streamId = providerStreamId;
-                        bool receivedText = false;
-                        client.TextDelta = fragment =>
+                        var call = rawCall as IDictionary<string, object>;
+                        var function = call != null && call.ContainsKey("function") ? call["function"] as IDictionary<string, object> : null;
+                        if (function == null || !call.ContainsKey("id")) throw new InvalidOperationException("Invalid tool call.");
+                        string name = Convert.ToString(function["name"]);
+                        string arguments = Convert.ToString(function["arguments"]);
+                        Append("Outil", name);
+                        string callId = Convert.ToString(call["id"]);
+                        bool recorded = messages.Select(m => json.DeserializeObject(json.Serialize(m)) as IDictionary<string, object>)
+                            .Any(m => m != null && m.TryGetValue("tool_call_id", out var existingId) && Convert.ToString(existingId) == callId);
+                        string result = recorded
+                            ? json.Serialize(Response.Failure("This tool call ID already has a recorded result. No action was replayed. Read the prior result and live state before proposing a new action."))
+                            : await ExecuteBudgetTool(name, arguments);
+                        if (!recorded)
                         {
-                            if (stopRequested || IsDisposed) return;
-                            receivedText = true;
-                            ReceiveChatUpdate("final", streamId, fragment, false);
-                        };
-                        IDictionary<string, object> message;
-                        lastHttpStreamDiagnostics = null;
-                        try { message = await client.CompleteAsync(messages, tools.CatalogForProvider()); }
-                        finally { lastHttpStreamDiagnostics = client.LastStreamDiagnostics; }
-                        if (stopRequested) throw new OperationCanceledException();
-                        if (receivedText) ReceiveChatUpdate("final", streamId, Convert.ToString(message["content"]), true);
-                        providerStreamId = null;
-                        messages.Add(message);
-                        object rawCalls;
-                        var calls = message.TryGetValue("tool_calls", out rawCalls) ? rawCalls as object[] : null;
-                        if (calls == null || calls.Length == 0)
-                        {
-                            string answer = message.ContainsKey("content") ? Convert.ToString(message["content"]) : "";
-                            CompleteAssistantResponse(string.IsNullOrWhiteSpace(answer) ? UiText.Get("No text response.") : answer);
-                            currentSession.ResumeContext = null;
-                            currentSession.BudgetPaused = false;
-                            SetStatus(client.DisplayName + UiText.Get(" — ready"));
-                            return true;
-                        }
-                        bool progressed = false;
-                        foreach (object rawCall in calls)
-                        {
-                            if (stopRequested) throw new OperationCanceledException();
-                            var call = rawCall as IDictionary<string, object>;
-                            var function = call != null && call.ContainsKey("function") ? call["function"] as IDictionary<string, object> : null;
-                            if (function == null || !call.ContainsKey("id")) throw new InvalidOperationException("Invalid tool call.");
-                            string name = Convert.ToString(function["name"]);
-                            string arguments = Convert.ToString(function["arguments"]);
-                            Append("Outil", name);
-                            string callId = Convert.ToString(call["id"]);
-                            bool recorded = messages.Select(m => json.DeserializeObject(json.Serialize(m)) as IDictionary<string, object>)
-                                .Any(m => m != null && m.TryGetValue("tool_call_id", out var existingId) && Convert.ToString(existingId) == callId);
-                            string result = recorded
-                                ? json.Serialize(Response.Failure("This tool call ID already has a recorded result. No action was replayed. Read the prior result and live state before proposing a new action."))
-                                : await ExecuteBudgetTool(name, arguments);
-                            if (!recorded)
+                            try
                             {
-                                try
-                                {
-                                    if (json.Deserialize<Response>(result)?.Ok == true && observedResults.Add(EditorDocument.Hash(name + "\n" + arguments + "\n" + result))) progressed = true;
-                                }
-                                catch { }
+                                if (json.Deserialize<Response>(result)?.Ok == true && observedResults.Add(EditorDocument.Hash(name + "\n" + arguments + "\n" + result))) progressed = true;
                             }
-                            messages.Add(new { role = "tool", tool_call_id = Convert.ToString(call["id"]), content = result });
-                            SaveCurrentSession();
+                            catch { }
                         }
-                        stalledRounds = progressed ? 0 : stalledRounds + 1;
-                        if (stalledRounds >= 8) { PauseBudget(provider, model); return false; }
+                        messages.Add(new { role = "tool", tool_call_id = Convert.ToString(call["id"]), content = result });
+                        SaveCurrentSession();
                     }
-                    PauseBudget(provider, model); return false;
+                    stalledRounds = progressed ? 0 : stalledRounds + 1;
+                    if (stalledRounds >= 8) { PauseBudget(provider, model); return false; }
                 }
+                PauseBudget(provider, model); return false;
+            }
         }
     }
 }

@@ -2,10 +2,10 @@ using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.ComTypes;
-using INVOKEKIND = System.Runtime.InteropServices.ComTypes.INVOKEKIND;
-using TYPEATTR = System.Runtime.InteropServices.ComTypes.TYPEATTR;
 using FUNCDESC = System.Runtime.InteropServices.ComTypes.FUNCDESC;
 using IMPLTYPEFLAGS = System.Runtime.InteropServices.ComTypes.IMPLTYPEFLAGS;
+using INVOKEKIND = System.Runtime.InteropServices.ComTypes.INVOKEKIND;
+using TYPEATTR = System.Runtime.InteropServices.ComTypes.TYPEATTR;
 
 namespace VBAi
 {
@@ -26,17 +26,22 @@ namespace VBAi
             var interfaces = new List<string>();
             var accessors = new List<object>();
             var errors = new List<string>();
-            var provider = target as IProvideClassInfo;
-            if (provider == null)
-                return new { Property = propertyName, Discovery = "IProvideClassInfo/ITypeInfo",
-                    MetadataComplete = false, SetterDeclared = (bool?)null,
-                    ActualSetterVerified = false, Interfaces = interfaces,
-                    Accessors = accessors, Errors = new[] { "IProvideClassInfo is unavailable." } };
-
-            ITypeInfo classInfo = null;
+            if (!(target is IProvideClassInfo provider))
+                return new
+                {
+                    Property = propertyName,
+                    Discovery = "IProvideClassInfo/ITypeInfo",
+                    MetadataComplete = false,
+                    SetterDeclared = (bool?)null,
+                    ActualSetterVerified = false,
+                    Interfaces = interfaces,
+                    Accessors = accessors,
+                    Errors = new[] { "IProvideClassInfo is unavailable." }
+                };
             try
             {
-                provider.GetClassInfo(out classInfo);
+
+                provider.GetClassInfo(out ITypeInfo classInfo);
                 if (classInfo == null) throw new InvalidOperationException("GetClassInfo returned null.");
                 var visited = new HashSet<Guid>();
                 ReadType(classInfo, propertyName, 0, visited, interfaces, accessors, errors);
@@ -51,10 +56,17 @@ namespace VBAi
                 if ((string)accessor.InvocationKind == INVOKEKIND.INVOKE_PROPERTYPUT.ToString() ||
                     (string)accessor.InvocationKind == INVOKEKIND.INVOKE_PROPERTYPUTREF.ToString())
                     setter = true;
-            return new { Property = propertyName, Discovery = "IProvideClassInfo/ITypeInfo",
-                MetadataComplete = complete, SetterDeclared = complete ? (bool?)setter : null,
-                ActualSetterVerified = false, Interfaces = interfaces,
-                Accessors = accessors, Errors = errors };
+            return new
+            {
+                Property = propertyName,
+                Discovery = "IProvideClassInfo/ITypeInfo",
+                MetadataComplete = complete,
+                SetterDeclared = complete ? (bool?)setter : null,
+                ActualSetterVerified = false,
+                Interfaces = interfaces,
+                Accessors = accessors,
+                Errors = errors
+            };
         }
 
         /// <summary>Inspecte un type COM puis ses interfaces héritées non-source en évitant les GUID déjà visités.</summary>
@@ -78,9 +90,7 @@ namespace VBAi
                 if (!visited.Add(attr.guid)) return;
                 if (attr.cFuncs > 2048 || attr.cImplTypes > 64)
                 { errors.Add("Type exceeds accessor inspection limit: " + attr.guid); return; }
-                string name, description, helpFile;
-                int helpContext;
-                info.GetDocumentation(-1, out name, out description, out helpContext, out helpFile);
+                info.GetDocumentation(-1, out string name, out string description, out int helpContext, out string helpFile);
                 interfaces.Add(name + " (" + attr.guid.ToString("D") + ")");
                 for (int index = 0; index < attr.cFuncs; index++)
                 {
@@ -90,11 +100,15 @@ namespace VBAi
                         info.GetFuncDesc(index, out functionPointer);
                         var function = (FUNCDESC)Marshal.PtrToStructure(functionPointer, typeof(FUNCDESC));
                         var names = new string[1];
-                        int count;
-                        info.GetNames(function.memid, names, 1, out count);
+                        info.GetNames(function.memid, names, 1, out int count);
                         if (count > 0 && string.Equals(names[0], propertyName, StringComparison.OrdinalIgnoreCase))
-                            accessors.Add(new { Interface = name, Name = names[0],
-                                DispId = function.memid, InvocationKind = function.invkind.ToString() });
+                            accessors.Add(new
+                            {
+                                Interface = name,
+                                Name = names[0],
+                                DispId = function.memid,
+                                InvocationKind = function.invkind.ToString()
+                            });
                     }
                     catch (Exception ex)
                     {
@@ -109,13 +123,10 @@ namespace VBAi
                 {
                     try
                     {
-                        IMPLTYPEFLAGS flags;
-                        info.GetImplTypeFlags(index, out flags);
+                        info.GetImplTypeFlags(index, out IMPLTYPEFLAGS flags);
                         if ((flags & IMPLTYPEFLAGS.IMPLTYPEFLAG_FSOURCE) != 0) continue;
-                        int reference;
-                        info.GetRefTypeOfImplType(index, out reference);
-                        ITypeInfo inherited;
-                        info.GetRefTypeInfo(reference, out inherited);
+                        info.GetRefTypeOfImplType(index, out int reference);
+                        info.GetRefTypeInfo(reference, out ITypeInfo inherited);
                         ReadType(inherited, propertyName, depth + 1, visited, interfaces, accessors, errors);
                     }
                     catch (Exception ex)

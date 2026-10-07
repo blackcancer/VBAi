@@ -1,7 +1,7 @@
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Collections.Generic;
 using System.IO;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace VBAi.Tests.Unit
 {
@@ -99,29 +99,33 @@ namespace VBAi.Tests.Unit
         public void UnverifiedCopyIdentityOrPathNeverClosesOriginalOrUnownedPresentation()
         {
             foreach (string fault in new[] { "null", "original", "project", "path", "projectRead", "resolve", "source" })
-            using (var fixture = new Fixture())
-            {
-                Presentation returned = null;
-                fixture.Application.Presentations.OnOpen = path => {
-                    returned = fault == "null" ? null : fault == "original" ? fixture.Source :
-                        new Presentation { FullName = fault == "path" ? Path.Combine(fixture.Folder, "Other.pptm") : path,
-                            VBProject = fault == "project" ? fixture.Source.VBProject : new object() };
-                    if (fault == "projectRead") returned.OnProjectRead = () => { throw new InvalidOperationException("Project getter failed after Open"); };
-                    if (fault == "resolve") fixture.Host.ReadActiveApplication = progId => { throw new InvalidOperationException("Application ownership unavailable after Open"); };
-                    if (fault == "source") fixture.Source.FullName = Path.Combine(fixture.Folder, "Renamed.pptm");
-                    return returned;
-                };
-                var provider = new VbaTestPowerPointCoverageClone { Host = fixture.Host };
-                string folder = Path.Combine(fixture.Folder, "Copy");
-                var error = Assert.ThrowsException<VbaTestInvocationException>(() => provider.Create(fixture.Source.VBProject, fixture.Source.FullName, folder));
-                Assert.IsTrue(error.Uncertain, fault);
-                StringAssert.Contains(error.Message, Path.Combine(folder, "coverage.pptm"));
-                Assert.AreEqual(1, fixture.Source.SaveCopyCalls, fault);
-                Assert.AreEqual(1, fixture.Application.Presentations.OpenCalls, fault);
-                Assert.AreEqual(0, fixture.Source.CloseCalls);
-                if (returned != null) { Assert.AreEqual(0, returned.CloseCalls); Assert.AreEqual(0, returned.SavedWrites); }
-                Assert.AreEqual(0, fixture.Source.SavedWrites);
-            }
+                using (var fixture = new Fixture())
+                {
+                    Presentation returned = null;
+                    fixture.Application.Presentations.OnOpen = path =>
+                    {
+                        returned = fault == "null" ? null : fault == "original" ? fixture.Source :
+                            new Presentation
+                            {
+                                FullName = fault == "path" ? Path.Combine(fixture.Folder, "Other.pptm") : path,
+                                VBProject = fault == "project" ? fixture.Source.VBProject : new object()
+                            };
+                        if (fault == "projectRead") returned.OnProjectRead = () => { throw new InvalidOperationException("Project getter failed after Open"); };
+                        if (fault == "resolve") fixture.Host.ReadActiveApplication = progId => { throw new InvalidOperationException("Application ownership unavailable after Open"); };
+                        if (fault == "source") fixture.Source.FullName = Path.Combine(fixture.Folder, "Renamed.pptm");
+                        return returned;
+                    };
+                    var provider = new VbaTestPowerPointCoverageClone { Host = fixture.Host };
+                    string folder = Path.Combine(fixture.Folder, "Copy");
+                    var error = Assert.ThrowsException<VbaTestInvocationException>(() => provider.Create(fixture.Source.VBProject, fixture.Source.FullName, folder));
+                    Assert.IsTrue(error.Uncertain, fault);
+                    StringAssert.Contains(error.Message, Path.Combine(folder, "coverage.pptm"));
+                    Assert.AreEqual(1, fixture.Source.SaveCopyCalls, fault);
+                    Assert.AreEqual(1, fixture.Application.Presentations.OpenCalls, fault);
+                    Assert.AreEqual(0, fixture.Source.CloseCalls);
+                    if (returned != null) { Assert.AreEqual(0, returned.CloseCalls); Assert.AreEqual(0, returned.SavedWrites); }
+                    Assert.AreEqual(0, fixture.Source.SavedWrites);
+                }
         }
 
         [TestMethod]
@@ -166,8 +170,11 @@ namespace VBAi.Tests.Unit
             using (var fixture = new Fixture())
             {
                 int attempts = 0;
-                var provider = new VbaTestPowerPointCoverageClone { Host = fixture.Host,
-                    CloseCopy = presentation => { attempts++; throw new InvalidOperationException("Close completion unknown"); } };
+                var provider = new VbaTestPowerPointCoverageClone
+                {
+                    Host = fixture.Host,
+                    CloseCopy = presentation => { attempts++; throw new InvalidOperationException("Close completion unknown"); }
+                };
                 var clone = provider.Create(fixture.Source.VBProject, fixture.Source.FullName, Path.Combine(fixture.Folder, "Copy"));
                 var error = Assert.ThrowsException<VbaTestInvocationException>(() => clone.Dispose());
                 Assert.IsTrue(error.Uncertain);
@@ -181,23 +188,23 @@ namespace VBAi.Tests.Unit
         public void FailedDiscardSetterOrReadbackIsUncertainWithoutClosingOrRetrying()
         {
             foreach (bool throws in new[] { false, true })
-            using (var fixture = new Fixture())
-            {
-                var provider = new VbaTestPowerPointCoverageClone { Host = fixture.Host };
-                var clone = provider.Create(fixture.Source.VBProject, fixture.Source.FullName, Path.Combine(fixture.Folder, "Copy"));
-                var copy = fixture.Application.Presentations[1];
-                copy.IgnoreSavedWrite = true;
-                if (throws) copy.OnSavedWrite = () => { throw new InvalidOperationException("Saved completion unknown"); };
-                var error = Assert.ThrowsException<VbaTestInvocationException>(() => clone.Dispose());
-                Assert.IsTrue(error.Uncertain);
-                StringAssert.Contains(error.Message, clone.Path);
-                clone.Dispose();
-                Assert.AreEqual(1, copy.SavedWrites);
-                Assert.AreEqual(0, copy.CloseCalls + copy.SaveCalls + copy.SaveAsCalls);
-                Assert.AreEqual(2, fixture.Application.Presentations.Count);
-                Assert.AreEqual(0, fixture.Source.SavedWrites + fixture.Source.CloseCalls + fixture.Source.SaveCalls + fixture.Source.SaveAsCalls);
-                Assert.AreEqual(0, fixture.Source.Saved);
-            }
+                using (var fixture = new Fixture())
+                {
+                    var provider = new VbaTestPowerPointCoverageClone { Host = fixture.Host };
+                    var clone = provider.Create(fixture.Source.VBProject, fixture.Source.FullName, Path.Combine(fixture.Folder, "Copy"));
+                    var copy = fixture.Application.Presentations[1];
+                    copy.IgnoreSavedWrite = true;
+                    if (throws) copy.OnSavedWrite = () => { throw new InvalidOperationException("Saved completion unknown"); };
+                    var error = Assert.ThrowsException<VbaTestInvocationException>(() => clone.Dispose());
+                    Assert.IsTrue(error.Uncertain);
+                    StringAssert.Contains(error.Message, clone.Path);
+                    clone.Dispose();
+                    Assert.AreEqual(1, copy.SavedWrites);
+                    Assert.AreEqual(0, copy.CloseCalls + copy.SaveCalls + copy.SaveAsCalls);
+                    Assert.AreEqual(2, fixture.Application.Presentations.Count);
+                    Assert.AreEqual(0, fixture.Source.SavedWrites + fixture.Source.CloseCalls + fixture.Source.SaveCalls + fixture.Source.SaveAsCalls);
+                    Assert.AreEqual(0, fixture.Source.Saved);
+                }
         }
 
         [TestMethod]
@@ -222,58 +229,58 @@ namespace VBAi.Tests.Unit
         public void SameSourceExistingFileAndOpenCopyPathsAreRefusedBeforeSave()
         {
             foreach (string fault in new[] { "same", "file", "open" })
-            using (var f = new Fixture())
-            {
-                string folder = Path.Combine(f.Folder, "Copy"), path = Path.Combine(folder, "coverage.pptm");
-                if (fault == "same") { folder = f.Folder; f.Source.FullName = Path.Combine(folder, "coverage.pptm"); }
-                if (fault == "file") { Directory.CreateDirectory(folder); File.WriteAllText(path, "Existing"); }
-                if (fault == "open") f.Application.Presentations.Add(new Presentation { FullName = path });
-                var provider = new VbaTestPowerPointCoverageClone { Host = f.Host };
-                Assert.ThrowsException<InvalidOperationException>(() => provider.Create(f.Source.VBProject, f.Source.FullName, folder));
-                Assert.AreEqual(0, f.Source.SaveCopyCalls); Assert.AreEqual(0, f.Application.Presentations.OpenCalls);
-            }
+                using (var f = new Fixture())
+                {
+                    string folder = Path.Combine(f.Folder, "Copy"), path = Path.Combine(folder, "coverage.pptm");
+                    if (fault == "same") { folder = f.Folder; f.Source.FullName = Path.Combine(folder, "coverage.pptm"); }
+                    if (fault == "file") { Directory.CreateDirectory(folder); File.WriteAllText(path, "Existing"); }
+                    if (fault == "open") f.Application.Presentations.Add(new Presentation { FullName = path });
+                    var provider = new VbaTestPowerPointCoverageClone { Host = f.Host };
+                    Assert.ThrowsException<InvalidOperationException>(() => provider.Create(f.Source.VBProject, f.Source.FullName, folder));
+                    Assert.AreEqual(0, f.Source.SaveCopyCalls); Assert.AreEqual(0, f.Application.Presentations.OpenCalls);
+                }
         }
 
         [TestMethod]
         public void InconsistentIdentityCannotAcceptTheCopyOrCloseTheOriginal()
         {
             foreach (string fault in new[] { "verify", "close", "discard" })
-            using (var f = new Fixture())
-            {
-                var provider = new VbaTestPowerPointCoverageClone { Host = f.Host };
-                Presentation copy = null;
-                f.Application.Presentations.OnOpen = path => copy = new Presentation { FullName = path };
-                if (fault == "verify")
+                using (var f = new Fixture())
                 {
-                    f.Host.SameIdentity = (a, b) => !(ReferenceEquals(a, copy) && ReferenceEquals(b, copy) && copy != null) && ReferenceEquals(a, b);
-                    Assert.IsTrue(Assert.ThrowsException<VbaTestInvocationException>(() => provider.Create(f.Source.VBProject, f.Source.FullName, Path.Combine(f.Folder, "Copy"))).Uncertain);
+                    var provider = new VbaTestPowerPointCoverageClone { Host = f.Host };
+                    Presentation copy = null;
+                    f.Application.Presentations.OnOpen = path => copy = new Presentation { FullName = path };
+                    if (fault == "verify")
+                    {
+                        f.Host.SameIdentity = (a, b) => !(ReferenceEquals(a, copy) && ReferenceEquals(b, copy) && copy != null) && ReferenceEquals(a, b);
+                        Assert.IsTrue(Assert.ThrowsException<VbaTestInvocationException>(() => provider.Create(f.Source.VBProject, f.Source.FullName, Path.Combine(f.Folder, "Copy"))).Uncertain);
+                    }
+                    else
+                    {
+                        var clone = provider.Create(f.Source.VBProject, f.Source.FullName, Path.Combine(f.Folder, "Copy"));
+                        Action invalidate = () => f.Host.SameIdentity = (a, b) => ReferenceEquals(a, b) || (ReferenceEquals(a, copy) && ReferenceEquals(b, f.Source));
+                        if (fault == "close") invalidate(); else copy.OnSavedWrite = invalidate;
+                        if (fault == "close") Assert.ThrowsException<InvalidOperationException>(() => clone.Dispose());
+                        else Assert.IsTrue(Assert.ThrowsException<VbaTestInvocationException>(() => clone.Dispose()).Uncertain);
+                    }
+                    Assert.AreEqual(0, copy.CloseCalls); Assert.AreEqual(0, f.Source.CloseCalls);
                 }
-                else
-                {
-                    var clone = provider.Create(f.Source.VBProject, f.Source.FullName, Path.Combine(f.Folder, "Copy"));
-                    Action invalidate = () => f.Host.SameIdentity = (a, b) => ReferenceEquals(a, b) || (ReferenceEquals(a, copy) && ReferenceEquals(b, f.Source));
-                    if (fault == "close") invalidate(); else copy.OnSavedWrite = invalidate;
-                    if (fault == "close") Assert.ThrowsException<InvalidOperationException>(() => clone.Dispose());
-                    else Assert.IsTrue(Assert.ThrowsException<VbaTestInvocationException>(() => clone.Dispose()).Uncertain);
-                }
-                Assert.AreEqual(0, copy.CloseCalls); Assert.AreEqual(0, f.Source.CloseCalls);
-            }
         }
 
         [TestMethod]
         public void ProjectIdentityChangingAtEitherCloseGuardNeverClosesTheOriginal()
         {
             foreach (int refusalRead in new[] { 2, 4 })
-            using (var f = new Fixture())
-            {
-                var provider = new VbaTestPowerPointCoverageClone { Host = f.Host };
-                var clone = provider.Create(f.Source.VBProject, f.Source.FullName, Path.Combine(f.Folder, "Copy"));
-                var copy = f.Application.Presentations[1]; int reads = 0;
-                f.Host.SameIdentity = (a, b) => ReferenceEquals(a, b) || (ReferenceEquals(a, copy.VBProject) && ReferenceEquals(b, f.Source.VBProject) && ++reads == refusalRead);
-                if (refusalRead == 2) Assert.ThrowsException<InvalidOperationException>(() => clone.Dispose());
-                else Assert.IsTrue(Assert.ThrowsException<VbaTestInvocationException>(() => clone.Dispose()).Uncertain);
-                Assert.AreEqual(0, copy.CloseCalls); Assert.AreEqual(0, f.Source.CloseCalls);
-            }
+                using (var f = new Fixture())
+                {
+                    var provider = new VbaTestPowerPointCoverageClone { Host = f.Host };
+                    var clone = provider.Create(f.Source.VBProject, f.Source.FullName, Path.Combine(f.Folder, "Copy"));
+                    var copy = f.Application.Presentations[1]; int reads = 0;
+                    f.Host.SameIdentity = (a, b) => ReferenceEquals(a, b) || (ReferenceEquals(a, copy.VBProject) && ReferenceEquals(b, f.Source.VBProject) && ++reads == refusalRead);
+                    if (refusalRead == 2) Assert.ThrowsException<InvalidOperationException>(() => clone.Dispose());
+                    else Assert.IsTrue(Assert.ThrowsException<VbaTestInvocationException>(() => clone.Dispose()).Uncertain);
+                    Assert.AreEqual(0, copy.CloseCalls); Assert.AreEqual(0, f.Source.CloseCalls);
+                }
         }
 
         private sealed class Fixture : IDisposable

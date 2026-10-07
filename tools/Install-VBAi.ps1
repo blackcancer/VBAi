@@ -1,8 +1,8 @@
-param([switch] $Direct)
+param([switch] $Direct, [string]$AssemblyDirectory)
 
 $ErrorActionPreference = 'Stop'
 
-if ($env:CODEX_SHELL -eq '1' -and -not $Direct) {
+if ($env:CODEX_SHELL -eq '1' -and -not $Direct -and -not $AssemblyDirectory) {
     $expectedAssembly = Join-Path (Split-Path -Parent $PSScriptRoot) 'bin\Debug\net48\VBAi.dll'
     & (Join-Path $PSScriptRoot 'Invoke-VBAi-OutsideSandbox.ps1') -Action Install -ExpectedAssemblyPath $expectedAssembly
     return
@@ -65,8 +65,9 @@ foreach ($base in @([Environment]::GetFolderPath('ApplicationData'), [Environmen
 }
 
 $projectRoot = Split-Path -Parent $PSScriptRoot
-$assemblyPath = Join-Path $projectRoot 'bin\Debug\net48\VBAi.dll'
-$typeLibPath = Join-Path $projectRoot 'bin\Debug\net48\VBAi.tlb'
+if (-not $AssemblyDirectory) { $AssemblyDirectory = Join-Path $projectRoot 'bin\Debug\net48' }
+$assemblyPath = Join-Path $AssemblyDirectory 'VBAi.dll'
+$typeLibPath = Join-Path $AssemblyDirectory 'VBAi.tlb'
 if (-not (Test-Path -LiteralPath $assemblyPath)) {
     throw "Build src/VBAi/VBAi.csproj first. Missing: $assemblyPath"
 }
@@ -152,8 +153,8 @@ try {
     try { $addin.SetValue('LoadBehavior', 3, [Microsoft.Win32.RegistryValueKind]::DWord) }
     finally { $addin.Dispose() }
 
-    & (Join-Path $PSScriptRoot 'Register-VBAiTypeLib.ps1')
-    & (Join-Path $PSScriptRoot 'Register-ChatToolWindow.ps1')
+    & (Join-Path $PSScriptRoot 'Register-VBAiTypeLib.ps1') -TypeLibPath $typeLibPath
+    & (Join-Path $PSScriptRoot 'Register-ChatToolWindow.ps1') -AssemblyPath $assemblyPath
     & (Join-Path $PSScriptRoot 'Register-VbaTestRuntime.ps1') -AssemblyPath $assemblyPath
 
     # Remove the old discovery entry only after the replacement is registered.

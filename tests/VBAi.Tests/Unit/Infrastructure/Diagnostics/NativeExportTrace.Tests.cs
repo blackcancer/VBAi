@@ -1,7 +1,7 @@
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Diagnostics;
 using System.IO;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace VBAi.Tests
 {
@@ -13,8 +13,13 @@ namespace VBAi.Tests
         public void TraceScriptPreservesPidPathPrivacyAndPairedNativeStatus()
         {
             string source = FindSource();
-            var info = new ProcessStartInfo("node.exe", "\"" + source + "\"") {
-                UseShellExecute = false, CreateNoWindow = true, RedirectStandardOutput = true, RedirectStandardError = true };
+            var info = new ProcessStartInfo("node.exe", "\"" + source + "\"")
+            {
+                UseShellExecute = false,
+                CreateNoWindow = true,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true
+            };
             using (var process = Process.Start(info))
             {
                 var output = process.StandardOutput.ReadToEndAsync();

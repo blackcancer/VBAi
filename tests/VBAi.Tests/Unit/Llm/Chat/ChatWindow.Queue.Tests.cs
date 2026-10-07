@@ -1,11 +1,10 @@
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Web.Script.Serialization;
 using System.Windows.Forms;
-using VBAi;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 namespace VBAi.Tests.Unit
 {
     public sealed partial class ChatWindowStateTests
@@ -18,7 +17,8 @@ namespace VBAi.Tests.Unit
                 var state = Get<ChatSessionState>(window, "currentSession");
                 var item = new QueuedChatMessage { Text = "interrupt queued request" };
                 state.PendingMessages.Add(item); int requests = 0;
-                window.CodexTurnOverride = (text, model, effort) => {
+                window.CodexTurnOverride = (text, model, effort) =>
+                {
                     requests++; Set(window, "stopRequested", true); return Task.FromResult("completed after stop");
                 };
                 Set(window, "busy", true);
@@ -64,42 +64,42 @@ namespace VBAi.Tests.Unit
         public void QueueCapturesTheSelectedMemoryAndRefusesAClosedScopeWithoutClearingDraft()
         {
             foreach (string memory in new[] { null, "captured draft memory" })
-            foreach (bool include in new[] { false, true })
-            using (var window = ReadyCodexWindow(new ChatSessionState { Scope = "temporary:test" }))
-            {
-                Set(window, "projectMemory", "project memory"); Set(window, "queuedDraftMemory", memory);
-                Get<CheckBox>(window, "attachMemory").Checked = include;
-                Question(window, " queued question "); Call(window, "QueueComposerMessage");
-                var state = Get<ChatSessionState>(window, "currentSession");
-                Assert.AreEqual(include ? memory ?? "project memory" : null, state.PendingMessages.Single().Memory);
-                Assert.AreEqual("queued question", state.PendingMessages.Single().Text);
-                Assert.IsNull(Get<string>(window, "queuedDraftMemory"));
-                Set(window, "scopeSession", new VbeSession(new object())); Question(window, "keep this draft");
-                Call(window, "QueueComposerMessage");
-                Assert.AreEqual(1, state.PendingMessages.Count); Assert.AreEqual("keep this draft", Get<System.Windows.Controls.TextBox>(window, "prompt").Text);
-                Set(window, "scopeSession", null); Set(window, "currentSession", null);
-            }
+                foreach (bool include in new[] { false, true })
+                    using (var window = ReadyCodexWindow(new ChatSessionState { Scope = "temporary:test" }))
+                    {
+                        Set(window, "projectMemory", "project memory"); Set(window, "queuedDraftMemory", memory);
+                        Get<CheckBox>(window, "attachMemory").Checked = include;
+                        Question(window, " queued question "); Call(window, "QueueComposerMessage");
+                        var state = Get<ChatSessionState>(window, "currentSession");
+                        Assert.AreEqual(include ? memory ?? "project memory" : null, state.PendingMessages.Single().Memory);
+                        Assert.AreEqual("queued question", state.PendingMessages.Single().Text);
+                        Assert.IsNull(Get<string>(window, "queuedDraftMemory"));
+                        Set(window, "scopeSession", new VbeSession(new object())); Question(window, "keep this draft");
+                        Call(window, "QueueComposerMessage");
+                        Assert.AreEqual(1, state.PendingMessages.Count); Assert.AreEqual("keep this draft", Get<System.Windows.Controls.TextBox>(window, "prompt").Text);
+                        Set(window, "scopeSession", null); Set(window, "currentSession", null);
+                    }
         }
 
         [STATestMethod, TestCategory("Unit")]
         public void QueueEditingPreservesEveryKindOfDraftAndRestoresNullableCapturedContext()
         {
             foreach (string draft in new[] { "text", "attachment", "reference", "memory", "empty" })
-            using (var window = ReadyCodexWindow(new ChatSessionState { Scope = "temporary:test" }))
-            {
-                var state = Get<ChatSessionState>(window, "currentSession");
-                var item = new QueuedChatMessage { Text = "queued", References = null, Attachments = null, Memory = null };
-                state.PendingMessages.Add(item); Set(window, "immediateMessageId", item.Id);
-                if (draft == "text") Question(window, "unsent text");
-                if (draft == "attachment") Get<List<ChatAttachment>>(window, "draftAttachments").Add(new ChatAttachment { Label = "draft", Text = "code" });
-                if (draft == "reference") Get<List<VbeChatReference>>(window, "selectedReferences").Add(new VbeChatReference());
-                if (draft == "memory") Get<CheckBox>(window, "attachMemory").Checked = true;
-                Call(window, "EditPendingMessage", item);
-                Assert.AreEqual(draft == "empty" ? 0 : 1, state.PendingMessages.Count);
-                if (draft == "empty") { Assert.AreEqual("queued", state.Draft); Assert.IsNull(Get<string>(window, "immediateMessageId")); }
-                else { Assert.AreEqual(item.Id, Get<string>(window, "immediateMessageId")); Call(window, "DeletePendingMessage", item); Assert.IsNull(Get<string>(window, "immediateMessageId")); }
-                Set(window, "currentSession", null);
-            }
+                using (var window = ReadyCodexWindow(new ChatSessionState { Scope = "temporary:test" }))
+                {
+                    var state = Get<ChatSessionState>(window, "currentSession");
+                    var item = new QueuedChatMessage { Text = "queued", References = null, Attachments = null, Memory = null };
+                    state.PendingMessages.Add(item); Set(window, "immediateMessageId", item.Id);
+                    if (draft == "text") Question(window, "unsent text");
+                    if (draft == "attachment") Get<List<ChatAttachment>>(window, "draftAttachments").Add(new ChatAttachment { Label = "draft", Text = "code" });
+                    if (draft == "reference") Get<List<VbeChatReference>>(window, "selectedReferences").Add(new VbeChatReference());
+                    if (draft == "memory") Get<CheckBox>(window, "attachMemory").Checked = true;
+                    Call(window, "EditPendingMessage", item);
+                    Assert.AreEqual(draft == "empty" ? 0 : 1, state.PendingMessages.Count);
+                    if (draft == "empty") { Assert.AreEqual("queued", state.Draft); Assert.IsNull(Get<string>(window, "immediateMessageId")); }
+                    else { Assert.AreEqual(item.Id, Get<string>(window, "immediateMessageId")); Call(window, "DeletePendingMessage", item); Assert.IsNull(Get<string>(window, "immediateMessageId")); }
+                    Set(window, "currentSession", null);
+                }
             using (var window = ReadyCodexWindow(new ChatSessionState { Scope = "temporary:test" }))
             {
                 var state = Get<ChatSessionState>(window, "currentSession");
@@ -115,20 +115,20 @@ namespace VBAi.Tests.Unit
         public void QueuedRequestsUseCapturedNullablePayloadWhilePreservingTheCurrentComposer()
         {
             foreach (bool nullable in new[] { false, true })
-            using (var window = ReadyCodexWindow(new ChatSessionState { Scope = "temporary:test" }))
-            {
-                var state = Get<ChatSessionState>(window, "currentSession");
-                var item = new QueuedChatMessage { Text = "queued request", References = nullable ? null : new VbeChatReference[0], Attachments = nullable ? null : new ChatAttachment[0], Memory = nullable ? null : "captured memory" };
-                state.PendingMessages.Add(item); string request = null;
-                if (!nullable) { var effort = Get<ComboBox>(window, "effortPicker"); effort.Items.Add(new LlmEffortOption("high", "High")); effort.SelectedIndex = 0; }
-                window.CodexTurnOverride = (text, model, effort) => { request = text; return Task.FromResult("done"); };
-                Question(window, "keep composer"); Set(window, "queuedDraftMemory", "unsent memory");
-                CompleteOnSta((Task)Call(window, "SendPendingNowAsync", item));
-                Assert.AreEqual(0, state.PendingMessages.Count); Assert.AreEqual("keep composer", state.Draft);
-                Assert.AreEqual("unsent memory", Get<string>(window, "queuedDraftMemory"));
-                StringAssert.Contains(request, "queued request"); Assert.AreEqual(!nullable, request.Contains("captured memory"));
-                Set(window, "currentSession", null);
-            }
+                using (var window = ReadyCodexWindow(new ChatSessionState { Scope = "temporary:test" }))
+                {
+                    var state = Get<ChatSessionState>(window, "currentSession");
+                    var item = new QueuedChatMessage { Text = "queued request", References = nullable ? null : new VbeChatReference[0], Attachments = nullable ? null : new ChatAttachment[0], Memory = nullable ? null : "captured memory" };
+                    state.PendingMessages.Add(item); string request = null;
+                    if (!nullable) { var effort = Get<ComboBox>(window, "effortPicker"); effort.Items.Add(new LlmEffortOption("high", "High")); effort.SelectedIndex = 0; }
+                    window.CodexTurnOverride = (text, model, effort) => { request = text; return Task.FromResult("done"); };
+                    Question(window, "keep composer"); Set(window, "queuedDraftMemory", "unsent memory");
+                    CompleteOnSta((Task)Call(window, "SendPendingNowAsync", item));
+                    Assert.AreEqual(0, state.PendingMessages.Count); Assert.AreEqual("keep composer", state.Draft);
+                    Assert.AreEqual("unsent memory", Get<string>(window, "queuedDraftMemory"));
+                    StringAssert.Contains(request, "queued request"); Assert.AreEqual(!nullable, request.Contains("captured memory"));
+                    Set(window, "currentSession", null);
+                }
         }
 
         [STATestMethod, TestCategory("Unit")]
@@ -139,12 +139,12 @@ namespace VBAi.Tests.Unit
                 var state = Get<ChatSessionState>(window, "currentSession"); int requests = 0;
                 window.CodexTurnOverride = (text, model, effort) => { requests++; return Task.FromResult("done"); };
                 foreach (bool busy in new[] { false, true }) foreach (bool stop in new[] { false, true })
-                foreach (bool paused in new[] { false, true }) foreach (bool draft in new[] { false, true })
-                {
-                    Set(window, "busy", busy); Set(window, "stopRequested", stop); state.BudgetPaused = paused;
-                    Question(window, draft ? "draft" : ""); Call(window, "UpdateBudgetControls");
-                    Assert.AreEqual(!busy || !stop || draft, Get<Button>(window, "send").Enabled);
-                }
+                    foreach (bool paused in new[] { false, true }) foreach (bool draft in new[] { false, true })
+                    {
+                        Set(window, "busy", busy); Set(window, "stopRequested", stop); state.BudgetPaused = paused;
+                        Question(window, draft ? "draft" : ""); Call(window, "UpdateBudgetControls");
+                        Assert.AreEqual(!busy || !stop || draft, Get<Button>(window, "send").Enabled);
+                    }
                 Set(window, "busy", false); Set(window, "stopRequested", false); state.BudgetPaused = false;
                 var prompt = Get<object>(window, "prompt"); Set(window, "prompt", null); Call(window, "UpdateBudgetControls"); Set(window, "prompt", prompt);
                 var item = new QueuedChatMessage { Text = "waiting" }; state.PendingMessages.Add(item);
@@ -164,20 +164,20 @@ namespace VBAi.Tests.Unit
         public void QueueRowsDispatchTheirActualActionsAndFollowTheirContainerWidth()
         {
             foreach (string action in new[] { "sendNow", "edit", "delete" })
-            using (var window = ReadyCodexWindow(new ChatSessionState { Scope = "temporary:test" }))
-            {
-                int requests = 0; window.CodexTurnOverride = (text, model, effort) => { requests++; return Task.FromResult("done"); };
-                var state = Get<ChatSessionState>(window, "currentSession");
-                state.PendingMessages.Add(new QueuedChatMessage { Text = "action target" }); Call(window, "RefreshPendingMessages");
-                var panel = Get<FlowLayoutPanel>(window, "pendingMessagesPanel"); var row = panel.Controls[0];
-                panel.Width = 640; Assert.AreEqual(Math.Max(200, panel.ClientSize.Width - 24), row.Width);
-                var button = (Button)row.GetType().GetField(action, System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic).GetValue(row);
-                typeof(Button).GetMethod("OnClick", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)
-                    .Invoke(button, new object[] { EventArgs.Empty });
-                Assert.AreEqual(0, state.PendingMessages.Count); Assert.AreEqual(action == "sendNow" ? 1 : 0, requests);
-                if (action == "edit") Assert.AreEqual("action target", state.Draft);
-                Set(window, "currentSession", null);
-            }
+                using (var window = ReadyCodexWindow(new ChatSessionState { Scope = "temporary:test" }))
+                {
+                    int requests = 0; window.CodexTurnOverride = (text, model, effort) => { requests++; return Task.FromResult("done"); };
+                    var state = Get<ChatSessionState>(window, "currentSession");
+                    state.PendingMessages.Add(new QueuedChatMessage { Text = "action target" }); Call(window, "RefreshPendingMessages");
+                    var panel = Get<FlowLayoutPanel>(window, "pendingMessagesPanel"); var row = panel.Controls[0];
+                    panel.Width = 640; Assert.AreEqual(Math.Max(200, panel.ClientSize.Width - 24), row.Width);
+                    var button = (Button)row.GetType().GetField(action, System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic).GetValue(row);
+                    typeof(Button).GetMethod("OnClick", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)
+                        .Invoke(button, new object[] { EventArgs.Empty });
+                    Assert.AreEqual(0, state.PendingMessages.Count); Assert.AreEqual(action == "sendNow" ? 1 : 0, requests);
+                    if (action == "edit") Assert.AreEqual("action target", state.Draft);
+                    Set(window, "currentSession", null);
+                }
         }
 
         [STATestMethod, TestCategory("Unit")]
@@ -211,7 +211,8 @@ namespace VBAi.Tests.Unit
             using (var window = ReadyCodexWindow(new ChatSessionState { Scope = "temporary:test" }))
             {
                 var pending = new TaskCompletionSource<string>(); int requests = 0; bool interrupted = false;
-                window.CodexTurnOverride = (text, model, effort) => {
+                window.CodexTurnOverride = (text, model, effort) =>
+                {
                     requests++; if (requests == 1) return pending.Task;
                     Assert.IsTrue(interrupted); if (requests == 2) StringAssert.Contains(text, "priority");
                     return Task.FromResult("done");
@@ -257,7 +258,7 @@ namespace VBAi.Tests.Unit
                 int actions = 0; var json = new JavaScriptSerializer();
                 var replies = Enumerable.Range(0, 10).Select(i => json.Serialize(new { choices = new[] { new { message = new { role = "assistant", tool_calls = new[] { new { id = "step-" + i, type = "function", function = new { name = "status", arguments = "{}" } } } } } } })).Concat(new[] { "{\"choices\":[{\"message\":{\"role\":\"assistant\",\"content\":\"finished\"}}]}" }).ToArray();
                 window.HttpHandlerOverride = () => new ChatResponseHandler(replies);
-                ChatWindow.InvokeTool = (t,n,a) => Task.FromResult(json.Serialize(Response.Success(new { Step = ++actions })));
+                ChatWindow.InvokeTool = (t, n, a) => Task.FromResult(json.Serialize(Response.Success(new { Step = ++actions })));
                 Question(window, "long work"); CompleteOnSta((Task)Call(window, "SendAsync"));
                 Assert.AreEqual(10, actions); Assert.IsFalse(Get<ChatSessionState>(window, "currentSession").BudgetPaused);
                 Assert.IsTrue(Get<List<ChatEntry>>(window, "transcriptEntries").Any(e => e.Text == "finished"));
@@ -290,7 +291,7 @@ namespace VBAi.Tests.Unit
                 int actions = 0; var json = new JavaScriptSerializer();
                 var replies = Enumerable.Range(0, 64).Select(i => json.Serialize(new { choices = new[] { new { message = new { role = "assistant", tool_calls = new[] { new { id = "bounded-" + i, type = "function", function = new { name = "status", arguments = "{}" } } } } } } })).ToArray();
                 var handler = new ChatResponseHandler(replies); window.HttpHandlerOverride = () => handler;
-                ChatWindow.InvokeTool = (t,n,a) => Task.FromResult(json.Serialize(Response.Success(new { Step = ++actions })));
+                ChatWindow.InvokeTool = (t, n, a) => Task.FromResult(json.Serialize(Response.Success(new { Step = ++actions })));
                 Question(window, "bounded work"); CompleteOnSta((Task)Call(window, "SendAsync"));
                 Assert.AreEqual(64, actions); Assert.AreEqual(64, handler.Requests.Count);
                 Assert.IsTrue(Get<ChatSessionState>(window, "currentSession").BudgetPaused); Assert.IsFalse(Get<bool>(window, "busy"));

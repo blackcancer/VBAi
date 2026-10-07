@@ -22,13 +22,15 @@ namespace VBAi
         /// <param name="parent">New control subtree to inspect for top-down FlowLayoutPanel containers.</param>
         private void Watch(Control parent)
         {
-            if (parent is FlowLayoutPanel flow && flow.FlowDirection == FlowDirection.TopDown && watched.Add(flow)) {
+            if (parent is FlowLayoutPanel flow && flow.FlowDirection == FlowDirection.TopDown && watched.Add(flow))
+            {
                 int lastWidth = -1;
-                flow.SizeChanged += (s,e) => {
+                flow.SizeChanged += (s, e) =>
+                {
                     if (lastWidth == flow.ClientSize.Width) return;
                     lastWidth = flow.ClientSize.Width; ResizeRows(flow);
                 };
-                flow.ControlAdded += (s,e) => ResizeRows(flow);
+                flow.ControlAdded += (s, e) => ResizeRows(flow);
             }
             foreach (Control child in parent.Controls) Watch(child);
         }
@@ -38,12 +40,13 @@ namespace VBAi
         private static void ResizeRows(FlowLayoutPanel flow)
         {
             if (flow.ClientSize.Width <= 0) return;
-            foreach (Control child in flow.Controls) {
+            foreach (Control child in flow.Controls)
+            {
                 int width = Math.Max(20, flow.ClientSize.Width - flow.Padding.Horizontal - child.Margin.Horizontal);
                 if (child.Width == width) continue;
                 int minimumHeight = child.MinimumSize.Height;
                 child.MinimumSize = System.Drawing.Size.Empty;
-                child.MaximumSize = new System.Drawing.Size(width,0);
+                child.MaximumSize = new System.Drawing.Size(width, 0);
                 child.MinimumSize = new System.Drawing.Size(width, minimumHeight);
                 child.Width = width;
             }

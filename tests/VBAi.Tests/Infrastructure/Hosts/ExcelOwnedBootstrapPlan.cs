@@ -1,9 +1,9 @@
+using Microsoft.Win32;
 using System;
 using System.Diagnostics;
 using System.IO;
 using System.IO.Packaging;
 using System.Xml;
-using Microsoft.Win32;
 
 namespace VBAi.Tests.Integration
 {
@@ -66,8 +66,10 @@ namespace VBAi.Tests.Integration
             if (!System.IO.File.Exists(seed) || !string.Equals(Path.GetExtension(seed), ".xlsx", StringComparison.OrdinalIgnoreCase))
                 throw new ArgumentException("The owned macro-free xlsx seed must already exist.");
             if (!Directory.Exists(Path.GetDirectoryName(trace))) throw new ArgumentException("The trace parent directory must already exist.");
-            var info = new ProcessStartInfo(executable, "/x /automation \"" + seed + "\"") {
-                UseShellExecute = false, WorkingDirectory = Path.GetDirectoryName(seed),
+            var info = new ProcessStartInfo(executable, "/x /automation \"" + seed + "\"")
+            {
+                UseShellExecute = false,
+                WorkingDirectory = Path.GetDirectoryName(seed),
                 WindowStyle = ProcessWindowStyle.Hidden
             };
             info.EnvironmentVariables[VbeInspectionTrace.EnvironmentName] = trace;

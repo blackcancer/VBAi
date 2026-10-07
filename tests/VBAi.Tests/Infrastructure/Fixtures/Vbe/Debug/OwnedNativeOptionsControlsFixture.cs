@@ -2,7 +2,6 @@ namespace VBAi.Tests.Unit
 {
     using System;
     using System.Collections.Generic;
-    using System.Linq;
     using System.Reflection;
     using System.Runtime.InteropServices;
     using System.Text;
@@ -58,6 +57,14 @@ namespace VBAi.Tests.Unit
         private static extern int OptionsFixtureSetStyle(IntPtr window, int index, int value);
         [DllImport("user32.dll", EntryPoint = "EnableWindow")]
         private static extern bool OptionsFixtureEnable(IntPtr window, bool enabled);
+        [DllImport("user32.dll", EntryPoint = "SetActiveWindow")]
+        private static extern IntPtr OptionsFixtureActivate(IntPtr window);
+        [DllImport("user32.dll", EntryPoint = "GetActiveWindow")]
+        private static extern IntPtr OptionsFixtureActive();
+        [DllImport("user32.dll", EntryPoint = "GetParent")]
+        private static extern IntPtr OptionsFixtureParent(IntPtr window);
+        [DllImport("kernel32.dll", EntryPoint = "GetCurrentThreadId")]
+        private static extern uint OptionsFixtureThread();
 
         private static string OptionsFixtureReadEditText(IntPtr window)
         {
@@ -88,8 +95,12 @@ namespace VBAi.Tests.Unit
             internal readonly AutomationNode Categories = new AutomationNode { Name = "Code Colors", Kind = ControlType.List };
             internal readonly List<AutomationNode> CategoryItems = new List<AutomationNode>();
             internal readonly List<AutomationNode> Palettes = new List<AutomationNode>();
-            internal readonly Dictionary<string, int[]> Colours = new Dictionary<string, int[]> {
-                ["Normal"] = new[] { 0, 0, 0 }, ["Comment"] = new[] { 1, 2, 0 }, ["Keyword"] = new[] { 2, 1, 2 } };
+            internal readonly Dictionary<string, int[]> Colours = new Dictionary<string, int[]>
+            {
+                ["Normal"] = new[] { 0, 0, 0 },
+                ["Comment"] = new[] { 1, 2, 0 },
+                ["Keyword"] = new[] { 2, 1, 2 }
+            };
             internal readonly AutomationHost Host;
             internal readonly List<Tuple<int, int, IntPtr>> Notifications = new List<Tuple<int, int, IntPtr>>();
             internal IntPtr Font, Size, List;
@@ -134,6 +145,29 @@ namespace VBAi.Tests.Unit
                     Size = Create(owner.Handle, "ComboBox", 511, 0x50210202);
                     OptionsFixtureText(Size, 0x000C, IntPtr.Zero, "10");
                 }, noActivate: true);
+            }
+
+            /// <summary>Vérifie et active le dialogue sur son STA avant un BM_CLICK, sans réclamer le premier plan.</summary>
+            internal void PrepareCheckboxClick(IntPtr button)
+            {
+                Host.Invoke(owner =>
+                {
+                    uint thread = OwnedOptionsFixtureProcess(owner, out uint process);
+                    uint buttonThread = OwnedOptionsFixtureProcess(button, out uint buttonProcess);
+                    var kind = new StringBuilder(128);
+                    OwnedOptionsFixtureClass(owner, kind, kind.Capacity);
+                    if (thread != OptionsFixtureThread() || buttonThread != thread || process != buttonProcess
+                        || process != (uint)System.Diagnostics.Process.GetCurrentProcess().Id
+                        || kind.ToString() != "#32770" || OptionsFixtureParent(button) != owner)
+                        throw new InvalidOperationException("The checkbox must belong to this exact owned dialog and STA.");
+                    kind.Clear();
+                    OwnedOptionsFixtureClass(button, kind, kind.Capacity);
+                    if (kind.ToString() != "Button")
+                        throw new InvalidOperationException("The owned checkbox must be a native Button.");
+                    OptionsFixtureActivate(owner);
+                    if (OptionsFixtureActive() != owner)
+                        throw new InvalidOperationException("The owned dialog must be active on its STA before BM_CLICK.");
+                });
             }
 
             /// <summary>Crée uniquement une fenêtre enfant standard du dialogue détenu.</summary>

@@ -38,8 +38,7 @@ namespace VBAi
         {
             if (request.Action == "status")
             {
-                var found = nativeNavigations.SingleOrDefault(x => x.Id == request.Query);
-                if (found == null) throw new InvalidOperationException("Unknown navigation operation in this session.");
+                var found = nativeNavigations.SingleOrDefault(x => x.Id == request.Query) ?? throw new InvalidOperationException("Unknown navigation operation in this session.");
                 ObserveNavigation(found);
                 return NavigationResult(found);
             }
@@ -47,8 +46,7 @@ namespace VBAi
             foreach (var prior in nativeNavigations) ObserveNavigation(prior);
             if (nativeNavigations.Any(x => x.State == "Queued" || x.State == "Running" || x.State == "Observing"))
                 throw new InvalidOperationException("A native navigation is still pending. Inspect its status and any native dialog.");
-            var context = SynchronizationContext.Current;
-            if (context == null) throw new InvalidOperationException("The VBE UI context is unavailable.");
+            var context = SynchronizationContext.Current ?? throw new InvalidOperationException("The VBE UI context is unavailable.");
             dynamic project = GetProject(request.Project);
             int mode = (int)project.Mode;
             if ((mode != 1 && mode != 2) || request.ExpectedMode != mode) throw new InvalidOperationException("The expected design or break mode is required.");
@@ -80,7 +78,8 @@ namespace VBAi
             int sourceLine = request.StartLine, expectedMode = request.ExpectedMode;
             try
             {
-                context.Post(_ => {
+                context.Post(_ =>
+                {
                     operation.State = "Running";
                     try
                     {
@@ -171,11 +170,21 @@ namespace VBAi
         /// <returns>État, observations, erreurs et limites d’interprétation.</returns>
         private static object NavigationResult(NavigationOperation operation)
         {
-            return new { OperationId = operation.Id, operation.Action, operation.State, operation.CommandCompleted,
-                operation.NavigationObserved, Before = operation.Before, After = operation.After, NativeError = operation.Error,
-                DefinitionResolved = false, VerificationPending = true,
+            return new
+            {
+                OperationId = operation.Id,
+                operation.Action,
+                operation.State,
+                operation.CommandCompleted,
+                operation.NavigationObserved,
+                operation.Before,
+                operation.After,
+                NativeError = operation.Error,
+                DefinitionResolved = false,
+                VerificationPending = true,
                 NextRead = operation.State == "Queued" || operation.State == "Running" || operation.State == "Observing" ? "native_code_navigation status (Query=OperationId), debug_dialog" : "vbe_windows, code_panes, read_module or debug_dialog",
-                Limit = "Native command completion and a changed selection or active window do not prove semantic resolution. Inspect the destination. A native modal dialog can outlive command completion; inspect debug_dialog when no navigation is observed." };
+                Limit = "Native command completion and a changed selection or active window do not prove semantic resolution. Inspect the destination. A native modal dialog can outlive command completion; inspect debug_dialog when no navigation is observed."
+            };
         }
     }
 }

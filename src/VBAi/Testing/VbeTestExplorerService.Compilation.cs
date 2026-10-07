@@ -66,13 +66,15 @@ namespace VBAi
             long started = CoverageCompilationClock();
             IDisposable timer = null;
             EventHandler dispatcherDisposed = null;
-            Action<Exception> finish = error => {
+            void finish(Exception error)
+            {
                 timer?.Dispose(); timer = null;
                 dispatcher.Disposed -= dispatcherDisposed;
                 if (error == null) completion.TrySetResult(true);
                 else completion.TrySetException(error);
-            };
-            Action tick = () => {
+            }
+            void tick()
+            {
                 if (completion.Task.IsCompleted) return;
                 try
                 {
@@ -89,19 +91,19 @@ namespace VBAi
                         throw new InvalidOperationException("The coverage compiler is still enabled when observed after the three-second deadline; no tests were dispatched.");
                 }
                 catch (Exception error) { finish(error); }
-            };
+            }
             dispatcherDisposed = (sender, args) => finish(new ObjectDisposedException(nameof(VbeTestExplorerService)));
             dispatcher.Disposed += dispatcherDisposed;
             try
             {
                 // Even a control already disabled is re-read only after an owner UI turn.
-                dispatcher.BeginInvoke(new Action(() => {
+                dispatcher.BeginInvoke(new Action(() =>
+                {
                     if (completion.Task.IsCompleted) return;
                     try
                     {
                         RequireOwner();
-                        timer = StartCoverageCompilationTimer(tick);
-                        if (timer == null) throw new InvalidOperationException("The owner compilation observer could not be started.");
+                        timer = StartCoverageCompilationTimer(tick) ?? throw new InvalidOperationException("The owner compilation observer could not be started.");
                         if (completion.Task.IsCompleted) { timer.Dispose(); timer = null; }
                     }
                     catch (Exception error) { finish(error); }

@@ -1,3 +1,4 @@
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -5,7 +6,6 @@ using System.IO;
 using System.Text;
 using System.Threading;
 using System.Web.Script.Serialization;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace VBAi.Tests.Integration
 {
@@ -65,7 +65,8 @@ namespace VBAi.Tests.Integration
             lease.VisibleOwnedDialog = window => IsVisibleOwnedAccessDiscard(window, process, started);
             worker.Discard = lease;
             dialogWorker = worker;
-            worker.Thread = new Thread(() => {
+            worker.Thread = new Thread(() =>
+            {
                 try
                 {
                     lease.BindWorkerThread();
@@ -76,7 +77,8 @@ namespace VBAi.Tests.Integration
                     }
                 }
                 catch (Exception error) { worker.Failure = error; worker.StopRequested = true; }
-            }) { IsBackground = true };
+            })
+            { IsBackground = true };
             worker.Thread.SetApartmentState(ApartmentState.STA);
             lease.Flush(); worker.Thread.Start();
             try
@@ -122,12 +124,23 @@ namespace VBAi.Tests.Integration
             {
                 ProcessId = processId; this.authority = authority; this.flush = flush;
                 names = new HashSet<string>(createdNames, StringComparer.Ordinal);
-                Record = new Dictionary<string, object> {
-                    ["ProcessId"] = processId, ["ProcessStartedUtc"] = started, ["OriginalProcessHandle"] = handle,
-                    ["DocumentPath"] = path, ["Project"] = project, ["OwnerThread"] = ownerThread,
-                    ["Mode"] = "DISCARD_ONLY", ["CreatedNames"] = new List<string>(names),
-                    ["CancelEntries"] = 0, ["SaveEntries"] = 0, ["CloseReturned"] = false,
-                    ["MacroReplay"] = false, ["QuitReplay"] = false, ["CancelReplay"] = false };
+                Record = new Dictionary<string, object>
+                {
+                    ["ProcessId"] = processId,
+                    ["ProcessStartedUtc"] = started,
+                    ["OriginalProcessHandle"] = handle,
+                    ["DocumentPath"] = path,
+                    ["Project"] = project,
+                    ["OwnerThread"] = ownerThread,
+                    ["Mode"] = "DISCARD_ONLY",
+                    ["CreatedNames"] = new List<string>(names),
+                    ["CancelEntries"] = 0,
+                    ["SaveEntries"] = 0,
+                    ["CloseReturned"] = false,
+                    ["MacroReplay"] = false,
+                    ["QuitReplay"] = false,
+                    ["CancelReplay"] = false
+                };
             }
             internal void BindWorkerThread()
             {
@@ -194,11 +207,13 @@ namespace VBAi.Tests.Integration
         private static void ScanNativeAccessDiscard(AccessDiscardLease lease)
         {
             var scan = Stopwatch.StartNew();
-            EnumWindows((window, parameter) => {
+            EnumWindows((window, parameter) =>
+            {
                 if (scan.ElapsedMilliseconds >= 1000) return false;
                 uint processId; GetWindowThreadProcessId(window, out processId);
                 if (processId == (uint)lease.ProcessId && IsWindowVisible(window))
-                    lease.TryCancel(window, ReadNativeAccessDiscardDialog, cancel => {
+                    lease.TryCancel(window, ReadNativeAccessDiscardDialog, cancel =>
+                    {
                         UIntPtr result;
                         return SendDialogCommand(cancel, 0x00F5, UIntPtr.Zero, IntPtr.Zero, 0x23, 750, out result) != IntPtr.Zero;
                     });
@@ -212,12 +227,28 @@ namespace VBAi.Tests.Integration
             uint pid, editPid, cancelPid;
             uint thread = GetWindowThreadProcessId(window, out pid), editThread = GetWindowThreadProcessId(edit, out editPid),
                 cancelThread = GetWindowThreadProcessId(cancel, out cancelPid);
-            return new AccessDiscardDialog {
-                Window = window, Edit = edit, Cancel = cancel, ProcessId = (int)pid, EditProcessId = (int)editPid, CancelProcessId = (int)cancelPid,
-                ThreadId = thread, EditThreadId = editThread, CancelThreadId = cancelThread,
-                WindowClass = NativeAccessDiscardClass(window), EditClass = NativeAccessDiscardClass(edit), CancelClass = NativeAccessDiscardClass(cancel),
-                EditId = GetDlgCtrlID(edit), CancelId = GetDlgCtrlID(cancel), Visible = IsWindowVisible(window), Enabled = IsWindowEnabled(cancel),
-                Title = BoundedDialogText(window), Name = ReadNativeAccessDiscardName(edit), CancelText = BoundedDialogText(cancel) };
+            return new AccessDiscardDialog
+            {
+                Window = window,
+                Edit = edit,
+                Cancel = cancel,
+                ProcessId = (int)pid,
+                EditProcessId = (int)editPid,
+                CancelProcessId = (int)cancelPid,
+                ThreadId = thread,
+                EditThreadId = editThread,
+                CancelThreadId = cancelThread,
+                WindowClass = NativeAccessDiscardClass(window),
+                EditClass = NativeAccessDiscardClass(edit),
+                CancelClass = NativeAccessDiscardClass(cancel),
+                EditId = GetDlgCtrlID(edit),
+                CancelId = GetDlgCtrlID(cancel),
+                Visible = IsWindowVisible(window),
+                Enabled = IsWindowEnabled(cancel),
+                Title = BoundedDialogText(window),
+                Name = ReadNativeAccessDiscardName(edit),
+                CancelText = BoundedDialogText(cancel)
+            };
         }
         /// <summary>Reads the attested Access Unicode rich edit naming control with bounded WM_GETTEXT.</summary>
         internal static string ReadNativeAccessDiscardName(IntPtr window)

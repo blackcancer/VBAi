@@ -60,9 +60,16 @@ namespace VBAi.Tests.Unit
             internal Action AfterWrite;
             internal Request Request(string action = "fit_container")
             {
-                return new Request { Project = Project.Name, Form = Form.Name, ControlPath = Path,
-                    Action = action, Left = 5, Top = 7,
-                    ExpectedTreeVersion = (string)((dynamic)Service.Tree(Project.Name, Form.Name)).TreeVersion };
+                return new Request
+                {
+                    Project = Project.Name,
+                    Form = Form.Name,
+                    ControlPath = Path,
+                    Action = action,
+                    Left = 5,
+                    Top = 7,
+                    ExpectedTreeVersion = (string)((dynamic)Service.Tree(Project.Name, Form.Name)).TreeVersion
+                };
             }
             internal void Write(string property, object value)
             {

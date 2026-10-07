@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using System.Text.RegularExpressions;
 
 namespace VBAi
@@ -179,8 +178,16 @@ namespace VBAi
         /// <param name="conditional">Indique une branche conditionnelle.</param>
         /// <param name="output">Collection de sortie.</param>
         private static void Add(Token token, string kind, string scope, string type, bool conditional, List<Declaration> output) =>
-            output.Add(new Declaration { Name = Bare(token.Text), Kind = kind, Scope = scope, TypeName = type,
-                Line = token.Line, Column = token.Column, Conditional = conditional });
+            output.Add(new Declaration
+            {
+                Name = Bare(token.Text),
+                Kind = kind,
+                Scope = scope,
+                TypeName = type,
+                Line = token.Line,
+                Column = token.Column,
+                Conditional = conditional
+            });
 
         /// <summary>Retire un suffixe de type VBA éventuel du nom lexical.</summary>
         /// <param name="text">Jeton ou identifiant à normaliser.</param>
@@ -197,8 +204,17 @@ namespace VBAi
         /// <returns>Type VBA associé, ou Variant pour un suffixe non reconnu.</returns>
         private static string SuffixType(char suffix)
         {
-            switch (suffix) { case '$': return "String"; case '%': return "Integer"; case '&': return "Long";
-                case '!': return "Single"; case '#': return "Double"; case '@': return "Currency"; case '^': return "LongLong"; default: return "Variant"; }
+            switch (suffix)
+            {
+                case '$': return "String";
+                case '%': return "Integer";
+                case '&': return "Long";
+                case '!': return "Single";
+                case '#': return "Double";
+                case '@': return "Currency";
+                case '^': return "LongLong";
+                default: return "Variant";
+            }
         }
 
         /// <summary>Lexeur de déclarations : conserve les positions, les continuations et les séparateurs.</summary>

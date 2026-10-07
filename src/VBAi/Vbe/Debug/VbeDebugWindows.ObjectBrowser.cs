@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.InteropServices;
-using System.Threading;
 using System.Windows.Automation;
 
 namespace VBAi
@@ -53,8 +52,15 @@ namespace VBAi
                 }
                 catch (Exception ex) { selections.Add(new { Error = ex.Message }); }
             }
-            return new { Available = true, Caption = WindowText(pane), Selections = selections,
-                Descriptions = descriptions, Source = "Native VBE UI Automation", SemanticResolutionVerified = false };
+            return new
+            {
+                Available = true,
+                Caption = WindowText(pane),
+                Selections = selections,
+                Descriptions = descriptions,
+                Source = "Native VBE UI Automation",
+                SemanticResolutionVerified = false
+            };
         }
 
         /// <summary>Énumère les seuls HWND exposant une liste, une combo ou une zone Document reconnue.</summary>
@@ -149,8 +155,15 @@ namespace VBAi
                 (string.IsNullOrEmpty(request.Procedure) ||
                  selectedLabels.Contains("Membres de '" + request.ObjectName + "' " + request.Procedure) ||
                  selectedLabels.Contains("Members of '" + request.ObjectName + "' " + request.Procedure));
-            return new { SelectionObserved = observed, ObjectName = request.ObjectName, Procedure = request.Procedure, Library = request.Context,
-                Snapshot = ReadObjectBrowser(), SemanticResolutionVerified = false };
+            return new
+            {
+                SelectionObserved = observed,
+                request.ObjectName,
+                request.Procedure,
+                Library = request.Context,
+                Snapshot = ReadObjectBrowser(),
+                SemanticResolutionVerified = false
+            };
         }
 
         /// <summary>Liste par pages les bibliothèques, classes ou membres exposés par le navigateur natif.</summary>
@@ -194,12 +207,26 @@ namespace VBAi
                 if (!string.IsNullOrEmpty(request.Query) && label.IndexOf(request.Query, StringComparison.OrdinalIgnoreCase) < 0) continue;
                 if (matched++ < request.Offset || rows.Count >= limit) continue;
                 bool readable = item.TryGetCurrentPattern(SelectionItemPattern.Pattern, out object selection);
-                rows.Add(new { Label = label, SelectionReadable = readable,
-                    Selected = readable && ((SelectionItemPattern)selection).Current.IsSelected });
+                rows.Add(new
+                {
+                    Label = label,
+                    SelectionReadable = readable,
+                    Selected = readable && ((SelectionItemPattern)selection).Current.IsSelected
+                });
             }
-            return new { Available = true, Pane = request.Pane, Query = request.Query, Offset = request.Offset,
-                Limit = limit, TotalMatches = matched, HasMore = matched - request.Offset > rows.Count,
-                Items = rows, Source = "Native VBE UI Automation", Enabled = list.Current.IsEnabled };
+            return new
+            {
+                Available = true,
+                request.Pane,
+                request.Query,
+                request.Offset,
+                Limit = limit,
+                TotalMatches = matched,
+                HasMore = matched - request.Offset > rows.Count,
+                Items = rows,
+                Source = "Native VBE UI Automation",
+                Enabled = list.Current.IsEnabled
+            };
         }
 
         /// <summary>Sélectionne une bibliothèque exacte puis vérifie l’état de la combo native.</summary>

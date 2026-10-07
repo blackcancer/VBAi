@@ -27,11 +27,14 @@ namespace VBAi
             if (syntheticAllowlist == null || syntheticAllowlist.Length != 4)
                 throw new ArgumentException("An exact two-directory/two-file synthetic allowlist is required.");
             var paths = new List<object>();
-            var report = new Dictionary<string, object> {
-                ["ProcessId"] = GetCurrentProcessId(), ["NativeThreadId"] = GetCurrentThreadId(),
+            var report = new Dictionary<string, object>
+            {
+                ["ProcessId"] = GetCurrentProcessId(),
+                ["NativeThreadId"] = GetCurrentThreadId(),
                 ["ManagedThreadId"] = Thread.CurrentThread.ManagedThreadId,
                 ["Apartment"] = Thread.CurrentThread.GetApartmentState().ToString(),
-                ["Utc"] = DateTime.UtcNow.ToString("o"), ["EffectiveTokenBefore"] = EffectiveTokenObservation.Read(),
+                ["Utc"] = DateTime.UtcNow.ToString("o"),
+                ["EffectiveTokenBefore"] = EffectiveTokenObservation.Read(),
                 ["Scope"] = "Calling-thread synthetic path attributes and effective token; caller must independently establish exact owner-STA identity."
             };
             foreach (string path in syntheticAllowlist)

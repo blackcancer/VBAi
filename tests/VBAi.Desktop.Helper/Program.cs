@@ -1,8 +1,8 @@
 using System;
-using System.Diagnostics;
 using System.Collections.Generic;
-using System.Linq;
+using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Threading;
@@ -38,8 +38,16 @@ namespace VBAi.Desktop.Helper
             catch (Exception error)
             {
                 if (args.Length == 2 && args[0] == "--run-plan" && Path.IsPathRooted(args[1]))
-                    try { Write(Path.GetDirectoryName(args[1]), "entry-failure.json", new {
-                        State = "ENTRY_FAILED", Error = error.ToString(), NoCleanupReplayed = true, Utc = Utc() }); }
+                    try
+                    {
+                        Write(Path.GetDirectoryName(args[1]), "entry-failure.json", new
+                        {
+                            State = "ENTRY_FAILED",
+                            Error = error.ToString(),
+                            NoCleanupReplayed = true,
+                            Utc = Utc()
+                        });
+                    }
                     catch { }
                 return 3;
             }
@@ -62,9 +70,15 @@ namespace VBAi.Desktop.Helper
             if (plan.ContainsKey("UserSid") &&
                 (string)plan["UserSid"] != System.Security.Principal.WindowsIdentity.GetCurrent().User.Value) return 3;
             int code = Run(new[] { "--run", script, output, worker });
-            Write(Path.GetDirectoryName(terminal), Path.GetFileName(terminal), new { State = "CHILD_TERMINAL",
-                ExitCode = code, User = System.Security.Principal.WindowsIdentity.GetCurrent().Name,
-                DirectGuiLauncher = true, ConsoleAttached = GetConsoleWindow() != IntPtr.Zero, Utc = Utc() });
+            Write(Path.GetDirectoryName(terminal), Path.GetFileName(terminal), new
+            {
+                State = "CHILD_TERMINAL",
+                ExitCode = code,
+                User = System.Security.Principal.WindowsIdentity.GetCurrent().Name,
+                DirectGuiLauncher = true,
+                ConsoleAttached = GetConsoleWindow() != IntPtr.Zero,
+                Utc = Utc()
+            });
             return code;
         }
 
@@ -89,21 +103,41 @@ namespace VBAi.Desktop.Helper
             string input = IsolatedTestDesktop.InputDesktopName();
             try
             {
-                Write(output, "helper-started.json", new { ProcessId = Process.GetCurrentProcess().Id,
+                Write(output, "helper-started.json", new
+                {
+                    ProcessId = Process.GetCurrentProcess().Id,
                     ProcessStartUtc = Process.GetCurrentProcess().StartTime.ToUniversalTime().ToString("o"),
-                    ConsoleAttached = GetConsoleWindow() != IntPtr.Zero, Product = typeof(Program).Assembly.Location,
-                    AssemblyMvid = typeof(Program).Module.ModuleVersionId.ToString("D"), Utc = Utc() });
+                    ConsoleAttached = GetConsoleWindow() != IntPtr.Zero,
+                    Product = typeof(Program).Assembly.Location,
+                    AssemblyMvid = typeof(Program).Module.ModuleVersionId.ToString("D"),
+                    Utc = Utc()
+                });
                 if (GetConsoleWindow() != IntPtr.Zero)
                     throw new InvalidOperationException("The private launcher must not depend on a console lifetime.");
                 retainedDesktop = IsolatedTestDesktop.Create(desktop);
                 retainedSentinel = new DesktopSentinel(desktop);
                 retainedSentinel.Start();
-                Write(output, "sentinel-started.json", new { Desktop = desktop, ProcessId = Process.GetCurrentProcess().Id,
-                    ThreadId = retainedSentinel.ThreadId, Window = retainedSentinel.Window.ToInt64(),
-                    Hidden = true, FocusRequested = false, ImeDisabledOnlyForSentinelThread = true, Utc = Utc() });
-                Write(output, "desktop-plan.json", new { Desktop = desktop, InputDesktop = input,
-                    Script = script, SwitchDesktopCalled = false, TerminationAllowed = false,
-                    Scope = "Window/focus isolation under the same user/profile; not a security sandbox or native acceptance", Utc = Utc() });
+                Write(output, "sentinel-started.json", new
+                {
+                    Desktop = desktop,
+                    ProcessId = Process.GetCurrentProcess().Id,
+                    ThreadId = retainedSentinel.ThreadId,
+                    Window = retainedSentinel.Window.ToInt64(),
+                    Hidden = true,
+                    FocusRequested = false,
+                    ImeDisabledOnlyForSentinelThread = true,
+                    Utc = Utc()
+                });
+                Write(output, "desktop-plan.json", new
+                {
+                    Desktop = desktop,
+                    InputDesktop = input,
+                    Script = script,
+                    SwitchDesktopCalled = false,
+                    TerminationAllowed = false,
+                    Scope = "Window/focus isolation under the same user/profile; not a security sandbox or native acceptance",
+                    Utc = Utc()
+                });
                 string self = typeof(Program).Assembly.Location;
                 retainedChild = IsolatedTestDesktop.Launch(self,
                     new[] { "--probe", desktop, Path.Combine(output, "canary.json") }, Path.GetDirectoryName(script), desktop);
@@ -114,8 +148,14 @@ namespace VBAi.Desktop.Helper
                 if (IsolatedTestDesktop.HasOtherWindows(desktop, retainedSentinel.Window, retainedSentinel.ThreadId,
                     (uint)Process.GetCurrentProcess().Id))
                     throw new InvalidOperationException("The canary exited while other private windows remain; the campaign was not started.");
-                Write(output, "empty-desktop.json", new { Desktop = desktop, CanaryOriginalExit = canaryExit,
-                    OtherWindowsPresent = false, SentinelObserved = true, Utc = Utc() });
+                Write(output, "empty-desktop.json", new
+                {
+                    Desktop = desktop,
+                    CanaryOriginalExit = canaryExit,
+                    OtherWindowsPresent = false,
+                    SentinelObserved = true,
+                    Utc = Utc()
+                });
                 string powershell = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Windows),
                     "System32", "WindowsPowerShell", "v1.0", "powershell.exe");
                 retainedChild = IsolatedTestDesktop.Launch(powershell,
@@ -130,25 +170,45 @@ namespace VBAi.Desktop.Helper
                 if (IsolatedTestDesktop.HasOtherWindows(desktop, retainedSentinel.Window, retainedSentinel.ThreadId,
                     (uint)Process.GetCurrentProcess().Id))
                     throw new InvalidOperationException("The script exited while private desktop windows remain; ownership is retained without cleanup replay.");
-                Write(output, "sentinel-inventory.json", new { Desktop = desktop, SentinelObserved = true,
-                    SentinelWindow = retainedSentinel.Window.ToInt64(), OtherWindows = 0,
-                    OriginalChildExitObserved = true, Utc = Utc() });
+                Write(output, "sentinel-inventory.json", new
+                {
+                    Desktop = desktop,
+                    SentinelObserved = true,
+                    SentinelWindow = retainedSentinel.Window.ToInt64(),
+                    OtherWindows = 0,
+                    OriginalChildExitObserved = true,
+                    Utc = Utc()
+                });
                 IsolatedTestDesktop.CompleteOwnedShutdown(() =>
                 {
                     retainedSentinel.CloseOnce();
-                    Write(output, "sentinel-exit.json", new { Desktop = desktop, OriginalThreadExitObserved = true,
-                        NativeCloseAttempts = 1, DesktopSwitches = 0, Utc = Utc() });
+                    Write(output, "sentinel-exit.json", new
+                    {
+                        Desktop = desktop,
+                        OriginalThreadExitObserved = true,
+                        NativeCloseAttempts = 1,
+                        DesktopSwitches = 0,
+                        Utc = Utc()
+                    });
                     retainedSentinel = null;
                 }, retainedDesktop, () =>
                 {
                     retainedChild.Dispose(); retainedChild = null;
                 }, () =>
                 {
-                    Write(output, "terminal.json", new { State = "ORIGINAL_CHILD_EXIT_OBSERVED", ExitCode = code,
-                        Desktop = desktop, InputDesktop = IsolatedTestDesktop.InputDesktopName(),
-                        DesktopCloseAttempted = retainedDesktop.CloseAttempted, DesktopCloseSucceeded = retainedDesktop.CloseSucceeded,
+                    Write(output, "terminal.json", new
+                    {
+                        State = "ORIGINAL_CHILD_EXIT_OBSERVED",
+                        ExitCode = code,
+                        Desktop = desktop,
+                        InputDesktop = IsolatedTestDesktop.InputDesktopName(),
+                        DesktopCloseAttempted = retainedDesktop.CloseAttempted,
+                        DesktopCloseSucceeded = retainedDesktop.CloseSucceeded,
                         DesktopCloseError = retainedDesktop.CloseError,
-                        DesktopSwitches = 0, OwnedForegroundObservations = 0, Utc = Utc() });
+                        DesktopSwitches = 0,
+                        OwnedForegroundObservations = 0,
+                        Utc = Utc()
+                    });
                 });
                 retainedDesktop = null;
                 return unchecked((int)code);
@@ -158,15 +218,21 @@ namespace VBAi.Desktop.Helper
                 Exception closeFailure;
                 bool retain = IsolatedTestDesktop.PrepareRefusal(retainedDesktop,
                     retainedChild != null || retainedSentinel != null, out closeFailure);
-                Write(output, "failure.json", new { State = retain ? "RETAINED_UNCERTAIN" : "REFUSED",
-                    Desktop = desktop, ProcessId = retainedChild == null ? 0 : retainedChild.ProcessId,
+                Write(output, "failure.json", new
+                {
+                    State = retain ? "RETAINED_UNCERTAIN" : "REFUSED",
+                    Desktop = desktop,
+                    ProcessId = retainedChild == null ? 0 : retainedChild.ProcessId,
                     SentinelWindow = retainedSentinel == null ? 0L : retainedSentinel.Window.ToInt64(),
                     DesktopHandle = retainedDesktop == null ? 0L : retainedDesktop.Handle.ToInt64(),
                     DesktopCloseAttempted = retainedDesktop != null && retainedDesktop.CloseAttempted,
                     DesktopCloseSucceeded = retainedDesktop != null && retainedDesktop.CloseSucceeded,
                     DesktopCloseError = retainedDesktop == null ? 0 : retainedDesktop.CloseError,
                     DesktopCloseFailure = closeFailure == null ? null : closeFailure.ToString(),
-                    Error = error.ToString(), CleanupReplayed = false, Utc = Utc() });
+                    Error = error.ToString(),
+                    CleanupReplayed = false,
+                    Utc = Utc()
+                });
                 // A child, sentinel or failed desktop close retains ownership without any close replay.
                 if (retain) return ObserveRetainedExit(output, desktop);
                 retainedDesktop = null;
@@ -178,7 +244,7 @@ namespace VBAi.Desktop.Helper
         private static int ObserveRetainedExit(string output, string desktop)
         {
             bool diagnosticWritten = false, releaseAttempted = false;
-            for (;;)
+            for (; ; )
             {
                 try
                 {
@@ -201,15 +267,23 @@ namespace VBAi.Desktop.Helper
                             retainedChild.Dispose(); retainedChild = null;
                         }, () =>
                         {
-                            Write(output, "retained-terminal.json", new {
+                            Write(output, "retained-terminal.json", new
+                            {
                                 State = "FAILED_CAMPAIGN_EXIT_OBSERVED_RESOURCES_RELEASED",
-                                ProcessId = pid, OriginalHandle = handle, ExitCode = code,
-                                Desktop = desktop, InputDesktop = IsolatedTestDesktop.InputDesktopName(),
-                                OtherWindowsPresent = false, SentinelCloseAttempts = 1,
+                                ProcessId = pid,
+                                OriginalHandle = handle,
+                                ExitCode = code,
+                                Desktop = desktop,
+                                InputDesktop = IsolatedTestDesktop.InputDesktopName(),
+                                OtherWindowsPresent = false,
+                                SentinelCloseAttempts = 1,
                                 DesktopCloseAttempted = retainedDesktop.CloseAttempted,
                                 DesktopCloseSucceeded = retainedDesktop.CloseSucceeded,
                                 DesktopCloseError = retainedDesktop.CloseError,
-                                CleanupReplayed = false, TerminationCalled = false, Utc = Utc() });
+                                CleanupReplayed = false,
+                                TerminationCalled = false,
+                                Utc = Utc()
+                            });
                         });
                         retainedDesktop = null;
                         return 1; // Resource release does not turn the failed campaign into a pass.
@@ -220,9 +294,14 @@ namespace VBAi.Desktop.Helper
                     if (retainedChild == null) throw;
                     if (!diagnosticWritten)
                     {
-                        Write(output, "retained-observation-failure.json", new {
-                            Desktop = desktop, Error = observation.ToString(),
-                            CleanupReplayed = false, ReleaseAttempted = releaseAttempted, Utc = Utc() });
+                        Write(output, "retained-observation-failure.json", new
+                        {
+                            Desktop = desktop,
+                            Error = observation.ToString(),
+                            CleanupReplayed = false,
+                            ReleaseAttempted = releaseAttempted,
+                            Utc = Utc()
+                        });
                         diagnosticWritten = true;
                     }
                     // An observation failure proves neither exit nor successful release.
@@ -337,8 +416,13 @@ namespace VBAi.Desktop.Helper
 
         private static void Observe(string output, string desktop, string phase, int deadline)
         {
-            Write(output, phase + "-started.json", new { ProcessId = retainedChild.ProcessId,
-                ThreadId = retainedChild.ThreadId, OriginalHandle = retainedChild.ProcessHandle.ToInt64(), Utc = Utc() });
+            Write(output, phase + "-started.json", new
+            {
+                ProcessId = retainedChild.ProcessId,
+                ThreadId = retainedChild.ThreadId,
+                OriginalHandle = retainedChild.ProcessHandle.ToInt64(),
+                Utc = Utc()
+            });
             var watch = Stopwatch.StartNew(); bool pending = false;
             while (!retainedChild.Wait(200))
             {
@@ -350,14 +434,27 @@ namespace VBAi.Desktop.Helper
                 if (!pending && watch.ElapsedMilliseconds >= deadline)
                 {
                     pending = true;
-                    Write(output, phase + "-pending.json", new { State = "PENDING_RETAINED", ProcessId = retainedChild.ProcessId,
-                        OriginalHandle = retainedChild.ProcessHandle.ToInt64(), ObservationBoundMs = deadline,
-                        NoRelaunch = true, NoTermination = true, Utc = Utc() });
+                    Write(output, phase + "-pending.json", new
+                    {
+                        State = "PENDING_RETAINED",
+                        ProcessId = retainedChild.ProcessId,
+                        OriginalHandle = retainedChild.ProcessHandle.ToInt64(),
+                        ObservationBoundMs = deadline,
+                        NoRelaunch = true,
+                        NoTermination = true,
+                        Utc = Utc()
+                    });
                 }
             }
-            Write(output, phase + "-exit.json", new { ProcessId = retainedChild.ProcessId,
-                OriginalHandle = retainedChild.ProcessHandle.ToInt64(), ExitCode = retainedChild.ExitCode(),
-                WaitElapsedMs = watch.ElapsedMilliseconds, PendingPreviouslyRecorded = pending, Utc = Utc() });
+            Write(output, phase + "-exit.json", new
+            {
+                ProcessId = retainedChild.ProcessId,
+                OriginalHandle = retainedChild.ProcessHandle.ToInt64(),
+                ExitCode = retainedChild.ExitCode(),
+                WaitElapsedMs = watch.ElapsedMilliseconds,
+                PendingPreviouslyRecorded = pending,
+                Utc = Utc()
+            });
         }
 
         private static int Probe(string expected, string receipt)
@@ -375,7 +472,8 @@ namespace VBAi.Desktop.Helper
                     form.Controls.Add(button);
                     timer.Tick += (sender, value) => { expired = true; timer.Stop(); form.Close(); };
                     button.Click += (sender, value) => { clicked = true; timer.Stop(); form.Close(); };
-                    form.Shown += (sender, value) => {
+                    form.Shown += (sender, value) =>
+                    {
                         IntPtr hwnd = button.Handle; uint nativePid;
                         uint nativeThread = GetWindowThreadProcessId(hwnd, out nativePid);
                         IsolatedTestDesktop.RequireCurrent(expected);
@@ -383,7 +481,8 @@ namespace VBAi.Desktop.Helper
                             throw new InvalidOperationException("The private window inventory did not observe the shown canary.");
                         if (IsolatedTestDesktop.DesktopName(nativeThread) != expected)
                             throw new InvalidOperationException("The canary window is on a different desktop.");
-                        reader = new Thread(() => {
+                        reader = new Thread(() =>
+                        {
                             try
                             {
                                 IsolatedTestDesktop.RequireCurrent(expected);
@@ -391,10 +490,17 @@ namespace VBAi.Desktop.Helper
                                 if (element.Current.ProcessId != Process.GetCurrentProcess().Id ||
                                     element.Current.AutomationId != "ownedCanary" || element.Current.ControlType != ControlType.Button)
                                     throw new InvalidOperationException("The private UIA canary identity differs.");
-                                observation = new { Desktop = expected, InputDesktop = IsolatedTestDesktop.InputDesktopName(),
-                                    NativeProcessId = nativePid, NativeThreadId = nativeThread,
-                                    NativeHandle = hwnd.ToInt64(), UiAProcessId = element.Current.ProcessId,
-                                    UiAOffscreen = element.Current.IsOffscreen, UiAEnabled = element.Current.IsEnabled };
+                                observation = new
+                                {
+                                    Desktop = expected,
+                                    InputDesktop = IsolatedTestDesktop.InputDesktopName(),
+                                    NativeProcessId = nativePid,
+                                    NativeThreadId = nativeThread,
+                                    NativeHandle = hwnd.ToInt64(),
+                                    UiAProcessId = element.Current.ProcessId,
+                                    UiAOffscreen = element.Current.IsOffscreen,
+                                    UiAEnabled = element.Current.IsEnabled
+                                };
                                 // The legacy UIA Button.Invoke proxy uses SendInput/SetFocus. Read UIA identity
                                 // only; address this exact owned button once without interacting with input.
                                 uint currentPid;
@@ -409,22 +515,35 @@ namespace VBAi.Desktop.Helper
                                     throw new InvalidOperationException("The single owned canary button message did not return.");
                             }
                             catch (Exception error) { failure = error; try { form.BeginInvoke((Action)form.Close); } catch { } }
-                        }) { IsBackground = true };
+                        })
+                        { IsBackground = true };
                         reader.SetApartmentState(ApartmentState.MTA); reader.Start(); timer.Start();
                     };
                     Application.Run(form);
                     if (reader == null || !reader.Join(3000) || expired || failure != null || !clicked)
                         throw new InvalidOperationException("Private desktop WinForms/UIA canary did not complete.", failure);
                 }
-                Write(Path.GetDirectoryName(receipt), Path.GetFileName(receipt), new { State = "PASS_CANARY_ONLY",
-                    Observation = observation, ClickObserved = clicked, Action = "OwnedHwndBM_CLICK",
-                    ShownWindowInventoryProven = true, UiAInvokeCalled = false, DesktopSwitches = 0, Utc = Utc() });
+                Write(Path.GetDirectoryName(receipt), Path.GetFileName(receipt), new
+                {
+                    State = "PASS_CANARY_ONLY",
+                    Observation = observation,
+                    ClickObserved = clicked,
+                    Action = "OwnedHwndBM_CLICK",
+                    ShownWindowInventoryProven = true,
+                    UiAInvokeCalled = false,
+                    DesktopSwitches = 0,
+                    Utc = Utc()
+                });
                 return 0;
             }
             catch (Exception error)
             {
-                if (!File.Exists(receipt)) Write(Path.GetDirectoryName(receipt), Path.GetFileName(receipt), new {
-                    State = "CANARY_FAILED", Error = error.ToString(), Utc = Utc() });
+                if (!File.Exists(receipt)) Write(Path.GetDirectoryName(receipt), Path.GetFileName(receipt), new
+                {
+                    State = "CANARY_FAILED",
+                    Error = error.ToString(),
+                    Utc = Utc()
+                });
                 return 1;
             }
         }
@@ -439,11 +558,13 @@ namespace VBAi.Desktop.Helper
             string[] required = { "TextBox", "TabControl", "ComboBoxExpand", "ComboBoxSelect", "ComboBoxCollapse",
                 "NativeButton", "ChatActionButtonOptions", "VirtualGitItem", "OwnedForm" };
             Exception failure = null; bool pending = false; int sequence = 0;
-            var worker = new Thread(() => {
+            var worker = new Thread(() =>
+            {
                 try
                 {
                     IsolatedTestDesktop.RequireCurrent(expected);
-                    PrivateUiActionCanary.Run(expected, value => {
+                    PrivateUiActionCanary.Run(expected, value =>
+                    {
                         Write(steps, (++sequence).ToString("D4") + ".json", value);
                         var fields = new JavaScriptSerializer().Deserialize<Dictionary<string, object>>(
                             new JavaScriptSerializer().Serialize(value));
@@ -457,12 +578,19 @@ namespace VBAi.Desktop.Helper
             worker.SetApartmentState(ApartmentState.MTA); worker.Start();
             // The parent retains the original handle if an accessibility provider does not return.
             worker.Join();
-            if (pending) for (;;) Thread.Sleep(1000);
+            if (pending) for (; ; ) Thread.Sleep(1000);
             bool success = failure == null && required.All(proven.Contains);
-            Write(Path.GetDirectoryName(receipt), Path.GetFileName(receipt), new {
+            Write(Path.GetDirectoryName(receipt), Path.GetFileName(receipt), new
+            {
                 State = success ? "PASS_SYNTHETIC_ACTION_MATRIX_ONLY" : "ACTION_MATRIX_GAPS",
-                Desktop = expected, Required = required, Proven = proven.ToArray(), Missing = required.Except(proven).ToArray(),
-                Error = failure == null ? null : failure.ToString(), OfficeAcceptance = false, Utc = Utc() });
+                Desktop = expected,
+                Required = required,
+                Proven = proven.ToArray(),
+                Missing = required.Except(proven).ToArray(),
+                Error = failure == null ? null : failure.ToString(),
+                OfficeAcceptance = false,
+                Utc = Utc()
+            });
             return success ? 0 : 1;
         }
 

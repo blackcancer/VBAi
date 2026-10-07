@@ -1,9 +1,8 @@
 namespace VBAi.Tests.Unit
 {
+    using Microsoft.VisualStudio.TestTools.UnitTesting;
     using System;
     using System.Collections.Generic;
-    using System.Web.Script.Serialization;
-    using Microsoft.VisualStudio.TestTools.UnitTesting;
     using VBAi;
 
     /// <summary>Vérifie la conversion des requêtes et réponses du protocole Bedrock Converse.</summary>
@@ -108,12 +107,13 @@ namespace VBAi.Tests.Unit
             var spec = Obj(Obj(((object[])Obj(request["toolConfig"])["tools"])[0])["toolSpec"]);
             Microsoft.VisualStudio.TestTools.UnitTesting.Assert.AreEqual("read", spec["name"]);
             Microsoft.VisualStudio.TestTools.UnitTesting.Assert.AreEqual("object", Obj(Obj(spec["inputSchema"])["json"])["type"]);
-            foreach (var stop in new[] { "end_turn", "stop_sequence" }) {
+            foreach (var stop in new[] { "end_turn", "stop_sequence" })
+            {
                 var response = BedrockProtocol.Response(Obj(new { stopReason = stop, output = new { message = new { content = new object[] { new { ignored = true }, new { text = "one" }, new { text = "two" } } } } }));
                 Microsoft.VisualStudio.TestTools.UnitTesting.Assert.AreEqual("one\ntwo", response["content"]);
                 Microsoft.VisualStudio.TestTools.UnitTesting.Assert.IsFalse(response.ContainsKey("tool_calls"));
             }
-            Microsoft.VisualStudio.TestTools.UnitTesting.Assert.ThrowsException<System.InvalidOperationException>(() => BedrockProtocol.Response(Obj(new {})));
+            Microsoft.VisualStudio.TestTools.UnitTesting.Assert.ThrowsException<System.InvalidOperationException>(() => BedrockProtocol.Response(Obj(new { })));
         }
     }
 }

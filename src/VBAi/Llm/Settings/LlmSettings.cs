@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.IO;
 using System.Security.Cryptography;
 using System.Text;
-using System.Web.Script.Serialization;
 
 namespace VBAi
 {
@@ -80,8 +79,7 @@ namespace VBAi
         /// <returns>Liste configurée ou valeur de variable d’environnement ; nul si aucune n’existe.</returns>
         public string GetManualModels(LlmProvider provider)
         {
-            string value;
-            return ManualModelLists != null && ManualModelLists.TryGetValue(provider.Name, out value) ? value :
+            return ManualModelLists != null && ManualModelLists.TryGetValue(provider.Name, out string value) ? value :
                 (provider.ModelVariable == null ? null : Environment.GetEnvironmentVariable(provider.ModelVariable));
         }
 
@@ -110,8 +108,7 @@ namespace VBAi
         public string GetKey(LlmProvider provider)
         {
             if (provider.Name == "OpenAI API") return GetOpenAiKey();
-            string cipher;
-            if (EncryptedProviderKeys != null && EncryptedProviderKeys.TryGetValue(provider.Name, out cipher) && !string.IsNullOrEmpty(cipher))
+            if (EncryptedProviderKeys != null && EncryptedProviderKeys.TryGetValue(provider.Name, out string cipher) && !string.IsNullOrEmpty(cipher))
                 return Encoding.UTF8.GetString(ProtectedData.Unprotect(Convert.FromBase64String(cipher), null, DataProtectionScope.CurrentUser));
             return provider.IsAzure && AzureUseEntraToken ? Environment.GetEnvironmentVariable("AZURE_OPENAI_ENTRA_TOKEN") :
                 provider.KeyVariable == null ? null : Environment.GetEnvironmentVariable(provider.KeyVariable);
@@ -140,10 +137,14 @@ namespace VBAi
 
         /// <summary>Obtient le chemin du fichier settings.json dans le dossier AppData utilisateur.</summary>
         /// <value>Chemin complet de la configuration utilisateur.</value>
-        private static string FilePath { get {
-            return StoragePathOverride ?? Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
-                "VBAi", "settings.json");
-        } }
+        private static string FilePath
+        {
+            get
+            {
+                return StoragePathOverride ?? Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
+                    "VBAi", "settings.json");
+            }
+        }
 
         /// <summary>Charge les paramètres depuis AppData et applique la valeur historique de confirmation aux fichiers anciens.</summary>
         /// <returns>Paramètres désérialisés ou configuration par défaut si le fichier n’existe pas.</returns>
@@ -205,8 +206,7 @@ namespace VBAi
             if (provider.IsCodex) return CodexModel;
             if (provider.Name == "OpenAI API") return OpenAiModel;
             if (provider.IsOllama) return OllamaModel;
-            string value;
-            return ProviderModels != null && ProviderModels.TryGetValue(provider.Name, out value) ? value : null;
+            return ProviderModels != null && ProviderModels.TryGetValue(provider.Name, out string value) ? value : null;
         }
 
         /// <summary>Enregistre le modèle choisi dans la propriété dédiée ou la table des fournisseurs génériques.</summary>
@@ -226,8 +226,7 @@ namespace VBAi
         /// <returns>Niveau enregistré ou nul.</returns>
         public string GetReasoningEffort(LlmProvider provider, string model)
         {
-            string value;
-            return ReasoningEfforts != null && ReasoningEfforts.TryGetValue(provider.Name + ":" + model, out value)
+            return ReasoningEfforts != null && ReasoningEfforts.TryGetValue(provider.Name + ":" + model, out string value)
                 ? value : null;
         }
 
@@ -249,7 +248,7 @@ namespace VBAi
             string value = null;
             if (provider.Name == "OpenAI API") value = OpenAiEndpoint;
             else if (provider.IsOllama) value = OllamaEndpoint;
-            else if (ProviderEndpoints != null) ProviderEndpoints.TryGetValue(provider.Name, out value);
+            else ProviderEndpoints?.TryGetValue(provider.Name, out value);
             if (string.IsNullOrWhiteSpace(value) && provider.EndpointVariable != null)
                 value = Environment.GetEnvironmentVariable(provider.EndpointVariable);
             return string.IsNullOrWhiteSpace(value) ? provider.Endpoint : value;

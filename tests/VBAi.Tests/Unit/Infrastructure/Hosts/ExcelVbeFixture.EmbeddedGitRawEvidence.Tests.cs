@@ -1,10 +1,10 @@
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Security.Cryptography;
 using System.Web.Script.Serialization;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 using VBAi.Tests.Integration;
 
 namespace VBAi.Tests.Unit
@@ -15,9 +15,11 @@ namespace VBAi.Tests.Unit
         [TestMethod]
         public void RetainsExactTargetAndActualBytesForEveryFileBeforeTheReceipt()
         {
-            WithRoot(root => {
+            WithRoot(root =>
+            {
                 var target = Files(0x25); var actual = Files(0x27); int receipts = 0;
-                ExcelVbeFixture.RetainEmbeddedImportRawEvidence(root, target, actual, receipt => {
+                ExcelVbeFixture.RetainEmbeddedImportRawEvidence(root, target, actual, receipt =>
+                {
                     receipts++;
                     Assert.IsTrue(File.Exists(Path.Combine(root, "post-import-raw", "raw-evidence.json")));
                     foreach (var side in new[] { "target", "actual" })
@@ -56,7 +58,8 @@ namespace VBAi.Tests.Unit
         [DataRow("null-bytes")]
         public void RefusesMissingOrUnsafeEvidenceInputs(string fault)
         {
-            WithRoot(root => {
+            WithRoot(root =>
+            {
                 var target = Files(0x25); var actual = Files(0x27);
                 if (fault == "unsafe-name") actual.Add("../escape.frx", new byte[] { 1 });
                 if (fault == "null-bytes") actual["EmbeddedForm.frx"] = null;
@@ -76,11 +79,13 @@ namespace VBAi.Tests.Unit
         [TestMethod]
         public void ReceiptFailureKeepsDurableRawBytesAndDoesNotRepeatCapture()
         {
-            WithRoot(root => {
+            WithRoot(root =>
+            {
                 int receipts = 0;
                 var failure = new IOException("Synthetic receipt failure");
                 Assert.AreSame(failure, Assert.ThrowsException<IOException>(() =>
-                    ExcelVbeFixture.RetainEmbeddedImportRawEvidence(root, Files(0x25), Files(0x27), _ => {
+                    ExcelVbeFixture.RetainEmbeddedImportRawEvidence(root, Files(0x25), Files(0x27), _ =>
+                    {
                         receipts++; throw failure;
                     })));
                 Assert.AreEqual(1, receipts);
@@ -95,7 +100,8 @@ namespace VBAi.Tests.Unit
         [TestMethod]
         public void RefusesAnExistingEvidenceRootBeforeWritingOrRepeatingTheReceipt()
         {
-            WithRoot(root => {
+            WithRoot(root =>
+            {
                 int receipts = 0; var target = Files(0x25);
                 ExcelVbeFixture.RetainEmbeddedImportRawEvidence(root, target, Files(0x27), _ => receipts++);
                 Assert.ThrowsException<IOException>(() => ExcelVbeFixture.RetainEmbeddedImportRawEvidence(
@@ -141,7 +147,8 @@ namespace VBAi.Tests.Unit
 
         private static Dictionary<string, byte[]> Files(byte resource)
         {
-            return new Dictionary<string, byte[]> {
+            return new Dictionary<string, byte[]>
+            {
                 ["EmbeddedForm.frm"] = new byte[] { 0x41, 0x0A },
                 ["EmbeddedForm.frx"] = new byte[] { resource },
                 ["EmbeddedClass.cls"] = new byte[] { 0x43 },

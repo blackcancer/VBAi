@@ -1,3 +1,4 @@
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -5,7 +6,6 @@ using System.IO;
 using System.Linq;
 using System.Security.Cryptography;
 using System.Threading;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace VBAi.Tests.Integration
 {
@@ -83,15 +83,25 @@ namespace VBAi.Tests.Integration
             var fixture = new ExcelVbeFixture { retainEvidence = true, Root = Path.Combine(parent, Guid.NewGuid().ToString("N")) };
             Directory.CreateDirectory(fixture.Root);
             string seed = fixture.File("OwnedScalarSeed.xlsx");
-            var launch = new Dictionary<string, object> {
-                ["Phase"] = "Preparing", ["StartedUtc"] = DateTime.UtcNow.ToString("o"), ["Executable"] = executable,
+            var launch = new Dictionary<string, object>
+            {
+                ["Phase"] = "Preparing",
+                ["StartedUtc"] = DateTime.UtcNow.ToString("o"),
+                ["Executable"] = executable,
                 ["ExecutableFileVersion"] = FileVersionInfo.GetVersionInfo(executable).FileVersion,
-                ["Seed"] = seed, ["EnvironmentName"] = VbeInspectionTrace.EnvironmentName,
-                ["TracePath"] = tracePath, ["StartAttempts"] = 0, ["ExistingExcelProcessIds"] = existingIds,
-                ["Desktop"] = launchDesktop, ["LaunchThreadId"] = launchThread,
-                ["LaunchThreadDesktop"] = launchDesktop, ["InputDesktopAtPreflight"] = inputDesktop,
+                ["Seed"] = seed,
+                ["EnvironmentName"] = VbeInspectionTrace.EnvironmentName,
+                ["TracePath"] = tracePath,
+                ["StartAttempts"] = 0,
+                ["ExistingExcelProcessIds"] = existingIds,
+                ["Desktop"] = launchDesktop,
+                ["LaunchThreadId"] = launchThread,
+                ["LaunchThreadDesktop"] = launchDesktop,
+                ["InputDesktopAtPreflight"] = inputDesktop,
                 ["ExpectedAssemblyMvid"] = typeof(VbeSession).Module.ModuleVersionId.ToString("D"),
-                ["BootstrapCloseAttempts"] = 0, ["BootstrapQuitAttempts"] = 0, ["ForceTerminationAttempts"] = 0,
+                ["BootstrapCloseAttempts"] = 0,
+                ["BootstrapQuitAttempts"] = 0,
+                ["ForceTerminationAttempts"] = 0,
                 ["StartupFileLoadingSuppressed"] = true
             };
             Action record = () => fixture.WriteEvidence("owned-bootstrap.json", launch);

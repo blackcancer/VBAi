@@ -1,6 +1,6 @@
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System.Collections.Generic;
 using System.Web.Script.Serialization;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace VBAi.Tests.Unit
 {
@@ -22,9 +22,15 @@ namespace VBAi.Tests.Unit
         [STATestMethod, TestCategory("Unit")]
         public void LegacyProviderContextIsClearedWhileLocalTranscriptRemainsAvailable()
         {
-            var state = new ChatSessionState { Scope = "A", ReadAccessPolicyVersion = 0,
-                CodexThreadId = "legacy-thread", ResumeContext = "PRIVATE-B", BudgetPaused = true,
-                MessagesJson = "[{\"role\":\"assistant\",\"content\":\"PRIVATE-B\"}]" };
+            var state = new ChatSessionState
+            {
+                Scope = "A",
+                ReadAccessPolicyVersion = 0,
+                CodexThreadId = "legacy-thread",
+                ResumeContext = "PRIVATE-B",
+                BudgetPaused = true,
+                MessagesJson = "[{\"role\":\"assistant\",\"content\":\"PRIVATE-B\"}]"
+            };
             using (var window = ReadyCodexWindow(state))
             {
                 Call(window, "AddEntry", new ChatEntry { Speaker = "Assistant", Text = "PRIVATE-B" });

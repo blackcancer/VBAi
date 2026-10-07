@@ -1,8 +1,7 @@
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
-using VBAi;
 
 namespace VBAi.Tests.Unit
 {
@@ -62,13 +61,37 @@ namespace VBAi.Tests.Unit
             { RequireSame(expected, true); BeforeCloseEntry?.Invoke(); entry(); Closes++; Button = id; OnClose?.Invoke(); if (CloseError != null) throw CloseError; if (!RefuseClosure) Visible = false; }
             public bool Closed(VbeProjectGeneralOperation.Snapshot expected) => !Visible;
         }
-        internal static VbeProjectGeneralOperation.Snapshot Snapshot() => new VbeProjectGeneralOperation.Snapshot {
-            Dialog = new IntPtr(1), Page = new IntPtr(2), Tab = new IntPtr(3), Context = new IntPtr(4), NameEdit = new IntPtr(5), DescriptionEdit = new IntPtr(6), HelpFileEdit = new IntPtr(7), CompilationEdit = new IntPtr(8),
-            Name = "Disposable", Description = "baseline", HelpFile = "", ContextText = "0", Compilation = ""
+        internal static VbeProjectGeneralOperation.Snapshot Snapshot() => new VbeProjectGeneralOperation.Snapshot
+        {
+            Dialog = new IntPtr(1),
+            Page = new IntPtr(2),
+            Tab = new IntPtr(3),
+            Context = new IntPtr(4),
+            NameEdit = new IntPtr(5),
+            DescriptionEdit = new IntPtr(6),
+            HelpFileEdit = new IntPtr(7),
+            CompilationEdit = new IntPtr(8),
+            Name = "Disposable",
+            Description = "baseline",
+            HelpFile = "",
+            ContextText = "0",
+            Compilation = ""
         };
-        internal static VbeProjectGeneralOperation.Snapshot Copy(VbeProjectGeneralOperation.Snapshot s) => new VbeProjectGeneralOperation.Snapshot {
-            Dialog=s.Dialog, Page=s.Page, Tab=s.Tab, Context=s.Context, NameEdit=s.NameEdit, DescriptionEdit=s.DescriptionEdit, HelpFileEdit=s.HelpFileEdit, CompilationEdit=s.CompilationEdit,
-            Name=s.Name, Description=s.Description, HelpFile=s.HelpFile, ContextText=s.ContextText, Compilation=s.Compilation
+        internal static VbeProjectGeneralOperation.Snapshot Copy(VbeProjectGeneralOperation.Snapshot s) => new VbeProjectGeneralOperation.Snapshot
+        {
+            Dialog = s.Dialog,
+            Page = s.Page,
+            Tab = s.Tab,
+            Context = s.Context,
+            NameEdit = s.NameEdit,
+            DescriptionEdit = s.DescriptionEdit,
+            HelpFileEdit = s.HelpFileEdit,
+            CompilationEdit = s.CompilationEdit,
+            Name = s.Name,
+            Description = s.Description,
+            HelpFile = s.HelpFile,
+            ContextText = s.ContextText,
+            Compilation = s.Compilation
         };
         internal sealed class Case
         {
@@ -79,7 +102,8 @@ namespace VBAi.Tests.Unit
             internal Case() { Operation = new VbeProjectGeneralOperation(Native, Scheduler); }
             internal void Start(int? value = 321, string file = null, string version = null)
             {
-                Pending = Operation.RunAsync("Disposable", value, version ?? Native.State.OptionsVersion, () => Live?.Invoke(), () => Pure?.Invoke(), before => {
+                Pending = Operation.RunAsync("Disposable", value, version ?? Native.State.OptionsVersion, () => Live?.Invoke(), () => Pure?.Invoke(), before =>
+                {
                     BeforeEntry?.Invoke(); before(); Native.Visible = true; AfterEntry?.Invoke();
                     Scheduler.Pump(); Scheduler.Pump();
                     BeforeExecuteReturns?.Invoke();
@@ -88,7 +112,9 @@ namespace VBAi.Tests.Unit
             }
             internal VbeProjectGeneralOperation.Result Complete() { Scheduler.Posted(); Scheduler.Pump(); return Pending.GetAwaiter().GetResult(); }
         }
-        [DataTestMethod][DataRow(false)][DataRow(true)]
+        [DataTestMethod]
+        [DataRow(false)]
+        [DataRow(true)]
         public void OneInitialUiWriteKeepsOtherFieldsAndSettlesOnlyAfterExecuteAndClosure(bool helpFile)
         {
             var c = new Case(); string file = "C:\\qualification-été\\unicode.chm";
@@ -105,10 +131,10 @@ namespace VBAi.Tests.Unit
         [TestMethod]
         public void ReadOnlyCancelsOnceAndNeverWritesOrClaimsPersistence()
         {
-            var c = new Case(); c.Start(null); var r=c.Complete();
-            Assert.AreEqual(2,c.Native.Button); Assert.AreEqual(0,c.Native.Writes); Assert.AreEqual(1,r.CancelAttempts);
+            var c = new Case(); c.Start(null); var r = c.Complete();
+            Assert.AreEqual(2, c.Native.Button); Assert.AreEqual(0, c.Native.Writes); Assert.AreEqual(1, r.CancelAttempts);
             Assert.IsTrue(r.DialogClosed && r.OriginalExecuteReturned && r.Terminal); Assert.IsFalse(r.MutationInvoked || r.Uncertain || r.PersistenceVerified);
-            CollectionAssert.AreEqual(new[] { "open", "cancel", "terminal" },c.Claims.ToArray());
+            CollectionAssert.AreEqual(new[] { "open", "cancel", "terminal" }, c.Claims.ToArray());
         }
         [TestMethod]
         public void UnrepresentableAnsiHelpFileRefusesBeforeFieldClaimAndCancelsUnchangedModalOnce()
@@ -124,19 +150,27 @@ namespace VBAi.Tests.Unit
             Assert.ThrowsException<InvalidOperationException>(() => c.Start(null, @"C:\été.chm"));
         }
         [DataTestMethod]
-        [DataRow("live")][DataRow("pure")][DataRow("owner")][DataRow("value")][DataRow("handle")]
-        [DataRow("claim")][DataRow("policyAfterClaim")][DataRow("deadlineBeforeEnqueue")]
+        [DataRow("live")]
+        [DataRow("pure")]
+        [DataRow("owner")]
+        [DataRow("value")]
+        [DataRow("handle")]
+        [DataRow("claim")]
+        [DataRow("policyAfterClaim")]
+        [DataRow("deadlineBeforeEnqueue")]
         public void KnownRefusalCannotCancelAfterAuthorizationIdentityClaimOrDeadlineFailure(string fault)
         {
             var c = new Case();
-            c.Native.OnRepresentation = () => {
+            c.Native.OnRepresentation = () =>
+            {
                 if (fault == "live") c.Live = () => { throw new InvalidOperationException("live revoked"); };
                 if (fault == "pure") c.Pure = () => { throw new InvalidOperationException("policy revoked"); };
                 if (fault == "owner") c.Native.OnOwner = () => { throw new InvalidOperationException("owner changed"); };
                 if (fault == "value") c.Native.State.Description = "changed";
                 if (fault == "handle") c.Native.State.Context = new IntPtr(99);
             };
-            c.Claim = receipt => {
+            c.Claim = receipt =>
+            {
                 if (receipt.Terminal || receipt.CancelAttempts == 0) return;
                 if (fault == "claim") throw new InvalidOperationException("cancel receipt failed");
                 if (fault == "policyAfterClaim") c.Pure = () => { throw new InvalidOperationException("policy revoked after claim"); };
@@ -156,7 +190,10 @@ namespace VBAi.Tests.Unit
             Assert.IsTrue(r.Uncertain && c.Native.Visible); Assert.IsFalse(r.RefusedBeforeWrite);
             Assert.AreEqual(0, r.FieldAttempts); Assert.AreEqual(0, r.CancelAttempts); Assert.AreEqual(0, c.Native.Closes);
         }
-        [DataTestMethod][DataRow("post")][DataRow("timeout")][DataRow("terminalReceipt")]
+        [DataTestMethod]
+        [DataRow("post")]
+        [DataRow("timeout")]
+        [DataRow("terminalReceipt")]
         public void RefusalCancelFailureRemainsUncertainAndNeverClosesAgain(string fault)
         {
             var c = new Case();
@@ -170,11 +207,14 @@ namespace VBAi.Tests.Unit
             Assert.AreEqual(0, c.Native.Writes); Assert.AreEqual(1, c.Native.Closes);
             c.Scheduler.Pump(); Assert.AreEqual(1, c.Native.Closes);
         }
-        [DataTestMethod][DataRow(false)][DataRow(true)]
+        [DataTestMethod]
+        [DataRow(false)]
+        [DataRow(true)]
         public void ClosedCancelWithOriginalExecuteStillPendingAtDeadlineRemainsUncertain(bool refusal)
         {
             var c = new Case(); bool observedPendingExecute = false;
-            c.BeforeExecuteReturns = () => {
+            c.BeforeExecuteReturns = () =>
+            {
                 Assert.IsFalse(c.Pending.IsCompleted, "Closed modal alone cannot settle the original Execute.");
                 c.Scheduler.Time = 20001; c.Scheduler.Pump();
                 var terminal = c.Pending.Result;
@@ -185,7 +225,10 @@ namespace VBAi.Tests.Unit
             Assert.IsTrue(observedPendingExecute && r.Uncertain); Assert.AreEqual(1, c.Native.Closes); Assert.AreEqual(0, c.Native.Writes);
         }
         [DataTestMethod]
-        [DataRow("fieldClaim")][DataRow("fieldEntry")][DataRow("okClaim")][DataRow("okEntry")]
+        [DataRow("fieldClaim")]
+        [DataRow("fieldEntry")]
+        [DataRow("okClaim")]
+        [DataRow("okEntry")]
         public void DeadlineCrossedDuringGuardsCannotEnterFieldOrOk(string phase)
         {
             var c = new Case();
@@ -217,53 +260,71 @@ namespace VBAi.Tests.Unit
         [TestMethod]
         public void PumpedUnownedDialogBeforeFinalExecuteGuardIsNeverAdopted()
         {
-            var c=new Case(); c.BeforeEntry=()=>{ c.Native.Visible=true; c.Scheduler.Pump(); };
-            c.Start(); c.Scheduler.Pump(); Assert.AreEqual(0,c.Native.Captures);
-            c.Scheduler.Posted(); var r=c.Pending.Result;
-            Assert.IsFalse(r.CommandEntered || r.MutationInvoked); Assert.AreEqual(0,c.Native.Writes); Assert.AreEqual(0,c.Native.Closes);
+            var c = new Case(); c.BeforeEntry = () => { c.Native.Visible = true; c.Scheduler.Pump(); };
+            c.Start(); c.Scheduler.Pump(); Assert.AreEqual(0, c.Native.Captures);
+            c.Scheduler.Posted(); var r = c.Pending.Result;
+            Assert.IsFalse(r.CommandEntered || r.MutationInvoked); Assert.AreEqual(0, c.Native.Writes); Assert.AreEqual(0, c.Native.Closes);
         }
-        [DataTestMethod][DataRow("version")][DataRow("owner")][DataRow("live")][DataRow("pure")][DataRow("unknownModal")]
+        [DataTestMethod]
+        [DataRow("version")]
+        [DataRow("owner")]
+        [DataRow("live")]
+        [DataRow("pure")]
+        [DataRow("unknownModal")]
         public void ChangedApprovalOrModalBeforeFieldNeverWritesAndRetainsEnteredDialog(string fault)
         {
-            var c=new Case(); c.AfterEntry=()=>{
-                if(fault=="owner")c.Native.OnOwner=()=>{throw new InvalidOperationException("owner changed");};
-                if(fault=="live")c.Live=()=>{throw new InvalidOperationException("revision/privacy/active changed");};
-                if(fault=="pure")c.Pure=()=>{throw new InvalidOperationException("selected scope/policy changed");};
-                if(fault=="unknownModal")c.Native.CaptureError=new InvalidOperationException("unknown modal");
+            var c = new Case(); c.AfterEntry = () =>
+            {
+                if (fault == "owner") c.Native.OnOwner = () => { throw new InvalidOperationException("owner changed"); };
+                if (fault == "live") c.Live = () => { throw new InvalidOperationException("revision/privacy/active changed"); };
+                if (fault == "pure") c.Pure = () => { throw new InvalidOperationException("selected scope/policy changed"); };
+                if (fault == "unknownModal") c.Native.CaptureError = new InvalidOperationException("unknown modal");
             };
-            c.Start(version:fault=="version"?"stale":null); c.Scheduler.Posted(); var r=c.Pending.Result;
+            c.Start(version: fault == "version" ? "stale" : null); c.Scheduler.Posted(); var r = c.Pending.Result;
             Assert.IsTrue(r.Uncertain && r.Terminal); Assert.IsFalse(r.MutationInvoked || r.CommittedRequested);
-            Assert.AreEqual(0,c.Native.Writes); Assert.AreEqual(0,c.Native.Closes);
+            Assert.AreEqual(0, c.Native.Writes); Assert.AreEqual(0, c.Native.Closes);
         }
-        [DataTestMethod][DataRow("partialError")][DataRow("wrongValue")][DataRow("otherField")][DataRow("changedHandle")][DataRow("policyBeforeOk")]
+        [DataTestMethod]
+        [DataRow("partialError")]
+        [DataRow("wrongValue")]
+        [DataRow("otherField")]
+        [DataRow("changedHandle")]
+        [DataRow("policyBeforeOk")]
         public void PartialWriteOrChangedReadbackNeverOkCancelSaveOrRetry(string fault)
         {
-            var c=new Case(); c.Native.OnWrite=()=>{
-                if(fault=="partialError")c.Native.WriteError=new InvalidOperationException("native failed after partial write");
-                if(fault=="wrongValue")c.Native.State.ContextText="32";
-                if(fault=="otherField")c.Native.State.HelpFile="unexpected.chm";
-                if(fault=="changedHandle")c.Native.State.Context=new IntPtr(999);
-                if(fault=="policyBeforeOk")c.Live=()=>{throw new InvalidOperationException("approval revoked");};
+            var c = new Case(); c.Native.OnWrite = () =>
+            {
+                if (fault == "partialError") c.Native.WriteError = new InvalidOperationException("native failed after partial write");
+                if (fault == "wrongValue") c.Native.State.ContextText = "32";
+                if (fault == "otherField") c.Native.State.HelpFile = "unexpected.chm";
+                if (fault == "changedHandle") c.Native.State.Context = new IntPtr(999);
+                if (fault == "policyBeforeOk") c.Live = () => { throw new InvalidOperationException("approval revoked"); };
             };
-            c.Start(); c.Scheduler.Posted();var r=c.Pending.Result;
-            Assert.IsTrue(r.MutationInvoked&&r.Uncertain);Assert.AreEqual(1,c.Native.Writes);Assert.AreEqual(0,c.Native.Closes);
-            Assert.IsFalse(r.CommittedRequested||r.DialogClosed||r.PersistenceVerified); c.Scheduler.Pump(); Assert.AreEqual(1,c.Native.Writes);
+            c.Start(); c.Scheduler.Posted(); var r = c.Pending.Result;
+            Assert.IsTrue(r.MutationInvoked && r.Uncertain); Assert.AreEqual(1, c.Native.Writes); Assert.AreEqual(0, c.Native.Closes);
+            Assert.IsFalse(r.CommittedRequested || r.DialogClosed || r.PersistenceVerified); c.Scheduler.Pump(); Assert.AreEqual(1, c.Native.Writes);
         }
-        [DataTestMethod][DataRow("open")][DataRow("field")][DataRow("ok")][DataRow("terminal")]
+        [DataTestMethod]
+        [DataRow("open")]
+        [DataRow("field")]
+        [DataRow("ok")]
+        [DataRow("terminal")]
         public void DurableReceiptFailureNeverLosesTerminalResultOrReplaysNativeWork(string phase)
         {
-            var c=new Case();c.Claim=claim=>{if(c.Claims[c.Claims.Count-1]==phase)throw new InvalidOperationException("journal unavailable");};
-            c.Start();c.Scheduler.Posted();c.Scheduler.Pump();var r=c.Pending.Result;
-            Assert.IsTrue(r.Terminal);Assert.IsNotNull(r.Error);Assert.IsFalse(c.Pending.IsFaulted);
-            Assert.AreEqual(phase=="open"||phase=="field"?0:1,c.Native.Writes);
-            Assert.AreEqual(phase=="terminal"?1:0,c.Native.Closes);if(r.CommandEntered)Assert.IsTrue(r.Uncertain);
+            var c = new Case(); c.Claim = claim => { if (c.Claims[c.Claims.Count - 1] == phase) throw new InvalidOperationException("journal unavailable"); };
+            c.Start(); c.Scheduler.Posted(); c.Scheduler.Pump(); var r = c.Pending.Result;
+            Assert.IsTrue(r.Terminal); Assert.IsNotNull(r.Error); Assert.IsFalse(c.Pending.IsFaulted);
+            Assert.AreEqual(phase == "open" || phase == "field" ? 0 : 1, c.Native.Writes);
+            Assert.AreEqual(phase == "terminal" ? 1 : 0, c.Native.Closes); if (r.CommandEntered) Assert.IsTrue(r.Uncertain);
         }
-        [DataTestMethod][DataRow(false)][DataRow(true)]
+        [DataTestMethod]
+        [DataRow(false)]
+        [DataRow(true)]
         public void PendingOkOrCleanupFailureIsUncertainWithOneWriteAndOneClose(bool cleanup)
         {
-            var c=new Case();if(cleanup)c.Scheduler.DisposeError=new InvalidOperationException("scheduler cleanup");else c.Native.RefuseClosure=true;
-            c.Start();c.Scheduler.Posted();if(!cleanup){c.Scheduler.Time=20001;c.Scheduler.Pump();}else c.Scheduler.Pump();
-            var r=c.Pending.Result;Assert.IsTrue(r.Terminal&&r.Uncertain);Assert.AreEqual(1,c.Native.Writes);Assert.AreEqual(1,c.Native.Closes);Assert.IsFalse(c.Pending.IsFaulted);
+            var c = new Case(); if (cleanup) c.Scheduler.DisposeError = new InvalidOperationException("scheduler cleanup"); else c.Native.RefuseClosure = true;
+            c.Start(); c.Scheduler.Posted(); if (!cleanup) { c.Scheduler.Time = 20001; c.Scheduler.Pump(); } else c.Scheduler.Pump();
+            var r = c.Pending.Result; Assert.IsTrue(r.Terminal && r.Uncertain); Assert.AreEqual(1, c.Native.Writes); Assert.AreEqual(1, c.Native.Closes); Assert.IsFalse(c.Pending.IsFaulted);
         }
     }
 }

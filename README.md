@@ -12,9 +12,10 @@ investigate native execution behavior.
 [Getting started](docs/getting-started.md) · [Documentation](docs/README.md) ·
 [Compatibility](docs/compatibility.md) · [Contributing](CONTRIBUTING.md)
 
-> **Development preview:** setup currently uses a source build and COM registration.
-> A standalone installer is a later milestone. Native qualification is recorded
-> for specific operations, host versions and candidate binaries.
+> **1.0.0 distribution:** the Windows x64 installer and uninstaller are unsigned.
+> Windows may display an unknown-publisher warning. Native qualification is recorded
+> for specific operations, host versions and candidate binaries; the new installer
+> has been compiled but its installation lifecycle has not been qualified.
 
 ## Features
 
@@ -33,7 +34,7 @@ document identity, persistence and host-specific execution. Read the
 
 ## Getting started
 
-1. Complete [source-build setup](docs/installation.md) and verify the loaded add-in.
+1. Complete [installation](docs/installation.md) and verify the loaded add-in.
 2. Open a disposable copy of your VBA project and the host's VBE.
 3. Configure a provider in VBAi settings; select a model and reasoning in the chat.
 4. Start in **Discussion** and review the selected project/context.
@@ -78,3 +79,11 @@ components retain their original licenses. See [licensing scope](LICENSING.md)
 and [third-party notices](THIRD_PARTY_NOTICES.md).
 VBAi is an independent project; Microsoft, OpenAI, GitHub and host application
 vendors do not publish or endorse it.
+
+## Code signing policy
+
+Version 1.0.0 is distributed without Authenticode signatures. Signed builds and
+their uninstallers require trusted, timestamped signatures before acceptance by
+the release tooling. The automatic updater retains its signature requirement.
+SignPath Foundation onboarding is being evaluated; no certificate or sponsorship
+has been granted. See [code signing](docs/code-signing.md).

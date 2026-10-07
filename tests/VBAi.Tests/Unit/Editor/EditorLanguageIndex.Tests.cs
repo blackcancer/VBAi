@@ -1,6 +1,5 @@
-using System.Linq;
-using VBAi;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+using System.Linq;
 
 namespace VBAi.Tests.Unit.Editor
 {

@@ -1,10 +1,7 @@
 namespace VBAi.Tests.Unit
 {
-    using System;
-    using System.Collections;
-    using System.Linq;
-    using VBAi;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
+    using System;
 
     public sealed partial class VbeFormsFrameDuplicationTests
     {
@@ -65,10 +62,9 @@ namespace VBAi.Tests.Unit
 }
 namespace VBAi.Tests.Unit
 {
-    using System;
+    using Microsoft.VisualStudio.TestTools.UnitTesting;
     using System.Drawing;
     using System.Reflection;
-    using Microsoft.VisualStudio.TestTools.UnitTesting;
     public sealed partial class VbeFormsFrameDuplicationTests
     {
         [TestMethod] public void LabelFrameChecksPreflightGeometryFontsAndConcurrentTreeChanges() { FramePreflightFailures("labels"); }
@@ -77,9 +73,9 @@ namespace VBAi.Tests.Unit
         [TestMethod]
         public void LabelColorConverterAcceptsNativeOleIntegersAndManagedColors()
         {
-            var method=typeof(VBAi.VbeForms).GetMethod("CopyOleColor",BindingFlags.NonPublic|BindingFlags.Static);
-            Assert.AreEqual(ColorTranslator.ToOle(Color.Red),method.Invoke(null,new object[]{Color.Red}));
-            Assert.AreEqual(255,method.Invoke(null,new object[]{255}));
+            var method = typeof(VBAi.VbeForms).GetMethod("CopyOleColor", BindingFlags.NonPublic | BindingFlags.Static);
+            Assert.AreEqual(ColorTranslator.ToOle(Color.Red), method.Invoke(null, new object[] { Color.Red }));
+            Assert.AreEqual(255, method.Invoke(null, new object[] { 255 }));
         }
     }
 }

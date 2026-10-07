@@ -1,18 +1,8 @@
 namespace VBAi.Tests.Unit
 {
-    using System;
-    using System.Collections;
-    using System.Collections.Generic;
-    using System.IO;
-    using System.Net;
-    using System.Net.Http;
-    using System.Reflection;
-    using System.Threading;
-    using System.Threading.Tasks;
-    using System.Web.Script.Serialization;
+    using Microsoft.VisualStudio.TestTools.UnitTesting;
     using System.Windows.Forms;
     using VBAi;
-    using Microsoft.VisualStudio.TestTools.UnitTesting;
 
     /// <summary>Vérifie les contrôles essentiels créés par les surfaces locales de discussion.</summary>
     public sealed partial class ChatWindowStateTests

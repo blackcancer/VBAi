@@ -1,6 +1,5 @@
-using System;
-using System.Diagnostics;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+using System;
 
 namespace VBAi.Tests.Integration
 {
@@ -20,15 +19,24 @@ namespace VBAi.Tests.Integration
                 long handle = Convert.ToInt64(((dynamic)window).HWnd);
                 uint pid; uint tid = GetWindowThreadProcessId(new IntPtr(handle), out pid);
                 Assert.AreEqual((uint)ProcessId, pid); Assert.IsTrue(tid != 0 && handle != 0);
-                return new OwnerGitQualificationManifest {
-                    Version = 1, OwnerPid = ProcessId,
+                return new OwnerGitQualificationManifest
+                {
+                    Version = 1,
+                    OwnerPid = ProcessId,
                     OwnerBirthUtcTicks = ownedProcess.StartTime.ToUniversalTime().Ticks,
-                    OwnerNativeTid = tid, VbeHandle = handle,
+                    OwnerNativeTid = tid,
+                    VbeHandle = handle,
                     AssemblyMvid = typeof(VbeSession).Module.ModuleVersionId.ToString("D"),
                     AssemblySha256 = EmbeddedRawHash(typeof(VbeSession).Assembly.Location),
-                    FixtureRoot = Root, WorkbookPath = workbookPath, EvidenceRoot = evidenceRoot,
-                    RepoRelativePath = repositoryChild, Project = workbookPath, Branch = branch,
-                    RemoteUrl = remote, RemoteCommit = remoteCommit, Steps = steps
+                    FixtureRoot = Root,
+                    WorkbookPath = workbookPath,
+                    EvidenceRoot = evidenceRoot,
+                    RepoRelativePath = repositoryChild,
+                    Project = workbookPath,
+                    Branch = branch,
+                    RemoteUrl = remote,
+                    RemoteCommit = remoteCommit,
+                    Steps = steps
                 };
             }
             finally { ReleaseGitLayoutAlias(window); ReleaseGitLayoutAlias(editor); Release(project); }

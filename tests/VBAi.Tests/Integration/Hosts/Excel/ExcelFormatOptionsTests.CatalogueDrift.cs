@@ -1,3 +1,4 @@
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -6,7 +7,6 @@ using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Web.Script.Serialization;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace VBAi.Tests.Integration.Hosts.Excel
 {
@@ -18,8 +18,7 @@ namespace VBAi.Tests.Integration.Hosts.Excel
         {
             const string inertProperty = "__Q026_CATALOGUE_DRIFT_NO_WRITE__";
             if (Environment.GetEnvironmentVariable("VBAi_RUN_EXCEL_TESTS") != "1") Assert.Inconclusive("Excel automation is opt-in.");
-            string desktop = Environment.GetEnvironmentVariable("VBAi_TEST_DESKTOP_NAME");
-            IsolatedTestDesktop.RequireCurrent(desktop);
+            string desktop = NativeTestDesktop.Current();
             string output = Environment.GetEnvironmentVariable("VBAi_TEST_FORMAT_OPTIONS_OUTPUT");
             Assert.IsTrue(Path.IsPathRooted(output));
             evidenceDirectory = Path.Combine(output, "options-evidence-" + Guid.NewGuid().ToString("N"));
@@ -55,15 +54,22 @@ namespace VBAi.Tests.Integration.Hosts.Excel
                     .SelectMany(tab => ((object[])tab["Controls"]).Select(VbeBridgeClient.Object)).Any(c => Equals(c["Name"], inertProperty)));
                 if (historical) Assert.AreEqual(0, ((object[])size["Choices"]).Length);
                 else Assert.IsTrue(((object[])size["Choices"]).Length > 0, "Current candidate must prepare Size before hashing.");
-                record("CatalogueDriftScenario", new { Historical = historical, ControlledFocus = true,
-                    NaturalHistoricalRefusal = false, OriginalHistoricalCauseProven = false, PreferenceWriteTargetExists = false });
-                var actor = new Thread(() => {
+                record("CatalogueDriftScenario", new
+                {
+                    Historical = historical,
+                    ControlledFocus = true,
+                    NaturalHistoricalRefusal = false,
+                    OriginalHistoricalCauseProven = false,
+                    PreferenceWriteTargetExists = false
+                });
+                var actor = new Thread(() =>
+                {
                     IntPtr lease = IntPtr.Zero;
                     try
                     {
                         lease = SizeFocusNative.OpenDesktopW(desktop, 0, false, 0xC7);
                         if (lease == IntPtr.Zero || !SizeFocusNative.SetThreadDesktop(lease)) throw new Win32Exception(System.Runtime.InteropServices.Marshal.GetLastWin32Error());
-                        IsolatedTestDesktop.RequireCurrent(desktop);
+                        NativeTestDesktop.RequireCurrent(desktop);
                         if (!intent.Wait(TimeSpan.FromSeconds(15))) throw new TimeoutException("Inert command intent was not emitted.");
                         IntPtr dialog = SizeFocusNative.WaitDialog(host.ProcessId, guard);
                         var timer = Stopwatch.StartNew(); IntPtr target;
@@ -75,9 +81,18 @@ namespace VBAi.Tests.Integration.Hosts.Excel
                         uint owner = SizeFocusNative.RequireOwned(target, host.ProcessId);
                         Assert.AreEqual("#32770", SizeFocusNative.Class(parent)); SizeFocusNative.RequireOwned(parent, host.ProcessId);
                         string before = SizeFocusNative.Text(target); int countBefore = SizeFocusNative.Count(target);
-                        guard(); record("CatalogueDriftFocusIntent", new { Dialog = dialog.ToInt64(), Target = target.ToInt64(),
-                            Parent = parent.ToInt64(), CountBefore = countBefore, ValueBefore = before, Attempts = 1,
-                            Message = "WM_NEXTDLGCTL", PreferenceWrites = 0, KeyboardInput = 0 });
+                        guard(); record("CatalogueDriftFocusIntent", new
+                        {
+                            Dialog = dialog.ToInt64(),
+                            Target = target.ToInt64(),
+                            Parent = parent.ToInt64(),
+                            CountBefore = countBefore,
+                            ValueBefore = before,
+                            Attempts = 1,
+                            Message = "WM_NEXTDLGCTL",
+                            PreferenceWrites = 0,
+                            KeyboardInput = 0
+                        });
                         SizeFocusNative.RequireOwned(parent, host.ProcessId); SizeFocusNative.RequireOwned(target, host.ProcessId);
                         Assert.AreEqual(parent, SizeFocusNative.GetParent(target));
                         if (!SizeFocusNative.PostMessage(parent, 0x28, target, new IntPtr(1))) throw new Win32Exception(System.Runtime.InteropServices.Marshal.GetLastWin32Error());
@@ -87,15 +102,31 @@ namespace VBAi.Tests.Integration.Hosts.Excel
                         Assert.IsTrue(focus == target || SizeFocusNative.GetParent(focus) == target, "One posted focus must be independently observed; no repost.");
                         int countAfter = SizeFocusNative.Count(target); string after = SizeFocusNative.Text(target);
                         Assert.AreEqual(before, after); Assert.AreEqual(size["Value"], after); Assert.IsTrue(countAfter > 0);
-                        record("CatalogueDriftFocusVerified", new { CountBefore = countBefore, CountAfter = countAfter,
-                            ValueBefore = before, ValueAfter = after, FocusHwnd = focus.ToInt64(), Attempts = 1, PreferenceWrites = 0, KeyboardInput = 0 });
+                        record("CatalogueDriftFocusVerified", new
+                        {
+                            CountBefore = countBefore,
+                            CountAfter = countAfter,
+                            ValueBefore = before,
+                            ValueAfter = after,
+                            FocusHwnd = focus.ToInt64(),
+                            Attempts = 1,
+                            PreferenceWrites = 0,
+                            KeyboardInput = 0
+                        });
                     }
                     catch (Exception error) { actorError = error; record("CatalogueDriftActorFailed", new { Error = error.ToString(), ReplayAllowed = false }); }
                     finally { if (lease != IntPtr.Zero) SizeFocusNative.CloseDesktop(lease); done.Set(); }
-                }) { IsBackground = true };
+                })
+                { IsBackground = true };
                 actor.SetApartmentState(ApartmentState.MTA); actor.Start(); actorStarted = true;
-                request = new { Command = "set_vbe_option", Pane = format["Tab"], Property = inertProperty,
-                    Value = "No preference mutation", ExpectedOptionsVersion = baseline["OptionsVersion"] };
+                request = new
+                {
+                    Command = "set_vbe_option",
+                    Pane = format["Tab"],
+                    Property = inertProperty,
+                    Value = "No preference mutation",
+                    ExpectedOptionsVersion = baseline["OptionsVersion"]
+                };
                 guard(); record("CatalogueDriftIntent", request); intent.Set(); response = host.Command(request);
                 record("CatalogueDriftReply", response);
                 Assert.IsTrue(done.Wait(TimeSpan.FromSeconds(10)), "Actor must be terminal before another command or cleanup.");
@@ -110,20 +141,39 @@ namespace VBAi.Tests.Integration.Hosts.Excel
                 var json = new JavaScriptSerializer();
                 Assert.AreEqual(baseline["OptionsVersion"], restored["OptionsVersion"]);
                 Assert.AreEqual(json.Serialize(baseline["Tabs"]), json.Serialize(restored["Tabs"]));
-                record("CatalogueDriftBaselineUnchanged", new { Baseline = baseline, Readback = restored,
-                    PreferenceWrites = 0, ControlledGuardCaptureRequiresOfflineVerification = historical });
+                record("CatalogueDriftBaselineUnchanged", new
+                {
+                    Baseline = baseline,
+                    Readback = restored,
+                    PreferenceWrites = 0,
+                    ControlledGuardCaptureRequiresOfflineVerification = historical
+                });
                 trace?.Dispose(); host.Dispose(); record("ShutdownVerified", host.ShutdownDiagnostics);
                 Assert.AreEqual(true, host.ShutdownDiagnostics["Exited"]); Assert.AreEqual(0, Convert.ToInt32(host.ShutdownDiagnostics["ExitCode"]));
                 Assert.AreEqual(false, host.ShutdownDiagnostics["ForcedTermination"]);
-                record("CatalogueDriftTerminal", new { Verified = true, ControlledFocus = true,
-                    NativeReplayAllowed = false, OriginalHistoricalCauseProven = false });
+                record("CatalogueDriftTerminal", new
+                {
+                    Verified = true,
+                    ControlledFocus = true,
+                    NativeReplayAllowed = false,
+                    OriginalHistoricalCauseProven = false
+                });
             }
             catch (Exception primary)
             {
                 RetainHost(host);
-                record("HostRetained", new { Error = primary.ToString(), Request = request, Response = response,
-                    CommittedRestoreEntries = new object[0], ActorStarted = actorStarted, ActorTerminal = done.IsSet,
-                    NativeReplayAllowed = false, CleanupAllowed = false, PreferenceWriteTargetExists = false });
+                record("HostRetained", new
+                {
+                    Error = primary.ToString(),
+                    Request = request,
+                    Response = response,
+                    CommittedRestoreEntries = new object[0],
+                    ActorStarted = actorStarted,
+                    ActorTerminal = done.IsSet,
+                    NativeReplayAllowed = false,
+                    CleanupAllowed = false,
+                    PreferenceWriteTargetExists = false
+                });
                 try { trace?.Dispose(); } catch (Exception detach) { throw new AggregateException("Controlled catalogue diagnosis and detachment both failed; retained.", primary, detach); }
                 throw;
             }

@@ -156,7 +156,8 @@ namespace VBAi
                             failure = failure ?? new InvalidOperationException("The native Options dialog could not be closed.");
                     }
                 }
-            }) { IsBackground = true, Name = "VBE native palette" };
+            })
+            { IsBackground = true, Name = "VBE native palette" };
             worker.SetApartmentState(ApartmentState.MTA);
             worker.Start();
             try
@@ -192,12 +193,10 @@ namespace VBAi
         private static HashSet<IntPtr> Windows(IntPtr owner)
         {
             var result = new HashSet<IntPtr>();
-            uint process;
-            GetWindowThreadProcessId(owner, out process);
+            GetWindowThreadProcessId(owner, out uint process);
             EnumWindows((window, unused) =>
             {
-                uint candidate;
-                GetWindowThreadProcessId(window, out candidate);
+                GetWindowThreadProcessId(window, out uint candidate);
                 if (candidate == process && IsWindowVisible(window))
                 {
                     IntPtr parent = GetWindow(window, 4);

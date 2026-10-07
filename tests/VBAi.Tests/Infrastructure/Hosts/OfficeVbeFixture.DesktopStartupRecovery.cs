@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Runtime.InteropServices;
 using System.Text;
 
 namespace VBAi.Tests.Integration
@@ -56,12 +55,24 @@ namespace VBAi.Tests.Integration
                     throw new InvalidOperationException("Publisher recovery identity or message changed before the single click; no action is permitted.");
                 guard();
                 Claimed = true; Dialog = current.Dialog; DialogThread = current.DialogThread;
-                Action<string, bool> write = (state, uncertain) => record(new Dictionary<string, object> {
-                    ["PublisherStartupRecovery"] = state, ["ProcessId"] = pid, ["OriginalHandle"] = originalHandle,
-                    ["DialogHwnd"] = Dialog.ToInt64(), ["DialogThreadId"] = DialogThread, ["ButtonHwnd"] = current.Button.ToInt64(),
-                    ["ButtonId"] = 7, ["Locale"] = "fr-FR", ["NativeClickAttempts"] = 1,
-                    ["NormalStartRequested"] = true, ["NormalModeProven"] = false, ["OutcomeUncertain"] = uncertain,
-                    ["ClickTimeoutMilliseconds"] = 2000, ["AutomaticRetry"] = false, ["Utc"] = DateTime.UtcNow.ToString("o") });
+                Action<string, bool> write = (state, uncertain) => record(new Dictionary<string, object>
+                {
+                    ["PublisherStartupRecovery"] = state,
+                    ["ProcessId"] = pid,
+                    ["OriginalHandle"] = originalHandle,
+                    ["DialogHwnd"] = Dialog.ToInt64(),
+                    ["DialogThreadId"] = DialogThread,
+                    ["ButtonHwnd"] = current.Button.ToInt64(),
+                    ["ButtonId"] = 7,
+                    ["Locale"] = "fr-FR",
+                    ["NativeClickAttempts"] = 1,
+                    ["NormalStartRequested"] = true,
+                    ["NormalModeProven"] = false,
+                    ["OutcomeUncertain"] = uncertain,
+                    ["ClickTimeoutMilliseconds"] = 2000,
+                    ["AutomaticRetry"] = false,
+                    ["Utc"] = DateTime.UtcNow.ToString("o")
+                });
                 write("CLICK_PENDING", false); // Durable intent precedes the only native mutation.
                 bool returned;
                 try { returned = clickOnce(); }
@@ -77,19 +88,37 @@ namespace VBAi.Tests.Integration
         }
 
         private void RecordPublisherStartup(IDictionary<string, object> row)
-        { row["Desktop"] = privateDesktop; steps.Add(row); FlushAdapterEvidence(); }
+        {
+            row["Desktop"] = privateDesktop;
+            row["SelectedDesktopMode"] = mainPublisherDesktop ? "MainWinSta0Default" : "InactivePrivate";
+            steps.Add(row); FlushAdapterEvidence();
+        }
 
         private string ReadPublisherStartupText(IntPtr window, string role)
         {
             RequirePrivateHostDesktop(true);
-            IsolatedTestDesktop.RequireOfficeWindowInventory(privateDesktop, (uint)ProcessId, true, window);
-            RecordPublisherStartup(new Dictionary<string, object> { ["PublisherStartupText"] = role, ["State"] = "PENDING",
-                ["ProcessId"] = ProcessId, ["Hwnd"] = window.ToInt64(), ["ReadTimeoutMilliseconds"] = 500, ["ReadAttempts"] = 1 });
+            RequireSelectedOfficeWindow(privateDesktop, mainPublisherDesktop, (uint)ProcessId, true, window);
+            RecordPublisherStartup(new Dictionary<string, object>
+            {
+                ["PublisherStartupText"] = role,
+                ["State"] = "PENDING",
+                ["ProcessId"] = ProcessId,
+                ["Hwnd"] = window.ToInt64(),
+                ["ReadTimeoutMilliseconds"] = 500,
+                ["ReadAttempts"] = 1
+            });
             var text = new StringBuilder(4096); UIntPtr returned;
             bool complete = ReadDialogText(window, 0x000D, new UIntPtr(4096), text, 0x23, 500, out returned) != IntPtr.Zero;
-            RecordPublisherStartup(new Dictionary<string, object> { ["PublisherStartupText"] = role, ["State"] = complete ? "RETURNED" : "UNCERTAIN",
-                ["ProcessId"] = ProcessId, ["Hwnd"] = window.ToInt64(), ["ReadTimeoutMilliseconds"] = 500,
-                ["ReturnedCharacters"] = returned.ToUInt64(), ["ReadAttempts"] = 1 });
+            RecordPublisherStartup(new Dictionary<string, object>
+            {
+                ["PublisherStartupText"] = role,
+                ["State"] = complete ? "RETURNED" : "UNCERTAIN",
+                ["ProcessId"] = ProcessId,
+                ["Hwnd"] = window.ToInt64(),
+                ["ReadTimeoutMilliseconds"] = 500,
+                ["ReturnedCharacters"] = returned.ToUInt64(),
+                ["ReadAttempts"] = 1
+            });
             if (!complete || returned.ToUInt64() >= 4095) throw new InvalidOperationException("Owned Publisher startup text is unavailable or truncated; no native action is permitted.");
             return text.ToString();
         }
@@ -100,10 +129,17 @@ namespace VBAi.Tests.Integration
         private PublisherRecoverySnapshot CapturePublisherRecovery(IntPtr dialog)
         {
             RequirePrivateHostDesktop(true);
-            IsolatedTestDesktop.RequireOfficeWindowInventory(privateDesktop, (uint)ProcessId, true, dialog);
+            RequireSelectedOfficeWindow(privateDesktop, mainPublisherDesktop, (uint)ProcessId, true, dialog);
             IntPtr button = GetDlgItem(dialog, 7);
-            var value = new PublisherRecoverySnapshot { Dialog = dialog, Button = button, DialogClass = PublisherStartupClass(dialog),
-                ButtonClass = PublisherStartupClass(button), ButtonId = GetDlgCtrlID(button), ButtonRoot = GetAncestor(button, 2) };
+            var value = new PublisherRecoverySnapshot
+            {
+                Dialog = dialog,
+                Button = button,
+                DialogClass = PublisherStartupClass(dialog),
+                ButtonClass = PublisherStartupClass(button),
+                ButtonId = GetDlgCtrlID(button),
+                ButtonRoot = GetAncestor(button, 2)
+            };
             value.DialogThread = GetWindowThreadProcessId(dialog, out value.DialogPid);
             value.ButtonThread = GetWindowThreadProcessId(button, out value.ButtonPid);
             if (value.DialogPid != (uint)ProcessId || value.ButtonPid != (uint)ProcessId || value.Button == IntPtr.Zero ||
@@ -114,7 +150,8 @@ namespace VBAi.Tests.Integration
             value.ButtonText = ReadPublisherStartupText(button, "NoButtonCaption");
             var statics = new List<IntPtr>(); bool complete = true;
             // Win32 documents this return value as unused; validate callbacks and exact live controls.
-            EnumChildWindows(dialog, (window, parameter) => {
+            EnumChildWindows(dialog, (window, parameter) =>
+            {
                 uint owner; GetWindowThreadProcessId(window, out owner);
                 if (owner == (uint)ProcessId && PublisherStartupClass(window) == "Static") statics.Add(window);
                 if (statics.Count > 16) { complete = false; return false; }
@@ -132,7 +169,8 @@ namespace VBAi.Tests.Integration
         {
             if (Kind != "Publisher") return false;
             RequirePrivateHostDesktop(false);
-            var dialogs = new List<IntPtr>(); bool complete = EnumWindows((window, parameter) => {
+            var dialogs = new List<IntPtr>(); bool complete = EnumWindows((window, parameter) =>
+            {
                 uint owner; GetWindowThreadProcessId(window, out owner);
                 if (owner == (uint)ProcessId && IsWindowVisible(window) && PublisherStartupClass(window) == "#32770") dialogs.Add(window);
                 return dialogs.Count <= 8;
@@ -149,9 +187,10 @@ namespace VBAi.Tests.Integration
             }
             var snapshot = CapturePublisherRecovery(dialog);
             publisherStartupRecovery.RequestNormalStart(snapshot, () => RequirePrivateHostDesktop(true),
-                () => CapturePublisherRecovery(dialog), () => {
+                () => CapturePublisherRecovery(dialog), () =>
+                {
                     RequirePrivateHostDesktop(true);
-                    IsolatedTestDesktop.RequireOfficeWindowInventory(privateDesktop, (uint)ProcessId, true, snapshot.Button);
+                    RequireSelectedOfficeWindow(privateDesktop, mainPublisherDesktop, (uint)ProcessId, true, snapshot.Button);
                     uint dialogPid, buttonPid;
                     uint dialogThread = GetWindowThreadProcessId(dialog, out dialogPid), buttonThread = GetWindowThreadProcessId(snapshot.Button, out buttonPid);
                     if (GetDlgItem(dialog, 7) != snapshot.Button || GetDlgCtrlID(snapshot.Button) != 7 || !IsWindowEnabled(snapshot.Button) ||

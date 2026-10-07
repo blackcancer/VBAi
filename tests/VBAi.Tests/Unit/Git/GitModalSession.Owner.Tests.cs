@@ -1,15 +1,16 @@
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace VBAi.Tests.Unit
 {
     public sealed partial class GitWindowCoverageTests
     {
         [WinFormsTestMethod]
-        [DataRow(false)][DataRow(true)]
+        [DataRow(false)]
+        [DataRow(true)]
         public void ExactOwnerLeaseRefusesDuplicateBeforeAnyShowOrDiagnosticEvenWhenDisabled(bool disabled)
         {
             using (var owner = new Form())
@@ -44,7 +45,8 @@ namespace VBAi.Tests.Unit
         }
 
         [WinFormsTestMethod]
-        [DataRow(false)][DataRow(true)]
+        [DataRow(false)]
+        [DataRow(true)]
         public void OriginalLeaseSurvivesShowReentrancyAndCanRunOnlyOnce(bool failShow)
         {
             using (var owner = new Form())
@@ -52,7 +54,8 @@ namespace VBAi.Tests.Unit
             using (var lease = GitModalSession.TryAcquire(owner))
             {
                 var original = new InvalidOperationException("show failed"); int shows = 0;
-                var task = lease.ShowAsync(window, (form, parent) => {
+                var task = lease.ShowAsync(window, (form, parent) =>
+                {
                     shows++; Assert.IsNull(GitModalSession.TryAcquire(owner));
                     Assert.ThrowsException<InvalidOperationException>(() => lease.Dispose());
                     if (failShow) throw original; return DialogResult.Cancel;
@@ -75,7 +78,8 @@ namespace VBAi.Tests.Unit
                 var finish = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
                 var request = new GitModalSession.Request("pull", null, null, null, null, null, false, "revision");
                 Task work = null;
-                var sessionTask = lease.ShowAsync(f.Window, (form, parent) => {
+                var sessionTask = lease.ShowAsync(f.Window, (form, parent) =>
+                {
                     if (++shows == 1)
                     {
                         var session = f.Get<GitModalSession>("modalSession");
@@ -97,7 +101,8 @@ namespace VBAi.Tests.Unit
         public void MtaEntryRefusesBeforeAttachingAWindowOrAcquiringAnOwnerLease()
         {
             Exception failure = null;
-            var thread = new Thread(() => {
+            var thread = new Thread(() =>
+            {
                 try
                 {
                     using (var owner = new Form())

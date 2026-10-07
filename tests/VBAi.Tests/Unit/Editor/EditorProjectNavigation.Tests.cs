@@ -1,3 +1,4 @@
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Collections;
 using System.Diagnostics;
@@ -5,7 +6,6 @@ using System.Reflection;
 using System.Threading;
 using System.Windows.Forms;
 using VBAi.Tests.Infrastructure;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace VBAi.Tests.Unit.Editor
 {
@@ -16,15 +16,15 @@ namespace VBAi.Tests.Unit.Editor
         public void DisposalReleasesLiveHooksAndAcceptsAlreadyDestroyedTrees()
         {
             foreach (bool destroyFirst in new[] { false, true })
-            using (var fixture = new EditorNavigationFixture())
-            {
-                var navigation = new EditorProjectNavigation(fixture.Vbe, fixture.Dispatcher, module => { });
-                Assert.AreEqual(1, ((IList)EditorNavigationFixture.Get(navigation, "hooks")).Count);
-                if (destroyFirst) fixture.Tree.Dispose();
-                navigation.Dispose();
-                Assert.AreEqual(0, ((IList)EditorNavigationFixture.Get(navigation, "hooks")).Count);
-                Assert.IsFalse(((System.Windows.Forms.Timer)EditorNavigationFixture.Get(navigation, "timer")).Enabled);
-            }
+                using (var fixture = new EditorNavigationFixture())
+                {
+                    var navigation = new EditorProjectNavigation(fixture.Vbe, fixture.Dispatcher, module => { });
+                    Assert.AreEqual(1, ((IList)EditorNavigationFixture.Get(navigation, "hooks")).Count);
+                    if (destroyFirst) fixture.Tree.Dispose();
+                    navigation.Dispose();
+                    Assert.AreEqual(0, ((IList)EditorNavigationFixture.Get(navigation, "hooks")).Count);
+                    Assert.IsFalse(((System.Windows.Forms.Timer)EditorNavigationFixture.Get(navigation, "timer")).Enabled);
+                }
         }
 
         [STATestMethod]

@@ -106,12 +106,23 @@ namespace VBAi
                 int endSubLine = FindEndSubLine(module, bodyLine);
                 if (oldBegin >= 0 && oldEnd - oldBegin + 1 == generated.Length &&
                     allBefore.Skip(oldBegin).Take(generated.Length).SequenceEqual(generated))
-                    return new { Project = request.Project, Form = request.Form,
-                        ControlPath = request.ControlPath, Mechanism = "UserForm_Initialize",
-                        Applied = false, Verified = true, VerificationPending = false,
-                        UserCodePreserved = true, ItemsWritten = itemsWritten, Columns = columns,
-                        Sha256Before = request.ExpectedSha256, Sha256After = request.ExpectedSha256,
-                        RuntimeVerificationPending = true, NextRead = "read_module" };
+                    return new
+                    {
+                        request.Project,
+                        request.Form,
+                        request.ControlPath,
+                        Mechanism = "UserForm_Initialize",
+                        Applied = false,
+                        Verified = true,
+                        VerificationPending = false,
+                        UserCodePreserved = true,
+                        ItemsWritten = itemsWritten,
+                        Columns = columns,
+                        Sha256Before = request.ExpectedSha256,
+                        Sha256After = request.ExpectedSha256,
+                        RuntimeVerificationPending = true,
+                        NextRead = "read_module"
+                    };
                 if (oldBegin < 0)
                 {
                     started = true;
@@ -138,25 +149,44 @@ namespace VBAi
                     ? ContainsOrderedLines(afterLines, CodeLines(afterEventCreation))
                     : StripBlock(allBefore, oldBegin, oldEnd)
                         .SequenceEqual(StripBlock(afterLines, finalBegin, finalEnd));
-                return new { Project = request.Project, Form = request.Form,
-                    ControlPath = request.ControlPath, Mechanism = "UserForm_Initialize",
-                    Applied = true, Verified = exact && preserved,
+                return new
+                {
+                    request.Project,
+                    request.Form,
+                    request.ControlPath,
+                    Mechanism = "UserForm_Initialize",
+                    Applied = true,
+                    Verified = exact && preserved,
                     VerificationPending = !(exact && preserved),
-                    UserCodePreserved = preserved, ItemsWritten = itemsWritten, Columns = columns,
-                    Sha256Before = request.ExpectedSha256, Sha256After = FormCodeSha(after),
-                    RuntimeVerificationPending = true, NextRead = "read_module" };
+                    UserCodePreserved = preserved,
+                    ItemsWritten = itemsWritten,
+                    Columns = columns,
+                    Sha256Before = request.ExpectedSha256,
+                    Sha256After = FormCodeSha(after),
+                    RuntimeVerificationPending = true,
+                    NextRead = "read_module"
+                };
             }
             catch (Exception ex)
             {
                 if (!started) throw;
                 string currentSha = null;
                 try { currentSha = FormCodeSha(ReadFormCode(module)); } catch { }
-                return new { Project = request.Project, Form = request.Form,
-                    ControlPath = request.ControlPath, Mechanism = "UserForm_Initialize",
-                    Applied = (bool?)null, Verified = false, VerificationPending = true,
-                    NativeError = ex.Message, Sha256Before = request.ExpectedSha256,
-                    Sha256After = currentSha, RuntimeVerificationPending = true,
-                    NextRead = "read_module" };
+                return new
+                {
+                    request.Project,
+                    request.Form,
+                    request.ControlPath,
+                    Mechanism = "UserForm_Initialize",
+                    Applied = (bool?)null,
+                    Verified = false,
+                    VerificationPending = true,
+                    NativeError = ex.Message,
+                    Sha256Before = request.ExpectedSha256,
+                    Sha256After = currentSha,
+                    RuntimeVerificationPending = true,
+                    NextRead = "read_module"
+                };
             }
         }
 

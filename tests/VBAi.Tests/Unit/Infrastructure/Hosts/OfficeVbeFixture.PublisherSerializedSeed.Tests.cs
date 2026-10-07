@@ -1,8 +1,8 @@
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Web.Script.Serialization;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 using VBAi.Tests.Integration;
 
 namespace VBAi.Tests.Unit
@@ -13,16 +13,88 @@ namespace VBAi.Tests.Unit
         private const string ModuleCode = "Option Explicit\r\n' Synthetic native General qualification: pending-c2468bacba634672be8b7ce6d656fd37\r\n";
         private const string ModuleSha = "48f46f56d9e9a767aabd8d9f79aadc4873b63cf4ff8672d735f5164eb91477e4";
 
-        private static string ShutdownJson() => new JavaScriptSerializer().Serialize(new {
-            DocumentPath = OfficeVbeFixture.PublisherSeedPath,
-            Lifecycle = new { ProcessId = 183824, ProcessStartedUtc = "2026-10-03T19:42:01.6309813Z",
-                ProcessExitObserved = true, ExitCodeObserved = true, ExitCode = 0, ForcedTermination = false,
-                State = "EXIT_OBSERVED_HANDLE_RELEASED" } });
+        [TestMethod]
+        public void MainPublisherSelectionRequiresExactSeedOptInAndEmptyPrivateDescriptors()
+        {
+            int checks = 0;
+            Action requireMain = () => checks++;
+            string seed = OfficeVbeFixture.PublisherSeedPath;
+            Assert.IsTrue(OfficeVbeFixture.SelectMainPublisherDesktop("Publisher", seed, "1", null, null, requireMain));
+            Assert.AreEqual(1, checks);
+            Assert.IsFalse(OfficeVbeFixture.SelectMainPublisherDesktop("Publisher", seed, null, null, null, requireMain));
+            Assert.IsFalse(OfficeVbeFixture.SelectMainPublisherDesktop("Publisher", null, "1", null, null, requireMain));
+            Assert.IsFalse(OfficeVbeFixture.SelectMainPublisherDesktop("Access", seed, "1", null, null, requireMain));
+            Assert.AreEqual(1, checks);
+            Assert.ThrowsException<InvalidOperationException>(() =>
+                OfficeVbeFixture.SelectMainPublisherDesktop("Publisher", seed, "1", "VBAiTests_owned", null, requireMain));
+            Assert.ThrowsException<InvalidOperationException>(() =>
+                OfficeVbeFixture.SelectMainPublisherDesktop("Publisher", seed, "1", null, "VBAiTests_owned", requireMain));
+            Assert.ThrowsException<ArgumentNullException>(() =>
+                OfficeVbeFixture.SelectMainPublisherDesktop("Publisher", seed, "1", null, null, null));
+            Assert.AreEqual(1, checks);
+        }
 
-        private static string ProgressJson(string sha, long bytes = 90624) => new JavaScriptSerializer().Serialize(new {
+        [TestMethod]
+        public void MainPublisherRequiresOwnedRootPidThreadAndCompleteDefaultInventory()
+        {
+            var root = new IntPtr(42);
+            var child = new IntPtr(43);
+            var inventory = new IsolatedTestDesktop.MainInventory
+            {
+                Desktop = "Default", Complete = true, Visited = 1,
+                Windows = new[] { new IsolatedTestDesktop.MainWindow
+                    { Handle = root.ToInt64(), ProcessId = 123, ThreadId = 7, ClassName = "PublisherRoot", Visible = true } }
+            };
+            OfficeVbeFixture.RequireMainPublisherPlacement(inventory, 123, true, child, root, 123, 123, 7, 7);
+            Assert.ThrowsException<InvalidOperationException>(() => OfficeVbeFixture.RequireMainPublisherPlacement(
+                inventory, 123, true, child, root, 124, 123, 7, 7));
+            Assert.ThrowsException<InvalidOperationException>(() => OfficeVbeFixture.RequireMainPublisherPlacement(
+                inventory, 123, true, child, root, 123, 123, 0, 7));
+            Assert.ThrowsException<InvalidOperationException>(() => OfficeVbeFixture.RequireMainPublisherPlacement(
+                inventory, 123, true, child, new IntPtr(99), 123, 123, 7, 7));
+            inventory.Complete = false;
+            Assert.ThrowsException<InvalidOperationException>(() => OfficeVbeFixture.RequireMainPublisherPlacement(
+                inventory, 123, false, IntPtr.Zero, IntPtr.Zero, 0, 0, 0, 0));
+            inventory.Complete = true; inventory.Desktop = "VBAiTests_private";
+            Assert.ThrowsException<InvalidOperationException>(() => OfficeVbeFixture.RequireMainPublisherPlacement(
+                inventory, 123, false, IntPtr.Zero, IntPtr.Zero, 0, 0, 0, 0));
+            inventory.Desktop = "Default"; inventory.Windows = new IsolatedTestDesktop.MainWindow[0];
+            Assert.ThrowsException<InvalidOperationException>(() => OfficeVbeFixture.RequireMainPublisherPlacement(
+                inventory, 123, true, IntPtr.Zero, IntPtr.Zero, 0, 0, 0, 0));
+        }
+
+        [TestMethod]
+        public void MainPublisherImageValidationDoesNotAdmitDefaultToPrivateExecutableGate()
+        {
+            const string image = @"C:\Program Files\Microsoft Office\root\Office16\MSPUB.EXE";
+            Assert.AreEqual(image, OfficeVbeFixture.RequireMainPublisherExecutable(image));
+            Assert.ThrowsException<ArgumentException>(() => OfficeVbeFixture.RequireMainPublisherExecutable(@"C:\foreign\WINWORD.EXE"));
+            Assert.ThrowsException<ArgumentException>(() => OfficeVbeFixture.RequireMainPublisherExecutable("MSPUB.EXE"));
+            Assert.ThrowsException<ArgumentException>(() =>
+                OfficeVbeFixture.RequirePrivateOfficeExecutable("Publisher", "Default", image));
+        }
+
+        private static string ShutdownJson() => new JavaScriptSerializer().Serialize(new
+        {
+            DocumentPath = OfficeVbeFixture.PublisherSeedPath,
+            Lifecycle = new
+            {
+                ProcessId = 183824,
+                ProcessStartedUtc = "2026-10-03T19:42:01.6309813Z",
+                ProcessExitObserved = true,
+                ExitCodeObserved = true,
+                ExitCode = 0,
+                ForcedTermination = false,
+                State = "EXIT_OBSERVED_HANDLE_RELEASED"
+            }
+        });
+
+        private static string ProgressJson(string sha, long bytes = 90624) => new JavaScriptSerializer().Serialize(new
+        {
             Steps = new object[] { new { AdapterStage = "PublisherGeneralClosedFileEvidence", Inputs = new {
                 Path = OfficeVbeFixture.PublisherSeedPath, Bytes = bytes, Sha256 = sha,
-                PreviousProcessId = 183824, HostExitedBeforeHash = true } } } });
+                PreviousProcessId = 183824, HostExitedBeforeHash = true } } }
+        });
 
         [TestMethod]
         public void ActualTypedSerializerArrayListReceiptIsValidatedBeforeHostCreation()

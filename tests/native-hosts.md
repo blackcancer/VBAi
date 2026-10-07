@@ -47,6 +47,14 @@ the real desktop, use its reviewed same-user Limited x64 STA coordinator. Never
 switch the user's desktop or select windows with keyboard/mouse coordinates.
 Private-desktop descriptors cannot be silently adopted by main-desktop workers.
 
+`VBAi_RUN_MAIN_DESKTOP_TESTS=1` explicitly selects the real `WinSta0\Default`
+desktop for the native Format diagnostics and the owned Office fixtures. Leave
+`VBAi_TEST_DESKTOP_NAME` and `VBAi_QUALIFICATION_DESKTOP` empty. The fixtures check
+the current and input desktop before native work; the serialized Publisher seed
+keeps its original-process, COM identity, macro safety and shutdown checks.
+The existing Word-specific main-desktop opt-in remains supported. Execute the
+prepared batch through a same-user Limited STA coordinator.
+
 ## Campaign entry points
 
 | Scope | Reviewed runner |

@@ -12,7 +12,7 @@ namespace VBAi
     [ProgId("VBAi.AddIn")]
     [ClassInterface(ClassInterfaceType.None)]
     [ComDefaultInterface(typeof(IDTExtensibility2))]
-        public sealed class AddIn : IDTExtensibility2
+    public sealed class AddIn : IDTExtensibility2
     {
 
         /// <summary>Écrit une entrée dans le journal du complément.</summary>
@@ -157,12 +157,15 @@ namespace VBAi
                 catch (Exception infoError) { WriteLog("AddInInst ProgId unavailable: " + infoError.Message); }
                 dispatcher = new Control();
                 var handle = dispatcher.Handle;
-                testExplorerService = new VbeTestExplorerService(vbe, dispatcher);
-                testExplorerService.ShowExplorer = projectId => {
-                    ShowTestExplorer();
-                    if (testExplorerWindow == null || testExplorerWindow.IsDisposed) throw new InvalidOperationException("The test explorer could not be opened.");
-                    testExplorerWindow.SelectProject(projectId);
-                    return new { Opened = true, Hwnd = testExplorerWindow.Handle.ToInt64(), Docked = !testExplorerWindow.TopLevel };
+                testExplorerService = new VbeTestExplorerService(vbe, dispatcher)
+                {
+                    ShowExplorer = projectId =>
+                    {
+                        ShowTestExplorer();
+                        if (testExplorerWindow == null || testExplorerWindow.IsDisposed) throw new InvalidOperationException("The test explorer could not be opened.");
+                        testExplorerWindow.SelectProject(projectId);
+                        return new { Opened = true, Hwnd = testExplorerWindow.Handle.ToInt64(), Docked = !testExplorerWindow.TopLevel };
+                    }
                 };
                 StartUpdateCheck();
                 crashReporter = CreateCrashReporter(report => CrashReportWindow.ShowReportForVbe(vbe, report));
@@ -313,8 +316,7 @@ namespace VBAi
                         // Reuse the registered generic Form container; the new layout ID is not a COM identity.
                         nativeTestWindow = ((IVbeWindows)((dynamic)vbe).Windows).CreateToolWindow((IVbeAddIn)ownerAddIn,
                             "VBAi.ChatToolWindow", UiText.Get("VBAi Test Explorer"), "{8C34CFFE-43A6-4D31-B8A1-709E44189849}", ref surface);
-                        nativeTestControl = surface as ChatToolWindow;
-                        if (nativeTestControl == null) throw new InvalidOperationException("The test explorer native container was not created.");
+                        nativeTestControl = surface as ChatToolWindow ?? throw new InvalidOperationException("The test explorer native container was not created.");
                     }
                     ((dynamic)nativeTestWindow).Visible = true;
                     if (testExplorerWindow.TopLevel) nativeTestControl.Attach(testExplorerWindow);
@@ -451,8 +453,7 @@ namespace VBAi
                     catch (Exception lookupError) { WriteLog("Tool window AddIn lookup failed: " + lookupError.Message); }
                     nativeChatWindow = ((IVbeWindows)((dynamic)vbe).Windows).CreateToolWindow((IVbeAddIn)addInForWindow, "VBAi.ChatToolWindow",
                         "VBAi", "{B5C96ED5-1B16-497C-8441-B3F471F9F92B}", ref document);
-                    nativeChatControl = document as ChatToolWindow;
-                    if (nativeChatControl == null) throw new InvalidOperationException(UiText.Get("The window's COM control was not created."));
+                    nativeChatControl = document as ChatToolWindow ?? throw new InvalidOperationException(UiText.Get("The window's COM control was not created."));
                 }
                 ((dynamic)nativeChatWindow).Visible = true;
                 nativeChatControl.Attach(chat); docked = true;
@@ -476,15 +477,14 @@ namespace VBAi
         /// <summary>Convertit en fenêtre flottante un volet conversation trop petit pour respecter sa taille minimale.</summary>
         private void EnsureUsableChatPlacement()
         {
-            System.Drawing.Size siteSize;
-            if (nativeChatControl == null || !nativeChatControl.TryGetNativeSiteSize(out siteSize) ||
+            if (nativeChatControl == null || !nativeChatControl.TryGetNativeSiteSize(out System.Drawing.Size siteSize) ||
                 (siteSize.Width >= chat.MinimumSize.Width && siteSize.Height >= chat.MinimumSize.Height)) return;
 
             dynamic window = nativeChatWindow;
             dynamic frame = window.LinkedWindowFrame;
             // Bounds on a docked pane describe its containing frame, not the actual site.
             // Detach only the unusable pane before assigning a readable floating layout.
-            if (frame != null) frame.LinkedWindows.Remove(window);
+            frame?.LinkedWindows.Remove(window);
             var area = Screen.FromHandle(VbeOwner().Handle).WorkingArea;
             int width = Math.Min(600, area.Width);
             int height = Math.Min(820, area.Height);

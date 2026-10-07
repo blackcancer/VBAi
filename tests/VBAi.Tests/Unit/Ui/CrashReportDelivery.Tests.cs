@@ -1,13 +1,11 @@
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.IO;
 using System.Net;
 using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Windows.Forms;
-using VBAi;
 using VBAi.Tests.Infrastructure;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 namespace VBAi.Tests.Unit
 {
     [TestClass, TestCategory("Unit"), DoNotParallelize]
@@ -17,7 +15,8 @@ namespace VBAi.Tests.Unit
         public async Task GitHubSuccessUsesNoEmailAndRejectsUnexpectedIssueUrls()
         {
             int emails = 0;
-            var delivery = new CrashReportDelivery {
+            var delivery = new CrashReportDelivery
+            {
                 Publish = (title, body, ct) => Task.FromResult(CrashReport.Repository + "/issues/7"),
                 SendOutlook = (title, body) => { emails++; return true; },
                 OpenDraft = url => Assert.Fail("Unexpected draft")
@@ -32,7 +31,8 @@ namespace VBAi.Tests.Unit
         public async Task RefusalsUseOutlookThenDraftButAmbiguousFailuresNeverSendAgain()
         {
             int emails = 0, drafts = 0; string opened = null, sentBody = null;
-            var delivery = new CrashReportDelivery {
+            var delivery = new CrashReportDelivery
+            {
                 Publish = (title, body, ct) => Task.FromException<string>(new GitHubApiFailure(403, "Denied")),
                 SendOutlook = (title, body) => { emails++; sentBody = body; return true; },
                 OpenDraft = url => { drafts++; opened = url; }

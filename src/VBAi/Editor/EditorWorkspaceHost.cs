@@ -140,10 +140,13 @@ namespace VBAi
         public void Dispose() { timer.Stop(); timer.Dispose(); }
 
         /// <summary>Describes the edges of the native editor workspace rectangle.</summary>
-        [StructLayout(LayoutKind.Sequential)] private struct Rect {
+        [StructLayout(LayoutKind.Sequential)]
+        private struct Rect
+        {
 
-/// <summary>Native client-coordinate edges returned by GetClientRect.</summary>
-public int Left, Top, Right, Bottom; }
+            /// <summary>Native client-coordinate edges returned by GetClientRect.</summary>
+            public int Left, Top, Right, Bottom;
+        }
 
         /// <summary>Callback signature used while enumerating child HWNDs.</summary>
         /// <param name="handle">Child window currently visited.</param>

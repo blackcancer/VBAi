@@ -1,7 +1,6 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Drawing;
 using System.Globalization;
 using System.Linq;
 
@@ -89,7 +88,8 @@ namespace VBAi
             {
                 dynamic control = ResolveTreeItem(form.Designer, (string)childPlan.SourcePath);
                 string kind = (string)childPlan.Type;
-                var item = new SimpleFrameChild {
+                var item = new SimpleFrameChild
+                {
                     Kind = kind,
                     Name = (string)childPlan.ProposedName,
                     Left = Convert.ToDouble(control.Left, CultureInfo.InvariantCulture),
@@ -189,10 +189,16 @@ namespace VBAi
                     else if (!string.Equals(item.TextValue, installed.Value as string, StringComparison.Ordinal))
                         throw new InvalidOperationException("Copied TextBox value differs: " + childPath);
                 }
-                return new { SourcePath = request.ControlPath, NewPath = framePath,
-                    DirectLabelsCopied = children.Count - textBoxCount, DirectTextBoxesCopied = textBoxCount,
+                return new
+                {
+                    SourcePath = request.ControlPath,
+                    NewPath = framePath,
+                    DirectLabelsCopied = children.Count - textBoxCount,
+                    DirectTextBoxesCopied = textBoxCount,
                     CopiedChildPaths = children.Select(item => framePath + "/Controls/" + item.Name).ToArray(),
-                    Completeness = "Partial", Tree = after };
+                    Completeness = "Partial",
+                    Tree = after
+                };
             }
             catch (Exception originalError)
             {

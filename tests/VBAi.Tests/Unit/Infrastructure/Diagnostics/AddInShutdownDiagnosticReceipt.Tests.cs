@@ -1,8 +1,8 @@
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 using VBAi.Tests.Integration;
 
 namespace VBAi.Tests.Unit
@@ -22,11 +22,36 @@ namespace VBAi.Tests.Unit
         { for (int i = 0; i < events.Count; i++) { Row(events[i])["Sequence"] = i + 1; Row(events[i])["ElapsedTicks"] = (long)i; } }
 
         [DataTestMethod]
-        [DataRow("version")][DataRow("nonce")][DataRow("pid")][DataRow("birth")][DataRow("image")][DataRow("product")][DataRow("mvid")][DataRow("hash")]
-        [DataRow("thread")][DataRow("apartment")][DataRow("managed")][DataRow("typed sequence")][DataRow("gap")][DataRow("extra")][DataRow("missing")]
-        [DataRow("unknown entry")][DataRow("foreign parent")][DataRow("foreign invocation")][DataRow("unknown phase")][DataRow("unknown operation")]
-        [DataRow("negative elapsed")][DataRow("decreasing elapsed")][DataRow("nonutc")][DataRow("returned error")][DataRow("missing terminal")]
-        [DataRow("duplicate return")][DataRow("returned after fault")][DataRow("clear order")][DataRow("missing clear")][DataRow("noninteger thread")]
+        [DataRow("version")]
+        [DataRow("nonce")]
+        [DataRow("pid")]
+        [DataRow("birth")]
+        [DataRow("image")]
+        [DataRow("product")]
+        [DataRow("mvid")]
+        [DataRow("hash")]
+        [DataRow("thread")]
+        [DataRow("apartment")]
+        [DataRow("managed")]
+        [DataRow("typed sequence")]
+        [DataRow("gap")]
+        [DataRow("extra")]
+        [DataRow("missing")]
+        [DataRow("unknown entry")]
+        [DataRow("foreign parent")]
+        [DataRow("foreign invocation")]
+        [DataRow("unknown phase")]
+        [DataRow("unknown operation")]
+        [DataRow("negative elapsed")]
+        [DataRow("decreasing elapsed")]
+        [DataRow("nonutc")]
+        [DataRow("returned error")]
+        [DataRow("missing terminal")]
+        [DataRow("duplicate return")]
+        [DataRow("returned after fault")]
+        [DataRow("clear order")]
+        [DataRow("missing clear")]
+        [DataRow("noninteger thread")]
         public void CompleteChainRejectsEveryForeignIncompleteOrContradictoryBoundary(string kind)
         {
             var events = Chain(); var last = Row(events.Last()); var first = Row(events.First());

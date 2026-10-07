@@ -1,6 +1,6 @@
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Collections.Generic;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 using VBAi.Tests.Integration;
 
 namespace VBAi.Tests.Unit
@@ -23,7 +23,8 @@ namespace VBAi.Tests.Unit
             var primary = new InvalidOperationException("Native menu failed");
             var cleanup = new InvalidOperationException("Project release failed");
             var observed = Assert.ThrowsException<AggregateException>(() =>
-                OfficeVbeFixture.ReleaseWordGitMenuReferences(new[] { project, project, collection }, lease => {
+                OfficeVbeFixture.ReleaseWordGitMenuReferences(new[] { project, project, collection }, lease =>
+                {
                     released.Add(lease); if (ReferenceEquals(lease, project)) throw cleanup;
                 }, primary));
             CollectionAssert.AreEqual(new[] { project, collection }, released);
@@ -59,7 +60,9 @@ namespace VBAi.Tests.Unit
         }
 
         [TestMethod]
-        [DataRow("")][DataRow("invalid")][DataRow(" {000204EF-0000-0000-C000-000000000046}")]
+        [DataRow("")]
+        [DataRow("invalid")]
+        [DataRow(" {000204EF-0000-0000-C000-000000000046}")]
         public void MalformedOwnerReferenceIdentityIsRefused(string guid)
         {
             Assert.ThrowsException<InvalidOperationException>(() =>
@@ -67,7 +70,10 @@ namespace VBAi.Tests.Unit
         }
 
         [TestMethod]
-        [DataRow(-1, 2)][DataRow(65536, 2)][DataRow(4, -1)][DataRow(4, 65536)]
+        [DataRow(-1, 2)]
+        [DataRow(65536, 2)]
+        [DataRow(4, -1)]
+        [DataRow(4, 65536)]
         public void OutOfRangeOwnerReferenceVersionIsRefused(int major, int minor)
         {
             Assert.ThrowsException<InvalidOperationException>(() => OfficeVbeFixture.WordGitReferenceIdentity(new object[] {
@@ -91,9 +97,14 @@ namespace VBAi.Tests.Unit
         }
 
         [TestMethod]
-        [DataRow("BuiltIn", true)][DataRow("Name", " ")][DataRow("FullPath", "Normal")]
+        [DataRow("BuiltIn", true)]
+        [DataRow("Name", " ")]
+        [DataRow("FullPath", "Normal")]
         [DataRow("Name", "OtherTemplate")]
-        [DataRow("Major", 1)][DataRow("Minor", 1)][DataRow("Guid", null)][DataRow("IsBroken", true)]
+        [DataRow("Major", 1)]
+        [DataRow("Minor", 1)]
+        [DataRow("Guid", null)]
+        [DataRow("IsBroken", true)]
         public void EmptyGuidWithoutExactTemplateMetadataIsRefused(string field, object value)
         {
             var template = TemplateReference(); template[field] = value;

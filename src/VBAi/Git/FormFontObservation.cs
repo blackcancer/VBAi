@@ -137,8 +137,15 @@ namespace VBAi
             if ((File.GetAttributes(value.OutputRoot) & FileAttributes.ReparsePoint) != 0)
                 throw new InvalidOperationException("Root font observation output root became a reparse point.");
             var observation = new FormFontObservation(value);
-            observation.Write("armed", new { value.Mode, value.FormName, value.Nonce,
-                value.CandidateMvid, value.TargetFormSha256, value.TargetDescriptorHex });
+            observation.Write("armed", new
+            {
+                value.Mode,
+                value.FormName,
+                value.Nonce,
+                value.CandidateMvid,
+                value.TargetFormSha256,
+                value.TargetDescriptorHex
+            });
             return observation;
         }
 
@@ -236,8 +243,12 @@ namespace VBAi
                 !string.Equals(Hex(descriptor), manifest.TargetDescriptorHex, StringComparison.OrdinalIgnoreCase))
                 throw new InvalidOperationException("Deferred root font transfer is not the single declared target delivery.");
             transferStarted = true;
-            Write("before-deferred-transfer", new { Owner = FormName, TargetDescriptorHex = Hex(descriptor),
-                Delivery = "one fresh StdFont IPersistStream.Load then Designer.Font.put" });
+            Write("before-deferred-transfer", new
+            {
+                Owner = FormName,
+                TargetDescriptorHex = Hex(descriptor),
+                Delivery = "one fresh StdFont IPersistStream.Load then Designer.Font.put"
+            });
         }
 
         /// <summary>Records that the native deferred setter returned after a transfer was armed.</summary>
@@ -262,8 +273,13 @@ namespace VBAi
         internal void AfterDelivery(string field, object requested, object child)
         {
             object actual = NativeRead("VBIDE.Property.Value.get(Font." + field + ")", () => ((dynamic)child).Value);
-            Write("after-put", new { Field = field, Requested = requested, Actual = actual,
-                Equal = object.Equals(requested, actual) });
+            Write("after-put", new
+            {
+                Field = field,
+                Requested = requested,
+                Actual = actual,
+                Equal = object.Equals(requested, actual)
+            });
             if (!object.Equals(requested, actual))
                 throw new InvalidOperationException("Root font child " + field + " did not read back the planned value.");
         }
@@ -282,7 +298,7 @@ namespace VBAi
             Write("before-observe", new { TargetPhase = phase });
             // Child preflight getters have already run. This export precedes only
             // the attached-font getters in this observation phase.
-            var export = Export(component, phase);
+            var (FrxBytes, FrxSha256, RootDescriptors) = Export(component, phase);
             var values = new Dictionary<string, object>(StringComparer.Ordinal);
             string[] names = { "Name", "Size", "Bold", "Italic", "Underline", "Strikethrough", "Weight", "Charset" };
             for (int i = 0; i < names.Length; i++)
@@ -300,9 +316,16 @@ namespace VBAi
                 bool same = NativeRead("Font.IUnknown.compare", () => SameComIdentity(propertyFont, designerFont));
                 var propertyDescriptor = SaveDescriptor(propertyFont, "VBIDE.Font.Object");
                 var designerDescriptor = SaveDescriptor(designerFont, "Designer.Font");
-                Write(phase, new { Children = values, PropertyFontDescriptor = Hex(propertyDescriptor),
-                    DesignerFontDescriptor = Hex(designerDescriptor), SameFontIUnknown = same,
-                    export.FrxBytes, export.FrxSha256, export.RootDescriptors });
+                Write(phase, new
+                {
+                    Children = values,
+                    PropertyFontDescriptor = Hex(propertyDescriptor),
+                    DesignerFontDescriptor = Hex(designerDescriptor),
+                    SameFontIUnknown = same,
+                    FrxBytes,
+                    FrxSha256,
+                    RootDescriptors
+                });
             }
             catch (Exception error) { primary = error; throw; }
             finally { ReleaseBoth(designerFont, propertyFont, primary); }
@@ -312,8 +335,13 @@ namespace VBAi
         /// <param name="error">Failure raised by the native observation operation.</param>
         internal void Failure(Exception error)
         {
-            Write("throw", new { ExceptionType = error.GetType().FullName, error.HResult,
-                Message = error.Message, Stage = error.InnerException?.GetType().FullName });
+            Write("throw", new
+            {
+                ExceptionType = error.GetType().FullName,
+                error.HResult,
+                error.Message,
+                Stage = error.InnerException?.GetType().FullName
+            });
         }
 
         /// <summary>Writes the final exact-snapshot comparison result.</summary>
@@ -330,8 +358,8 @@ namespace VBAi
         {
             revalidate();
             Write("before-export", new { TargetPhase = "post-import-before-font-getters" });
-            var export = Export(component, "post-import-before-font-getters");
-            Write("post-import-before-font-getters", new { export.FrxBytes, export.FrxSha256, export.RootDescriptors });
+            var (FrxBytes, FrxSha256, RootDescriptors) = Export(component, "post-import-before-font-getters");
+            Write("post-import-before-font-getters", new { FrxBytes, FrxSha256, RootDescriptors });
         }
 
         /// <summary>Exports the form into a unique receipt directory and extracts resource length, hash, and root-font descriptors.</summary>
@@ -351,12 +379,15 @@ namespace VBAi
             var form = new VbaGitComponent { Name = manifest.FormName, Type = 3, HasResources = true };
             // Exported files use the actual form name only inside the validated snapshot,
             // while the phase-prefixed files remain durable trial evidence.
-            var files = new Dictionary<string, byte[]> {
+            var files = new Dictionary<string, byte[]>
+            {
                 [form.FileName] = VbaGitSnapshot.Utf8.GetBytes(source),
                 [form.Name + ".frx"] = bytes
             };
-            var snapshot = new VbaGitSnapshot(new VbaGitManifest {
-                References = "", Components = new[] { form }
+            var snapshot = new VbaGitSnapshot(new VbaGitManifest
+            {
+                References = "",
+                Components = new[] { form }
             }, files);
             string[] roots = snapshot.FormFonts(form)?.Where(item => item.OwnerPath == "")
                 .Select(item => Hex(item.Descriptor)).ToArray() ?? new string[0];
@@ -371,7 +402,7 @@ namespace VBAi
             string file = Path.Combine(manifest.OutputRoot,
                 (++receipt).ToString("D3", CultureInfo.InvariantCulture) + "-" + phase + ".json");
             byte[] bytes = new UTF8Encoding(false).GetBytes(
-                new JavaScriptSerializer().Serialize(new { Phase = phase, Nonce = manifest.Nonce, Data = data }) + "\n");
+                new JavaScriptSerializer().Serialize(new { Phase = phase, manifest.Nonce, Data = data }) + "\n");
             using (var stream = new FileStream(file, FileMode.CreateNew, FileAccess.Write, FileShare.None))
             { stream.Write(bytes, 0, bytes.Length); stream.Flush(true); }
         }
@@ -387,11 +418,15 @@ namespace VBAi
             Exception primary = null;
             try
             {
-                NativeRead("CreateStreamOnHGlobal", () => {
-                    Marshal.ThrowExceptionForHR(CreateStreamOnHGlobal(IntPtr.Zero, true, out stream)); return true; });
+                NativeRead("CreateStreamOnHGlobal", () =>
+                {
+                    Marshal.ThrowExceptionForHR(CreateStreamOnHGlobal(IntPtr.Zero, true, out stream)); return true;
+                });
                 NativeRead("IPersistStream.Save(" + owner + ")", () => { ((PersistStream)font).Save(stream, false); return true; });
-                var stat = NativeRead("IStream.Stat(" + owner + ")", () => {
-                    stream.Stat(out System.Runtime.InteropServices.ComTypes.STATSTG result, 1); return result; });
+                var stat = NativeRead("IStream.Stat(" + owner + ")", () =>
+                {
+                    stream.Stat(out System.Runtime.InteropServices.ComTypes.STATSTG result, 1); return result;
+                });
                 if (stat.cbSize < 11 || stat.cbSize > 4096)
                     throw new InvalidOperationException("Observed font descriptor size is outside bounded profile.");
                 byte[] data = new byte[checked((int)stat.cbSize)];
@@ -403,10 +438,12 @@ namespace VBAi
                 return data;
             }
             catch (Exception error) { primary = error; throw; }
-            finally {
+            finally
+            {
                 if (count != IntPtr.Zero) Marshal.FreeHGlobal(count);
                 try { Release(stream); }
-                catch (Exception cleanup) {
+                catch (Exception cleanup)
+                {
                     if (primary != null) throw new AggregateException("Font observation and stream release both failed.", primary, cleanup);
                     throw;
                 }
@@ -455,7 +492,8 @@ namespace VBAi
                 b = Marshal.GetIUnknownForObject(second);
                 return a == b;
             }
-            finally {
+            finally
+            {
                 if (b != IntPtr.Zero) Marshal.Release(b);
                 if (a != IntPtr.Zero) Marshal.Release(a);
             }
@@ -516,8 +554,14 @@ namespace VBAi
 
         /// <summary>Gets strict text encoding for VBIDE exports using the active Windows ANSI code page.</summary>
         /// <value>Encoding configured to throw on invalid input or output.</value>
-        private static Encoding NativeEncoding { get { return Encoding.GetEncoding((int)GetACP(),
-            EncoderFallback.ExceptionFallback, DecoderFallback.ExceptionFallback); } }
+        private static Encoding NativeEncoding
+        {
+            get
+            {
+                return Encoding.GetEncoding((int)GetACP(),
+            EncoderFallback.ExceptionFallback, DecoderFallback.ExceptionFallback);
+            }
+        }
 
         /// <summary>Reads the active Windows ANSI code page identifier.</summary>
         /// <returns>Windows code-page number.</returns>
@@ -540,22 +584,22 @@ namespace VBAi
             /// <param name="clsid">Receives the object's CLSID.</param>
             void GetClassID(out Guid clsid);
 
-/// <summary>Reports whether the object has changes not represented by its persisted stream.</summary>
-/// <returns>HRESULT indicating dirty state.</returns>
-[PreserveSig] int IsDirty();
+            /// <summary>Reports whether the object has changes not represented by its persisted stream.</summary>
+            /// <returns>HRESULT indicating dirty state.</returns>
+            [PreserveSig] int IsDirty();
 
             /// <summary>Loads object state from a stream.</summary>
             /// <param name="stream">Serialized object state.</param>
             void Load(IStream stream);
 
-/// <summary>Saves object state to a stream.</summary>
-/// <param name="stream">Destination for serialized state.</param>
-/// <param name="clearDirty">Whether saving clears the object's dirty flag.</param>
-void Save(IStream stream, [MarshalAs(UnmanagedType.Bool)] bool clearDirty);
+            /// <summary>Saves object state to a stream.</summary>
+            /// <param name="stream">Destination for serialized state.</param>
+            /// <param name="clearDirty">Whether saving clears the object's dirty flag.</param>
+            void Save(IStream stream, [MarshalAs(UnmanagedType.Bool)] bool clearDirty);
 
-/// <summary>Returns the maximum stream size required to save the object.</summary>
-/// <param name="size">Receives the maximum byte count.</param>
-void GetSizeMax(out long size);
+            /// <summary>Returns the maximum stream size required to save the object.</summary>
+            /// <param name="size">Receives the maximum byte count.</param>
+            void GetSizeMax(out long size);
         }
     }
 }

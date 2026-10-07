@@ -1,3 +1,4 @@
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -5,7 +6,6 @@ using System.IO;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Web.Script.Serialization;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace VBAi.Tests.Integration
 {
@@ -43,11 +43,21 @@ namespace VBAi.Tests.Integration
         {
             File.WriteAllText(Path.Combine(Root, "adapter-only-progress.json"),
                 new JavaScriptSerializer { MaxJsonLength = 20 * 1024 * 1024 }.Serialize(
-                    new { Host = Kind, HostProgId = hostProgId, ProcessId, DocumentPath, Project,
+                    new
+                    {
+                        Host = Kind,
+                        HostProgId = hostProgId,
+                        ProcessId,
+                        DocumentPath,
+                        Project,
                         ExpectedMvid = typeof(VbeSession).Module.ModuleVersionId.ToString("D"),
-                        PendingCommand = commandContainment.Command, CommandPending = commandContainment.Pending,
+                        PendingCommand = commandContainment.Command,
+                        CommandPending = commandContainment.Pending,
                         DeliveryUncertain = commandContainment.Uncertain,
-                        AdapterOnlyCleanup = adapterOnlyCleanup, Failures, Steps = steps }));
+                        AdapterOnlyCleanup = adapterOnlyCleanup,
+                        Failures,
+                        Steps = steps
+                    }));
         }
 
         /// <summary>Establishes the disposable baseline before final edits; never used after adapter invocation.</summary>
@@ -82,9 +92,13 @@ namespace VBAi.Tests.Integration
         internal IDictionary<string, object> RecordAdapterObservation(string phase)
         {
             commandContainment.RequireTerminal();
-            var observation = new Dictionary<string, object> {
-                ["AdapterOnlyPhase"] = phase, ["Utc"] = DateTime.UtcNow.ToString("O"),
-                ["ProcessId"] = ProcessId, ["DocumentPath"] = DocumentPath };
+            var observation = new Dictionary<string, object>
+            {
+                ["AdapterOnlyPhase"] = phase,
+                ["Utc"] = DateTime.UtcNow.ToString("O"),
+                ["ProcessId"] = ProcessId,
+                ["DocumentPath"] = DocumentPath
+            };
             steps.Add(observation);
             FlushAdapterEvidence();
             object window = null;
@@ -138,9 +152,18 @@ namespace VBAi.Tests.Integration
         /// <summary>Records each bounded retry of a named read-only getter without repeating an adapter action.</summary>
         private T ObserveGetter<T>(Func<T> read, string phase, string name)
         {
-            return OfficeObservationRead.Getter(read, (attempt, delay) => {
-                steps.Add(new { ReadOnlyGetterRetry = name, Phase = phase, Attempt = attempt, DelayMilliseconds = delay,
-                    HResult = "0x80010001", SaveRetryInvoked = false, Utc = DateTime.UtcNow.ToString("O") });
+            return OfficeObservationRead.Getter(read, (attempt, delay) =>
+            {
+                steps.Add(new
+                {
+                    ReadOnlyGetterRetry = name,
+                    Phase = phase,
+                    Attempt = attempt,
+                    DelayMilliseconds = delay,
+                    HResult = "0x80010001",
+                    SaveRetryInvoked = false,
+                    Utc = DateTime.UtcNow.ToString("O")
+                });
                 FlushAdapterEvidence();
             });
         }

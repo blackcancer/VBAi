@@ -3,15 +3,15 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.ComTypes;
-using TYPEDESC = System.Runtime.InteropServices.ComTypes.TYPEDESC;
-using TYPEATTR = System.Runtime.InteropServices.ComTypes.TYPEATTR;
+using ELEMDESC = System.Runtime.InteropServices.ComTypes.ELEMDESC;
 using FUNCDESC = System.Runtime.InteropServices.ComTypes.FUNCDESC;
 using FUNCFLAGS = System.Runtime.InteropServices.ComTypes.FUNCFLAGS;
-using INVOKEKIND = System.Runtime.InteropServices.ComTypes.INVOKEKIND;
 using IMPLTYPEFLAGS = System.Runtime.InteropServices.ComTypes.IMPLTYPEFLAGS;
-using TYPEKIND = System.Runtime.InteropServices.ComTypes.TYPEKIND;
-using ELEMDESC = System.Runtime.InteropServices.ComTypes.ELEMDESC;
+using INVOKEKIND = System.Runtime.InteropServices.ComTypes.INVOKEKIND;
 using PARAMFLAG = System.Runtime.InteropServices.ComTypes.PARAMFLAG;
+using TYPEATTR = System.Runtime.InteropServices.ComTypes.TYPEATTR;
+using TYPEDESC = System.Runtime.InteropServices.ComTypes.TYPEDESC;
+using TYPEKIND = System.Runtime.InteropServices.ComTypes.TYPEKIND;
 using VARDESC = System.Runtime.InteropServices.ComTypes.VARDESC;
 using VARFLAGS = System.Runtime.InteropServices.ComTypes.VARFLAGS;
 
@@ -54,8 +54,12 @@ namespace VBAi
             string key = string.Join("|", paths.Select(p => p + ":" + System.IO.File.GetLastWriteTimeUtc(p).Ticks)) + ":" + string.Join("|", requestedTypes);
             if (key == cacheKey) return cacheValue;
             var symbols = new List<EditorSymbol>();
-            var requested = new HashSet<string>(requestedTypes.Select(n => n.Split('.').Last()), StringComparer.OrdinalIgnoreCase);
-            requested.Add("Application"); requested.Add("_Application"); requested.Add("_Global");
+            var requested = new HashSet<string>(requestedTypes.Select(n => n.Split('.').Last()), StringComparer.OrdinalIgnoreCase)
+            {
+                "Application",
+                "_Application",
+                "_Global"
+            };
             var indexed = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
             for (int pass = 0; pass < 6; pass++)
             {

@@ -1,13 +1,13 @@
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
 using System.Runtime.ExceptionServices;
+using System.Runtime.InteropServices;
 using System.Web.Script.Serialization;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace VBAi.Tests.Integration
 {
@@ -77,9 +77,11 @@ namespace VBAi.Tests.Integration
             bool durable = !string.IsNullOrWhiteSpace(output);
             if (durable && (!Path.IsPathRooted(output) || !string.Equals(Path.GetPathRoot(output), Path.GetPathRoot(Path.GetFullPath(output)), StringComparison.OrdinalIgnoreCase)))
                 throw new ArgumentException("VBAi_EXCEL_RESULTS must specify an absolute output directory.");
-            var fixture = new ExcelVbeFixture {
+            var fixture = new ExcelVbeFixture
+            {
                 retainEvidence = durable,
-                Root = Path.Combine(durable ? Path.GetFullPath(output) : Path.Combine(Path.GetTempPath(), "VBAi-VSTest"), Guid.NewGuid().ToString("N")) };
+                Root = Path.Combine(durable ? Path.GetFullPath(output) : Path.Combine(Path.GetTempPath(), "VBAi-VSTest"), Guid.NewGuid().ToString("N"))
+            };
             try
             {
                 Directory.CreateDirectory(fixture.Root);
@@ -207,7 +209,8 @@ namespace VBAi.Tests.Integration
         {
             if (!ClaimShutdown()) return;
             try { DisposeOwnedHostCore(); CompleteShutdown(); }
-            catch (Exception error) {
+            catch (Exception error)
+            {
                 Exception combined = CombineShutdownFailure(error);
                 RetainFailedShutdown(combined);
                 if (ReferenceEquals(combined, error)) throw;
@@ -218,9 +221,13 @@ namespace VBAi.Tests.Integration
         /// <summary>Runs the only permitted cleanup sequence on the original owner thread.</summary>
         private void DisposeOwnedHostCore()
         {
-            var diagnostics = new Dictionary<string, object> {
-                ["ProcessId"] = ProcessId, ["FixtureRoot"] = Root, ["StartedUtc"] = DateTime.UtcNow.ToString("o"),
-                ["AssemblyMvid"] = typeof(VbeSession).Module.ModuleVersionId.ToString("D"), ["ForcedTermination"] = false
+            var diagnostics = new Dictionary<string, object>
+            {
+                ["ProcessId"] = ProcessId,
+                ["FixtureRoot"] = Root,
+                ["StartedUtc"] = DateTime.UtcNow.ToString("o"),
+                ["AssemblyMvid"] = typeof(VbeSession).Module.ModuleVersionId.ToString("D"),
+                ["ForcedTermination"] = false
             };
             CopyComAttachedIdentityToShutdown(startupEvidence, diagnostics);
             diagnostics["DurableEvidence"] = retainEvidence;
@@ -239,7 +246,8 @@ namespace VBAi.Tests.Integration
             }
             var watch = Stopwatch.StartNew();
             Exception closeFailure = null, quitFailure = null, evidenceFailure = null;
-            Action writeDiagnostics = () => {
+            Action writeDiagnostics = () =>
+            {
                 try { WriteShutdownDiagnostics(diagnostics); }
                 catch (Exception error) { if (evidenceFailure == null) evidenceFailure = error; RememberShutdownFailure(error); }
             };
@@ -292,55 +300,55 @@ namespace VBAi.Tests.Integration
             }
             var process = ownedProcess;
             if (process != null)
+            {
+                RecordShutdownThread(diagnostics, "BeforeExitWait");
+                cleanupStage = "EXIT_WAIT"; exitWaitAttempted = true;
+                bool exited = WaitForOwnedExcelExit(process, 10000);
+                exitWaitReturned = true;
+                RecordShutdownThread(diagnostics, "AfterExitWait");
+                diagnostics["Exited"] = exited;
+                diagnostics["ElapsedMs"] = watch.ElapsedMilliseconds;
+                if (exited)
                 {
-                    RecordShutdownThread(diagnostics, "BeforeExitWait");
-                    cleanupStage = "EXIT_WAIT"; exitWaitAttempted = true;
-                    bool exited = WaitForOwnedExcelExit(process, 10000);
-                    exitWaitReturned = true;
-                    RecordShutdownThread(diagnostics, "AfterExitWait");
-                    diagnostics["Exited"] = exited;
-                    diagnostics["ElapsedMs"] = watch.ElapsedMilliseconds;
-                    if (exited)
-                    {
-                        cleanupStage = "EXIT_CODE";
-                        int code = ReadOwnedExcelExitCode(process);
-                        exitCodeObserved = true;
-                        diagnostics["ExitCode"] = code;
-                        diagnostics["ExitCodeHex"] = "0x" + unchecked((uint)code).ToString("X8");
-                    }
-                    ObserveAddInShutdownTrace(diagnostics);
-                    writeDiagnostics();
-                    try
-                    {
-                        if (!exited)
-                            Assert.Fail("Excel did not exit after Quit and COM release. PID: " + ProcessId + "; fixture: " + Root + ". The process was left running for diagnosis; shutdown.json preserves each phase.");
-                        int code = (int)diagnostics["ExitCode"];
-                        Assert.AreEqual(0, code, "Excel exited abnormally. PID: " + ProcessId +
-                            "; exit code: 0x" + unchecked((uint)code).ToString("X8") + "; fixture: " + Root);
-                        if (privateDesktopChild != null)
-                        {
-                            Assert.IsTrue(privateDesktopChild.Wait(0), "The original native Excel handle must independently observe exit.");
-                            Assert.AreEqual(0u, privateDesktopChild.ExitCode());
-                            privateDesktopChild.Dispose(); privateDesktopChild = null;
-                        }
-                    }
-                    catch (Exception exitFailure)
-                    {
-                        if (evidenceFailure != null)
-                            throw new AggregateException("Excel shutdown and its evidence write failed; both errors are retained.",
-                                new[] { exitFailure, closeFailure, quitFailure, evidenceFailure }.Where(error => error != null));
-                        throw;
-                    }
-                    if (evidenceFailure != null) throw evidenceFailure;
-                    if (addInShutdownFailure != null) throw addInShutdownFailure;
-                    cleanupStage = "PROCESS_RELEASE";
-                    processReleaseEntered = true;
-                    ReleaseOwnedExcelProcess(process);
-                    processReleaseReturned = true;
-                    ownedProcess = null;
-                    diagnostics["ProcessHandleRetained"] = false;
-                    writeDiagnostics();
+                    cleanupStage = "EXIT_CODE";
+                    int code = ReadOwnedExcelExitCode(process);
+                    exitCodeObserved = true;
+                    diagnostics["ExitCode"] = code;
+                    diagnostics["ExitCodeHex"] = "0x" + unchecked((uint)code).ToString("X8");
                 }
+                ObserveAddInShutdownTrace(diagnostics);
+                writeDiagnostics();
+                try
+                {
+                    if (!exited)
+                        Assert.Fail("Excel did not exit after Quit and COM release. PID: " + ProcessId + "; fixture: " + Root + ". The process was left running for diagnosis; shutdown.json preserves each phase.");
+                    int code = (int)diagnostics["ExitCode"];
+                    Assert.AreEqual(0, code, "Excel exited abnormally. PID: " + ProcessId +
+                        "; exit code: 0x" + unchecked((uint)code).ToString("X8") + "; fixture: " + Root);
+                    if (privateDesktopChild != null)
+                    {
+                        Assert.IsTrue(privateDesktopChild.Wait(0), "The original native Excel handle must independently observe exit.");
+                        Assert.AreEqual(0u, privateDesktopChild.ExitCode());
+                        privateDesktopChild.Dispose(); privateDesktopChild = null;
+                    }
+                }
+                catch (Exception exitFailure)
+                {
+                    if (evidenceFailure != null)
+                        throw new AggregateException("Excel shutdown and its evidence write failed; both errors are retained.",
+                            new[] { exitFailure, closeFailure, quitFailure, evidenceFailure }.Where(error => error != null));
+                    throw;
+                }
+                if (evidenceFailure != null) throw evidenceFailure;
+                if (addInShutdownFailure != null) throw addInShutdownFailure;
+                cleanupStage = "PROCESS_RELEASE";
+                processReleaseEntered = true;
+                ReleaseOwnedExcelProcess(process);
+                processReleaseReturned = true;
+                ownedProcess = null;
+                diagnostics["ProcessHandleRetained"] = false;
+                writeDiagnostics();
+            }
             else writeDiagnostics();
             if (privateDesktopChild != null)
             {

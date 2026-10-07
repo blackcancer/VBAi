@@ -1,7 +1,7 @@
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 using VBAi.Tests.Integration;
 
 namespace VBAi.Tests.Unit
@@ -58,8 +58,11 @@ namespace VBAi.Tests.Unit
             {
                 ExcelVbeFixture.AcquireIndependentGitProject(() => shared, value => new IntPtr(27), value => unique,
                     value => { events.Add("identity"); if (identityFails) throw identityError; },
-                    value => { bool isShared = ReferenceEquals(value, shared); events.Add(isShared ? "shared" : "unique");
-                        if (isShared && sharedFails) throw sharedError; if (!isShared && uniqueFails) throw uniqueError; });
+                    value =>
+                    {
+                        bool isShared = ReferenceEquals(value, shared); events.Add(isShared ? "shared" : "unique");
+                        if (isShared && sharedFails) throw sharedError; if (!isShared && uniqueFails) throw uniqueError;
+                    });
                 Assert.Fail("A cleanup failure must prevent the unique wrapper handoff");
             }
             catch (InvalidOperationException error) { thrown = error; }

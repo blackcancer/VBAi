@@ -1,7 +1,5 @@
-using VBAi;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
-using System.Linq;
 
 namespace VBAi.Tests.Unit
 {
@@ -77,8 +75,11 @@ namespace VBAi.Tests.Unit
             {
                 var f = new EditorDebugFixture(); var other = f.AddModule("other");
                 int id = action == "cascade" ? 1826 : action == "tile_vertical" ? 2561 : 2562;
-                f.Command(id, action, () => { other.CodePane.Window.Left = action == "tile_vertical" ? 300 : action == "cascade" ? 26 : 0;
-                    other.CodePane.Window.Top = action == "tile_horizontal" ? 200 : action == "cascade" ? 26 : 0; });
+                f.Command(id, action, () =>
+                {
+                    other.CodePane.Window.Left = action == "tile_vertical" ? 300 : action == "cascade" ? 26 : 0;
+                    other.CodePane.Window.Top = action == "tile_horizontal" ? 200 : action == "cascade" ? 26 : 0;
+                });
                 var request = Inspected(f, action); request.ExpectedWindowVersion = request.ExpectedWindowVersion.ToUpperInvariant();
                 dynamic result = f.Service.ArrangeEditorWindows(request);
                 Assert.IsTrue((bool)result.Verified); Assert.IsTrue((bool)result.Applied); Assert.IsFalse((bool)result.VerificationPending);
@@ -91,7 +92,8 @@ namespace VBAi.Tests.Unit
             foreach (int scenario in new[] { 0, 1, 2, 3, 4 })
             {
                 var f = new EditorDebugFixture(); var other = f.AddModule("other");
-                f.Command(2561, "tile_vertical", () => {
+                f.Command(2561, "tile_vertical", () =>
+                {
                     if (scenario == 1 || scenario == 2) f.Vbe.Panes.Remove(other.CodePane);
                     if (scenario == 3) f.Vbe.Windows.Remove(other.CodePane.Window);
                     if (scenario == 0 || scenario == 2) throw new InvalidOperationException("execute failed");
@@ -108,10 +110,10 @@ namespace VBAi.Tests.Unit
         {
             var a = new EditorWindowBounds { Width = 300, Height = 200 };
             var b = new EditorWindowBounds { Left = 26, Top = 26, Width = 300, Height = 0 };
-            Assert.IsFalse(VbeDebug.VerifyArrangement("cascade", new[] { a,b }));
-            b.Height = 203; Assert.IsFalse(VbeDebug.VerifyArrangement("cascade", new[] { a,b }));
-            b.Height = 200; b.Top = 200; Assert.IsFalse(VbeDebug.VerifyArrangement("cascade", new[] { a,b }));
-            b.Top = 26; b.Left = 300; Assert.IsFalse(VbeDebug.VerifyArrangement("cascade", new[] { a,b }));
+            Assert.IsFalse(VbeDebug.VerifyArrangement("cascade", new[] { a, b }));
+            b.Height = 203; Assert.IsFalse(VbeDebug.VerifyArrangement("cascade", new[] { a, b }));
+            b.Height = 200; b.Top = 200; Assert.IsFalse(VbeDebug.VerifyArrangement("cascade", new[] { a, b }));
+            b.Top = 26; b.Left = 300; Assert.IsFalse(VbeDebug.VerifyArrangement("cascade", new[] { a, b }));
         }
     }
     [TestClass, TestCategory("Unit")]

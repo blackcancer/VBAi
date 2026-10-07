@@ -1,12 +1,10 @@
 namespace VBAi.Tests.Unit
 {
+    using Microsoft.VisualStudio.TestTools.UnitTesting;
     using System;
     using System.Collections;
-    using System.Collections.Generic;
     using System.ComponentModel;
     using System.Linq;
-    using System.Runtime.CompilerServices;
-    using Microsoft.VisualStudio.TestTools.UnitTesting;
     using VBAi;
 
     [TestClass]
@@ -88,11 +86,11 @@ namespace VBAi.Tests.Unit
                 Assert.IsNull((string)failed.ListVersion);
                 StringAssert.Contains((string)failed.ListVersionError, "could not be read");
                 control.ThrowOnCell = false;
-                control.ListRows[0][0] = new object ();
+                control.ListRows[0][0] = new object();
                 dynamic objectValue = fixture.Service.ListItems(request);
                 Assert.IsNull((string)objectValue.ListVersion);
                 StringAssert.Contains((string)objectValue.ListVersionError, "non-scalar");
-                control.ListRows[0][0] = new string ('x', 4097);
+                control.ListRows[0][0] = new string('x', 4097);
                 dynamic oversized = fixture.Service.ListItems(request);
                 Assert.IsNull((string)oversized.ListVersion);
                 StringAssert.Contains((string)oversized.ListVersionError, "4096");
@@ -142,49 +140,53 @@ namespace VBAi.Tests.Unit
 }
 namespace VBAi.Tests.Unit
 {
+    using Microsoft.VisualStudio.TestTools.UnitTesting;
     using System;
     using VBAi;
-    using Microsoft.VisualStudio.TestTools.UnitTesting;
     public sealed partial class VbeFormsTests
     {
         [TestMethod]
         public void ListReaderValidatesRequiredFieldsNegativeRowsAndNonzeroOffset()
         {
             var service = new VbeForms(new FakeVbe());
-            MissingFields(r=>service.ListItems(r),"Project","Form","ControlPath");
-            WithList("ListBox",(f,c,r)=>{
-                c.ListCountOverride=-1;
-                Assert.ThrowsException<InvalidOperationException>(()=>f.Service.ListItems(r));
-                c.ListCountOverride=null; r.Offset=1;
-                dynamic result=f.Service.ListItems(r);
-                Assert.AreEqual(1,(int)result.ReturnedRows);
+            MissingFields(r => service.ListItems(r), "Project", "Form", "ControlPath");
+            WithList("ListBox", (f, c, r) =>
+            {
+                c.ListCountOverride = -1;
+                Assert.ThrowsException<InvalidOperationException>(() => f.Service.ListItems(r));
+                c.ListCountOverride = null; r.Offset = 1;
+                dynamic result = f.Service.ListItems(r);
+                Assert.AreEqual(1, (int)result.ReturnedRows);
                 Assert.IsNull((string)result.ListVersion);
-                StringAssert.Contains((string)result.ListVersionError,"complete list");
+                StringAssert.Contains((string)result.ListVersionError, "complete list");
             });
         }
 
         [TestMethod]
         public void ListReaderPreservesNullAndReportsConversionAndSerializationFailures()
         {
-            WithList("ComboBox",(f,c,r)=>{
-                c.ListRows[0][0]=null;
-                dynamic nullable=f.Service.ListItems(r);
+            WithList("ComboBox", (f, c, r) =>
+            {
+                c.ListRows[0][0] = null;
+                dynamic nullable = f.Service.ListItems(r);
                 Assert.IsNotNull((string)nullable.ListVersion);
-                foreach(var invocation in new[]{false,true}) {
-                    c.ListRows[0][0]=new CellTextFailure(invocation);
-                    dynamic failed=f.Service.ListItems(r);
+                foreach (var invocation in new[] { false, true })
+                {
+                    c.ListRows[0][0] = new CellTextFailure(invocation);
+                    dynamic failed = f.Service.ListItems(r);
                     Assert.IsNull((string)failed.ListVersion);
-                    StringAssert.Contains((string)failed.ListVersionError,"could not be read");
+                    StringAssert.Contains((string)failed.ListVersionError, "could not be read");
                 }
-                c.ListRows.Clear(); c.ColumnCount=32;
-                for(int i=0;i<4;i++) {
-                    var cells=new object[32];
-                    for(int j=0;j<32;j++) cells[j]=new string('\0',4096);
+                c.ListRows.Clear(); c.ColumnCount = 32;
+                for (int i = 0; i < 4; i++)
+                {
+                    var cells = new object[32];
+                    for (int j = 0; j < 32; j++) cells[j] = new string('\0', 4096);
                     c.ListRows.Add(cells);
                 }
-                dynamic oversized=f.Service.ListItems(r);
+                dynamic oversized = f.Service.ListItems(r);
                 Assert.IsNull((string)oversized.ListVersion);
-                StringAssert.Contains((string)oversized.ListVersionError,"could not be calculated");
+                StringAssert.Contains((string)oversized.ListVersionError, "could not be calculated");
             });
         }
     }

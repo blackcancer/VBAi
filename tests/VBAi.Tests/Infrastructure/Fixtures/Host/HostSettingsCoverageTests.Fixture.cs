@@ -1,10 +1,8 @@
 namespace VBAi.Tests.Unit
 {
+    using Microsoft.VisualStudio.TestTools.UnitTesting;
     using System;
     using System.Reflection;
-    using System.Windows.Forms;
-    using VBAi;
-    using Microsoft.VisualStudio.TestTools.UnitTesting;
 
     /// <summary>Fournit des objets hôte simulés et des accès réfléchis aux tests de configuration.</summary>
     public sealed partial class HostSettingsCoverageTests

@@ -85,8 +85,14 @@ namespace VBAi
                     var tests = group.ToArray();
                     if (cancellation.IsCancellationRequested) break;
                     foreach (var test in tests.Where(test => !string.IsNullOrEmpty(module.Diagnostic) || !string.IsNullOrEmpty(test.Diagnostic) || !string.IsNullOrEmpty(test.IgnoreReason)))
-                        Publish(run, new VbaTestResult { Test = test, Outcome = !string.IsNullOrEmpty(module.Diagnostic) || !string.IsNullOrEmpty(test.Diagnostic)
-                            ? VbaTestOutcome.Blocked : VbaTestOutcome.Skipped, Message = FirstMessage(module.Diagnostic, test.Diagnostic, test.IgnoreReason), Phase = "Discovery" }, progress);
+                        Publish(run, new VbaTestResult
+                        {
+                            Test = test,
+                            Outcome = !string.IsNullOrEmpty(module.Diagnostic) || !string.IsNullOrEmpty(test.Diagnostic)
+                            ? VbaTestOutcome.Blocked : VbaTestOutcome.Skipped,
+                            Message = FirstMessage(module.Diagnostic, test.Diagnostic, test.IgnoreReason),
+                            Phase = "Discovery"
+                        }, progress);
                     var runnable = tests.Where(test => !run.Results.Any(result => result.Test.Id == test.Id)).ToArray();
                     if (runnable.Length == 0) continue;
                     bool stopModule = false;
@@ -98,8 +104,14 @@ namespace VBAi
                         moduleHasEntered = module.ModuleInitialize != null;
                         if (setup != null && setup.Outcome != VbaTestOutcome.Passed)
                         {
-                            foreach (var test in runnable) Publish(run, new VbaTestResult { Test = test, Outcome = VbaTestOutcome.Blocked,
-                                Message = setup.Message, ErrorNumber = setup.ErrorNumber, Phase = setup.Phase }, progress);
+                            foreach (var test in runnable) Publish(run, new VbaTestResult
+                            {
+                                Test = test,
+                                Outcome = VbaTestOutcome.Blocked,
+                                Message = setup.Message,
+                                ErrorNumber = setup.ErrorNumber,
+                                Phase = setup.Phase
+                            }, progress);
                             AddRunError(run, "Module initialization failed: " + setup.Message);
                             continue;
                         }
@@ -118,8 +130,14 @@ namespace VBAi
                                 testHasEntered = module.TestInitialize != null;
                                 moduleHasEntered |= testHasEntered;
                                 if (initialized != null && initialized.Outcome != VbaTestOutcome.Passed)
-                                    result = new VbaTestResult { Test = test, Outcome = VbaTestOutcome.Error, Message = initialized.Message,
-                                        ErrorNumber = initialized.ErrorNumber, Phase = initialized.Phase };
+                                    result = new VbaTestResult
+                                    {
+                                        Test = test,
+                                        Outcome = VbaTestOutcome.Error,
+                                        Message = initialized.Message,
+                                        ErrorNumber = initialized.ErrorNumber,
+                                        Phase = initialized.Phase
+                                    };
                                 else
                                 {
                                     currentPhase = "Test";
@@ -175,8 +193,13 @@ namespace VBAi
                     }
                     if (stopModule)
                         foreach (var test in runnable.Where(test => !run.Results.Any(result => result.Test.Id == test.Id)))
-                            Publish(run, new VbaTestResult { Test = test, Outcome = VbaTestOutcome.Blocked, Phase = "TestCleanup",
-                                Message = "A preceding test cleanup failed." }, progress);
+                            Publish(run, new VbaTestResult
+                            {
+                                Test = test,
+                                Outcome = VbaTestOutcome.Blocked,
+                                Phase = "TestCleanup",
+                                Message = "A preceding test cleanup failed."
+                            }, progress);
                 }
             }
             catch (Exception error)
@@ -189,9 +212,13 @@ namespace VBAi
                 try
                 {
                     foreach (var test in selected.Where(test => !run.Results.Any(result => result.Test.Id == test.Id)))
-                        Publish(run, new VbaTestResult { Test = test,
+                        Publish(run, new VbaTestResult
+                        {
+                            Test = test,
                             Outcome = cancellation.IsCancellationRequested ? VbaTestOutcome.Cancelled : VbaTestOutcome.Blocked,
-                            Message = run.Error ?? "Stopped before execution.", Phase = "Scheduling" }, progress);
+                            Message = run.Error ?? "Stopped before execution.",
+                            Phase = "Scheduling"
+                        }, progress);
                 }
                 finally { active = false; }
             }
@@ -212,8 +239,7 @@ namespace VBAi
         /// <returns>Owner-aware awaitable, or a normal awaitable for hosts without a continuation dispatcher.</returns>
         private VbaTestOwnerAwaitable<T> AwaitOwner<T>(Task<T> task)
         {
-            var owned = host as IVbaTestContinuationHost;
-            return owned == null ? VbaTestOwnerAwaitable<T>.Unowned(task) : owned.AwaitOwner(task);
+            return !(host is IVbaTestContinuationHost owned) ? VbaTestOwnerAwaitable<T>.Unowned(task) : owned.AwaitOwner(task);
         }
 
         /// <summary>Converts adapter preflight failures into explicit safe-refusal invocation failures.</summary>
@@ -262,9 +288,14 @@ namespace VBAi
         private static VbaTestResult Refused(VbaTestDescriptor test, Exception error, string phase, bool cancelled = false)
         {
             bool uncertain = error is VbaTestInvocationException invocation && invocation.Uncertain;
-            return new VbaTestResult { Test = test, Outcome = uncertain ? VbaTestOutcome.OutcomeUnknown
+            return new VbaTestResult
+            {
+                Test = test,
+                Outcome = uncertain ? VbaTestOutcome.OutcomeUnknown
                 : cancelled ? VbaTestOutcome.Cancelled : VbaTestOutcome.Blocked,
-                Message = error.Message, Phase = phase };
+                Message = error.Message,
+                Phase = phase
+            };
         }
 
         /// <summary>Combines a cleanup failure with the preceding test verdict, promoting uncertain cleanup to unknown.</summary>

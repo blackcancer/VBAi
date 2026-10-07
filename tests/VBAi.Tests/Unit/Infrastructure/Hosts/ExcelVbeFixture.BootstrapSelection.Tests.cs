@@ -1,3 +1,4 @@
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -5,7 +6,6 @@ using System.Diagnostics;
 using System.IO;
 using System.Reflection;
 using System.Web.Script.Serialization;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 using VBAi.Tests.Integration;
 
 namespace VBAi.Tests.Unit
@@ -109,11 +109,22 @@ namespace VBAi.Tests.Unit
         }
 
         [DataTestMethod]
-        [DataRow(null, null, false)] [DataRow(null, "", false)] [DataRow(null, " ", false)]
-        [DataRow(null, "0", false)] [DataRow(null, "true", false)] [DataRow(null, " 1 ", false)] [DataRow(null, "1 ", false)]
-        [DataRow(null, "1", true)] [DataRow("", "1", true)] [DataRow(" ", "1", true)]
-        [DataRow("Q027Private", null, true)] [DataRow("Q027Private", "", true)] [DataRow("Q027Private", "0", true)]
-        [DataRow("Q027Private", "true", true)] [DataRow("Q027Private", " 1 ", true)] [DataRow("Q027Private", "1", true)]
+        [DataRow(null, null, false)]
+        [DataRow(null, "", false)]
+        [DataRow(null, " ", false)]
+        [DataRow(null, "0", false)]
+        [DataRow(null, "true", false)]
+        [DataRow(null, " 1 ", false)]
+        [DataRow(null, "1 ", false)]
+        [DataRow(null, "1", true)]
+        [DataRow("", "1", true)]
+        [DataRow(" ", "1", true)]
+        [DataRow("Q027Private", null, true)]
+        [DataRow("Q027Private", "", true)]
+        [DataRow("Q027Private", "0", true)]
+        [DataRow("Q027Private", "true", true)]
+        [DataRow("Q027Private", " 1 ", true)]
+        [DataRow("Q027Private", "1", true)]
         public void SelectionExecutesOnlyTheRequestedLauncherAndPreservesTheUnsavedPrecondition(string desktop, string setting, bool explicitLaunch)
         {
             using (var scope = new Scope())
@@ -142,8 +153,14 @@ namespace VBAi.Tests.Unit
         }
 
         [DataTestMethod]
-        [DataRow(null, null)] [DataRow(null, "")] [DataRow(null, "relative.jsonl")] [DataRow(null, "C:\\trace.jsonl:alternate")]
-        [DataRow("Q027Private", null)] [DataRow("Q027Private", "")] [DataRow("Q027Private", "relative.jsonl")] [DataRow("Q027Private", "C:\\trace.jsonl:alternate")]
+        [DataRow(null, null)]
+        [DataRow(null, "")]
+        [DataRow(null, "relative.jsonl")]
+        [DataRow(null, "C:\\trace.jsonl:alternate")]
+        [DataRow("Q027Private", null)]
+        [DataRow("Q027Private", "")]
+        [DataRow("Q027Private", "relative.jsonl")]
+        [DataRow("Q027Private", "C:\\trace.jsonl:alternate")]
         public void InvalidExplicitTraceRefusesBothLaunchersBeforeAnyWorkbookMutation(string desktop, string trace)
         {
             int privateGuards = 0, launches = 0;
@@ -162,8 +179,12 @@ namespace VBAi.Tests.Unit
         }
 
         [DataTestMethod]
-        [DataRow(null, "pid")] [DataRow(null, "image")] [DataRow(null, "birth")]
-        [DataRow("Q027Private", "pid")] [DataRow("Q027Private", "image")] [DataRow("Q027Private", "birth")]
+        [DataRow(null, "pid")]
+        [DataRow(null, "image")]
+        [DataRow(null, "birth")]
+        [DataRow("Q027Private", "pid")]
+        [DataRow("Q027Private", "image")]
+        [DataRow("Q027Private", "birth")]
         public void ExistingOwnedIdentityGuardFailureCannotFallbackOrEnterUnsavedTransition(string desktop, string member)
         {
             using (var scope = new Scope())
@@ -172,9 +193,12 @@ namespace VBAi.Tests.Unit
                 var actual = Capture(() => ExcelVbeFixture.StartSelectedBootstrap(desktop, "1", scope.Trace, value => { }, value =>
                 {
                     starts++;
-                    try { ExcelOwnedBootstrapPlan.VerifyAttachedIdentity(71, @"C:\Qualification\EXCEL.EXE", "exact-birth",
+                    try
+                    {
+                        ExcelOwnedBootstrapPlan.VerifyAttachedIdentity(71, @"C:\Qualification\EXCEL.EXE", "exact-birth",
                         member == "pid" ? 72 : 71, member == "image" ? @"C:\Foreign\EXCEL.EXE" : @"C:\Qualification\EXCEL.EXE",
-                        member == "birth" ? "foreign-birth" : "exact-birth"); }
+                        member == "birth" ? "foreign-birth" : "exact-birth");
+                    }
                     catch (Exception error) { primary = error; throw; }
                     return scope.Fixture;
                 }, () => { fallback++; return scope.Fixture; }));
@@ -197,12 +221,26 @@ namespace VBAi.Tests.Unit
         }
 
         [DataTestMethod]
-        [DataRow(null, "close-before")] [DataRow(null, "close-after")] [DataRow(null, "add-before")] [DataRow(null, "add-after")]
-        [DataRow(null, "count-error")] [DataRow(null, "extra-workbook")] [DataRow(null, "path-error")] [DataRow(null, "saved-path")]
-        [DataRow(null, "name-error")] [DataRow(null, "evidence")]
-        [DataRow("Q027Private", "close-before")] [DataRow("Q027Private", "close-after")] [DataRow("Q027Private", "add-before")] [DataRow("Q027Private", "add-after")]
-        [DataRow("Q027Private", "count-error")] [DataRow("Q027Private", "extra-workbook")] [DataRow("Q027Private", "path-error")] [DataRow("Q027Private", "saved-path")]
-        [DataRow("Q027Private", "name-error")] [DataRow("Q027Private", "evidence")]
+        [DataRow(null, "close-before")]
+        [DataRow(null, "close-after")]
+        [DataRow(null, "add-before")]
+        [DataRow(null, "add-after")]
+        [DataRow(null, "count-error")]
+        [DataRow(null, "extra-workbook")]
+        [DataRow(null, "path-error")]
+        [DataRow(null, "saved-path")]
+        [DataRow(null, "name-error")]
+        [DataRow(null, "evidence")]
+        [DataRow("Q027Private", "close-before")]
+        [DataRow("Q027Private", "close-after")]
+        [DataRow("Q027Private", "add-before")]
+        [DataRow("Q027Private", "add-after")]
+        [DataRow("Q027Private", "count-error")]
+        [DataRow("Q027Private", "extra-workbook")]
+        [DataRow("Q027Private", "path-error")]
+        [DataRow("Q027Private", "saved-path")]
+        [DataRow("Q027Private", "name-error")]
+        [DataRow("Q027Private", "evidence")]
         public void UncertainSeedAndUnsavedTransitionsRetainTheSameFixtureWithoutCleanupOrReplay(string desktop, string fault)
         {
             using (var scope = new Scope())

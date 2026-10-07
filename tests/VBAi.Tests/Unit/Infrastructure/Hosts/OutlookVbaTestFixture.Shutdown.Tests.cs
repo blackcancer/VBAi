@@ -1,3 +1,4 @@
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -5,7 +6,6 @@ using System.Diagnostics;
 using System.IO;
 using System.Reflection;
 using System.Web.Script.Serialization;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 using VBAi.Tests.Integration;
 
 namespace VBAi.Tests.Unit
@@ -17,7 +17,8 @@ namespace VBAi.Tests.Unit
         [TestMethod]
         public void PendingNativeRunRetainsAllReferencesAndOtmWithoutAnyCleanupOrRetry()
         {
-            WithFakeFixture((fixture, application, inspector, process, root) => {
+            WithFakeFixture((fixture, application, inspector, process, root) =>
+            {
                 SetField(fixture, "runPending", true);
                 fixture.Dispatch = (pid, request) => { Assert.Fail("A pending run cannot enter native cleanup."); return null; };
                 Assert.ThrowsException<AssertFailedException>(() => fixture.Dispose());
@@ -35,12 +36,14 @@ namespace VBAi.Tests.Unit
         [DataRow(true)]
         public void UncertainOwnedModuleRemovalRetainsOwnershipAndNeverClosesOrQuits(bool throwAfterDispatch)
         {
-            WithFakeFixture((fixture, application, inspector, process, root) => {
+            WithFakeFixture((fixture, application, inspector, process, root) =>
+            {
                 SetField(fixture, "baselineVerified", true);
                 var modules = (Dictionary<string, string>)Field(fixture, "ownedModules");
                 modules.Add("SyntheticOwnedModule", "owned-hash");
                 var commands = new List<string>();
-                fixture.Dispatch = (pid, request) => {
+                fixture.Dispatch = (pid, request) =>
+                {
                     var command = (string)((IDictionary<string, object>)request)["Command"];
                     commands.Add(command);
                     if (command == "read_module") return Reply(new Dictionary<string, object> { ["Sha256"] = "owned-hash" });
@@ -65,7 +68,8 @@ namespace VBAi.Tests.Unit
         [TestMethod]
         public void UncertainInspectorCloseRetainsOriginalReferencesBeforeAnyQuit()
         {
-            WithFakeFixture((fixture, application, inspector, process, root) => {
+            WithFakeFixture((fixture, application, inspector, process, root) =>
+            {
                 inspector.CloseError = new InvalidOperationException("synthetic inspector close outcome unknown");
                 Assert.ThrowsException<AssertFailedException>(() => fixture.Dispose());
                 AssertRetained(fixture, application, inspector, process, root);
@@ -77,7 +81,8 @@ namespace VBAi.Tests.Unit
         [TestMethod]
         public void UncertainQuitRetainsOriginalReferencesAndQueryHandleWithoutRetry()
         {
-            WithFakeFixture((fixture, application, inspector, process, root) => {
+            WithFakeFixture((fixture, application, inspector, process, root) =>
+            {
                 application.QuitError = new InvalidOperationException("synthetic quit outcome unknown");
                 Assert.ThrowsException<AssertFailedException>(() => fixture.Dispose());
                 AssertRetained(fixture, application, inspector, process, root);
@@ -89,13 +94,18 @@ namespace VBAi.Tests.Unit
         [TestMethod]
         public void ConfirmedCompletedRunClearsPendingWithoutRetainingSettledOwnership()
         {
-            WithFakeFixture((fixture, application, inspector, process, root) => {
-                fixture.Dispatch = (pid, request) => {
+            WithFakeFixture((fixture, application, inspector, process, root) =>
+            {
+                fixture.Dispatch = (pid, request) =>
+                {
                     string command = (string)((IDictionary<string, object>)request)["Command"];
                     return command == "run_vba_tests"
                         ? Reply(new Dictionary<string, object> { ["Query"] = "synthetic-run" })
-                        : Reply(new Dictionary<string, object> { ["Pending"] = false,
-                            ["Report"] = new Dictionary<string, object> { ["uncertain"] = false } });
+                        : Reply(new Dictionary<string, object>
+                        {
+                            ["Pending"] = false,
+                            ["Report"] = new Dictionary<string, object> { ["uncertain"] = false }
+                        });
                 };
                 fixture.Response("run_vba_tests"); Assert.AreEqual(true, Field(fixture, "runPending"));
                 fixture.Response("vba_test_run_status"); Assert.AreEqual(false, Field(fixture, "runPending"));

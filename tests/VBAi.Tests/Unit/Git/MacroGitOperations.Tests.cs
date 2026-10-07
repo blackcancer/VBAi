@@ -1,12 +1,12 @@
 namespace VBAi.Tests.Unit
 {
+    using Microsoft.VisualStudio.TestTools.UnitTesting;
     using System;
     using System.Collections.Generic;
     using System.IO;
     using System.Threading.Tasks;
     using System.Web.Script.Serialization;
     using VBAi;
-    using Microsoft.VisualStudio.TestTools.UnitTesting;
 
     /// <summary>Vérifie les préconditions, opérations et récupérations du coordinateur Git VBA.</summary>
     [TestClass]
@@ -194,7 +194,8 @@ namespace VBAi.Tests.Unit
                 var readbackFailure = new IOException("Simulated post-import capture failure");
                 bool failReadback = true;
                 int failedReadbacks = 0;
-                var project = new VbaGitProject(() => f.Host, f.Host.FileName, _ => {
+                var project = new VbaGitProject(() => f.Host, f.Host.FileName, _ =>
+                {
                     if (failReadback && f.Host.VBComponents.Item("Module1").CodeModule.Text.Contains("Value = 2"))
                     {
                         failedReadbacks++;

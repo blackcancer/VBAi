@@ -1,8 +1,8 @@
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.ExceptionServices;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace VBAi.Tests.Integration
 {
@@ -77,8 +77,13 @@ namespace VBAi.Tests.Integration
                     Assert.AreEqual(names[0], before["ActiveCodeComponent"]);
                     Assert.AreEqual(false, before["ProjectSaved"], "Fresh pending edits are required for adapter qualification.");
                     string expectedVersion = (string)fixture.Data("project_properties")["Version"];
-                    fixture.RecordAdapterStage("SingleAdapterSaveStarting", new { Project = fixture.Project,
-                        ExpectedHostPath = fixture.DocumentPath, ExpectedProjectVersion = expectedVersion, RetryAllowed = false });
+                    fixture.RecordAdapterStage("SingleAdapterSaveStarting", new
+                    {
+                        Project = fixture.Project,
+                        ExpectedHostPath = fixture.DocumentPath,
+                        ExpectedProjectVersion = expectedVersion,
+                        RetryAllowed = false
+                    });
                     var original = fixture.Response("save_host_document", "ExpectedHostPath", fixture.DocumentPath,
                         "ExpectedProjectVersion", expectedVersion);
                     try { AssertVerifiedAdapterOutcome(original, host); }

@@ -84,7 +84,8 @@ namespace VBAi.Tests.Infrastructure
         }
         [StructLayout(LayoutKind.Sequential)] private struct Hit { internal int X, Y; internal uint Flags; internal IntPtr Item; }
         [StructLayout(LayoutKind.Sequential)] private struct CommonControls { internal int Size, Classes; }
-        [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)] private struct WindowClass
+        [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
+        private struct WindowClass
         {
             internal uint Style; internal IntPtr Procedure; internal int ClassExtra, WindowExtra;
             internal IntPtr Instance, Icon, Cursor, Background; internal string MenuName, ClassName;

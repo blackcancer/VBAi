@@ -140,7 +140,8 @@ namespace VBAi
             int current = Array.FindIndex(LlmProvider.All, item => item.Name == settings.ProviderName);
             provider.SelectedIndex = current < 0 ? 0 : current;
             provider.SelectedIndexChanged += (sender, args) => UpdateRows();
-            codexLogin.Click += (sender, args) => {
+            codexLogin.Click += (sender, args) =>
+            {
                 try { if (((LlmProvider)provider.SelectedItem).IsCopilot) StartCopilotLogin(); else StartCodexLogin(); codexStatus.Text = UiText.Get("Sign-in opened. Click Refresh after authenticating."); }
                 catch (Exception ex) { codexStatus.Text = ex.Message; }
             };
@@ -289,7 +290,8 @@ namespace VBAi
         /// <returns>Tâche terminée après la lecture de l’état du compte courant.</returns>
         private async System.Threading.Tasks.Task RefreshCodexStatusAsync()
         {
-            if (((LlmProvider)provider.SelectedItem).IsCopilot) {
+            if (((LlmProvider)provider.SelectedItem).IsCopilot)
+            {
                 codexStatus.Text = UiText.Get("Checking GitHub Copilot…");
                 try { string status = await ReadCopilotStatus(); if (!IsDisposed && ((LlmProvider)provider.SelectedItem).IsCopilot) codexStatus.Text = status; }
                 catch (Exception ex) { if (!IsDisposed && ((LlmProvider)provider.SelectedItem).IsCopilot) codexStatus.Text = ex.Message; }
@@ -338,7 +340,8 @@ namespace VBAi
                     approvalPicker.SelectedIndex == 1 ? "AskEachTime" : "Automatic";
                 bool previousNativeTheme = settings.NativeVbeDarkTheme;
                 settings.NativeVbeDarkTheme = nativeVbeDark.Checked;
-                foreach (var item in LlmProvider.All) {
+                foreach (var item in LlmProvider.All)
+                {
                     string value;
                     if (endpointDrafts.TryGetValue(item.Name, out value)) settings.SetEndpoint(item, value);
                     if (clearedKeys.Contains(item.Name)) settings.SetKey(item, null);

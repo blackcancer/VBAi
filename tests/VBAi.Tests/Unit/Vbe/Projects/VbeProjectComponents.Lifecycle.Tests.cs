@@ -1,8 +1,8 @@
 namespace VBAi.Tests.Unit
 {
+    using Microsoft.VisualStudio.TestTools.UnitTesting;
     using System;
     using System.IO;
-    using Microsoft.VisualStudio.TestTools.UnitTesting;
     using VBAi;
 
     // Matrix established before execution:
@@ -65,7 +65,8 @@ namespace VBAi.Tests.Unit
         {
             var f = Create();
             var request = f.CollectionRequest();
-            f.Vbe.VBProjects.After = () => {
+            f.Vbe.VBProjects.After = () =>
+            {
                 var added = f.Vbe.VBProjects.Items[1];
                 added.Saved = false;
                 added.FileNameError = unchecked((int)0x800A004C);
@@ -85,18 +86,18 @@ namespace VBAi.Tests.Unit
         public void PathReadFailuresRemainBlockingForSavedHostAndOtherComErrors()
         {
             foreach (bool clrMapped in new[] { false, true })
-            foreach (string scenario in new[] { "saved", "host", "other-hresult" })
-            {
-                var f = Create();
-                var project = f.Vbe.VBProjects.Items[0];
-                project.Saved = scenario == "saved";
-                project.Type = scenario == "host" ? 100 : 101;
-                project.FileNameError = scenario == "other-hresult" ? unchecked((int)0x80004005) : unchecked((int)0x800A004C);
-                project.ClrPathNotFound = clrMapped && scenario != "other-hresult";
-                if (project.ClrPathNotFound) Assert.ThrowsException<System.IO.DirectoryNotFoundException>(() => f.Service.ProjectCollectionState(), scenario);
-                else Assert.ThrowsException<System.Runtime.InteropServices.COMException>(() => f.Service.ProjectCollectionState(), scenario);
-                Assert.AreEqual(0, f.Vbe.VBProjects.Attempts);
-            }
+                foreach (string scenario in new[] { "saved", "host", "other-hresult" })
+                {
+                    var f = Create();
+                    var project = f.Vbe.VBProjects.Items[0];
+                    project.Saved = scenario == "saved";
+                    project.Type = scenario == "host" ? 100 : 101;
+                    project.FileNameError = scenario == "other-hresult" ? unchecked((int)0x80004005) : unchecked((int)0x800A004C);
+                    project.ClrPathNotFound = clrMapped && scenario != "other-hresult";
+                    if (project.ClrPathNotFound) Assert.ThrowsException<System.IO.DirectoryNotFoundException>(() => f.Service.ProjectCollectionState(), scenario);
+                    else Assert.ThrowsException<System.Runtime.InteropServices.COMException>(() => f.Service.ProjectCollectionState(), scenario);
+                    Assert.AreEqual(0, f.Vbe.VBProjects.Attempts);
+                }
         }
 
         [TestMethod]

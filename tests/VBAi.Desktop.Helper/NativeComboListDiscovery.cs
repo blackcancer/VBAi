@@ -12,7 +12,8 @@ namespace VBAi.Desktop.Helper
     public static class NativeComboListDiscovery
     {
         [StructLayout(LayoutKind.Sequential)] private struct Rect { public int Left, Top, Right, Bottom; }
-        [StructLayout(LayoutKind.Sequential)] private struct ComboBoxInfo
+        [StructLayout(LayoutKind.Sequential)]
+        private struct ComboBoxInfo
         {
             public uint Size;
             public Rect Item, Button;
@@ -88,11 +89,21 @@ namespace VBAi.Desktop.Helper
                 if (!MatchesNativeList((int)comboPid, comboTid, (int)listPid, listTid,
                     expectedPid, expectedTid, nativeClass, visible, comboDesktop, listDesktop))
                 {
-                    observation(new { Phase = "NativeComboListDiscoveryRefused", ComboHandle = combo.ToInt64(),
-                        ListHandle = info.List.ToInt64(), ListClass = nativeClass,
-                        ComboPid = comboPid, ComboTid = comboTid, ListPid = listPid, ListTid = listTid,
-                        ListVisible = visible, ComboDesktopMatches = comboDesktop, ListDesktopMatches = listDesktop,
-                        ActionDelivered = false });
+                    observation(new
+                    {
+                        Phase = "NativeComboListDiscoveryRefused",
+                        ComboHandle = combo.ToInt64(),
+                        ListHandle = info.List.ToInt64(),
+                        ListClass = nativeClass,
+                        ComboPid = comboPid,
+                        ComboTid = comboTid,
+                        ListPid = listPid,
+                        ListTid = listTid,
+                        ListVisible = visible,
+                        ComboDesktopMatches = comboDesktop,
+                        ListDesktopMatches = listDesktop,
+                        ActionDelivered = false
+                    });
                     throw new InvalidOperationException("Native combo/list owner, class or private desktop changed.");
                 }
                 var root = AutomationElement.FromHandle(info.List);
@@ -108,11 +119,20 @@ namespace VBAi.Desktop.Helper
                         unchecked((uint)NativeAncestor(node).ToInt64()) == unchecked((uint)info.List.ToInt64()))
                         matches.Add(node);
                 }
-                last = new { ComboHandle = combo.ToInt64(), ListHandle = info.List.ToInt64(),
-                    ListClass = nativeClass, ComboPid = comboPid, ComboTid = comboTid,
-                    ListPid = listPid, ListTid = listTid, ListVisible = visible,
-                    RawNodeCount = nodes.Length, ExactNameCount = exactNameCount,
-                    EligibleListItemCount = matches.Count };
+                last = new
+                {
+                    ComboHandle = combo.ToInt64(),
+                    ListHandle = info.List.ToInt64(),
+                    ListClass = nativeClass,
+                    ComboPid = comboPid,
+                    ComboTid = comboTid,
+                    ListPid = listPid,
+                    ListTid = listTid,
+                    ListVisible = visible,
+                    RawNodeCount = nodes.Length,
+                    ExactNameCount = exactNameCount,
+                    EligibleListItemCount = matches.Count
+                };
                 if (matches.Count > 1) break;
                 if (visible && matches.Count == 1)
                 {

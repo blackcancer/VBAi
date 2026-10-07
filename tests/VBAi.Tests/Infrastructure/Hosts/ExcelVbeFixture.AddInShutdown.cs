@@ -27,15 +27,29 @@ namespace VBAi.Tests.Integration
                 Environment.GetEnvironmentVariable(AddInShutdownProductEnvironmentName),
                 Environment.GetEnvironmentVariable("VBAi_TEST_EMBEDDED_GIT_MVID"), hash,
                 typeof(VbeSession).Assembly.Location, typeof(VbeSession).Module.ModuleVersionId, ReadAddInShutdownProductHash);
-            var identity = new AddInShutdownDiagnostic.Identity { ProcessId = ProcessId,
-                ProcessStartedUtc = ownedProcess.StartTime.ToUniversalTime().ToString("o"), HostImagePath = ownedImagePath(),
-                ProductPath = product, ProductMvid = typeof(VbeSession).Module.ModuleVersionId.ToString("D"), ProductSha256 = hash, ThreadId = owningThread };
+            var identity = new AddInShutdownDiagnostic.Identity
+            {
+                ProcessId = ProcessId,
+                ProcessStartedUtc = ownedProcess.StartTime.ToUniversalTime().ToString("o"),
+                HostImagePath = ownedImagePath(),
+                ProductPath = product,
+                ProductMvid = typeof(VbeSession).Module.ModuleVersionId.ToString("D"),
+                ProductSha256 = hash,
+                ThreadId = owningThread
+            };
             string root = AddInShutdownDiagnostic.RequireRoot(configured, Path.GetTempPath());
             string request = PublishAddInShutdownRequest(root, identity);
             addInShutdownRoot = root;
             addInShutdownIdentity = identity;
-            WriteEvidence("addin-shutdown-request.json", new { RequestPath = request, Nonce = Path.GetFileName(root),
-                ExpectedIdentity = identity, FixtureRoot = Root, PublicationReturned = true, Utc = DateTime.UtcNow.ToString("o") });
+            WriteEvidence("addin-shutdown-request.json", new
+            {
+                RequestPath = request,
+                Nonce = Path.GetFileName(root),
+                ExpectedIdentity = identity,
+                FixtureRoot = Root,
+                PublicationReturned = true,
+                Utc = DateTime.UtcNow.ToString("o")
+            });
         }
 
         /// <summary>Compares independent manifest pins to installed status and local test-reference bytes, allowing different deployment paths.</summary>

@@ -1,9 +1,11 @@
-param([switch]$Unregister, [switch]$MachineOnly)
+param([switch]$Unregister, [switch]$MachineOnly, [string]$AssemblyPath,
+    [switch]$PreserveMachineMapping)
 $ErrorActionPreference = 'Stop'
 if (-not [Environment]::Is64BitProcess) { throw 'Use 64-bit PowerShell.' }
 $chatClassId = '{0F4D723B-97D8-42E5-9B31-70646B97C8D2}'
 $chatProgId = 'VBAi.ChatToolWindow'
-$chatAssemblyPath = Join-Path (Split-Path -Parent $PSScriptRoot) 'bin\Debug\net48\VBAi.dll'
+$chatAssemblyPath = $AssemblyPath
+if (-not $chatAssemblyPath) { $chatAssemblyPath = Join-Path (Split-Path -Parent $PSScriptRoot) 'bin\Debug\net48\VBAi.dll' }
 function Set-MachineProgId {
     $machine = [Microsoft.Win32.RegistryKey]::OpenBaseKey([Microsoft.Win32.RegistryHive]::LocalMachine, [Microsoft.Win32.RegistryView]::Registry64)
     try {
@@ -67,7 +69,7 @@ try {
         finally { $existing.Dispose() }
     }
     if ($Unregister) {
-        Set-MachineProgId
+        if (-not $PreserveMachineMapping) { Set-MachineProgId }
         $registry.DeleteSubKeyTree("Software\Classes\$chatProgId", $false)
         $registry.DeleteSubKeyTree("Software\Classes\CLSID\$chatClassId", $false)
         return

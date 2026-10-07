@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Web.Script.Serialization;
@@ -140,10 +139,22 @@ namespace VBAi.Tests.Integration
             throw new TimeoutException("Diagnostic " + phase + " deadline exceeded; retain host, never replay cleanup.");
         }
 
-        private object Snapshot(string state) => new { State = state, identity.ProcessId, identity.ProcessStartedUtc,
-            identity.Nonce, identity.AssemblyMvid, CommandEmissions = emissions, InvocationRequests = invocationRequests,
-            PendingQueries = pending.Count, DeliveryUncertain = uncertain, CleanupAttempts = cleanupAttempts,
-            MutationReplayAllowed = false, ForceTermination = false, Utc = DateTime.UtcNow.ToString("o") };
+        private object Snapshot(string state) => new
+        {
+            State = state,
+            identity.ProcessId,
+            identity.ProcessStartedUtc,
+            identity.Nonce,
+            identity.AssemblyMvid,
+            CommandEmissions = emissions,
+            InvocationRequests = invocationRequests,
+            PendingQueries = pending.Count,
+            DeliveryUncertain = uncertain,
+            CleanupAttempts = cleanupAttempts,
+            MutationReplayAllowed = false,
+            ForceTermination = false,
+            Utc = DateTime.UtcNow.ToString("o")
+        };
 
         private void Write(string file, object value)
         { File.WriteAllText(Path.Combine(identity.Root, file), new JavaScriptSerializer().Serialize(value), new UTF8Encoding(false)); }

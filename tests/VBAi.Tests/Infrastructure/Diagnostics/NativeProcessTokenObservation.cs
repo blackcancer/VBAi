@@ -12,15 +12,20 @@ namespace VBAi.Tests.Integration
         [DllImport("kernel32.dll", SetLastError = true)] private static extern IntPtr OpenProcess(uint access, bool inherit, uint processId);
         [DllImport("kernel32.dll")] private static extern bool CloseHandle(IntPtr handle);
         [DllImport("advapi32.dll", SetLastError = true)] private static extern bool OpenProcessToken(IntPtr process, uint access, out IntPtr token);
-        [DllImport("advapi32.dll", SetLastError = true)] private static extern bool GetTokenInformation(IntPtr token, int informationClass,
+        [DllImport("advapi32.dll", SetLastError = true)]
+        private static extern bool GetTokenInformation(IntPtr token, int informationClass,
             IntPtr information, int size, out int returnedSize);
         [DllImport("advapi32.dll")]
         [return: MarshalAs(UnmanagedType.Bool)] private static extern bool IsTokenRestricted(IntPtr token);
 
         internal static IDictionary<string, object> Read(int processId)
         {
-            var result = new Dictionary<string, object> { ["ProcessId"] = processId, ["State"] = "UNVERIFIED",
-                ["Scope"] = "Read-only TOKEN_QUERY/process limited information. Public SID/session/integrity/restriction metadata only; no credentials, handles or token mutation." };
+            var result = new Dictionary<string, object>
+            {
+                ["ProcessId"] = processId,
+                ["State"] = "UNVERIFIED",
+                ["Scope"] = "Read-only TOKEN_QUERY/process limited information. Public SID/session/integrity/restriction metadata only; no credentials, handles or token mutation."
+            };
             IntPtr process = IntPtr.Zero, token = IntPtr.Zero;
             try
             {

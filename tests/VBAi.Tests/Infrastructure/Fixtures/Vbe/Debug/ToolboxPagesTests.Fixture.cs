@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using VBAi;
 
 namespace VBAi.Tests.Infrastructure
 {

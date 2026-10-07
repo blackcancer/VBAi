@@ -2,9 +2,9 @@
 
 [Documentation](README.md)
 
-This guide is for a first controlled session with VBAi. The standalone installer
-will come later; for the current preview, complete the
-[source-build setup](installation.md) first.
+This guide is for a first controlled session with VBAi. Complete
+[installation](installation.md) and verify the loaded add-in first. The 1.0.0
+setup is unsigned; its distribution and validation limits are documented there.
 
 ## Prepare your environment
 

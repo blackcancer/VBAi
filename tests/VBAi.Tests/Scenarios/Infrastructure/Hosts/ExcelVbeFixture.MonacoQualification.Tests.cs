@@ -1,7 +1,7 @@
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 using VBAi.Tests.Integration;
 
 namespace VBAi.Tests.Unit
@@ -116,11 +116,24 @@ namespace VBAi.Tests.Unit
             else Assert.ThrowsException<AssertFailedException>(() => ExcelVbeFixture.RequireMonacoCandidate(expected, reference, 123, status));
         }
 
-        private static ExcelVbeFixture.MonacoNativeObservation Valid() => new ExcelVbeFixture.MonacoNativeObservation {
-            VbeHandle = 100, VbeProcessId = 123, EditorHandle = 200, EditorProcessId = 123, EditorClass = "WindowsForms10.Window.fake",
-            Embedded = true, Visible = true, StatusProcessId = 123, StatusVisible = true, StatusAutomationId = "status", StatusCount = 1,
-            StatusText = ExcelVbeFixture.MonacoSynchronizedStatus, Tabs = new[] { Closed, Live }, TabProcessIds = new[] { 123, 123 },
-            SelectedTabs = new[] { Live }, RenderedText = "Option Explicit\n' VBAi owned live scope probe\nPublic Function LiveValue() As Long\nLiveValue = 42\nEnd Function"
+        private static ExcelVbeFixture.MonacoNativeObservation Valid() => new ExcelVbeFixture.MonacoNativeObservation
+        {
+            VbeHandle = 100,
+            VbeProcessId = 123,
+            EditorHandle = 200,
+            EditorProcessId = 123,
+            EditorClass = "WindowsForms10.Window.fake",
+            Embedded = true,
+            Visible = true,
+            StatusProcessId = 123,
+            StatusVisible = true,
+            StatusAutomationId = "status",
+            StatusCount = 1,
+            StatusText = ExcelVbeFixture.MonacoSynchronizedStatus,
+            Tabs = new[] { Closed, Live },
+            TabProcessIds = new[] { 123, 123 },
+            SelectedTabs = new[] { Live },
+            RenderedText = "Option Explicit\n' VBAi owned live scope probe\nPublic Function LiveValue() As Long\nLiveValue = 42\nEnd Function"
         };
     }
 }

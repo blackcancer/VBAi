@@ -1,8 +1,7 @@
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.IO;
 using System.Threading.Tasks;
-using VBAi;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 namespace VBAi.Tests.Unit.Updates
 {
     [TestClass, TestCategory("Unit"), DoNotParallelize]
@@ -15,7 +14,8 @@ namespace VBAi.Tests.Unit.Updates
             {
                 string payload = null; int attempts = 0;
                 var failure = new TimeoutException("owned uncertain installer");
-                var runtime = new WebViewRuntimePrerequisite {
+                var runtime = new WebViewRuntimePrerequisite
+                {
                     IsInstalled = () => false,
                     Download = path => { payload = path; File.WriteAllText(path, "owned bootstrapper"); return Task.CompletedTask; },
                     Verify = path => true,
@@ -36,7 +36,8 @@ namespace VBAi.Tests.Unit.Updates
             {
                 FileStream locked = null;
                 var failure = new InvalidDataException("owned verification refusal");
-                var runtime = new WebViewRuntimePrerequisite {
+                var runtime = new WebViewRuntimePrerequisite
+                {
                     IsInstalled = () => false,
                     Download = path => { locked = new FileStream(path, FileMode.CreateNew, FileAccess.ReadWrite, FileShare.None); return Task.CompletedTask; },
                     Verify = path => throw failure,
@@ -153,15 +154,15 @@ namespace VBAi.Tests.Unit.Updates
                 Assert.IsFalse(runtime.Verify(signed));
                 WebViewRuntimePrerequisite.VerifyTrust = path => true;
                 foreach (string subject in new[] { "Microsoft Corporation", "Owned Fixture Vendor" })
-                using (var rsa = System.Security.Cryptography.RSA.Create())
-                {
-                    rsa.KeySize = 2048;
-                    var request = new System.Security.Cryptography.X509Certificates.CertificateRequest("CN=" + subject, rsa, System.Security.Cryptography.HashAlgorithmName.SHA256, System.Security.Cryptography.RSASignaturePadding.Pkcs1);
-                    var certificate = request.CreateSelfSigned(DateTimeOffset.UtcNow.AddDays(-1), DateTimeOffset.UtcNow.AddDays(1));
-                    WebViewRuntimePrerequisite.LoadCertificate = path => certificate;
-                    Assert.AreEqual(subject == "Microsoft Corporation", runtime.Verify("owned-certificate.exe"));
-                    Assert.AreEqual(IntPtr.Zero, certificate.Handle);
-                }
+                    using (var rsa = System.Security.Cryptography.RSA.Create())
+                    {
+                        rsa.KeySize = 2048;
+                        var request = new System.Security.Cryptography.X509Certificates.CertificateRequest("CN=" + subject, rsa, System.Security.Cryptography.HashAlgorithmName.SHA256, System.Security.Cryptography.RSASignaturePadding.Pkcs1);
+                        var certificate = request.CreateSelfSigned(DateTimeOffset.UtcNow.AddDays(-1), DateTimeOffset.UtcNow.AddDays(1));
+                        WebViewRuntimePrerequisite.LoadCertificate = path => certificate;
+                        Assert.AreEqual(subject == "Microsoft Corporation", runtime.Verify("owned-certificate.exe"));
+                        Assert.AreEqual(IntPtr.Zero, certificate.Handle);
+                    }
             }
         }
 

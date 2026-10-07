@@ -36,7 +36,8 @@ namespace VBAi
             contextMonitor = new VbeContextMonitor(request => ReadHost(session, request));
             contextMonitor.Changed += () => contextDirty = true;
             contextMonitorTimer = new Timer(components) { Interval = 1500 };
-            contextMonitorTimer.Tick += (sender, args) => {
+            contextMonitorTimer.Tick += (sender, args) =>
+            {
                 if (busy || loadingSession || !Visible || IsDisposed) return;
                 try
                 {
@@ -95,15 +96,13 @@ namespace VBAi
             if (busy || loadingSession || loadingScope || runtimeDisposed || IsDisposed) return false;
             Response response = ReadHost(session, new Request { Command = "list_projects" });
             if (!response.Ok) return false;
-            var entries = json.DeserializeObject(json.Serialize(response.Data)) as object[];
-            if (entries == null) return false;
+            if (!(json.DeserializeObject(json.Serialize(response.Data)) is object[] entries)) return false;
             var selected = scopePicker.SelectedItem as MacroScope;
             var old = scopePicker.Items.Cast<MacroScope>().ToArray();
             var updated = new List<MacroScope>();
             foreach (var raw in entries)
             {
-                var fields = raw as IDictionary<string, object>;
-                if (fields == null) continue;
+                if (!(raw is IDictionary<string, object> fields)) continue;
                 string name = Convert.ToString(fields["Name"]), path = VbeProjectHostPath.FromFields(fields);
                 bool saved = !string.IsNullOrWhiteSpace(path) && Path.IsPathRooted(path);
                 string project = saved ? Path.GetFullPath(path) : name;
@@ -125,9 +124,13 @@ namespace VBAi
                     previous.Name = name;
                     previous.Label = name + " · " + (saved ? Path.GetFileName(path) : UiText.Get("unsaved document"));
                 }
-                var scope = previous ?? new MacroScope { Project = project, Name = name,
+                var scope = previous ?? new MacroScope
+                {
+                    Project = project,
+                    Name = name,
                     Key = saved ? project.ToUpperInvariant() : "temporary:" + Guid.NewGuid().ToString("N"),
-                    Label = name + " · " + (saved ? Path.GetFileName(path) : UiText.Get("unsaved document")) };
+                    Label = name + " · " + (saved ? Path.GetFileName(path) : UiText.Get("unsaved document"))
+                };
                 if (previous == null && !saved) scope.Identity = CaptureScopeIdentity(session, project);
                 updated.Add(scope);
             }

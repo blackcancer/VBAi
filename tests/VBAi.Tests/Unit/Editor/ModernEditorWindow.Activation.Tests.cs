@@ -1,12 +1,11 @@
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Diagnostics;
 using System.Linq;
 using System.Threading;
-using System.Windows.Forms;
 using System.Threading.Tasks;
 using System.Web.Script.Serialization;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
-using VBAi;
+using System.Windows.Forms;
 using VBAi.Tests.Infrastructure;
 
 namespace VBAi.Tests.Unit
@@ -77,22 +76,22 @@ namespace VBAi.Tests.Unit
         public void ActivationChangedWhileRendererCaptureIsPendingNeverOpensTheStaleTarget()
         {
             foreach (string change in new[] { "component", "designer", "protected", "break", "project", "window" })
-            using (var f = new ActivationScope())
-            {
-                var second = f.Another(); var capture = new TaskCompletionSource<string>();
-                int reads = 0; f.Native.Original.CodeModule.BeforeRead = () => reads++;
-                f.Editor.ScriptExecution = (method, values) => method == "snapshots" ? capture.Task : Task.FromResult("1");
-                var follow = f.Editor.FollowNativeActivation(); Application.DoEvents();
-                Assert.IsFalse(follow.IsCompleted, change);
-                if (change == "component") f.Activate(second);
-                if (change == "designer") f.Native.Vbe.ActiveWindow = new EditorVbeContract.Window { Type = 1 };
-                if (change == "protected") f.Native.Project.Protection = 1;
-                if (change == "break") f.Native.Project.Mode = 1;
-                if (change == "project") f.Native.Vbe.ActiveVBProject = new object();
-                if (change == "window") f.Native.Vbe.ActiveWindow = new EditorVbeContract.Window();
-                capture.SetResult("null"); ModernEditorDebugFixture.Wait(follow);
-                Assert.IsNull(f.Editor.Current, change); Assert.AreEqual(0, reads, change);
-            }
+                using (var f = new ActivationScope())
+                {
+                    var second = f.Another(); var capture = new TaskCompletionSource<string>();
+                    int reads = 0; f.Native.Original.CodeModule.BeforeRead = () => reads++;
+                    f.Editor.ScriptExecution = (method, values) => method == "snapshots" ? capture.Task : Task.FromResult("1");
+                    var follow = f.Editor.FollowNativeActivation(); Application.DoEvents();
+                    Assert.IsFalse(follow.IsCompleted, change);
+                    if (change == "component") f.Activate(second);
+                    if (change == "designer") f.Native.Vbe.ActiveWindow = new EditorVbeContract.Window { Type = 1 };
+                    if (change == "protected") f.Native.Project.Protection = 1;
+                    if (change == "break") f.Native.Project.Mode = 1;
+                    if (change == "project") f.Native.Vbe.ActiveVBProject = new object();
+                    if (change == "window") f.Native.Vbe.ActiveWindow = new EditorVbeContract.Window();
+                    capture.SetResult("null"); ModernEditorDebugFixture.Wait(follow);
+                    Assert.IsNull(f.Editor.Current, change); Assert.AreEqual(0, reads, change);
+                }
         }
 
         [STATestMethod]
@@ -118,27 +117,27 @@ namespace VBAi.Tests.Unit
         public void PassiveActivationRejectsNonCodeModeProtectionAndForeignIdentityBeforeReadingSource()
         {
             foreach (string state in new[] { "designer", "browser", "tool", "break", "running", "protected", "foreign-project", "foreign-window", "component-type", "removed", "not-ready", "busy", "closing", "hidden", "debug-gate" })
-            using (var f = new ActivationScope())
-            {
-                int reads = 0; f.Native.Original.CodeModule.BeforeRead = () => reads++;
-                if (state == "designer") f.Native.Original.CodeModule.CodePane.Window.Type = 1;
-                if (state == "browser") f.Native.Original.CodeModule.CodePane.Window.Type = 2;
-                if (state == "tool") f.Native.Original.CodeModule.CodePane.Window.Type = 6;
-                if (state == "break") f.Native.Project.Mode = 1;
-                if (state == "running") f.Native.Project.Mode = 0;
-                if (state == "protected") f.Native.Project.Protection = 1;
-                if (state == "foreign-project") f.Native.Vbe.ActiveVBProject = new object();
-                if (state == "foreign-window") f.Native.Vbe.ActiveWindow = new EditorVbeContract.Window();
-                if (state == "component-type") f.Native.Original.Type = 11;
-                if (state == "removed") f.Native.Project.VBComponents.Items.Clear();
-                if (state == "not-ready") LlmBoundaryScope.Set(f.Editor, "<Ready>k__BackingField", false);
-                if (state == "busy") LlmBoundaryScope.Set(f.Editor, "busy", true);
-                if (state == "closing") LlmBoundaryScope.Set(f.Editor, "closing", true);
-                if (state == "hidden") f.Editor.Hide();
-                var gate = UiInvoke.Field<SemaphoreSlim>(f.Editor, "debugCommands"); if (state == "debug-gate") gate.Wait();
-                try { f.Follow(); Assert.IsNull(f.Editor.Current, state); Assert.AreEqual(0, reads, state); }
-                finally { if (state == "debug-gate") gate.Release(); LlmBoundaryScope.Set(f.Editor, "closing", false); }
-            }
+                using (var f = new ActivationScope())
+                {
+                    int reads = 0; f.Native.Original.CodeModule.BeforeRead = () => reads++;
+                    if (state == "designer") f.Native.Original.CodeModule.CodePane.Window.Type = 1;
+                    if (state == "browser") f.Native.Original.CodeModule.CodePane.Window.Type = 2;
+                    if (state == "tool") f.Native.Original.CodeModule.CodePane.Window.Type = 6;
+                    if (state == "break") f.Native.Project.Mode = 1;
+                    if (state == "running") f.Native.Project.Mode = 0;
+                    if (state == "protected") f.Native.Project.Protection = 1;
+                    if (state == "foreign-project") f.Native.Vbe.ActiveVBProject = new object();
+                    if (state == "foreign-window") f.Native.Vbe.ActiveWindow = new EditorVbeContract.Window();
+                    if (state == "component-type") f.Native.Original.Type = 11;
+                    if (state == "removed") f.Native.Project.VBComponents.Items.Clear();
+                    if (state == "not-ready") LlmBoundaryScope.Set(f.Editor, "<Ready>k__BackingField", false);
+                    if (state == "busy") LlmBoundaryScope.Set(f.Editor, "busy", true);
+                    if (state == "closing") LlmBoundaryScope.Set(f.Editor, "closing", true);
+                    if (state == "hidden") f.Editor.Hide();
+                    var gate = UiInvoke.Field<SemaphoreSlim>(f.Editor, "debugCommands"); if (state == "debug-gate") gate.Wait();
+                    try { f.Follow(); Assert.IsNull(f.Editor.Current, state); Assert.AreEqual(0, reads, state); }
+                    finally { if (state == "debug-gate") gate.Release(); LlmBoundaryScope.Set(f.Editor, "closing", false); }
+                }
         }
 
         /// <summary>Reproduces an empty ready Monaco shell after a later programmatic native code activation.</summary>

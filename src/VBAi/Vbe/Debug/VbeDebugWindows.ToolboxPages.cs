@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.Globalization;
-using System.Linq;
 using System.Runtime.InteropServices;
 
 namespace VBAi
@@ -90,9 +89,8 @@ namespace VBAi
         /// <returns>Wrapper MSAA qui possède sa référence COM.</returns>
         private static IToolboxAccessibleNode OpenToolboxAccessibleNode(IntPtr handle)
         {
-            object value;
             Guid iid = IidAccessible;
-            int hr = AccessibleObjectFromWindow(handle, ObjidClient, ref iid, out value);
+            int hr = AccessibleObjectFromWindow(handle, ObjidClient, ref iid, out object value);
             if (hr != 0 || !(value is Accessibility.IAccessible node))
             {
                 if (value != null && Marshal.IsComObject(value)) Marshal.ReleaseComObject(value);
@@ -107,9 +105,13 @@ namespace VBAi
         /// <returns>Pages MSAA observées ou état indisponible si leur fournisseur est absent ou ambigu.</returns>
         private static NavigationSurface ReadNativeToolboxPages(IntPtr window, uint owner)
         {
-            var result = new NavigationSurface { Provider = "MSAA", Caption = WindowText(window),
+            var result = new NavigationSurface
+            {
+                Provider = "MSAA",
+                Caption = WindowText(window),
                 Coverage = "Observed Toolbox pages only. Buttons are not exposed by this fallback; page actions are not qualified.",
-                ButtonsExposed = false };
+                ButtonsExposed = false
+            };
             try
             {
                 GetWindowThreadProcessId(window, out uint actual);
@@ -117,7 +119,8 @@ namespace VBAi
                     !(ClassName(window) == "VbaWindow" || ClassName(window).StartsWith("F3 MinFrame ", StringComparison.Ordinal)) ||
                     (result.Caption != "Toolbox" && result.Caption != "Boîte à outils")) throw new InvalidOperationException();
                 var servers = new HashSet<IntPtr>();
-                EnumChildWindows(window, (h, p) => {
+                EnumChildWindows(window, (h, p) =>
+                {
                     GetWindowThreadProcessId(h, out uint pid);
                     if (pid == owner && IsWindowVisible(h) && ClassName(h).StartsWith("F3 Server ", StringComparison.Ordinal)) servers.Add(h);
                     return true;
@@ -153,9 +156,14 @@ namespace VBAi
         /// <returns>Instantané des pages exposées, sans action de sélection.</returns>
         internal static NavigationSurface ReadToolboxPages(IntPtr window, IntPtr server, string caption, IToolboxAccessibleNode root)
         {
-            var state = new NavigationSurface { Caption = caption, Provider = "MSAA", ButtonsExposed = false,
+            var state = new NavigationSurface
+            {
+                Caption = caption,
+                Provider = "MSAA",
+                ButtonsExposed = false,
                 Coverage = "Observed Toolbox pages only. Buttons are not exposed by this fallback; page actions are not qualified.",
-                Identity = "msaa:" + window.ToInt64().ToString(CultureInfo.InvariantCulture) + ":" + server.ToInt64().ToString(CultureInfo.InvariantCulture) };
+                Identity = "msaa:" + window.ToInt64().ToString(CultureInfo.InvariantCulture) + ":" + server.ToInt64().ToString(CultureInfo.InvariantCulture)
+            };
             if (window == IntPtr.Zero || server == IntPtr.Zero || root == null || root.Role(0) != 20)
                 throw new InvalidOperationException("The exact Toolbox grouping provider is required.");
             var pages = new List<NavigationNode>();
@@ -195,10 +203,18 @@ namespace VBAi
                     string name = node.Name(child);
                     int flags = node.State(child);
                     if (string.IsNullOrEmpty(name) || name.Length > 256 || flags < 0) throw new InvalidOperationException("The Toolbox page state is unreadable.");
-                    pages.Add(new NavigationNode { Token = identity + ":" + path + "." + child.ToString(CultureInfo.InvariantCulture),
-                        ParentToken = identity + ":" + path, Name = name, Kind = "MSAA.PageTab", Enabled = (flags & 1) == 0,
-                        Selected = null, ObservedSelected = (flags & 2) != 0, MSAAState = flags,
-                        ActionUnavailableReason = "Toolbox page selection is observed only; changing pages through MSAA is not qualified." });
+                    pages.Add(new NavigationNode
+                    {
+                        Token = identity + ":" + path + "." + child.ToString(CultureInfo.InvariantCulture),
+                        ParentToken = identity + ":" + path,
+                        Name = name,
+                        Kind = "MSAA.PageTab",
+                        Enabled = (flags & 1) == 0,
+                        Selected = null,
+                        ObservedSelected = (flags & 2) != 0,
+                        MSAAState = flags,
+                        ActionUnavailableReason = "Toolbox page selection is observed only; changing pages through MSAA is not qualified."
+                    });
                 }
                 return;
             }

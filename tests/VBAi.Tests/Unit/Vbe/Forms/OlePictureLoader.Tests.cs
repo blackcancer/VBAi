@@ -1,5 +1,6 @@
 namespace VBAi.Tests.Unit
 {
+    using Microsoft.VisualStudio.TestTools.UnitTesting;
     using System;
     using System.Drawing;
     using System.Drawing.Imaging;
@@ -8,7 +9,6 @@ namespace VBAi.Tests.Unit
     using System.Runtime.InteropServices.ComTypes;
     using System.Threading;
     using VBAi;
-    using Microsoft.VisualStudio.TestTools.UnitTesting;
 
     [TestClass]
     [TestCategory("Unit")]

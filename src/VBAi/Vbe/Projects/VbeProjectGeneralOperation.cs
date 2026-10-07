@@ -250,35 +250,40 @@ namespace VBAi
             var result = new Result(); var completion = new TaskCompletionSource<Result>(TaskCreationOptions.RunContinuationsAsynchronously);
             long started = scheduling.ElapsedMilliseconds; IDisposable polling = null;
             Snapshot before = null; bool tickActive = false, commandEntered = false, commandReturned = false, closeClaimed = false, terminal = false;
-            Action finish = () => {
+            void finish()
+            {
                 if (terminal) return; terminal = true; result.Terminal = true;
                 try { polling?.Dispose(); }
                 catch (Exception error) { result.Error = (result.Error == null ? "" : result.Error + " | ") + "Scheduler cleanup: " + error.Message; result.Uncertain |= commandEntered; }
                 try { scheduling.RequireOwner(); native.RequireOwner(); durableClaim(result); }
                 catch (Exception error) { result.Error = (result.Error == null ? "" : result.Error + " | ") + "Terminal receipt/owner: " + error.Message; result.Uncertain |= commandEntered; }
                 finally { completion.TrySetResult(result); }
-            };
-            Action<Exception> fail = error => {
+            }
+            void fail(Exception error)
+            {
                 if (terminal) return;
                 result.Error = error.ToString();
                 result.Uncertain = result.FieldAttempts != 0 || result.OkAttempts != 0 || (commandEntered && (!result.DialogClosed || !commandReturned));
                 // A claimed field/OK or unsettled Execute is retained. No Cancel/second close fallback.
                 finish();
-            };
-            Action requireDeadline = () => {
+            }
+            void requireDeadline()
+            {
                 scheduling.RequireOwner();
                 long elapsed = scheduling.ElapsedMilliseconds - started;
                 if (elapsed < 0 || elapsed > 20000) throw new InvalidOperationException("Original General operation deadline expired; no replay.");
-            };
-            Action cancelUnchanged = () => {
+            }
+            void cancelUnchanged()
+            {
                 if (result.FieldAttempts != 0 || result.OkAttempts != 0 || result.MutationInvoked || result.CancelAttempts != 0 || closeClaimed)
                     throw new InvalidOperationException("Only an unchanged original General inspection may be cancelled once.");
                 authorizeLiveTarget(); native.RequireSame(before, true); authorizeCachedPolicy(); native.RequireOwner(); requireDeadline();
                 result.CancelAttempts = 1; durableClaim(result); native.RequireSame(before, true); authorizeCachedPolicy(); native.RequireOwner(); requireDeadline();
                 closeClaimed = true;
                 native.Close(before, 2, () => { authorizeCachedPolicy(); native.RequireOwner(); requireDeadline(); });
-            };
-            Action tick = () => {
+            }
+            void tick()
+            {
                 if (terminal || tickActive) return; tickActive = true;
                 try
                 {
@@ -315,7 +320,7 @@ namespace VBAi
                         }
                     }
                     requireDeadline(); result.FieldAttempts = 1; durableClaim(result); native.RequireSame(before, true); authorizeCachedPolicy(); native.RequireOwner();
-                    Action entry = () => { authorizeCachedPolicy(); native.RequireOwner(); requireDeadline(); result.MutationInvoked = true; };
+                    void entry() { authorizeCachedPolicy(); native.RequireOwner(); requireDeadline(); result.MutationInvoked = true; }
                     if (contextValue.HasValue) native.WriteContext(before, contextValue.Value, entry);
                     else native.WriteHelpFile(before, helpFileValue, entry);
                     var after = native.Capture(exactProjectName);
@@ -329,24 +334,26 @@ namespace VBAi
                 }
                 catch (Exception error) { fail(error); }
                 finally { tickActive = false; }
-            };
+            }
             try
             {
                 polling = scheduling.Poll(tick);
-                scheduling.Post(() => {
-                if (terminal) return;
-                try
+                scheduling.Post(() =>
                 {
-                    scheduling.RequireOwner(); native.RequireOwner(); authorizeLiveTarget(); native.Prepare(); authorizeCachedPolicy(); native.RequireOwner();
-                    result.OpenAttempts = 1; durableClaim(result); authorizeLiveTarget(); native.Prepare(); authorizeCachedPolicy(); native.RequireOwner();
-                    openExactCommand(() => {
-                        native.Prepare(); authorizeCachedPolicy(); native.RequireOwner();
-                        result.CommandEntered = commandEntered = true; // Only immediately before original Execute, after all COM reads.
-                    });
-                    result.OriginalExecuteReturned = commandReturned = true;
-                    if (result.DialogClosed) finish();
-                }
-                catch (Exception error) { fail(error); }
+                    if (terminal) return;
+                    try
+                    {
+                        scheduling.RequireOwner(); native.RequireOwner(); authorizeLiveTarget(); native.Prepare(); authorizeCachedPolicy(); native.RequireOwner();
+                        result.OpenAttempts = 1; durableClaim(result); authorizeLiveTarget(); native.Prepare(); authorizeCachedPolicy(); native.RequireOwner();
+                        openExactCommand(() =>
+                        {
+                            native.Prepare(); authorizeCachedPolicy(); native.RequireOwner();
+                            result.CommandEntered = commandEntered = true; // Only immediately before original Execute, after all COM reads.
+                        });
+                        result.OriginalExecuteReturned = commandReturned = true;
+                        if (result.DialogClosed) finish();
+                    }
+                    catch (Exception error) { fail(error); }
                 });
             }
             catch (Exception error) { fail(error); }

@@ -1,9 +1,8 @@
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Collections.Generic;
 using System.Reflection;
 using System.Runtime.InteropServices;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
-using VBAi;
 
 namespace VBAi.Tests.Unit
 {
@@ -52,7 +51,10 @@ namespace VBAi.Tests.Unit
         }
 
         [DataTestMethod]
-        [DataRow(0)][DataRow(321)][DataRow(int.MinValue)][DataRow(int.MaxValue)]
+        [DataRow(0)]
+        [DataRow(321)]
+        [DataRow(int.MinValue)]
+        [DataRow(int.MaxValue)]
         public void TypedInt32SetterReceivesExactValueAfterPreparationAndFinalGuard(int value)
         {
             var calls = new Calls(); var dispatch = new VbeProjectComponents.AccessHelpContextDispatch(calls); int guards = 0;
@@ -65,7 +67,11 @@ namespace VBAi.Tests.Unit
         }
 
         [DataTestMethod]
-        [DataRow("cast")][DataRow("preparation")][DataRow("initialOwner")][DataRow("finalOwner")][DataRow("authorization")]
+        [DataRow("cast")]
+        [DataRow("preparation")]
+        [DataRow("initialOwner")]
+        [DataRow("finalOwner")]
+        [DataRow("authorization")]
         public void ReadonlyPreparationAndFinalRefusalsNeverSetOrReplay(string refusal)
         {
             var calls = new Calls();
@@ -95,7 +101,8 @@ namespace VBAi.Tests.Unit
         }
 
         [DataTestMethod]
-        [DataRow(false)][DataRow(true)]
+        [DataRow(false)]
+        [DataRow(true)]
         public void FailedTypedSetterKeepsOriginalHresultEvenAfterPartialMutationOrCleanupFailure(bool partialMutation)
         {
             const int hr = unchecked((int)0x80020009);
@@ -135,12 +142,18 @@ namespace VBAi.Tests.Unit
     public sealed class AccessHelpContextProjectTests
     {
         [DataTestMethod]
-        [DataRow("MSACCESS", true)][DataRow("msaccess", true)]
-        [DataRow("MSPUB", true)][DataRow("mspub", true)]
-        [DataRow("EXCEL", false)][DataRow("WINWORD", false)]
-        [DataRow("POWERPNT", false)][DataRow("OUTLOOK", false)]
-        [DataRow("SLDWORKS", false)][DataRow("MSPUB.exe", false)]
-        [DataRow("", false)][DataRow(null, false)]
+        [DataRow("MSACCESS", true)]
+        [DataRow("msaccess", true)]
+        [DataRow("MSPUB", true)]
+        [DataRow("mspub", true)]
+        [DataRow("EXCEL", false)]
+        [DataRow("WINWORD", false)]
+        [DataRow("POWERPNT", false)]
+        [DataRow("OUTLOOK", false)]
+        [DataRow("SLDWORKS", false)]
+        [DataRow("MSPUB.exe", false)]
+        [DataRow("", false)]
+        [DataRow(null, false)]
         public void OnlyAccessAndPublisherNativeProjectsUseTheTypedMetadataRoute(string processName, bool expected)
         {
             Assert.AreEqual(expected, VbeProjectComponents.IsAccessHelpContextHost(processName));
@@ -192,11 +205,18 @@ namespace VBAi.Tests.Unit
         }
 
         [DataTestMethod]
-        [DataRow("revision")][DataRow("identityWithSameVersion")][DataRow("mode")][DataRow("protection")][DataRow("window")][DataRow("host")][DataRow("nativeTarget")]
+        [DataRow("revision")]
+        [DataRow("identityWithSameVersion")]
+        [DataRow("mode")]
+        [DataRow("protection")]
+        [DataRow("window")]
+        [DataRow("host")]
+        [DataRow("nativeTarget")]
         public void ChangedContextAfterReadonlyPreparationRefusesBeforeNativeWrite(string changed)
         {
             var fixture = new Fixture(); var request = fixture.Request();
-            fixture.Calls.OnPrepare = () => {
+            fixture.Calls.OnPrepare = () =>
+            {
                 if (changed == "revision") fixture.Project.Description = "Changed";
                 if (changed == "identityWithSameVersion") fixture.Vbe.VBProjects[0] = new Project { Name = "P" };
                 if (changed == "mode") fixture.Project.Mode = 1;
@@ -231,7 +251,8 @@ namespace VBAi.Tests.Unit
         public void RevisionChangedByHostScopeReadIsRecheckedBeforeCachedFinalAuthorization()
         {
             var fixture = new Fixture(); var request = fixture.Request(); var stages = new List<bool>();
-            request.RevalidateProjectPropertyAuthorization = validateScope => {
+            request.RevalidateProjectPropertyAuthorization = validateScope =>
+            {
                 stages.Add(validateScope);
                 if (validateScope) fixture.Project.Description = "Changed while reading host scope";
             };
@@ -243,7 +264,8 @@ namespace VBAi.Tests.Unit
         public void SameVersionReplacementDuringLastRevisionReadIsRefusedByFinalIdentity()
         {
             var fixture = new Fixture(); var request = fixture.Request(); int reads = 0;
-            fixture.Calls.OnPrepare = () => fixture.Project.OnReadContext = () => {
+            fixture.Calls.OnPrepare = () => fixture.Project.OnReadContext = () =>
+            {
                 if (++reads == 2) fixture.Vbe.VBProjects[0] = new Project { Name = "P" };
             };
             Assert.ThrowsException<InvalidOperationException>(() => fixture.Service.SetProjectProperty(request));
@@ -259,7 +281,8 @@ namespace VBAi.Tests.Unit
         }
 
         [DataTestMethod]
-        [DataRow(false)][DataRow(true)]
+        [DataRow(false)]
+        [DataRow(true)]
         public void ManagedAndOtherHostProjectsKeepExistingDescriptorPath(bool otherHost)
         {
             var fixture = new Fixture(); var request = fixture.Request();
@@ -283,7 +306,9 @@ namespace VBAi.Tests.Unit
         }
 
         [DataTestMethod]
-        [DataRow("321")][DataRow(321L)][DataRow(321.0)]
+        [DataRow("321")]
+        [DataRow(321L)]
+        [DataRow(321.0)]
         public void ExistingScalarConversionFeedsTheTypedInt32Setter(object value)
         {
             var fixture = new Fixture(); var request = fixture.Request(); request.Value = value;
@@ -299,7 +324,8 @@ namespace VBAi.Tests.Unit
             var original = new COMException("Failed declared setter after mutation", unchecked((int)0x80020009));
             fixture.Calls.InvokeError = original;
             int postMutationReads = 0;
-            fixture.Calls.OnInvoke = () => {
+            fixture.Calls.OnInvoke = () =>
+            {
                 fixture.Project.HelpContextID = fixture.Calls.Value;
                 fixture.Project.OnReadContext = () => postMutationReads++;
             };

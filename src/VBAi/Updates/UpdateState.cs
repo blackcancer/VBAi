@@ -96,8 +96,14 @@ namespace VBAi
         {
             // Keep release notes available even if a later download fails; never cache an access token or signed CDN URL.
             if (release?.body?.Length > 64000)
-                release = new UpdateRelease { tag_name = release.tag_name, body = release.body.Substring(0, 64000),
-                    draft = release.draft, prerelease = release.prerelease, assets = release.assets };
+                release = new UpdateRelease
+                {
+                    tag_name = release.tag_name,
+                    body = release.body.Substring(0, 64000),
+                    draft = release.draft,
+                    prerelease = release.prerelease,
+                    assets = release.assets
+                };
             UpdatePaths.WriteAtomic(Path.Combine(UpdatePaths.Root, "latest-release.json"), new JavaScriptSerializer().Serialize(release));
         }
 

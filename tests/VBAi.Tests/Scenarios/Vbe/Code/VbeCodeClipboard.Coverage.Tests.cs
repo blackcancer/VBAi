@@ -1,6 +1,5 @@
-using System;
-using VBAi;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+using System;
 
 namespace VBAi.Tests.Unit
 {
@@ -17,8 +16,19 @@ namespace VBAi.Tests.Unit
             public CodeClipboardSnapshot Write(string text) { return State; }
         }
         private static Request Request()
-        { return new Request { Project = "P", Module = "M", ExpectedSha256 = VbeCodeClipboard.Hash("abc\r\ndef"),
-            StartLine = 1, EndLine = 1, StartColumn = 1, EndColumn = 2, ExpectedClipboardVersion = "revision" }; }
+        {
+            return new Request
+            {
+                Project = "P",
+                Module = "M",
+                ExpectedSha256 = VbeCodeClipboard.Hash("abc\r\ndef"),
+                StartLine = 1,
+                EndLine = 1,
+                StartColumn = 1,
+                EndColumn = 2,
+                ExpectedClipboardVersion = "revision"
+            };
+        }
 
         [TestMethod]
         public void ClipboardEditingValidatesCommandsReadsVersionsAndNonemptyRanges()
@@ -44,29 +54,30 @@ namespace VBAi.Tests.Unit
         public void ClipboardEditsPreserveFailureDetailsAndIndependentlyVerifyNativeSource()
         {
             foreach (string action in new[] { "cut", "paste" })
-            foreach (int outcome in new[] { 0, 1, 2, 3 })
-            {
-                int reads = 0; string requested = null;
-                var tool = new VbeCodeClipboard(r => {
-                    if (r.Command == "debug_state") return Response.Success(new ModeSnapshot());
-                    if (r.Command == "replace_lines") { requested = r.Text; return outcome == 0 ? Response.Failure("write failure") : Response.Success(null); }
-                    reads++;
-                    if (reads == 1) return Response.Success(new Source());
-                    return outcome == 1 ? Response.Failure("readback failure") : Response.Success(new Source { Code = outcome == 2 ? requested : "native normalization" });
-                }, new Clipboard());
-                if (outcome == 0)
+                foreach (int outcome in new[] { 0, 1, 2, 3 })
                 {
-                    string error = Assert.ThrowsException<InvalidOperationException>(() => tool.Edit(Request(), action)).Message;
-                    StringAssert.Contains(error, "write failure");
-                    Assert.AreEqual(action == "cut", error.Contains("copied to the clipboard"));
+                    int reads = 0; string requested = null;
+                    var tool = new VbeCodeClipboard(r =>
+                    {
+                        if (r.Command == "debug_state") return Response.Success(new ModeSnapshot());
+                        if (r.Command == "replace_lines") { requested = r.Text; return outcome == 0 ? Response.Failure("write failure") : Response.Success(null); }
+                        reads++;
+                        if (reads == 1) return Response.Success(new Source());
+                        return outcome == 1 ? Response.Failure("readback failure") : Response.Success(new Source { Code = outcome == 2 ? requested : "native normalization" });
+                    }, new Clipboard());
+                    if (outcome == 0)
+                    {
+                        string error = Assert.ThrowsException<InvalidOperationException>(() => tool.Edit(Request(), action)).Message;
+                        StringAssert.Contains(error, "write failure");
+                        Assert.AreEqual(action == "cut", error.Contains("copied to the clipboard"));
+                    }
+                    else
+                    {
+                        dynamic result = tool.Edit(Request(), action);
+                        Assert.IsTrue((bool)result.Applied);
+                        Assert.AreEqual(outcome == 2, (bool)result.Verified);
+                    }
                 }
-                else
-                {
-                    dynamic result = tool.Edit(Request(), action);
-                    Assert.IsTrue((bool)result.Applied);
-                    Assert.AreEqual(outcome == 2, (bool)result.Verified);
-                }
-            }
         }
 
         [TestMethod]

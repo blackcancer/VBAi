@@ -1,8 +1,7 @@
-using System.Linq;
-using System.ComponentModel;
-using VBAi;
-using VBAi.Tests.Infrastructure;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+using System.ComponentModel;
+using System.Linq;
+using VBAi.Tests.Infrastructure;
 namespace VBAi.Tests.Unit
 {
     [TestClass, TestCategory("Unit")]
@@ -90,7 +89,8 @@ namespace VBAi.Tests.Unit
                 var entered = new System.Threading.Tasks.TaskCompletionSource<bool>();
                 var release = new System.Threading.Tasks.TaskCompletionSource<string>();
                 var renderer = f.Window.ScriptExecution;
-                f.Window.ScriptExecution = (method, values) => {
+                f.Window.ScriptExecution = (method, values) =>
+                {
                     if (method == "apply" && (string)values[0] == updatingDocument.Id)
                     { entered.TrySetResult(true); return release.Task; }
                     return renderer(method, values);
@@ -170,11 +170,13 @@ namespace VBAi.Tests.Unit
                     int initialCount = f.Window.Documents.Count();
                     Assert.AreSame(f.Document, f.Window.Current);
                     var calls = new System.Collections.Concurrent.ConcurrentQueue<System.Tuple<string, int>>();
-                    f.Override = (method, values) => {
+                    f.Override = (method, values) =>
+                    {
                         calls.Enqueue(System.Tuple.Create(method, System.Threading.Thread.CurrentThread.ManagedThreadId));
                         return null;
                     };
-                    System.Action<System.Func<bool>> pump = complete => {
+                    System.Action<System.Func<bool>> pump = complete =>
+                    {
                         var timeout = System.Diagnostics.Stopwatch.StartNew();
                         while (!complete() && timeout.ElapsedMilliseconds < 10000)
                         { System.Windows.Forms.Application.DoEvents(); System.Threading.Thread.Sleep(1); }
@@ -216,7 +218,8 @@ namespace VBAi.Tests.Unit
                     f.Document.Observe();
                     Assert.IsTrue(f.Document.Dirty && f.Document.Conflict);
                     var calls = new System.Collections.Concurrent.ConcurrentQueue<System.Tuple<string, int>>();
-                    f.Override = (method, values) => {
+                    f.Override = (method, values) =>
+                    {
                         calls.Enqueue(System.Tuple.Create(method, System.Threading.Thread.CurrentThread.ManagedThreadId));
                         return null;
                     };
@@ -224,12 +227,14 @@ namespace VBAi.Tests.Unit
                     var ledger = new System.Collections.Concurrent.ConcurrentQueue<string>();
                     var elapsed = System.Diagnostics.Stopwatch.StartNew();
                     int invocationSequence = 0;
-                    System.Action<int, string, string> trace = (invocation, method, stage) => {
+                    System.Action<int, string, string> trace = (invocation, method, stage) =>
+                    {
                         if (method == "snapshots" || method == "apply" || method == "hideDiff")
                             ledger.Enqueue(elapsed.ElapsedMilliseconds + "ms #" + invocation + " " + method + " " + stage +
                                 " thread=" + System.Threading.Thread.CurrentThread.ManagedThreadId);
                     };
-                    f.Window.ScriptExecution = async (method, values) => {
+                    f.Window.ScriptExecution = async (method, values) =>
+                    {
                         int invocation = System.Threading.Interlocked.Increment(ref invocationSequence);
                         trace(invocation, method, "enter");
                         try
@@ -242,7 +247,8 @@ namespace VBAi.Tests.Unit
                         }
                         catch (System.Exception error) { trace(invocation, method, "error=" + error); throw; }
                     };
-                    System.Action<System.Func<bool>> pump = complete => {
+                    System.Action<System.Func<bool>> pump = complete =>
+                    {
                         var timeout = System.Diagnostics.Stopwatch.StartNew();
                         while (!complete() && timeout.ElapsedMilliseconds < 5000)
                         { System.Windows.Forms.Application.DoEvents(); System.Threading.Thread.Sleep(1); }
@@ -301,33 +307,33 @@ namespace VBAi.Tests.Unit
         public void ConflictChoicesKeepCaptionsAndFitScaledToolbar()
         {
             foreach (float scale in new[] { 1f, 1.5f, 2f })
-            using (var module = new EditorFixture())
-            using (var window = new ModernEditorWindow())
-            using (var font = new System.Drawing.Font("Segoe UI", 12f * scale))
-            {
-                window.Drafts = new EditorDraftStore(module.Root);
-                var doc = ModernEditorDebugFixture.Wait(window.OpenModule(module));
-                doc.Edit("edited source"); module.Code = "changed native source"; doc.Observe();
-                typeof(ModernEditorWindow).GetField("initializing", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic).SetValue(window, true);
-                window.Scale(new System.Drawing.SizeF(scale, scale)); window.Font = font;
-                window.StartPosition = System.Windows.Forms.FormStartPosition.Manual;
-                window.Location = new System.Drawing.Point(-10000, -10000);
-                window.Show();
-                var resolve = UiInvoke.Field<ThemedButton>(window, "resolve"); var reload = UiInvoke.Field<ThemedButton>(window, "reload");
-                foreach (var caption in new[] { "Utiliser la version modifiée", new string('W', 80) })
+                using (var module = new EditorFixture())
+                using (var window = new ModernEditorWindow())
+                using (var font = new System.Drawing.Font("Segoe UI", 12f * scale))
                 {
-                    resolve.Text = caption; reload.Text = "Recharger la version VBA · " + caption;
-                    UiInvoke.Call(typeof(ModernEditorWindow), "UpdateStatus", window); window.PerformLayout();
-                    var toolbar = UiInvoke.Field<System.Windows.Forms.FlowLayoutPanel>(window, "toolbar");
-                    foreach (var button in new[] { resolve, reload })
+                    window.Drafts = new EditorDraftStore(module.Root);
+                    var doc = ModernEditorDebugFixture.Wait(window.OpenModule(module));
+                    doc.Edit("edited source"); module.Code = "changed native source"; doc.Observe();
+                    typeof(ModernEditorWindow).GetField("initializing", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic).SetValue(window, true);
+                    window.Scale(new System.Drawing.SizeF(scale, scale)); window.Font = font;
+                    window.StartPosition = System.Windows.Forms.FormStartPosition.Manual;
+                    window.Location = new System.Drawing.Point(-10000, -10000);
+                    window.Show();
+                    var resolve = UiInvoke.Field<ThemedButton>(window, "resolve"); var reload = UiInvoke.Field<ThemedButton>(window, "reload");
+                    foreach (var caption in new[] { "Utiliser la version modifiée", new string('W', 80) })
                     {
-                        Assert.IsFalse(button.IconOnly); Assert.IsTrue(button.AutoSize); Assert.IsTrue(button.Visible);
-                        Assert.AreEqual(button.Text, button.AccessibilityObject.Name);
-                        Assert.IsTrue(button.Width >= button.GetPreferredSize(System.Drawing.Size.Empty).Width);
-                        Assert.IsTrue(toolbar.ClientSize.Height >= button.Height + button.Margin.Vertical + toolbar.Padding.Vertical);
+                        resolve.Text = caption; reload.Text = "Recharger la version VBA · " + caption;
+                        UiInvoke.Call(typeof(ModernEditorWindow), "UpdateStatus", window); window.PerformLayout();
+                        var toolbar = UiInvoke.Field<System.Windows.Forms.FlowLayoutPanel>(window, "toolbar");
+                        foreach (var button in new[] { resolve, reload })
+                        {
+                            Assert.IsFalse(button.IconOnly); Assert.IsTrue(button.AutoSize); Assert.IsTrue(button.Visible);
+                            Assert.AreEqual(button.Text, button.AccessibilityObject.Name);
+                            Assert.IsTrue(button.Width >= button.GetPreferredSize(System.Drawing.Size.Empty).Width);
+                            Assert.IsTrue(toolbar.ClientSize.Height >= button.Height + button.Margin.Vertical + toolbar.Padding.Vertical);
+                        }
                     }
                 }
-            }
         }
 
         [STATestMethod]
@@ -413,56 +419,56 @@ namespace VBAi.Tests.Unit
         public void ProcessDocumentsHonorsInitialAndLateOwnedLifetimeGuards()
         {
             foreach (string state in new[] { "busy", "not-ready", "closing", "late-disposed", "late-closing", "snapshot-error" })
-            using (var f = new Editor.ModernEditorToolFixture())
-            {
-                if (state == "busy" || state == "closing") f.Base.Set(state, true); if (state == "not-ready") f.Base.Ready(false);
-                f.Override = (method, values) =>
+                using (var f = new Editor.ModernEditorToolFixture())
                 {
-                    if (method == "snapshots") { if (state == "late-disposed") f.Window.Dispose(); if (state == "late-closing") f.Base.Set("closing", true); if (state == "snapshot-error") throw new System.IO.IOException("owned snapshot error"); }
-                    return null;
-                };
-                ModernEditorDebugFixture.Wait(f.Window.ProcessDocuments(true)); Assert.AreEqual(0, f.Module.Writes);
-                if (state != "busy") Assert.IsFalse(f.Base.Get<bool>("busy"));
-            }
+                    if (state == "busy" || state == "closing") f.Base.Set(state, true); if (state == "not-ready") f.Base.Ready(false);
+                    f.Override = (method, values) =>
+                    {
+                        if (method == "snapshots") { if (state == "late-disposed") f.Window.Dispose(); if (state == "late-closing") f.Base.Set("closing", true); if (state == "snapshot-error") throw new System.IO.IOException("owned snapshot error"); }
+                        return null;
+                    };
+                    ModernEditorDebugFixture.Wait(f.Window.ProcessDocuments(true)); Assert.AreEqual(0, f.Module.Writes);
+                    if (state != "busy") Assert.IsFalse(f.Base.Get<bool>("busy"));
+                }
             foreach (string state in new[] { "disposed", "closing", "text", "baseline" })
-            using (var f = new Editor.ModernEditorToolFixture())
-            using (var entered = new System.Threading.ManualResetEventSlim())
-            using (var release = new System.Threading.ManualResetEventSlim())
-            {
-                var worker = new EditorSyncWorker(); f.Base.Set("synchronizationWorker", worker);
-                var blocked = worker.Evaluate(() => { entered.Set(); if (!release.Wait(5000)) throw new System.TimeoutException("owned worker gate"); return 1; }); Assert.IsTrue(entered.Wait(5000));
-                f.Base.Document.Edit(f.Base.Document.Text + "\n' queued draft");
-                var processing = f.Window.ProcessDocuments(true);
-                // Observe the actual immutable plan queue before releasing the worker.
-                var queue = (System.Collections.Concurrent.BlockingCollection<System.Action>)typeof(EditorSyncWorker).GetField("work", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic).GetValue(worker);
-                var limit = System.Diagnostics.Stopwatch.StartNew();
-                while (queue.Count == 0 && !processing.IsCompleted) { if (limit.ElapsedMilliseconds > 5000) throw new System.TimeoutException("Owned immutable plan was not queued"); System.Windows.Forms.Application.DoEvents(); System.Threading.Thread.Sleep(1); }
-                Assert.AreEqual(1, queue.Count); Assert.IsFalse(processing.IsCompleted);
-                if (state == "disposed") f.Window.Dispose(); if (state == "closing") f.Base.Set("closing", true);
-                if (state == "text") f.Base.Document.Edit(f.Base.Document.Text + "\n' concurrent plan"); if (state == "baseline") f.Base.Document.Acknowledge("new baseline", "different captured revision");
-                release.Set(); ModernEditorDebugFixture.Wait(processing); Assert.AreEqual(0, f.Module.Writes); Assert.IsFalse(f.Base.Get<bool>("busy"));
-            }
+                using (var f = new Editor.ModernEditorToolFixture())
+                using (var entered = new System.Threading.ManualResetEventSlim())
+                using (var release = new System.Threading.ManualResetEventSlim())
+                {
+                    var worker = new EditorSyncWorker(); f.Base.Set("synchronizationWorker", worker);
+                    var blocked = worker.Evaluate(() => { entered.Set(); if (!release.Wait(5000)) throw new System.TimeoutException("owned worker gate"); return 1; }); Assert.IsTrue(entered.Wait(5000));
+                    f.Base.Document.Edit(f.Base.Document.Text + "\n' queued draft");
+                    var processing = f.Window.ProcessDocuments(true);
+                    // Observe the actual immutable plan queue before releasing the worker.
+                    var queue = (System.Collections.Concurrent.BlockingCollection<System.Action>)typeof(EditorSyncWorker).GetField("work", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic).GetValue(worker);
+                    var limit = System.Diagnostics.Stopwatch.StartNew();
+                    while (queue.Count == 0 && !processing.IsCompleted) { if (limit.ElapsedMilliseconds > 5000) throw new System.TimeoutException("Owned immutable plan was not queued"); System.Windows.Forms.Application.DoEvents(); System.Threading.Thread.Sleep(1); }
+                    Assert.AreEqual(1, queue.Count); Assert.IsFalse(processing.IsCompleted);
+                    if (state == "disposed") f.Window.Dispose(); if (state == "closing") f.Base.Set("closing", true);
+                    if (state == "text") f.Base.Document.Edit(f.Base.Document.Text + "\n' concurrent plan"); if (state == "baseline") f.Base.Document.Acknowledge("new baseline", "different captured revision");
+                    release.Set(); ModernEditorDebugFixture.Wait(processing); Assert.AreEqual(0, f.Module.Writes); Assert.IsFalse(f.Base.Get<bool>("busy"));
+                }
         }
         [STATestMethod]
         public void CaptureRevisionsAndSynchronizationFailuresPreserveOwnedDrafts()
         {
             foreach (string state in new[] { "missing", "stale", "same", "newer" })
-            using (var f = new Editor.ModernEditorToolFixture())
-            {
-                string text = f.Document.Text + "\n' renderer";
-                f.Override = (method, values) => method == "snapshots" ? f.Json.Serialize(new[] { new { id = state == "missing" ? "missing" : f.Document.Id, version = state == "stale" ? 0 : state == "newer" ? 2 : 1, text } }) : null;
-                ModernEditorDebugFixture.Wait((System.Threading.Tasks.Task)f.Private("CaptureDocuments"));
-                Assert.AreEqual(state == "same" || state == "newer", f.Document.Text == text);
-            }
+                using (var f = new Editor.ModernEditorToolFixture())
+                {
+                    string text = f.Document.Text + "\n' renderer";
+                    f.Override = (method, values) => method == "snapshots" ? f.Json.Serialize(new[] { new { id = state == "missing" ? "missing" : f.Document.Id, version = state == "stale" ? 0 : state == "newer" ? 2 : 1, text } }) : null;
+                    ModernEditorDebugFixture.Wait((System.Threading.Tasks.Task)f.Private("CaptureDocuments"));
+                    Assert.AreEqual(state == "same" || state == "newer", f.Document.Text == text);
+                }
             foreach (string state in new[] { "write-failure", "readonly", "conflict", "invalid-apply", "zero-apply" })
-            using (var f = new Editor.ModernEditorToolFixture())
-            {
-                f.Document.Edit(f.Document.Text + "\n' draft"); f.Module.Fail = state == "write-failure"; f.Module.CanWrite = state != "readonly";
-                if (state == "conflict") f.Module.Code += "\n' external";
-                if (state == "invalid-apply" || state == "zero-apply") { f.Document.AcceptRemote(f.Module.Code); f.Module.Code += "\n' external"; f.Override = (method, values) => method == "apply" ? state == "zero-apply" ? "0" : "invalid" : null; }
-                ModernEditorDebugFixture.Wait(f.Window.ProcessDocuments(true)); Assert.AreEqual(0, f.Module.Writes); Assert.IsFalse(f.Base.Get<bool>("busy"));
-                if (state == "write-failure") Assert.IsTrue(UiInvoke.Field<System.Windows.Forms.Label>(f.Window, "status").Text.Contains("Write refused"));
-            }
+                using (var f = new Editor.ModernEditorToolFixture())
+                {
+                    f.Document.Edit(f.Document.Text + "\n' draft"); f.Module.Fail = state == "write-failure"; f.Module.CanWrite = state != "readonly";
+                    if (state == "conflict") f.Module.Code += "\n' external";
+                    if (state == "invalid-apply" || state == "zero-apply") { f.Document.AcceptRemote(f.Module.Code); f.Module.Code += "\n' external"; f.Override = (method, values) => method == "apply" ? state == "zero-apply" ? "0" : "invalid" : null; }
+                    ModernEditorDebugFixture.Wait(f.Window.ProcessDocuments(true)); Assert.AreEqual(0, f.Module.Writes); Assert.IsFalse(f.Base.Get<bool>("busy"));
+                    if (state == "write-failure") Assert.IsTrue(UiInvoke.Field<System.Windows.Forms.Label>(f.Window, "status").Text.Contains("Write refused"));
+                }
         }
         [STATestMethod]
         public void OwnedStatusGenerationsAndDisposalGuardsSuppressObsoleteResults()
@@ -483,15 +489,15 @@ namespace VBAi.Tests.Unit
         public void OwnedEditThemeDiffAndModuleClosurePropagateScriptAndQueuedTabFailures()
         {
             foreach (string operation in new[] { "EditClick", "ThemeChanged", "DiffClick", "CloseModuleClick" })
-            foreach (bool failed in new[] { false, true })
-            using (var f = new Editor.ModernEditorToolFixture())
-            using (var dispatcher = new Editor.OwnedEditorDispatcher())
-            {
-                if (failed) f.Override = (method, values) => { if (method == "hideDiff" || method == "theme" || method == "compare" || method == "close") throw new System.IO.IOException("owned script refusal"); return null; };
-                if (operation == "ThemeChanged") f.Private(operation); else f.Private(operation, null, System.EventArgs.Empty); dispatcher.Drain();
-                if (failed) Assert.IsTrue(UiInvoke.Field<System.Windows.Forms.Label>(f.Window, "status").Text.Contains("owned script refusal"));
-                if (operation == "CloseModuleClick" && !failed) Assert.IsFalse(f.Window.Documents.Contains(f.Document));
-            }
+                foreach (bool failed in new[] { false, true })
+                    using (var f = new Editor.ModernEditorToolFixture())
+                    using (var dispatcher = new Editor.OwnedEditorDispatcher())
+                    {
+                        if (failed) f.Override = (method, values) => { if (method == "hideDiff" || method == "theme" || method == "compare" || method == "close") throw new System.IO.IOException("owned script refusal"); return null; };
+                        if (operation == "ThemeChanged") f.Private(operation); else f.Private(operation, null, System.EventArgs.Empty); dispatcher.Drain();
+                        if (failed) Assert.IsTrue(UiInvoke.Field<System.Windows.Forms.Label>(f.Window, "status").Text.Contains("owned script refusal"));
+                        if (operation == "CloseModuleClick" && !failed) Assert.IsFalse(f.Window.Documents.Contains(f.Document));
+                    }
             using (var f = new Editor.ModernEditorToolFixture())
             using (var dispatcher = new Editor.OwnedEditorDispatcher())
             {
@@ -504,49 +510,49 @@ namespace VBAi.Tests.Unit
         public void OwnedReloadRestoreAndResolveHandleEveryGuardReplacementAndFailure()
         {
             foreach (string operation in new[] { "ReloadClick", "RestoreClick", "ResolveClick", "CloseModuleClick" })
-            foreach (string state in new[] { "busy", "missing", "no-entry", "invalid", "zero", "error", "success" })
-            using (var f = new Editor.ModernEditorToolFixture())
-            using (var dispatcher = new Editor.OwnedEditorDispatcher())
-            {
-                if (state == "busy") f.Base.Set("busy", true); if (state == "missing") f.Base.Set("selected", null);
-                if (state != "no-entry")
-                {
-                    f.Base.Get<System.Collections.Generic.Dictionary<string, string>>("reviewed")[f.Document.Id] = f.Module.Code;
-                    f.Base.Get<System.Collections.Generic.Dictionary<string, EditorDraft>>("recovered")[f.Document.Id] = new EditorDraft { Key = f.Document.RecoveryKey, Baseline = f.Document.Baseline, Text = f.Document.Text + "\n' recovered" };
-                }
-                if (operation == "ReloadClick" && state == "success") f.Document.Edit(f.Document.Text + "\n' local");
-                f.Override = (method, values) => { if (method == "snapshots" && state == "error") throw new System.IO.IOException("owned event failure"); if (method == "apply" && (state == "invalid" || state == "zero")) return state == "zero" ? "0" : "invalid"; return null; };
-                f.Private(operation, null, System.EventArgs.Empty); dispatcher.Drain();
-                if (state == "error") Assert.IsTrue(UiInvoke.Field<System.Windows.Forms.Label>(f.Window, "status").Text.Contains("owned event failure"));
-                if (operation == "RestoreClick" && state == "success") Assert.IsTrue(f.Document.Text.Contains("recovered"));
-                if (state != "busy") Assert.IsFalse(f.Base.Get<bool>("busy"));
-            }
+                foreach (string state in new[] { "busy", "missing", "no-entry", "invalid", "zero", "error", "success" })
+                    using (var f = new Editor.ModernEditorToolFixture())
+                    using (var dispatcher = new Editor.OwnedEditorDispatcher())
+                    {
+                        if (state == "busy") f.Base.Set("busy", true); if (state == "missing") f.Base.Set("selected", null);
+                        if (state != "no-entry")
+                        {
+                            f.Base.Get<System.Collections.Generic.Dictionary<string, string>>("reviewed")[f.Document.Id] = f.Module.Code;
+                            f.Base.Get<System.Collections.Generic.Dictionary<string, EditorDraft>>("recovered")[f.Document.Id] = new EditorDraft { Key = f.Document.RecoveryKey, Baseline = f.Document.Baseline, Text = f.Document.Text + "\n' recovered" };
+                        }
+                        if (operation == "ReloadClick" && state == "success") f.Document.Edit(f.Document.Text + "\n' local");
+                        f.Override = (method, values) => { if (method == "snapshots" && state == "error") throw new System.IO.IOException("owned event failure"); if (method == "apply" && (state == "invalid" || state == "zero")) return state == "zero" ? "0" : "invalid"; return null; };
+                        f.Private(operation, null, System.EventArgs.Empty); dispatcher.Drain();
+                        if (state == "error") Assert.IsTrue(UiInvoke.Field<System.Windows.Forms.Label>(f.Window, "status").Text.Contains("owned event failure"));
+                        if (operation == "RestoreClick" && state == "success") Assert.IsTrue(f.Document.Text.Contains("recovered"));
+                        if (state != "busy") Assert.IsFalse(f.Base.Get<bool>("busy"));
+                    }
         }
         [STATestMethod]
         public void OwnedClosingWaitsForEachActiveOperationAndPreservesDraftsEvenAfterCaptureFailure()
         {
             foreach (string state in new[] { "allowed", "idle", "already-closing", "capture-error", "not-ready", "initializing", "busy", "layout", "disposed" })
-            using (var f = new Editor.ModernEditorToolFixture())
-            using (var dispatcher = new Editor.OwnedEditorDispatcher())
-            {
-                f.Document.Edit(f.Document.Text + "\n\u0027 owned recovery draft");
-                if (state == "allowed") f.Base.Set("closeAllowed", true);
-                if (state == "idle" || state == "not-ready" || state == "initializing" || state == "busy" || state == "layout") f.Base.Ready(false);
-                if (state == "already-closing") f.Base.Set("closing", true);
-                if (state == "initializing" || state == "busy") f.Base.Set(state, true); if (state == "layout") f.Base.Set("activeStatusLayouts", 1);
-                if (state == "not-ready") f.Base.Set("busy", true);
-                if (state == "capture-error") f.Override = (method, values) => method == "snapshots" ? throw new System.IO.IOException("owned close capture error") : (string)null;
-                if (state == "disposed") f.Override = (method, values) => { if (method == "snapshots") f.Window.Dispose(); return null; };
-                var args = new System.Windows.Forms.FormClosingEventArgs(System.Windows.Forms.CloseReason.UserClosing, false); f.Private("ClosingWindow", null, args);
-                Assert.AreEqual(state != "allowed" && state != "idle", args.Cancel, state);
-                if (state == "initializing" || state == "busy" || state == "layout" || state == "not-ready")
+                using (var f = new Editor.ModernEditorToolFixture())
+                using (var dispatcher = new Editor.OwnedEditorDispatcher())
                 {
-                    Assert.IsFalse(f.Window.IsDisposed);
-                    f.Base.Set("initializing", false); f.Base.Set("busy", false); f.Base.Set("activeStatusLayouts", 0);
+                    f.Document.Edit(f.Document.Text + "\n\u0027 owned recovery draft");
+                    if (state == "allowed") f.Base.Set("closeAllowed", true);
+                    if (state == "idle" || state == "not-ready" || state == "initializing" || state == "busy" || state == "layout") f.Base.Ready(false);
+                    if (state == "already-closing") f.Base.Set("closing", true);
+                    if (state == "initializing" || state == "busy") f.Base.Set(state, true); if (state == "layout") f.Base.Set("activeStatusLayouts", 1);
+                    if (state == "not-ready") f.Base.Set("busy", true);
+                    if (state == "capture-error") f.Override = (method, values) => method == "snapshots" ? throw new System.IO.IOException("owned close capture error") : (string)null;
+                    if (state == "disposed") f.Override = (method, values) => { if (method == "snapshots") f.Window.Dispose(); return null; };
+                    var args = new System.Windows.Forms.FormClosingEventArgs(System.Windows.Forms.CloseReason.UserClosing, false); f.Private("ClosingWindow", null, args);
+                    Assert.AreEqual(state != "allowed" && state != "idle", args.Cancel, state);
+                    if (state == "initializing" || state == "busy" || state == "layout" || state == "not-ready")
+                    {
+                        Assert.IsFalse(f.Window.IsDisposed);
+                        f.Base.Set("initializing", false); f.Base.Set("busy", false); f.Base.Set("activeStatusLayouts", 0);
+                    }
+                    dispatcher.Drain();
+                    if (state != "already-closing") Assert.IsNotNull(f.Window.Drafts.Recover(f.Document.RecoveryKey));
                 }
-                dispatcher.Drain();
-                if (state != "already-closing") Assert.IsNotNull(f.Window.Drafts.Recover(f.Document.RecoveryKey));
-            }
             using (var f = new Editor.ModernEditorToolFixture())
             {
                 var child = new System.Windows.Forms.Panel(); f.Window.Controls.Add(child); f.Window.ScriptExecution = null;
@@ -566,14 +572,14 @@ namespace VBAi.Tests.Unit
                 UiInvoke.Field<System.Windows.Forms.TabControl>(f.Window, "tabs").SelectedTab = null; f.Private("TabChanged", null, System.EventArgs.Empty); dispatcher.Drain();
             }
             foreach (string state in new[] { "busy", "closing", "plain", "late-closing", "late-disposed", "observation-error" })
-            using (var f = new Editor.ModernEditorToolFixture())
-            using (var dispatcher = new Editor.OwnedEditorDispatcher())
-            {
-                if (state == "busy" || state == "closing") f.Base.Set(state, true);
-                if (state == "observation-error") { f.Base.Set("selected", f.Base.Document.Id); f.Base.Native.Vbe.MainWindow.HWnd = 0; }
-                f.Override = (method, values) => { if (method == "snapshots") { if (state == "late-closing") f.Base.Set("closing", true); if (state == "late-disposed") f.Window.Dispose(); } return null; };
-                f.Private("TimerTick", null, System.EventArgs.Empty); dispatcher.Drain();
-            }
+                using (var f = new Editor.ModernEditorToolFixture())
+                using (var dispatcher = new Editor.OwnedEditorDispatcher())
+                {
+                    if (state == "busy" || state == "closing") f.Base.Set(state, true);
+                    if (state == "observation-error") { f.Base.Set("selected", f.Base.Document.Id); f.Base.Native.Vbe.MainWindow.HWnd = 0; }
+                    f.Override = (method, values) => { if (method == "snapshots") { if (state == "late-closing") f.Base.Set("closing", true); if (state == "late-disposed") f.Window.Dispose(); } return null; };
+                    f.Private("TimerTick", null, System.EventArgs.Empty); dispatcher.Drain();
+                }
             using (var f = new Editor.ModernEditorToolFixture())
             {
                 f.Window.Drafts = new EditorDraftStore(System.IO.Path.Combine(f.Module.Root, "blocked")); System.IO.Directory.CreateDirectory(f.Module.Root); System.IO.File.WriteAllText(f.Window.Drafts.Root, "owned blocker");
@@ -608,30 +614,30 @@ namespace VBAi.Tests.Unit
         public void OwnedBrowserAwaitsHonorEveryInitialAndLateLifetimeGuardAndTranslationChoice()
         {
             foreach (string state in new[] { "initializing", "ready", "disposed", "closing", "missing-assets", "environment-disposed", "environment-closing", "core-disposed", "core-closing", "translation-disposed", "translation-closing", "environment-error", "error-disposed", "error-closing", "plain", "existing-browser" })
-            using (var f = new Editor.ModernEditorBrowserFixture())
-            {
-                if (state == "initializing" || state == "closing") f.Editor.Base.Set(state, true); if (state == "ready") f.Editor.Base.Ready(true); if (state == "disposed") f.Window.Dispose();
-                if (state == "missing-assets") System.IO.File.Delete(System.IO.Path.Combine(f.Assets, "index.html"));
-                f.EnvironmentCreated = () => { if (state == "environment-disposed" || state == "error-disposed") f.Window.Dispose(); if (state == "environment-closing" || state == "error-closing") f.Editor.Base.Set("closing", true); if (state.StartsWith("error-") || state == "environment-error") throw new System.IO.IOException("owned environment unavailable"); };
-                f.CoreEnsured = () => { if (state == "core-disposed") f.Window.Dispose(); if (state == "core-closing") f.Editor.Base.Set("closing", true); };
-                if (state.StartsWith("translation-"))
-                { string language = UiText.Culture.TwoLetterISOLanguageName; System.IO.File.WriteAllText(System.IO.Path.Combine(f.Assets, "nls.messages." + language + ".js"), "owned translation"); f.TranslationAdded = () => { if (state == "translation-disposed") f.Window.Dispose(); else f.Editor.Base.Set("closing", true); }; }
-                if (state == "existing-browser") ModernEditorDebugFixture.Wait(f.Initialize());
-                ModernEditorDebugFixture.Wait(f.Initialize());
-                if (state == "plain" || state == "existing-browser") Assert.AreEqual(ModernEditorWindow.Origin, f.Navigation);
-                else Assert.IsNull(f.Navigation, state);
-                if (state != "initializing") Assert.IsFalse(f.Editor.Base.Get<bool>("initializing"));
-            }
+                using (var f = new Editor.ModernEditorBrowserFixture())
+                {
+                    if (state == "initializing" || state == "closing") f.Editor.Base.Set(state, true); if (state == "ready") f.Editor.Base.Ready(true); if (state == "disposed") f.Window.Dispose();
+                    if (state == "missing-assets") System.IO.File.Delete(System.IO.Path.Combine(f.Assets, "index.html"));
+                    f.EnvironmentCreated = () => { if (state == "environment-disposed" || state == "error-disposed") f.Window.Dispose(); if (state == "environment-closing" || state == "error-closing") f.Editor.Base.Set("closing", true); if (state.StartsWith("error-") || state == "environment-error") throw new System.IO.IOException("owned environment unavailable"); };
+                    f.CoreEnsured = () => { if (state == "core-disposed") f.Window.Dispose(); if (state == "core-closing") f.Editor.Base.Set("closing", true); };
+                    if (state.StartsWith("translation-"))
+                    { string language = UiText.Culture.TwoLetterISOLanguageName; System.IO.File.WriteAllText(System.IO.Path.Combine(f.Assets, "nls.messages." + language + ".js"), "owned translation"); f.TranslationAdded = () => { if (state == "translation-disposed") f.Window.Dispose(); else f.Editor.Base.Set("closing", true); }; }
+                    if (state == "existing-browser") ModernEditorDebugFixture.Wait(f.Initialize());
+                    ModernEditorDebugFixture.Wait(f.Initialize());
+                    if (state == "plain" || state == "existing-browser") Assert.AreEqual(ModernEditorWindow.Origin, f.Navigation);
+                    else Assert.IsNull(f.Navigation, state);
+                    if (state != "initializing") Assert.IsFalse(f.Editor.Base.Get<bool>("initializing"));
+                }
             var culture = UiText.Culture;
             try
             {
                 foreach (string language in new[] { "en-US", "pt-BR", "zh-CN" })
-                using (var f = new Editor.ModernEditorBrowserFixture())
-                {
-                    LocalizationScope.Set(language);
-                    string suffix = language == "en-US" ? "en" : language.ToLowerInvariant(); System.IO.File.WriteAllText(System.IO.Path.Combine(f.Assets, "nls.messages." + suffix + ".js"), "owned translation");
-                    ModernEditorDebugFixture.Wait(f.Initialize()); Assert.AreEqual(1, f.Scripts, language);
-                }
+                    using (var f = new Editor.ModernEditorBrowserFixture())
+                    {
+                        LocalizationScope.Set(language);
+                        string suffix = language == "en-US" ? "en" : language.ToLowerInvariant(); System.IO.File.WriteAllText(System.IO.Path.Combine(f.Assets, "nls.messages." + suffix + ".js"), "owned translation");
+                        ModernEditorDebugFixture.Wait(f.Initialize()); Assert.AreEqual(1, f.Scripts, language);
+                    }
             }
             finally { LocalizationScope.Set(culture.Name); }
             using (var f = new Editor.ModernEditorBrowserFixture())
@@ -641,14 +647,14 @@ namespace VBAi.Tests.Unit
                 f.Window.Dispose();
             }
             foreach (bool failed in new[] { false, true })
-            using (var f = new Editor.ModernEditorBrowserFixture())
-            {
-                var completion = new System.Threading.Tasks.TaskCompletionSource<Microsoft.Web.WebView2.Core.CoreWebView2Environment>();
-                f.Window.CreateBrowserEnvironment = cache => completion.Task; var task = f.Initialize();
-                var child = new System.Windows.Forms.Panel(); f.Window.Controls.Add(child);
-                child.Disposed += (sender, args) => { Assert.IsTrue(f.Window.Disposing); Assert.IsFalse(f.Window.IsDisposed); if (failed) completion.SetException(new System.IO.IOException("owned disposing environment")); else completion.SetResult(Editor.OwnedWebRaw.Wrap<Microsoft.Web.WebView2.Core.CoreWebView2Environment>(f.Environment.Proxy)); ModernEditorDebugFixture.Wait(task); };
-                f.Window.Dispose(); Assert.IsTrue(task.IsCompleted); Assert.IsNull(f.Navigation);
-            }
+                using (var f = new Editor.ModernEditorBrowserFixture())
+                {
+                    var completion = new System.Threading.Tasks.TaskCompletionSource<Microsoft.Web.WebView2.Core.CoreWebView2Environment>();
+                    f.Window.CreateBrowserEnvironment = cache => completion.Task; var task = f.Initialize();
+                    var child = new System.Windows.Forms.Panel(); f.Window.Controls.Add(child);
+                    child.Disposed += (sender, args) => { Assert.IsTrue(f.Window.Disposing); Assert.IsFalse(f.Window.IsDisposed); if (failed) completion.SetException(new System.IO.IOException("owned disposing environment")); else completion.SetResult(Editor.OwnedWebRaw.Wrap<Microsoft.Web.WebView2.Core.CoreWebView2Environment>(f.Environment.Proxy)); ModernEditorDebugFixture.Wait(task); };
+                    f.Window.Dispose(); Assert.IsTrue(task.IsCompleted); Assert.IsNull(f.Navigation);
+                }
         }
         [STATestMethod]
         public void OwnedBrowserEventsEnforceNavigationDownloadPermissionAndResourcePolicies()
@@ -687,30 +693,30 @@ namespace VBAi.Tests.Unit
         public void OwnedWebMessagesValidateAuthoritySizeRevisionAndEverySupportedDispatch()
         {
             foreach (string state in new[] { "untrusted", "disposed", "closing", "oversized", "malformed", "ready", "ready-no-selection", "change-null", "change-missing", "change-stale", "change", "command-wrong", "command", "language", "definition", "editorCommand", "unknown" })
-            using (var f = new Editor.ModernEditorBrowserFixture())
-            using (var dispatcher = new Editor.OwnedEditorDispatcher())
-            {
-                if (state == "disposed") f.Window.Dispose(); if (state == "closing") f.Editor.Base.Set("closing", true);
-                if (state == "ready-no-selection") f.Editor.Base.Set("selected", null);
-                string type = state.StartsWith("ready") ? "ready" : state.StartsWith("change") ? "change" : state.StartsWith("command") ? "command" : state;
-                string payload = f.Editor.Json.Serialize(new { type, id = state == "change-null" ? null : state == "change-missing" ? "missing" : f.Editor.Document.Id, version = state == "change-stale" ? 0 : 2, text = f.Editor.Document.Text + "\n' owned message", name = state == "command-wrong" ? "wrong" : state == "editorCommand" ? "unknown" : "sync", request = 42, module = f.Editor.Module.Name, line = 1, column = 1 });
-                if (state == "oversized") payload = new string('x', 16 * 1024 * 1024 + 1); if (state == "malformed") payload = "malformed";
-                f.Message(payload, state == "untrusted" ? "https://external.example" : ModernEditorWindow.Origin); dispatcher.Drain();
-                Assert.AreEqual(state == "ready" || state == "ready-no-selection", f.Window.Ready, state);
-                Assert.AreEqual(state == "change", f.Editor.Document.Dirty, state);
-                UiInvoke.Field<System.Windows.Forms.Timer>(f.Window, "timer").Stop();
-            }
+                using (var f = new Editor.ModernEditorBrowserFixture())
+                using (var dispatcher = new Editor.OwnedEditorDispatcher())
+                {
+                    if (state == "disposed") f.Window.Dispose(); if (state == "closing") f.Editor.Base.Set("closing", true);
+                    if (state == "ready-no-selection") f.Editor.Base.Set("selected", null);
+                    string type = state.StartsWith("ready") ? "ready" : state.StartsWith("change") ? "change" : state.StartsWith("command") ? "command" : state;
+                    string payload = f.Editor.Json.Serialize(new { type, id = state == "change-null" ? null : state == "change-missing" ? "missing" : f.Editor.Document.Id, version = state == "change-stale" ? 0 : 2, text = f.Editor.Document.Text + "\n' owned message", name = state == "command-wrong" ? "wrong" : state == "editorCommand" ? "unknown" : "sync", request = 42, module = f.Editor.Module.Name, line = 1, column = 1 });
+                    if (state == "oversized") payload = new string('x', 16 * 1024 * 1024 + 1); if (state == "malformed") payload = "malformed";
+                    f.Message(payload, state == "untrusted" ? "https://external.example" : ModernEditorWindow.Origin); dispatcher.Drain();
+                    Assert.AreEqual(state == "ready" || state == "ready-no-selection", f.Window.Ready, state);
+                    Assert.AreEqual(state == "change", f.Editor.Document.Dirty, state);
+                    UiInvoke.Field<System.Windows.Forms.Timer>(f.Window, "timer").Stop();
+                }
             using (var f = new Editor.ModernEditorBrowserFixture())
             {
                 var child = new System.Windows.Forms.Panel(); f.Window.Controls.Add(child); child.Disposed += (sender, args) => { Assert.IsTrue(f.Window.Disposing); f.Message("{}"); }; f.Window.Dispose();
             }
             foreach (string state in new[] { "closing", "disposed", "disposing" })
-            using (var f = new Editor.ModernEditorBrowserFixture())
-            using (var dispatcher = new Editor.OwnedEditorDispatcher())
-            {
-                f.Editor.Override = (method, values) => { if (method == "theme") { if (state == "closing") f.Editor.Base.Set("closing", true); if (state == "disposed") f.Window.Dispose(); } return null; };
-                if (state != "disposing") { f.Message("{\"type\":\"ready\"}"); dispatcher.Drain(); Assert.IsFalse(UiInvoke.Field<System.Windows.Forms.Timer>(f.Window, "timer").Enabled); }
-            }
+                using (var f = new Editor.ModernEditorBrowserFixture())
+                using (var dispatcher = new Editor.OwnedEditorDispatcher())
+                {
+                    f.Editor.Override = (method, values) => { if (method == "theme") { if (state == "closing") f.Editor.Base.Set("closing", true); if (state == "disposed") f.Window.Dispose(); } return null; };
+                    if (state != "disposing") { f.Message("{\"type\":\"ready\"}"); dispatcher.Drain(); Assert.IsFalse(UiInvoke.Field<System.Windows.Forms.Timer>(f.Window, "timer").Enabled); }
+                }
         }
         [STATestMethod]
         public void OwnedModuleLimitRecoveryAndUncreatedStatusPreserveEveryBoundary()
@@ -774,18 +780,25 @@ namespace VBAi.Tests.Unit
         public void Pr10AssistantActionsValidateNativeIdentitySelectionVersionAndOptionalCallback()
         {
             foreach (string state in new[] { "null-id", "missing", "managed", "unknown", "invalid-text", "invalid-selection", "stale", "no-callback", "/expliquer", "/corriger", "/refactoriser" })
-            using (var f = new Editor.ModernEditorBrowserFixture())
-            using (var dispatcher = new Editor.OwnedEditorDispatcher())
-            {
-                var doc = f.Editor.Base.Document; int actions = 0; ChatAttachment attachment = null; string command = null;
-                if (state != "no-callback") f.Window.AssistantAction += (name, value) => { actions++; attachment = value; command = name; };
-                f.Message(f.Editor.Json.Serialize(new { type = "assistantAction", id = state == "null-id" ? null : state == "missing" ? "missing" : state == "managed" ? f.Editor.Document.Id : doc.Id,
-                    name = state == "unknown" ? "/unknown" : state.StartsWith("/") ? state : "/expliquer", text = state == "invalid-text" ? null : doc.Text,
-                    selectedText = state == "invalid-selection" ? null : "Debug.Print 1", version = state == "stale" ? 0 : 1, line = 3 }));
-                dispatcher.Drain(); bool valid = state.StartsWith("/"); Assert.AreEqual(valid ? 1 : 0, actions, state);
-                if (valid) { Assert.AreEqual(state, command); Assert.AreEqual("Debug.Print 1", attachment.Text); Assert.AreEqual("Project1", attachment.Project); Assert.AreEqual("Module1", attachment.Module); Assert.AreEqual(3, attachment.StartLine); Assert.AreEqual(doc.Id, attachment.EditorDocumentId); Assert.AreEqual(EditorDocument.Hash(doc.Text), attachment.Sha256); }
-                if (state.StartsWith("invalid") || state == "stale") Assert.IsFalse(string.IsNullOrEmpty(f.Editor.Base.Get<System.Windows.Forms.Label>("status").Text));
-            }
+                using (var f = new Editor.ModernEditorBrowserFixture())
+                using (var dispatcher = new Editor.OwnedEditorDispatcher())
+                {
+                    var doc = f.Editor.Base.Document; int actions = 0; ChatAttachment attachment = null; string command = null;
+                    if (state != "no-callback") f.Window.AssistantAction += (name, value) => { actions++; attachment = value; command = name; };
+                    f.Message(f.Editor.Json.Serialize(new
+                    {
+                        type = "assistantAction",
+                        id = state == "null-id" ? null : state == "missing" ? "missing" : state == "managed" ? f.Editor.Document.Id : doc.Id,
+                        name = state == "unknown" ? "/unknown" : state.StartsWith("/") ? state : "/expliquer",
+                        text = state == "invalid-text" ? null : doc.Text,
+                        selectedText = state == "invalid-selection" ? null : "Debug.Print 1",
+                        version = state == "stale" ? 0 : 1,
+                        line = 3
+                    }));
+                    dispatcher.Drain(); bool valid = state.StartsWith("/"); Assert.AreEqual(valid ? 1 : 0, actions, state);
+                    if (valid) { Assert.AreEqual(state, command); Assert.AreEqual("Debug.Print 1", attachment.Text); Assert.AreEqual("Project1", attachment.Project); Assert.AreEqual("Module1", attachment.Module); Assert.AreEqual(3, attachment.StartLine); Assert.AreEqual(doc.Id, attachment.EditorDocumentId); Assert.AreEqual(EditorDocument.Hash(doc.Text), attachment.Sha256); }
+                    if (state.StartsWith("invalid") || state == "stale") Assert.IsFalse(string.IsNullOrEmpty(f.Editor.Base.Get<System.Windows.Forms.Label>("status").Text));
+                }
         }
 
         [STATestMethod]
@@ -824,18 +837,18 @@ namespace VBAi.Tests.Unit
         public void Pr10OwnedBrowserKeysDispatchOnlyF9AndControlSaveAndReportScriptFailure()
         {
             foreach (var keys in new[] { System.Windows.Forms.Keys.F9, System.Windows.Forms.Keys.Control | System.Windows.Forms.Keys.S, System.Windows.Forms.Keys.Shift | System.Windows.Forms.Keys.F9, System.Windows.Forms.Keys.S, System.Windows.Forms.Keys.Alt | System.Windows.Forms.Keys.S })
-            using (var f = new Editor.ModernEditorBrowserFixture())
-            using (var dispatcher = new Editor.OwnedEditorDispatcher())
-            {
-                ModernEditorDebugFixture.Wait(f.Initialize()); f.Editor.Base.Ready(true); f.Editor.Base.Scripts.Clear();
-                var key = new System.Windows.Forms.KeyEventArgs(keys);
-                UiInvoke.Call(typeof(System.Windows.Forms.Control), "OnKeyDown", f.Window.Browser, key);
-                ModernEditorDebugFixture.Wait(System.Threading.Tasks.Task.Delay(30)); dispatcher.Drain();
-                bool handled = keys == System.Windows.Forms.Keys.F9 || keys == (System.Windows.Forms.Keys.Control | System.Windows.Forms.Keys.S);
-                Assert.AreEqual(handled, key.Handled); Assert.AreEqual(handled, key.SuppressKeyPress);
-                var commands = f.Editor.Base.Scripts.Where(item => item.Item1 == "command").ToArray(); Assert.AreEqual(handled ? 1 : 0, commands.Length);
-                if (handled) Assert.AreEqual(keys == System.Windows.Forms.Keys.F9 ? "vbai.toggle_breakpoint" : "vbai.save", commands[0].Item2[0]);
-            }
+                using (var f = new Editor.ModernEditorBrowserFixture())
+                using (var dispatcher = new Editor.OwnedEditorDispatcher())
+                {
+                    ModernEditorDebugFixture.Wait(f.Initialize()); f.Editor.Base.Ready(true); f.Editor.Base.Scripts.Clear();
+                    var key = new System.Windows.Forms.KeyEventArgs(keys);
+                    UiInvoke.Call(typeof(System.Windows.Forms.Control), "OnKeyDown", f.Window.Browser, key);
+                    ModernEditorDebugFixture.Wait(System.Threading.Tasks.Task.Delay(30)); dispatcher.Drain();
+                    bool handled = keys == System.Windows.Forms.Keys.F9 || keys == (System.Windows.Forms.Keys.Control | System.Windows.Forms.Keys.S);
+                    Assert.AreEqual(handled, key.Handled); Assert.AreEqual(handled, key.SuppressKeyPress);
+                    var commands = f.Editor.Base.Scripts.Where(item => item.Item1 == "command").ToArray(); Assert.AreEqual(handled ? 1 : 0, commands.Length);
+                    if (handled) Assert.AreEqual(keys == System.Windows.Forms.Keys.F9 ? "vbai.toggle_breakpoint" : "vbai.save", commands[0].Item2[0]);
+                }
             using (var f = new Editor.ModernEditorBrowserFixture())
             using (var dispatcher = new Editor.OwnedEditorDispatcher())
             {

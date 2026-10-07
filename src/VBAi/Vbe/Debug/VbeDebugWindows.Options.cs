@@ -98,8 +98,7 @@ namespace VBAi
             public void SelectFormatCategory(IntPtr dialog, int tabIndex, string category)
             {
                 SelectOptionsTab(dialog, tabIndex);
-                var list = FormatCategoryList(dialog);
-                if (list == null) throw new InvalidOperationException("The native Code Colors category list is absent.");
+                var list = FormatCategoryList(dialog) ?? throw new InvalidOperationException("The native Code Colors category list is absent.");
                 SelectFormatCategoryList(dialog, list, category);
             }
 
@@ -299,12 +298,13 @@ namespace VBAi
         /// <param name="desired">Requested checked state; the operation returns without clicking when it already matches.</param>
         private static void WriteOptionsCheckbox(IntPtr dialog, IntPtr button, bool desired)
         {
-            Action guard = () => {
+            void guard()
+            {
                 GuardOptionsOwnedWindow(dialog, button, "Button");
                 int kind = OptionsComboStyle(button, -16) & 0xf;
                 if (!IsWindowVisible(button) || !OptionsWindowEnabled(button) || (kind != 2 && kind != 3))
                     throw new InvalidOperationException("The exact native Options checkbox is unavailable or not a two-state checkbox.");
-            };
+            }
             SetOptionsCheckbox(desired,
                 () => { guard(); return SendMessageInt(button, 0xF0, IntPtr.Zero, IntPtr.Zero).ToInt32(); },
                 () => { guard(); SendMessageInt(button, BmClick, IntPtr.Zero, IntPtr.Zero); });
@@ -349,14 +349,17 @@ namespace VBAi
             {
                 if (labels[i] == null || labels[i].Length > 4096)
                     throw new InvalidOperationException("A native options list label is unreadable or oversized.");
-                choices.Add(new OptionsNativeChoice { Index = i, Label = labels[i],
-                    SelectionValue = string.IsNullOrWhiteSpace(labels[i]) ? "NativeIndex:" + i.ToString(CultureInfo.InvariantCulture) : labels[i] });
+                choices.Add(new OptionsNativeChoice
+                {
+                    Index = i,
+                    Label = labels[i],
+                    SelectionValue = string.IsNullOrWhiteSpace(labels[i]) ? "NativeIndex:" + i.ToString(CultureInfo.InvariantCulture) : labels[i]
+                });
             }
             control.NativeChoices = choices;
             control.SelectedIndex = selectedIndex;
             control.Choices = choices.Select(x => x.SelectionValue).ToArray();
-            control.Value = selectedIndex >= 0 ? choices[selectedIndex].SelectionValue : editValue;
-            if (control.Value == null) throw new InvalidOperationException("The native options list selection and edit value cannot be read.");
+            control.Value = (selectedIndex >= 0 ? choices[selectedIndex].SelectionValue : editValue) ?? throw new InvalidOperationException("The native options list selection and edit value cannot be read.");
         }
 
         /// <summary>Obtient le parent natif d’une ComboBox d’options.</summary>
@@ -429,20 +432,22 @@ namespace VBAi
         private static void FocusOptionsSizeCatalogue(IntPtr window)
         {
             IntPtr parent = OptionsComboParent(window);
-            Action guard = () => {
+            void guard()
+            {
                 GuardOptionsCombo(window);
                 GuardOptionsOwnedWindow(parent, window, "ComboBox");
                 if (ClassName(parent) != "#32770" || OptionsComboParent(window) != parent ||
                     !IsWindowVisible(window) || !OptionsWindowEnabled(window))
                     throw new InvalidOperationException("The owned Size control is unavailable for catalogue focus.");
-            };
+            }
             guard(); uint owner = GetWindowThreadProcessId(window, out uint ignored);
-            Func<bool> focused = () => {
+            bool focused()
+            {
                 guard();
                 var info = new OptionsGuiInfo { Size = (uint)System.Runtime.InteropServices.Marshal.SizeOf(typeof(OptionsGuiInfo)) };
                 if (!OptionsGuiThreadInfo(owner, ref info)) throw new InvalidOperationException("The Size owning-thread focus cannot be read.");
                 return info.Focus == window || (info.Focus != IntPtr.Zero && OptionsComboParent(info.Focus) == window);
-            };
+            }
             if (focused()) return;
             if (owner == OptionsCurrentThreadId()) SendMessageInt(parent, 0x28, window, new IntPtr(1));
             else if (!PostMessage(parent, 0x28, window, new IntPtr(1)))
@@ -461,8 +466,12 @@ namespace VBAi
         private static void ReadOptionsCombo(IntPtr window, OptionsControl control)
         {
             var trace = VbeInspectionTrace.Current;
-            var observed = trace == null ? null : new VbeInspectionTrace.OptionsComboEvidence {
-                Reader = VbeInspectionTrace.OptionsReader.NativeCombo, Role = OptionsDiagnosticRole(control.Name), Window = window.ToInt64() };
+            var observed = trace == null ? null : new VbeInspectionTrace.OptionsComboEvidence
+            {
+                Reader = VbeInspectionTrace.OptionsReader.NativeCombo,
+                Role = OptionsDiagnosticRole(control.Name),
+                Window = window.ToInt64()
+            };
             bool expanded = false;
             Exception failure = null;
             try
@@ -602,7 +611,7 @@ namespace VBAi
         /// <summary>Lit l’état actif d’une fenêtre Win32 du dialogue Options.</summary>
         /// <param name="window">Handle de la fenêtre.</param>
         /// <returns><see langword="true"/> si Windows indique que la fenêtre est activée.</returns>
-        [System.Runtime.InteropServices.DllImport("user32.dll", EntryPoint="IsWindowEnabled")]
+        [System.Runtime.InteropServices.DllImport("user32.dll", EntryPoint = "IsWindowEnabled")]
         private static extern bool NativeOptionsWindowEnabled(IntPtr window);
 
         /// <summary>Native enabled-state boundary, preserving the Options button validation.</summary>
@@ -758,10 +767,20 @@ namespace VBAi
                 commitRequested = true;
                 native.Accept(dialog);
                 bool closed = WaitForOptionsClosure(native, dialog, 40);
-                result = new { request.Pane, request.Property, Category = request.Query, Before = oldValue, After = observed[0].Value,
-                    CommitRequested = true, DialogClosed = closed, ControlValueVerified = true,
-                    PersistenceVerified = false, NextRead = "read_vbe_options",
-                    Limit = "Reopen Options to verify committed preferences. A requested OK or a closed dialog alone is not a restart persistence proof. Do not retry automatically." };
+                result = new
+                {
+                    request.Pane,
+                    request.Property,
+                    Category = request.Query,
+                    Before = oldValue,
+                    After = observed[0].Value,
+                    CommitRequested = true,
+                    DialogClosed = closed,
+                    ControlValueVerified = true,
+                    PersistenceVerified = false,
+                    NextRead = "read_vbe_options",
+                    Limit = "Reopen Options to verify committed preferences. A requested OK or a closed dialog alone is not a restart persistence proof. Do not retry automatically."
+                };
             }
             catch (Exception error) { primary = error; }
             Exception cleanup = null;
@@ -804,7 +823,7 @@ namespace VBAi
             { if (!(value is bool)) throw new ArgumentException("This option requires a boolean Value."); return value; }
             if (general && control.Type == "ControlType.RadioButton" &&
                 new[] { "break on all errors", "break in class module", "break on unhandled errors", "arrêt sur toutes les erreurs", "arrêt dans le module de classe", "arrêt sur les erreurs non gérées" }.Contains(normalized))
-            { if (!(value is bool) || !(bool)value) throw new ArgumentException("Select an error-trapping radio option with Value=true."); return true; }
+            { if (!(value is bool v) || !v) throw new ArgumentException("Select an error-trapping radio option with Value=true."); return true; }
             bool width = editor && new[] { "tab width", "largeur de tabulation", "largeur de la tabulation" }.Contains(normalized);
             bool grid = general && new[] { "width", "height", "largeur", "hauteur" }.Contains(normalized);
             if (control.Type == "ControlType.Edit" && (width || grid))
@@ -844,7 +863,7 @@ namespace VBAi
                 var controls = observed.Where(x => x.Visible && x.Enabled && (!string.IsNullOrWhiteSpace(x.Name) || x.Type != "ControlType.Text"))
                     .Select(x => (object)new { x.Name, x.Type, x.Value, x.Error, x.Choices, x.NativeChoices, x.SelectedIndex }).ToList();
                 var categories = native is IFormatCategoriesOptionsProbe format ? format.FormatCategories(dialog, i) : new OptionsFormatCategory[0];
-                tabs.Add(new { Tab = names[i], Controls = controls, Count = controls.Count, FormatCategories = categories });
+                tabs.Add(new { Tab = names[i], Controls = controls, controls.Count, FormatCategories = categories });
             }
             return tabs;
         }

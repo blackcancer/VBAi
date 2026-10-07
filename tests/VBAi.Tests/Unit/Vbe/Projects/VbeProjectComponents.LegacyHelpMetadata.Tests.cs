@@ -1,8 +1,7 @@
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
-using VBAi;
 
 namespace VBAi.Tests.Unit
 {
@@ -43,9 +42,12 @@ namespace VBAi.Tests.Unit
         }
 
         [DataTestMethod]
-        [DataRow("MSACCESS", "HelpFile")][DataRow("MSPUB", "HelpFile")]
-        [DataRow("msaccess", "helpcontextid")][DataRow("mspub", "HELPFILE")]
-        [DataRow("MSACCESS", "HelpContextID")][DataRow("MSPUB", "HelpContextID")]
+        [DataRow("MSACCESS", "HelpFile")]
+        [DataRow("MSPUB", "HelpFile")]
+        [DataRow("msaccess", "helpcontextid")]
+        [DataRow("mspub", "HELPFILE")]
+        [DataRow("MSACCESS", "HelpContextID")]
+        [DataRow("MSPUB", "HelpContextID")]
         public void NativeHostHelpWritesAreRefusedBeforeEitherSetter(string host, string property)
         {
             var f = new Fixture(host); var request = f.Request(property, property.Equals("HelpFile", StringComparison.OrdinalIgnoreCase) ? (object)"C:\\new.chm" : 322);
@@ -58,8 +60,14 @@ namespace VBAi.Tests.Unit
         }
 
         [DataTestMethod]
-        [DataRow("EXCEL")][DataRow("WINWORD")][DataRow("POWERPNT")][DataRow("SLDWORKS")]
-        [DataRow("OUTLOOK")][DataRow("MSPUB.exe")][DataRow("")][DataRow(null)]
+        [DataRow("EXCEL")]
+        [DataRow("WINWORD")]
+        [DataRow("POWERPNT")]
+        [DataRow("SLDWORKS")]
+        [DataRow("OUTLOOK")]
+        [DataRow("MSPUB.exe")]
+        [DataRow("")]
+        [DataRow(null)]
         public void OtherProcessesRetainTheirExistingScalarRoute(string host)
         {
             var f = new Fixture(host); f.Service.SetProjectProperty(f.Request("HelpFile", "C:\\new.chm"));
@@ -67,7 +75,10 @@ namespace VBAi.Tests.Unit
             Assert.AreEqual("DescriptorCandidateUnverified", f.Properties().Single(p => p.Name == "HelpFile").SetterStatus);
         }
 
-        [DataTestMethod][DataRow(0)][DataRow(1)][DataRow(101)]
+        [DataTestMethod]
+        [DataRow(0)]
+        [DataRow(1)]
+        [DataRow(101)]
         public void OtherProjectTypesRetainTheirExistingScalarRoute(int type)
         {
             var f = new Fixture("MSPUB"); f.Project.ProjectType = type;

@@ -1,8 +1,7 @@
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.IO;
 using System.Threading.Tasks;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
-using VBAi;
 
 namespace VBAi.Tests.Unit
 {
@@ -167,7 +166,8 @@ namespace VBAi.Tests.Unit
                 Exception cleanup = phase == "access" ? (Exception)new UnauthorizedAccessException("synthetic completion access failure") :
                     new IOException("synthetic completion failure"); int observations = 0, deletions = 0;
                 f.Repository.RecoveryAttributes = path => { if (++observations == 2 && (phase == "metadata" || phase == "access")) throw cleanup; return File.GetAttributes(path); };
-                f.Repository.DeleteRecoveryMarker = path => {
+                f.Repository.DeleteRecoveryMarker = path =>
+                {
                     deletions++;
                     if (phase == "delete") throw cleanup;
                     File.Delete(path); Directory.CreateDirectory(path);
@@ -194,11 +194,13 @@ namespace VBAi.Tests.Unit
                 var primary = new IOException("synthetic exact pre-mutation project observation failure");
                 var completion = new UnauthorizedAccessException("synthetic exact completion failure");
                 int projectObservations = 0, markerObservations = 0, deletions = 0;
-                var project = new VbaGitProject(() => f.Host, f.Host.FileName, value => {
+                var project = new VbaGitProject(() => f.Host, f.Host.FileName, value =>
+                {
                     if (++projectObservations == 3) throw primary; // Execute, import preflight, then Apply preflight.
                     return f.Host.FileName;
                 });
-                f.Repository.RecoveryAttributes = path => {
+                f.Repository.RecoveryAttributes = path =>
+                {
                     if (++markerObservations == 3 && !deletionFails) throw completion;
                     return File.GetAttributes(path);
                 };
@@ -224,7 +226,8 @@ namespace VBAi.Tests.Unit
             {
                 var before = f.Project.Capture(); var target = f.Snapshot("2"); int observations = 0, deletions = 0;
                 var captureFailure = new IOException("synthetic post-import observation failure");
-                var project = new VbaGitProject(() => f.Host, f.Host.FileName, value => {
+                var project = new VbaGitProject(() => f.Host, f.Host.FileName, value =>
+                {
                     if (readbackFails && f.Host.VBComponents.Item("Module1").CodeModule.Text.Contains("Value = 2")) throw captureFailure;
                     return f.Host.FileName;
                 });
@@ -234,7 +237,8 @@ namespace VBAi.Tests.Unit
                 {
                     string checkpoint = f.Repository.Checkpoint(target, "uncertain native target").Id;
                     // Ready observes definite absence, then PrepareRecovery independently observes it again.
-                    f.Repository.RecoveryAttributes = path => {
+                    f.Repository.RecoveryAttributes = path =>
+                    {
                         if (++observations > 2) throw new IOException("Unexpected completion metadata read after uncertain native mutation");
                         return File.GetAttributes(path);
                     };
@@ -261,12 +265,14 @@ namespace VBAi.Tests.Unit
             {
                 var before = f.Project.Capture(); var target = f.Snapshot("2"); var original = new IOException("synthetic successful-apply completion failure");
                 int observations = 0, deletions = 0;
-                f.Repository.RecoveryAttributes = path => {
+                f.Repository.RecoveryAttributes = path =>
+                {
                     observations++;
                     if ((phase == "metadata" && observations == 2) || (phase == "postobserve" && observations == 3)) throw original;
                     return File.GetAttributes(path);
                 };
-                f.Repository.DeleteRecoveryMarker = path => {
+                f.Repository.DeleteRecoveryMarker = path =>
+                {
                     deletions++; if (phase == "delete") throw original;
                     File.Delete(path); if (phase == "concurrent") Directory.CreateDirectory(path);
                 };

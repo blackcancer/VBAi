@@ -1,8 +1,7 @@
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Linq;
-using VBAi;
 using VBAi.Tests.Infrastructure;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace VBAi.Tests.Unit
 {
@@ -12,47 +11,47 @@ namespace VBAi.Tests.Unit
         public void NativeNavigationRejectsChangingOwnersAndDeduplicatesReparentedToolboxes()
         {
             foreach (string fault in new[] { "top French", "reparented", "foreign child", "closed root", "empty toolbox", "detached parent" })
-            using (var host = new AutomationHost(new AutomationNode { Kind = System.Windows.Automation.ControlType.Pane, Name = "surface" }))
-            using (var scene = new SystemScene())
-            {
-                var root = scene.Add("VBE", "wndclass_desked_gsk");
-                var surface = scene.Add("Boîte à outils", "F3 MinFrame fixture", fault == "top French" ? null : root); surface.Handle = host.Handle;
-                scene.AccessibilityHResult = -1;
-                if (fault == "foreign child") surface.ProcessId = 999999;
-                if (fault == "reparented") { var enumerate = VbeDebugWindows.EnumChildWindows; VbeDebugWindows.EnumChildWindows = (h, c, p) => { bool result = enumerate(h, c, p); surface.Parent = IntPtr.Zero; return result; }; }
-                if (fault == "closed root") { var read = VbeDebugWindows.GetWindowThreadProcessId; int rootReads = 0; surface.ProcessId = 0; VbeDebugWindows.GetWindowThreadProcessId = (IntPtr h, out uint pid) => { uint result = read(h, out pid); if (h == root.Handle && ++rootReads > 1) pid = 0; return result; }; }
-                if (fault == "empty toolbox") host.Invoke(h => System.Windows.Forms.Control.FromHandle(h).GetType().GetProperty("ControlBox").SetValue(System.Windows.Forms.Control.FromHandle(h), false));
-                if (fault == "detached parent") host.Root.Add(new AutomationNode { Kind = System.Windows.Automation.ControlType.TreeItem, Name = "detached" });
-                var probe = Native<VbeDebugWindows.INavigationSurfaceProbe>("NativeNavigationSurfaceProbe");
-                if (fault == "detached parent") probe.GetType().GetField("ReadParent", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic).SetValue(probe, new Func<System.Windows.Automation.AutomationElement, System.Windows.Automation.AutomationElement>(e => null));
-                var state = probe.Read("toolbox");
-                if (fault == "foreign child" || fault == "closed root" || fault == "empty toolbox") Assert.IsFalse(state.Available, fault);
-                else Assert.IsTrue(state.Available, fault);
-            }
+                using (var host = new AutomationHost(new AutomationNode { Kind = System.Windows.Automation.ControlType.Pane, Name = "surface" }))
+                using (var scene = new SystemScene())
+                {
+                    var root = scene.Add("VBE", "wndclass_desked_gsk");
+                    var surface = scene.Add("Boîte à outils", "F3 MinFrame fixture", fault == "top French" ? null : root); surface.Handle = host.Handle;
+                    scene.AccessibilityHResult = -1;
+                    if (fault == "foreign child") surface.ProcessId = 999999;
+                    if (fault == "reparented") { var enumerate = VbeDebugWindows.EnumChildWindows; VbeDebugWindows.EnumChildWindows = (h, c, p) => { bool result = enumerate(h, c, p); surface.Parent = IntPtr.Zero; return result; }; }
+                    if (fault == "closed root") { var read = VbeDebugWindows.GetWindowThreadProcessId; int rootReads = 0; surface.ProcessId = 0; VbeDebugWindows.GetWindowThreadProcessId = (IntPtr h, out uint pid) => { uint result = read(h, out pid); if (h == root.Handle && ++rootReads > 1) pid = 0; return result; }; }
+                    if (fault == "empty toolbox") host.Invoke(h => System.Windows.Forms.Control.FromHandle(h).GetType().GetProperty("ControlBox").SetValue(System.Windows.Forms.Control.FromHandle(h), false));
+                    if (fault == "detached parent") host.Root.Add(new AutomationNode { Kind = System.Windows.Automation.ControlType.TreeItem, Name = "detached" });
+                    var probe = Native<VbeDebugWindows.INavigationSurfaceProbe>("NativeNavigationSurfaceProbe");
+                    if (fault == "detached parent") probe.GetType().GetField("ReadParent", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic).SetValue(probe, new Func<System.Windows.Automation.AutomationElement, System.Windows.Automation.AutomationElement>(e => null));
+                    var state = probe.Read("toolbox");
+                    if (fault == "foreign child" || fault == "closed root" || fault == "empty toolbox") Assert.IsFalse(state.Available, fault);
+                    else Assert.IsTrue(state.Available, fault);
+                }
         }
 
         [Microsoft.VisualStudio.TestTools.UnitTesting.TestMethod]
         public void NativeNavigationOwnsExactSurfaceAndReportsEveryAbsentOrInaccessibleState()
         {
             foreach (string fault in new[] { "missing root", "enumeration", "hidden", "wrong class", "ambiguous", "empty", "toolbox", "macros" })
-            using (var host = new AutomationHost(new AutomationNode { Kind = System.Windows.Automation.ControlType.Pane, Name = "surface" }))
-            using (var scene = new SystemScene())
-            {
-                var root = scene.Add("VBE", "wndclass_desked_gsk");
-                var surface = scene.Add("Toolbox", fault == "toolbox" ? "VbaWindow" : fault == "macros" ? "#32770" : "SysTreeView32", root); surface.Handle = host.Handle;
-                if (fault == "missing root") root.Class = "not VBE";
-                if (fault == "enumeration") VbeDebugWindows.EnumChildWindows = (p, c, a) => { throw new InvalidOperationException("enumeration unavailable"); };
-                if (fault == "hidden") surface.Visible = false;
-                if (fault == "wrong class") surface.Class = "unrelated";
-                if (fault == "ambiguous") scene.Add("second", "SysTreeView32", root);
-                if (fault == "macros") { surface.Parent = IntPtr.Zero; surface.Text = "unrelated dialog"; }
-                if (fault == "toolbox") surface.Handle = new IntPtr(987654);
-                var probe = Native<VbeDebugWindows.INavigationSurfaceProbe>("NativeNavigationSurfaceProbe");
-                var result = probe.Read(fault == "toolbox" ? "toolbox" : fault == "macros" ? "macros" : "project");
-                Microsoft.VisualStudio.TestTools.UnitTesting.Assert.IsFalse(result.Available, fault);
-                Microsoft.VisualStudio.TestTools.UnitTesting.Assert.IsFalse(string.IsNullOrEmpty(result.Error), fault);
-                Microsoft.VisualStudio.TestTools.UnitTesting.Assert.ThrowsException<InvalidOperationException>(() => probe.Act("project", "expired", "select"));
-            }
+                using (var host = new AutomationHost(new AutomationNode { Kind = System.Windows.Automation.ControlType.Pane, Name = "surface" }))
+                using (var scene = new SystemScene())
+                {
+                    var root = scene.Add("VBE", "wndclass_desked_gsk");
+                    var surface = scene.Add("Toolbox", fault == "toolbox" ? "VbaWindow" : fault == "macros" ? "#32770" : "SysTreeView32", root); surface.Handle = host.Handle;
+                    if (fault == "missing root") root.Class = "not VBE";
+                    if (fault == "enumeration") VbeDebugWindows.EnumChildWindows = (p, c, a) => { throw new InvalidOperationException("enumeration unavailable"); };
+                    if (fault == "hidden") surface.Visible = false;
+                    if (fault == "wrong class") surface.Class = "unrelated";
+                    if (fault == "ambiguous") scene.Add("second", "SysTreeView32", root);
+                    if (fault == "macros") { surface.Parent = IntPtr.Zero; surface.Text = "unrelated dialog"; }
+                    if (fault == "toolbox") surface.Handle = new IntPtr(987654);
+                    var probe = Native<VbeDebugWindows.INavigationSurfaceProbe>("NativeNavigationSurfaceProbe");
+                    var result = probe.Read(fault == "toolbox" ? "toolbox" : fault == "macros" ? "macros" : "project");
+                    Microsoft.VisualStudio.TestTools.UnitTesting.Assert.IsFalse(result.Available, fault);
+                    Microsoft.VisualStudio.TestTools.UnitTesting.Assert.IsFalse(string.IsNullOrEmpty(result.Error), fault);
+                    Microsoft.VisualStudio.TestTools.UnitTesting.Assert.ThrowsException<InvalidOperationException>(() => probe.Act("project", "expired", "select"));
+                }
         }
 
         [Microsoft.VisualStudio.TestTools.UnitTesting.TestMethod]
@@ -208,7 +207,8 @@ namespace VBAi.Tests.Unit
             foreach (int i in Enumerable.Range(0, 6))
             {
                 var p = new IdeSurfaceFixture.NavigationProbe(); var r = p.Change();
-                p.AfterAction = () => {
+                p.AfterAction = () =>
+                {
                     if (i == 0) throw new InvalidOperationException("native failed");
                     if (i == 1) p.State.Identity = "new tree";
                     if (i == 2) p.State.Nodes = new VbeDebugWindows.NavigationNode[0];

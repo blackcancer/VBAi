@@ -1,8 +1,8 @@
+using Microsoft.CSharp.RuntimeBinder;
 using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using System.Text;
-using Microsoft.CSharp.RuntimeBinder;
 
 namespace VBAi
 {
@@ -18,11 +18,12 @@ namespace VBAi
         internal static object Resolve(int processId, Func<object> registeredApplication)
         {
             var documents = new List<IntPtr>();
-            VbeDebugWindows.EnumWindows((window, parameter) => {
-                uint owner;
-                VbeDebugWindows.GetWindowThreadProcessId(window, out owner);
+            VbeDebugWindows.EnumWindows((window, parameter) =>
+            {
+                VbeDebugWindows.GetWindowThreadProcessId(window, out uint owner);
                 if (owner != (uint)processId) return true;
-                VbeDebugWindows.EnumChildWindows(window, (child, childParameter) => {
+                VbeDebugWindows.EnumChildWindows(window, (child, childParameter) =>
+                {
                     VbeDebugWindows.GetWindowThreadProcessId(child, out owner);
                     if (owner != (uint)processId) return true;
                     var name = new StringBuilder(256);
@@ -37,12 +38,10 @@ namespace VBAi
                 try
                 {
                     Guid dispatch = new Guid("00020400-0000-0000-C000-000000000046");
-                    object window;
-                    int result = VbeDebugWindows.AccessibleObjectFromWindow(document, 0xFFFFFFF0, ref dispatch, out window);
+                    int result = VbeDebugWindows.AccessibleObjectFromWindow(document, 0xFFFFFFF0, ref dispatch, out object window);
                     if (result != 0 || window == null) continue;
                     dynamic application = ((dynamic)window).Application;
-                    uint owner;
-                    VbeDebugWindows.GetWindowThreadProcessId(new IntPtr(Convert.ToInt64(application.Hwnd)), out owner);
+                    VbeDebugWindows.GetWindowThreadProcessId(new IntPtr(Convert.ToInt64(application.Hwnd)), out uint owner);
                     if (owner == (uint)processId) return application;
                 }
                 catch (COMException) { }

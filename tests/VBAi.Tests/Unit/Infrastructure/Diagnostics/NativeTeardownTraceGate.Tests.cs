@@ -1,9 +1,9 @@
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Text;
 using System.Web.Script.Serialization;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 using VBAi.Tests.Integration;
 
 namespace VBAi.Tests.Unit
@@ -18,21 +18,35 @@ namespace VBAi.Tests.Unit
             internal bool Owned = true, Exited, Attached = true;
             internal Scope()
             {
-                Identity = new NativeTeardownTraceGate.Identity { ProcessId = 424242, ProcessStartedUtc = DateTime.UtcNow.ToString("o"),
+                Identity = new NativeTeardownTraceGate.Identity
+                {
+                    ProcessId = 424242,
+                    ProcessStartedUtc = DateTime.UtcNow.ToString("o"),
                     Root = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N")),
-                    Executable = @"C:\Program Files\Microsoft Office\EXCEL.EXE", AssemblyPath = @"C:\Owned\VBAi.dll",
-                    AssemblyMvid = Guid.NewGuid().ToString("D"), Scenario = "NativeVariantArraysRoundTripWithBoundsAndOneInvocation" };
+                    Executable = @"C:\Program Files\Microsoft Office\EXCEL.EXE",
+                    AssemblyPath = @"C:\Owned\VBAi.dll",
+                    AssemblyMvid = Guid.NewGuid().ToString("D"),
+                    Scenario = "NativeVariantArraysRoundTripWithBoundsAndOneInvocation"
+                };
                 Directory.CreateDirectory(Identity.Root);
                 Gate = new NativeTeardownTraceGate(Identity, () => Owned, () => Exited, () => Attached);
             }
-            internal string Marker(string phase) => new JavaScriptSerializer().Serialize(new { Phase = phase, Identity.ProcessId,
-                Identity.ProcessStartedUtc, Identity.Nonce, Identity.AssemblyMvid });
+            internal string Marker(string phase) => new JavaScriptSerializer().Serialize(new
+            {
+                Phase = phase,
+                Identity.ProcessId,
+                Identity.ProcessStartedUtc,
+                Identity.Nonce,
+                Identity.AssemblyMvid
+            });
             internal void Arm() => File.WriteAllText(Path.Combine(Identity.Root, "teardown.armed.json"), Marker("Armed"), new UTF8Encoding(false));
             public void Dispose() => Directory.Delete(Identity.Root, true);
         }
 
-        private static IDictionary<string, object> Operation(bool pending, bool uncertain = false) => new Dictionary<string, object> {
-            ["Ok"] = true, ["Data"] = new Dictionary<string, object> { ["Query"] = "owned-query", ["Pending"] = pending, ["Uncertain"] = uncertain }
+        private static IDictionary<string, object> Operation(bool pending, bool uncertain = false) => new Dictionary<string, object>
+        {
+            ["Ok"] = true,
+            ["Data"] = new Dictionary<string, object> { ["Query"] = "owned-query", ["Pending"] = pending, ["Uncertain"] = uncertain }
         };
 
         [TestMethod]

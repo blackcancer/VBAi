@@ -30,9 +30,17 @@ namespace VBAi
                 { if (selected != null) throw new InvalidOperationException("The procedure is ambiguous."); selected = procedure; }
             if (selected == null) throw new InvalidOperationException("The exact procedure is absent.");
             string after = VbaParameterRename.Transform(before, request, (int)selected.BodyLine, (int)selected.EndLine);
-            if (preview) return new { request.Project, request.Module, request.Procedure, Before = before, After = after,
-                ExpectedSha256 = Hash(before), Changed = before != after,
-                Scope = "Private standard-module parameter, local uses and named arguments of direct or module-qualified calls in this module. Public interfaces, classes, callbacks and conditional binding are refused." };
+            if (preview) return new
+            {
+                request.Project,
+                request.Module,
+                request.Procedure,
+                Before = before,
+                After = after,
+                ExpectedSha256 = Hash(before),
+                Changed = before != after,
+                Scope = "Private standard-module parameter, local uses and named arguments of direct or module-qualified calls in this module. Public interfaces, classes, callbacks and conditional binding are refused."
+            };
             if (request.ExpectedMode != 2) throw new ArgumentException("ExpectedMode=2 is required to rename a parameter.");
             Response state = execute(new Request { Command = "debug_state", Project = request.Project });
             if (!state.Ok || (int)((dynamic)state.Data).Mode != 2) throw new InvalidOperationException("Renaming requires design mode.");

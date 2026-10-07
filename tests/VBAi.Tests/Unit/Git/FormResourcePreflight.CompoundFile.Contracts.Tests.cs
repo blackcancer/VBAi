@@ -1,8 +1,8 @@
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace VBAi.Tests.Unit
 {
@@ -29,8 +29,10 @@ namespace VBAi.Tests.Unit
         }
 
         [DataTestMethod]
-        [DataRow(0u, 512)] [DataRow(4u, 2560)]
-        [DataRow(5u, -1)] [DataRow(uint.MaxValue, -1)]
+        [DataRow(0u, 512)]
+        [DataRow(4u, 2560)]
+        [DataRow(5u, -1)]
+        [DataRow(uint.MaxValue, -1)]
         public void PrivateSectorAddressRequiresAnActualSectorWithinTheDeclaredCfbRegion(uint sector, int expected)
         {
             int length; byte[] bytes = PrivateContractResource(out length), original = (byte[])bytes.Clone();
@@ -45,7 +47,10 @@ namespace VBAi.Tests.Unit
         }
 
         [DataTestMethod]
-        [DataRow(-1L)] [DataRow(long.MinValue)] [DataRow(3073L)] [DataRow(long.MaxValue)]
+        [DataRow(-1L)]
+        [DataRow(long.MinValue)]
+        [DataRow(3073L)]
+        [DataRow(long.MaxValue)]
         public void PrivateChainRejectsInvalidSizeBeforeReservingAnOtherwiseFreeSector(long size)
         {
             foreach (uint start in new[] { 0xfffffffeu, 4u })
@@ -62,7 +67,8 @@ namespace VBAi.Tests.Unit
         }
 
         [DataTestMethod]
-        [DataRow(false)] [DataRow(true)]
+        [DataRow(false)]
+        [DataRow(true)]
         public void PrivateChainAcceptsTheEndMarkerForAnUnsizedOrExactlyEmptyChain(bool sized)
         {
             int length; byte[] bytes = PrivateContractResource(out length), original = (byte[])bytes.Clone();

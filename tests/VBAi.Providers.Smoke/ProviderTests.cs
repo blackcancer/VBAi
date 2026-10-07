@@ -65,12 +65,14 @@ internal static partial class ProviderTests
     [STAThread]
     public static int Main(string[] args)
     {
-        try {
+        try
+        {
             if (args.Contains("--headless")) { FakeCopilot(); return 0; }
             if (args.Contains("--live-openrouter")) { LiveOpenRouter().GetAwaiter().GetResult(); return 0; }
             if (args.Contains("--live-openrouter-tools")) { LiveOpenRouterTools().GetAwaiter().GetResult(); return 0; }
             SettingsUi(); GitHubSettingsUi(); Run().GetAwaiter().GetResult(); Extended().GetAwaiter().GetResult(); return 0;
-        } catch (Exception ex) { Console.Error.WriteLine(ex); return 1; }
+        }
+        catch (Exception ex) { Console.Error.WriteLine(ex); return 1; }
     }
     /// <summary>Exécute les scénarios compatibles avec la suite de couverture automatisée.</summary>
     internal static void RunCoverageSuite()
@@ -81,7 +83,8 @@ internal static partial class ProviderTests
     private static void SettingsUi()
     {
         var settings = new LlmSettings { ProviderName = "Claude" };
-        using (var form = new LlmSettingsWindow(settings)) {
+        using (var form = new LlmSettingsWindow(settings))
+        {
             Func<string, object> field = name => typeof(LlmSettingsWindow).GetField(name, BindingFlags.Instance | BindingFlags.NonPublic).GetValue(form);
             var picker = (System.Windows.Forms.ComboBox)field("provider");
             var endpoint = (System.Windows.Forms.TextBox)field("openAiEndpoint");
@@ -111,12 +114,14 @@ internal static partial class ProviderTests
     private static async Task Run()
     {
         var settings = new LlmSettings();
-        foreach (var p in LlmProvider.All.Where(x => !x.IsCodex && !x.IsCopilot)) {
+        foreach (var p in LlmProvider.All.Where(x => !x.IsCodex && !x.IsCopilot))
+        {
             settings.SetKey(p, "test-key-" + p.Name);
             settings.SetSelectedModel(p, "model-" + p.Name);
         }
         var restored = Json.Deserialize<LlmSettings>(Json.Serialize(settings));
-        foreach (var p in LlmProvider.All.Where(x => !x.IsCodex && !x.IsCopilot)) {
+        foreach (var p in LlmProvider.All.Where(x => !x.IsCodex && !x.IsCopilot))
+        {
             Assert(restored.GetKey(p) == "test-key-" + p.Name, "key isolation " + p.Name);
             Assert(restored.GetSelectedModel(p) == "model-" + p.Name, "model isolation " + p.Name);
         }
@@ -127,56 +132,79 @@ internal static partial class ProviderTests
         Assert(legacy.GetSelectedModel(Provider("Gemini")) == "gemini-test", "null dictionary migration");
         Console.WriteLine("PASS provider key/model isolation, DPAPI roundtrip and legacy settings");
 
-        foreach (var p in LlmProvider.All.Where(x => !x.IsCodex && !x.IsCopilot && !x.IsClaude && !x.ManualModels)) {
-            var handler = new Handler { Handle = async request => {
-                Assert(request.RequestUri.AbsoluteUri == p.Endpoint, "endpoint " + p.Name);
-                Assert(request.Headers.Authorization.Parameter == "test-key-" + p.Name, "auth " + p.Name);
-                var payload = Obj(Json.DeserializeObject(await request.Content.ReadAsStringAsync()));
-                Assert(payload.ContainsKey("store") == (p.Name == "OpenAI API"), "provider-specific store " + p.Name);
-                Assert(ClaudeProtocol.Array(payload, "tools").Length == 1, "missing tools");
-                return Response(new { choices = new[] { new { message = new { role = "assistant", content = "été", reasoning_content = "opaque", tool_calls = new[] {
+        foreach (var p in LlmProvider.All.Where(x => !x.IsCodex && !x.IsCopilot && !x.IsClaude && !x.ManualModels))
+        {
+            var handler = new Handler
+            {
+                Handle = async request =>
+                {
+                    Assert(request.RequestUri.AbsoluteUri == p.Endpoint, "endpoint " + p.Name);
+                    Assert(request.Headers.Authorization.Parameter == "test-key-" + p.Name, "auth " + p.Name);
+                    var payload = Obj(Json.DeserializeObject(await request.Content.ReadAsStringAsync()));
+                    Assert(payload.ContainsKey("store") == (p.Name == "OpenAI API"), "provider-specific store " + p.Name);
+                    Assert(ClaudeProtocol.Array(payload, "tools").Length == 1, "missing tools");
+                    return Response(new
+                    {
+                        choices = new[] { new { message = new { role = "assistant", content = "été", reasoning_content = "opaque", tool_calls = new[] {
                     new { id = "call-1", type = "function", function = new { name = "read_module", arguments = "{}" }, extra_content = new { google = new { thought_signature = "opaque-signature" } } }
-                } } } } });
-            } };
-            using (var client = new LlmChatClient(p, settings, "model", handler)) {
+                } } } }
+                    });
+                }
+            };
+            using (var client = new LlmChatClient(p, settings, "model", handler))
+            {
                 var result = await client.CompleteAsync(History(), Tools);
                 Assert(Text(result, "content") == "été", "UTF8 response");
                 Assert(Json.Serialize(result).Contains("opaque-signature") && result.ContainsKey("reasoning_content"), "provider continuation metadata lost");
             }
-            var catalogue = new Handler { Handle = request => {
-                Assert(request.RequestUri.AbsolutePath.EndsWith(p.IsOllama ? "/api/tags" : "/models"), "catalogue path " + p.Name);
-                return Task.FromResult(p.IsOllama ? Response(new { models = new[] { new { name = "local-model" } } }) : Response(new { data = new[] { new { id = "remote-model" } } }));
-            } };
+            var catalogue = new Handler
+            {
+                Handle = request =>
+                {
+                    Assert(request.RequestUri.AbsolutePath.EndsWith(p.IsOllama ? "/api/tags" : "/models"), "catalogue path " + p.Name);
+                    return Task.FromResult(p.IsOllama ? Response(new { models = new[] { new { name = "local-model" } } }) : Response(new { data = new[] { new { id = "remote-model" } } }));
+                }
+            };
             Assert((await LlmChatClient.ListModelsAsync(p, settings, catalogue)).Length == 1, "catalogue " + p.Name);
         }
         Console.WriteLine("PASS all compatible providers: endpoints, auth, models, tool calls and continuation metadata");
 
         var claude = Provider("Claude"); int claudeCalls = 0;
-        var claudeHandler = new Handler { Handle = async request => {
-            Assert(request.Headers.Contains("x-api-key") && request.Headers.Contains("anthropic-version") && request.Headers.Authorization == null, "Claude auth");
-            var payload = Obj(Json.DeserializeObject(await request.Content.ReadAsStringAsync()));
-            Assert(Text(payload, "system") == "Read before editing.", "Claude system prompt");
-            Assert(Obj(ClaudeProtocol.Array(payload, "tools")[0]).ContainsKey("input_schema"), "Claude tools schema");
-            if (++claudeCalls == 1) return Response(new { content = new[] { new { type = "tool_use", id = "a", name = "read_module", input = new { } } }, stop_reason = "tool_use" });
-            var last = Obj(ClaudeProtocol.Array(payload, "messages").Last());
-            Assert(Text(last, "role") == "user" && Text(Obj(ClaudeProtocol.Array(last, "content")[0]), "tool_use_id") == "a", "Claude tool result mapping");
-            return Response(new { content = new[] { new { type = "text", text = "Réponse complète" } }, stop_reason = "end_turn" });
-        } };
-        using (var client = new LlmChatClient(claude, settings, "claude-model", claudeHandler)) {
+        var claudeHandler = new Handler
+        {
+            Handle = async request =>
+            {
+                Assert(request.Headers.Contains("x-api-key") && request.Headers.Contains("anthropic-version") && request.Headers.Authorization == null, "Claude auth");
+                var payload = Obj(Json.DeserializeObject(await request.Content.ReadAsStringAsync()));
+                Assert(Text(payload, "system") == "Read before editing.", "Claude system prompt");
+                Assert(Obj(ClaudeProtocol.Array(payload, "tools")[0]).ContainsKey("input_schema"), "Claude tools schema");
+                if (++claudeCalls == 1) return Response(new { content = new[] { new { type = "tool_use", id = "a", name = "read_module", input = new { } } }, stop_reason = "tool_use" });
+                var last = Obj(ClaudeProtocol.Array(payload, "messages").Last());
+                Assert(Text(last, "role") == "user" && Text(Obj(ClaudeProtocol.Array(last, "content")[0]), "tool_use_id") == "a", "Claude tool result mapping");
+                return Response(new { content = new[] { new { type = "text", text = "Réponse complète" } }, stop_reason = "end_turn" });
+            }
+        };
+        using (var client = new LlmChatClient(claude, settings, "claude-model", claudeHandler))
+        {
             var history = History(); history.Add(await client.CompleteAsync(history, Tools));
             history.Add(new { role = "tool", tool_call_id = "a", content = "Sub Exemple()" });
             Assert(Text(await client.CompleteAsync(history, Tools), "content") == "Réponse complète", "Claude final response");
         }
         int pages = 0;
-        var paginated = new Handler { Handle = request => {
-            pages++; if (pages == 2) Assert(request.RequestUri.Query == "?after_id=first", "Claude cursor");
-            return Task.FromResult(Response(new { data = new[] { new { id = pages == 1 ? "first" : "second", display_name = "Claude" } }, has_more = pages == 1, last_id = "first" }));
-        } };
+        var paginated = new Handler
+        {
+            Handle = request =>
+            {
+                pages++; if (pages == 2) Assert(request.RequestUri.Query == "?after_id=first", "Claude cursor");
+                return Task.FromResult(Response(new { data = new[] { new { id = pages == 1 ? "first" : "second", display_name = "Claude" } }, has_more = pages == 1, last_id = "first" }));
+            }
+        };
         Assert((await LlmChatClient.ListModelsAsync(claude, settings, paginated)).Length == 2, "Claude pagination");
         Console.WriteLine("PASS native Claude system/tools/results, UTF8 and catalogue pagination");
 
         var failure = new Handler { Handle = r => Task.FromResult(Response(new { secret = "do-not-display" }, HttpStatusCode.Unauthorized)) };
-        using (var client = new LlmChatClient(Provider("Gemini"), settings, "model", failure)) {
+        using (var client = new LlmChatClient(Provider("Gemini"), settings, "model", failure))
+        {
             try { await client.CompleteAsync(History(), Tools); throw new Exception("expected failure"); }
             catch (InvalidOperationException ex) { Assert(ex.Message.Contains("401") && !ex.Message.Contains("do-not-display"), "unsafe HTTP error"); }
         }
@@ -186,15 +214,19 @@ internal static partial class ProviderTests
         Console.WriteLine("PASS HTTP failures redact response bodies and remote HTTP is rejected");
 
         string previous = Environment.GetEnvironmentVariable("VBAi_COPILOT_CLI");
-        try {
+        try
+        {
             Environment.SetEnvironmentVariable("VBAi_COPILOT_CLI", CopilotFixtureExecutable ?? Assembly.GetExecutingAssembly().Location);
-            foreach (string version in new[] { "2", "3" }) {
+            foreach (string version in new[] { "2", "3" })
+            {
                 Environment.SetEnvironmentVariable("VBAi_TEST_COPILOT_VERSION", version);
                 using (var client = new CopilotClient()) Assert((await client.ListModelsAsync()).Single().Id == "test-model", "Copilot models");
-                using (var client = new CopilotClient()) {
+                using (var client = new CopilotClient())
+                {
                     int toolsCalled = 0; var history = History(); var streamed = new StringBuilder();
                     client.TextDelta = text => streamed.Append(text);
-                    var result = await client.CompleteAsync("test-model", history, Tools, (name, args) => {
+                    var result = await client.CompleteAsync("test-model", history, Tools, (name, args) =>
+                    {
                         Assert(name == "read_module", "unexpected native tool execution"); toolsCalled++;
                         return Task.FromResult("résultat été");
                     });
@@ -204,19 +236,22 @@ internal static partial class ProviderTests
                 }
             }
             Environment.SetEnvironmentVariable("VBAi_TEST_COPILOT_VERSION", "99");
-            using (var client = new CopilotClient()) {
+            using (var client = new CopilotClient())
+            {
                 try { await client.ListModelsAsync(); throw new Exception("unsupported protocol accepted"); }
                 catch (InvalidOperationException ex) { Assert(ex.Message.Contains("incompatible"), "protocol error"); }
             }
             Environment.SetEnvironmentVariable("VBAi_TEST_COPILOT_VERSION", "3");
             Environment.SetEnvironmentVariable("VBAi_TEST_COPILOT_WAIT", "1");
-            using (var client = new CopilotClient()) {
+            using (var client = new CopilotClient())
+            {
                 var task = client.CompleteAsync("test-model", History(), Tools, (name, args) => Task.FromResult("unused"));
                 await Task.Delay(250); client.Dispose();
                 Assert(await Task.WhenAny(task, Task.Delay(3000)) == task, "Copilot cancellation hung");
                 try { await task; throw new Exception("cancelled turn completed"); } catch (OperationCanceledException) { }
             }
-        } finally { Environment.SetEnvironmentVariable("VBAi_COPILOT_CLI", previous); Environment.SetEnvironmentVariable("VBAi_TEST_COPILOT_VERSION", null); Environment.SetEnvironmentVariable("VBAi_TEST_COPILOT_WAIT", null); }
+        }
+        finally { Environment.SetEnvironmentVariable("VBAi_COPILOT_CLI", previous); Environment.SetEnvironmentVariable("VBAi_TEST_COPILOT_VERSION", null); Environment.SetEnvironmentVariable("VBAi_TEST_COPILOT_WAIT", null); }
         Console.WriteLine("PASS Copilot framed subprocess protocol v2/v3, tool dispatch/deduplication, permission scoping, foreign sessions and unsupported version");
     }
 
@@ -246,42 +281,50 @@ internal static partial class ProviderTests
         string session = null; var input = Console.OpenStandardInput();
         Action<string, object> evt = (type, data) => WriteFrame(new { jsonrpc = "2.0", method = "session.event", @params = new { sessionId = session, @event = new { type, data } } });
         Action finish = () => { evt("assistant.message_delta", new { deltaContent = "Réponse été" }); evt("assistant.message", new { content = "Réponse été" }); evt("session.idle", new { }); };
-        while (true) {
+        while (true)
+        {
             var message = ReadFrame(input); if (message == null) return;
             string method = Text(message, "method"); object id = message["id"];
             var p = message.ContainsKey("params") ? Obj(message["params"]) : null;
             Action<object> reply = result => WriteFrame(new { jsonrpc = "2.0", id, result });
             if (method == "ping") reply(new { protocolVersion = version });
             else if (method == "models.list") reply(new { models = new[] { new { id = "test-model", name = "Test" } } });
-            else if (method == "session.create") {
+            else if (method == "session.create")
+            {
                 session = Text(p, "sessionId");
                 Assert(ClaudeProtocol.Array(p, "availableTools").Length == 1 && Equals(p["requestPermission"], true), "Copilot tool scope");
                 Assert(Text(Obj(p["systemMessage"]), "content").Contains("Read before editing."), "system instructions lost");
                 reply(new { sessionId = session });
             }
-            else if (method == "session.send") {
+            else if (method == "session.send")
+            {
                 reply(new { messageId = "m1" });
                 if (Environment.GetEnvironmentVariable("VBAi_TEST_COPILOT_WAIT") == "1") continue;
                 WriteFrame(new { jsonrpc = "2.0", method = "session.event", @params = new { sessionId = "foreign", @event = new { type = "session.idle", data = new { } } } });
                 if (version == 3) evt("permission.requested", new { requestId = "deny", permissionRequest = new { kind = "shell", toolName = "read_module" } });
                 else WriteFrame(new { jsonrpc = "2.0", id = "deny", method = "permission.request", @params = new { sessionId = session, permissionRequest = new { kind = "shell" } } });
             }
-            else if (method == "session.permissions.handlePendingPermissionRequest" || method == null && (Convert.ToString(id) == "deny" || Convert.ToString(id) == "allow")) {
+            else if (method == "session.permissions.handlePendingPermissionRequest" || method == null && (Convert.ToString(id) == "deny" || Convert.ToString(id) == "allow"))
+            {
                 var decision = p == null ? Obj(Obj(message["result"])["result"]) : Obj(p["result"]);
                 string permissionId = p == null ? Convert.ToString(id) : Text(p, "requestId");
                 Assert(Text(decision, "kind") == (permissionId == "allow" ? "approved" : "denied-by-rules"), "permission scope incorrect");
                 if (p != null) reply(new { });
-                if (permissionId == "deny") {
+                if (permissionId == "deny")
+                {
                     if (version == 3) evt("permission.requested", new { requestId = "allow", permissionRequest = new { kind = "custom-tool", toolName = "read_module" } });
                     else WriteFrame(new { jsonrpc = "2.0", id = "allow", method = "permission.request", @params = new { sessionId = session, permissionRequest = new { kind = "custom-tool", toolName = "read_module" } } });
                     continue;
                 }
-                if (version == 3) {
+                if (version == 3)
+                {
                     evt("external_tool.requested", new { requestId = "tool1", toolCallId = "c1", toolName = "read_module", arguments = new { } });
                     evt("external_tool.requested", new { requestId = "tool1", toolCallId = "c1", toolName = "read_module", arguments = new { } });
-                } else WriteFrame(new { jsonrpc = "2.0", id = "tool1", method = "tool.call", @params = new { sessionId = session, toolName = "read_module", toolCallId = "c1", arguments = new { } } });
+                }
+                else WriteFrame(new { jsonrpc = "2.0", id = "tool1", method = "tool.call", @params = new { sessionId = session, toolName = "read_module", toolCallId = "c1", arguments = new { } } });
             }
-            else if (method == "session.tools.handlePendingToolCall" || method == null && Convert.ToString(id) == "tool1") {
+            else if (method == "session.tools.handlePendingToolCall" || method == null && Convert.ToString(id) == "tool1")
+            {
                 var result = p == null ? Obj(Obj(message["result"])["result"]) : Obj(p["result"]);
                 Assert(Text(result, "textResultForLlm") == "résultat été", "tool result encoding");
                 if (p != null) reply(new { }); finish();

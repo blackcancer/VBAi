@@ -1,3 +1,4 @@
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -8,7 +9,6 @@ using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Web.Script.Serialization;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace VBAi.Tests.Integration
 {
@@ -26,9 +26,18 @@ namespace VBAi.Tests.Integration
 
         /// <summary>Qualifies the actual VBE owner-dispatched import for every prepared persisted native layout.</summary>
         [TestMethod]
-        [DataRow("LabelButton")][DataRow("TextBox")][DataRow("ComboBox")][DataRow("ListBox")]
-        [DataRow("CheckBox")][DataRow("OptionButton")][DataRow("ToggleButton")][DataRow("ScrollBar")]
-        [DataRow("SpinButton")][DataRow("TabStrip")][DataRow("Image")][DataRow("FrameMultiPage")]
+        [DataRow("LabelButton")]
+        [DataRow("TextBox")]
+        [DataRow("ComboBox")]
+        [DataRow("ListBox")]
+        [DataRow("CheckBox")]
+        [DataRow("OptionButton")]
+        [DataRow("ToggleButton")]
+        [DataRow("ScrollBar")]
+        [DataRow("SpinButton")]
+        [DataRow("TabStrip")]
+        [DataRow("Image")]
+        [DataRow("FrameMultiPage")]
         public void InstalledOwnerGitWindowRestoresPersistedFormCheckpoint(string layout)
         {
             if (Environment.GetEnvironmentVariable("VBAi_RUN_USERFORM_OWNER_RESTORE_TESTS") != "1")
@@ -56,9 +65,17 @@ namespace VBAi.Tests.Integration
             Assert.AreEqual(typeof(VbeSession).Module.ModuleVersionId, expected, "Tests must reference the exact frozen product candidate.");
             Assert.AreEqual(hash, Sha(typeof(VbeSession).Assembly.Location), true);
             var context = new RunContext(Path.Combine(root, "embedded-git-" + Guid.NewGuid().ToString("N")), plan) { FontObservation = fontObservation };
-            context.Record(new { Phase = "Preflight", ExpectedMvid = expected.ToString("D"), ExpectedSha256 = hash,
-                Remote = plan.Remote, Branch = plan.Branch, BranchCommit = plan.Commit,
-                Layout = layout, Scope = persistence ? "Owner-dispatched checkpoint import, one Save, normal exit, independent read-only fresh-process reopen; no remote push or recovery replay." : layout == null ? "Owner-dispatched capture/checkpoint only." : "Owner-dispatched persisted UserForm checkpoint import with exact native snapshot and font readback; no remote push, recovery replay or save/reopen acceptance." });
+            context.Record(new
+            {
+                Phase = "Preflight",
+                ExpectedMvid = expected.ToString("D"),
+                ExpectedSha256 = hash,
+                Remote = plan.Remote,
+                Branch = plan.Branch,
+                BranchCommit = plan.Commit,
+                Layout = layout,
+                Scope = persistence ? "Owner-dispatched checkpoint import, one Save, normal exit, independent read-only fresh-process reopen; no remote push or recovery replay." : layout == null ? "Owner-dispatched capture/checkpoint only." : "Owner-dispatched persisted UserForm checkpoint import with exact native snapshot and font readback; no remote push, recovery replay or save/reopen acceptance."
+            });
             var owner = new Thread(() => Owner(context, expected, hash)) { IsBackground = true };
             owner.SetApartmentState(ApartmentState.STA); owner.Start();
             try
@@ -94,9 +111,18 @@ namespace VBAi.Tests.Integration
                 Exception preserved = EmbeddedGitUiProtocol.PreserveFailures(primary, context.UiError, context.OwnerError);
                 try
                 {
-                    context.Record(new { Phase = "FailedOrRetained", Retained = context.Retain, Error = preserved.ToString(),
-                        ProcessId = context.Fixture?.ProcessId, MenuEmitted = context.MenuEmitted, ModalClosed = context.ModalClosed,
-                        OwnerTerminal = context.OwnerDone.IsSet, UiTerminal = context.UiDone.IsSet, ReplayAttempts = 0 });
+                    context.Record(new
+                    {
+                        Phase = "FailedOrRetained",
+                        Retained = context.Retain,
+                        Error = preserved.ToString(),
+                        ProcessId = context.Fixture?.ProcessId,
+                        MenuEmitted = context.MenuEmitted,
+                        ModalClosed = context.ModalClosed,
+                        OwnerTerminal = context.OwnerDone.IsSet,
+                        UiTerminal = context.UiDone.IsSet,
+                        ReplayAttempts = 0
+                    });
                 }
                 catch (Exception evidence) { throw new AggregateException("Original scenario and durable failure recording both failed.", preserved, evidence); }
                 if (!ReferenceEquals(primary, preserved)) ExceptionDispatchInfo.Capture(preserved).Throw();
@@ -127,19 +153,35 @@ namespace VBAi.Tests.Integration
                     var claim = RootFontObservationManifest.Build(context.FontObservation, context.Output, context.Scope.Path,
                         context.Scope.Baseline, expected, Guid.Parse(Convert.ToString(data["AssemblyModuleVersionId"])), Guid.NewGuid());
                     RootFontObservationManifest.Publish(context.FontObservation, claim, Environment.GetEnvironmentVariable);
-                    context.Record(new { Phase = "RootFontDiagnosticManifestPublished", ManifestPath = context.FontObservation.Path,
+                    context.Record(new
+                    {
+                        Phase = "RootFontDiagnosticManifestPublished",
+                        ManifestPath = context.FontObservation.Path,
                         BaselineFontSeedProfile = context.FontObservation.SeedProfile,
                         SourceWorkbook = context.FontObservation.SourceWorkbook,
-                        Manifest = claim, NativeFontDelivery = "NOT_RUN", GetterOrExportRequestsAdded = 0 });
+                        Manifest = claim,
+                        NativeFontDelivery = "NOT_RUN",
+                        GetterOrExportRequestsAdded = 0
+                    });
                 }
                 context.WorkbookSha256 = Sha(context.Scope.Path);
-                context.Record(new { Phase = "Prepared", ProcessId = context.Fixture.ProcessId, context.Scope.ThreadId,
-                    VbeHandle = context.Scope.VbeHandle.ToInt64(), context.Scope.Path, context.Scope.Cache,
-                    WorkbookSha256 = context.WorkbookSha256, StateSha256 = ShaText(context.Scope.State), Mvid = expected.ToString("D") });
+                context.Record(new
+                {
+                    Phase = "Prepared",
+                    ProcessId = context.Fixture.ProcessId,
+                    context.Scope.ThreadId,
+                    VbeHandle = context.Scope.VbeHandle.ToInt64(),
+                    context.Scope.Path,
+                    context.Scope.Cache,
+                    WorkbookSha256 = context.WorkbookSha256,
+                    StateSha256 = ShaText(context.Scope.State),
+                    Mvid = expected.ToString("D")
+                });
                 context.Ready.Set();
                 if (!context.StartMenu.Wait(TimeSpan.FromSeconds(30))) throw new TimeoutException("UIA worker did not prepare the modal invocation.");
                 if (context.Stop) throw new InvalidOperationException("Coordinator stopped before modal emission.");
-                context.Fixture.ExecuteEmbeddedGitMenu(value => {
+                context.Fixture.ExecuteEmbeddedGitMenu(value =>
+                {
                     context.Record(value);
                     if (new JavaScriptSerializer().Serialize(value).Contains("MenuExecuteIntent"))
                     { context.MenuEmitted = true; context.MenuIntent.Set(); }
@@ -158,13 +200,19 @@ namespace VBAi.Tests.Integration
                 context.Record(new { Phase = "NativeStatePreserved", StateSha256 = ShaText(context.Scope.State) });
                 if (context.Plan.Persistence)
                 {
-                    context.Fixture.SaveEmbeddedImportedForm(context.Scope, context.Plan.Remote, context.Plan.Branch, context.Plan.Commit, value => {
+                    context.Fixture.SaveEmbeddedImportedForm(context.Scope, context.Plan.Remote, context.Plan.Branch, context.Plan.Commit, value =>
+                    {
                         if (value && context.Stop) { context.Fixture.PreserveMonacoNativeOutcome(); throw new InvalidOperationException("Coordinator stopped before the next persistence dispatch."); }
                         nativePending = value;
                     }, context.Record);
                     context.WorkbookSha256 = Sha(context.Scope.Path);
-                    context.Record(new { Phase = "PostImportSaveVerified", Path = context.Scope.Path,
-                        WorkbookSha256 = context.WorkbookSha256, SaveAttempts = 1 });
+                    context.Record(new
+                    {
+                        Phase = "PostImportSaveVerified",
+                        Path = context.Scope.Path,
+                        WorkbookSha256 = context.WorkbookSha256,
+                        SaveAttempts = 1
+                    });
                 }
             }
             catch (Exception error) { context.OwnerError = error; if (context.Fixture?.PreserveForDiagnosticRecovery == true || EmbeddedGitUiProtocol.MustRetainOwner(nativePending, context.MenuEmitted, context.ModalClosed)) context.Retain = true; }
@@ -209,8 +257,12 @@ namespace VBAi.Tests.Integration
             var automation = new EmbeddedGitAutomation(context.Fixture, context.Scope, context.Record, () => context.Stop);
             try
             {
-                context.Record(new { Phase = "MtaUiaDiscoveryArmed", ThreadId = Thread.CurrentThread.ManagedThreadId,
-                    Apartment = Thread.CurrentThread.GetApartmentState().ToString() });
+                context.Record(new
+                {
+                    Phase = "MtaUiaDiscoveryArmed",
+                    ThreadId = Thread.CurrentThread.ManagedThreadId,
+                    Apartment = Thread.CurrentThread.GetApartmentState().ToString()
+                });
                 context.UiReady.Set();
                 if (!context.MenuIntent.Wait(TimeSpan.FromSeconds(40)))
                     throw new TimeoutException("No modal intent was emitted; UIA has no authority to invoke or close a window.");
@@ -241,8 +293,13 @@ namespace VBAi.Tests.Integration
             string remote = Convert.ToString(manifest["repositoryUrl"]) + ".git";
             if (remote != "https://github.com/blackcancer/vbai-qualification-20260929203712-7267b1e6.git" || Convert.ToString(manifest["repositoryId"]) != "1396566119")
                 throw new InvalidOperationException("Only the maintainer's exact retained synthetic repository is allowed.");
-            var result = new TestPlan { Remote = remote, Branch = Convert.ToString(manifest["embeddedBranch"]),
-                Commit = Convert.ToString(manifest["embeddedBranchCommit"]), TabName = Convert.ToString(manifest["checkpointTabName"]) };
+            var result = new TestPlan
+            {
+                Remote = remote,
+                Branch = Convert.ToString(manifest["embeddedBranch"]),
+                Commit = Convert.ToString(manifest["embeddedBranchCommit"]),
+                TabName = Convert.ToString(manifest["checkpointTabName"])
+            };
             const string retainedBranch = "qualification-userform-20260929225354-93ed53dc";
             const string retainedCommit = "f5fb1a004dcb287c4c820b4bf308c673ce3b64e6";
             bool authorizedBranch = result.Branch == retainedBranch

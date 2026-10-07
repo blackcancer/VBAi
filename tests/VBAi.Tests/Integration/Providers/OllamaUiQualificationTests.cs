@@ -1,5 +1,6 @@
 namespace VBAi.Tests.Unit
 {
+    using Microsoft.VisualStudio.TestTools.UnitTesting;
     using System;
     using System.Collections.Generic;
     using System.Diagnostics;
@@ -11,9 +12,8 @@ namespace VBAi.Tests.Unit
     using System.Web.Script.Serialization;
     using System.Windows;
     using VBAi;
-    using VBAi.Tests.Integration;
     using VBAi.Tests.Infrastructure.Diagnostics;
-    using Microsoft.VisualStudio.TestTools.UnitTesting;
+    using VBAi.Tests.Integration;
     using Forms = System.Windows.Forms;
 
     // Shares the isolated synthetic VBE/settings/history fixture; HTTP is deliberately not mocked.
@@ -40,7 +40,8 @@ namespace VBAi.Tests.Unit
                 ChatWindow.ReadModelCatalogue = LlmChatClient.ListModelsAsync;
                 int refusedTools = 0;
                 var toolCalls = new List<object>();
-                ChatWindow.InvokeTool = (tools, name, arguments) => {
+                ChatWindow.InvokeTool = (tools, name, arguments) =>
+                {
                     refusedTools++;
                     toolCalls.Add(new { Name = name, Arguments = arguments, Result = "Refused by synthetic fixture", Utc = DateTime.UtcNow.ToString("o") });
                     return Task.FromResult(new JavaScriptSerializer().Serialize(Response.Failure(
@@ -64,7 +65,8 @@ namespace VBAi.Tests.Unit
                     var elapsed = Stopwatch.StartNew();
                     long lastObservation = -1000;
                     string lastStage = null;
-                    Action<string> observe = stage => {
+                    Action<string> observe = stage =>
+                    {
                         if (stage == lastStage && elapsed.ElapsedMilliseconds - lastObservation < 500) return;
                         lastStage = stage; lastObservation = elapsed.ElapsedMilliseconds;
                         if (observations.Count >= 512) return;
@@ -82,7 +84,8 @@ namespace VBAi.Tests.Unit
                         Assert.IsFalse(providers.Enabled);
                         Assert.IsFalse(models.Enabled);
                         Assert.IsFalse(modes.Enabled);
-                        WaitOllamaUi(window, () => {
+                        WaitOllamaUi(window, () =>
+                        {
                             streamedCharacters = Get<Dictionary<string, Forms.RichTextBox>>(window, "liveTexts").Values
                                 .Where(text => !text.IsDisposed && text.Visible).Sum(text => text.TextLength);
                             return Get<bool>(window, "busy") && streamedCharacters > 0;
@@ -142,18 +145,27 @@ namespace VBAi.Tests.Unit
         {
             var texts = Get<Dictionary<string, Forms.RichTextBox>>(window, "liveTexts");
             var entries = Get<List<ChatEntry>>(window, "transcriptEntries");
-            return new {
-                Stage = stage, ElapsedMilliseconds = elapsedMilliseconds,
-                Busy = Get<bool>(window, "busy"), StopRequested = Get<bool>(window, "stopRequested"),
-                Status = Get<Forms.Label>(window, "status").Text, WindowVisible = window.Visible,
+            return new
+            {
+                Stage = stage,
+                ElapsedMilliseconds = elapsedMilliseconds,
+                Busy = Get<bool>(window, "busy"),
+                StopRequested = Get<bool>(window, "stopRequested"),
+                Status = Get<Forms.Label>(window, "status").Text,
+                WindowVisible = window.Visible,
                 ActiveHttpClient = Get<LlmChatClient>(window, "activeHttpClient") != null,
                 StreamDiagnostics = (Get<LlmChatClient>(window, "activeHttpClient")?.LastStreamDiagnostics ?? Get<StreamDiagnostics>(window, "lastHttpStreamDiagnostics"))?.Snapshot(),
-                EntryCount = entries.Count, TranscriptCharacters = entries.Sum(entry => (entry.Text ?? "").Length),
+                EntryCount = entries.Count,
+                TranscriptCharacters = entries.Sum(entry => (entry.Text ?? "").Length),
                 EntryViews = Get<Dictionary<ChatEntry, FrameworkElement>>(window, "entryViews").Count,
                 PendingStreamCharacters = Get<Dictionary<ChatEntry, StringBuilder>>(window, "pendingStreamText").Values.Sum(text => text.Length),
-                LiveTexts = texts.Select(item => new { StreamId = item.Key, Disposed = item.Value.IsDisposed,
+                LiveTexts = texts.Select(item => new
+                {
+                    StreamId = item.Key,
+                    Disposed = item.Value.IsDisposed,
                     Visible = !item.Value.IsDisposed && item.Value.Visible,
-                    Characters = item.Value.IsDisposed ? 0 : item.Value.TextLength }).ToArray()
+                    Characters = item.Value.IsDisposed ? 0 : item.Value.TextLength
+                }).ToArray()
             };
         }
 
@@ -164,23 +176,46 @@ namespace VBAi.Tests.Unit
             {
                 // RuntimeScope has a new synthetic VBE project and isolated history/settings. Do not
                 // collect credentials, settings objects, user files, or the desktop outside this window.
-                var transcript = Get<List<ChatEntry>>(window, "transcriptEntries").Select(entry => new {
-                    entry.Speaker, entry.StreamId, entry.TurnId, entry.Text,
+                var transcript = Get<List<ChatEntry>>(window, "transcriptEntries").Select(entry => new
+                {
+                    entry.Speaker,
+                    entry.StreamId,
+                    entry.TurnId,
+                    entry.Text,
                     ActivityStatus = entry.Activity?.Status
                 }).ToArray();
-                var views = Get<Dictionary<ChatEntry, FrameworkElement>>(window, "entryViews").Select(item => new {
-                    item.Key.Speaker, item.Key.StreamId, ViewType = item.Value.GetType().FullName,
-                    item.Value.IsVisible, item.Value.ActualWidth, item.Value.ActualHeight,
-                    NativeTexts = NativeDescendants(item.Value).OfType<Forms.RichTextBox>().Select(text => new {
-                        Disposed = text.IsDisposed, Visible = !text.IsDisposed && text.Visible,
-                        Text = text.IsDisposed ? null : text.Text, Width = text.Width, Height = text.Height
+                var views = Get<Dictionary<ChatEntry, FrameworkElement>>(window, "entryViews").Select(item => new
+                {
+                    item.Key.Speaker,
+                    item.Key.StreamId,
+                    ViewType = item.Value.GetType().FullName,
+                    item.Value.IsVisible,
+                    item.Value.ActualWidth,
+                    item.Value.ActualHeight,
+                    NativeTexts = NativeDescendants(item.Value).OfType<Forms.RichTextBox>().Select(text => new
+                    {
+                        Disposed = text.IsDisposed,
+                        Visible = !text.IsDisposed && text.Visible,
+                        Text = text.IsDisposed ? null : text.Text,
+                        Width = text.Width,
+                        Height = text.Height
                     }).ToArray()
                 }).ToArray();
-                var result = new { State = "FAIL", Model = profile.Model, Endpoint = profile.Endpoint.AbsoluteUri,
-                    Temperature = profile.Temperature, TopP = profile.TopP, Failure = error.ToString(),
+                var result = new
+                {
+                    State = "FAIL",
+                    Model = profile.Model,
+                    Endpoint = profile.Endpoint.AbsoluteUri,
+                    Temperature = profile.Temperature,
+                    TopP = profile.TopP,
+                    Failure = error.ToString(),
                     Scope = "Detached synthetic ChatWindow, real loopback Ollama HTTP; no native host or tool execution",
                     Mvid = typeof(LlmChatClient).Module.ModuleVersionId.ToString("D"),
-                    Observations = observations, Transcript = transcript, EntryViews = views, RefusedToolCalls = toolCalls };
+                    Observations = observations,
+                    Transcript = transcript,
+                    EntryViews = views,
+                    RefusedToolCalls = toolCalls
+                };
                 string root = Environment.GetEnvironmentVariable("VBAi_OLLAMA_UI_RESULTS") ??
                     Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "ollama-ui-diagnostics");
                 Directory.CreateDirectory(root);

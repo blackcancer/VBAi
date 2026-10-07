@@ -87,7 +87,7 @@ namespace VBAi
             { Phase = phase; HostPath = path; Ordinal = ordinal; Utc = DateTime.UtcNow; }
         }
 
-            /// <summary>Snapshot of the native New Macro dialog identity and filename field state.</summary>
+        /// <summary>Snapshot of the native New Macro dialog identity and filename field state.</summary>
         internal sealed class SolidWorksMacroDialog
         {
 
@@ -182,22 +182,24 @@ namespace VBAi
             Action<bool> authorization = revalidateAuthorization ?? (_ => { });
             Action context = requireNativeContext ?? (() => { });
             int claimOrdinal = 0;
-            Action<SolidWorksMacroCreationResult> durableClaim = result => {
+            void durableClaim(SolidWorksMacroCreationResult result)
+            {
                 string phase = result.Terminal ? "Terminal" : result.SaveAttempts != 0 ? "BeforeSave" :
                     result.FilenameAttempts != 0 ? "BeforeFilename" : "BeforeNewMacro";
                 var claim = new MacroMutationClaim(phase, result.HostPath, ++claimOrdinal);
                 result.AddClaim(claim); recordClaim?.Invoke(claim);
-            };
+            }
             string path = RequireFreshSolidWorksMacroPath(request.Path);
             var frozen = new Request { ExpectedMode = 2, ExpectedProjectVersion = request.ExpectedProjectVersion, Path = path };
             var scheduler = SolidWorksMacroCreationSchedulerFactory(); scheduler.RequireOwner();
             authorization(true);
             var before = RequireLifecycleCollection(frozen);
-            Func<LifecycleProject, string> selector = row => string.IsNullOrWhiteSpace(row.Path) ? row.Name : row.Path;
+            string selector(LifecycleProject row) => string.IsNullOrWhiteSpace(row.Path) ? row.Name : row.Path;
             var originals = before.ToDictionary(row => row.Identity, row => (object)GetProject(selector(row)), StringComparer.OrdinalIgnoreCase);
             var native = SolidWorksMacroCreationNativeFactory((object)vbe, context);
             bool consumed = false;
-            Action live = () => {
+            void live()
+            {
                 scheduler.RequireOwner(); native.RequireOwner(); authorization(true);
                 if (solidWorksSavePending) throw new InvalidOperationException("An original SOLIDWORKS save must settle before native creation.");
                 RequireFreshSolidWorksMacroPath(path);
@@ -206,9 +208,10 @@ namespace VBAi
                     if (!originals.ContainsKey(row.Identity) || !native.SameProject(originals[row.Identity], (object)GetProject(selector(row))))
                         throw new InvalidOperationException("The original SOLIDWORKS collection identity changed.");
                 authorization(false); native.RequireOwner();
-            };
-            Action final = () => { scheduler.RequireOwner(); authorization(false); native.RequireOwner(); if (solidWorksSavePending) throw new InvalidOperationException("An original SOLIDWORKS save is pending before delivery."); };
-            Func<SolidWorksMacroCreationResult, SolidWorksMacroCreationResult> verify = result => {
+            }
+            void final() { scheduler.RequireOwner(); authorization(false); native.RequireOwner(); if (solidWorksSavePending) throw new InvalidOperationException("An original SOLIDWORKS save is pending before delivery."); }
+            SolidWorksMacroCreationResult verify(SolidWorksMacroCreationResult result)
+            {
                 scheduler.RequireOwner(); native.RequireOwner(); authorization(true);
                 var after = ReadLifecycleCollection(); RequireLifecycleDesign(after);
                 var retained = after.Where(row => originals.ContainsKey(row.Identity)).ToList();
@@ -234,7 +237,7 @@ namespace VBAi
                 result.Project = target.Name; result.ProjectVersion = (string)properties.Version;
                 result.CollectionVersion = LifecycleVersion(after); result.DestinationCreated = true; result.Verified = true;
                 return result;
-            };
+            }
             try
             {
                 live(); native.Prepare(); final();
@@ -288,23 +291,29 @@ namespace VBAi
             var completion = new TaskCompletionSource<SolidWorksMacroCreationResult>();
             IDisposable polling = null; SolidWorksMacroDialog dialog = null; bool terminal = false, disposed = false, ticking = false;
             long began = scheduler.ElapsedMilliseconds;
-            Action budget = () => { if (scheduler.ElapsedMilliseconds - began >= SolidWorksMacroCreationTimeoutMilliseconds)
-                throw new TimeoutException("Native macro creation deadline expired; no retry or cleanup mutation."); };
-            Action dispose = () => { if (!disposed && (!result.CommandEntered || result.OriginalCommandReturned)) { disposed = true; native.Dispose(); } };
-            Action finish = () => {
+            void budget()
+            {
+                if (scheduler.ElapsedMilliseconds - began >= SolidWorksMacroCreationTimeoutMilliseconds)
+                    throw new TimeoutException("Native macro creation deadline expired; no retry or cleanup mutation.");
+            }
+            void dispose() { if (!disposed && (!result.CommandEntered || result.OriginalCommandReturned)) { disposed = true; native.Dispose(); } }
+            void finish()
+            {
                 if (terminal) return;
                 terminal = true; polling?.Dispose(); result.Terminal = true;
                 try { dispose(); } catch (Exception error) { result.Error = (result.Error ?? "") + " | Native reference cleanup: " + error; result.Verified = false; result.Uncertain |= result.CommandEntered; }
                 try { durableClaim(result); }
                 catch (Exception error) { result.Error = "Terminal receipt: " + error; result.Verified = false; result.Uncertain |= result.CommandEntered; }
                 completion.TrySetResult(result);
-            };
-            Action<Exception> fail = error => {
+            }
+            void fail(Exception error)
+            {
                 result.Error = error.ToString(); result.Verified = false;
                 result.Uncertain |= result.CommandEntered && (!result.OriginalCommandReturned || !result.DialogClosed || result.SaveQueued);
                 finish();
-            };
-            Action tick = () => {
+            }
+            void tick()
+            {
                 if (terminal || ticking || !result.CommandEntered) return;
                 ticking = true;
                 try
@@ -334,11 +343,12 @@ namespace VBAi
                 }
                 catch (Exception error) { fail(error); }
                 finally { ticking = false; }
-            };
+            }
             try
             {
                 polling = scheduler.Poll(tick); // Arm the original owner-STA timer before entering the modal command.
-                scheduler.Post(() => {
+                scheduler.Post(() =>
+                {
                     if (terminal) return;
                     try
                     {
@@ -373,8 +383,11 @@ namespace VBAi
             public long ElapsedMilliseconds => watch.ElapsedMilliseconds;
 
             /// <summary>Requires the captured synchronization context, managed thread, and STA apartment.</summary>
-            public void RequireOwner() { if (context == null || owner != Thread.CurrentThread.ManagedThreadId || Thread.CurrentThread.GetApartmentState() != ApartmentState.STA)
-                throw new InvalidOperationException("Native macro creation requires the original VBE UI STA/context."); }
+            public void RequireOwner()
+            {
+                if (context == null || owner != Thread.CurrentThread.ManagedThreadId || Thread.CurrentThread.GetApartmentState() != ApartmentState.STA)
+                    throw new InvalidOperationException("Native macro creation requires the original VBE UI STA/context.");
+            }
 
             /// <summary>Posts one callback to the captured owner synchronization context.</summary>
             /// <param name="action">Callback to execute asynchronously on the owner thread.</param>
@@ -397,13 +410,13 @@ namespace VBAi
 
             /// <summary>Gets the SOLIDWORKS revision string captured and rechecked around command entry.</summary>
             /// <returns>Host revision identifier.</returns>
-            [DispId(12)] [return: MarshalAs(UnmanagedType.BStr)] string RevisionNumber();
+            [DispId(12)][return: MarshalAs(UnmanagedType.BStr)] string RevisionNumber();
 
             /// <summary>Invokes one host command by numeric command ID and title.</summary>
             /// <param name="command">SOLIDWORKS command identifier; this flow uses 573 for New Macro.</param>
             /// <param name="title">Command title parameter, empty for the New Macro route.</param>
             /// <returns>Host-reported command acceptance; false is surfaced as failure without retry.</returns>
-            [DispId(245)] [return: MarshalAs(UnmanagedType.VariantBool)] bool RunCommand(int command, [MarshalAs(UnmanagedType.BStr)] string title);
+            [DispId(245)][return: MarshalAs(UnmanagedType.VariantBool)] bool RunCommand(int command, [MarshalAs(UnmanagedType.BStr)] string title);
         }
 
         /// <summary>Implements native SOLIDWORKS ROT binding and one-shot New Macro dialog mutations.</summary>
@@ -451,7 +464,7 @@ namespace VBAi
             /// <summary>Requires the captured SOLIDWORKS process, window, UI thread, STA, and project context.</summary>
             public void RequireOwner()
             {
-                uint owner; uint tid = WindowThread(root, out owner);
+                uint tid = WindowThread(root, out uint owner);
                 if (disposed || root == IntPtr.Zero || owner != pid || tid != thread || NativeThread() != thread || Thread.CurrentThread.GetApartmentState() != ApartmentState.STA)
                     throw new InvalidOperationException("Original SOLIDWORKS VBE owner/window/thread changed.");
                 requireContext();
@@ -483,16 +496,21 @@ namespace VBAi
                 RequireOwner(); var dialogs = VisibleDialogs(); if (dialogs.Count == 0) return null;
                 if (dialogs.Count != 1) throw new InvalidOperationException("Owned visible modal is ambiguous.");
                 IntPtr dialog = dialogs[0]; var filenames = new List<IntPtr>(); var saves = new List<IntPtr>(); bool complete = true; int count = 0; Exception callbackError = null;
-                NativeCallback callback = (w, state) => {
-                    try {
-                    if (++count > 512) { complete = false; return false; }
-                    RequireWindow(w); if (Visible(w) && Enabled(w)) {
-                        string cls = Class(w); int id = ControlId(w);
-                        if (cls == "Edit" && (id == 1001 || id == 1148) && Class(Parent(w)) == "ComboBox") filenames.Add(w);
-                        if (cls == "Button" && id == 1) saves.Add(w);
-                    } return true;
-                    } catch (Exception error) { callbackError = error; complete = false; return false; }
-                };
+                bool callback(IntPtr w, IntPtr state)
+                {
+                    try
+                    {
+                        if (++count > 512) { complete = false; return false; }
+                        RequireWindow(w); if (Visible(w) && Enabled(w))
+                        {
+                            string cls = Class(w); int id = ControlId(w);
+                            if (cls == "Edit" && (id == 1001 || id == 1148) && Class(Parent(w)) == "ComboBox") filenames.Add(w);
+                            if (cls == "Button" && id == 1) saves.Add(w);
+                        }
+                        return true;
+                    }
+                    catch (Exception error) { callbackError = error; complete = false; return false; }
+                }
                 EnumChildren(dialog, callback, IntPtr.Zero);
                 if (callbackError != null) throw new InvalidOperationException("Native Save dialog inventory failed.", callbackError);
                 if (!complete || filenames.Count != 1 || saves.Count != 1 || !SaveCaption(Text(saves[0])))
@@ -512,9 +530,9 @@ namespace VBAi
             public void WriteFilename(SolidWorksMacroDialog expected, string path, Action beforeEntry, Action beforeDelivery)
             {
                 if (filenameConsumed) throw new InvalidOperationException("Filename delivery is already consumed."); filenameConsumed = true;
-                RequireSame(expected); beforeEntry(); RequireOwner(); RequireFinalControl(expected, false); UIntPtr result;
+                RequireSame(expected); beforeEntry(); RequireOwner(); RequireFinalControl(expected, false);
                 beforeDelivery(); RequireOwner();
-                if (WriteText(expected.Filename, 12, UIntPtr.Zero, path, 0x23, 250, out result) == IntPtr.Zero || result == UIntPtr.Zero)
+                if (WriteText(expected.Filename, 12, UIntPtr.Zero, path, 0x23, 250, out UIntPtr result) == IntPtr.Zero || result == UIntPtr.Zero)
                     throw new InvalidOperationException("Original filename write is uncertain; no retry.");
             }
 
@@ -546,15 +564,18 @@ namespace VBAi
             private List<IntPtr> VisibleDialogs()
             {
                 RequireOwner(); var found = new List<IntPtr>(); bool valid = true, sawRoot = false; int count = 0; Exception callbackError = null;
-                NativeCallback callback = (w, state) => {
-                    try {
-                    if (++count > 8192) { valid = false; return false; }
-                    uint owner; uint tid = WindowThread(w, out owner); if (owner == 0 || tid == 0) { valid = false; return false; }
-                    if (w == root) sawRoot = true;
-                    if (owner == pid && Visible(w) && Class(w) == "#32770") { if (tid != thread) throw new InvalidOperationException("Owned modal has another UI thread."); found.Add(w); }
-                    return true;
-                    } catch (Exception error) { callbackError = error; valid = false; return false; }
-                };
+                bool callback(IntPtr w, IntPtr state)
+                {
+                    try
+                    {
+                        if (++count > 8192) { valid = false; return false; }
+                        uint tid = WindowThread(w, out uint owner); if (owner == 0 || tid == 0) { valid = false; return false; }
+                        if (w == root) sawRoot = true;
+                        if (owner == pid && Visible(w) && Class(w) == "#32770") { if (tid != thread) throw new InvalidOperationException("Owned modal has another UI thread."); found.Add(w); }
+                        return true;
+                    }
+                    catch (Exception error) { callbackError = error; valid = false; return false; }
+                }
                 bool complete = EnumDesktop(NativeDesktop(thread), callback, IntPtr.Zero);
                 if (callbackError != null) throw new InvalidOperationException("Original desktop inventory failed.", callbackError);
                 if (!complete || !valid || !sawRoot) throw new InvalidOperationException("Original desktop inventory is incomplete.");
@@ -563,7 +584,7 @@ namespace VBAi
 
             /// <summary>Requires a live HWND owned by the captured process and native UI thread.</summary>
             /// <param name="w">Window or control HWND to validate.</param>
-            private void RequireWindow(IntPtr w) { uint p; if (WindowThread(w, out p) != thread || p != pid || !IsWindow(w)) throw new InvalidOperationException("Native dialog/control owner changed."); }
+            private void RequireWindow(IntPtr w) { if (WindowThread(w, out uint p) != thread || p != pid || !IsWindow(w)) throw new InvalidOperationException("Native dialog/control owner changed."); }
 
             /// <summary>Rechecks exact dialog, edit, and Save button classes, IDs, ancestry, visibility, and enabled state.</summary>
             /// <param name="expected">Frozen dialog identity and filename value.</param>
@@ -588,7 +609,7 @@ namespace VBAi
             /// <summary>Reads bounded Unicode control text using a 250 ms SendMessageTimeout call.</summary>
             /// <param name="w">Owner-verified HWND whose text is read.</param>
             /// <returns>Complete text; timeout or a full/truncated buffer throws.</returns>
-            private string Text(IntPtr w) { RequireWindow(w); var text = new StringBuilder(32768); UIntPtr length; if (ReadText(w, 13, new UIntPtr((uint)text.Capacity), text, 0x23, 250, out length) == IntPtr.Zero || length.ToUInt64() >= (ulong)text.Capacity - 1) throw new InvalidOperationException("Bounded native text read incomplete."); return text.ToString(); }
+            private string Text(IntPtr w) { RequireWindow(w); var text = new StringBuilder(32768);  if (ReadText(w, 13, new UIntPtr((uint)text.Capacity), text, 0x23, 250, out UIntPtr length) == IntPtr.Zero || length.ToUInt64() >= (ulong)text.Capacity - 1) throw new InvalidOperationException("Bounded native text read incomplete."); return text.ToString(); }
 
             /// <summary>Recognizes the qualified English and French Save button captions.</summary>
             /// <param name="text">Captured button caption.</param>
@@ -604,21 +625,26 @@ namespace VBAi
             private static object ResolveOwnedSolidWorksApplication(int pid)
             {
                 IRunningObjectTable rot = null; IBindCtx context = null; IEnumMoniker iterator = null;
-                try {
+                try
+                {
                     Marshal.ThrowExceptionForHR(GetRot(0, out rot)); Marshal.ThrowExceptionForHR(CreateContext(0, out context)); rot.EnumRunning(out iterator);
                     var current = new IMoniker[1]; int count = 0;
-                    while (iterator.Next(1, current, IntPtr.Zero) == 0) {
-                        try {
+                    while (iterator.Next(1, current, IntPtr.Zero) == 0)
+                    {
+                        try
+                        {
                             if (++count > 4096) throw new InvalidOperationException("ROT inventory bound exceeded.");
-                            string name; current[0].GetDisplayName(context, null, out name);
+                            current[0].GetDisplayName(context, null, out string name);
                             if (!string.Equals(name, "SolidWorks_PID_" + pid, StringComparison.OrdinalIgnoreCase)) continue;
-                            object borrowed; rot.GetObject(current[0], out borrowed);
+                            rot.GetObject(current[0], out object borrowed);
                             IntPtr identity = Marshal.GetIUnknownForObject(borrowed);
                             try { return Marshal.GetUniqueObjectForIUnknown(identity); } finally { Marshal.Release(identity); }
-                        } finally { if (current[0] != null) Marshal.ReleaseComObject(current[0]); }
+                        }
+                        finally { if (current[0] != null) Marshal.ReleaseComObject(current[0]); }
                     }
                     throw new InvalidOperationException("Exact in-process SOLIDWORKS ROT identity is unavailable; no activation attempted.");
-                } finally { if (iterator != null) Marshal.ReleaseComObject(iterator); if (context != null) Marshal.ReleaseComObject(context); if (rot != null) Marshal.ReleaseComObject(rot); }
+                }
+                finally { if (iterator != null) Marshal.ReleaseComObject(iterator); if (context != null) Marshal.ReleaseComObject(context); if (rot != null) Marshal.ReleaseComObject(rot); }
             }
 
             /// <summary>Callback signature used to enumerate desktop and dialog-child HWNDs.</summary>

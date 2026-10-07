@@ -1,9 +1,8 @@
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Collections.Generic;
 using System.Dynamic;
 using System.Reflection;
-using VBAi;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace VBAi.Tests.Unit
 {
@@ -43,8 +42,16 @@ namespace VBAi.Tests.Unit
             var method = typeof(VbeEditorWindows).GetMethod("ToolbarSnapshot", BindingFlags.Static | BindingFlags.NonPublic);
             var bars = (Host)typeof(VbeEditorWindows).GetField("vbe", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(editor);
             dynamic state = method.Invoke(null, new[] { bars.CommandBars[0] });
-            return new Request { ObjectName = "Standard", Action = action, ExpectedWindowVersion = state.WindowVersion,
-                ExpectedToolbarLayoutVersion = state.ToolbarLayoutVersion, ToolbarLeft = 20, ToolbarTop = 30, RowIndex = 2 };
+            return new Request
+            {
+                ObjectName = "Standard",
+                Action = action,
+                ExpectedWindowVersion = state.WindowVersion,
+                ExpectedToolbarLayoutVersion = state.ToolbarLayoutVersion,
+                ToolbarLeft = 20,
+                ToolbarTop = 30,
+                RowIndex = 2
+            };
         }
         private static VbeEditorWindows Editor(NativeBar bar)
         { var host = new Host(); host.CommandBars.Add(bar); return new VbeEditorWindows(host); }
@@ -133,24 +140,24 @@ namespace VBAi.Tests.Unit
         public void ToolbarMutationsReportPartialFailuresAndUnverifiableReadbacks()
         {
             foreach (string action in new[] { "visibility", "position", "float", "row" })
-            foreach (int fault in new[] { 0, 1, 2, 3, 4, 5, 6, 7, 8 })
-            {
-                var bar = new NativeBar();
-                bar.Values["Position"] = action == "row" ? 1 : 4;
-                var editor = Editor(bar); var r = Command(editor, action == "visibility" ? "hide" : action == "position" ? "top" : action);
-                string property = action == "visibility" ? "Visible" : action == "position" ? "Position" : action == "float" ? "Left" : "RowIndex";
-                bar.FailWrite = fault == 1 || fault == 6;
-                bar.IgnoreWrite = fault == 2 ? property : fault == 7 && action == "float" ? "Top" : null;
-                bar.FailAfterWrite = fault == 4 || fault == 5 || fault == 6 ? property : null;
-                bar.InvalidErrorDetails = fault == 5 || fault == 6;
-                bar.AlterAfterWrite = fault == 3 ? (action == "visibility" ? "Enabled" : "Visible") : fault == 8 && (action == "float" || action == "row") ? "Position" : null;
-                dynamic result = action == "visibility" ? editor.SetToolbarVisibility(r) : action == "position" ? editor.SetToolbarPosition(r) : editor.SetToolbarPlacement(r);
-                if (fault == 0) Assert.IsTrue((bool)result.Verified);
-                if (fault == 1 || fault >= 4 && fault <= 6) Assert.IsFalse((bool)result.Verified);
-                if (fault == 1) StringAssert.Contains((string)result.NativeError, "write failed");
-                if (fault == 5) StringAssert.Contains((string)result.NativeError, "error details unavailable");
-                if (fault == 6) StringAssert.Contains((string)result.NativeError, "write failed");
-            }
+                foreach (int fault in new[] { 0, 1, 2, 3, 4, 5, 6, 7, 8 })
+                {
+                    var bar = new NativeBar();
+                    bar.Values["Position"] = action == "row" ? 1 : 4;
+                    var editor = Editor(bar); var r = Command(editor, action == "visibility" ? "hide" : action == "position" ? "top" : action);
+                    string property = action == "visibility" ? "Visible" : action == "position" ? "Position" : action == "float" ? "Left" : "RowIndex";
+                    bar.FailWrite = fault == 1 || fault == 6;
+                    bar.IgnoreWrite = fault == 2 ? property : fault == 7 && action == "float" ? "Top" : null;
+                    bar.FailAfterWrite = fault == 4 || fault == 5 || fault == 6 ? property : null;
+                    bar.InvalidErrorDetails = fault == 5 || fault == 6;
+                    bar.AlterAfterWrite = fault == 3 ? (action == "visibility" ? "Enabled" : "Visible") : fault == 8 && (action == "float" || action == "row") ? "Position" : null;
+                    dynamic result = action == "visibility" ? editor.SetToolbarVisibility(r) : action == "position" ? editor.SetToolbarPosition(r) : editor.SetToolbarPlacement(r);
+                    if (fault == 0) Assert.IsTrue((bool)result.Verified);
+                    if (fault == 1 || fault >= 4 && fault <= 6) Assert.IsFalse((bool)result.Verified);
+                    if (fault == 1) StringAssert.Contains((string)result.NativeError, "write failed");
+                    if (fault == 5) StringAssert.Contains((string)result.NativeError, "error details unavailable");
+                    if (fault == 6) StringAssert.Contains((string)result.NativeError, "write failed");
+                }
         }
     }
 }

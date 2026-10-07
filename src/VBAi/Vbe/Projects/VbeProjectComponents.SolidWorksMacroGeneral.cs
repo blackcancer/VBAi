@@ -23,13 +23,16 @@ namespace VBAi
         /// <exception cref="InvalidOperationException">No unambiguous active project is available.</exception>
         internal PublicationGeneralSelection CapturePublicationGeneralSelection()
         {
-            object canonical = (object)vbe.ActiveVBProject;
-            if (canonical == null) throw new InvalidOperationException("Original active project is unavailable.");
+            object canonical = (object)vbe.ActiveVBProject ?? throw new InvalidOperationException("Original active project is unavailable.");
             string name = (string)((dynamic)canonical).Name;
             if (!GeneralProjectIdentity(canonical, (object)GetDesignProject(name)))
                 throw new InvalidOperationException("Original active project identity is ambiguous.");
-            return new PublicationGeneralSelection { Canonical = canonical, Name = name,
-                Version = (string)((dynamic)ProjectProperties(name)).Version };
+            return new PublicationGeneralSelection
+            {
+                Canonical = canonical,
+                Name = name,
+                Version = (string)((dynamic)ProjectProperties(name)).Version
+            };
         }
 
         /// <summary>Restores the captured active project after confirming its identity and version are unchanged.</summary>

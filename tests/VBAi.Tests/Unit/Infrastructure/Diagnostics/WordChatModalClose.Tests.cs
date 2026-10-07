@@ -1,6 +1,6 @@
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.ComponentModel;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 using VBAi.Tests.Integration;
 
 namespace VBAi.Tests.Unit
@@ -27,7 +27,8 @@ namespace VBAi.Tests.Unit
         {
             bool guarded = false;
             int calls = 0;
-            WordChatModalClose.PostOnce(new IntPtr(41), () => guarded = true, window => {
+            WordChatModalClose.PostOnce(new IntPtr(41), () => guarded = true, window =>
+            {
                 Assert.IsTrue(guarded); Assert.AreEqual(new IntPtr(41), window); calls++; return true;
             });
             Assert.AreEqual(1, calls);

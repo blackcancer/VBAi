@@ -61,14 +61,32 @@ namespace VBAi
                 foreach (var callRaw in Array(message, "tool_calls"))
                 {
                     var call = Object(callRaw); var function = Object(call["function"]);
-                    content.Add(new { type = "tool_use", id = Text(call, "id"), name = Text(function, "name"),
-                        input = new JavaScriptSerializer().DeserializeObject(Text(function, "arguments") ?? "{}") });
+                    content.Add(new
+                    {
+                        type = "tool_use",
+                        id = Text(call, "id"),
+                        name = Text(function, "name"),
+                        input = new JavaScriptSerializer().DeserializeObject(Text(function, "arguments") ?? "{}")
+                    });
                 }
                 if (content.Count > 0) messages.Add(new { role, content });
             }
-            return new { model, max_tokens = 8192, system = string.Join("\n\n", system), messages,
-                tools = definitions.Select(raw => { var f = Object(Object(raw)["function"]); return new {
-                    name = Text(f, "name"), description = Text(f, "description"), input_schema = f["parameters"] }; }).ToArray() };
+            return new
+            {
+                model,
+                max_tokens = 8192,
+                system = string.Join("\n\n", system),
+                messages,
+                tools = definitions.Select(raw =>
+                {
+                    var f = Object(Object(raw)["function"]); return new
+                    {
+                        name = Text(f, "name"),
+                        description = Text(f, "description"),
+                        input_schema = f["parameters"]
+                    };
+                }).ToArray()
+            };
         }
 
         /// <summary>Convertit les blocs Claude en message assistant et en appels d’outils au format interne.</summary>
@@ -81,9 +99,16 @@ namespace VBAi
             {
                 var block = Object(raw);
                 if (Text(block, "type") == "text") text.Add(Text(block, "text"));
-                if (Text(block, "type") == "tool_use") calls.Add(new Dictionary<string, object> {
-                    ["id"] = Text(block, "id"), ["type"] = "function", ["function"] = new Dictionary<string, object> {
-                        ["name"] = Text(block, "name"), ["arguments"] = new JavaScriptSerializer().Serialize(block["input"]) } });
+                if (Text(block, "type") == "tool_use") calls.Add(new Dictionary<string, object>
+                {
+                    ["id"] = Text(block, "id"),
+                    ["type"] = "function",
+                    ["function"] = new Dictionary<string, object>
+                    {
+                        ["name"] = Text(block, "name"),
+                        ["arguments"] = new JavaScriptSerializer().Serialize(block["input"])
+                    }
+                });
             }
             if (Text(response, "stop_reason") == "max_tokens") throw new InvalidOperationException(UiText.Get("Claude reached its response limit. Narrow the scope of your request."));
             var result = new Dictionary<string, object> { ["role"] = "assistant", ["content"] = string.Join("\n", text), ["_claude_content"] = Array(response, "content") };

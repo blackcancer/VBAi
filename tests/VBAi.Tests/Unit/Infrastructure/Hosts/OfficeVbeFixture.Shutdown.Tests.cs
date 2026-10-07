@@ -1,3 +1,4 @@
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -6,7 +7,6 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Web.Script.Serialization;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 using VBAi.Tests.Integration;
 
 namespace VBAi.Tests.Unit
@@ -18,7 +18,8 @@ namespace VBAi.Tests.Unit
         [TestMethod]
         public void FixtureNonexitRetainsExactOriginalHandleAndBlocksAllNativeReuseWithoutMaskingFirstFailure()
         {
-            WithFakeFixture((fixture, application, document, process, root) => {
+            WithFakeFixture((fixture, application, document, process, root) =>
+            {
                 fixture.WaitForOwnedExit = (observed, timeout) => { Assert.AreSame(process, observed); Assert.AreEqual(5000, timeout); return false; };
                 fixture.ReadOwnedExitCode = observed => { Assert.Fail("A nonexited host has no observed exit code."); return 0; };
                 var original = new InvalidOperationException("original qualification failure");
@@ -46,7 +47,8 @@ namespace VBAi.Tests.Unit
         [TestMethod]
         public void FixtureKnownExitReleasesOnlyItsQueryHandleAndDoesNotQuitAgain()
         {
-            WithFakeFixture((fixture, application, document, process, root) => {
+            WithFakeFixture((fixture, application, document, process, root) =>
+            {
                 // Both observations are synthetic. Disposing this Process wrapper
                 // releases a query handle; it never terminates the testhost.
                 fixture.WaitForOwnedExit = (observed, timeout) => true;
@@ -65,7 +67,8 @@ namespace VBAi.Tests.Unit
         [TestMethod]
         public void FixtureFailedQuitRetainsOriginalApplicationHandleAndRejectsRetry()
         {
-            WithFakeFixture((fixture, application, document, process, root) => {
+            WithFakeFixture((fixture, application, document, process, root) =>
+            {
                 application.QuitError = new InvalidOperationException("synthetic original Quit failure");
                 fixture.WaitForOwnedExit = (observed, timeout) => { Assert.Fail("Unknown Quit must retain its process without exit acceptance."); return true; };
                 Assert.ThrowsException<AssertFailedException>(() => fixture.Dispose());
@@ -82,7 +85,8 @@ namespace VBAi.Tests.Unit
         [TestMethod]
         public void FixturePendingNativeTestRetainsAllOwnershipBeforeCloseOrQuitAndRejectsLaterCleanupRetry()
         {
-            WithFakeFixture((fixture, application, document, process, root) => {
+            WithFakeFixture((fixture, application, document, process, root) =>
+            {
                 fixture.NativeExecutionUnsettled = true;
                 fixture.WaitForOwnedExit = (observed, timeout) => { Assert.Fail("A pending test must not enter shutdown observation."); return false; };
                 Assert.ThrowsException<AssertFailedException>(() => fixture.Dispose());
@@ -101,7 +105,8 @@ namespace VBAi.Tests.Unit
         [TestMethod]
         public void ReviewedSupportApprovalCannotLatchWithoutItsOriginalLiveDialogGeneration()
         {
-            WithFakeFixture((fixture, application, document, process, root) => {
+            WithFakeFixture((fixture, application, document, process, root) =>
+            {
                 var approve = typeof(OfficeVbeFixture).GetMethod("SetReviewedSupportSaveAllowed", BindingFlags.Instance | BindingFlags.NonPublic);
                 Assert.IsInstanceOfType(Assert.ThrowsException<TargetInvocationException>(() => approve.Invoke(fixture, new object[] { true })).InnerException,
                     typeof(AssertFailedException));
@@ -126,7 +131,8 @@ namespace VBAi.Tests.Unit
         [DataRow("Publisher")]
         public void AdapterOnlyHostPolicyWaitsOnceForItsDeclaredBoundWithoutAnotherQuit(string host)
         {
-            WithFakeFixture((fixture, application, document, process, root) => {
+            WithFakeFixture((fixture, application, document, process, root) =>
+            {
                 SetProperty(fixture, "Kind", host);
                 fixture.RequireAdapterOnlyCleanup();
                 Assert.AreEqual(15000, fixture.OwnedExitWaitMilliseconds);
@@ -134,7 +140,8 @@ namespace VBAi.Tests.Unit
                 // discard/quit shape; it is not a native Access/Publisher proof.
                 SetProperty(fixture, "Kind", "Word");
                 int waits = 0;
-                fixture.WaitForOwnedExit = (observed, timeout) => {
+                fixture.WaitForOwnedExit = (observed, timeout) =>
+                {
                     Assert.AreSame(process, observed); Assert.AreEqual(15000, timeout); waits++; return true;
                 };
                 fixture.ReadOwnedExitCode = observed => 0;
@@ -150,17 +157,20 @@ namespace VBAi.Tests.Unit
         [STATestMethod]
         public void WordShutdownPumpRunsOnOwnerAfterKnownQuitAndReleaseAndObservesOriginalHandle()
         {
-            WithFakeFixture((fixture, application, document, process, root) => {
+            WithFakeFixture((fixture, application, document, process, root) =>
+            {
                 bool exited = false; int pumps = 0;
                 int ownerThread = System.Threading.Thread.CurrentThread.ManagedThreadId;
                 IntPtr original = process.Handle;
-                fixture.ReadWordProcessExit = observed => {
+                fixture.ReadWordProcessExit = observed =>
+                {
                     Assert.AreSame(process, observed); Assert.AreEqual(original, observed.Handle);
                     Assert.IsNull(Field(fixture, "application")); Assert.IsNull(Field(fixture, "document"));
                     Assert.AreEqual(1, application.QuitCount); Assert.AreEqual(1, document.CloseCount);
                     return exited;
                 };
-                fixture.PumpWordShutdownMessages = () => {
+                fixture.PumpWordShutdownMessages = () =>
+                {
                     Assert.AreEqual(ownerThread, System.Threading.Thread.CurrentThread.ManagedThreadId);
                     Assert.ThrowsException<InvalidOperationException>(() => fixture.Data("status"), "Pumped messages must not reenter native fixture requests after shutdown was prepared.");
                     pumps++; exited = true;
@@ -207,7 +217,8 @@ namespace VBAi.Tests.Unit
             foreach (bool afterPump in new[] { false, true })
             {
                 elapsed = 0; reads = 0;
-                Assert.IsFalse(OfficeVbeFixture.WaitForWordExit(5000, () => elapsed, () => {
+                Assert.IsFalse(OfficeVbeFixture.WaitForWordExit(5000, () => elapsed, () =>
+                {
                     reads++;
                     if (!afterPump || reads == 2) { elapsed = 5001; return true; }
                     return false;
@@ -225,22 +236,24 @@ namespace VBAi.Tests.Unit
         public void PreparedAccessShutdownAllowsSupportReadbackWhilePreparedWordBlocksReentry()
         {
             foreach (string kind in new[] { "Access", "Word" })
-            WithFakeFixture((fixture, application, document, process, root) => {
-                SetProperty(fixture, "Kind", kind);
-                int dispatches = 0;
-                fixture.Dispatch = (pid, request) => {
-                    Assert.AreEqual(process.Id, pid); Assert.AreEqual("read_module", ((IDictionary<string, object>)request)["Command"]);
-                    dispatches++;
-                    return new Dictionary<string, object> { ["Ok"] = true, ["Error"] = null, ["Data"] = new Dictionary<string, object> { ["Code"] = "synthetic reviewed support" } };
-                };
-                typeof(OfficeVbeFixture).GetMethod("PrepareOwnedShutdown", BindingFlags.Instance | BindingFlags.NonPublic).Invoke(fixture, null);
-                if (kind == "Word")
-                    Assert.ThrowsException<InvalidOperationException>(() => fixture.Data("read_module", "Module", "Support"));
-                else
-                    Assert.AreEqual("synthetic reviewed support", fixture.Data("read_module", "Module", "Support")["Code"]);
-                Assert.AreEqual(kind == "Word" ? 0 : 1, dispatches);
-                Assert.AreEqual(0, application.QuitCount); Assert.AreEqual(0, document.CloseCount);
-            });
+                WithFakeFixture((fixture, application, document, process, root) =>
+                {
+                    SetProperty(fixture, "Kind", kind);
+                    int dispatches = 0;
+                    fixture.Dispatch = (pid, request) =>
+                    {
+                        Assert.AreEqual(process.Id, pid); Assert.AreEqual("read_module", ((IDictionary<string, object>)request)["Command"]);
+                        dispatches++;
+                        return new Dictionary<string, object> { ["Ok"] = true, ["Error"] = null, ["Data"] = new Dictionary<string, object> { ["Code"] = "synthetic reviewed support" } };
+                    };
+                    typeof(OfficeVbeFixture).GetMethod("PrepareOwnedShutdown", BindingFlags.Instance | BindingFlags.NonPublic).Invoke(fixture, null);
+                    if (kind == "Word")
+                        Assert.ThrowsException<InvalidOperationException>(() => fixture.Data("read_module", "Module", "Support"));
+                    else
+                        Assert.AreEqual("synthetic reviewed support", fixture.Data("read_module", "Module", "Support")["Code"]);
+                    Assert.AreEqual(kind == "Word" ? 0 : 1, dispatches);
+                    Assert.AreEqual(0, application.QuitCount); Assert.AreEqual(0, document.CloseCount);
+                });
         }
         [TestMethod]
         public void SettledScopeCollectionIsWordOptInAndRejectsUncertainOrUnownedFixtures()
@@ -248,7 +261,8 @@ namespace VBAi.Tests.Unit
             string prior = Environment.GetEnvironmentVariable("VBAi_TEST_WORD_SETTLED_SCOPE_GC");
             try
             {
-                WithFakeFixture((fixture, application, document, process, root) => {
+                WithFakeFixture((fixture, application, document, process, root) =>
+                {
                     int collections = 0; fixture.CollectSettledWordReferences = () => collections++;
                     Environment.SetEnvironmentVariable("VBAi_TEST_WORD_SETTLED_SCOPE_GC", null);
                     fixture.CollectSettledWordScopeDiagnostic(); Assert.AreEqual(0, collections);
@@ -272,7 +286,8 @@ namespace VBAi.Tests.Unit
                     Assert.AreEqual(false, report["BridgePending"]); Assert.AreEqual(false, report["BridgeUncertain"]);
                     Assert.AreEqual(0, application.QuitCount); Assert.AreEqual(0, document.CloseCount);
                 });
-                WithFakeFixture((fixture, application, document, process, root) => {
+                WithFakeFixture((fixture, application, document, process, root) =>
+                {
                     int collections = 0; fixture.CollectSettledWordReferences = () => collections++;
                     fixture.Dispatch = (_, __) => { throw new InvalidOperationException("Unconfirmed delivery"); };
                     Assert.ThrowsException<InvalidOperationException>(() => fixture.Data("status"));
@@ -290,10 +305,12 @@ namespace VBAi.Tests.Unit
             try
             {
                 Environment.SetEnvironmentVariable("VBAi_TEST_WORD_EXIT_WAIT_BOUND_MS", "15000");
-                WithFakeFixture((fixture, application, document, process, root) => {
+                WithFakeFixture((fixture, application, document, process, root) =>
+                {
                     IntPtr original = process.Handle;
                     application.OnQuit = () => Environment.SetEnvironmentVariable("VBAi_TEST_WORD_EXIT_WAIT_BOUND_MS", "0");
-                    fixture.WaitForOwnedExit = (observed, timeout) => {
+                    fixture.WaitForOwnedExit = (observed, timeout) =>
+                    {
                         Assert.AreSame(process, observed); Assert.AreEqual(original, observed.Handle);
                         Assert.AreEqual(15000, timeout, "The bound captured before Quit must survive subsequent environment changes.");
                         return true;
@@ -306,13 +323,14 @@ namespace VBAi.Tests.Unit
                     fixture.Dispose(); Assert.AreEqual(1, application.QuitCount); Assert.AreEqual(1, document.CloseCount);
                 });
                 foreach (string kind in new[] { "Access", "PowerPoint", "Publisher" })
-                WithFakeFixture((fixture, application, document, process, root) => {
-                    SetProperty(fixture, "Kind", kind);
-                    typeof(OfficeVbeFixture).GetMethod("PrepareOwnedShutdown", BindingFlags.Instance | BindingFlags.NonPublic).Invoke(fixture, null);
-                    var lifecycle = (IDictionary<string, object>)Read(Path.Combine(root, "shutdown-lifecycle.json"))["Lifecycle"];
-                    Assert.AreEqual(5000, lifecycle["WaitBoundMilliseconds"], "Non-Word hosts must ignore this diagnostic.");
-                    Assert.AreEqual(0, application.QuitCount); Assert.AreEqual(0, document.CloseCount);
-                });
+                    WithFakeFixture((fixture, application, document, process, root) =>
+                    {
+                        SetProperty(fixture, "Kind", kind);
+                        typeof(OfficeVbeFixture).GetMethod("PrepareOwnedShutdown", BindingFlags.Instance | BindingFlags.NonPublic).Invoke(fixture, null);
+                        var lifecycle = (IDictionary<string, object>)Read(Path.Combine(root, "shutdown-lifecycle.json"))["Lifecycle"];
+                        Assert.AreEqual(5000, lifecycle["WaitBoundMilliseconds"], "Non-Word hosts must ignore this diagnostic.");
+                        Assert.AreEqual(0, application.QuitCount); Assert.AreEqual(0, document.CloseCount);
+                    });
             }
             finally { Environment.SetEnvironmentVariable("VBAi_TEST_WORD_EXIT_WAIT_BOUND_MS", prior); }
         }
@@ -327,14 +345,15 @@ namespace VBAi.Tests.Unit
                 {
                     Environment.SetEnvironmentVariable("VBAi_TEST_WORD_EXIT_WAIT_BOUND_MS", configured);
                     foreach (string kind in new[] { "Word", "PowerPoint", "Access", "Publisher" })
-                    WithFakeFixture((fixture, application, document, process, root) => {
-                        SetProperty(fixture, "Kind", kind);
-                        fixture.RequireAdapterOnlyCleanup();
-                        typeof(OfficeVbeFixture).GetMethod("PrepareOwnedShutdown", BindingFlags.Instance | BindingFlags.NonPublic).Invoke(fixture, null);
-                        var lifecycle = (IDictionary<string, object>)Read(Path.Combine(root, "shutdown-lifecycle.json"))["Lifecycle"];
-                        Assert.AreEqual(15000, lifecycle["WaitBoundMilliseconds"]);
-                        Assert.AreEqual(0, application.QuitCount); Assert.AreEqual(0, document.CloseCount);
-                    });
+                        WithFakeFixture((fixture, application, document, process, root) =>
+                        {
+                            SetProperty(fixture, "Kind", kind);
+                            fixture.RequireAdapterOnlyCleanup();
+                            typeof(OfficeVbeFixture).GetMethod("PrepareOwnedShutdown", BindingFlags.Instance | BindingFlags.NonPublic).Invoke(fixture, null);
+                            var lifecycle = (IDictionary<string, object>)Read(Path.Combine(root, "shutdown-lifecycle.json"))["Lifecycle"];
+                            Assert.AreEqual(15000, lifecycle["WaitBoundMilliseconds"]);
+                            Assert.AreEqual(0, application.QuitCount); Assert.AreEqual(0, document.CloseCount);
+                        });
                 }
             }
             finally { Environment.SetEnvironmentVariable("VBAi_TEST_WORD_EXIT_WAIT_BOUND_MS", prior); }
@@ -347,7 +366,8 @@ namespace VBAi.Tests.Unit
             try
             {
                 Environment.SetEnvironmentVariable("VBAi_TEST_WORD_EXIT_WAIT_BOUND_MS", "0");
-                WithFakeFixture((fixture, application, document, process, root) => {
+                WithFakeFixture((fixture, application, document, process, root) =>
+                {
                     fixture.WaitForOwnedExit = (_, __) => { Assert.Fail("Invalid configuration must emit no exit observation."); return false; };
                     var failure = Assert.ThrowsException<AssertFailedException>(() => fixture.Dispose());
                     StringAssert.Contains(failure.Message, "VBAi_TEST_WORD_EXIT_WAIT_BOUND_MS=15000");
@@ -363,10 +383,13 @@ namespace VBAi.Tests.Unit
             }
             finally { Environment.SetEnvironmentVariable("VBAi_TEST_WORD_EXIT_WAIT_BOUND_MS", prior); }
         }
-        [DataTestMethod][DataRow(false)][DataRow(true)]
+        [DataTestMethod]
+        [DataRow(false)]
+        [DataRow(true)]
         public void FirstWordDocumentCloseRejectionOrUncertaintyNeverEntersQuitOrRetriesCleanup(bool timeout)
         {
-            WithFakeFixture((fixture, application, document, process, root) => {
+            WithFakeFixture((fixture, application, document, process, root) =>
+            {
                 document.CloseError = timeout ? (Exception)new TimeoutException("uncertain original Close") :
                     new System.Runtime.InteropServices.COMException("original Word Close rejected", unchecked((int)0x80010001));
                 fixture.WaitForOwnedExit = (_, __) => { Assert.Fail("Quit never entered; no manufactured exit observation"); return false; };

@@ -1,10 +1,10 @@
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Web.Script.Serialization;
 using System.Windows.Forms;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace VBAi.Tests.Unit
 {
@@ -22,7 +22,7 @@ namespace VBAi.Tests.Unit
         private static LlmVbeTools Tools(LlmSettings settings = null)
         {
             var tools = new LlmVbeTools(null, null, settings ?? new LlmSettings { VbeEditApproval = "Automatic" })
-                { BoundProject = "Draft" };
+            { BoundProject = "Draft" };
             tools.Execute = _ => Response.Success(new object[0]);
             tools.SetReadAccess(new string[0], true);
             tools.NoteUserRequest(Path);
@@ -68,20 +68,32 @@ namespace VBAi.Tests.Unit
         }
 
         [DataTestMethod]
-        [DataRow("create_solidworks_macro", false)][DataRow("create_solidworks_macro", true)]
-        [DataRow("publish_solidworks_macro", false)][DataRow("publish_solidworks_macro", true)]
+        [DataRow("create_solidworks_macro", false)]
+        [DataRow("create_solidworks_macro", true)]
+        [DataRow("publish_solidworks_macro", false)]
+        [DataRow("publish_solidworks_macro", true)]
         public void NativeRoutesAndCatalogPreserveOneApprovalAndIdentityMapping(string command, bool catalog)
         {
             var tools = Tools(new LlmSettings { VbeEditApproval = "AskEachTime" });
             int approvals = 0, entries = 0; Request captured = null;
             tools.ShowApproval = (_, __) => { approvals++; return DialogResult.Yes; };
-            tools.SolidWorksMacroNative = async request => {
+            tools.SolidWorksMacroNative = async request =>
+            {
                 captured = request; entries++;
                 Assert.AreEqual(command, request.Command);
                 await Task.Yield();
                 request.RevalidateMacroAuthorization(true); request.RevalidateMacroAuthorization(false);
-                return new { Terminal = true, Verified = true, Uncertain = false, MutationInvoked = true,
-                    OriginalProject = "Draft", DestinationProject = "Published", IdentityChanged = true, OriginalPreserved = true };
+                return new
+                {
+                    Terminal = true,
+                    Verified = true,
+                    Uncertain = false,
+                    MutationInvoked = true,
+                    OriginalProject = "Draft",
+                    DestinationProject = "Published",
+                    IdentityChanged = true,
+                    OriginalPreserved = true
+                };
             };
             string output = Invoke(tools, command, catalog);
             Assert.IsTrue(Json.Deserialize<Response>(output).Ok, output);
@@ -90,15 +102,21 @@ namespace VBAi.Tests.Unit
         }
 
         [DataTestMethod]
-        [DataRow("policy", false)][DataRow("binding", false)][DataRow("shared", false)][DataRow("grants", false)]
-        [DataRow("mode", true)][DataRow("cached", true)][DataRow("scope", true)]
+        [DataRow("policy", false)]
+        [DataRow("binding", false)]
+        [DataRow("shared", false)]
+        [DataRow("grants", false)]
+        [DataRow("mode", true)]
+        [DataRow("cached", true)]
+        [DataRow("scope", true)]
         public void RevocationWhilePendingRefusesFurtherNativeMutation(string changed, bool catalog)
         {
             var settings = new LlmSettings { VbeEditApproval = "Automatic" };
             var tools = Tools(settings); bool scope = true, cached = true; int writes = 0; Request captured = null;
             tools.ValidateScope = () => { if (!scope) throw new InvalidOperationException("Scope revoked"); };
             tools.ValidateCachedScope = () => { if (!cached) throw new InvalidOperationException("Cached scope revoked"); };
-            tools.SolidWorksMacroNative = async request => {
+            tools.SolidWorksMacroNative = async request =>
+            {
                 captured = request; await Task.Yield();
                 if (changed == "policy") settings.VbeEditApproval = "ReadOnly";
                 if (changed == "binding") tools.BoundProject = "Other";
@@ -136,10 +154,17 @@ namespace VBAi.Tests.Unit
         public void RevokedAccessAfterNativeMutationRedactsDestinationAndKeepsUncertainty(string command)
         {
             var tools = Tools();
-            tools.SolidWorksMacroNative = async request => {
+            tools.SolidWorksMacroNative = async request =>
+            {
                 await Task.Yield(); tools.BoundProject = "Other";
-                return new { Verified = true, MutationInvoked = true, CommandEntered = true,
-                    OriginalProject = "Draft", DestinationProject = "DoNotDiscloseNativeTarget" };
+                return new
+                {
+                    Verified = true,
+                    MutationInvoked = true,
+                    CommandEntered = true,
+                    OriginalProject = "Draft",
+                    DestinationProject = "DoNotDiscloseNativeTarget"
+                };
             };
             string output = Invoke(tools, command, true);
             var result = Json.Deserialize<Response>(output);

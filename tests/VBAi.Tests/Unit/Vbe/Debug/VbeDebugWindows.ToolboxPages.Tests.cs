@@ -1,7 +1,6 @@
-using System;
-using VBAi;
-using VBAi.Tests.Infrastructure;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+using System;
+using VBAi.Tests.Infrastructure;
 
 namespace VBAi.Tests.Unit
 {
@@ -11,41 +10,42 @@ namespace VBAi.Tests.Unit
         public void NativeToolboxPagesValidateOwnerWindowServersAndFullReadback()
         {
             foreach (string fault in new[] { "none", "zero owner", "foreign", "hidden", "class", "caption", "no servers", "too many", "foreign server", "hidden server", "server class", "provider error", "provider null", "wrong role", "duplicate groups", "changed owner", "changed server owner", "changed visible", "changed server visible", "changed caption", "changed server class" })
-            using (var scene = new SystemScene())
-            {
-                var editor = scene.Add("VBE", "wndclass_desked_gsk"); var window = scene.Add("Toolbox", "VbaWindow", editor); var server = scene.Add("pages", "F3 Server fixture", window);
-                var grouping = new AccessibleNode { NativeRole = System.Windows.Forms.AccessibleRole.Grouping };
-                var list = new AccessibleNode { NativeRole = System.Windows.Forms.AccessibleRole.PageTabList };
-                list.Children.Add(new AccessibleNode { Label = "Controls", NativeRole = System.Windows.Forms.AccessibleRole.PageTab, StateValue = System.Windows.Forms.AccessibleStates.Selected }); grouping.Children.Add(list); server.Accessible = grouping;
-                uint owner = window.ProcessId;
-                if (fault == "zero owner") owner = 0;
-                if (fault == "foreign") window.ProcessId = 999999;
-                if (fault == "hidden") window.Visible = false;
-                if (fault == "class") window.Class = "unrelated";
-                if (fault == "caption") window.Text = "unrelated";
-                if (fault == "no servers") scene.Windows.Remove(server);
-                if (fault == "too many") for (int i = 0; i < 64; i++) scene.Add("server", "F3 Server fixture", window);
-                if (fault == "foreign server") server.ProcessId = 999999;
-                if (fault == "hidden server") server.Visible = false;
-                if (fault == "server class") server.Class = "unrelated";
-                if (fault == "provider error") scene.AccessibilityHResult = -1;
-                if (fault == "provider null") server.Accessible = null;
-                if (fault == "wrong role") grouping.NativeRole = System.Windows.Forms.AccessibleRole.Client;
-                if (fault == "duplicate groups") scene.Add("second", "F3 Server fixture", window).Accessible = grouping;
-                list.Children[0].OnName = () => {
-                    if (fault == "changed owner") window.ProcessId = 999999;
-                    if (fault == "changed server owner") server.ProcessId = 999999;
-                    if (fault == "changed visible") window.Visible = false;
-                    if (fault == "changed server visible") server.Visible = false;
-                    if (fault == "changed caption") window.Text = "Changed";
-                    if (fault == "changed server class") server.Class = "changed";
-                };
-                var result = (VbeDebugWindows.NavigationSurface)Call("ReadNativeToolboxPages", window.Handle, owner);
-                Assert.AreEqual(fault == "none", result.Available, fault);
-                if (fault == "none") { Assert.AreEqual(1, result.Nodes.Length); Assert.AreEqual(true, result.Nodes[0].ObservedSelected); Assert.IsNull(result.Nodes[0].Selected); }
-                else { Assert.AreEqual(0, result.Nodes.Length); Assert.IsNull(result.Identity); Assert.IsFalse(string.IsNullOrEmpty(result.Error)); }
-                if (fault == "none") Assert.IsTrue(Native<VbeDebugWindows.INavigationSurfaceProbe>("NativeNavigationSurfaceProbe").Read("toolbox").Available);
-            }
+                using (var scene = new SystemScene())
+                {
+                    var editor = scene.Add("VBE", "wndclass_desked_gsk"); var window = scene.Add("Toolbox", "VbaWindow", editor); var server = scene.Add("pages", "F3 Server fixture", window);
+                    var grouping = new AccessibleNode { NativeRole = System.Windows.Forms.AccessibleRole.Grouping };
+                    var list = new AccessibleNode { NativeRole = System.Windows.Forms.AccessibleRole.PageTabList };
+                    list.Children.Add(new AccessibleNode { Label = "Controls", NativeRole = System.Windows.Forms.AccessibleRole.PageTab, StateValue = System.Windows.Forms.AccessibleStates.Selected }); grouping.Children.Add(list); server.Accessible = grouping;
+                    uint owner = window.ProcessId;
+                    if (fault == "zero owner") owner = 0;
+                    if (fault == "foreign") window.ProcessId = 999999;
+                    if (fault == "hidden") window.Visible = false;
+                    if (fault == "class") window.Class = "unrelated";
+                    if (fault == "caption") window.Text = "unrelated";
+                    if (fault == "no servers") scene.Windows.Remove(server);
+                    if (fault == "too many") for (int i = 0; i < 64; i++) scene.Add("server", "F3 Server fixture", window);
+                    if (fault == "foreign server") server.ProcessId = 999999;
+                    if (fault == "hidden server") server.Visible = false;
+                    if (fault == "server class") server.Class = "unrelated";
+                    if (fault == "provider error") scene.AccessibilityHResult = -1;
+                    if (fault == "provider null") server.Accessible = null;
+                    if (fault == "wrong role") grouping.NativeRole = System.Windows.Forms.AccessibleRole.Client;
+                    if (fault == "duplicate groups") scene.Add("second", "F3 Server fixture", window).Accessible = grouping;
+                    list.Children[0].OnName = () =>
+                    {
+                        if (fault == "changed owner") window.ProcessId = 999999;
+                        if (fault == "changed server owner") server.ProcessId = 999999;
+                        if (fault == "changed visible") window.Visible = false;
+                        if (fault == "changed server visible") server.Visible = false;
+                        if (fault == "changed caption") window.Text = "Changed";
+                        if (fault == "changed server class") server.Class = "changed";
+                    };
+                    var result = (VbeDebugWindows.NavigationSurface)Call("ReadNativeToolboxPages", window.Handle, owner);
+                    Assert.AreEqual(fault == "none", result.Available, fault);
+                    if (fault == "none") { Assert.AreEqual(1, result.Nodes.Length); Assert.AreEqual(true, result.Nodes[0].ObservedSelected); Assert.IsNull(result.Nodes[0].Selected); }
+                    else { Assert.AreEqual(0, result.Nodes.Length); Assert.IsNull(result.Identity); Assert.IsFalse(string.IsNullOrEmpty(result.Error)); }
+                    if (fault == "none") Assert.IsTrue(Native<VbeDebugWindows.INavigationSurfaceProbe>("NativeNavigationSurfaceProbe").Read("toolbox").Available);
+                }
         }
 
         [TestMethod]

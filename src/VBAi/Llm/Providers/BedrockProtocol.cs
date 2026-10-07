@@ -18,10 +18,12 @@ namespace VBAi
         {
             var messages = new List<object>(); var system = new List<object>();
             List<object> results = null;
-            foreach (var raw in history) {
+            foreach (var raw in history)
+            {
                 var m = ClaudeProtocol.Object(raw); string role = ClaudeProtocol.Text(m, "role"), text = ClaudeProtocol.Text(m, "content");
                 if (role == "system") { system.Add(new { text }); continue; }
-                if (role == "tool") {
+                if (role == "tool")
+                {
                     if (results == null) { results = new List<object>(); messages.Add(new { role = "user", content = results }); }
                     results.Add(new { toolResult = new { toolUseId = ClaudeProtocol.Text(m, "tool_call_id"), content = new[] { new { text = text ?? "" } } } });
                     continue;
@@ -30,16 +32,42 @@ namespace VBAi
                 if (m.ContainsKey("_bedrock_content")) { messages.Add(new { role, content = m["_bedrock_content"] }); continue; }
                 var content = new List<object>();
                 if (!string.IsNullOrEmpty(text)) content.Add(new { text });
-                foreach (var callRaw in ClaudeProtocol.Array(m, "tool_calls")) {
+                foreach (var callRaw in ClaudeProtocol.Array(m, "tool_calls"))
+                {
                     var call = ClaudeProtocol.Object(callRaw); var f = ClaudeProtocol.Object(call["function"]);
-                    content.Add(new { toolUse = new { toolUseId = ClaudeProtocol.Text(call, "id"), name = ClaudeProtocol.Text(f, "name"),
-                        input = new JavaScriptSerializer().DeserializeObject(ClaudeProtocol.Text(f, "arguments") ?? "{}") } });
+                    content.Add(new
+                    {
+                        toolUse = new
+                        {
+                            toolUseId = ClaudeProtocol.Text(call, "id"),
+                            name = ClaudeProtocol.Text(f, "name"),
+                            input = new JavaScriptSerializer().DeserializeObject(ClaudeProtocol.Text(f, "arguments") ?? "{}")
+                        }
+                    });
                 }
                 if (content.Count > 0) messages.Add(new { role, content });
             }
-            return new { system, messages, inferenceConfig = new { maxTokens = 8192 }, toolConfig = new {
-                tools = tools.Select(raw => { var f = ClaudeProtocol.Object(ClaudeProtocol.Object(raw)["function"]); return new { toolSpec = new {
-                    name = ClaudeProtocol.Text(f, "name"), description = ClaudeProtocol.Text(f, "description"), inputSchema = new { json = f["parameters"] } } }; }).ToArray() } };
+            return new
+            {
+                system,
+                messages,
+                inferenceConfig = new { maxTokens = 8192 },
+                toolConfig = new
+                {
+                    tools = tools.Select(raw =>
+                    {
+                        var f = ClaudeProtocol.Object(ClaudeProtocol.Object(raw)["function"]); return new
+                        {
+                            toolSpec = new
+                            {
+                                name = ClaudeProtocol.Text(f, "name"),
+                                description = ClaudeProtocol.Text(f, "description"),
+                                inputSchema = new { json = f["parameters"] }
+                            }
+                        };
+                    }).ToArray()
+                }
+            };
         }
 
         /// <summary>Convertit le message Converse de Bedrock en message assistant au format interne.</summary>
@@ -52,12 +80,19 @@ namespace VBAi
                 throw new InvalidOperationException(UiText.Get("Incomplete or filtered Bedrock response: ") + stop);
             var message = ClaudeProtocol.Object(ClaudeProtocol.Object(root["output"])["message"]);
             var blocks = ClaudeProtocol.Array(message, "content"); var text = new List<string>(); var calls = new List<object>();
-            foreach (var raw in blocks) {
+            foreach (var raw in blocks)
+            {
                 var block = ClaudeProtocol.Object(raw);
                 if (block.ContainsKey("text")) text.Add(ClaudeProtocol.Text(block, "text"));
-                if (block.ContainsKey("toolUse")) { var tool = ClaudeProtocol.Object(block["toolUse"]);
-                    calls.Add(new Dictionary<string, object> { ["id"] = tool["toolUseId"], ["type"] = "function",
-                        ["function"] = new Dictionary<string, object> { ["name"] = tool["name"], ["arguments"] = new JavaScriptSerializer().Serialize(tool["input"]) } });
+                if (block.ContainsKey("toolUse"))
+                {
+                    var tool = ClaudeProtocol.Object(block["toolUse"]);
+                    calls.Add(new Dictionary<string, object>
+                    {
+                        ["id"] = tool["toolUseId"],
+                        ["type"] = "function",
+                        ["function"] = new Dictionary<string, object> { ["name"] = tool["name"], ["arguments"] = new JavaScriptSerializer().Serialize(tool["input"]) }
+                    });
                 }
             }
             var result = new Dictionary<string, object> { ["role"] = "assistant", ["content"] = string.Join("\n", text), ["_bedrock_content"] = blocks };

@@ -1,6 +1,6 @@
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Collections.Generic;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 using VBAi.Tests.Integration;
 
 namespace VBAi.Tests.Unit
@@ -77,12 +77,16 @@ namespace VBAi.Tests.Unit
         }
 
         private static WordChatTopWindowInventory.Identity Id(int processId, uint threadId, bool visible)
-            => new WordChatTopWindowInventory.Identity {
-                ProcessId = processId, ThreadId = threadId, Visible = visible
+            => new WordChatTopWindowInventory.Identity
+            {
+                ProcessId = processId,
+                ThreadId = threadId,
+                Visible = visible
             };
 
         private static WordChatTopWindowInventory.Enumerator Enumerate(IEnumerable<IntPtr> windows)
-            => (visitor, state) => {
+            => (visitor, state) =>
+            {
                 foreach (IntPtr window in windows)
                     if (!visitor(window, state)) return false;
                 return true;

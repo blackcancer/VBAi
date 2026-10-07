@@ -1,3 +1,4 @@
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -5,8 +6,6 @@ using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Windows.Forms;
-using VBAi;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace VBAi.Tests.Unit
 {
@@ -54,15 +53,19 @@ namespace VBAi.Tests.Unit
         [DllImport("gdi32.dll")] private static extern IntPtr CreateSolidBrush(int color);
         [DllImport("gdi32.dll")] private static extern bool DeleteObject(IntPtr brush);
         [DllImport("gdi32.dll")] internal static extern uint GetObjectType(IntPtr value);
-        [DllImport("user32.dll", CharSet = CharSet.Unicode)] private static extern IntPtr CreateWindowEx(int exStyle, string className,
+        [DllImport("user32.dll", CharSet = CharSet.Unicode)]
+        private static extern IntPtr CreateWindowEx(int exStyle, string className,
             string title, int style, int x, int y, int width, int height, IntPtr parent, IntPtr id, IntPtr instance, IntPtr parameter);
         [DllImport("user32.dll")] private static extern bool DestroyWindow(IntPtr window);
-        [DllImport("user32.dll")] private static extern IntPtr SetWinEventHook(uint first, uint last, IntPtr module,
+        [DllImport("user32.dll")]
+        private static extern IntPtr SetWinEventHook(uint first, uint last, IntPtr module,
             VbeNativeTheme.WinEventCallback callback, uint process, uint thread, uint flags);
         [DllImport("user32.dll")] private static extern bool UnhookWinEvent(IntPtr hook);
-        [DllImport("comctl32.dll")] private static extern bool SetWindowSubclass(IntPtr window,
+        [DllImport("comctl32.dll")]
+        private static extern bool SetWindowSubclass(IntPtr window,
             VbeNativeTheme.SubclassCallback callback, UIntPtr id, IntPtr reference);
-        [DllImport("comctl32.dll", EntryPoint = "#411")] private static extern bool GetWindowSubclass(IntPtr window,
+        [DllImport("comctl32.dll", EntryPoint = "#411")]
+        private static extern bool GetWindowSubclass(IntPtr window,
             VbeNativeTheme.SubclassCallback callback, UIntPtr id, out IntPtr reference);
 
         internal NativeThemeFixture()

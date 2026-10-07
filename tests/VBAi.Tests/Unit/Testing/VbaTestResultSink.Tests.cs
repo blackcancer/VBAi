@@ -1,6 +1,6 @@
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Threading;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace VBAi.Tests.Unit
 {
@@ -130,7 +130,7 @@ namespace VBAi.Tests.Unit
                     var descriptor = new VbaTestDescriptor { Id = index == 6 ? null : "test", Module = index == 7 ? "" : "Tests", Procedure = index == 8 ? new string('x', 256) : "Check" };
                     Assert.ThrowsException<ArgumentException>(() => sink.Arm(index == 0 ? null : new object(), index == 2 ? null : "path", index == 3 ? new string('x', 33) : "3",
                         index == 4 ? " " : "revision", index == 5 ? new string('x', 129) : "run", index == 1 ? null : descriptor,
-                        index == 9 ? "unknown" : "Test", index == 10 ? " " : index == 11 ? new string('x',129) : null));
+                        index == 9 ? "unknown" : "Test", index == 10 ? " " : index == 11 ? new string('x', 129) : null));
                     Assert.IsFalse(sink.HasVerdict); Assert.IsFalse(sink.HasFault);
                 }
                 foreach (var phase in new[] { "Test", "ModuleInitialize", "ModuleCleanup", "TestInitialize", "TestCleanup" })

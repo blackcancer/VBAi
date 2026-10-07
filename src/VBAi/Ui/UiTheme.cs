@@ -1,9 +1,9 @@
+using Microsoft.Win32;
 using System;
 using System.ComponentModel;
 using System.Drawing;
 using System.IO;
 using System.Windows.Forms;
-using Microsoft.Win32;
 
 namespace VBAi
 {
@@ -72,7 +72,8 @@ namespace VBAi
         /// <value>Valeur déterminée selon le contraste élevé, le choix et la préférence Windows.</value>
         internal static bool Dark
         {
-            get {
+            get
+            {
                 if (HighContrast()) return WindowColor().GetBrightness() < 0.5f;
                 if (Choice != ThemeChoice.System) return Choice == ThemeChoice.Dark;
                 try { return (int?)ReadSystemTheme() == 0; } catch { return false; }
@@ -165,7 +166,7 @@ namespace VBAi
 
         /// <summary>Charge le thème enregistré ou retourne le suivi du système si le fichier est absent ou invalide.</summary>
         /// <returns>Choix valide enregistré, ou suivi des préférences système.</returns>
-        private static ThemeChoice Load() { try { ThemeChoice value; if (Enum.TryParse(ReadTheme(FileName), out value) && Enum.IsDefined(typeof(ThemeChoice), value)) return value; } catch { } return ThemeChoice.System; }
+        private static ThemeChoice Load() { try { if (Enum.TryParse(ReadTheme(FileName), out ThemeChoice value) && Enum.IsDefined(typeof(ThemeChoice), value)) return value; } catch { } return ThemeChoice.System; }
 
         /// <summary>Enregistre le choix fourni et notifie les vues abonnées.</summary>
         /// <param name="choice">Mode de thème à enregistrer.</param>
@@ -181,7 +182,7 @@ namespace VBAi
         {
             if (IsDesignPreview(form)) return;
             UiHelp.Attach(form);
-            Action update = () => { if (!form.IsDisposed) { if (form.InvokeRequired) form.BeginInvoke(new Action(() => Apply(form))); else Apply(form); } };
+            void update() { if (!form.IsDisposed) { if (form.InvokeRequired) form.BeginInvoke(new Action(() => Apply(form))); else Apply(form); } }
             Changed += update;
             form.Disposed += (s, e) => { Changed -= update; };
             Apply(form);
@@ -199,7 +200,8 @@ namespace VBAi
             control.BackColor = control is TextBoxBase || control is ListControl || control is DataGridView ? Surface : Background;
             control.ForeColor = Foreground;
             if (control.ContextMenuStrip != null) ApplyMenu(control.ContextMenuStrip);
-            if (control is TextBoxBase textBox) {
+            if (control is TextBoxBase textBox)
+            {
                 bool transcript = textBox.BorderStyle == BorderStyle.None && (textBox is UiTextBox || textBox is RichTextBox rich && rich.ReadOnly);
                 textBox.BorderStyle = transcript ? BorderStyle.None : BorderStyle.FixedSingle;
                 if (transcript) textBox.BackColor = Background;
@@ -207,10 +209,13 @@ namespace VBAi
             if (control is ListBox listBox) listBox.BorderStyle = BorderStyle.FixedSingle;
             if (control is CheckBox checkBox) checkBox.FlatStyle = FlatStyle.Flat;
             if (control is Button button) { button.FlatStyle = FlatStyle.Flat; button.FlatAppearance.BorderColor = Dark ? Color.FromArgb(75, 85, 99) : Color.FromArgb(203, 213, 225); }
-            if (control is DataGridView grid) { grid.BackgroundColor = Surface; grid.DefaultCellStyle.BackColor = Surface; grid.DefaultCellStyle.ForeColor = Foreground; grid.EnableHeadersVisualStyles = false; grid.ColumnHeadersBorderStyle = DataGridViewHeaderBorderStyle.None; grid.ColumnHeadersDefaultCellStyle.BackColor = Background; grid.ColumnHeadersDefaultCellStyle.ForeColor = Foreground;
+            if (control is DataGridView grid)
+            {
+                grid.BackgroundColor = Surface; grid.DefaultCellStyle.BackColor = Surface; grid.DefaultCellStyle.ForeColor = Foreground; grid.EnableHeadersVisualStyles = false; grid.ColumnHeadersBorderStyle = DataGridViewHeaderBorderStyle.None; grid.ColumnHeadersDefaultCellStyle.BackColor = Background; grid.ColumnHeadersDefaultCellStyle.ForeColor = Foreground;
                 grid.ColumnHeadersDefaultCellStyle.SelectionBackColor = Background; grid.ColumnHeadersDefaultCellStyle.SelectionForeColor = Foreground;
                 grid.GridColor = Dark ? Color.FromArgb(71, 85, 105) : Color.FromArgb(203, 213, 225);
-                grid.CellFormatting -= FormatDiffCell; grid.CellFormatting += FormatDiffCell; }
+                grid.CellFormatting -= FormatDiffCell; grid.CellFormatting += FormatDiffCell;
+            }
             if (control is ComboBox combo) { combo.FlatStyle = combo is UiComboBox ? FlatStyle.Standard : FlatStyle.Flat; combo.DrawMode = DrawMode.OwnerDrawFixed; combo.DrawItem -= DrawCombo; if (!(combo is UiComboBox)) combo.DrawItem += DrawCombo; }
             foreach (Control child in control.Controls) Apply(child);
             control.Invalidate();
@@ -235,7 +240,8 @@ namespace VBAi
         /// <param name="items">Menu items whose text and surface colors are updated recursively.</param>
         private static void ApplyMenuItems(ToolStripItemCollection items)
         {
-            foreach (ToolStripItem item in items) {
+            foreach (ToolStripItem item in items)
+            {
                 item.ForeColor = Foreground; item.BackColor = Surface;
                 if (item is ToolStripDropDownItem parent) ApplyMenuItems(parent.DropDownItems);
             }

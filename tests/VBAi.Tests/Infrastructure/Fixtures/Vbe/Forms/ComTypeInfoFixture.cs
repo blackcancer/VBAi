@@ -5,12 +5,12 @@ namespace VBAi.Tests.Unit
     using System.Runtime.InteropServices;
     using System.Runtime.InteropServices.ComTypes;
     using VBAi;
-    using TYPEATTR = System.Runtime.InteropServices.ComTypes.TYPEATTR;
-    using FUNCDESC = System.Runtime.InteropServices.ComTypes.FUNCDESC;
-    using TYPEKIND = System.Runtime.InteropServices.ComTypes.TYPEKIND;
-    using INVOKEKIND = System.Runtime.InteropServices.ComTypes.INVOKEKIND;
-    using IMPLTYPEFLAGS = System.Runtime.InteropServices.ComTypes.IMPLTYPEFLAGS;
     using DISPPARAMS = System.Runtime.InteropServices.ComTypes.DISPPARAMS;
+    using FUNCDESC = System.Runtime.InteropServices.ComTypes.FUNCDESC;
+    using IMPLTYPEFLAGS = System.Runtime.InteropServices.ComTypes.IMPLTYPEFLAGS;
+    using INVOKEKIND = System.Runtime.InteropServices.ComTypes.INVOKEKIND;
+    using TYPEATTR = System.Runtime.InteropServices.ComTypes.TYPEATTR;
+    using TYPEKIND = System.Runtime.InteropServices.ComTypes.TYPEKIND;
 
     internal sealed class ComClassInfoFixture : IProvideClassInfo
     {
@@ -52,8 +52,13 @@ namespace VBAi.Tests.Unit
         {
             pointer = IntPtr.Zero;
             if (AttributeFailure) throw new COMException("Disposable attribute failure");
-            pointer = Allocate(new TYPEATTR { guid = Identity, typekind = Kind,
-                cFuncs = FunctionCount ?? (short)Functions.Count, cImplTypes = ParentCount ?? (short)Parents.Count });
+            pointer = Allocate(new TYPEATTR
+            {
+                guid = Identity,
+                typekind = Kind,
+                cFuncs = FunctionCount ?? (short)Functions.Count,
+                cImplTypes = ParentCount ?? (short)Parents.Count
+            });
             if (AttributeFailureAfterAllocation) throw new COMException("Disposable attribute failure after allocation");
         }
         public void GetFuncDesc(int index, out IntPtr pointer)

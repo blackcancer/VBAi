@@ -1,11 +1,10 @@
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
-using VBAi;
 
 namespace VBAi.Tests.Unit
 {
@@ -95,7 +94,8 @@ namespace VBAi.Tests.Unit
                 Assert.IsFalse(fixture.Window.IsDisposed);
                 Assert.IsFalse(operation.IsCompleted);
                 using (File.Create(Path.Combine(fixture.Git.Root, "retained-marker.txt"))) { }
-                Assert.ThrowsException<IOException>(() => {
+                Assert.ThrowsException<IOException>(() =>
+                {
                     using (File.Open(Path.Combine(fixture.UiCache, "session.lock"), FileMode.Open, FileAccess.ReadWrite, FileShare.None)) { }
                 });
                 Assert.AreSame(cache, GitWindow.CacheDirectory);

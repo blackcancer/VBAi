@@ -50,10 +50,9 @@ namespace VBAi
         private static string ReadObserverText(IntPtr handle)
         {
             var text = new StringBuilder(512);
-            UIntPtr length;
             // SMTO_BLOCK | SMTO_ABORTIFHUNG; an empty successful WM_GETTEXT reply remains valid.
             if (ReadObserverTextMessage(handle, 13, new IntPtr(text.Capacity), text, 3,
-                ObserverTextTimeoutMilliseconds, out length) == IntPtr.Zero)
+                ObserverTextTimeoutMilliseconds, out UIntPtr length) == IntPtr.Zero)
                 throw new TimeoutException("The native observer text read did not complete within its bounded wait.");
             if (length.ToUInt64() >= (ulong)text.Capacity - 1)
                 throw new InvalidOperationException("The native observer text is truncated.");

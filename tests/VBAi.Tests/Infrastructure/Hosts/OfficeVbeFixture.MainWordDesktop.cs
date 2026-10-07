@@ -13,6 +13,9 @@ namespace VBAi.Tests.Integration
         private bool mainWordDesktop;
         private string mainWordExecutable, mainWordBirth;
 
+        internal static string OfficeMainWordOptIn(string kind, string genericMain, string wordOptIn) =>
+            kind == "Word" && genericMain == "1" ? "1" : wordOptIn;
+
         internal static bool SelectMainWordDesktop(string kind, string optIn, string required, string configured, Action requireMain)
         {
             if (optIn != "1") return false;
@@ -116,16 +119,30 @@ namespace VBAi.Tests.Integration
             string path = RequireMainWordProduct(status, ProcessId, expectedMvid, expectedHash,
                 typeof(VbeSession).Module.ModuleVersionId, HashOwnedFile);
             var inventory = ObserveMainWord(IntPtr.Zero, true, true);
-            var record = new { Phase = "MainWordReadyPlacementObserved", ProcessId, ProcessStartedUtc = mainWordBirth,
-                Executable = mainWordExecutable, OriginalLaunchProcessHandle = privateWordChild.ProcessHandle.ToInt64(),
-                OriginalProcessHandle = ownedProcess.Handle.ToInt64(), OriginalLaunchHandleOrigin = "CreateProcessW",
+            var record = new
+            {
+                Phase = "MainWordReadyPlacementObserved",
+                ProcessId,
+                ProcessStartedUtc = mainWordBirth,
+                Executable = mainWordExecutable,
+                OriginalLaunchProcessHandle = privateWordChild.ProcessHandle.ToInt64(),
+                OriginalProcessHandle = ownedProcess.Handle.ToInt64(),
+                OriginalLaunchHandleOrigin = "CreateProcessW",
                 OriginalProcessHandleOrigin = "Process.GetProcessById_PinnedAfterOwnedCreateProcess",
-                Desktop = "Default", InputDesktop = "Default", WindowStation = "WinSta0", Inventory = inventory,
+                Desktop = "Default",
+                InputDesktop = "Default",
+                WindowStation = "WinSta0",
+                Inventory = inventory,
                 WordRoots = inventory.Windows.Where(row => row.ClassName == "OpusApp" && row.Visible).ToArray(),
                 Vbe = inventory.Windows.Single(row => row.ClassName == "wndclass_desked_gsk" && row.Visible),
-                AssemblyPath = path, AssemblyModuleVersionId = (string)status["AssemblyModuleVersionId"], AssemblySha256 = expectedHash,
+                AssemblyPath = path,
+                AssemblyModuleVersionId = (string)status["AssemblyModuleVersionId"],
+                AssemblySha256 = expectedHash,
                 ExpectedAssemblyMvid = typeof(VbeSession).Module.ModuleVersionId.ToString("D"),
-                NativeRcwReleaseProven = false, HostExitProven = false, Utc = DateTime.UtcNow.ToString("o") };
+                NativeRcwReleaseProven = false,
+                HostExitProven = false,
+                Utc = DateTime.UtcNow.ToString("o")
+            };
             using (var stream = new FileStream(Path.Combine(Root, "main-word-placement.json"), FileMode.CreateNew, FileAccess.Write))
             using (var writer = new StreamWriter(stream, new UTF8Encoding(false))) writer.Write(new JavaScriptSerializer().Serialize(record));
             steps.Add(record);

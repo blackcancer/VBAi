@@ -1,9 +1,9 @@
 namespace VBAi.Tests.Unit
 {
+    using Microsoft.VisualStudio.TestTools.UnitTesting;
     using System;
     using System.Linq;
     using System.Threading.Tasks;
-    using Microsoft.VisualStudio.TestTools.UnitTesting;
     using VBAi;
 
     public sealed partial class VbeSolidWorksMacroPublicationTests
@@ -13,7 +13,8 @@ namespace VBAi.Tests.Unit
         {
             using (var f = new Fixture())
             {
-                f.Service.PublicationSave = r => {
+                f.Service.PublicationSave = r =>
+                {
                     f.SaveAttempts++;
                     foreach (var c in f.Target.VBComponents.Items.Where(c => c.Type != 100)) c.Saved = true;
                     return Task.FromResult<object>(new { Verified = true, Uncertain = false });
@@ -34,7 +35,8 @@ namespace VBAi.Tests.Unit
         {
             using (var f = new Fixture())
             {
-                f.Service.PublicationSave = r => {
+                f.Service.PublicationSave = r =>
+                {
                     f.SaveAttempts++;
                     var c = f.Target.VBComponents.Items.Single(x => x.Name == "Module1");
                     c.Saved = true;
@@ -82,8 +84,15 @@ namespace VBAi.Tests.Unit
         public void PublicationPostSaveMetadataAllowanceIsStrictAndOperationSpecific(string fault)
         {
             var serializer = new System.Web.Script.Serialization.JavaScriptSerializer();
-            Func<bool, object> descriptor = value => new System.Collections.Generic.Dictionary<string, object> {
-                ["Name"] = "Saved", ["Kind"] = "scalar", ["Type"] = "System.Boolean", ["Value"] = value, ["Error"] = null, ["ReadOnly"] = false };
+            Func<bool, object> descriptor = value => new System.Collections.Generic.Dictionary<string, object>
+            {
+                ["Name"] = "Saved",
+                ["Kind"] = "scalar",
+                ["Type"] = "System.Boolean",
+                ["Value"] = value,
+                ["Error"] = null,
+                ["ReadOnly"] = false
+            };
             var oldRow = (System.Collections.Generic.Dictionary<string, object>)descriptor(fault == "true-false");
             var newRow = (System.Collections.Generic.Dictionary<string, object>)descriptor(fault != "true-false");
             if (fault == "saved-error") newRow["Error"] = "Native getter failed";
@@ -102,8 +111,10 @@ namespace VBAi.Tests.Unit
         {
             using (var f = new Fixture())
             {
-                var result = (VbeProjectComponents.SolidWorksMacroPublicationResult)await f.Service.PublishSolidWorksMacroAsync(f.Request(), recordClaim: claim => {
-                    if (claim.Phase == "BeforePostSaveVerificationExport") {
+                var result = (VbeProjectComponents.SolidWorksMacroPublicationResult)await f.Service.PublishSolidWorksMacroAsync(f.Request(), recordClaim: claim =>
+                {
+                    if (claim.Phase == "BeforePostSaveVerificationExport")
+                    {
                         var current = f.Target.VBComponents.Items.Single(c => c.Name == "Module1");
                         if (fault == "code") current.CodeModule.Source += "\r\n' changed after save";
                         else { var replacement = new Component(current.Name, current.Type); replacement.CodeModule.Source = current.CodeModule.Source; f.Target.VBComponents.Items.Remove(current); f.Target.VBComponents.Items.Add(replacement); }
@@ -114,5 +125,6 @@ namespace VBAi.Tests.Unit
                 Assert.AreEqual(fault != "canonical", result.FinalMismatch.CanonicalEqual);
                 Assert.AreEqual(1, result.FinalMismatch.ComponentOrdinal); Assert.IsFalse(result.RetryAllowed);
             }
-        }    }
+        }
+    }
 }

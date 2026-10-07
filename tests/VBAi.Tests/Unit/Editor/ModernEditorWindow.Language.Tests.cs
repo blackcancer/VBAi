@@ -1,13 +1,11 @@
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
-using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
-using VBAi;
 using VBAi.Tests.Infrastructure;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 namespace VBAi.Tests.Unit.Editor
 {
     [TestClass, TestCategory("Unit")]
@@ -30,30 +28,30 @@ namespace VBAi.Tests.Unit.Editor
         public void LanguageRequestsReplyOnlyToLiveOwnedWindowsAndHandleMissingStaleOrFailedSnapshots()
         {
             foreach (string state in new[] { "null-id", "missing", "stale", "error", "not-ready", "disposed", "success", "existing-worker", "failed-worker" })
-            using (var f = new ModernEditorToolFixture())
-            {
-                EditorSyncWorker worker = null;
-                if (state == "not-ready") f.Base.Ready(false); if (state == "disposed") f.Window.Dispose();
-                if (state == "error") f.Override = (method, values) => method == "snapshots" ? throw new IOException("owned snapshot unavailable") : (string)null;
-                if (state == "existing-worker" || state == "failed-worker")
+                using (var f = new ModernEditorToolFixture())
                 {
-                    worker = new EditorSyncWorker(); f.Base.Set("languageWorker", worker);
-                    if (state == "failed-worker") { worker.Dispose(); Assert.IsTrue(((Thread)typeof(EditorSyncWorker).GetField("thread", BindingFlags.NonPublic | BindingFlags.Instance).GetValue(worker)).Join(5000)); }
-                }
-                f.Base.Scripts.Clear();
-                Call(f, "LanguageRequest", Message(f, id: state == "missing" ? "missing" : null, version: state == "stale" ? 0 : 1, nullId: state == "null-id"));
-                var replies = f.Base.Scripts.Where(script => script.Item1 == "languageReply").ToArray();
-                Assert.AreEqual(state == "disposed" || state == "not-ready" ? 0 : 1, replies.Length, state);
-                if (replies.Length != 0)
-                {
-                    Assert.AreEqual(42, replies[0].Item2[0]);
-                    if (state == "success" || state == "existing-worker")
+                    EditorSyncWorker worker = null;
+                    if (state == "not-ready") f.Base.Ready(false); if (state == "disposed") f.Window.Dispose();
+                    if (state == "error") f.Override = (method, values) => method == "snapshots" ? throw new IOException("owned snapshot unavailable") : (string)null;
+                    if (state == "existing-worker" || state == "failed-worker")
                     {
-                        var response = f.Result(replies[0].Item2[1]); Assert.AreEqual(f.Document.Id, response["id"]); Assert.AreEqual(f.Module.Name, response["module"]); Assert.IsNotNull(response["symbols"]);
+                        worker = new EditorSyncWorker(); f.Base.Set("languageWorker", worker);
+                        if (state == "failed-worker") { worker.Dispose(); Assert.IsTrue(((Thread)typeof(EditorSyncWorker).GetField("thread", BindingFlags.NonPublic | BindingFlags.Instance).GetValue(worker)).Join(5000)); }
                     }
-                    else Assert.IsNull(replies[0].Item2[1], state);
+                    f.Base.Scripts.Clear();
+                    Call(f, "LanguageRequest", Message(f, id: state == "missing" ? "missing" : null, version: state == "stale" ? 0 : 1, nullId: state == "null-id"));
+                    var replies = f.Base.Scripts.Where(script => script.Item1 == "languageReply").ToArray();
+                    Assert.AreEqual(state == "disposed" || state == "not-ready" ? 0 : 1, replies.Length, state);
+                    if (replies.Length != 0)
+                    {
+                        Assert.AreEqual(42, replies[0].Item2[0]);
+                        if (state == "success" || state == "existing-worker")
+                        {
+                            var response = f.Result(replies[0].Item2[1]); Assert.AreEqual(f.Document.Id, response["id"]); Assert.AreEqual(f.Module.Name, response["module"]); Assert.IsNotNull(response["symbols"]);
+                        }
+                        else Assert.IsNull(replies[0].Item2[1], state);
+                    }
                 }
-            }
         }
         [STATestMethod]
         public void NativeLanguageOverlaysOnlyItsOwnProjectAndReadsSafeLocalTypeMetadata()
@@ -128,9 +126,12 @@ namespace VBAi.Tests.Unit.Editor
                 var native = f.Base.Native;
                 native.Original.CodeModule.Raw += "\nPublic dictionary As Scripting.Dictionary";
                 f.Base.Document.AcceptRemote(native.Original.CodeModule.Raw);
-                var reference = new EditorVbeContract.Reference {
-                    FullPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.System), "scrrun.dll") };
-                Func<string> payload = () => {
+                var reference = new EditorVbeContract.Reference
+                {
+                    FullPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.System), "scrrun.dll")
+                };
+                Func<string> payload = () =>
+                {
                     f.Base.Scripts.Clear(); Call(f, "LanguageRequest", Message(f, id: f.Base.Document.Id));
                     return LanguagePayload(f);
                 };
@@ -172,13 +173,13 @@ namespace VBAi.Tests.Unit.Editor
         public void DefinitionRoutesExactOwnedModulesAndClampsSourcePositions()
         {
             foreach (string state in new[] { "null-id", "missing", "missing-target", "managed", "native" })
-            using (var f = new ModernEditorToolFixture())
-            {
-                f.Base.Scripts.Clear();
-                Call(f, "OpenDefinition", Message(f, id: state == "missing" ? "missing" : state == "native" ? f.Base.Document.Id : null, module: state == "missing-target" ? "absent" : state == "native" ? "Module1" : f.Module.Name, line: -1, column: 0, nullId: state == "null-id"));
-                var reveal = f.Base.Scripts.Where(script => script.Item1 == "reveal").ToArray(); Assert.AreEqual(state == "native" || state == "managed" ? 1 : 0, reveal.Length, state);
-                if (reveal.Length != 0) { Assert.AreEqual(1, reveal[0].Item2[0]); Assert.AreEqual(1, reveal[0].Item2[1]); }
-            }
+                using (var f = new ModernEditorToolFixture())
+                {
+                    f.Base.Scripts.Clear();
+                    Call(f, "OpenDefinition", Message(f, id: state == "missing" ? "missing" : state == "native" ? f.Base.Document.Id : null, module: state == "missing-target" ? "absent" : state == "native" ? "Module1" : f.Module.Name, line: -1, column: 0, nullId: state == "null-id"));
+                    var reveal = f.Base.Scripts.Where(script => script.Item1 == "reveal").ToArray(); Assert.AreEqual(state == "native" || state == "managed" ? 1 : 0, reveal.Length, state);
+                    if (reveal.Length != 0) { Assert.AreEqual(1, reveal[0].Item2[0]); Assert.AreEqual(1, reveal[0].Item2[1]); }
+                }
         }
     }
 }

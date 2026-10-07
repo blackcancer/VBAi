@@ -55,6 +55,22 @@ principal native campaigns are identified in the
 The [native macro evidence index](qualification/q020-q030.json) retains the
 machine-readable Q020/Q030 candidate references.
 
+## Installer lifecycle
+
+The maintainer stopped the general campaign and separately authorized installer
+qualification on 2026-10-07. The unsigned 1.0.0 setup with SHA-256
+`6170e080eb4b1b4142f844f7ee5f741af471997b6532bb1de8f144019ee13fb6`
+passed four real current-user scenarios: fresh installation, same-version repair
+with preserved installation identity, uninstallation with preserved user data,
+and reinstallation with a new identity. The installed payload hashes, COM paths,
+Windows Installed apps entry, marker and unsigned uninstaller were checked.
+
+The reusable harness is `tests/Installer/Invoke-InstallerLifecycle.ps1`; it requires
+explicit deployment opt-in and never launches Office or SOLIDWORKS. This result
+does not qualify upgrade to a different version, failure recovery, a new UAC
+bootstrap on another machine or native-host loading of the installed candidate.
+The remaining general/native test campaign was not resumed.
+
 ## Managed line and branch coverage
 
 The target remains **100% lines and 100% branches**, with meaningful mirrored tests.

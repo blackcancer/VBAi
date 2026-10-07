@@ -2184,4 +2184,628 @@ QQ 附加内存
   <data name="User guide" xml:space="preserve"><value>用户指南</value></data>
   <data name="Open the local VBAi user guide in the interface language" xml:space="preserve"><value>以界面语言打开本地 VBAi 用户指南</value></data>
   <data name="Local help is not included in this build. Place the VBAi help files in the Help folder beside the application." xml:space="preserve"><value>此构建版本不包含本地帮助。请将 VBAi 帮助文件放在应用程序旁的 Help 文件夹中。</value></data>
+  <data name="Close this window without starting another operation." xml:space="preserve">
+    <value>关闭此窗口，不启动其他操作。</value>
+  </data>
+  <data name="Save the settings edited in this window." xml:space="preserve">
+    <value>保存此窗口中编辑的设置。</value>
+  </data>
+  <data name="Choose the provider; authentication fields and available models depend on this selection." xml:space="preserve">
+    <value>选择提供商；认证字段和可用模型取决于此选择。</value>
+  </data>
+  <data name="Choose an available model for this conversation after the provider catalogue has loaded." xml:space="preserve">
+    <value>提供商目录加载后，为此对话选择可用模型。</value>
+  </data>
+  <data name="Choose the reasoning level supported by this model for the current conversation." xml:space="preserve">
+    <value>为当前对话选择此模型支持的推理级别。</value>
+  </data>
+  <data name="Select the project bound to this conversation and its VBE operations." xml:space="preserve">
+    <value>选择与此对话及其 VBE 操作关联的项目。</value>
+  </data>
+  <data name="Choose when VBA edits need confirmation; project identity, privacy and revision checks still apply." xml:space="preserve">
+    <value>选择 VBA 编辑何时需要确认；项目标识、隐私和修订检查仍然生效。</value>
+  </data>
+  <data name="Choose the agent&#x27;s work mode for the next request." xml:space="preserve">
+    <value>选择代理处理下一条请求的工作模式。</value>
+  </data>
+  <data name="Start account authentication for the selected provider." xml:space="preserve">
+    <value>启动所选提供商的账户认证。</value>
+  </data>
+  <data name="Read the selected provider&#x27;s account status again without starting login." xml:space="preserve">
+    <value>重新读取所选提供商的账户状态，不启动登录。</value>
+  </data>
+  <data name="Connection status for the selected account-based provider." xml:space="preserve">
+    <value>所选基于账户连接的提供商的连接状态。</value>
+  </data>
+  <data name="Set this provider&#x27;s API address; an incorrect URL can prevent models or requests from loading." xml:space="preserve">
+    <value>设置此提供商的 API 地址；错误 URL 可能导致模型或请求无法加载。</value>
+  </data>
+  <data name="Enter a new key for this provider; leave it empty to keep the saved key." xml:space="preserve">
+    <value>输入此提供商的新密钥；留空以保留已保存的密钥。</value>
+  </data>
+  <data name="Remove the saved key when settings are saved; an environment fallback may remain active." xml:space="preserve">
+    <value>保存设置时移除已保存的密钥；环境变量提供的备用密钥可能仍然生效。</value>
+  </data>
+  <data name="Enter the model or deployment identifiers required by this provider, one per line." xml:space="preserve">
+    <value>输入此提供商所需的模型或部署标识，每行一个。</value>
+  </data>
+  <data name="Name this custom provider so it can be recognized in the chat picker." xml:space="preserve">
+    <value>为自定义提供商命名，以便在聊天选择器中识别。</value>
+  </data>
+  <data name="Use an Entra bearer token for Azure; renew the token after it expires." xml:space="preserve">
+    <value>为 Azure 使用 Entra bearer token；到期后更新令牌。</value>
+  </data>
+  <data name="Set Ollama sampling temperature from 0 to 2; a lower value reduces variation." xml:space="preserve">
+    <value>设置 Ollama 采样温度，范围为 0 到 2；数值越低，变化越小。</value>
+  </data>
+  <data name="Set Ollama nucleus sampling above 0 and at most 1." xml:space="preserve">
+    <value>设置 Ollama nucleus sampling，数值大于 0 且不超过 1。</value>
+  </data>
+  <data name="Choose the GitHub account for repositories; this is separate from Copilot authentication." xml:space="preserve">
+    <value>选择用于仓库的 GitHub 账户；这与 Copilot 认证不同。</value>
+  </data>
+  <data name="Connect a GitHub account through Git Credential Manager." xml:space="preserve">
+    <value>通过 Git Credential Manager 连接 GitHub 账户。</value>
+  </data>
+  <data name="Reload the GitHub accounts available in Git Credential Manager." xml:space="preserve">
+    <value>重新加载 Git Credential Manager 中可用的 GitHub 账户。</value>
+  </data>
+  <data name="Status of GitHub repository authentication, separate from the chat provider." xml:space="preserve">
+    <value>GitHub 仓库认证状态，与聊天提供商分开。</value>
+  </data>
+  <data name="Choose light, dark or Windows-following appearance for VBAi." xml:space="preserve">
+    <value>选择 VBAi 的浅色、深色或跟随 Windows 的外观。</value>
+  </data>
+  <data name="Apply experimental dark styling to native VBE surfaces; original editor colors are retained for restoration." xml:space="preserve">
+    <value>为原生 VBE 界面应用实验性深色样式；保留原始编辑器颜色供恢复使用。</value>
+  </data>
+  <data name="Start a separate conversation for the selected project." xml:space="preserve">
+    <value>为选中的项目启动独立对话。</value>
+  </data>
+  <data name="Open conversation settings and additional actions." xml:space="preserve">
+    <value>打开对话设置和其他操作。</value>
+  </data>
+  <data name="Show the conversations associated with the current document." xml:space="preserve">
+    <value>显示与当前文档关联的对话。</value>
+  </data>
+  <data name="Filter this document&#x27;s conversation history by text." xml:space="preserve">
+    <value>按文本筛选此文档的对话历史。</value>
+  </data>
+  <data name="Select a stored or temporary conversation to reopen." xml:space="preserve">
+    <value>选择要重新打开的已保存或临时对话。</value>
+  </data>
+  <data name="Include archived conversations so they can be reopened or restored." xml:space="preserve">
+    <value>包含已归档对话，以便重新打开或恢复。</value>
+  </data>
+  <data name="Edit the selected conversation&#x27;s title before renaming it." xml:space="preserve">
+    <value>重命名前编辑所选对话的标题。</value>
+  </data>
+  <data name="Rename the selected conversation using the title entered above." xml:space="preserve">
+    <value>使用上方输入的标题重命名所选对话。</value>
+  </data>
+  <data name="Archive the selected conversation, or restore it if already archived." xml:space="preserve">
+    <value>归档所选对话；若已归档，则恢复它。</value>
+  </data>
+  <data name="Pin or unpin the selected conversation in the history list." xml:space="preserve">
+    <value>在历史列表中固定或取消固定所选对话。</value>
+  </data>
+  <data name="Permanently remove the selected conversation from VBAi local history." xml:space="preserve">
+    <value>从 VBAi 本地历史中永久删除所选对话。</value>
+  </data>
+  <data name="Export the selected conversation as Markdown; review its contents before sharing." xml:space="preserve">
+    <value>将所选对话导出为 Markdown；共享前请检查内容。</value>
+  </data>
+  <data name="Show the local notes associated with this document." xml:space="preserve">
+    <value>显示与此文档关联的本地笔记。</value>
+  </data>
+  <data name="Edit local project notes; they are transmitted only when attached to outgoing context." xml:space="preserve">
+    <value>编辑本地项目笔记；仅在附加到发送上下文时才会传送。</value>
+  </data>
+  <data name="Save the edited notes locally for this document." xml:space="preserve">
+    <value>在本地保存此文档编辑后的笔记。</value>
+  </data>
+  <data name="Include these notes in the next message sent to the selected provider." xml:space="preserve">
+    <value>将这些笔记包含在发给所选提供商的下一条消息中。</value>
+  </data>
+  <data name="Attach the currently selected VBA code to the message being prepared." xml:space="preserve">
+    <value>将当前选中的 VBA 代码附加到正在准备的消息。</value>
+  </data>
+  <data name="Compile the selected VBA project and read the compiler result." xml:space="preserve">
+    <value>编译所选 VBA 项目并读取编译结果。</value>
+  </data>
+  <data name="Request compilation after agent code changes when supported by the current workflow." xml:space="preserve">
+    <value>当前流程支持时，在代理更改代码后请求编译。</value>
+  </data>
+  <data name="Choose a module reference to add to the outgoing message." xml:space="preserve">
+    <value>选择要添加到发送消息的模块引用。</value>
+  </data>
+  <data name="Choose a procedure reference to add to the outgoing message." xml:space="preserve">
+    <value>选择要添加到发送消息的过程引用。</value>
+  </data>
+  <data name="Send the prepared message and its selected context to the provider." xml:space="preserve">
+    <value>将准备好的消息及所选上下文发送给提供商。</value>
+  </data>
+  <data name="Inspect and refresh the project data and attachments that will be sent." xml:space="preserve">
+    <value>检查并刷新将发送的项目数据和附件。</value>
+  </data>
+  <data name="Scroll back to the most recent message without changing the conversation." xml:space="preserve">
+    <value>滚动返回最新消息，不更改对话。</value>
+  </data>
+  <data name="Inspect code changes and the available revision-checked undo actions." xml:space="preserve">
+    <value>检查代码变更及经过修订检查的可用撤销操作。</value>
+  </data>
+  <data name="Open this referenced module or procedure if its target is still available." xml:space="preserve">
+    <value>目标仍可用时，打开此引用的模块或过程。</value>
+  </data>
+  <data name="Remove this reference from the message being prepared." xml:space="preserve">
+    <value>从正在准备的消息中移除此引用。</value>
+  </data>
+  <data name="Open the attached code&#x27;s target in the VBE when available." xml:space="preserve">
+    <value>可用时，在 VBE 中打开所附代码的目标。</value>
+  </data>
+  <data name="Open the displayed external link through the safe-link handler." xml:space="preserve">
+    <value>通过安全链接处理器打开显示的外部链接。</value>
+  </data>
+  <data name="Copy this message&#x27;s content to the system clipboard." xml:space="preserve">
+    <value>将此消息内容复制到系统剪贴板。</value>
+  </data>
+  <data name="Start a separate conversation from this message." xml:space="preserve">
+    <value>从此消息启动独立对话。</value>
+  </data>
+  <data name="Prepare a correction request from the issue shown in this message." xml:space="preserve">
+    <value>根据此消息显示的问题准备修正请求。</value>
+  </data>
+  <data name="Undo this code change if the current revision still allows it." xml:space="preserve">
+    <value>当前修订仍允许时，撤销此代码变更。</value>
+  </data>
+  <data name="Undo the code changes of this agent turn subject to revision checks." xml:space="preserve">
+    <value>经过修订检查，撤销代理此轮的代码变更。</value>
+  </data>
+  <data name="Choose a changed code block to undo rather than the whole change." xml:space="preserve">
+    <value>选择要撤销的代码变更块，而不是整个变更。</value>
+  </data>
+  <data name="Open the module affected by this code change." xml:space="preserve">
+    <value>打开受此代码变更影响的模块。</value>
+  </data>
+  <data name="Expand or collapse this section to read its details." xml:space="preserve">
+    <value>展开或折叠此部分以阅读详细信息。</value>
+  </data>
+  <data name="Restore the cut form controls when the saved recovery state is still usable." xml:space="preserve">
+    <value>保存的恢复状态仍可用时，恢复被剪切的窗体控件。</value>
+  </data>
+  <data name="Request sending this queued message according to the current turn state." xml:space="preserve">
+    <value>根据当前轮次状态，请求发送此排队消息。</value>
+  </data>
+  <data name="Edit this queued message before it is sent." xml:space="preserve">
+    <value>发送前编辑此排队消息。</value>
+  </data>
+  <data name="Remove this unsent message from the queue." xml:space="preserve">
+    <value>从队列中移除此尚未发送的消息。</value>
+  </data>
+  <data name="Prepare a request to explain a VBA procedure." xml:space="preserve">
+    <value>准备解释 VBA 过程的请求。</value>
+  </data>
+  <data name="Prepare a request to improve the current VBA code." xml:space="preserve">
+    <value>准备改进当前 VBA 代码的请求。</value>
+  </data>
+  <data name="Prepare a request to diagnose and fix a VBA error." xml:space="preserve">
+    <value>准备诊断和修复 VBA 错误的请求。</value>
+  </data>
+  <data name="Choose one of the matching VBA targets for this reference." xml:space="preserve">
+    <value>为此引用选择匹配的 VBA 目标之一。</value>
+  </data>
+  <data name="Type a message; add module or procedure references before sending." xml:space="preserve">
+    <value>输入消息；发送前添加模块或过程引用。</value>
+  </data>
+  <data name="Show deletions and additions together instead of side by side." xml:space="preserve">
+    <value>将删除和新增合并显示，代替并排显示。</value>
+  </data>
+  <data name="Fold unchanged lines to concentrate on the changed code." xml:space="preserve">
+    <value>折叠未更改的行，以便集中查看代码变更。</value>
+  </data>
+  <data name="Move to the previous changed block in this comparison." xml:space="preserve">
+    <value>移到此比较的上一个变更块。</value>
+  </data>
+  <data name="Move to the next changed block in this comparison." xml:space="preserve">
+    <value>移到此比较的下一个变更块。</value>
+  </data>
+  <data name="Enter text to find within this code comparison." xml:space="preserve">
+    <value>输入要在此代码比较中查找的文本。</value>
+  </data>
+  <data name="Find the entered text in this comparison." xml:space="preserve">
+    <value>在此比较中查找输入的文本。</value>
+  </data>
+  <data name="Read the before and after source with highlighted additions and deletions." xml:space="preserve">
+    <value>阅读突出显示新增和删除的修改前后源代码。</value>
+  </data>
+  <data name="Choose the projects included in this view&#x27;s read or discovery scope." xml:space="preserve">
+    <value>选择此视图的读取或发现范围包含的项目。</value>
+  </data>
+  <data name="Allow read access to shared debugger, native inventory and clipboard data; no additional project write permission is granted." xml:space="preserve">
+    <value>允许读取共享调试器、原生清单和剪贴板数据；不会授予其他项目的写入权限。</value>
+  </data>
+  <data name="Apply the selected project read scope to a new conversation." xml:space="preserve">
+    <value>将所选项目读取范围应用到新对话。</value>
+  </data>
+  <data name="Allow the specific VBE action described in this dialog." xml:space="preserve">
+    <value>允许此对话框所描述的特定 VBE 操作。</value>
+  </data>
+  <data name="Deny the specific VBE action described in this dialog." xml:space="preserve">
+    <value>拒绝此对话框所描述的特定 VBE 操作。</value>
+  </data>
+  <data name="Review the proposed action and its project before allowing or denying it." xml:space="preserve">
+    <value>允许或拒绝前，检查提议的操作及其项目。</value>
+  </data>
+  <data name="Apply the edited Monaco version after the conflict has been reviewed and the project revalidated." xml:space="preserve">
+    <value>检查冲突并重新验证项目后，应用编辑过的 Monaco 版本。</value>
+  </data>
+  <data name="Compare the Monaco text with the current native VBA text." xml:space="preserve">
+    <value>将 Monaco 文本与当前原生 VBA 文本比较。</value>
+  </data>
+  <data name="Reload the current VBA version instead of the conflicting local edit." xml:space="preserve">
+    <value>重新加载当前 VBA 版本，代替有冲突的本地编辑。</value>
+  </data>
+  <data name="Review and restore an available local editor draft." xml:space="preserve">
+    <value>检查并恢复可用的本地编辑器草稿。</value>
+  </data>
+  <data name="Return to the editable code surface from the comparison." xml:space="preserve">
+    <value>从比较返回可编辑的代码界面。</value>
+  </data>
+  <data name="Choose the section to display; changing tabs alone does not submit an operation." xml:space="preserve">
+    <value>选择要显示的部分；仅切换选项卡不会提交操作。</value>
+  </data>
+  <data name="Enter the GitHub repository to link to this VBA project." xml:space="preserve">
+    <value>输入要关联到此 VBA 项目的 GitHub 仓库。</value>
+  </data>
+  <data name="Enter the repository branch used for this VBA project." xml:space="preserve">
+    <value>输入用于此 VBA 项目的仓库分支。</value>
+  </data>
+  <data name="Link the selected repository and branch to the current VBA project." xml:space="preserve">
+    <value>将所选仓库和分支关联到当前 VBA 项目。</value>
+  </data>
+  <data name="Compare current VBA sources with their repository baseline." xml:space="preserve">
+    <value>将当前 VBA 源代码与仓库基准比较。</value>
+  </data>
+  <data name="Fetch remote references without treating that alone as a VBA import." xml:space="preserve">
+    <value>获取远程引用，不将该操作本身视为 VBA 导入。</value>
+  </data>
+  <data name="Publish local commits to the selected remote branch." xml:space="preserve">
+    <value>将本地提交发布到所选远程分支。</value>
+  </data>
+  <data name="Pull sources and run the guarded VBA import; inspect the result and save the document." xml:space="preserve">
+    <value>Pull 源代码并执行受保护的 VBA 导入；检查结果并保存文档。</value>
+  </data>
+  <data name="Restore VBA from the available backup and inspect the recovery result." xml:space="preserve">
+    <value>从可用备份恢复 VBA，并检查恢复结果。</value>
+  </data>
+  <data name="Preview the source changes that an import would apply before changing VBA." xml:space="preserve">
+    <value>更改 VBA 前，预览导入将应用的源代码变更。</value>
+  </data>
+  <data name="Request cancellation of the current operation; a native mutation already in progress may still finish." xml:space="preserve">
+    <value>请求取消当前操作；已进行的原生修改仍可能完成。</value>
+  </data>
+  <data name="Describe the selected source changes in the commit message." xml:space="preserve">
+    <value>在提交消息中描述所选源代码变更。</value>
+  </data>
+  <data name="Create a local commit from the selected source changes; Push publishes it separately." xml:space="preserve">
+    <value>从所选源代码变更创建本地提交；Push 另行发布。</value>
+  </data>
+  <data name="Select the VBA source changes to review and include in a commit." xml:space="preserve">
+    <value>选择要检查并纳入提交的 VBA 源代码变更。</value>
+  </data>
+  <data name="Open the selected module in the VBE without restoring its source." xml:space="preserve">
+    <value>在 VBE 中打开所选模块，不恢复其源代码。</value>
+  </data>
+  <data name="Replace the selected module using the available repository version; review before applying." xml:space="preserve">
+    <value>用可用的仓库版本替换所选模块；应用前请检查。</value>
+  </data>
+  <data name="Select a commit to inspect its details or compare revisions." xml:space="preserve">
+    <value>选择提交以检查详细信息或比较修订。</value>
+  </data>
+  <data name="Compare the chosen repository revisions without applying them to VBA." xml:space="preserve">
+    <value>比较所选仓库修订，不将它们应用到 VBA。</value>
+  </data>
+  <data name="Select a local or remote branch for the branch actions." xml:space="preserve">
+    <value>选择用于分支操作的本地或远程分支。</value>
+  </data>
+  <data name="Enter the new local branch name." xml:space="preserve">
+    <value>输入新本地分支名称。</value>
+  </data>
+  <data name="Include remote branch references in the branch list." xml:space="preserve">
+    <value>在分支列表中包含远程分支引用。</value>
+  </data>
+  <data name="Create the named local branch." xml:space="preserve">
+    <value>创建指定名称的本地分支。</value>
+  </data>
+  <data name="Create local tracking for the selected remote branch." xml:space="preserve">
+    <value>为所选远程分支创建本地跟踪。</value>
+  </data>
+  <data name="Switch to the selected branch subject to the current Git and VBA state checks." xml:space="preserve">
+    <value>通过当前 Git 和 VBA 状态检查后，切换到所选分支。</value>
+  </data>
+  <data name="Merge the selected branch into the current branch; review the direction first." xml:space="preserve">
+    <value>将所选分支合并到当前分支；先检查方向。</value>
+  </data>
+  <data name="Select a stored checkpoint to inspect or restore." xml:space="preserve">
+    <value>选择要检查或恢复的已保存检查点。</value>
+  </data>
+  <data name="Name the checkpoint so its purpose is recognizable later." xml:space="preserve">
+    <value>为检查点命名，以便日后识别其用途。</value>
+  </data>
+  <data name="Create a checkpoint of the current VBA source state." xml:space="preserve">
+    <value>创建当前 VBA 源代码状态的检查点。</value>
+  </data>
+  <data name="Restore the selected checkpoint through the guarded recovery workflow." xml:space="preserve">
+    <value>通过受保护的恢复流程还原所选检查点。</value>
+  </data>
+  <data name="Choose the source file whose merge conflict you want to resolve." xml:space="preserve">
+    <value>选择要解决合并冲突的源文件。</value>
+  </data>
+  <data name="Enter the complete resolved file content, not only the changed lines." xml:space="preserve">
+    <value>输入解决后的完整文件内容，而非仅更改的行。</value>
+  </data>
+  <data name="Use the local side as the resolution for this selected file." xml:space="preserve">
+    <value>使用本地版本作为所选文件的解决方案。</value>
+  </data>
+  <data name="Use the incoming side as the resolution for this selected file." xml:space="preserve">
+    <value>使用传入版本作为所选文件的解决方案。</value>
+  </data>
+  <data name="Use the complete text in the resolution editor for this selected file." xml:space="preserve">
+    <value>使用解决编辑器中的完整文本解决所选文件。</value>
+  </data>
+  <data name="Complete the prepared merge after all conflicts have been resolved." xml:space="preserve">
+    <value>解决所有冲突后，完成准备好的合并。</value>
+  </data>
+  <data name="Abort the prepared merge through the repository recovery workflow." xml:space="preserve">
+    <value>通过仓库恢复流程中止准备好的合并。</value>
+  </data>
+  <data name="Read the common ancestor to understand how the conflicting edits diverged." xml:space="preserve">
+    <value>阅读共同祖先，了解发生冲突的编辑如何分歧。</value>
+  </data>
+  <data name="Filter repositories available to the connected GitHub account." xml:space="preserve">
+    <value>筛选已连接 GitHub 账户可用的仓库。</value>
+  </data>
+  <data name="Select a GitHub repository before choosing its branch or using it." xml:space="preserve">
+    <value>选择分支或使用仓库前，先选择 GitHub 仓库。</value>
+  </data>
+  <data name="Choose the branch of the selected GitHub repository." xml:space="preserve">
+    <value>选择所选 GitHub 仓库的分支。</value>
+  </data>
+  <data name="Choose the account or organization that will own the new repository." xml:space="preserve">
+    <value>选择新仓库所属的账户或组织。</value>
+  </data>
+  <data name="Enter the new GitHub repository name." xml:space="preserve">
+    <value>输入新 GitHub 仓库名称。</value>
+  </data>
+  <data name="Choose private visibility for the new repository before creating it." xml:space="preserve">
+    <value>创建新仓库前，选择私有可见性。</value>
+  </data>
+  <data name="Load repositories accessible to the connected GitHub account." xml:space="preserve">
+    <value>加载已连接 GitHub 账户可访问的仓库。</value>
+  </data>
+  <data name="Use the selected repository and branch for this VBA project&#x27;s connection." xml:space="preserve">
+    <value>将所选仓库和分支用于此 VBA 项目的连接。</value>
+  </data>
+  <data name="Create a GitHub repository with the entered owner, name and visibility." xml:space="preserve">
+    <value>使用输入的所有者、名称和可见性创建 GitHub 仓库。</value>
+  </data>
+  <data name="Choose a pull request to inspect its details, files, comments and checks." xml:space="preserve">
+    <value>选择拉取请求，检查其详细信息、文件、评论和检查。</value>
+  </data>
+  <data name="Load pull requests from the selected repository." xml:space="preserve">
+    <value>从所选仓库加载拉取请求。</value>
+  </data>
+  <data name="Open the selected pull request on GitHub." xml:space="preserve">
+    <value>在 GitHub 上打开所选拉取请求。</value>
+  </data>
+  <data name="Load the prepared pull request draft and review it before publication." xml:space="preserve">
+    <value>加载准备好的拉取请求草稿，并在发布前检查。</value>
+  </data>
+  <data name="Choose the destination branch for the new pull request." xml:space="preserve">
+    <value>选择新拉取请求的目标分支。</value>
+  </data>
+  <data name="Describe the proposed change in the pull request title." xml:space="preserve">
+    <value>在拉取请求标题中描述提议的变更。</value>
+  </data>
+  <data name="Explain the change, validation and remaining limits before creating the pull request." xml:space="preserve">
+    <value>创建拉取请求前，说明变更、验证和剩余限制。</value>
+  </data>
+  <data name="Create the pull request as a draft when it is not ready for final review." xml:space="preserve">
+    <value>尚未准备好最终评审时，以草稿方式创建拉取请求。</value>
+  </data>
+  <data name="Publish the prepared pull request using the selected source and target branches." xml:space="preserve">
+    <value>使用所选源分支和目标分支发布准备好的拉取请求。</value>
+  </data>
+  <data name="Read the selected pull request&#x27;s title, state and description." xml:space="preserve">
+    <value>阅读所选拉取请求的标题、状态和说明。</value>
+  </data>
+  <data name="Inspect the files changed by the selected pull request." xml:space="preserve">
+    <value>检查所选拉取请求更改的文件。</value>
+  </data>
+  <data name="Read the comments of the selected pull request." xml:space="preserve">
+    <value>阅读所选拉取请求的评论。</value>
+  </data>
+  <data name="Read the content of the selected review comment." xml:space="preserve">
+    <value>阅读所选评审评论的内容。</value>
+  </data>
+  <data name="Inspect the status checks reported by GitHub for this pull request." xml:space="preserve">
+    <value>检查 GitHub 为此拉取请求报告的状态检查。</value>
+  </data>
+  <data name="Filter discovered VBA tests by name or category." xml:space="preserve">
+    <value>按名称或类别筛选发现的 VBA 测试。</value>
+  </data>
+  <data name="Filter tests by their last reported outcome." xml:space="preserve">
+    <value>按最近报告的结果筛选测试。</value>
+  </data>
+  <data name="Choose how discovered tests are grouped in the tree." xml:space="preserve">
+    <value>选择发现的测试在树中的分组方式。</value>
+  </data>
+  <data name="Select tests or check them to define the next execution scope." xml:space="preserve">
+    <value>选择或勾选测试，定义下次执行范围。</value>
+  </data>
+  <data name="Read the selected test&#x27;s source identity, outcome and failure details." xml:space="preserve">
+    <value>阅读所选测试的源代码标识、结果和失败详细信息。</value>
+  </data>
+  <data name="Read the human-readable report for the current VBA test run." xml:space="preserve">
+    <value>阅读当前 VBA 测试运行的易读报告。</value>
+  </data>
+  <data name="Read the structured JSON report for the current VBA test run." xml:space="preserve">
+    <value>阅读当前 VBA 测试运行的结构化 JSON 报告。</value>
+  </data>
+  <data name="Copy the current VBA test result report to the clipboard." xml:space="preserve">
+    <value>将当前 VBA 测试结果报告复制到剪贴板。</value>
+  </data>
+  <data name="Export the current VBA test result report to a chosen file." xml:space="preserve">
+    <value>将当前 VBA 测试结果报告导出到所选文件。</value>
+  </data>
+  <data name="Discover the tests currently present in the selected projects." xml:space="preserve">
+    <value>发现所选项目中当前存在的测试。</value>
+  </data>
+  <data name="Run the selected or checked VBA tests." xml:space="preserve">
+    <value>运行所选或勾选的 VBA 测试。</value>
+  </data>
+  <data name="Run the tests in the current visible scope." xml:space="preserve">
+    <value>运行当前可见范围内的测试。</value>
+  </data>
+  <data name="Run the selected tests with the supported VBA procedure coverage workflow." xml:space="preserve">
+    <value>通过受支持的 VBA 过程覆盖率流程运行所选测试。</value>
+  </data>
+  <data name="Run the visible scope with the supported VBA procedure coverage workflow." xml:space="preserve">
+    <value>通过受支持的 VBA 过程覆盖率流程运行可见范围。</value>
+  </data>
+  <data name="Run again the tests whose current recorded result is a failure." xml:space="preserve">
+    <value>重新运行当前记录结果为失败的测试。</value>
+  </data>
+  <data name="Request stopping between tests after the current VBA test finishes." xml:space="preserve">
+    <value>请求在当前 VBA 测试结束后、测试之间停止。</value>
+  </data>
+  <data name="Open the selected test&#x27;s source in the VBE." xml:space="preserve">
+    <value>在 VBE 中打开所选测试的源代码。</value>
+  </data>
+  <data name="Review the test support module and its source backup before applying it." xml:space="preserve">
+    <value>应用前检查测试支持模块及其源代码备份。</value>
+  </data>
+  <data name="Apply the reviewed test support after project revalidation and backup." xml:space="preserve">
+    <value>重新验证项目并备份后，应用已检查的测试支持。</value>
+  </data>
+  <data name="Give the issue a concise title that describes the observed symptom." xml:space="preserve">
+    <value>为问题填写简洁标题，描述观察到的症状。</value>
+  </data>
+  <data name="Describe reproduction steps, expected behavior and observed behavior; remove sensitive details." xml:space="preserve">
+    <value>描述复现步骤、预期行为和观察行为；移除敏感细节。</value>
+  </data>
+  <data name="Review the complete report that will be copied, saved or sent." xml:space="preserve">
+    <value>检查将复制、保存或发送的完整报告。</value>
+  </data>
+  <data name="Send the reviewed issue report through the GitHub-first reporting workflow." xml:space="preserve">
+    <value>通过 GitHub 优先的问题报告流程发送已检查的报告。</value>
+  </data>
+  <data name="Prepare the reviewed issue report for the available email workflow." xml:space="preserve">
+    <value>为可用的电子邮件流程准备已检查的问题报告。</value>
+  </data>
+  <data name="Copy the reviewed issue report to the clipboard." xml:space="preserve">
+    <value>将已检查的问题报告复制到剪贴板。</value>
+  </data>
+  <data name="Save the reviewed report to a chosen local file." xml:space="preserve">
+    <value>将已检查的报告保存到所选本地文件。</value>
+  </data>
+  <data name="Open the created GitHub issue when its link is available." xml:space="preserve">
+    <value>链接可用时，打开创建的 GitHub 问题。</value>
+  </data>
+  <data name="Open the VBAi source repository on GitHub." xml:space="preserve">
+    <value>在 GitHub 上打开 VBAi 源代码仓库。</value>
+  </data>
+  <data name="Open the maintained VBAi documentation on GitHub." xml:space="preserve">
+    <value>在 GitHub 上打开维护中的 VBAi 文档。</value>
+  </data>
+  <data name="Open the GitHub issue form to report a VBAi problem." xml:space="preserve">
+    <value>打开 GitHub 问题表单以报告 VBAi 问题。</value>
+  </data>
+  <data name="Copy version and environment metadata for support without project source or personal paths." xml:space="preserve">
+    <value>复制支持所需的版本和环境元数据，不包含项目源代码或个人路径。</value>
+  </data>
+  <data name="Check the configured release feed and display the available version." xml:space="preserve">
+    <value>检查配置的发布源，并显示可用版本。</value>
+  </data>
+  <data name="Allow the scheduled daily check for an eligible update." xml:space="preserve">
+    <value>允许计划的每日检查，以查找符合条件的更新。</value>
+  </data>
+  <data name="Download eligible updates automatically when their package is available." xml:space="preserve">
+    <value>更新包可用时，自动下载符合条件的更新。</value>
+  </data>
+  <data name="Schedule installation after VBA hosts close when package trust and installation policy allow it." xml:space="preserve">
+    <value>更新包可信且安装策略允许时，安排在 VBA 宿主关闭后安装。</value>
+  </data>
+  <data name="Include prerelease versions when checking for updates." xml:space="preserve">
+    <value>检查更新时包含预发布版本。</value>
+  </data>
+  <data name="Download the selected update package and verify its identity." xml:space="preserve">
+    <value>下载所选更新包并验证其标识。</value>
+  </data>
+  <data name="Install the verified update only when the host and publisher policy permit it." xml:space="preserve">
+    <value>仅当宿主和发布者策略允许时，安装已验证的更新。</value>
+  </data>
+  <data name="Ignore this proposed update version." xml:space="preserve">
+    <value>忽略此次提供的更新版本。</value>
+  </data>
+  <data name="Save the automatic-update and prerelease preferences." xml:space="preserve">
+    <value>保存自动更新和预发布版本偏好。</value>
+  </data>
+  <data name="Cancel the scheduled update before its installation starts." xml:space="preserve">
+    <value>安装开始前取消计划更新。</value>
+  </data>
+  <data name="Read the notes of the proposed update before downloading or installing it." xml:space="preserve">
+    <value>下载或安装前阅读提议更新的说明。</value>
+  </data>
+  <data name="Open the local French user guide." xml:space="preserve">
+    <value>打开本地法语用户指南。</value>
+  </data>
+  <data name="Local help is not included in this build. Build or obtain VBAi.fr-FR.chm and place it in the Help folder beside VBAi.dll." xml:space="preserve">
+    <value>此构建不包含本地帮助。请构建或获取 VBAi.fr-FR.chm，并放入 VBAi.dll 旁的 Help 文件夹。</value>
+  </data>
+  <data name="Write your request. Enter sends it; Shift+Enter adds a line. Use # or @ to reference VBA code and / to see chat commands." xml:space="preserve">
+    <value>输入请求。Enter 发送；Shift+Enter 换行。使用 # 或 @ 引用 VBA 代码，使用 / 查看聊天命令。</value>
+  </data>
+  <data name="Open the modified module" xml:space="preserve">
+    <value>打开修改后的模块</value>
+  </data>
+  <data name="Read the exact context prepared for the next message; refresh it after changing referenced code." xml:space="preserve">
+    <value>阅读为下一条消息准备的确切上下文；更改引用代码后请刷新。</value>
+  </data>
+  <data name="Select response text to copy it; use the context menu to copy a complete code block." xml:space="preserve">
+    <value>选择回复文本以复制；使用上下文菜单复制完整代码块。</value>
+  </data>
+  <data name="Open the provider, model and reasoning choices for this conversation." xml:space="preserve">
+    <value>打开此对话的提供商、模型和推理选择。</value>
+  </data>
+  <data name="Compare the current and incoming versions of the selected conflict before choosing a complete resolution." xml:space="preserve">
+    <value>选择完整解决方案前，比较所选冲突的当前版本和传入版本。</value>
+  </data>
+  <data name="Read the selected commit and its changed sources without importing that revision." xml:space="preserve">
+    <value>阅读所选提交及其更改的源代码，不导入该修订。</value>
+  </data>
+  <data name="Review the incoming VBA components and changes before importing them into the current project." xml:space="preserve">
+    <value>向当前项目导入前，检查传入的 VBA 组件和变更。</value>
+  </data>
+  <data name="Configure provider authentication, editing approvals and the repository account." xml:space="preserve">
+    <value>配置提供商认证、编辑审批和仓库账户。</value>
+  </data>
+  <data name="Reload the model catalogue from the selected provider without sending a chat message." xml:space="preserve">
+    <value>重新加载所选提供商的模型目录，不发送聊天消息。</value>
+  </data>
+  <data name="Switch the chat between a VBE docked pane and a floating window." xml:space="preserve">
+    <value>在 VBE 停靠面板和浮动窗口之间切换聊天。</value>
+  </data>
+  <data name="Choose whether to compile the project automatically after agent code edits." xml:space="preserve">
+    <value>选择代理编辑代码后是否自动编译项目。</value>
+  </data>
+  <data name="Copy the selected response text to the clipboard." xml:space="preserve">
+    <value>将选中的回复文本复制到剪贴板。</value>
+  </data>
+  <data name="Copy the complete code block under the pointer without its surrounding explanation." xml:space="preserve">
+    <value>复制指针下的完整代码块，不包含周围解释。</value>
+  </data>
+  <data name="Back to conversation" xml:space="preserve">
+    <value>返回对话</value>
+  </data>
 </root>

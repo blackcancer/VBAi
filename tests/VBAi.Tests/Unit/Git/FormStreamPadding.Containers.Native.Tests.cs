@@ -69,16 +69,18 @@ namespace VBAi.Tests.Unit
                 ["/f"] = new HashSet<int>(new int[] { 18, 19, 114, 161, 162, 214, 269, 270, 294 }),
                 ["/o"] = new HashSet<int>(new int[] { 62, 63, 70, 71, 127, 134, 135 }),
                 ["/i03/f"] = new HashSet<int>(new int[] { 17, 18, 19, 26, 27, 67, 111, 112, 159, 160 }),
-                ["/i03/o"] = new HashSet<int>(new int[] {  }),
+                ["/i03/o"] = new HashSet<int>(new int[] { }),
                 ["/i03/i04/f"] = new HashSet<int>(new int[] { 51, 109, 110, 111, 149, 150, 151, 174, 175 }),
                 ["/i03/i04/o"] = new HashSet<int>(new int[] { 66, 67, 77, 78, 79, 138, 139, 146, 147 }),
                 ["/i03/i04/i06/f"] = new HashSet<int>(new int[] { 50, 51, 99 }),
                 ["/i03/i04/i06/o"] = new HashSet<int>(new int[] { 66, 67, 74, 75 }),
-                ["/i03/i04/i07/f"] = new HashSet<int>(new int[] {  }),
-                ["/i03/i04/i07/o"] = new HashSet<int>(new int[] {  }),
+                ["/i03/i04/i07/f"] = new HashSet<int>(new int[] { }),
+                ["/i03/i04/i07/o"] = new HashSet<int>(new int[] { }),
             };
         }
-        internal static byte[] ContainerResourceBefore() { return Convert.FromBase64String(
+        internal static byte[] ContainerResourceBefore()
+        {
+            return Convert.FromBase64String(
             "TEIIAAAgAAAAAAAAAAAAAFgbAABYGwAA0M8R4KGxGuEAAAAAAAAAAAAAAAAAAAAAPgADAP7/CQAGAAAAAAAAAAAAAAABAAAABAAAAAAAAAAAEA" +
             "AABwAAAAEAAAD+////AAAAAAUAAAD/////////////////////////////////////////////////////////////////////////////////" +
             "//////////////////////////////////////////////////////////////////////////////////////////////////////////////" +
@@ -178,8 +180,11 @@ namespace VBAi.Tests.Unit
             "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAADIAAABIAAAAAAAVAFF1YWxpZmljYXRpb25MYWJlbO2+pwEAAHsCAA" +
             "AAADAA5QEAABMAAIACAAAAQAAAAAEAEQBRdWFsaWZpY2F0aW9uQnV0dG9uhqcBAABFCAAAAABMANcBAAASAACAFwAAgAMAAAAjAAQAAgAOAFF1" +
             "YWxpZmljYXRpb25FeHRyYS43T3JpZ2luYWwgRnJhbWVNdWx0aVBhZ2UApwEAAOIOAAAAAAAAAAAAAAAAAAAAAAAAAAEA/v8DCgAA//////BpKs" +
-            "bcFs4RnpgAqgBXSk8ZAAAATWljcm9zb2Z0IEZvcm1zIDIuMCBGb3JtABAAAABFbWI="); }
-        internal static byte[] ContainerResourceAfter() { return Convert.FromBase64String(
+            "bcFs4RnpgAqgBXSk8ZAAAATWljcm9zb2Z0IEZvcm1zIDIuMCBGb3JtABAAAABFbWI=");
+        }
+        internal static byte[] ContainerResourceAfter()
+        {
+            return Convert.FromBase64String(
             "TEIIAAAgAAAAAAAAAAAAAFgbAABYGwAA0M8R4KGxGuEAAAAAAAAAAAAAAAAAAAAAPgADAP7/CQAGAAAAAAAAAAAAAAABAAAABAAAAAAAAAAAEA" +
             "AABwAAAAEAAAD+////AAAAAAUAAAD/////////////////////////////////////////////////////////////////////////////////" +
             "//////////////////////////////////////////////////////////////////////////////////////////////////////////////" +
@@ -279,6 +284,7 @@ namespace VBAi.Tests.Unit
             "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAADIAAABIAAAAAAAVAFF1YWxpZmljYXRpb25MYWJlbEOGpwEAAHsCAA" +
             "AAADAA5QEAABMAAIACAAAAQAAAAAEAEQBRdWFsaWZpY2F0aW9uQnV0dG9uhqcBAABFCAAAAABMANcBAAASAACAFwAAgAMAAAAjAAQAAgAOAFF1" +
             "YWxpZmljYXRpb25FeHRyYai6T3JpZ2luYWwgRnJhbWVNdWx0aVBhZ2UApwEAAOIOAAAAAAAAAAAAAAAAAAAAAAAAAAEA/v8DCgAA//////BpKs" +
-            "bcFs4RnpgAqgBXSk8ZAAAATWljcm9zb2Z0IEZvcm1zIDIuMCBGb3JtABAAAABFbWI="); }
+            "bcFs4RnpgAqgBXSk8ZAAAATWljcm9zb2Z0IEZvcm1zIDIuMCBGb3JtABAAAABFbWI=");
+        }
     }
 }

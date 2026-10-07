@@ -1,11 +1,11 @@
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
+using System.Text;
 using System.Threading;
 using System.Web.Script.Serialization;
-using System.IO;
-using System.Text;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace VBAi.Tests.Integration
 {
@@ -34,8 +34,14 @@ namespace VBAi.Tests.Integration
                 Assert.IsNull(page["Selected"], "Observation is distinct from qualified mutation support.");
                 Assert.AreEqual(true, page["ObservedSelected"]);
                 Assert.IsFalse(string.IsNullOrWhiteSpace(Convert.ToString(page["ActionUnavailableReason"])));
-                var refused = host.Command(new { Command = "change_navigation_surface", Pane = "toolbox", Control = page["Token"],
-                    Action = "select", ExpectedWindowVersion = before["WindowVersion"] });
+                var refused = host.Command(new
+                {
+                    Command = "change_navigation_surface",
+                    Pane = "toolbox",
+                    Control = page["Token"],
+                    Action = "select",
+                    ExpectedWindowVersion = before["WindowVersion"]
+                });
                 Assert.AreEqual(false, refused["Ok"], "No MSAA mutation is delivered.");
                 var after = Data(host.Command(new { Command = "read_navigation_surface", Pane = "toolbox" }));
                 Assert.AreEqual(before["WindowVersion"], after["WindowVersion"], "The refusal retains the observed surface unchanged.");
@@ -53,15 +59,29 @@ namespace VBAi.Tests.Integration
                 var properties = Data(host.Command(new { Command = "project_properties", Project = project }));
                 var commands = (object[])host.Command(new { Command = "list_commands", Limit = 500 })["Data"];
                 var command = commands.Select(VbeBridgeClient.Object).First(item => Convert.ToInt32(item["Id"]) == 2578 && Convert.ToBoolean(item["Enabled"]));
-                var protection = Data(host.Command(new { Command = "read_project_protection", Project = project, ExpectedMode = 2,
-                    ExpectedProjectVersion = properties["Version"], ControlCaption = command["Caption"] }));
+                var protection = Data(host.Command(new
+                {
+                    Command = "read_project_protection",
+                    Project = project,
+                    ExpectedMode = 2,
+                    ExpectedProjectVersion = properties["Version"],
+                    ControlCaption = command["Caption"]
+                }));
                 string path = host.File("protected.xlsm"), secretFile = host.File("secret.txt");
                 File.WriteAllText(secretFile, Guid.NewGuid().ToString("N"), new UTF8Encoding(false));
                 try
                 {
-                    var locked = Data(host.Command(new { Command = "set_project_protection", Project = project, ExpectedMode = 2,
-                        ExpectedProjectVersion = properties["Version"], ControlCaption = command["Caption"], Action = "lock",
-                        ExpectedOptionsVersion = protection["OptionsVersion"], Path = secretFile }));
+                    var locked = Data(host.Command(new
+                    {
+                        Command = "set_project_protection",
+                        Project = project,
+                        ExpectedMode = 2,
+                        ExpectedProjectVersion = properties["Version"],
+                        ControlCaption = command["Caption"],
+                        Action = "lock",
+                        ExpectedOptionsVersion = protection["OptionsVersion"],
+                        Path = secretFile
+                    }));
                     Assert.AreEqual(true, locked["Available"], new JavaScriptSerializer().Serialize(locked));
                     Assert.AreEqual(true, locked["ControlValueVerified"]); Assert.AreEqual(true, locked["DialogClosed"]);
                     Assert.AreEqual(false, locked["PersistenceVerified"]);
@@ -86,15 +106,25 @@ namespace VBAi.Tests.Integration
             // retain phase summaries alongside this exact host's durable startup ledger.
             string prefix = Path.Combine(host.Root, "options-qualification");
             TestContext.WriteLine("Options phase evidence: " + prefix);
-            var lifecycle = new ExcelOptionsQualification(host.Command, () => {
+            var lifecycle = new ExcelOptionsQualification(host.Command, () =>
+            {
                 host.PreserveForDiagnosticRecovery = true;
                 lock (retainedOptionsHosts) if (!retainedOptionsHosts.Contains(host)) retainedOptionsHosts.Add(host);
-            }, host.Dispose, (phase, data) => {
+            }, host.Dispose, (phase, data) =>
+            {
                 string path = prefix + "-" + (++sequence).ToString("D4") + ".json";
-                var record = new { Phase = phase, Sequence = sequence, ObservedUtc = DateTime.UtcNow.ToString("o"),
-                    host.ProcessId, FixtureRoot = host.Root, StartupEvidence = host.File("startup.json"),
+                var record = new
+                {
+                    Phase = phase,
+                    Sequence = sequence,
+                    ObservedUtc = DateTime.UtcNow.ToString("o"),
+                    host.ProcessId,
+                    FixtureRoot = host.Root,
+                    StartupEvidence = host.File("startup.json"),
                     ProductMvid = typeof(VbeSession).Module.ModuleVersionId.ToString("D"),
-                    TestMvid = typeof(ExcelIdeSurfaceTests).Module.ModuleVersionId.ToString("D"), Data = data };
+                    TestMvid = typeof(ExcelIdeSurfaceTests).Module.ModuleVersionId.ToString("D"),
+                    Data = data
+                };
                 File.WriteAllText(path, new JavaScriptSerializer().Serialize(record), new UTF8Encoding(false));
                 TestContext.AddResultFile(path);
             });
@@ -115,8 +145,14 @@ namespace VBAi.Tests.Integration
                 var properties = Data(host.Command(new { Command = "project_properties", Project = project }));
                 var commands = (object[])host.Command(new { Command = "list_commands", Limit = 500 })["Data"];
                 var command = commands.Select(VbeBridgeClient.Object).First(item => Convert.ToInt32(item["Id"]) == 2578 && Convert.ToBoolean(item["Enabled"]));
-                var protection = Data(host.Command(new { Command = "read_project_protection", Project = project, ExpectedMode = 2,
-                    ExpectedProjectVersion = properties["Version"], ControlCaption = command["Caption"] }));
+                var protection = Data(host.Command(new
+                {
+                    Command = "read_project_protection",
+                    Project = project,
+                    ExpectedMode = 2,
+                    ExpectedProjectVersion = properties["Version"],
+                    ControlCaption = command["Caption"]
+                }));
                 Assert.AreEqual(true, protection["Available"], new JavaScriptSerializer().Serialize(protection));
                 Assert.AreEqual(true, protection["DialogClosed"]);
                 Assert.AreEqual(false, protection["LockedForViewing"]);
@@ -135,16 +171,46 @@ namespace VBAi.Tests.Integration
                 const string caller = "Option Explicit\r\nPublic Sub Entry()\r\nThisWorkbook.Worksheets(1).Range(\"A1\").Value2 = MathModule.Compute(21)\r\nEnd Sub";
                 var source = WriteModule(host, project, "MathModule", target);
                 var other = WriteModule(host, project, "Caller", caller);
-                var preview = Data(host.Command(new { Command = "preview_procedure_rename", Project = project, Module = "MathModule",
-                    Query = "Compute", NewName = "Calculate", ProcKind = 0, StartLine = 2, StartColumn = 17, ExpectedSha256 = source["Sha256"] }));
+                var preview = Data(host.Command(new
+                {
+                    Command = "preview_procedure_rename",
+                    Project = project,
+                    Module = "MathModule",
+                    Query = "Compute",
+                    NewName = "Calculate",
+                    ProcKind = 0,
+                    StartLine = 2,
+                    StartColumn = 17,
+                    ExpectedSha256 = source["Sha256"]
+                }));
                 Assert.AreEqual(2, ((object[])preview["Edits"]).Length);
                 Assert.AreEqual(source["Code"], Data(host.Command(new { Command = "read_module", Project = project, Module = "MathModule" }))["Code"]);
-                Data(host.Command(new { Command = "apply_procedure_rename", Project = project, Module = "MathModule", Query = "Compute", NewName = "Calculate",
-                    ProcKind = 0, StartLine = 2, StartColumn = 17, ExpectedSha256 = source["Sha256"], ExpectedProjectVersion = preview["ExpectedProjectVersion"], ExpectedMode = 2 }));
+                Data(host.Command(new
+                {
+                    Command = "apply_procedure_rename",
+                    Project = project,
+                    Module = "MathModule",
+                    Query = "Compute",
+                    NewName = "Calculate",
+                    ProcKind = 0,
+                    StartLine = 2,
+                    StartColumn = 17,
+                    ExpectedSha256 = source["Sha256"],
+                    ExpectedProjectVersion = preview["ExpectedProjectVersion"],
+                    ExpectedMode = 2
+                }));
                 var renamed = Data(host.Command(new { Command = "read_module", Project = project, Module = "Caller" }));
                 StringAssert.Contains(Convert.ToString(renamed["Code"]), "MathModule.Calculate(21)");
-                var run = Data(host.Command(new { Command = "run_procedure", Project = project, Module = "Caller", Procedure = "Entry",
-                    ExpectedSha256 = renamed["Sha256"], ExpectedMode = 2, Arguments = new object[0] }));
+                var run = Data(host.Command(new
+                {
+                    Command = "run_procedure",
+                    Project = project,
+                    Module = "Caller",
+                    Procedure = "Entry",
+                    ExpectedSha256 = renamed["Sha256"],
+                    ExpectedMode = 2,
+                    Arguments = new object[0]
+                }));
                 DateTime deadline = DateTime.UtcNow.AddSeconds(15);
                 while (Convert.ToBoolean(run["Pending"]) && DateTime.UtcNow < deadline)
                 {
@@ -172,8 +238,20 @@ namespace VBAi.Tests.Integration
                 const string form = "ContentProbe";
                 Data(host.Command(new { Command = "create_form", Project = project, Form = form }));
                 var state = Data(host.Command(new { Command = "form_state", Project = project, Form = form }));
-                Data(host.Command(new { Command = "add_form_control", Project = project, Form = form, ExpectedFormVersion = state["Version"],
-                    ControlType = "Forms.Label.1", Control = "ContentLabel", Left = 20d, Top = 30d, Width = 90d, Height = 25d, Caption = "Content" }));
+                Data(host.Command(new
+                {
+                    Command = "add_form_control",
+                    Project = project,
+                    Form = form,
+                    ExpectedFormVersion = state["Version"],
+                    ControlType = "Forms.Label.1",
+                    Control = "ContentLabel",
+                    Left = 20d,
+                    Top = 30d,
+                    Width = 90d,
+                    Height = 25d,
+                    Caption = "Content"
+                }));
                 var tree = Data(host.Command(new { Command = "form_tree", Project = project, Form = form }));
                 var preview = Data(host.Command(new { Command = "preview_fit_form_content", Project = project, Form = form, ExpectedTreeVersion = tree["TreeVersion"], Action = "fit_container", Left = 10d, Top = 12d }));
                 Assert.AreEqual(true, preview["ReadOnly"]);

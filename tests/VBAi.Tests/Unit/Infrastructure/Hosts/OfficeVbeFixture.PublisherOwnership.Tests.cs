@@ -1,8 +1,8 @@
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.InteropServices;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 using VBAi.Tests.Integration;
 
 namespace VBAi.Tests.Unit
@@ -39,13 +39,28 @@ namespace VBAi.Tests.Unit
             { Probe.Recheck(pid, handle, () => { Identities++; return Identity; }, Guard, ReadWindow); }
         }
 
-        private static OfficeVbeFixture.PublisherOwnerWindow Exact() => new OfficeVbeFixture.PublisherOwnerWindow {
-            Window = new IntPtr(11), Root = new IntPtr(10), Process = 100, RootProcess = 100,
-            Thread = 200, RootThread = 201, Class = "MsoCommandBar" };
+        private static OfficeVbeFixture.PublisherOwnerWindow Exact() => new OfficeVbeFixture.PublisherOwnerWindow
+        {
+            Window = new IntPtr(11),
+            Root = new IntPtr(10),
+            Process = 100,
+            RootProcess = 100,
+            Thread = 200,
+            RootThread = 201,
+            Class = "MsoCommandBar"
+        };
 
         private static OfficeVbeFixture.PublisherOwnerWindow Copy(OfficeVbeFixture.PublisherOwnerWindow w) =>
-            w == null ? null : new OfficeVbeFixture.PublisherOwnerWindow { Window = w.Window, Root = w.Root,
-                Process = w.Process, RootProcess = w.RootProcess, Thread = w.Thread, RootThread = w.RootThread, Class = w.Class };
+            w == null ? null : new OfficeVbeFixture.PublisherOwnerWindow
+            {
+                Window = w.Window,
+                Root = w.Root,
+                Process = w.Process,
+                RootProcess = w.RootProcess,
+                Thread = w.Thread,
+                RootThread = w.RootThread,
+                Class = w.Class
+            };
 
         private static OfficeVbeFixture.PublisherOwnerWindow Bar(long hwnd)
         { var value = Exact(); value.Window = new IntPtr(hwnd); return value; }
@@ -185,7 +200,8 @@ namespace VBAi.Tests.Unit
         {
             foreach (string stage in new[] { "NativeOM", "TypedInterface", "Application", "ApplicationIUnknown" })
             {
-                var h = new NativeBarHarness(); h.Record = row => {
+                var h = new NativeBarHarness(); h.Record = row =>
+                {
                     if (Equals(row["PublisherOwnershipRead"], "Bar11." + stage) && Equals(row["State"], "RETURNED"))
                         throw new InvalidOperationException("Evidence failed");
                     h.Rows.Add(row);
@@ -371,8 +387,11 @@ namespace VBAi.Tests.Unit
         [TestMethod]
         public void MultipleDistinctBarsPermitKnownMismatchThenExactApplicationMatch()
         {
-            var h = new Harness { QueryResult = OfficeVbeFixture.PublisherOwnershipProbe.NoInterface,
-                Bars = new[] { Bar(11), Bar(12), Bar(13) } };
+            var h = new Harness
+            {
+                QueryResult = OfficeVbeFixture.PublisherOwnershipProbe.NoInterface,
+                Bars = new[] { Bar(11), Bar(12), Bar(13) }
+            };
             var observed = new List<IntPtr>();
             h.ReadBarIdentity = window => { observed.Add(window.Window); return window.Window.ToInt64() == 12 ? 700 : 701; };
             h.Bind(); h.Recheck();
@@ -392,8 +411,11 @@ namespace VBAi.Tests.Unit
                 w => w.RootProcess = 101, w => w.Thread = 0, w => w.RootThread = 0, w => w.Class = "OtherClass" })
             {
                 var later = Bar(12); change(later);
-                var h = new Harness { QueryResult = OfficeVbeFixture.PublisherOwnershipProbe.NoInterface,
-                    Bars = new[] { Bar(11), later } };
+                var h = new Harness
+                {
+                    QueryResult = OfficeVbeFixture.PublisherOwnershipProbe.NoInterface,
+                    Bars = new[] { Bar(11), later }
+                };
                 Assert.ThrowsException<InvalidOperationException>(h.Bind); Assert.AreEqual(0, h.NativeOms);
             }
         }
@@ -401,8 +423,11 @@ namespace VBAi.Tests.Unit
         [TestMethod]
         public void FirstBarUnknownFailureNeverAttemptsAnotherWindowOrReplays()
         {
-            var h = new Harness { QueryResult = OfficeVbeFixture.PublisherOwnershipProbe.NoInterface,
-                Bars = new[] { Bar(11), Bar(12) } };
+            var h = new Harness
+            {
+                QueryResult = OfficeVbeFixture.PublisherOwnershipProbe.NoInterface,
+                Bars = new[] { Bar(11), Bar(12) }
+            };
             h.ReadBarIdentity = window => { throw new COMException("NativeOM or container getter failed", unchecked((int)0x80004005)); };
             Assert.ThrowsException<COMException>(h.Bind); Assert.AreEqual(1, h.NativeOms);
             Assert.ThrowsException<InvalidOperationException>(h.Bind); Assert.AreEqual(1, h.NativeOms);
@@ -412,8 +437,12 @@ namespace VBAi.Tests.Unit
         [TestMethod]
         public void AllKnownContainerMismatchesRemainBlockedWithoutApplicationAdoption()
         {
-            var h = new Harness { QueryResult = OfficeVbeFixture.PublisherOwnershipProbe.NoInterface,
-                Bars = new[] { Bar(11), Bar(12) }, BarIdentity = 701 };
+            var h = new Harness
+            {
+                QueryResult = OfficeVbeFixture.PublisherOwnershipProbe.NoInterface,
+                Bars = new[] { Bar(11), Bar(12) },
+                BarIdentity = 701
+            };
             Assert.ThrowsException<InvalidOperationException>(h.Bind); Assert.AreEqual(2, h.NativeOms);
             Assert.AreEqual(2, h.Rows.Count(row => row.ContainsKey("PublisherCommandBarAssociation") &&
                 Equals(row["PublisherCommandBarAssociation"], "KNOWN_MISMATCH")));
@@ -426,8 +455,11 @@ namespace VBAi.Tests.Unit
         {
             foreach (bool changedApplication in new[] { false, true })
             {
-                var h = new Harness { QueryResult = OfficeVbeFixture.PublisherOwnershipProbe.NoInterface,
-                    Bars = new[] { Bar(11), Bar(12) } };
+                var h = new Harness
+                {
+                    QueryResult = OfficeVbeFixture.PublisherOwnershipProbe.NoInterface,
+                    Bars = new[] { Bar(11), Bar(12) }
+                };
                 h.ReadBarIdentity = window => { if (changedApplication) h.Identity = 702; return changedApplication ? 701 : 0; };
                 Assert.ThrowsException<InvalidOperationException>(h.Bind); Assert.AreEqual(1, h.NativeOms);
                 Assert.ThrowsException<InvalidOperationException>(h.Bind); Assert.AreEqual(1, h.NativeOms);

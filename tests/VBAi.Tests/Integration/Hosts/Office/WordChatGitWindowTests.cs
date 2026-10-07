@@ -1,3 +1,4 @@
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -10,7 +11,6 @@ using System.Text;
 using System.Threading;
 using System.Web.Script.Serialization;
 using System.Windows.Automation;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 using VBAi.Desktop.Helper;
 
 namespace VBAi.Tests.Integration
@@ -34,8 +34,13 @@ namespace VBAi.Tests.Integration
             Assert.AreEqual(expected, typeof(VbeSession).Module.ModuleVersionId);
             Assert.AreEqual(hash, Sha(typeof(VbeSession).Assembly.Location), true);
             var context = new Context(Path.Combine(root, "word-chat-git-" + Guid.NewGuid().ToString("N")));
-            context.Record(new { Phase = "Preflight", ExpectedMvid = expected.ToString("D"), ExpectedSha256 = hash,
-                Scope = "Actual owned Word chat scope selection and Git modal opening/close only; no provider prompt, Git connect, remote write, macro or import." });
+            context.Record(new
+            {
+                Phase = "Preflight",
+                ExpectedMvid = expected.ToString("D"),
+                ExpectedSha256 = hash,
+                Scope = "Actual owned Word chat scope selection and Git modal opening/close only; no provider prompt, Git connect, remote write, macro or import."
+            });
             var owner = new Thread(() => Owner(context, expected, hash)) { IsBackground = true };
             owner.SetApartmentState(ApartmentState.STA); owner.Start();
             try
@@ -49,8 +54,12 @@ namespace VBAi.Tests.Integration
                 var errors = new[] { context.UiError, context.OwnerError }.Where(error => error != null).ToArray();
                 if (errors.Length > 1) throw new AggregateException("Word chat UI and owner failures are preserved.", errors);
                 if (errors.Length == 1) ExceptionDispatchInfo.Capture(errors[0]).Throw();
-                context.Record(new { Phase = "PASS", ProcessId = context.Fixture.ProcessId,
-                    Scope = "WordChatScopeGitModalKnownCloseNormalExit" });
+                context.Record(new
+                {
+                    Phase = "PASS",
+                    ProcessId = context.Fixture.ProcessId,
+                    Scope = "WordChatScopeGitModalKnownCloseNormalExit"
+                });
             }
             catch (Exception primary)
             {
@@ -65,9 +74,18 @@ namespace VBAi.Tests.Integration
                     lock (Retained) if (!Retained.Contains(context)) Retained.Add(context);
                 }
                 Exception preserved = EmbeddedGitUiProtocol.PreserveFailures(primary, context.UiError, context.OwnerError);
-                context.Record(new { Phase = "FailedOrRetained", context.Retain, context.ActionIssued,
-                    context.ModalObserved, context.ModalClosed, OwnerTerminal = context.OwnerDone.IsSet,
-                    UiTerminal = context.UiDone.IsSet, Error = preserved.ToString(), ReplayAttempts = 0 });
+                context.Record(new
+                {
+                    Phase = "FailedOrRetained",
+                    context.Retain,
+                    context.ActionIssued,
+                    context.ModalObserved,
+                    context.ModalClosed,
+                    OwnerTerminal = context.OwnerDone.IsSet,
+                    UiTerminal = context.UiDone.IsSet,
+                    Error = preserved.ToString(),
+                    ReplayAttempts = 0
+                });
                 if (!ReferenceEquals(primary, preserved)) ExceptionDispatchInfo.Capture(preserved).Throw();
                 throw;
             }
@@ -88,8 +106,15 @@ namespace VBAi.Tests.Integration
                 context.Label = context.Fixture.RequireWordChatGitScope(context.Scope);
                 context.DocumentHash = Sha(context.Scope.Path);
                 Assert.IsFalse(Directory.Exists(context.Scope.Cache), "A new Word chat scope must have no prior Git binding.");
-                context.Record(new { Phase = "Prepared", context.Fixture.ProcessId, context.Scope.Path,
-                    context.Scope.ThreadId, context.Label, context.DocumentHash });
+                context.Record(new
+                {
+                    Phase = "Prepared",
+                    context.Fixture.ProcessId,
+                    context.Scope.Path,
+                    context.Scope.ThreadId,
+                    context.Label,
+                    context.DocumentHash
+                });
                 context.Ready.Set();
                 if (!context.ScopeObserved.Wait(TimeSpan.FromSeconds(45))) throw new TimeoutException("Chat scope selection was not observed.");
                 if (context.Stop || context.UiError != null) throw new InvalidOperationException("Chat UI stopped before Git action.");
@@ -162,12 +187,22 @@ namespace VBAi.Tests.Integration
                 automation.CloseExactGitModal();
                 if (!context.InvokerDone.Wait(TimeSpan.FromSeconds(15))) throw new TimeoutException("The chat Git invocation did not return after modal close.");
                 if (context.InvokerError != null) throw context.InvokerError;
-                context.Record(new { Phase = "ChatGitOpenCloseTerminal", context.ChatHandle, context.GitHandle,
-                    context.Scope.Path, ReplayAttempts = 0 });
+                context.Record(new
+                {
+                    Phase = "ChatGitOpenCloseTerminal",
+                    context.ChatHandle,
+                    context.GitHandle,
+                    context.Scope.Path,
+                    ReplayAttempts = 0
+                });
                 context.ModalClosed = true;
                 object[] diagnosticChain = ChatGitDiagnosticReceipt.Wait(context.DiagnosticRoot, context.DiagnosticNonce, context.DiagnosticIdentity);
-                context.Record(new { Phase = "InstalledChatGitPostHandlerChainVerified", Chain = diagnosticChain,
-                    Meaning = "Observed later owning-STA dispatch after ShowModal and Dispose; not a guarantee Word will accept the first Close." });
+                context.Record(new
+                {
+                    Phase = "InstalledChatGitPostHandlerChainVerified",
+                    Chain = diagnosticChain,
+                    Meaning = "Observed later owning-STA dispatch after ShowModal and Dispose; not a guarantee Word will accept the first Close."
+                });
                 context.Fixture.NativeExecutionUnsettled = false;
             }
             catch (Exception error) { context.UiError = error; if (context.ActionIssued) context.Retain = true; }
@@ -208,10 +243,17 @@ namespace VBAi.Tests.Integration
             internal void WriteDiagnosticRequest()
             {
                 using (var process = Process.GetProcessById(Fixture.ProcessId))
-                    DiagnosticIdentity = new ChatGitModalDiagnostic.Identity { DocumentPath = Scope.Path, ProcessId = process.Id,
-                        ProcessStartedUtc = process.StartTime.ToUniversalTime().ToString("o"), ThreadId = Scope.ThreadId,
-                        ChatHandle = ChatHandle.ToInt64(), RootHandle = Scope.VbeHandle.ToInt64(),
-                        ProductMvid = typeof(VbeSession).Module.ModuleVersionId.ToString("D"), ProductSha256 = Sha(typeof(VbeSession).Assembly.Location) };
+                    DiagnosticIdentity = new ChatGitModalDiagnostic.Identity
+                    {
+                        DocumentPath = Scope.Path,
+                        ProcessId = process.Id,
+                        ProcessStartedUtc = process.StartTime.ToUniversalTime().ToString("o"),
+                        ThreadId = Scope.ThreadId,
+                        ChatHandle = ChatHandle.ToInt64(),
+                        RootHandle = Scope.VbeHandle.ToInt64(),
+                        ProductMvid = typeof(VbeSession).Module.ModuleVersionId.ToString("D"),
+                        ProductSha256 = Sha(typeof(VbeSession).Assembly.Location)
+                    };
                 ChatGitModalDiagnostic.RequireManifestPath(DiagnosticManifest, Path.GetTempPath());
                 using (var file = new FileStream(DiagnosticManifest, FileMode.CreateNew, FileAccess.Write, FileShare.None))
                 using (var writer = new StreamWriter(file, new UTF8Encoding(false)))
@@ -257,17 +299,28 @@ namespace VBAi.Tests.Integration
 
             private IntPtr[] OwnedTopWindows()
             {
-                return WordChatTopWindowInventory.Read(EnumWindows, window => {
+                return WordChatTopWindowInventory.Read(EnumWindows, window =>
+                {
                     uint pid; uint tid = GetWindowThreadProcessId(window, out pid);
-                    return new WordChatTopWindowInventory.Identity {
-                        ProcessId = (int)pid, ThreadId = tid, Visible = IsWindowVisible(window)
+                    return new WordChatTopWindowInventory.Identity
+                    {
+                        ProcessId = (int)pid,
+                        ThreadId = tid,
+                        Visible = IsWindowVisible(window)
                     };
                 }, context.Fixture.ProcessId, context.Scope.ThreadId, result =>
-                    context.Record(new { Phase = "WordTopWindowInventoryRefused", result.ApiReturned,
-                        result.VisitedTotal, result.OwnedProcessCount, result.ExactThreadVisibleCount,
-                        result.GlobalBoundHit, result.FailureStatus,
+                    context.Record(new
+                    {
+                        Phase = "WordTopWindowInventoryRefused",
+                        result.ApiReturned,
+                        result.VisitedTotal,
+                        result.OwnedProcessCount,
+                        result.ExactThreadVisibleCount,
+                        result.GlobalBoundHit,
+                        result.FailureStatus,
                         NativeLastError = !result.ApiReturned && !result.GlobalBoundHit
-                            ? (int?)Marshal.GetLastWin32Error() : null }));
+                            ? (int?)Marshal.GetLastWin32Error() : null
+                    }));
             }
 
             private static string NativeClass(IntPtr window)
@@ -280,10 +333,16 @@ namespace VBAi.Tests.Integration
             private static WordChatGitMenuDiscovery.OwnerShape ReadPopupOwner(IntPtr handle)
             {
                 uint pid; uint tid = GetWindowThreadProcessId(handle, out pid);
-                return new WordChatGitMenuDiscovery.OwnerShape {
-                    Handle = handle.ToInt64(), Live = IsWindow(handle), ProcessId = (int)pid, ThreadId = tid,
-                    ClassName = NativeClass(handle), Visible = IsWindowVisible(handle),
-                    Parent = GetParent(handle).ToInt64(), Root = GetAncestor(handle, 2).ToInt64(),
+                return new WordChatGitMenuDiscovery.OwnerShape
+                {
+                    Handle = handle.ToInt64(),
+                    Live = IsWindow(handle),
+                    ProcessId = (int)pid,
+                    ThreadId = tid,
+                    ClassName = NativeClass(handle),
+                    Visible = IsWindowVisible(handle),
+                    Parent = GetParent(handle).ToInt64(),
+                    Root = GetAncestor(handle, 2).ToInt64(),
                     Owner = GetWindow(handle, 4).ToInt64(),
                     Style = unchecked((uint)GetWindowLongPtr(handle, -16).ToInt64()),
                     ExStyle = unchecked((uint)GetWindowLongPtr(handle, -20).ToInt64())
@@ -291,9 +350,19 @@ namespace VBAi.Tests.Integration
             }
 
             private static object OwnerEvidence(WordChatGitMenuDiscovery.OwnerShape owner)
-                => owner == null ? null : new {
-                    owner.Handle, owner.Live, owner.ProcessId, owner.ThreadId, owner.ClassName,
-                    owner.Visible, owner.Parent, owner.Root, owner.Owner, owner.Style, owner.ExStyle
+                => owner == null ? null : new
+                {
+                    owner.Handle,
+                    owner.Live,
+                    owner.ProcessId,
+                    owner.ThreadId,
+                    owner.ClassName,
+                    owner.Visible,
+                    owner.Parent,
+                    owner.Root,
+                    owner.Owner,
+                    owner.Style,
+                    owner.ExStyle
                 };
 
             private static AutomationElement[] Descendants(AutomationElement root, string id)
@@ -332,19 +401,27 @@ namespace VBAi.Tests.Integration
                 IntPtr optionsHandle = options.Length == 1 ? NativeAncestorHandle(options[0]) : IntPtr.Zero;
                 uint pickerTid = pickerHandle == IntPtr.Zero ? 0 : GetWindowThreadProcessId(pickerHandle, out pickerPid);
                 uint optionsTid = optionsHandle == IntPtr.Zero ? 0 : GetWindowThreadProcessId(optionsHandle, out optionsPid);
-                return new WordChatWindowDiscovery.Candidate {
-                    Handle = window.ToInt64(), NativeProcessId = (int)nativePid, NativeThreadId = nativeTid,
-                    UiProcessId = element.Current.ProcessId, Visible = IsWindowVisible(window),
+                return new WordChatWindowDiscovery.Candidate
+                {
+                    Handle = window.ToInt64(),
+                    NativeProcessId = (int)nativePid,
+                    NativeThreadId = nativeTid,
+                    UiProcessId = element.Current.ProcessId,
+                    Visible = IsWindowVisible(window),
                     WithinOwnedVbe = IsChild(context.Scope.VbeHandle, window) || GetWindow(window, 4) == context.Scope.VbeHandle,
                     FixedChatCaption = true,
-                    NativeClass = nativeClass, ControlType = element.Current.ControlType.ProgrammaticName,
-                    ScopePickerCount = pickers.Length, OptionsCount = options.Length,
+                    NativeClass = nativeClass,
+                    ControlType = element.Current.ControlType.ProgrammaticName,
+                    ScopePickerCount = pickers.Length,
+                    OptionsCount = options.Length,
                     ScopePickerProcessId = pickers.Length == 1 ? pickers[0].Current.ProcessId : 0,
                     OptionsProcessId = options.Length == 1 ? options[0].Current.ProcessId : 0,
                     ScopePickerType = pickers.Length == 1 ? pickers[0].Current.ControlType.ProgrammaticName : null,
                     OptionsType = options.Length == 1 ? options[0].Current.ControlType.ProgrammaticName : null,
-                    ScopePickerHandle = pickerHandle.ToInt64(), OptionsHandle = optionsHandle.ToInt64(),
-                    ScopePickerThreadId = pickerTid, OptionsThreadId = optionsTid,
+                    ScopePickerHandle = pickerHandle.ToInt64(),
+                    OptionsHandle = optionsHandle.ToInt64(),
+                    ScopePickerThreadId = pickerTid,
+                    OptionsThreadId = optionsTid,
                     ScopePickerWithinChat = pickerHandle != IntPtr.Zero &&
                         (pickerHandle == window || IsChild(window, pickerHandle)),
                     OptionsWithinChat = optionsHandle != IntPtr.Zero &&
@@ -397,18 +474,42 @@ namespace VBAi.Tests.Integration
                 finally
                 {
                     // No captions, transcript text, paths or provider state enter this pre-action receipt.
-                    context.Record(new { Phase = "ChatNativeWindowInventory", VbeHandle = context.Scope.VbeHandle.ToInt64(),
-                        ProcessId = context.Fixture.ProcessId, ThreadId = context.Scope.ThreadId,
-                        NativeWindowCount = handles.Count, ExactThreadVisibleCount = exactThreadWindows,
-                        WindowsFormsCount = windowsFormsCount, ControlTypes = controlTypes,
+                    context.Record(new
+                    {
+                        Phase = "ChatNativeWindowInventory",
+                        VbeHandle = context.Scope.VbeHandle.ToInt64(),
+                        ProcessId = context.Fixture.ProcessId,
+                        ThreadId = context.Scope.ThreadId,
+                        NativeWindowCount = handles.Count,
+                        ExactThreadVisibleCount = exactThreadWindows,
+                        WindowsFormsCount = windowsFormsCount,
+                        ControlTypes = controlTypes,
                         FixedChatCaptionCount = fixedCaptionCount,
-                        Candidates = candidates.Select(item => new { item.Handle, item.NativeClass, item.ControlType,
-                            item.NativeProcessId, item.NativeThreadId, item.UiProcessId, item.Visible,
-                            item.WithinOwnedVbe, item.FixedChatCaption,
-                            item.ScopePickerCount, item.OptionsCount, item.ScopePickerType, item.OptionsType,
-                            item.ScopePickerHandle, item.OptionsHandle, item.ScopePickerThreadId, item.OptionsThreadId,
-                            item.ScopePickerProcessId, item.OptionsProcessId,
-                            item.ScopePickerWithinChat, item.OptionsWithinChat }).ToArray() });
+                        Candidates = candidates.Select(item => new
+                        {
+                            item.Handle,
+                            item.NativeClass,
+                            item.ControlType,
+                            item.NativeProcessId,
+                            item.NativeThreadId,
+                            item.UiProcessId,
+                            item.Visible,
+                            item.WithinOwnedVbe,
+                            item.FixedChatCaption,
+                            item.ScopePickerCount,
+                            item.OptionsCount,
+                            item.ScopePickerType,
+                            item.OptionsType,
+                            item.ScopePickerHandle,
+                            item.OptionsHandle,
+                            item.ScopePickerThreadId,
+                            item.OptionsThreadId,
+                            item.ScopePickerProcessId,
+                            item.OptionsProcessId,
+                            item.ScopePickerWithinChat,
+                            item.OptionsWithinChat
+                        }).ToArray()
+                    });
                 }
                 return elements[WordChatWindowDiscovery.RequireUnique(candidates, context.Fixture.ProcessId,
                     context.Scope.ThreadId).Handle];
@@ -463,14 +564,21 @@ namespace VBAi.Tests.Integration
                     Pattern<SelectionItemPattern>(selected, SelectionItemPattern.Pattern).Select();
                 }
                 var watch = Stopwatch.StartNew();
-                WordChatScopeIdle.Wait(GuardScopePicker, () => new WordChatScopeIdle.Observation {
+                WordChatScopeIdle.Wait(GuardScopePicker, () => new WordChatScopeIdle.Observation
+                {
                     Enabled = scopePicker.Current.IsEnabled,
                     ExactSelection = SelectedLabel(scopeSelection, context.Label),
                     State = Pattern<ExpandCollapsePattern>(scopePicker, ExpandCollapsePattern.Pattern).Current.ExpandCollapseState
                 }, () => Pattern<ExpandCollapsePattern>(scopePicker, ExpandCollapsePattern.Pattern).Collapse(),
                     () => watch.ElapsedMilliseconds, () => Thread.Sleep(50));
-                context.Record(new { Phase = "ChatScopeSelected", context.Label, CanonicalPath = context.Scope.Path,
-                    ChatHandle = context.ChatHandle.ToInt64(), PickerHandle = scopePicker.Current.NativeWindowHandle });
+                context.Record(new
+                {
+                    Phase = "ChatScopeSelected",
+                    context.Label,
+                    CanonicalPath = context.Scope.Path,
+                    ChatHandle = context.ChatHandle.ToInt64(),
+                    PickerHandle = scopePicker.Current.NativeWindowHandle
+                });
             }
 
             private void RequireSelectedScope()
@@ -489,10 +597,15 @@ namespace VBAi.Tests.Integration
                 IntPtr actual = UiHandle(current.NativeWindowHandle);
                 uint processId; uint threadId = GetWindowThreadProcessId(actual, out processId);
                 WordChatScopeIdle.RequirePicker(scopePickerHandle.ToInt64(), context.Fixture.ProcessId, context.Scope.ThreadId,
-                    new WordChatScopeIdle.PickerIdentity {
-                        Handle = actual.ToInt64(), NativeProcessId = (int)processId, NativeThreadId = threadId,
-                        UiProcessId = current.ProcessId, WithinChat = IsChild(context.ChatHandle, actual),
-                        IsComboBox = current.ControlType == ControlType.ComboBox, AutomationId = current.AutomationId
+                    new WordChatScopeIdle.PickerIdentity
+                    {
+                        Handle = actual.ToInt64(),
+                        NativeProcessId = (int)processId,
+                        NativeThreadId = threadId,
+                        UiProcessId = current.ProcessId,
+                        WithinChat = IsChild(context.ChatHandle, actual),
+                        IsComboBox = current.ControlType == ControlType.ComboBox,
+                        AutomationId = current.AutomationId
                     });
             }
 
@@ -504,13 +617,18 @@ namespace VBAi.Tests.Integration
                 uint vbePid, chatPid;
                 uint vbeTid = GetWindowThreadProcessId(vbeRoot, out vbePid);
                 uint chatTid = GetWindowThreadProcessId(chatRoot, out chatPid);
-                return new WordChatWindowDiscovery.OwnerIdentity {
-                    VbeHandle = context.Scope.VbeHandle.ToInt64(), VbeRoot = vbeRoot.ToInt64(),
-                    ChatHandle = context.ChatHandle.ToInt64(), ChatRoot = chatRoot.ToInt64(),
+                return new WordChatWindowDiscovery.OwnerIdentity
+                {
+                    VbeHandle = context.Scope.VbeHandle.ToInt64(),
+                    VbeRoot = vbeRoot.ToInt64(),
+                    ChatHandle = context.ChatHandle.ToInt64(),
+                    ChatRoot = chatRoot.ToInt64(),
                     ChatOwner = GetWindow(context.ChatHandle, 4).ToInt64(),
                     ChatWithinVbe = IsChild(context.Scope.VbeHandle, context.ChatHandle),
-                    VbeRootProcessId = (int)vbePid, ChatRootProcessId = (int)chatPid,
-                    VbeRootThreadId = vbeTid, ChatRootThreadId = chatTid
+                    VbeRootProcessId = (int)vbePid,
+                    ChatRootProcessId = (int)chatPid,
+                    VbeRootThreadId = vbeTid,
+                    ChatRootThreadId = chatTid
                 };
             }
 
@@ -529,11 +647,21 @@ namespace VBAi.Tests.Integration
                     exactScopePickerOwner = ReadPopupOwner(pickerHandle);
                     context.Record(new { Phase = "ExactScopePickerOwnerFrozen", Owner = OwnerEvidence(exactScopePickerOwner) });
                 }
-                context.Record(new { Phase = "ChatModalOwnerPreflight", modalOwner.VbeHandle, modalOwner.VbeRoot,
-                    modalOwner.ChatHandle, modalOwner.ChatRoot, modalOwner.ChatOwner,
-                    modalOwner.ChatWithinVbe, ExpectedModalOwner = expected,
-                    modalOwner.VbeRootProcessId, modalOwner.VbeRootThreadId,
-                    modalOwner.ChatRootProcessId, modalOwner.ChatRootThreadId });
+                context.Record(new
+                {
+                    Phase = "ChatModalOwnerPreflight",
+                    modalOwner.VbeHandle,
+                    modalOwner.VbeRoot,
+                    modalOwner.ChatHandle,
+                    modalOwner.ChatRoot,
+                    modalOwner.ChatOwner,
+                    modalOwner.ChatWithinVbe,
+                    ExpectedModalOwner = expected,
+                    modalOwner.VbeRootProcessId,
+                    modalOwner.VbeRootThreadId,
+                    modalOwner.ChatRootProcessId,
+                    modalOwner.ChatRootThreadId
+                });
             }
 
             private void RequireSameModalOwner(IntPtr observedOwner)
@@ -566,7 +694,8 @@ namespace VBAi.Tests.Integration
                 Guard(optionsHandle);
                 exactOptionsButtonOwner = ReadPopupOwner(optionsHandle);
                 context.Record(new { Phase = "ExactOptionsButtonOwnerFrozen", Owner = OwnerEvidence(exactOptionsButtonOwner) });
-                var visibleBefore = new HashSet<IntPtr>(OwnedTopWindows().Where(window => {
+                var visibleBefore = new HashSet<IntPtr>(OwnedTopWindows().Where(window =>
+                {
                     uint pid; uint tid = GetWindowThreadProcessId(window, out pid);
                     return pid == context.Fixture.ProcessId && tid == context.Scope.ThreadId && IsWindowVisible(window);
                 }));
@@ -606,12 +735,19 @@ namespace VBAi.Tests.Integration
                                 item.Current.Name, label, item.Current.ControlType.ProgrammaticName,
                                 item.Current.ProcessId, context.Fixture.ProcessId)).ToArray();
                             var enabled = matching.Where(item => item.Current.IsEnabled && !item.Current.IsOffscreen).ToArray();
-                            var candidate = new WordChatGitMenuDiscovery.Candidate {
-                                PopupHandle = window.ToInt64(), OwnerHandle = GetWindow(window, 4).ToInt64(),
-                                NativeProcessId = (int)pid, NativeThreadId = tid, UiProcessId = popup.Current.ProcessId,
-                                Visible = true, NewlyVisible = !visibleBefore.Contains(window),
-                                NativeClass = cls, UiType = popup.Current.ControlType.ProgrammaticName,
-                                MenuItemCount = items.Length, GitLabelMatches = matching.Length,
+                            var candidate = new WordChatGitMenuDiscovery.Candidate
+                            {
+                                PopupHandle = window.ToInt64(),
+                                OwnerHandle = GetWindow(window, 4).ToInt64(),
+                                NativeProcessId = (int)pid,
+                                NativeThreadId = tid,
+                                UiProcessId = popup.Current.ProcessId,
+                                Visible = true,
+                                NewlyVisible = !visibleBefore.Contains(window),
+                                NativeClass = cls,
+                                UiType = popup.Current.ControlType.ProgrammaticName,
+                                MenuItemCount = items.Length,
+                                GitLabelMatches = matching.Length,
                                 EnabledGitMatches = enabled.Length,
                                 GitItemProcessId = matching.Length == 1 ? matching[0].Current.ProcessId : 0,
                                 GitItemNativeAncestor = matching.Length == 1
@@ -638,22 +774,45 @@ namespace VBAi.Tests.Integration
                 finally
                 {
                     // The popup receipt contains only native identity and product-label match counts.
-                    context.Record(new { Phase = "ChatOptionsPopupInventory", ProcessId = context.Fixture.ProcessId,
-                        ThreadId = context.Scope.ThreadId, ExpectedOwner = expectedOwner,
-                        VisibleTopWindowCount = nativeVisible, Candidates = last.Select(item => new {
-                            item.PopupHandle, item.OwnerHandle, item.NativeProcessId, item.NativeThreadId,
-                            item.UiProcessId, item.NativeClass, item.UiType, item.Visible, item.NewlyVisible,
-                            item.MenuItemCount, item.GitLabelMatches, item.EnabledGitMatches,
-                            item.GitItemProcessId, item.GitItemNativeAncestor,
-                            Owner = OwnerEvidence(item.OwnerShape) }).ToArray() });
+                    context.Record(new
+                    {
+                        Phase = "ChatOptionsPopupInventory",
+                        ProcessId = context.Fixture.ProcessId,
+                        ThreadId = context.Scope.ThreadId,
+                        ExpectedOwner = expectedOwner,
+                        VisibleTopWindowCount = nativeVisible,
+                        Candidates = last.Select(item => new
+                        {
+                            item.PopupHandle,
+                            item.OwnerHandle,
+                            item.NativeProcessId,
+                            item.NativeThreadId,
+                            item.UiProcessId,
+                            item.NativeClass,
+                            item.UiType,
+                            item.Visible,
+                            item.NewlyVisible,
+                            item.MenuItemCount,
+                            item.GitLabelMatches,
+                            item.EnabledGitMatches,
+                            item.GitItemProcessId,
+                            item.GitItemNativeAncestor,
+                            Owner = OwnerEvidence(item.OwnerShape)
+                        }).ToArray()
+                    });
                 }
                 if (gitItem == null) throw new InvalidOperationException("The exact chat GitHub menu item was not observed.");
-                context.Record(new { Phase = "ChatGitItemObserved", PopupHandle = gitPopupHandle.ToInt64(),
-                    LocalizedProductLabelMatched = true, ProcessId = gitItem.Current.ProcessId,
+                context.Record(new
+                {
+                    Phase = "ChatGitItemObserved",
+                    PopupHandle = gitPopupHandle.ToInt64(),
+                    LocalizedProductLabelMatched = true,
+                    ProcessId = gitItem.Current.ProcessId,
                     NativeAncestorHandle = NativeAncestorHandle(gitItem).ToInt64(),
                     PopupNativeClass = selectedPopup.NativeClass,
                     PopupOwnerHandle = selectedPopup.OwnerHandle,
-                    PopupOwner = OwnerEvidence(selectedPopup.OwnerShape) });
+                    PopupOwner = OwnerEvidence(selectedPopup.OwnerShape)
+                });
                 if (PrivateDesktopUiAction.Enabled) context.Fixture.NativeExecutionUnsettled = false;
             }
 
@@ -691,11 +850,22 @@ namespace VBAi.Tests.Integration
                         NativeAncestorHandle(gitItem) != gitPopupHandle ||
                         !gitItem.Current.IsEnabled || gitItem.Current.IsOffscreen)
                         throw new InvalidOperationException("The exact localized Word chat Git menu item changed before invocation.");
-                    context.Record(new { Phase = "ChatOptionsOwnerRevalidated", PopupHandle = gitPopupHandle.ToInt64(),
-                        PopupNativeClass = currentPopupClass, PopupOwnerHandle = currentPopupOwner,
-                        PopupOwner = OwnerEvidence(currentOwner), GitItemNativeAncestor = NativeAncestorHandle(gitItem).ToInt64() });
-                    context.Record(new { Phase = "ChatGitInvokeIntent", context.Label, CanonicalPath = context.Scope.Path,
-                        ChatHandle = context.ChatHandle.ToInt64() });
+                    context.Record(new
+                    {
+                        Phase = "ChatOptionsOwnerRevalidated",
+                        PopupHandle = gitPopupHandle.ToInt64(),
+                        PopupNativeClass = currentPopupClass,
+                        PopupOwnerHandle = currentPopupOwner,
+                        PopupOwner = OwnerEvidence(currentOwner),
+                        GitItemNativeAncestor = NativeAncestorHandle(gitItem).ToInt64()
+                    });
+                    context.Record(new
+                    {
+                        Phase = "ChatGitInvokeIntent",
+                        context.Label,
+                        CanonicalPath = context.Scope.Path,
+                        ChatHandle = context.ChatHandle.ToInt64()
+                    });
                     context.ActionIssued = true;
                     context.Fixture.NativeExecutionUnsettled = true;
                     context.GitIntent.Set();
@@ -743,9 +913,15 @@ namespace VBAi.Tests.Integration
                 }
                 if (git == null) throw new TimeoutException("The chat Git action has no observed exact modal; no retry or cleanup.");
                 context.ModalObserved = true;
-                context.Record(new { Phase = "OwnedChatGitModalObserved", ProcessId = context.Fixture.ProcessId,
-                    ThreadId = context.Scope.ThreadId, Handle = context.GitHandle.ToInt64(),
-                    Owner = GetWindow(context.GitHandle, 4).ToInt64(), ChatHandle = context.ChatHandle.ToInt64() });
+                context.Record(new
+                {
+                    Phase = "OwnedChatGitModalObserved",
+                    ProcessId = context.Fixture.ProcessId,
+                    ThreadId = context.Scope.ThreadId,
+                    Handle = context.GitHandle.ToInt64(),
+                    Owner = GetWindow(context.GitHandle, 4).ToInt64(),
+                    ChatHandle = context.ChatHandle.ToInt64()
+                });
             }
 
             internal void CloseExactGitModal()
@@ -755,8 +931,14 @@ namespace VBAi.Tests.Integration
                 // Emit one native close to the exact owned modal. The UIA Close
                 // provider returned without destroying this dialog in the frozen
                 // Word qualification; no fallback or second close is permitted.
-                context.Record(new { Phase = "ChatGitCloseIntent", Handle = context.GitHandle.ToInt64(),
-                    Message = "WM_CLOSE", InvocationLimit = 1, FocusChanges = 0 });
+                context.Record(new
+                {
+                    Phase = "ChatGitCloseIntent",
+                    Handle = context.GitHandle.ToInt64(),
+                    Message = "WM_CLOSE",
+                    InvocationLimit = 1,
+                    FocusChanges = 0
+                });
                 WordChatModalClose.PostOnce(context.GitHandle,
                     () => { Guard(context.GitHandle); RequireSameModalOwner(GetWindow(context.GitHandle, 4)); },
                     window => PostMessage(window, 0x0010, IntPtr.Zero, IntPtr.Zero));

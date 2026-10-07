@@ -1,7 +1,6 @@
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.IO;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
-using VBAi;
 using VBAi.Tests.Integration;
 
 namespace VBAi.Tests.Scenarios
@@ -25,9 +24,11 @@ namespace VBAi.Tests.Scenarios
                 const string form = "LifetimeForm";
                 string path = host.File("Lifetime.xlsm");
                 host.PrepareGitForm(form, "Synthetic lifetime form", "NeverExecuted", path);
-                host.WithGitProject(path, outer => {
+                host.WithGitProject(path, outer =>
+                {
                     VbaGitSnapshot before = outer.Capture();
-                    Action nested = () => host.WithGitProject(path, inner => {
+                    Action nested = () => host.WithGitProject(path, inner =>
+                    {
                         var state = host.ReadGitForm(form);
                         Assert.AreEqual("Synthetic lifetime form", state["Caption"]);
                         Assert.IsTrue(before.SameAs(inner.Capture()));

@@ -39,10 +39,18 @@ namespace VBAi
             object created = null; string error = null;
             try { created = (object)vbe.CommandBars.Add(name, 1, false, temporary); ((dynamic)created).Visible = true; if (!temporary) SaveToolbarProfile((dynamic)created, true); }
             catch (Exception ex) { error = ex.Message; }
-            return new { Created = created != null, Verified = error == null && created != null, NativeError = error,
-                Temporary = temporary, ObjectName = name, After = created == null ? null : ReadToolbarCommands(created),
-                ToolbarCollectionVersion = ToolbarCollectionVersion(), PersistenceVerified = false,
-                NextRead = "list_toolbars, toolbar_controls" };
+            return new
+            {
+                Created = created != null,
+                Verified = error == null && created != null,
+                NativeError = error,
+                Temporary = temporary,
+                ObjectName = name,
+                After = created == null ? null : ReadToolbarCommands(created),
+                ToolbarCollectionVersion = ToolbarCollectionVersion(),
+                PersistenceVerified = false,
+                NextRead = "list_toolbars, toolbar_controls"
+            };
         }
 
         /// <summary>Supprime uniquement une barre VBAi personnalisée vide et inchangée.</summary>
@@ -92,9 +100,18 @@ namespace VBAi
             catch (Exception ex) { error = ex.Message; }
             var after = ReadToolbarCommands((object)bar);
             var addedState = after.Controls.FirstOrDefault(x => x.Tag == tag);
-            return new { Added = addedState != null, Verified = error == null && addedState != null && addedState.Id == request.ControlId && addedState.Caption == request.ControlCaption,
-                Tag = tag, After = after, NativeError = error, Temporary = temporary, PersistenceVerified = false,
-                NextRead = "toolbar_controls", Limit = "Inspect partial results; no automatic retry. Restart persistence must be qualified separately." };
+            return new
+            {
+                Added = addedState != null,
+                Verified = error == null && addedState != null && addedState.Id == request.ControlId && addedState.Caption == request.ControlCaption,
+                Tag = tag,
+                After = after,
+                NativeError = error,
+                Temporary = temporary,
+                PersistenceVerified = false,
+                NextRead = "toolbar_controls",
+                Limit = "Inspect partial results; no automatic retry. Restart persistence must be qualified separately."
+            };
         }
 
         /// <summary>Retire uniquement un bouton ajouté par VBAi après vérification de son identité et de son index.</summary>
@@ -209,8 +226,16 @@ namespace VBAi
         {
             var controls = new List<ToolbarCommandState>();
             foreach (dynamic control in bar.Controls)
-                controls.Add(new ToolbarCommandState { Index = (int)control.Index, Id = (int)control.Id, Type = (int)control.Type,
-                    Caption = (string)control.Caption, Tag = (string)control.Tag ?? "", BuiltIn = (bool)control.BuiltIn, Visible = (bool)control.Visible });
+                controls.Add(new ToolbarCommandState
+                {
+                    Index = (int)control.Index,
+                    Id = (int)control.Id,
+                    Type = (int)control.Type,
+                    Caption = (string)control.Caption,
+                    Tag = (string)control.Tag ?? "",
+                    BuiltIn = (bool)control.BuiltIn,
+                    Visible = (bool)control.Visible
+                });
             var state = new ToolbarCommandsState { ObjectName = (string)bar.Name, Controls = controls.ToArray() };
             state.ToolbarControlsVersion = ToolbarCustomizationHash(new { state.ObjectName, state.Controls, Protection = (int)bar.Protection, Enabled = (bool)bar.Enabled });
             return state;

@@ -1,8 +1,8 @@
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Runtime.ExceptionServices;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace VBAi.Tests.Integration
 {
@@ -12,9 +12,18 @@ namespace VBAi.Tests.Integration
 
         /// <summary>Qualifies disk persistence only after the separate exact owner-dispatched import contract succeeds.</summary>
         [TestMethod, TestCategory("NativeEmbeddedGitPersistence")]
-        [DataRow("LabelButton")][DataRow("TextBox")][DataRow("ComboBox")][DataRow("ListBox")]
-        [DataRow("CheckBox")][DataRow("OptionButton")][DataRow("ToggleButton")][DataRow("ScrollBar")]
-        [DataRow("SpinButton")][DataRow("TabStrip")][DataRow("Image")][DataRow("FrameMultiPage")]
+        [DataRow("LabelButton")]
+        [DataRow("TextBox")]
+        [DataRow("ComboBox")]
+        [DataRow("ListBox")]
+        [DataRow("CheckBox")]
+        [DataRow("OptionButton")]
+        [DataRow("ToggleButton")]
+        [DataRow("ScrollBar")]
+        [DataRow("SpinButton")]
+        [DataRow("TabStrip")]
+        [DataRow("Image")]
+        [DataRow("FrameMultiPage")]
         public void InstalledOwnerImportedFormSurvivesOneSaveAndFreshReadOnlyProcess(string layout)
         {
             if (Environment.GetEnvironmentVariable("VBAi_RUN_USERFORM_OWNER_PERSISTENCE_TESTS") != "1" ||
@@ -33,7 +42,8 @@ namespace VBAi.Tests.Integration
             ExcelVbeFixture fresh = null;
             Exception failure = null;
             bool pending = false;
-            Action<bool> observePending = value => {
+            Action<bool> observePending = value =>
+            {
                 if (value && context.Stop)
                 {
                     fresh?.PreserveMonacoNativeOutcome();
@@ -44,9 +54,16 @@ namespace VBAi.Tests.Integration
             try
             {
                 if (context.Stop) throw new InvalidOperationException("Coordinator stopped before fresh-process launch; no second host was started.");
-                context.Record(new { Phase = "FreshProcessLaunchIntent", Path = context.Scope.Path,
-                    OriginalRoot = originalRoot, OriginalProcessId = context.Fixture.ProcessId, OriginalStartedUtc = originalStart,
-                    SavedWorkbookSha256 = savedHash, ImportReplayAttempts = 0 });
+                context.Record(new
+                {
+                    Phase = "FreshProcessLaunchIntent",
+                    Path = context.Scope.Path,
+                    OriginalRoot = originalRoot,
+                    OriginalProcessId = context.Fixture.ProcessId,
+                    OriginalStartedUtc = originalStart,
+                    SavedWorkbookSha256 = savedHash,
+                    ImportReplayAttempts = 0
+                });
                 fresh = ExcelVbeFixture.StartOwnedWithTrace(ExcelVbeFixture.SelectOwnedTracePath(
                     Path.Combine(context.Output, "fresh-process-unused-trace.jsonl")));
                 EmbeddedGitPersistenceContract.RequireFreshIdentity(originalRoot, originalStart, context.Fixture.ProcessId,
@@ -58,9 +75,17 @@ namespace VBAi.Tests.Integration
                 EmbeddedGitPersistenceContract.RequireDiskHash(savedHash, Sha(context.Scope.Path));
                 fresh.VerifyEmbeddedReopenedForm(context.Scope, observePending, context.Record);
                 EmbeddedGitPersistenceContract.RequireDiskHash(savedHash, Sha(context.Scope.Path));
-                context.Record(new { Phase = "FreshProcessReadbackVerified", fresh.ProcessId, fresh.Root,
-                    StartedUtc = fresh.EmbeddedProcessStartedUtc, SavedWorkbookSha256 = savedHash,
-                    MacroExecutions = 0, SavesInFreshProcess = 0, ImportReplayAttempts = 0 });
+                context.Record(new
+                {
+                    Phase = "FreshProcessReadbackVerified",
+                    fresh.ProcessId,
+                    fresh.Root,
+                    StartedUtc = fresh.EmbeddedProcessStartedUtc,
+                    SavedWorkbookSha256 = savedHash,
+                    MacroExecutions = 0,
+                    SavesInFreshProcess = 0,
+                    ImportReplayAttempts = 0
+                });
             }
             catch (Exception error)
             {
@@ -71,8 +96,15 @@ namespace VBAi.Tests.Integration
                     lock (RetainedPersistenceHosts) RetainedPersistenceHosts.Add(fresh);
                     try
                     {
-                        context.Record(new { Phase = "FreshProcessRetained", fresh.ProcessId, fresh.Root,
-                            NativePending = pending, Error = error.ToString(), CleanupReplayAttempts = 0 });
+                        context.Record(new
+                        {
+                            Phase = "FreshProcessRetained",
+                            fresh.ProcessId,
+                            fresh.Root,
+                            NativePending = pending,
+                            Error = error.ToString(),
+                            CleanupReplayAttempts = 0
+                        });
                     }
                     catch (Exception evidence) { failure = new AggregateException("Fresh-process readback and retention evidence both failed.", error, evidence); }
                 }
@@ -85,8 +117,12 @@ namespace VBAi.Tests.Integration
                     fresh.Dispose();
                     EmbeddedGitPersistenceContract.RequireNormalExit(fresh.ShutdownDiagnostics);
                     EmbeddedGitPersistenceContract.RequireDiskHash(savedHash, Sha(context.Scope.Path));
-                    context.Record(new { Phase = "FreshProcessNormalExitVerified", Shutdown = fresh.ShutdownDiagnostics,
-                        SavedWorkbookSha256 = savedHash });
+                    context.Record(new
+                    {
+                        Phase = "FreshProcessNormalExitVerified",
+                        Shutdown = fresh.ShutdownDiagnostics,
+                        SavedWorkbookSha256 = savedHash
+                    });
                 }
                 catch (Exception cleanup)
                 {

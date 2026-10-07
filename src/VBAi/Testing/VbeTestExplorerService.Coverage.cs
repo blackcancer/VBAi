@@ -43,10 +43,12 @@ namespace VBAi
                 return "This document format does not support an owned coverage copy.";
             var plan = VbaCoverageInstrumentation.Create(catalog.Project);
             if (!plan.CanInstrument) return string.Join(Environment.NewLine, plan.Diagnostics);
-            try {
+            try
+            {
                 Validate(catalog);
                 var target = Host.ResolveTarget(ResolveLive(catalog.Project.Id), catalog.Project.HostPath);
-                try {
+                try
+                {
                     if (target is VbaTestWordValuesHost.OwnedTarget word && !((bool)((dynamic)word.Document).Saved))
                         return "Save all Word document changes before collecting coverage from its saved-file copy.";
                 }
@@ -80,18 +82,30 @@ namespace VBAi
         internal static object CoveragePreviewPage(string project, string revision, VbaCoveragePlan plan, string unavailable, int offset = 0, int limit = 0)
         {
             limit = VbaTestReports.PageLimit(offset, limit);
-            return new { Project = project, ExpectedProjectVersion = revision,
-                Available = false, Reason = unavailable ?? "No measured coverage run was requested; pass rate is a separate metric.",
-                Supported = plan.CanInstrument && unavailable == null, ExecutionUnavailableReason = unavailable,
-                Metric = "Procedure", plan.EligibleProcedureCount, plan.DenominatorKnown,
+            return new
+            {
+                Project = project,
+                ExpectedProjectVersion = revision,
+                Available = false,
+                Reason = unavailable ?? "No measured coverage run was requested; pass rate is a separate metric.",
+                Supported = plan.CanInstrument && unavailable == null,
+                ExecutionUnavailableReason = unavailable,
+                Metric = "Procedure",
+                plan.EligibleProcedureCount,
+                plan.DenominatorKnown,
                 Probes = plan.Probes.Skip(offset).Take(limit).ToArray(),
-                Exclusions = plan.Exclusions.Skip(offset).Take(limit).ToArray(), Diagnostics = plan.Diagnostics.Skip(offset).Take(limit).ToArray(),
+                Exclusions = plan.Exclusions.Skip(offset).Take(limit).ToArray(),
+                Diagnostics = plan.Diagnostics.Skip(offset).Take(limit).ToArray(),
                 Total = Math.Max(plan.Probes.Count, Math.Max(plan.Exclusions.Count, plan.Diagnostics.Count)),
-                ProbeTotal = plan.Probes.Count, ExclusionTotal = plan.Exclusions.Count, DiagnosticTotal = plan.Diagnostics.Count,
-                Offset = offset, Limit = limit,
+                ProbeTotal = plan.Probes.Count,
+                ExclusionTotal = plan.Exclusions.Count,
+                DiagnosticTotal = plan.Diagnostics.Count,
+                Offset = offset,
+                Limit = limit,
                 NextOffset = VbaTestReports.NextOffset(offset, limit, Math.Max(plan.Probes.Count, Math.Max(plan.Exclusions.Count, plan.Diagnostics.Count))),
                 StatementCoverageAvailable = false,
-                Method = "Explicit coverage run on a separate instrumented host-document copy; original source is never instrumented." };
+                Method = "Explicit coverage run on a separate instrumented host-document copy; original source is never instrumented."
+            };
         }
 
         /// <summary>Runs explicit tests in an owned instrumented copy and reports procedure-entry coverage.</summary>
@@ -119,7 +133,7 @@ namespace VBAi
             VbaTestCoverageClone clone = null;
             bool ownedClone = false;
             string folder = Path.Combine(CoverageRoot(), Guid.NewGuid().ToString("N"));
-            Action guard = () => { RequireOwner(); executionGuard?.Invoke(); Validate(original); };
+            void guard() { RequireOwner(); executionGuard?.Invoke(); Validate(original); }
             try
             {
                 cancellation.ThrowIfCancellationRequested();
@@ -147,7 +161,7 @@ namespace VBAi
                 }
                 Directory.CreateDirectory(folder);
                 File.WriteAllText(Path.Combine(folder, "coverage-plan.json"), new System.Web.Script.Serialization.JavaScriptSerializer
-                    { MaxJsonLength = 32 * 1024 * 1024 }.Serialize(plan), new UTF8Encoding(false));
+                { MaxJsonLength = 32 * 1024 * 1024 }.Serialize(plan), new UTF8Encoding(false));
                 foreach (var module in plan.Modules)
                 {
                     guard(); cancellation.ThrowIfCancellationRequested();
@@ -155,8 +169,12 @@ namespace VBAi
                 }
                 guard(); cancellation.ThrowIfCancellationRequested();
                 WriteCloneModule(clone.Project, VbaCoverageInstrumentation.ModuleName, plan.RuntimeSource, true);
-                coverageService = new VbeTestExplorerService((object)vbe, dispatcher) { Host = Host, IsExecutionHost = IsExecutionHost,
-                    BackupRoot = () => Path.Combine(folder, "support-backups") };
+                coverageService = new VbeTestExplorerService((object)vbe, dispatcher)
+                {
+                    Host = Host,
+                    IsExecutionHost = IsExecutionHost,
+                    BackupRoot = () => Path.Combine(folder, "support-backups")
+                };
                 string copyId = coverageService.FindIdentity(clone.Project);
                 var copiedCatalog = coverageService.Discover(copyId);
                 guard(); cancellation.ThrowIfCancellationRequested();
@@ -167,7 +185,8 @@ namespace VBAi
                 guard(); cancellation.ThrowIfCancellationRequested();
                 if (CompileCoverageProject == null) throw new InvalidOperationException("A verified coverage compilation boundary is required.");
                 var compileProject = CompileCoverageProject;
-                currentCoverageCompileGuard = () => {
+                currentCoverageCompileGuard = () =>
+                {
                     guard(); coverageService.Validate(copiedCatalog); cancellation.ThrowIfCancellationRequested();
                 };
                 try
@@ -180,12 +199,20 @@ namespace VBAi
                 guard(); coverageService.Validate(copiedCatalog);
                 var reset = InvokeCoverageFunction(coverageService, copiedCatalog, VbaCoverageInstrumentation.ResetProcedure, guard);
                 if (!(reset is bool initialized) || !initialized) throw new InvalidOperationException("The coverage runtime did not verify a successful reset; no tests were dispatched.");
-                Action<VbaTestResult> translate = result => {
+                void translate(VbaTestResult result)
+                {
                     var test = selected.Single(item => item.Module.Equals(result.Test.Module, StringComparison.OrdinalIgnoreCase) && item.Procedure.Equals(result.Test.Procedure, StringComparison.OrdinalIgnoreCase));
-                    var translated = new VbaTestResult { Test = test, Outcome = result.Outcome, Message = result.Message,
-                        Phase = result.Phase, ErrorNumber = result.ErrorNumber, Duration = result.Duration };
+                    var translated = new VbaTestResult
+                    {
+                        Test = test,
+                        Outcome = result.Outcome,
+                        Message = result.Message,
+                        Phase = result.Phase,
+                        ErrorNumber = result.ErrorNumber,
+                        Duration = result.Duration
+                    };
                     run.Results.Add(translated); progress?.Invoke(translated);
-                };
+                }
                 var measured = await AwaitOwner(coverageService.BeginRun(copiedCatalog, copyTests, translate, cancellation, guard));
                 run.Error = measured.Error; run.OutcomeUnknown = measured.OutcomeUnknown;
                 if (measured.OutcomeUnknown) { outcomeUnknown = true; run.Coverage = VbaCoverageInstrumentation.Unavailable(plan, "A native test outcome is uncertain; further coverage dispatch was refused."); }
@@ -214,14 +241,22 @@ namespace VBAi
                         run.Coverage.Diagnostics.Add("The copy was retained open because ownership or native completion could not be verified: " + clone.Path);
                     }
                 }
-                catch (Exception error) { run.Error = (run.Error == null ? "" : run.Error + Environment.NewLine) + "The coverage copy could not be closed: " + error.Message;
+                catch (Exception error)
+                {
+                    run.Error = (run.Error == null ? "" : run.Error + Environment.NewLine) + "The coverage copy could not be closed: " + error.Message;
                     run.OutcomeUnknown |= error is VbaTestInvocationException invocation && invocation.Uncertain;
                     outcomeUnknown |= run.OutcomeUnknown;
-                    if (run.Coverage != null) { run.Coverage.Complete = false; run.Coverage.Percent = null; run.Coverage.Diagnostics.Add("The owned coverage copy remains open. Inspect " + clone.Path); } }
+                    if (run.Coverage != null) { run.Coverage.Complete = false; run.Coverage.Percent = null; run.Coverage.Diagnostics.Add("The owned coverage copy remains open. Inspect " + clone.Path); }
+                }
                 foreach (var test in selected.Where(test => run.Results.All(result => result.Test.Id != test.Id)))
                 {
-                    var result = new VbaTestResult { Test = test, Outcome = cancellation.IsCancellationRequested ? VbaTestOutcome.Cancelled : VbaTestOutcome.Blocked,
-                        Phase = "Preparation", Message = run.Error ?? "The coverage run stopped before this test was dispatched." };
+                    var result = new VbaTestResult
+                    {
+                        Test = test,
+                        Outcome = cancellation.IsCancellationRequested ? VbaTestOutcome.Cancelled : VbaTestOutcome.Blocked,
+                        Phase = "Preparation",
+                        Message = run.Error ?? "The coverage run stopped before this test was dispatched."
+                    };
                     run.Results.Add(result); progress?.Invoke(result);
                 }
             }
@@ -242,12 +277,14 @@ namespace VBAi
             try
             {
                 guard(); copy.Validate(catalog);
-                try {
+                try
+                {
                     var returned = copy.Host.Invoke(target, VbaCoverageInstrumentation.ModuleName, procedure, new object[0]);
                     RequireOwner(); guard(); copy.Validate(catalog);
                     return returned;
                 }
-                catch (Exception error) {
+                catch (Exception error)
+                {
                     uncertain = true;
                     throw new VbaTestInvocationException("Coverage runtime completion is uncertain: " + error.Message, true, error);
                 }

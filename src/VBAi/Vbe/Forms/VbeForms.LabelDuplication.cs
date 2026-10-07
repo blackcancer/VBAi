@@ -40,9 +40,14 @@ namespace VBAi
                     throw new ArgumentException("Only Font members are supported as nested accessor metadata.");
                 target = ((dynamic)target).Font;
             }
-            return new { Project = request.Project, Form = request.Form,
-                ControlPath = request.ControlPath ?? "UserForm", Property = request.Property,
-                Metadata = VbeComPropertyAccessors.Inspect(target, path[path.Length - 1]) };
+            return new
+            {
+                request.Project,
+                request.Form,
+                ControlPath = request.ControlPath ?? "UserForm",
+                request.Property,
+                Metadata = VbeComPropertyAccessors.Inspect(target, path[path.Length - 1])
+            };
         }
 
         // Deliberately limited to setters already exercised on MSForms Label in Excel.
@@ -76,9 +81,7 @@ namespace VBAi
                 throw new InvalidOperationException("Only native MSForms Label controls are supported by this probe.");
             object owner = parts.Length == 2 ? (object)form.Designer :
                 ResolveTreeItem(form.Designer, string.Join("/", parts.Take(parts.Length - 2)));
-            PropertyDescriptor controlsProperty = TypeDescriptor.GetProperties(owner).Find("Controls", true);
-            if (controlsProperty == null)
-                throw new InvalidOperationException("The parent has no Controls collection.");
+            PropertyDescriptor controlsProperty = TypeDescriptor.GetProperties(owner).Find("Controls", true) ?? throw new InvalidOperationException("The parent has no Controls collection.");
             dynamic controls = controlsProperty.GetValue(owner);
             foreach (dynamic existing in controls)
                 if (string.Equals((string)existing.Name, request.NewName, StringComparison.OrdinalIgnoreCase))
@@ -93,8 +96,8 @@ namespace VBAi
             double width = Convert.ToDouble(original.Width, CultureInfo.InvariantCulture);
             double height = Convert.ToDouble(original.Height, CultureInfo.InvariantCulture);
             object sourceBackColor = original.BackColor;
-            int backColor = sourceBackColor is Color
-                ? ColorTranslator.ToOle((Color)sourceBackColor)
+            int backColor = sourceBackColor is Color clr
+                ? ColorTranslator.ToOle(clr)
                 : Convert.ToInt32(sourceBackColor, CultureInfo.InvariantCulture);
             dynamic sourceFont = original.Font;
             string fontName = (string)sourceFont.Name;
@@ -133,17 +136,22 @@ namespace VBAi
                     Math.Abs(Convert.ToDouble(installed.Top, CultureInfo.InvariantCulture) - top) > 0.01 ||
                     Math.Abs(Convert.ToDouble(installed.Width, CultureInfo.InvariantCulture) - width) > 0.01 ||
                     Math.Abs(Convert.ToDouble(installed.Height, CultureInfo.InvariantCulture) - height) > 0.01 ||
-                    (installed.BackColor is Color
-                        ? ColorTranslator.ToOle((Color)installed.BackColor)
+                    (installed.BackColor is Color color
+                        ? ColorTranslator.ToOle(color)
                         : Convert.ToInt32(installed.BackColor, CultureInfo.InvariantCulture)) != backColor ||
                     (string)installed.Font.Name != fontName ||
                     Math.Abs(Convert.ToDouble(installed.Font.Size, CultureInfo.InvariantCulture) - fontSize) > 0.01 ||
                     (bool)installed.Font.Bold != fontBold)
                     throw new InvalidOperationException("The duplicate did not retain all supported Label properties.");
-                return new { SourcePath = request.ControlPath, NewPath = newPath,
+                return new
+                {
+                    SourcePath = request.ControlPath,
+                    NewPath = newPath,
                     CopiedProperties = new[] { "Name", "Caption", "Left", "Top", "Width", "Height",
                         "BackColor", "Font.Name", "Font.Size", "Font.Bold" },
-                    Completeness = "Partial", Tree = after };
+                    Completeness = "Partial",
+                    Tree = after
+                };
             }
             catch
             {

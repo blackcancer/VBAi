@@ -233,18 +233,19 @@ namespace VBAi
                 throw new InvalidOperationException("Git modal work requires its original owning STA.");
             if (owner == null) throw new ArgumentNullException(nameof(owner));
             IntPtr handle = owner.Handle;
-            uint pid; uint tid = GetWindowThreadProcessId(handle, out pid);
+            uint tid = GetWindowThreadProcessId(handle, out uint pid);
             uint current = GetCurrentThreadId();
             int processId; long processBirth;
             using (var process = System.Diagnostics.Process.GetCurrentProcess())
             { processId = process.Id; processBirth = process.StartTime.ToUniversalTime().Ticks; }
-            Action validate = () => {
-                    uint actualPid; uint actualTid = GetWindowThreadProcessId(handle, out actualPid);
-                    using (var process = System.Diagnostics.Process.GetCurrentProcess())
-                        if (pid != processId || process.Id != processId || process.StartTime.ToUniversalTime().Ticks != processBirth)
-                            throw new InvalidOperationException("The original Git owner process generation changed.");
-                    RequireOwner(pid, tid, current, handle, actualPid, actualTid, GetCurrentThreadId(), IsWindow(handle), IsWindowEnabled(handle));
-                };
+            void validate()
+            {
+                uint actualTid = GetWindowThreadProcessId(handle, out uint actualPid);
+                using (var process = System.Diagnostics.Process.GetCurrentProcess())
+                    if (pid != processId || process.Id != processId || process.StartTime.ToUniversalTime().Ticks != processBirth)
+                        throw new InvalidOperationException("The original Git owner process generation changed.");
+                RequireOwner(pid, tid, current, handle, actualPid, actualTid, GetCurrentThreadId(), IsWindow(handle), IsWindowEnabled(handle));
+            }
             return validate;
         }
 

@@ -93,8 +93,11 @@ namespace VBAi
         internal static CultureInfo FromMenus(IEnumerable<string> captions, CultureInfo fallback)
         {
             var names = captions.Select(NormalizeMenu).ToArray();
-            var scores = All.Select(x => new { Language = x,
-                Score = names.Count(n => x.View.Contains(n)) * 2 + names.Count(n => x.Tools.Contains(n)) }).ToArray();
+            var scores = All.Select(x => new
+            {
+                Language = x,
+                Score = names.Count(n => x.View.Contains(n)) * 2 + names.Count(n => x.Tools.Contains(n))
+            }).ToArray();
             int max = scores.Max(x => x.Score);
             if (max == 0) return CultureInfo.GetCultureInfo("en-US");
             var best = scores.Where(x => x.Score == max).Select(x => x.Language).ToArray();

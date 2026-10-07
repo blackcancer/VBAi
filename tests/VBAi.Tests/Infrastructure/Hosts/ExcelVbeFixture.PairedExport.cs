@@ -1,6 +1,6 @@
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Collections.Generic;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace VBAi.Tests.Integration
 {
@@ -32,9 +32,15 @@ namespace VBAi.Tests.Integration
                 controls = ((dynamic)designer).Controls;
                 Assert.AreEqual(1, Convert.ToInt32(((dynamic)controls).Count));
                 label = ((dynamic)controls).Item("SyntheticLabel");
-                return new Dictionary<string, object> { ["Name"] = ((dynamic)label).Name, ["Caption"] = ((dynamic)label).Caption,
-                    ["Left"] = Convert.ToDouble(((dynamic)label).Left), ["Top"] = Convert.ToDouble(((dynamic)label).Top),
-                    ["Width"] = Convert.ToDouble(((dynamic)label).Width), ["Height"] = Convert.ToDouble(((dynamic)label).Height) };
+                return new Dictionary<string, object>
+                {
+                    ["Name"] = ((dynamic)label).Name,
+                    ["Caption"] = ((dynamic)label).Caption,
+                    ["Left"] = Convert.ToDouble(((dynamic)label).Left),
+                    ["Top"] = Convert.ToDouble(((dynamic)label).Top),
+                    ["Width"] = Convert.ToDouble(((dynamic)label).Width),
+                    ["Height"] = Convert.ToDouble(((dynamic)label).Height)
+                };
             }
             finally { Release(label); Release(controls); Release(designer); Release(component); Release(components); Release(project); }
         }

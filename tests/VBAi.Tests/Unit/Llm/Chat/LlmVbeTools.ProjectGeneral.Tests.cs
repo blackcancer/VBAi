@@ -1,11 +1,10 @@
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Web.Script.Serialization;
 using System.Windows.Forms;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace VBAi.Tests.Unit
 {
@@ -16,8 +15,13 @@ namespace VBAi.Tests.Unit
         private const string Version = "project-version";
         private static string Arguments(bool write = false, object value = null, string property = "HelpContextID", string project = "P")
         {
-            var fields = new Dictionary<string, object> { ["Project"] = project, ["ExpectedProjectVersion"] = Version,
-                ["ExpectedMode"] = 2, ["ControlCaption"] = "Propriétés de P..." };
+            var fields = new Dictionary<string, object>
+            {
+                ["Project"] = project,
+                ["ExpectedProjectVersion"] = Version,
+                ["ExpectedMode"] = 2,
+                ["ControlCaption"] = "Propriétés de P..."
+            };
             if (write) { fields["Property"] = property; fields["Value"] = value ?? 321; fields["ExpectedOptionsVersion"] = "native-options"; }
             return Json.Serialize(fields);
         }
@@ -75,7 +79,8 @@ namespace VBAi.Tests.Unit
         {
             var tools = Tools(new LlmSettings { VbeEditApproval = "ReadOnly" }); tools.Mode = ChatMode.Discussion;
             string path = @"C:\資料\㩃-é-😀.chm"; Request captured = null; int entries = 0;
-            tools.ProjectGeneralNative = (request, write) => {
+            tools.ProjectGeneralNative = (request, write) =>
+            {
                 captured = request; entries++; Assert.IsFalse(write); Assert.AreEqual("read_project_general", request.Command);
                 request.RevalidateProjectPropertyAuthorization(true); request.RevalidateProjectPropertyAuthorization(false);
                 return Task.FromResult<object>(new { Available = true, HelpFile = path, HelpContextText = "321", OptionsVersion = "native-options", DialogClosed = true });
@@ -91,12 +96,14 @@ namespace VBAi.Tests.Unit
             var settings = new LlmSettings { VbeEditApproval = policy }; var tools = Tools(settings);
             int approvals = 0, entries = 0, writes = 0; Request captured = null;
             int ownerThread = Thread.CurrentThread.ManagedThreadId; SynchronizationContext approvalContext = null;
-            tools.ShowApproval = (dialog, window) => {
+            tools.ShowApproval = (dialog, window) =>
+            {
                 Assert.AreEqual(ownerThread, Thread.CurrentThread.ManagedThreadId);
                 Assert.IsInstanceOfType(SynchronizationContext.Current, typeof(SaveQueueContext));
                 approvalContext = SynchronizationContext.Current; approvals++; return DialogResult.Yes;
             };
-            tools.ProjectGeneralNative = async (request, write) => {
+            tools.ProjectGeneralNative = async (request, write) =>
+            {
                 captured = request; entries++; Assert.IsTrue(write);
                 Assert.AreEqual("HelpContextID", request.Property); Assert.AreEqual(321, request.Value);
                 var context = SynchronizationContext.Current;
@@ -116,15 +123,21 @@ namespace VBAi.Tests.Unit
         }
 
         [DataTestMethod]
-        [DataRow("policy", false)][DataRow("binding", false)][DataRow("mode", false)][DataRow("scope", false)]
-        [DataRow("cached", false)][DataRow("policy", true)][DataRow("binding", true)]
+        [DataRow("policy", false)]
+        [DataRow("binding", false)]
+        [DataRow("mode", false)]
+        [DataRow("scope", false)]
+        [DataRow("cached", false)]
+        [DataRow("policy", true)]
+        [DataRow("binding", true)]
         public async Task GeneralRevocationWhilePendingBlocksFinalMutationAndClearsRuntimeAuthorization(string changed, bool catalog)
         {
             var settings = new LlmSettings { VbeEditApproval = "Automatic" }; var tools = Tools(settings);
             int writes = 0; bool scope = true, cached = true; Request captured = null;
             tools.ValidateScope = () => { if (!scope) throw new InvalidOperationException("Scope revoked"); };
             tools.ValidateCachedScope = () => { if (!cached) throw new InvalidOperationException("Cached scope revoked"); };
-            tools.ProjectGeneralNative = async (request, write) => {
+            tools.ProjectGeneralNative = async (request, write) =>
+            {
                 captured = request; await Task.Yield();
                 if (changed == "policy") settings.VbeEditApproval = "ReadOnly";
                 if (changed == "binding") tools.BoundProject = "Other";
@@ -143,7 +156,8 @@ namespace VBAi.Tests.Unit
         {
             var tools = Tools(); bool allowed = true; Request captured = null;
             tools.ValidateScope = () => { if (!allowed) throw new InvalidOperationException("Scope revoked"); };
-            tools.ProjectGeneralNative = async (request, write) => {
+            tools.ProjectGeneralNative = async (request, write) =>
+            {
                 captured = request; await Task.Yield(); allowed = false;
                 return new { Available = true, HelpFile = "private-path-must-not-leak", DialogClosed = true };
             };
@@ -156,7 +170,8 @@ namespace VBAi.Tests.Unit
         public async Task RevokedWriteResultRetainsMutationOrUnsettledDialogUncertaintyWithoutDisclosingMetadata(bool mutationInvoked)
         {
             var settings = new LlmSettings { VbeEditApproval = "Automatic" }; var tools = Tools(settings);
-            tools.ProjectGeneralNative = (request, write) => {
+            tools.ProjectGeneralNative = (request, write) =>
+            {
                 settings.VbeEditApproval = "ReadOnly";
                 return Task.FromResult<object>(new { MutationInvoked = mutationInvoked, Uncertain = true, HelpFile = "private-path-must-not-leak" });
             };
@@ -172,7 +187,8 @@ namespace VBAi.Tests.Unit
             var tools = Tools(); tools.SetReadAccess(new[] { "Other" }, false); int aliasReads = 0, scopeReads = 0;
             tools.Execute = request => { aliasReads++; return Response.Success(new object[0]); };
             tools.ValidateScope = () => scopeReads++;
-            tools.ProjectGeneralNative = (request, write) => {
+            tools.ProjectGeneralNative = (request, write) =>
+            {
                 int before = scopeReads; request.RevalidateProjectPropertyAuthorization(false);
                 Assert.AreEqual(before, scopeReads); Assert.AreEqual(0, aliasReads);
                 tools.SetReadAccess(new string[0], false);
@@ -195,10 +211,16 @@ namespace VBAi.Tests.Unit
         }
 
         [DataTestMethod]
-        [DataRow("HelpContextID", "321")][DataRow("HelpContextID", true)][DataRow("HelpContextID", 1.5)]
-        [DataRow("HelpContextID", -1)][DataRow("HelpContextID", 2147483648L)]
-        [DataRow("Name", "NewName")][DataRow("HelpFile", "relative.chm")][DataRow("HelpFile", "C:relative.chm")]
-        [DataRow("HelpFile", "C:\\file.hlp")][DataRow("HelpFile", 1)]
+        [DataRow("HelpContextID", "321")]
+        [DataRow("HelpContextID", true)]
+        [DataRow("HelpContextID", 1.5)]
+        [DataRow("HelpContextID", -1)]
+        [DataRow("HelpContextID", 2147483648L)]
+        [DataRow("Name", "NewName")]
+        [DataRow("HelpFile", "relative.chm")]
+        [DataRow("HelpFile", "C:relative.chm")]
+        [DataRow("HelpFile", "C:\\file.hlp")]
+        [DataRow("HelpFile", 1)]
         public async Task InvalidGeneralFieldOrValueRefusesBeforeNativeEntry(string property, object value)
         {
             var tools = Tools(); int entries = 0;

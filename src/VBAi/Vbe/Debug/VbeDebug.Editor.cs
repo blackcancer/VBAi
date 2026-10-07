@@ -29,16 +29,25 @@ namespace VBAi
             int before = ModulePaneCount(module), desired = request.Action == "split" ? 2 : 1;
             if (before < 1 || before > 2) throw new InvalidOperationException("Unexpected native code-pane topology.");
             if (before == desired) return new { Applied = false, Verified = true, PaneCount = before, request.Project, request.Module };
-            var command = EnumerateCommands().FirstOrDefault(x => x.Id == 302 && x.Enabled && string.Equals(x.Caption, request.ControlCaption, StringComparison.Ordinal));
-            if (command == null) throw new InvalidOperationException("The exact native Split command is absent or disabled. Refresh list_commands.");
+            var command = EnumerateCommands().FirstOrDefault(x => x.Id == 302 && x.Enabled && string.Equals(x.Caption, request.ControlCaption, StringComparison.Ordinal)) ?? throw new InvalidOperationException("The exact native Split command is absent or disabled. Refresh list_commands.");
             string error = null;
             try { ((dynamic)command.Control).Execute(); } catch (Exception ex) { error = ex.Message; }
             int? after = null;
             try { after = ModulePaneCount(module); } catch (Exception ex) { error = error ?? ex.Message; }
             bool verified = error == null && after == desired;
-            return new { Applied = error == null ? (bool?)true : null, Verified = verified, VerificationPending = !verified,
-                request.Project, request.Module, BeforePaneCount = before, PaneCount = after, NativeError = error,
-                PersistenceVerified = false, NextRead = verified ? null : "code_panes" };
+            return new
+            {
+                Applied = error == null ? (bool?)true : null,
+                Verified = verified,
+                VerificationPending = !verified,
+                request.Project,
+                request.Module,
+                BeforePaneCount = before,
+                PaneCount = after,
+                NativeError = error,
+                PersistenceVerified = false,
+                NextRead = verified ? null : "code_panes"
+            };
         }
 
         /// <summary>Compte les volets natifs qui référencent exactement le module fourni.</summary>

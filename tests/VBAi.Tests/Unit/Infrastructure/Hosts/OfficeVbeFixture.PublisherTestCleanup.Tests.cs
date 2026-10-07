@@ -1,3 +1,4 @@
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -5,7 +6,6 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Threading;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 using VBAi.Tests.Integration;
 
 namespace VBAi.Tests.Unit
@@ -25,7 +25,8 @@ namespace VBAi.Tests.Unit
             Assert.IsNull(typeof(FakeDocument).GetProperty("Saved").GetSetMethod());
             Assert.IsNull(typeof(FakeDocument).GetMethod("Save"));
             Assert.IsNull(typeof(FakeDocument).GetMethod("SaveAs"));
-            WithFixture((fixture, app, sources, process) => {
+            WithFixture((fixture, app, sources, process) =>
+            {
                 fixture.AllowReviewedPublisherTestCleanup(ModuleName, sources);
                 Assert.AreEqual(0, app.Commands.Count, "Approval must not save, select, execute or dispatch a native command.");
                 fixture.Dispose();
@@ -59,24 +60,28 @@ namespace VBAi.Tests.Unit
                 (fixture, app, sources) => Evidence(fixture)["ProcessImage"] = "another image"
             };
             foreach (var change in changes)
-                WithFixture((fixture, app, sources, process) => {
+                WithFixture((fixture, app, sources, process) =>
+                {
                     change(fixture, app, sources);
                     Assert.ThrowsException<AssertFailedException>(() => fixture.AllowReviewedPublisherTestCleanup(ModuleName, sources));
                     Assert.AreEqual(0, app.QuitCalls); Assert.AreEqual(0, app.Commands.Count);
                     Assert.IsNull(Field(fixture, "publisherTestCleanupSources"));
                 });
-            WithFixture((fixture, app, sources, process) => {
+            WithFixture((fixture, app, sources, process) =>
+            {
                 Set(fixture, "owned", false);
                 Assert.ThrowsException<InvalidOperationException>(() => fixture.AllowReviewedPublisherTestCleanup(ModuleName, sources));
                 Assert.AreEqual(0, app.QuitCalls); Assert.AreEqual(0, app.Commands.Count);
             });
-            WithFixture((fixture, app, sources, process) => {
+            WithFixture((fixture, app, sources, process) =>
+            {
                 fixture.Dispatch = (_, __) => { throw new InvalidOperationException("pending native request"); };
                 Assert.ThrowsException<InvalidOperationException>(() => fixture.Response("status"));
                 Assert.ThrowsException<InvalidOperationException>(() => fixture.AllowReviewedPublisherTestCleanup(ModuleName, sources));
                 Assert.AreEqual(0, app.QuitCalls); Assert.AreEqual(0, app.Commands.Count);
             });
-            WithFixture((fixture, app, sources, process) => {
+            WithFixture((fixture, app, sources, process) =>
+            {
                 Assert.ThrowsException<AssertFailedException>(() => fixture.AllowReviewedPublisherTestCleanup("OtherModule", sources));
                 Exception refusal = null;
                 var worker = new Thread(() => { try { fixture.AllowReviewedPublisherTestCleanup(ModuleName, sources); } catch (Exception error) { refusal = error; } });
@@ -110,7 +115,8 @@ namespace VBAi.Tests.Unit
                 (fixture, app) => Evidence(fixture)["ProcessStartedUtc"] = "replaced generation"
             };
             foreach (var change in changes)
-                WithFixture((fixture, app, sources, process) => {
+                WithFixture((fixture, app, sources, process) =>
+                {
                     fixture.AllowReviewedPublisherTestCleanup(ModuleName, sources);
                     change(fixture, app);
                     RequireRetainedRefusal(fixture, app, process);
@@ -127,12 +133,14 @@ namespace VBAi.Tests.Unit
                 app => app.AfterSourceRead = () => app.Sources[ModuleName] += "' changed after first captured response"
             };
             foreach (var change in changes)
-                WithFixture((fixture, app, sources, process) => {
+                WithFixture((fixture, app, sources, process) =>
+                {
                     fixture.AllowReviewedPublisherTestCleanup(ModuleName, sources);
                     change(app);
                     RequireRetainedRefusal(fixture, app, process);
                 });
-            WithFixture((fixture, app, sources, process) => {
+            WithFixture((fixture, app, sources, process) =>
+            {
                 fixture.AllowReviewedPublisherTestCleanup(ModuleName, sources);
                 sources[ModuleName] = "caller mutated approval input";
                 fixture.Dispose(); Assert.AreEqual(1, app.QuitCalls, "The approved snapshot must be immutable.");
@@ -143,7 +151,8 @@ namespace VBAi.Tests.Unit
         public void UnknownBridgeOrQuitAndUnobservedExitCannotBeRetriedOrReleased()
         {
             foreach (string failure in new[] { "bridge", "quit", "exit" })
-                WithFixture((fixture, app, sources, process) => {
+                WithFixture((fixture, app, sources, process) =>
+                {
                     fixture.AllowReviewedPublisherTestCleanup(ModuleName, sources);
                     if (failure == "bridge") app.DispatchError = new InvalidOperationException("bridge outcome unknown");
                     if (failure == "quit") app.QuitError = new InvalidOperationException("Quit outcome unknown");
@@ -200,13 +209,25 @@ namespace VBAi.Tests.Unit
             fixture.ReadPublisherProcessCanary = () => new object[0];
             fixture.WaitForOwnedExit = (observed, timeout) => { Assert.AreSame(process, observed); Assert.AreEqual(5000, timeout); return true; };
             fixture.ReadOwnedExitCode = observed => 0;
-            app.Persistence = new Dictionary<string, object> { ["Project"] = "SyntheticPublisher", ["HostAvailable"] = true,
-                ["Host"] = "Publisher", ["HostPath"] = path, ["OwnerProcessId"] = process.Id,
-                ["IdentityVerified"] = true, ["ProjectSaved"] = false, ["HostSaved"] = false };
-            app.Sources = new Dictionary<string, string> { [ModuleName] = Source,
-                [VbaTestRuntimeSource.ModuleName] = VbaTestRuntimeSource.Generate(new VbaTestCatalog()) };
+            app.Persistence = new Dictionary<string, object>
+            {
+                ["Project"] = "SyntheticPublisher",
+                ["HostAvailable"] = true,
+                ["Host"] = "Publisher",
+                ["HostPath"] = path,
+                ["OwnerProcessId"] = process.Id,
+                ["IdentityVerified"] = true,
+                ["ProjectSaved"] = false,
+                ["HostSaved"] = false
+            };
+            app.Sources = new Dictionary<string, string>
+            {
+                [ModuleName] = Source,
+                [VbaTestRuntimeSource.ModuleName] = VbaTestRuntimeSource.Generate(new VbaTestCatalog())
+            };
             var expected = new Dictionary<string, string>(app.Sources);
-            fixture.Dispatch = (pid, request) => {
+            fixture.Dispatch = (pid, request) =>
+            {
                 if (app.DispatchError != null) throw app.DispatchError;
                 var values = (IDictionary<string, object>)request;
                 Assert.AreEqual("SyntheticPublisher", values["Project"]); Assert.AreEqual(process.Id, pid);

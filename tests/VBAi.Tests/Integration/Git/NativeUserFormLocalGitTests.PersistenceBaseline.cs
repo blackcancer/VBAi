@@ -1,9 +1,9 @@
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Security.Cryptography;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace VBAi.Tests.Integration
 {
@@ -61,10 +61,14 @@ namespace VBAi.Tests.Integration
             const string form = "QualificationForm";
             IDictionary<string, object> before = null, sameProcess = null, freshProcess = null;
             int originalPid = 0;
-            var report = new Dictionary<string, object> {
-                ["Layout"] = layout, ["Stage"] = "STARTED", ["GitImports"] = 0,
+            var report = new Dictionary<string, object>
+            {
+                ["Layout"] = layout,
+                ["Stage"] = "STARTED",
+                ["GitImports"] = 0,
                 ["PersistedBaseline"] = persistedBaseline,
-                ["MacroExecutions"] = 0, ["RemoteOperations"] = 0,
+                ["MacroExecutions"] = 0,
+                ["RemoteOperations"] = 0,
                 ["AssemblyMvid"] = typeof(VbeSession).Module.ModuleVersionId.ToString("D"),
                 ["Scope"] = "Independent native baseline persistence; one prepared Save, same-process document reopen, then read-only fresh Excel process; no Git import or repair."
             };
@@ -72,7 +76,8 @@ namespace VBAi.Tests.Integration
             Action write = () => File.WriteAllText(evidence, Json.Serialize(report));
             try
             {
-                ExcelVbeFixture.Run(host => {
+                ExcelVbeFixture.Run(host =>
+                {
                     originalPid = host.ProcessId;
                     report["OriginalProcessId"] = originalPid;
                     report["OriginalStatus"] = host.Command("status");
@@ -96,7 +101,8 @@ namespace VBAi.Tests.Integration
                     report["SameProcessDifferences"] = DescribeNativeDifferences(before, sameProcess);
                     report["Stage"] = "same-process-observed";
                     write();
-                }, host => {
+                }, host =>
+                {
                     report["OriginalShutdown"] = host.ShutdownDiagnostics;
                     write();
                 });
@@ -104,7 +110,8 @@ namespace VBAi.Tests.Integration
                 // normal exit. The saved copy belongs to this evidence directory.
                 string savedHash = BaselineFileHash(saved);
                 report["SavedFileSha256"] = savedHash;
-                ExcelVbeFixture.Run(host => {
+                ExcelVbeFixture.Run(host =>
+                {
                     Assert.AreNotEqual(originalPid, host.ProcessId, "A distinct Excel process is required.");
                     report["FreshProcessId"] = host.ProcessId;
                     host.OpenOwnedReadOnlyWorkbook(saved);
@@ -118,7 +125,8 @@ namespace VBAi.Tests.Integration
                     Assert.AreEqual(savedHash, BaselineFileHash(saved), "Read-only reopen/export must preserve the saved file.");
                     report["Stage"] = "fresh-process-observed";
                     write();
-                }, host => {
+                }, host =>
+                {
                     report["FreshShutdown"] = host.ShutdownDiagnostics;
                     write();
                 });
@@ -139,8 +147,10 @@ namespace VBAi.Tests.Integration
         private static object[] DescribeNativeDifferences(IDictionary<string, object> expected, IDictionary<string, object> actual)
         {
             return expected.Keys.Union(actual.Keys).Where(key => !expected.ContainsKey(key) || !actual.ContainsKey(key) ||
-                !Equals(expected[key], actual[key])).Select(key => (object)new {
-                    Property = key, Expected = expected.ContainsKey(key) ? expected[key] : null,
+                !Equals(expected[key], actual[key])).Select(key => (object)new
+                {
+                    Property = key,
+                    Expected = expected.ContainsKey(key) ? expected[key] : null,
                     Actual = actual.ContainsKey(key) ? actual[key] : null
                 }).ToArray();
         }

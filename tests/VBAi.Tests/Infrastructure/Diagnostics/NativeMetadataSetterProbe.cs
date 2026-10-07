@@ -23,7 +23,8 @@ namespace VBAi.Tests.Integration
                 var invoke = (InvokeDelegate)Marshal.GetDelegateForFunctionPointer(
                     Marshal.ReadIntPtr(Marshal.ReadIntPtr(dispatch), 6 * IntPtr.Size), typeof(InvokeDelegate));
                 var exception = new EXCEPINFO(); uint argumentError = 0;
-                var row = PutRawCore(property, value, (parameters, result) => {
+                var row = PutRawCore(property, value, (parameters, result) =>
+                {
                     Guid iid = Guid.Empty;
                     return invoke(dispatch, property == "HelpFile" ? 116 : 117, ref iid,
                         (uint)CultureInfo.InvariantCulture.LCID, 4 /* DISPATCH_PROPERTYPUT */,
@@ -43,19 +44,29 @@ namespace VBAi.Tests.Integration
         internal static IDictionary<string, object> PutRawCore(string property, object value, Func<DISPPARAMS, IntPtr, int> invoke)
         {
             Validate(property, value);
-            var row = new Dictionary<string, object> { ["Property"] = property, ["Dispid"] = property == "HelpFile" ? 116 : 117,
-                ["Flags"] = "DISPATCH_PROPERTYPUT only", ["Locale"] = CultureInfo.InvariantCulture.LCID,
-                ["NamedDispid"] = -3, ["ArgumentCount"] = 1, ["NamedArgumentCount"] = 1,
-                ["InvokeEntries"] = 0, ["MutationRetryAllowed"] = false,
-                ["ReturnVariant"] = new Dictionary<string, object> { ["State"] = "NOT_CALLED" } };
+            var row = new Dictionary<string, object>
+            {
+                ["Property"] = property,
+                ["Dispid"] = property == "HelpFile" ? 116 : 117,
+                ["Flags"] = "DISPATCH_PROPERTYPUT only",
+                ["Locale"] = CultureInfo.InvariantCulture.LCID,
+                ["NamedDispid"] = -3,
+                ["ArgumentCount"] = 1,
+                ["NamedArgumentCount"] = 1,
+                ["InvokeEntries"] = 0,
+                ["MutationRetryAllowed"] = false,
+                ["ReturnVariant"] = new Dictionary<string, object> { ["State"] = "NOT_CALLED" }
+            };
             IntPtr named = Marshal.AllocHGlobal(sizeof(int));
             try
             {
                 Marshal.WriteInt32(named, -3); // DISPID_PROPERTYPUT, required by the IDispatch contract.
-                row["ArgumentVariant"] = NativeMetadataGetterProbe.ReadVariant(argument => {
+                row["ArgumentVariant"] = NativeMetadataGetterProbe.ReadVariant(argument =>
+                {
                     Marshal.GetNativeVariantForObject(value, argument);
                     var parameters = new DISPPARAMS { rgvarg = argument, rgdispidNamedArgs = named, cArgs = 1, cNamedArgs = 1 };
-                    row["ReturnVariant"] = NativeMetadataGetterProbe.ReadVariant(result => {
+                    row["ReturnVariant"] = NativeMetadataGetterProbe.ReadVariant(result =>
+                    {
                         row["InvokeEntries"] = 1; // Entry attempted, not evidence that the host changed the property.
                         return invoke(parameters, result);
                     });

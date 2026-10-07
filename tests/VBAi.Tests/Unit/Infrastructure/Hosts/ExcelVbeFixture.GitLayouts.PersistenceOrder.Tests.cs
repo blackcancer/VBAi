@@ -1,7 +1,7 @@
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Collections.Generic;
 using System.IO;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 using VBAi.Tests.Integration;
 
 namespace VBAi.Tests.Unit
@@ -63,7 +63,8 @@ namespace VBAi.Tests.Unit
         {
             var events = new List<string>();
             var failure = new IOException("Synthetic " + failingPhase + " failure");
-            Action<string> visit = phase => {
+            Action<string> visit = phase =>
+            {
                 events.Add(phase);
                 if (phase == failingPhase) throw failure;
             };

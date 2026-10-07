@@ -1,7 +1,7 @@
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.ComponentModel;
 using System.Runtime.InteropServices;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 using VBAi.Tests.Integration;
 
 namespace VBAi.Tests.Unit
@@ -125,7 +125,8 @@ namespace VBAi.Tests.Unit
             foreach (int count in new[] { 0, 1, 8192 })
             {
                 int names = 0, visits = 0;
-                IsolatedTestDesktop.InventoryNamedWindows(desktop, () => { names++; return desktop; }, callback => {
+                IsolatedTestDesktop.InventoryNamedWindows(desktop, () => { names++; return desktop; }, callback =>
+                {
                     for (int index = 0; index < count; index++) Assert.IsTrue(callback(new IntPtr(index + 1)));
                     return new IsolatedTestDesktop.WindowEnumeration { Completed = count != 0, Error = 0 };
                 }, unused => { visits++; return true; });
@@ -135,7 +136,8 @@ namespace VBAi.Tests.Unit
             {
                 int names = 0, visits = 0;
                 Assert.ThrowsException<InvalidOperationException>(() => IsolatedTestDesktop.InventoryNamedWindows(desktop,
-                    () => { names++; return desktop; }, callback => {
+                    () => { names++; return desktop; }, callback =>
+                    {
                         if (failure == 0) return null;
                         if (failure == 1) return new IsolatedTestDesktop.WindowEnumeration { Completed = false, Error = 5 };
                         int bound = failure == 2 ? 1 : 8193;
@@ -159,7 +161,8 @@ namespace VBAi.Tests.Unit
                 int names = 0;
                 Action run = () => IsolatedTestDesktop.InventoryNamedWindows(desktop,
                     () => { if (++names == 1 || failure == 0) return desktop; if (failure == 1) return "Default"; throw recheck; },
-                    callback => {
+                    callback =>
+                    {
                         Assert.IsFalse(callback(new IntPtr(1)));
                         if (failure == 3) throw new InvalidOperationException("Enumeration also failed");
                         return new IsolatedTestDesktop.WindowEnumeration { Completed = false };

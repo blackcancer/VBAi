@@ -1,7 +1,7 @@
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace VBAi.Tests.Unit
 {
@@ -12,12 +12,24 @@ namespace VBAi.Tests.Unit
             new GitModalSession.Request(action, "revision", "message", "choice", "Module1", new[] { "Module1" }, true, "expected-state");
 
         [DataTestMethod]
-        [DataRow("checkpoint_restore", true)][DataRow("branch_switch", true)][DataRow("module_restore", true)]
-        [DataRow("pull", true)][DataRow("merge_complete", true)][DataRow("rollback", true)]
-        [DataRow("checkpoint_create", false)][DataRow("branch_create", false)][DataRow("branch_track", false)]
-        [DataRow("commit", false)][DataRow("commit_selected", false)][DataRow("fetch", false)][DataRow("push", false)]
-        [DataRow("merge_begin", false)][DataRow("merge_resolve", false)][DataRow("merge_abort", false)]
-        [DataRow("remote_branches", false)][DataRow("pr_prepare", false)]
+        [DataRow("checkpoint_restore", true)]
+        [DataRow("branch_switch", true)]
+        [DataRow("module_restore", true)]
+        [DataRow("pull", true)]
+        [DataRow("merge_complete", true)]
+        [DataRow("rollback", true)]
+        [DataRow("checkpoint_create", false)]
+        [DataRow("branch_create", false)]
+        [DataRow("branch_track", false)]
+        [DataRow("commit", false)]
+        [DataRow("commit_selected", false)]
+        [DataRow("fetch", false)]
+        [DataRow("push", false)]
+        [DataRow("merge_begin", false)]
+        [DataRow("merge_resolve", false)]
+        [DataRow("merge_abort", false)]
+        [DataRow("remote_branches", false)]
+        [DataRow("pr_prepare", false)]
         public void OnlyTheSixImportActionsRequireModalReturn(string action, bool expected)
         { Assert.AreEqual(expected, GitModalSession.RequiresHandoff(action)); }
 
@@ -27,7 +39,8 @@ namespace VBAi.Tests.Unit
         {
             var events = new List<string>(); var request = Request(action); GitModalSession session = null;
             Task work = null; int shows = 0;
-            session = new GitModalSession(() => {
+            session = new GitModalSession(() =>
+            {
                 shows++;
                 if (shows == 1)
                 {
@@ -45,7 +58,8 @@ namespace VBAi.Tests.Unit
         private static async Task Execute(Task admission, Action execute, GitModalSession.Request request)
         {
             Exception failure = null;
-            try { await admission; execute(); } catch (Exception error) { failure = error; }
+            try { await admission; execute(); }
+            catch (Exception error) { failure = error; }
             finally { request.Complete(failure); }
         }
 
@@ -54,7 +68,8 @@ namespace VBAi.Tests.Unit
         {
             var original = new InvalidOperationException(stage); var request = Request(); GitModalSession session = null;
             Task work = null; int shows = 0, executions = 0;
-            session = new GitModalSession(() => {
+            session = new GitModalSession(() =>
+            {
                 if (++shows != 1) return;
                 var admission = session.Queue(request, () => { if (stage == "leave") throw original; });
                 work = Execute(admission, () => { executions++; if (stage == "execute") throw original; }, request);
@@ -85,7 +100,8 @@ namespace VBAi.Tests.Unit
         public async Task PendingCompletionKeepsTheSessionAliveAndForbidsAnotherRunOrRequest()
         {
             var request = Request(); GitModalSession session = null; int shows = 0;
-            session = new GitModalSession(() => {
+            session = new GitModalSession(() =>
+            {
                 if (++shows != 1) return;
                 session.Queue(request, () => { });
                 Assert.ThrowsException<InvalidOperationException>(() => session.Queue(Request(), () => Assert.Fail()));
@@ -182,7 +198,8 @@ namespace VBAi.Tests.Unit
         {
             var request = Request(); var candidate = kind == "exact" ? request : kind == "foreign" ? Request() : null;
             int checks = 0, shows = 0; GitModalSession session = null;
-            session = new GitModalSession(() => {
+            session = new GitModalSession(() =>
+            {
                 Assert.ThrowsException<InvalidOperationException>(() => session.RequireImportOwner(candidate));
                 if (++shows == 1) session.Queue(request, () => { });
             }, () => checks++);

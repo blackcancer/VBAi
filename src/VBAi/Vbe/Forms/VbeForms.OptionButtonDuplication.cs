@@ -41,9 +41,7 @@ namespace VBAi
                 throw new InvalidOperationException("Only native MSForms OptionButton controls are supported by this probe.");
             object owner = parts.Length == 2 ? (object)form.Designer :
                 ResolveTreeItem(form.Designer, string.Join("/", parts.Take(parts.Length - 2)));
-            PropertyDescriptor controlsProperty = TypeDescriptor.GetProperties(owner).Find("Controls", true);
-            if (controlsProperty == null)
-                throw new InvalidOperationException("The parent has no Controls collection.");
+            PropertyDescriptor controlsProperty = TypeDescriptor.GetProperties(owner).Find("Controls", true) ?? throw new InvalidOperationException("The parent has no Controls collection.");
             dynamic controls = controlsProperty.GetValue(owner);
             foreach (dynamic existing in controls)
                 if (string.Equals((string)existing.Name, request.NewName, StringComparison.OrdinalIgnoreCase))
@@ -85,9 +83,16 @@ namespace VBAi
                     Math.Abs(Convert.ToDouble(installed.Width, CultureInfo.InvariantCulture) - width) > 0.01 ||
                     Math.Abs(Convert.ToDouble(installed.Height, CultureInfo.InvariantCulture) - height) > 0.01)
                     throw new InvalidOperationException("The duplicate did not retain the supported OptionButton properties.");
-                return new { SourcePath = request.ControlPath, NewPath = newPath,
+                return new
+                {
+                    SourcePath = request.ControlPath,
+                    NewPath = newPath,
                     CopiedProperties = new[] { "Name", "Caption", "Left", "Top", "Width", "Height" },
-                    Completeness = "Partial", SelectionCopied = false, GroupCopied = false, Tree = after };
+                    Completeness = "Partial",
+                    SelectionCopied = false,
+                    GroupCopied = false,
+                    Tree = after
+                };
             }
             catch
             {

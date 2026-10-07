@@ -1,13 +1,11 @@
-    namespace VBAi.Tests.Unit
+namespace VBAi.Tests.Unit
 {
+    using Microsoft.VisualStudio.TestTools.UnitTesting;
     using System;
-    using System.Drawing;
-    using System.Reflection;
     using System.Runtime.Serialization;
     using System.Threading.Tasks;
     using System.Windows.Forms;
     using VBAi;
-    using Microsoft.VisualStudio.TestTools.UnitTesting;
 
     /// <summary>Vérifie l’état des commandes et contrôles de GitWindow pendant les opérations.</summary>
     public sealed partial class GitWindowStateTests
@@ -100,21 +98,21 @@
 
 namespace VBAi.Tests.Unit
 {
+    using Microsoft.VisualStudio.TestTools.UnitTesting;
     using System;
     using System.IO;
     using System.Threading.Tasks;
     using System.Windows.Forms;
     using VBAi;
-    using Microsoft.VisualStudio.TestTools.UnitTesting;
 
     [TestClass]
     [TestCategory("Unit")]
-        /// <summary>Vérifie les opérations de dépôt, les conflits et l’état de la fenêtre Git.</summary>
-[DoNotParallelize]
+    /// <summary>Vérifie les opérations de dépôt, les conflits et l’état de la fenêtre Git.</summary>
+    [DoNotParallelize]
     public sealed partial class GitWindowCoverageTests
     {
-                /// <summary>Connecte un dépôt Git local et vérifie la sauvegarde et le remplacement de la liaison.</summary>
-[WinFormsTestMethod]
+        /// <summary>Connecte un dépôt Git local et vérifie la sauvegarde et le remplacement de la liaison.</summary>
+        [WinFormsTestMethod]
         public void ConnectUsesRealLocalGitAndPersistsAndReplacesBinding()
         {
             using (var f = new Fixture(false))
@@ -133,8 +131,8 @@ namespace VBAi.Tests.Unit
             }
         }
 
-                /// <summary>Vérifie verrouillage, actualisation, annulation et fermeture pendant les opérations.</summary>
-[WinFormsTestMethod]
+        /// <summary>Vérifie verrouillage, actualisation, annulation et fermeture pendant les opérations.</summary>
+        [WinFormsTestMethod]
         public void PerformLockBranchRefreshCancellationAndClosingMatrix()
         {
             using (var f = new Fixture())
@@ -157,8 +155,8 @@ namespace VBAi.Tests.Unit
             }
         }
 
-                /// <summary>Compare l’état courant à la base et vérifie les imports interrompus ou modifiés.</summary>
-[WinFormsTestMethod]
+        /// <summary>Compare l’état courant à la base et vérifie les imports interrompus ou modifiés.</summary>
+        [WinFormsTestMethod]
         public void CompareTracksBaselineDirtyAndInterruptedImportStates()
         {
             using (var f = new Fixture())
@@ -175,8 +173,8 @@ namespace VBAi.Tests.Unit
             }
         }
 
-                /// <summary>Exécute les actions de branche, point de contrôle, distant et fusion sur Git local.</summary>
-[WinFormsTestMethod]
+        /// <summary>Exécute les actions de branche, point de contrôle, distant et fusion sur Git local.</summary>
+        [WinFormsTestMethod]
         public void BranchCheckpointRemoteAndMergeActionsUseNativeGitAndReturnToLiveState()
         {
             using (var f = new Fixture())
@@ -197,8 +195,8 @@ namespace VBAi.Tests.Unit
             }
         }
 
-                /// <summary>Vérifie les aperçus de conflit et les choix textuels « ours » et « theirs ».</summary>
-[WinFormsTestMethod]
+        /// <summary>Vérifie les aperçus de conflit et les choix textuels « ours » et « theirs ».</summary>
+        [WinFormsTestMethod]
         public void ConflictPreviewAndOursTheirsTextResolutionMatrix()
         {
             foreach (string choice in new[] { "ours", "theirs", "text" })
@@ -223,8 +221,8 @@ namespace VBAi.Tests.Unit
             }
         }
 
-                /// <summary>Vérifie les commits, la synchronisation, les états obsolètes et le statut des opérations.</summary>
-[WinFormsTestMethod]
+        /// <summary>Vérifie les commits, la synchronisation, les états obsolètes et le statut des opérations.</summary>
+        [WinFormsTestMethod]
         public void CommitSynchronizationStaleStateAndOperationStatusMatrix()
         {
             using (var f = new Fixture())
@@ -265,8 +263,8 @@ namespace VBAi.Tests.Unit
             }
         }
 
-                /// <summary>Vérifie les conflits binaires et les changements de sélection pendant la lecture.</summary>
-[WinFormsTestMethod]
+        /// <summary>Vérifie les conflits binaires et les changements de sélection pendant la lecture.</summary>
+        [WinFormsTestMethod]
         public void BinaryConflictPreviewAndSelectionChangesDuringReadAreHandled()
         {
             foreach (int selection in new[] { 0, -1, 1 })
@@ -275,8 +273,11 @@ namespace VBAi.Tests.Unit
                 {
                     Func<byte, VbaGitSnapshot> snapshot = resource => new VbaGitSnapshot(
                         new VbaGitManifest { References = "", Components = new[] { new VbaGitComponent { Name = "Form1", Type = 3, HasResources = true } } },
-                        new System.Collections.Generic.Dictionary<string, byte[]> {
-                            ["Form1.frm"] = VbaGitSnapshot.Utf8.GetBytes("Attribute VB_Name = \"Form1\"\n"), ["Form1.frx"] = new byte[] { 0, resource } });
+                        new System.Collections.Generic.Dictionary<string, byte[]>
+                        {
+                            ["Form1.frm"] = VbaGitSnapshot.Utf8.GetBytes("Attribute VB_Name = \"Form1\"\n"),
+                            ["Form1.frx"] = new byte[] { 0, resource }
+                        });
                     string initial = f.Git.Commit(snapshot(1)); f.Git.Repository.SetRef(f.Git.Repository.Head, initial);
                     f.Git.Repository.CreateBranch("feature"); f.Git.Repository.SetRef("refs/heads/feature", f.Git.Commit(snapshot(2), initial));
                     f.Git.Repository.SetRef(f.Git.Repository.Head, f.Git.Commit(snapshot(3), initial));
@@ -286,7 +287,8 @@ namespace VBAi.Tests.Unit
                     using (var changed = new System.Threading.ManualResetEventSlim())
                     {
                         int called = 0;
-                        if (selection != 0) f.Git.Repository.Progress = _ => {
+                        if (selection != 0) f.Git.Repository.Progress = _ =>
+                        {
                             if (System.Threading.Interlocked.Increment(ref called) != 1) return;
                             f.Window.BeginInvoke(new Action(() => { conflicts.SelectedIndex = selection; changed.Set(); }));
                             if (!changed.Wait(TimeSpan.FromSeconds(10))) throw new TimeoutException("Selection change was not processed.");

@@ -1,11 +1,10 @@
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Windows;
-using Forms = System.Windows.Forms;
-using VBAi;
 using VBAi.Tests.Infrastructure;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
+using Forms = System.Windows.Forms;
 namespace VBAi.Tests.Unit
 {
     /// <summary>Vérifie l’intégration du diff Designer dans le transcript WPF.</summary>

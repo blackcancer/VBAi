@@ -1,10 +1,10 @@
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Linq;
-using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Text;
@@ -73,8 +73,7 @@ namespace VBAi
             /// <returns>Identifiant du processus associé à la fenêtre.</returns>
             public uint WindowProcessId(IntPtr window)
             {
-                uint processId;
-                GetWindowThreadProcessId(window, out processId);
+                GetWindowThreadProcessId(window, out uint processId);
                 return processId;
             }
         }
@@ -122,14 +121,30 @@ namespace VBAi
                 components.Add(new { Name = (string)component.Name, Type = (int)component.Type });
             var references = new List<object>();
             foreach (dynamic reference in project.References)
-                references.Add(new { Guid = (string)reference.GUID,
-                    Major = (int)reference.Major, Minor = (int)reference.Minor,
-                    IsBroken = (bool)reference.IsBroken, BuiltIn = (bool)reference.BuiltIn });
-            string version = Hash(json.Serialize(new { Mode = (int)project.Mode,
-                Properties = properties, Components = components, References = references }));
-            return new { Project = (string)project.Name, Mode = (int)project.Mode,
-                Version = version, Properties = properties, Components = components,
-                References = references };
+                references.Add(new
+                {
+                    Guid = (string)reference.GUID,
+                    Major = (int)reference.Major,
+                    Minor = (int)reference.Minor,
+                    IsBroken = (bool)reference.IsBroken,
+                    BuiltIn = (bool)reference.BuiltIn
+                });
+            string version = Hash(json.Serialize(new
+            {
+                Mode = (int)project.Mode,
+                Properties = properties,
+                Components = components,
+                References = references
+            }));
+            return new
+            {
+                Project = (string)project.Name,
+                Mode = (int)project.Mode,
+                Version = version,
+                Properties = properties,
+                Components = components,
+                References = references
+            };
         }
 
         /// <summary>Retourne l’instantané détaillé d’un composant de projet.</summary>
@@ -149,15 +164,27 @@ namespace VBAi
         {
             dynamic project = GetProject(projectName);
             if (!host.IsExcel)
-                return new { Project = projectName, Available = false, Signed = (bool?)null,
-                    Source = "Host", Reason = "This host does not expose Excel.Workbook.VBASigned." };
+                return new
+                {
+                    Project = projectName,
+                    Available = false,
+                    Signed = (bool?)null,
+                    Source = "Host",
+                    Reason = "This host does not expose Excel.Workbook.VBASigned."
+                };
             try
             {
                 dynamic excel = host.ExcelApplication();
                 uint excelProcessId = host.WindowProcessId(new IntPtr(Convert.ToInt64(excel.Hwnd)));
                 if (excelProcessId != (uint)host.CurrentProcessId)
-                    return new { Project = projectName, Available = false, Signed = (bool?)null,
-                        Source = "Excel.Workbook.VBASigned", Reason = "The registered Excel instance is not this VBE host. Registered PID=" + excelProcessId + ", VBE PID=" + host.CurrentProcessId };
+                    return new
+                    {
+                        Project = projectName,
+                        Available = false,
+                        Signed = (bool?)null,
+                        Source = "Excel.Workbook.VBASigned",
+                        Reason = "The registered Excel instance is not this VBE host. Registered PID=" + excelProcessId + ", VBE PID=" + host.CurrentProcessId
+                    };
                 string projectPath = null;
                 try { projectPath = (string)project.FileName; }
                 catch { /* An unsaved workbook may have no project path. */ }
@@ -170,16 +197,34 @@ namespace VBAi
                          string.Equals(Path.GetFullPath((string)workbook.FullName),
                              Path.GetFullPath(projectPath), StringComparison.OrdinalIgnoreCase));
                     if (!matches) continue;
-                    return new { Project = projectName, Available = true, Signed = (bool?)((bool)workbook.VBASigned),
-                        Source = "Excel.Workbook.VBASigned", Reason = (string)null };
+                    return new
+                    {
+                        Project = projectName,
+                        Available = true,
+                        Signed = (bool?)((bool)workbook.VBASigned),
+                        Source = "Excel.Workbook.VBASigned",
+                        Reason = (string)null
+                    };
                 }
-                return new { Project = projectName, Available = false, Signed = (bool?)null,
-                    Source = "Excel.Workbook.VBASigned", Reason = "No workbook matches the selected VBE project." };
+                return new
+                {
+                    Project = projectName,
+                    Available = false,
+                    Signed = (bool?)null,
+                    Source = "Excel.Workbook.VBASigned",
+                    Reason = "No workbook matches the selected VBE project."
+                };
             }
             catch (Exception ex)
             {
-                return new { Project = projectName, Available = false, Signed = (bool?)null,
-                    Source = "Excel.Workbook.VBASigned", Reason = ex.Message };
+                return new
+                {
+                    Project = projectName,
+                    Available = false,
+                    Signed = (bool?)null,
+                    Source = "Excel.Workbook.VBASigned",
+                    Reason = ex.Message
+                };
             }
         }
 
@@ -203,26 +248,47 @@ namespace VBAi
                 if (other.HostKind != null) return OtherHostPersistence(projectName, other);
             }
             if (!host.IsExcel)
-                return new { Project = projectName, ProjectSaved = projectSaved,
-                    HostAvailable = false, HostPath = (string)null, HostSaved = (bool?)null,
-                    HostReadOnly = (bool?)null, HostHasPath = (bool?)null,
-                    Reason = "The host is not Excel; its document save state is unavailable." };
+                return new
+                {
+                    Project = projectName,
+                    ProjectSaved = projectSaved,
+                    HostAvailable = false,
+                    HostPath = (string)null,
+                    HostSaved = (bool?)null,
+                    HostReadOnly = (bool?)null,
+                    HostHasPath = (bool?)null,
+                    Reason = "The host is not Excel; its document save state is unavailable."
+                };
             try
             {
                 dynamic workbook = MatchExcelWorkbook(project, true);
                 string path = (string)workbook.Path;
                 bool hasPath = !string.IsNullOrWhiteSpace(path);
-                return new { Project = projectName, ProjectSaved = projectSaved,
-                    HostAvailable = true, HostPath = hasPath ? (string)workbook.FullName : null,
+                return new
+                {
+                    Project = projectName,
+                    ProjectSaved = projectSaved,
+                    HostAvailable = true,
+                    HostPath = hasPath ? (string)workbook.FullName : null,
                     HostSaved = (bool?)((bool)workbook.Saved),
                     HostReadOnly = (bool?)((bool)workbook.ReadOnly),
-                    HostHasPath = (bool?)hasPath, Reason = (string)null };
+                    HostHasPath = (bool?)hasPath,
+                    Reason = (string)null
+                };
             }
             catch (Exception ex)
             {
-                return new { Project = projectName, ProjectSaved = projectSaved,
-                    HostAvailable = false, HostPath = (string)null, HostSaved = (bool?)null,
-                    HostReadOnly = (bool?)null, HostHasPath = (bool?)null, Reason = ex.Message };
+                return new
+                {
+                    Project = projectName,
+                    ProjectSaved = projectSaved,
+                    HostAvailable = false,
+                    HostPath = (string)null,
+                    HostSaved = (bool?)null,
+                    HostReadOnly = (bool?)null,
+                    HostHasPath = (bool?)null,
+                    Reason = ex.Message
+                };
             }
         }
 
@@ -267,12 +333,18 @@ namespace VBAi
             if (!hostSaved || !projectSaved)
                 throw new InvalidOperationException("Excel did not mark the workbook and VBA project as saved; a BeforeSave handler may have cancelled the save. Inspect the result; do not retry automatically.");
             AssertExcelSaveIdentity(workbook, project, projectPath, fileFormat);
-            return new { Project = request.Project, HostPath = projectPath,
-                SaveInvoked = true, HostSavedBefore = beforeHostSaved,
-                ProjectSavedBefore = beforeProjectSaved, HostSaved = hostSaved,
+            return new
+            {
+                request.Project,
+                HostPath = projectPath,
+                SaveInvoked = true,
+                HostSavedBefore = beforeHostSaved,
+                ProjectSavedBefore = beforeProjectSaved,
+                HostSaved = hostSaved,
                 ProjectSaved = projectSaved,
                 Verification = "ExcelWorkbookSaveAndSavedReadback",
-                Limit = "The host reported Saved=true. Reopen the file to verify that a specific code edit persisted on disk." };
+                Limit = "The host reported Saved=true. Reopen the file to verify that a specific code edit persisted on disk."
+            };
         }
 
         /// <summary>Rejects path or format changes made by save event handlers without replaying the mutation.</summary>
@@ -361,11 +433,18 @@ namespace VBAi
                 !File.Exists(path) || !(bool)workbook.Saved || !(bool)project.Saved)
                 throw new InvalidOperationException("Excel SaveAs returned without matching saved workbook and project paths.");
             AssertExcelSaveIdentity(workbook, project, path, 52);
-            return new { Project = request.Project, HostPath = actual, ProjectPath = projectPath,
-                SaveAsInvoked = true, Bytes = new FileInfo(path).Length,
-                HostSaved = true, ProjectSaved = true,
+            return new
+            {
+                request.Project,
+                HostPath = actual,
+                ProjectPath = projectPath,
+                SaveAsInvoked = true,
+                Bytes = new FileInfo(path).Length,
+                HostSaved = true,
+                ProjectSaved = true,
                 Verification = "ExcelWorkbookAndProjectPathReadback",
-                Limit = "Reopen the .xlsm to verify persistence of a specific VBA edit." };
+                Limit = "Reopen the .xlsm to verify persistence of a specific VBA edit."
+            };
         }
 
         /// <summary>Associe le projet au classeur Excel du même hôte en comparant leurs chemins complets.</summary>
@@ -406,8 +485,12 @@ namespace VBAi
         public object PersistExcelSignature(string projectName)
         {
             if (!host.IsExcel)
-                return new { Available = false, Saved = false,
-                    Reason = "The host is not Excel; save the host document with its native command." };
+                return new
+                {
+                    Available = false,
+                    Saved = false,
+                    Reason = "The host is not Excel; save the host document with its native command."
+                };
             dynamic project = GetProject(projectName);
             string projectPath = (string)project.FileName;
             if (string.IsNullOrWhiteSpace(projectPath) || !Path.IsPathRooted(projectPath))
@@ -435,9 +518,15 @@ namespace VBAi
                 throw new InvalidOperationException("Excel did not mark the signed workbook and VBA project as saved. Inspect the result; do not retry automatically.");
             AssertExcelSaveIdentity(match, project, projectPath, fileFormat);
             if (!(bool)match.VBASigned) throw new InvalidOperationException("Excel no longer reports the VBA project as signed after saving.");
-            return new { Available = true, Saved = true, Path = projectPath,
-                Signed = true, Verification = "ExcelWorkbookSaveAndVBASignedReadback",
-                Limit = "A reopening check is needed to prove the signature persisted on disk." };
+            return new
+            {
+                Available = true,
+                Saved = true,
+                Path = projectPath,
+                Signed = true,
+                Verification = "ExcelWorkbookSaveAndVBASignedReadback",
+                Limit = "A reopening check is needed to prove the signature persisted on disk."
+            };
         }
 
         /// <summary>Lit individuellement une propriété de concepteur du composant nommé.</summary>
@@ -469,8 +558,12 @@ namespace VBAi
                     return new { Name = (string)component.Name, Type = (int)component.Type };
                 case "descriptor_names":
                     return TypeDescriptor.GetProperties((object)component)
-                        .Cast<PropertyDescriptor>().Select(item => new { item.Name,
-                            Type = item.PropertyType?.FullName, item.IsReadOnly }).ToArray();
+                        .Cast<PropertyDescriptor>().Select(item => new
+                        {
+                            item.Name,
+                            Type = item.PropertyType?.FullName,
+                            item.IsReadOnly
+                        }).ToArray();
                 case "designer_property_names":
                     var names = new List<string>();
                     foreach (dynamic property in component.Properties) names.Add((string)property.Name);
@@ -480,24 +573,33 @@ namespace VBAi
                 case "code_sha":
                     dynamic module = component.CodeModule;
                     int lines = (int)module.CountOfLines;
-                    return new { Lines = lines,
-                        Sha256 = Hash(lines == 0 ? "" : (string)module.Lines(1, lines)) };
+                    return new
+                    {
+                        Lines = lines,
+                        Sha256 = Hash(lines == 0 ? "" : (string)module.Lines(1, lines))
+                    };
                 case "descriptor_value":
-                    PropertyDescriptor descriptor = TypeDescriptor.GetProperties((object)component).Find(propertyName, true);
-                    if (descriptor == null) throw new ArgumentException("Descriptor not found: " + propertyName);
+                    PropertyDescriptor descriptor = TypeDescriptor.GetProperties((object)component).Find(propertyName, true) ?? throw new ArgumentException("Descriptor not found: " + propertyName);
                     object value = descriptor.GetValue((object)component);
-                    return new { Name = descriptor.Name, Type = descriptor.PropertyType?.FullName,
+                    return new
+                    {
+                        descriptor.Name,
+                        Type = descriptor.PropertyType?.FullName,
                         Kind = value != null && Marshal.IsComObject(value) ? "object" : "scalar",
-                        Value = value != null && Marshal.IsComObject(value) ? null : Scalar(value) };
+                        Value = value != null && Marshal.IsComObject(value) ? null : Scalar(value)
+                    };
                 case "designer_property_value":
                     if ((int)component.Type == 100 &&
                         string.Equals(propertyName, "MailEnvelope", StringComparison.OrdinalIgnoreCase))
                         throw new InvalidOperationException("MailEnvelope blocks the Excel document-component COM inspector and is not read automatically.");
                     dynamic selectedProperty = component.Properties.Item(propertyName);
                     object designerValue = selectedProperty.Value;
-                    return new { Name = (string)selectedProperty.Name,
+                    return new
+                    {
+                        Name = (string)selectedProperty.Name,
                         Kind = designerValue != null && Marshal.IsComObject(designerValue) ? "object" : "scalar",
-                        Value = designerValue != null && Marshal.IsComObject(designerValue) ? null : Scalar(designerValue) };
+                        Value = designerValue != null && Marshal.IsComObject(designerValue) ? null : Scalar(designerValue)
+                    };
                 default:
                     throw new ArgumentException("Unsupported component probe Action.");
             }
@@ -546,14 +648,29 @@ namespace VBAi
                 dynamic state = forms.State(projectName, name);
                 formVersion = (string)state.Version;
             }
-            string version = Hash(json.Serialize(new { Name = name, Type = type,
-                Properties = properties, DesignerProperties = designerProperties,
+            string version = Hash(json.Serialize(new
+            {
+                Name = name,
+                Type = type,
+                Properties = properties,
+                DesignerProperties = designerProperties,
                 HostProperties = hostProperties,
-                CodeSha256 = codeHash, FormVersion = formVersion }));
-            return new { Project = projectName, Component = name, Type = type,
-                Version = version, CodeSha256 = codeHash, CodeLines = lineCount,
-                FormVersion = formVersion, Properties = properties,
-                DesignerProperties = designerProperties, HostProperties = hostProperties };
+                CodeSha256 = codeHash,
+                FormVersion = formVersion
+            }));
+            return new
+            {
+                Project = projectName,
+                Component = name,
+                Type = type,
+                Version = version,
+                CodeSha256 = codeHash,
+                CodeLines = lineCount,
+                FormVersion = formVersion,
+                Properties = properties,
+                DesignerProperties = designerProperties,
+                HostProperties = hostProperties
+            };
         }
 
         /// <summary>Modifie une propriété scalaire exposée du projet en mode conception et retourne son nouvel instantané.</summary>
@@ -612,9 +729,15 @@ namespace VBAi
             if (before != requested) property.Value = requested;
             int actual = Convert.ToInt32(property.Value, CultureInfo.InvariantCulture);
             if (actual != requested) throw new InvalidOperationException("The VBE did not retain class Instancing.");
-            return new { Project = request.Project, Class = request.Module, Before = before,
-                Instancing = actual, Meaning = actual == 1 ? "Private" : "PublicNotCreatable",
-                Component = ComponentSnapshot(request.Project, component) };
+            return new
+            {
+                request.Project,
+                Class = request.Module,
+                Before = before,
+                Instancing = actual,
+                Meaning = actual == 1 ? "Private" : "PublicNotCreatable",
+                Component = ComponentSnapshot(request.Project, component)
+            };
         }
 
         /// <summary>Renomme un composant de projet après validation de l’identifiant et de la version attendue.</summary>
@@ -699,12 +822,19 @@ namespace VBAi
             object projectState = TryImmediateRead(() => ProjectProperties(request.Project),
                 out string projectError);
             bool verified = importedState != null && projectState != null;
-            return new { Applied = true, Verified = verified, VerificationPending = !verified,
+            return new
+            {
+                Applied = true,
+                Verified = verified,
+                VerificationPending = !verified,
                 ImportedName = importedName,
-                Imported = importedState, Project = projectState,
-                ImportError = importError?.Message, ComponentReadbackError = componentError,
+                Imported = importedState,
+                Project = projectState,
+                ImportError = importError?.Message,
+                ComponentReadbackError = componentError,
                 ProjectReadbackError = projectError,
-                NextRead = verified ? null : "Call component_properties and project_properties in a separate request before another mutation." };
+                NextRead = verified ? null : "Call component_properties and project_properties in a separate request before another mutation."
+            };
         }
 
         /// <summary>Tente une lecture immédiate et retourne son erreur sous forme de texte sans propager l’exception.</summary>
@@ -736,9 +866,14 @@ namespace VBAi
                 throw new IOException("The UserForm FRX companion destination already exists.");
             component.Export(path);
             if (!File.Exists(path)) throw new IOException("The VBE did not create the export file.");
-            return new { Project = request.Project, Component = request.Module,
-                Path = path, Bytes = new FileInfo(path).Length,
-                ComponentState = ComponentSnapshot(request.Project, component) };
+            return new
+            {
+                request.Project,
+                Component = request.Module,
+                Path = path,
+                Bytes = new FileInfo(path).Length,
+                ComponentState = ComponentSnapshot(request.Project, component)
+            };
         }
 
         /// <summary>Résout un projet dans l’instance VBE configurée.</summary>
@@ -820,8 +955,7 @@ namespace VBAi
         {
             if (string.IsNullOrWhiteSpace(name) || value == null)
                 throw new ArgumentException("Property and non-null Value are required.");
-            PropertyDescriptor descriptor = TypeDescriptor.GetProperties(target).Find(name, true);
-            if (descriptor == null) throw new InvalidOperationException("Property is not exposed: " + name);
+            PropertyDescriptor descriptor = TypeDescriptor.GetProperties(target).Find(name, true) ?? throw new InvalidOperationException("Property is not exposed: " + name);
             if (descriptor.IsReadOnly) throw new InvalidOperationException("Property is read-only: " + name);
             Type type = descriptor.PropertyType;
             if (type == typeof(object)) type = descriptor.GetValue(target)?.GetType() ?? value.GetType();
@@ -832,7 +966,7 @@ namespace VBAi
                 converted = value;
             }
             else if (type.IsEnum)
-                converted = value is string ? Enum.Parse(type, (string)value, true) :
+                converted = value is string v ? Enum.Parse(type, v, true) :
                     Enum.ToObject(type, Convert.ToInt32(value, CultureInfo.InvariantCulture));
             else if (type.IsPrimitive || type == typeof(decimal))
                 converted = Convert.ChangeType(value, type, CultureInfo.InvariantCulture);
@@ -866,8 +1000,12 @@ namespace VBAi
             var result = new List<VbePropertyInfo>();
             foreach (PropertyDescriptor descriptor in TypeDescriptor.GetProperties(target))
             {
-                var info = new VbePropertyInfo { Name = descriptor.Name,
-                    Type = descriptor.PropertyType?.FullName, ReadOnly = descriptor.IsReadOnly };
+                var info = new VbePropertyInfo
+                {
+                    Name = descriptor.Name,
+                    Type = descriptor.PropertyType?.FullName,
+                    ReadOnly = descriptor.IsReadOnly
+                };
                 if (!IsSafeScalarType(descriptor.PropertyType))
                 {
                     info.Kind = "object";

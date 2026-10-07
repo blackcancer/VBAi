@@ -87,16 +87,14 @@ namespace VBAi
         {
             try
             {
-                var definition = MonacoDefinitions.Cast<dynamic>().FirstOrDefault(d => (string)d.function.name == name);
-                if (definition == null) throw new ArgumentException("Unknown Monaco tool: " + name);
-                var values = json.DeserializeObject(arguments) as IDictionary<string, object>;
-                if (values == null) throw new ArgumentException("Tool arguments must be an object.");
+                var definition = MonacoDefinitions.Cast<dynamic>().FirstOrDefault(d => (string)d.function.name == name) ?? throw new ArgumentException("Unknown Monaco tool: " + name);
+                if (!(json.DeserializeObject(arguments) is IDictionary<string, object> values)) throw new ArgumentException("Tool arguments must be an object.");
                 var fields = (Dictionary<string, object>)definition.function.parameters.properties;
                 foreach (string field in fields.Keys)
                 {
                     if (!values.TryGetValue(field, out var value) || value == null) throw new ArgumentException(field + " is required.");
                     bool integer = field == "ExpectedVersion" || field == "StartLine" || field == "StartColumn" || field == "EndLine" || field == "EndColumn";
-                    if (integer ? !(value is int) || (int)value < 1 : !(value is string) || (field != "Text" && string.IsNullOrWhiteSpace((string)value)))
+                    if (integer ? !(value is int v) || v < 1 : !(value is string v1) || (field != "Text" && string.IsNullOrWhiteSpace(v1)))
                         throw new ArgumentException("Invalid Monaco argument: " + field);
                 }
                 foreach (string field in values.Keys) if (!fields.ContainsKey(field)) throw new ArgumentException("Unexpected argument: " + field);
@@ -119,7 +117,8 @@ namespace VBAi
                 if (window.InvokeRequired) throw new InvalidOperationException("Monaco tools must run on the owning VBE UI thread.");
                 // Native hosts need not provide an ambient managed context. Pin the
                 // complete renderer/COM operation to the already verified owning STA.
-                return await VbeUiTask.Run(async () => {
+                return await VbeUiTask.Run(async () =>
+                {
                     EditorDocument doc;
                     if (name == "monaco_open")
                     {
@@ -132,7 +131,7 @@ namespace VBAi
                     else if (edit)
                     {
                         var before = ReadCode(project, module);
-                        Action synchronizedSource = () =>
+                        void synchronizedSource()
                         {
                             // Capture the native diff before renderer/draft-worker awaits can admit
                             // unrelated user edits. A diff failure must not interrupt reconciliation.
@@ -143,7 +142,7 @@ namespace VBAi
                                     CodeEdited?.Invoke(new CodeChange(project, module, before.Code, before.Sha256, after.Code, after.Sha256, CodeRollback.Lines(after.Code).Length));
                             }
                             catch (Exception error) { WriteLog("Monaco code diff readback failed: " + error.Message); }
-                        };
+                        }
                         result = name == "monaco_edit"
                             ? await window.EditForTool(doc, (int)values["ExpectedVersion"], (string)values["Text"], synchronizedSource)
                             : await window.SynchronizeForTool(doc, (int)values["ExpectedVersion"], (string)values["ExpectedSha256"], synchronizedSource);

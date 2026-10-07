@@ -32,7 +32,8 @@ namespace VBAi.Tests.Integration
             if (recordFailure == null) throw new ArgumentNullException(nameof(recordFailure));
             var selected = new List<IntPtr>();
             var receipt = new Receipt();
-            Visitor visitor = (window, unused) => {
+            Visitor visitor = (window, unused) =>
+            {
                 if (++receipt.VisitedTotal > 4096)
                 {
                     receipt.GlobalBoundHit = true;

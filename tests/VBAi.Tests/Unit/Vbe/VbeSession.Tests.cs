@@ -6,50 +6,50 @@ namespace VBAi.Tests.Unit
         [TestMethod]
         public void SessionRestoresOnlyKnownHostProfilesFromTheirOwnTemporaryDatabase()
         {
-            using(var scope=new ProfileScope())
+            using (var scope = new ProfileScope())
             {
-                foreach(string hostName in new[] {"excel","sLdWoRkS"})
+                foreach (string hostName in new[] { "excel", "sLdWoRkS" })
                 {
-                    string path=System.IO.Path.Combine(scope.Root,"VBAi","VbeToolbars",hostName.ToUpperInvariant()+".sqlite");
-                    var profile=ProfileBar();var profiles=new VBAi.VbeToolbarProfiles(path);profiles.Update(profile.Name,profile);
-                    var host=NativeHost();int paths=0;
-                    var session=new VBAi.VbeSession(host,null,null,()=>hostName,()=>{paths++;return scope.Root;});
-                    Assert.AreEqual(1,paths);Assert.AreEqual(2,host.CommandBars.Count);Assert.AreEqual(profile.Name,host.CommandBars[1].Name);
-                    Assert.AreEqual(profile.Commands[0].Tag,host.CommandBars[1].Controls[1].Tag);
-                    var response=session.Execute(new VBAi.Request {Command="list_toolbars"});Assert.IsTrue(response.Ok,response.Error);
-                    Assert.AreEqual(0,((System.Collections.IList)Data(response.Data)["ProfileErrors"]).Count);
+                    string path = System.IO.Path.Combine(scope.Root, "VBAi", "VbeToolbars", hostName.ToUpperInvariant() + ".sqlite");
+                    var profile = ProfileBar(); var profiles = new VBAi.VbeToolbarProfiles(path); profiles.Update(profile.Name, profile);
+                    var host = NativeHost(); int paths = 0;
+                    var session = new VBAi.VbeSession(host, null, null, () => hostName, () => { paths++; return scope.Root; });
+                    Assert.AreEqual(1, paths); Assert.AreEqual(2, host.CommandBars.Count); Assert.AreEqual(profile.Name, host.CommandBars[1].Name);
+                    Assert.AreEqual(profile.Commands[0].Tag, host.CommandBars[1].Controls[1].Tag);
+                    var response = session.Execute(new VBAi.Request { Command = "list_toolbars" }); Assert.IsTrue(response.Ok, response.Error);
+                    Assert.AreEqual(0, ((System.Collections.IList)Data(response.Data)["ProfileErrors"]).Count);
                 }
-                var unknownHost=NativeHost();
-                var unknown=new VBAi.VbeSession(unknownHost,null,null,()=>"OTHER",()=>{Assert.Fail("Other processes must not read profile storage.");return scope.Root;});
-                Assert.AreEqual(1,unknownHost.CommandBars.Count);Assert.IsTrue(unknown.Execute(new VBAi.Request {Command="list_toolbars"}).Ok);
-                Assert.AreEqual(2,System.IO.Directory.GetFiles(System.IO.Path.Combine(scope.Root,"VBAi","VbeToolbars"),"*.sqlite").Length);
+                var unknownHost = NativeHost();
+                var unknown = new VBAi.VbeSession(unknownHost, null, null, () => "OTHER", () => { Assert.Fail("Other processes must not read profile storage."); return scope.Root; });
+                Assert.AreEqual(1, unknownHost.CommandBars.Count); Assert.IsTrue(unknown.Execute(new VBAi.Request { Command = "list_toolbars" }).Ok);
+                Assert.AreEqual(2, System.IO.Directory.GetFiles(System.IO.Path.Combine(scope.Root, "VBAi", "VbeToolbars"), "*.sqlite").Length);
             }
         }
 
         [TestMethod]
         public void SessionStartsWithEmptyProfilesAndReportsCorruptionWithoutDroppingServices()
         {
-            using(var scope=new ProfileScope())
+            using (var scope = new ProfileScope())
             {
-                var host=NativeHost();var empty=new VBAi.VbeSession(host,null,null,()=>"EXCEL",()=>scope.Root);
-                Assert.AreEqual(1,host.CommandBars.Count);Assert.IsTrue(empty.Execute(new VBAi.Request {Command="list_toolbars"}).Ok);
-                string path=System.IO.Path.Combine(scope.Root,"VBAi","VbeToolbars","EXCEL.sqlite");
-                using(var store=new VBAi.ChatSessionStore(path))store.UpdateToolbarProfile("Invalid",new VBAi.VbeToolbarProfiles.Bar {Name="Invalid",Commands=new VBAi.VbeToolbarProfiles.Command[0]},bars=>{});
-                var corrupt=new VBAi.VbeSession(host,null,null,()=>"EXCEL",()=>scope.Root);
-                var response=corrupt.Execute(new VBAi.Request {Command="list_toolbars"});Assert.IsTrue(response.Ok,response.Error);
-                var errors=(System.Collections.IList)Data(response.Data)["ProfileErrors"];Assert.AreEqual(1,errors.Count);
-                StringAssert.Contains((string)errors[0],"Invalid toolbar profile contents.");Assert.AreEqual(1,host.CommandBars.Count);
+                var host = NativeHost(); var empty = new VBAi.VbeSession(host, null, null, () => "EXCEL", () => scope.Root);
+                Assert.AreEqual(1, host.CommandBars.Count); Assert.IsTrue(empty.Execute(new VBAi.Request { Command = "list_toolbars" }).Ok);
+                string path = System.IO.Path.Combine(scope.Root, "VBAi", "VbeToolbars", "EXCEL.sqlite");
+                using (var store = new VBAi.ChatSessionStore(path)) store.UpdateToolbarProfile("Invalid", new VBAi.VbeToolbarProfiles.Bar { Name = "Invalid", Commands = new VBAi.VbeToolbarProfiles.Command[0] }, bars => { });
+                var corrupt = new VBAi.VbeSession(host, null, null, () => "EXCEL", () => scope.Root);
+                var response = corrupt.Execute(new VBAi.Request { Command = "list_toolbars" }); Assert.IsTrue(response.Ok, response.Error);
+                var errors = (System.Collections.IList)Data(response.Data)["ProfileErrors"]; Assert.AreEqual(1, errors.Count);
+                StringAssert.Contains((string)errors[0], "Invalid toolbar profile contents."); Assert.AreEqual(1, host.CommandBars.Count);
             }
         }
     }
 }
 namespace VBAi.Tests.Unit
 {
+    using Microsoft.VisualStudio.TestTools.UnitTesting;
     using System;
     using System.Collections.Generic;
     using System.Linq;
     using VBAi;
-    using Microsoft.VisualStudio.TestTools.UnitTesting;
 
     [TestClass]
     [TestCategory("Unit")]
@@ -189,12 +189,12 @@ namespace VBAi.Tests.Unit
 
 namespace VBAi.Tests.Unit
 {
+    using Microsoft.VisualStudio.TestTools.UnitTesting;
     using System;
     using System.Collections;
     using System.Linq;
     using System.Reflection;
     using System.Security.Cryptography.X509Certificates;
-    using Microsoft.VisualStudio.TestTools.UnitTesting;
     using VBAi;
 
     [TestClass]
@@ -498,8 +498,13 @@ namespace VBAi.Tests.Unit
                 if (wrongName) project.VBComponents.ForcedReadbackName = "Unexpected";
                 else project.VBComponents.ForcedAddedType = 3;
                 var session = new VbeSession(host);
-                StringAssert.Contains(Assert.ThrowsException<InvalidOperationException>(() => session.Execute(new Request {
-                    Command = "create_module", Project = project.Name, Module = "Created", ExpectedMode = 2 })).Message,
+                StringAssert.Contains(Assert.ThrowsException<InvalidOperationException>(() => session.Execute(new Request
+                {
+                    Command = "create_module",
+                    Project = project.Name,
+                    Module = "Created",
+                    ExpectedMode = 2
+                })).Message,
                     "did not create the requested component identity");
                 Assert.AreEqual(1, project.VBComponents.Items.Count);
             }
@@ -509,8 +514,13 @@ namespace VBAi.Tests.Unit
             var rejectingHost = new SessionHost();
             rejectingHost.VBProjects.Add(rejected);
             var rejectingSession = new VbeSession(rejectingHost);
-            var failure = Assert.ThrowsException<InvalidOperationException>(() => rejectingSession.Execute(new Request {
-                Command = "create_class", Project = rejected.Name, Module = "RejectedModule", ExpectedMode = 2 }));
+            var failure = Assert.ThrowsException<InvalidOperationException>(() => rejectingSession.Execute(new Request
+            {
+                Command = "create_class",
+                Project = rejected.Name,
+                Module = "RejectedModule",
+                ExpectedMode = 2
+            }));
             Assert.AreEqual("Rejected by VBE", failure.Message);
             Assert.AreEqual(1, rejected.VBComponents.RemoveCount);
             Assert.AreEqual(1, rejected.VBComponents.Items.Count);
@@ -525,8 +535,13 @@ namespace VBAi.Tests.Unit
                 var host = new SessionHost();
                 host.VBProjects.Add(project);
                 var session = new VbeSession(host);
-                var failure = Assert.ThrowsException<InvalidOperationException>(() => session.Execute(new Request {
-                    Command = command, Project = project.Name, Module = "NewComponent", ExpectedMode = 2 }));
+                var failure = Assert.ThrowsException<InvalidOperationException>(() => session.Execute(new Request
+                {
+                    Command = command,
+                    Project = project.Name,
+                    Module = "NewComponent",
+                    ExpectedMode = 2
+                }));
                 Assert.AreEqual("The project is no longer in design mode.", failure.Message);
                 Assert.AreEqual(0, project.VBComponents.Items.Count);
             }
@@ -540,16 +555,25 @@ namespace VBAi.Tests.Unit
             host.VBProjects.Add(project);
             var session = new VbeSession(host);
             foreach (var path in new[] { null, "", " ", "relative.tlb" })
-                Assert.ThrowsException<ArgumentException>(() => session.Execute(new Request {
-                    Command = "add_reference_file", Project = project.Name, Path = path }));
+                Assert.ThrowsException<ArgumentException>(() => session.Execute(new Request
+                {
+                    Command = "add_reference_file",
+                    Project = project.Name,
+                    Path = path
+                }));
             const string selected = "{11111111-1111-1111-1111-111111111111}";
             project.References.Items.Add(new VbeSessionTests.FakeReference { GUID = selected, Major = 2, Minor = 3 });
             dynamic state = session.Execute(new Request { Command = "list_references", Project = project.Name }).Data;
             foreach (var mismatch in new[] { 0, 1, 2 })
-                StringAssert.Contains(Assert.ThrowsException<InvalidOperationException>(() => session.Execute(new Request {
-                    Command = "remove_reference", Project = project.Name, ExpectedReferencesVersion = state.Version,
+                StringAssert.Contains(Assert.ThrowsException<InvalidOperationException>(() => session.Execute(new Request
+                {
+                    Command = "remove_reference",
+                    Project = project.Name,
+                    ExpectedReferencesVersion = state.Version,
                     Guid = mismatch == 0 ? "{22222222-2222-2222-2222-222222222222}" : selected,
-                    Major = mismatch == 1 ? 4 : 2, Minor = mismatch == 2 ? 4 : 3 })).Message, "exact reference was not found");
+                    Major = mismatch == 1 ? 4 : 2,
+                    Minor = mismatch == 2 ? 4 : 3
+                })).Message, "exact reference was not found");
             Assert.AreEqual(1, project.References.Items.Count);
         }
     }
@@ -557,15 +581,12 @@ namespace VBAi.Tests.Unit
 
 namespace VBAi.Tests.Unit
 {
+    using Microsoft.VisualStudio.TestTools.UnitTesting;
     using System;
     using System.Collections;
-    using System.Collections.Generic;
     using System.IO;
     using System.Linq;
-    using System.Security.Cryptography;
-    using System.Text;
     using VBAi;
-    using Microsoft.VisualStudio.TestTools.UnitTesting;
 
     [TestClass]
     [TestCategory("Unit")]
@@ -1056,10 +1077,10 @@ namespace VBAi.Tests.Unit
 
 namespace VBAi.Tests.Unit
 {
+    using Microsoft.VisualStudio.TestTools.UnitTesting;
     using System;
     using System.Collections;
     using System.Linq;
-    using Microsoft.VisualStudio.TestTools.UnitTesting;
     using VBAi;
 
     public sealed partial class VbeSessionCoverageTests
@@ -1262,8 +1283,11 @@ namespace VBAi.Tests.Unit
             Assert.IsTrue(session.Execute(request).Ok); StringAssert.Contains(fixture.Module.Code, "Run amount:=7");
             request.Command = "undo_code_edit"; request.ExpectedSha256 = Hash(fixture.Module.Code);
             Assert.IsTrue(session.Execute(request).Ok); Assert.AreEqual(original, fixture.Module.Code);
-            Assert.ThrowsException<System.IO.FileNotFoundException>(() => session.Execute(new VBAi.Request {
-                Command = "verify_vba_signature_file", Path = System.IO.Path.Combine(System.IO.Path.GetTempPath(), System.Guid.NewGuid() + ".xlsm") }));
+            Assert.ThrowsException<System.IO.FileNotFoundException>(() => session.Execute(new VBAi.Request
+            {
+                Command = "verify_vba_signature_file",
+                Path = System.IO.Path.Combine(System.IO.Path.GetTempPath(), System.Guid.NewGuid() + ".xlsm")
+            }));
         }
     }
 

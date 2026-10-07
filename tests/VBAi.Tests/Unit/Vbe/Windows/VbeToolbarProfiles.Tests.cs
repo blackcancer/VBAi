@@ -1,11 +1,11 @@
 namespace VBAi.Tests.Unit
 {
+    using Microsoft.VisualStudio.TestTools.UnitTesting;
     using System;
-    using System.IO;
     using System.Collections.Generic;
+    using System.IO;
     using System.Web.Script.Serialization;
     using VBAi;
-    using Microsoft.VisualStudio.TestTools.UnitTesting;
     [TestClass, TestCategory("Unit")]
     public sealed partial class ToolbarProfilesTests
     {
@@ -36,8 +36,12 @@ namespace VBAi.Tests.Unit
             {
                 var store = new VbeToolbarProfiles(Path.Combine(root, "profile.sqlite"));
                 var host = NativeHost(); var service = new VbeEditorWindows(host) { ToolbarProfiles = store };
-                var created = Data(service.CreateToolbar(new Request { ObjectName = "Persistent", Temporary = false,
-                    ExpectedToolbarCollectionVersion = (string)Data(service.Toolbars())["ToolbarCollectionVersion"] }));
+                var created = Data(service.CreateToolbar(new Request
+                {
+                    ObjectName = "Persistent",
+                    Temporary = false,
+                    ExpectedToolbarCollectionVersion = (string)Data(service.Toolbars())["ToolbarCollectionVersion"]
+                }));
                 var request = new Request { ObjectName = (string)created["ObjectName"], ControlId = 42, ControlCaption = "Native command", Temporary = false };
                 request.ExpectedToolbarControlsVersion = (string)Data(service.ToolbarControls(request))["ToolbarControlsVersion"];
                 Assert.IsTrue((bool)Data(service.AddToolbarCommand(request))["Verified"]);
@@ -65,10 +69,10 @@ namespace VBAi.Tests.Unit
 }
 namespace VBAi.Tests.Unit
 {
+    using Microsoft.VisualStudio.TestTools.UnitTesting;
     using System;
     using System.Linq;
     using VBAi;
-    using Microsoft.VisualStudio.TestTools.UnitTesting;
 
     public sealed partial class ToolbarProfilesTests
     {
@@ -108,11 +112,11 @@ namespace VBAi.Tests.Unit
             }
             foreach (var edge in new[] { -32768, 32767 })
             {
-                var bar = ProfileBar(); bar.Name = "VBAi - " + new string('x',64); bar.Position = edge < 0 ? 0 : 4;
-                bar.Left = edge; bar.Top = edge; bar.RowIndex = 1; bar.Commands[0].Id = 2; bar.Commands[0].Caption = new string('x',1024);
-                bar.Commands[0].Tag = PersistentTag + new string('x',96-PersistentTag.Length); ValidateProfile("ValidateContents",bar);
+                var bar = ProfileBar(); bar.Name = "VBAi - " + new string('x', 64); bar.Position = edge < 0 ? 0 : 4;
+                bar.Left = edge; bar.Top = edge; bar.RowIndex = 1; bar.Commands[0].Id = 2; bar.Commands[0].Caption = new string('x', 1024);
+                bar.Commands[0].Tag = PersistentTag + new string('x', 96 - PersistentTag.Length); ValidateProfile("ValidateContents", bar);
             }
-            var many = ProfileBar(); many.Commands = Enumerable.Range(0,128).Select(i => new VbeToolbarProfiles.Command { Id = i+2, Caption = "C", Tag = PersistentTag+i }).ToArray();
+            var many = ProfileBar(); many.Commands = Enumerable.Range(0, 128).Select(i => new VbeToolbarProfiles.Command { Id = i + 2, Caption = "C", Tag = PersistentTag + i }).ToArray();
             ValidateProfile("ValidateContents", many);
         }
     }

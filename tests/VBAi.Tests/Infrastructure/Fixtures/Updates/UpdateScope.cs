@@ -1,6 +1,5 @@
 using System;
 using System.IO;
-using VBAi;
 namespace VBAi.Tests.Infrastructure
 {
     internal sealed class UpdateScope : IDisposable

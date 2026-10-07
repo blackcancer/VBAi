@@ -1,8 +1,7 @@
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Diagnostics;
 using System.IO;
-using VBAi;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace VBAi.Tests.Unit
 {
@@ -47,8 +46,13 @@ namespace VBAi.Tests.Unit
             ProviderSessionStorage.PrepareCodexSession(isolated); Assert.AreEqual("private", isolated.CodexThreadId); Assert.IsNull(isolated.ResumeContext);
             foreach (string home in new[] { null, "external-store" })
             {
-                var legacy = new ChatSessionState { CodexThreadId = "old", CodexThreadHome = home,
-                    CodexDeveloperInstructionsHash = "old-hash", ResumeContext = "earlier branch" };
+                var legacy = new ChatSessionState
+                {
+                    CodexThreadId = "old",
+                    CodexThreadHome = home,
+                    CodexDeveloperInstructionsHash = "old-hash",
+                    ResumeContext = "earlier branch"
+                };
                 legacy.Entries.Add(new ChatEntry { Speaker = "Vous", Text = "question été" });
                 legacy.Entries.Add(new ChatEntry { Speaker = "Assistant", Text = "answer" });
                 ProviderSessionStorage.PrepareCodexSession(legacy);

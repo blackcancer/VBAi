@@ -1,9 +1,9 @@
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
 using System.Web.Script.Serialization;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 using VBAi.Tests.Integration;
 
 namespace VBAi.Tests.Unit
@@ -15,14 +15,16 @@ namespace VBAi.Tests.Unit
         [TestMethod]
         public void TimeoutKeepsDurableIntentOriginalFailureAndPendingStateWithoutReplay()
         {
-            InScratch(root => {
+            InScratch(root =>
+            {
                 var state = new OfficeCommandContainment();
                 var records = new List<object>();
                 string path = Path.Combine(root, "commands.json");
                 Action persist = () => File.WriteAllText(path, new JavaScriptSerializer().Serialize(records));
                 int sends = 0, retained = 0, nativeCleanup = 0;
                 var timeout = new TimeoutException("Synthetic uncertain form property write.");
-                var observed = Assert.ThrowsException<TimeoutException>(() => state.Send("set_form_property", new { Command = "set_form_property", Property = "Caption", Value = "Synthetic" }, records.Add, persist, () => {
+                var observed = Assert.ThrowsException<TimeoutException>(() => state.Send("set_form_property", new { Command = "set_form_property", Property = "Caption", Value = "Synthetic" }, records.Add, persist, () =>
+                {
                     sends++;
                     var before = (IDictionary<string, object>)((object[])new JavaScriptSerializer().DeserializeObject(File.ReadAllText(path)))[0];
                     Assert.AreEqual("set_form_property", before["Command"]);
@@ -99,7 +101,8 @@ namespace VBAi.Tests.Unit
         [TestMethod]
         public void FixtureTimeoutPreservesOriginalErrorAndRefusesFakeNativeCloseQuitResetAndReopen()
         {
-            InScratch(root => {
+            InScratch(root =>
+            {
                 var fixture = (OfficeVbeFixture)Activator.CreateInstance(typeof(OfficeVbeFixture), true);
                 SetProperty(fixture, "Root", root); SetProperty(fixture, "Kind", "Word"); SetProperty(fixture, "ProcessId", 42);
                 SetProperty(fixture, "DocumentPath", Path.Combine(root, "Synthetic.docm"));
@@ -107,7 +110,8 @@ namespace VBAi.Tests.Unit
                 SetField(fixture, "owned", true); SetField(fixture, "application", application); SetField(fixture, "document", document);
                 var primary = new TimeoutException("Synthetic emitted native mutation timeout");
                 int sends = 0;
-                fixture.Dispatch = (pid, request) => {
+                fixture.Dispatch = (pid, request) =>
+                {
                     sends++;
                     Assert.AreEqual(42, pid);
                     var before = Read(Path.Combine(root, "adapter-only-progress.json"));
@@ -132,7 +136,8 @@ namespace VBAi.Tests.Unit
         [TestMethod]
         public void FixtureFinalWriteFailureCannotMaskTheOriginalTimeoutOrCleanupRefusal()
         {
-            InScratch(root => {
+            InScratch(root =>
+            {
                 var fixture = (OfficeVbeFixture)Activator.CreateInstance(typeof(OfficeVbeFixture), true);
                 SetProperty(fixture, "Root", root); SetProperty(fixture, "Kind", "Word");
                 var primary = new TimeoutException("Synthetic command deadline");

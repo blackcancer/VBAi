@@ -80,7 +80,7 @@ namespace VBAi
             {
                 Validate();
                 var handle = new IntPtr((int)((dynamic)vbe).MainWindow.HWnd);
-                uint pid; if (handle == IntPtr.Zero || GetWindowThreadProcessId(handle, out pid) == 0 || pid == 0)
+                if (handle == IntPtr.Zero || GetWindowThreadProcessId(handle, out uint pid) == 0 || pid == 0)
                     throw new InvalidOperationException("The owning VBE process could not be identified.");
                 return checked((int)pid);
             }
@@ -101,7 +101,7 @@ namespace VBAi
         /// <param name="cancellation">Stops obsolete language requests between native module reads.</param>
         /// <param name="urgentCommand">Allows a queued debugger operation to preempt background catalog reads.</param>
         /// <returns>Sources avec nom, type et code de chaque composant.</returns>
-        internal async System.Threading.Tasks.Task<EditorSource[]> Sources(System.Threading.CancellationToken cancellation = default(System.Threading.CancellationToken), Func<bool> urgentCommand = null)
+        internal async System.Threading.Tasks.Task<EditorSource[]> Sources(System.Threading.CancellationToken cancellation = default, Func<bool> urgentCommand = null)
         {
             Validate(); var sources = new System.Collections.Generic.List<EditorSource>();
             foreach (dynamic item in ((dynamic)project).VBComponents)
@@ -285,7 +285,7 @@ namespace VBAi
                 string restore = Path.Combine(directory, "restore.bas");
                 File.WriteAllText(restore, EditorAttributeRewrite.CodeSection(original), System.Text.Encoding.Default);
                 dynamic code = ((dynamic)component).CodeModule;
-                Action<string> load = path => { int count = code.CountOfLines; if (count > 0) code.DeleteLines(1, count); code.AddFromFile(path); };
+                void load(string path) { int count = code.CountOfLines; if (count > 0) code.DeleteLines(1, count); code.AddFromFile(path); }
                 if ((int)((dynamic)project).Mode != 2 || !CanWrite || EditorDocument.Normalize(Read()) != before) throw new InvalidOperationException("The module changed before attribute restoration.");
                 try
                 {

@@ -1,9 +1,9 @@
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Diagnostics;
 using System.IO;
 using System.Text;
 using System.Web.Script.Serialization;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace VBAi.Tests.Integration
 {
@@ -24,10 +24,16 @@ namespace VBAi.Tests.Integration
             string receipt = Path.Combine(evidence, "testhost-" + Process.GetCurrentProcess().Id + "-" + Guid.NewGuid().ToString("N") + ".json");
             using (var file = new FileStream(receipt, FileMode.CreateNew, FileAccess.Write, FileShare.Read))
             using (var writer = new StreamWriter(file, new UTF8Encoding(false)))
-                writer.Write(new JavaScriptSerializer().Serialize(new { ExpectedDesktop = expected,
-                    ActualDesktop = actual, InputDesktop = input, ProcessId = Process.GetCurrentProcess().Id,
-                    ThreadId = thread, TestAssemblyMvid = typeof(QualificationDesktopGuard).Module.ModuleVersionId,
-                    Utc = DateTime.UtcNow.ToString("o") }));
+                writer.Write(new JavaScriptSerializer().Serialize(new
+                {
+                    ExpectedDesktop = expected,
+                    ActualDesktop = actual,
+                    InputDesktop = input,
+                    ProcessId = Process.GetCurrentProcess().Id,
+                    ThreadId = thread,
+                    TestAssemblyMvid = typeof(QualificationDesktopGuard).Module.ModuleVersionId,
+                    Utc = DateTime.UtcNow.ToString("o")
+                }));
             context.AddResultFile(receipt);
         }
 

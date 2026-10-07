@@ -1,10 +1,10 @@
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Runtime.ExceptionServices;
 using System.Text.RegularExpressions;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace VBAi.Tests.Integration
 {
@@ -28,9 +28,14 @@ namespace VBAi.Tests.Integration
         internal void WarmGuardForBreakpoint()
         {
             var before = Read("GuardBreakpointWarmupBefore");
-            Refusal("GuardBreakpointWarmup", new { Command = "set_vbe_option", Pane = (string)Format(before)["Tab"],
-                Property = "__Q026_READ_ONLY_GUARD_WARMUP__", Value = "No preference mutation",
-                ExpectedOptionsVersion = new string('0', 64) }, before, "VBE options changed since inspection; read them again.");
+            Refusal("GuardBreakpointWarmup", new
+            {
+                Command = "set_vbe_option",
+                Pane = (string)Format(before)["Tab"],
+                Property = "__Q026_READ_ONLY_GUARD_WARMUP__",
+                Value = "No preference mutation",
+                ExpectedOptionsVersion = new string('0', 64)
+            }, before, "VBE options changed since inspection; read them again.");
             evidence("GuardBreakpointWarmupVerified", new { NativePreferenceWrites = 0, FailedMutationReplayed = false });
         }
 
@@ -38,12 +43,14 @@ namespace VBAi.Tests.Integration
             Func<IDictionary<string, object>> observeClosure, Action preserve, Action cleanup, Action<string, object> evidence,
             bool verifyReadStability = false, bool marginOnly = false, bool historicalPalettePrefix = false,
             Action verifyExclusiveHost = null, bool fontSizeOnly = false, bool historicalFullMatrix = false)
-        { this.processId = processId; this.dispatch = dispatch; this.observeClosure = observeClosure;
+        {
+            this.processId = processId; this.dispatch = dispatch; this.observeClosure = observeClosure;
             this.preserve = preserve; this.cleanup = cleanup; this.evidence = evidence; this.verifyReadStability = verifyReadStability; this.marginOnly = marginOnly;
             this.historicalPalettePrefix = historicalPalettePrefix; this.verifyExclusiveHost = verifyExclusiveHost;
             this.fontSizeOnly = fontSizeOnly; this.historicalFullMatrix = historicalFullMatrix;
             if (historicalFullMatrix && (!historicalPalettePrefix || marginOnly || fontSizeOnly))
-                throw new ArgumentException("Historical full matrix requires historical mutation order and the complete scope."); }
+                throw new ArgumentException("Historical full matrix requires historical mutation order and the complete scope.");
+        }
 
         /// <summary>Validate the Format opt-in before preparation, then hand off only a successfully owned bootstrap.</summary>
         internal static void RunOwned<T>(bool enabled, string ownedResults, string evidenceRoot, string inheritedDiagnosticManifest,
@@ -73,9 +80,19 @@ namespace VBAi.Tests.Integration
                 try { evidence("CleanupIntent", new { NativeRequestsComplete = true }); cleanupInvoked = true; cleanup(); }
                 catch (Exception error) { shutdown = cleanupInvoked ? error : Retain(error); }
             }
-            try { evidence("QualificationTerminal", new { Verified = primary == null && restoration == null && shutdown == null,
-                HostRetained, CleanupInvoked = cleanupInvoked, PrimaryError = primary?.ToString(), RestorationError = restoration?.ToString(),
-                ShutdownError = shutdown?.ToString(), NativeReplayAllowed = false }); }
+            try
+            {
+                evidence("QualificationTerminal", new
+                {
+                    Verified = primary == null && restoration == null && shutdown == null,
+                    HostRetained,
+                    CleanupInvoked = cleanupInvoked,
+                    PrimaryError = primary?.ToString(),
+                    RestorationError = restoration?.ToString(),
+                    ShutdownError = shutdown?.ToString(),
+                    NativeReplayAllowed = false
+                });
+            }
             catch (Exception error) { terminalRecord = error; }
             ThrowFailures("Format scenario, restoration, cleanup and terminal evidence failures are preserved separately.", primary, restoration, shutdown, terminalRecord);
         }
@@ -110,8 +127,14 @@ namespace VBAi.Tests.Integration
             if (sizes.Length == 0)
             {
                 Assert.IsNotNull(size["Value"], "Empty native catalogue must still report the real edit value.");
-                Refusal("EmptySize", new { Command = "set_vbe_option", Pane = tab, Property = size["Name"], Value = "12",
-                    ExpectedOptionsVersion = Version(sizeRead) }, sizeRead, "The exact native choice is absent, ambiguous or unreadable.");
+                Refusal("EmptySize", new
+                {
+                    Command = "set_vbe_option",
+                    Pane = tab,
+                    Property = size["Name"],
+                    Value = "12",
+                    ExpectedOptionsVersion = Version(sizeRead)
+                }, sizeRead, "The exact native choice is absent, ambiguous or unreadable.");
             }
             else
             {
@@ -144,8 +167,14 @@ namespace VBAi.Tests.Integration
             Margin(tab);
             var beforeStale = Read("BeforeStaleRefusal");
             Assert.AreNotEqual(Version(baseline), Version(beforeStale), "The stale scenario needs a genuinely changed complete revision.");
-            Refusal("StaleVersion", new { Command = "set_vbe_option", Pane = tab, Property = font["Name"], Value = font["Value"],
-                ExpectedOptionsVersion = Version(baseline) }, beforeStale, "VBE options changed since inspection; read them again.");
+            Refusal("StaleVersion", new
+            {
+                Command = "set_vbe_option",
+                Pane = tab,
+                Property = font["Name"],
+                Value = font["Value"],
+                ExpectedOptionsVersion = Version(baseline)
+            }, beforeStale, "VBE options changed since inspection; read them again.");
         }
 
         private void Margin(string tab)
@@ -166,8 +195,15 @@ namespace VBAi.Tests.Integration
                 object actual = Control(Format(current), entry.Item2, entry.Item4)["Value"];
                 if (Equals(actual, Expected(entry.Item3)))
                 { evidence("RestorationAlreadyMatched", new { entry.Item2, entry.Item4, Expected = entry.Item3, Before = current }); continue; }
-                Send("Restoration", new { Command = "set_vbe_option", Pane = entry.Item1, Property = entry.Item2,
-                    Value = entry.Item3, Query = entry.Item4, ExpectedOptionsVersion = Version(current) }, true, null);
+                Send("Restoration", new
+                {
+                    Command = "set_vbe_option",
+                    Pane = entry.Item1,
+                    Property = entry.Item2,
+                    Value = entry.Item3,
+                    Query = entry.Item4,
+                    ExpectedOptionsVersion = Version(current)
+                }, true, null);
                 var after = Read("RestorationReadback");
                 Assert.AreEqual(Expected(entry.Item3), Control(Format(after), entry.Item2, entry.Item4)["Value"], "Exact restoration readback is required.");
                 evidence("RestorationEntryVerified", new { Property = entry.Item2, Category = entry.Item4, Readback = after });
@@ -191,23 +227,41 @@ namespace VBAi.Tests.Integration
             string restoreCategory = historicalFullMatrix && category == null &&
                 new[] { "Foreground", "Background", "Indicator" }.Contains(phase)
                 ? CurrentCategory(Format(before)) : category;
-            Send(phase, new { Command = "set_vbe_option", Pane = tab, Property = property, Value = value,
-                Query = category, ExpectedOptionsVersion = Version(before) }, true, () => {
-                    if (!ledger.Any(item => item.Item2 == property && item.Item4 == restoreCategory))
-                        ledger.Add(Tuple.Create(tab, property, old, restoreCategory));
-                });
+            Send(phase, new
+            {
+                Command = "set_vbe_option",
+                Pane = tab,
+                Property = property,
+                Value = value,
+                Query = category,
+                ExpectedOptionsVersion = Version(before)
+            }, true, () =>
+            {
+                if (!ledger.Any(item => item.Item2 == property && item.Item4 == restoreCategory))
+                    ledger.Add(Tuple.Create(tab, property, old, restoreCategory));
+            });
             if (historicalPalettePrefix)
             {
                 // The original test reads back in Matrix immediately after Write. Keep that
                 // order rather than inserting another full native inspection between them.
-                evidence(phase + "HistoricalCommit", new { Before = before, MutationRetried = false,
-                    IndependentReadbackRequiredByMatrix = true });
+                evidence(phase + "HistoricalCommit", new
+                {
+                    Before = before,
+                    MutationRetried = false,
+                    IndependentReadbackRequiredByMatrix = true
+                });
                 return;
             }
             var after = Read(phase + "IndependentAfterWrite");
             Assert.AreEqual(Expected(value), Control(Format(after), property, category)["Value"], "The native preference readback differs from the requested value.");
-            evidence(phase + "Verified", new { Before = before, IndependentAfterRead = after,
-                ObservedCategoryBefore = CurrentCategory(Format(before)), ObservedCategoryAfter = CurrentCategory(Format(after)), MutationRetried = false });
+            evidence(phase + "Verified", new
+            {
+                Before = before,
+                IndependentAfterRead = after,
+                ObservedCategoryBefore = CurrentCategory(Format(before)),
+                ObservedCategoryAfter = CurrentCategory(Format(after)),
+                MutationRetried = false
+            });
         }
 
         private void Refusal(string phase, object request, IDictionary<string, object> before, string expectedError)
@@ -267,9 +321,18 @@ namespace VBAi.Tests.Integration
         {
             Exception retention = null, recording = null;
             if (!HostRetained) { HostRetained = true; try { preserve(); } catch (Exception error) { retention = error; } }
-            try { evidence("HostRetained", new { Error = primary.ToString(), Request = request, Response = response,
-                NativeReplayAllowed = false, CleanupAllowed = false,
-                CommittedRestoreEntries = ledger.Select(item => new { Pane = item.Item1, Property = item.Item2, Value = item.Item3, Category = item.Item4 }).ToArray() }); }
+            try
+            {
+                evidence("HostRetained", new
+                {
+                    Error = primary.ToString(),
+                    Request = request,
+                    Response = response,
+                    NativeReplayAllowed = false,
+                    CleanupAllowed = false,
+                    CommittedRestoreEntries = ledger.Select(item => new { Pane = item.Item1, Property = item.Item2, Value = item.Item3, Category = item.Item4 }).ToArray()
+                });
+            }
             catch (Exception error) { recording = error; }
             var failures = new[] { primary, retention, recording }.Where(error => error != null).ToArray();
             return failures.Length == 1 ? primary : new AggregateException("Native failure and retention/evidence failures are preserved.", failures);
@@ -278,8 +341,10 @@ namespace VBAi.Tests.Integration
             .Any(key => data.TryGetValue(key, out object value) && !Equals(value, false) && value != null);
         private static bool True(IDictionary<string, object> data, string key) => data.TryGetValue(key, out object value) && Equals(value, true);
         private static string Version(IDictionary<string, object> data)
-        { string value = data.TryGetValue("OptionsVersion", out object raw) ? raw as string : null;
-            if (value == null || !Regex.IsMatch(value, "^[a-fA-F0-9]{64}$")) throw new InvalidOperationException("The complete options SHA-256 revision is absent or malformed."); return value; }
+        {
+            string value = data.TryGetValue("OptionsVersion", out object raw) ? raw as string : null;
+            if (value == null || !Regex.IsMatch(value, "^[a-fA-F0-9]{64}$")) throw new InvalidOperationException("The complete options SHA-256 revision is absent or malformed."); return value;
+        }
         private static object Expected(object value) => value is bool check ? (object)(check ? "On" : "Off") : value;
         private static IDictionary<string, object> Format(IDictionary<string, object> data) => ((object[])data["Tabs"]).Select(VbeBridgeClient.Object)
             .Single(item => new[] { "Editor Format", "Format de l'éditeur", "Format de l’éditeur" }.Contains((string)item["Tab"]));
@@ -299,7 +364,9 @@ namespace VBAi.Tests.Integration
             Assert.IsFalse(string.IsNullOrWhiteSpace(category)); Assert.AreEqual(1, Choices(control).Count(item => item == category)); return category;
         }
         private static void ThrowFailures(string message, params Exception[] failures)
-        { var actual = failures.Where(error => error != null).ToArray(); if (actual.Length > 1) throw new AggregateException(message, actual);
-            if (actual.Length == 1) ExceptionDispatchInfo.Capture(actual[0]).Throw(); }
+        {
+            var actual = failures.Where(error => error != null).ToArray(); if (actual.Length > 1) throw new AggregateException(message, actual);
+            if (actual.Length == 1) ExceptionDispatchInfo.Capture(actual[0]).Throw();
+        }
     }
 }

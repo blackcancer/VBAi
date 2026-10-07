@@ -1,6 +1,6 @@
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Linq;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 using VBAi.Tests.Integration;
 
 namespace VBAi.Tests.Unit
@@ -18,7 +18,8 @@ namespace VBAi.Tests.Unit
             foreach (bool apiReturn in new[] { false, true })
             {
                 int calls = 0;
-                var actual = WordChatWindowDiscovery.ReadNativeChildren(parent, (observedParent, visit, state) => {
+                var actual = WordChatWindowDiscovery.ReadNativeChildren(parent, (observedParent, visit, state) =>
+                {
                     calls++; Assert.AreEqual(parent, observedParent); Assert.AreEqual(IntPtr.Zero, state);
                     Assert.IsTrue(visit(new IntPtr(20), state));
                     Assert.IsTrue(visit(new IntPtr(21), state));
@@ -46,7 +47,8 @@ namespace VBAi.Tests.Unit
         {
             int visited = 0, calls = 0;
             Assert.ThrowsException<InvalidOperationException>(() => WordChatWindowDiscovery.ReadNativeChildren(
-                new IntPtr(14), (parent, visit, state) => {
+                new IntPtr(14), (parent, visit, state) =>
+                {
                     calls++;
                     while (++visited <= 4096 && visit(new IntPtr(visited), state)) { }
                     return true; // Even a nonzero API result cannot accept our partial callback inventory.
@@ -133,22 +135,43 @@ namespace VBAi.Tests.Unit
                 floating, changed, floating.VbeRoot, ProcessId, ThreadId));
         }
 
-        private static WordChatWindowDiscovery.OwnerIdentity Docked() => new WordChatWindowDiscovery.OwnerIdentity {
-            VbeHandle = 18486114, VbeRoot = 18486114, ChatHandle = 18486120, ChatRoot = 18486114,
-            ChatOwner = 0, ChatWithinVbe = true, VbeRootProcessId = ProcessId,
-            ChatRootProcessId = ProcessId, VbeRootThreadId = ThreadId, ChatRootThreadId = ThreadId
+        private static WordChatWindowDiscovery.OwnerIdentity Docked() => new WordChatWindowDiscovery.OwnerIdentity
+        {
+            VbeHandle = 18486114,
+            VbeRoot = 18486114,
+            ChatHandle = 18486120,
+            ChatRoot = 18486114,
+            ChatOwner = 0,
+            ChatWithinVbe = true,
+            VbeRootProcessId = ProcessId,
+            ChatRootProcessId = ProcessId,
+            VbeRootThreadId = ThreadId,
+            ChatRootThreadId = ThreadId
         };
 
-        private static WordChatWindowDiscovery.Candidate Exact() => new WordChatWindowDiscovery.Candidate {
-            Handle = 18486120, NativeProcessId = ProcessId, UiProcessId = ProcessId, NativeThreadId = ThreadId,
-            Visible = true, WithinOwnedVbe = true, FixedChatCaption = true,
+        private static WordChatWindowDiscovery.Candidate Exact() => new WordChatWindowDiscovery.Candidate
+        {
+            Handle = 18486120,
+            NativeProcessId = ProcessId,
+            UiProcessId = ProcessId,
+            NativeThreadId = ThreadId,
+            Visible = true,
+            WithinOwnedVbe = true,
+            FixedChatCaption = true,
             NativeClass = "WindowsForms10.Window.8.app.0.example",
-            ControlType = "ControlType.Window", ScopePickerCount = 1, OptionsCount = 1,
-            ScopePickerProcessId = ProcessId, OptionsProcessId = ProcessId,
-            ScopePickerType = "ControlType.ComboBox", OptionsType = "ControlType.Button",
-            ScopePickerHandle = 18486130, OptionsHandle = 18486140,
-            ScopePickerThreadId = ThreadId, OptionsThreadId = ThreadId,
-            ScopePickerWithinChat = true, OptionsWithinChat = true
+            ControlType = "ControlType.Window",
+            ScopePickerCount = 1,
+            OptionsCount = 1,
+            ScopePickerProcessId = ProcessId,
+            OptionsProcessId = ProcessId,
+            ScopePickerType = "ControlType.ComboBox",
+            OptionsType = "ControlType.Button",
+            ScopePickerHandle = 18486130,
+            OptionsHandle = 18486140,
+            ScopePickerThreadId = ThreadId,
+            OptionsThreadId = ThreadId,
+            ScopePickerWithinChat = true,
+            OptionsWithinChat = true
         };
     }
 }

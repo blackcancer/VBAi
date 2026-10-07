@@ -1,7 +1,7 @@
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Threading;
 using System.Threading.Tasks;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace VBAi.Tests.Unit
 {
@@ -10,14 +10,17 @@ namespace VBAi.Tests.Unit
     public sealed class SolidWorksStaTestMethodAttributeTests
     {
         [DataTestMethod]
-        [DataRow(false, false)] [DataRow(false, true)]
-        [DataRow(true, false)] [DataRow(true, true)]
+        [DataRow(false, false)]
+        [DataRow(false, true)]
+        [DataRow(true, false)]
+        [DataRow(true, true)]
         public void PendingRealAdapterStaysOnItsParkedStaAndTheNextHostSaveIsIndependent(bool directAdapter, bool throws)
         {
             Task<object> pending = null;
             int oldSaves = 0, lateCallbacks = 0;
             var original = new AssertFailedException("Original synthetic scenario failure; no late acceptance");
-            var retained = AccessStaTestMethodAttribute.RunOnFreshSta(() => {
+            var retained = AccessStaTestMethodAttribute.RunOnFreshSta(() =>
+            {
                 var probe = new VbeSolidWorksPersistenceTests.Probe();
                 probe.OnSave = () => { oldSaves++; probe.Project.Saved = false; };
                 pending = directAdapter ? probe.SaveAdapterAsync(probe.Request()) : probe.SaveHostAsync(probe.Request());
@@ -37,7 +40,8 @@ namespace VBAi.Tests.Unit
             StringAssert.Contains(retained.Diagnostic, "OwnerSta");
             StringAssert.Contains(retained.Diagnostic, "LateCompletionAccepted=false");
             StringAssert.Contains(retained.Diagnostic, "SaveReplay=0");
-            var next = AccessStaTestMethodAttribute.RunOnFreshSta(() => {
+            var next = AccessStaTestMethodAttribute.RunOnFreshSta(() =>
+            {
                 var probe = new VbeSolidWorksPersistenceTests.Probe();
                 dynamic result = VbeSolidWorksPersistenceTests.Complete(directAdapter ?
                     probe.SaveHostAsync(probe.Request()) : probe.SaveAdapterAsync(probe.Request()));
@@ -51,10 +55,12 @@ namespace VBAi.Tests.Unit
         }
 
         [DataTestMethod]
-        [DataRow(false)] [DataRow(true)]
+        [DataRow(false)]
+        [DataRow(true)]
         public void TerminalSaveAndUncertainReadbackKeepTheirOriginalOutcomeAndPreAdmissionTrace(bool changeIdentity)
         {
-            var run = AccessStaTestMethodAttribute.RunOnFreshSta(() => {
+            var run = AccessStaTestMethodAttribute.RunOnFreshSta(() =>
+            {
                 var probe = new VbeSolidWorksPersistenceTests.Probe();
                 int owner = Thread.CurrentThread.ManagedThreadId;
                 probe.OnSave = () => { Assert.AreEqual(owner, Thread.CurrentThread.ManagedThreadId); if (changeIdentity) probe.Identity = false; };
@@ -73,15 +79,22 @@ namespace VBAi.Tests.Unit
         }
 
         [DataTestMethod]
-        [DataRow(false)] [DataRow(true)]
+        [DataRow(false)]
+        [DataRow(true)]
         public void AttributeExecutionPreservesDataRowsAndOriginalFailureButNeverPassesPendingWork(bool originallyFailed)
         {
             var failure = new AssertFailedException("Original five-second outcome");
-            var first = new TestResult { DisplayName = "save (identity)", Outcome = originallyFailed ? UnitTestOutcome.Failed : UnitTestOutcome.Passed,
-                TestFailureException = originallyFailed ? failure : null, LogOutput = "original details" };
+            var first = new TestResult
+            {
+                DisplayName = "save (identity)",
+                Outcome = originallyFailed ? UnitTestOutcome.Failed : UnitTestOutcome.Passed,
+                TestFailureException = originallyFailed ? failure : null,
+                LogOutput = "original details"
+            };
             var second = new TestResult { DisplayName = "save (another row)", Outcome = UnitTestOutcome.Failed, TestFailureException = failure };
             var rows = new[] { first, second };
-            var result = SolidWorksStaTestMethodAttribute.ExecuteScenario(() => {
+            var result = SolidWorksStaTestMethodAttribute.ExecuteScenario(() =>
+            {
                 var probe = new VbeSolidWorksPersistenceTests.Probe();
                 probe.OnSave = () => probe.Project.Saved = false;
                 var task = probe.SaveHostAsync(probe.Request());
@@ -97,12 +110,14 @@ namespace VBAi.Tests.Unit
         }
 
         [DataTestMethod]
-        [DataRow(false)] [DataRow(true)]
+        [DataRow(false)]
+        [DataRow(true)]
         public void TerminalAttributeExecutionPreservesRowsOrTheExactThrownException(bool throws)
         {
             var original = new InvalidOperationException("Original invocation error");
             var rows = new[] { new TestResult { Outcome = UnitTestOutcome.Passed, DisplayName = "unchanged row" } };
-            Func<TestResult[]> invoke = () => {
+            Func<TestResult[]> invoke = () =>
+            {
                 var probe = new VbeSolidWorksPersistenceTests.Probe();
                 VbeSolidWorksPersistenceTests.Complete(probe.SaveHostAsync(probe.Request()));
                 if (throws) throw original;
@@ -116,7 +131,8 @@ namespace VBAi.Tests.Unit
         public void ShimRefusesSaveAdmissionOutsideAnOwnedTestScopeBeforeCallingTheAdapter()
         {
             int attempts = 0;
-            Assert.ThrowsException<InvalidOperationException>(() => SolidWorksStaTestMethodAttribute.StartSave(() => {
+            Assert.ThrowsException<InvalidOperationException>(() => SolidWorksStaTestMethodAttribute.StartSave(() =>
+            {
                 attempts++; return Task.FromResult<object>(null);
             }));
             Assert.AreEqual(0, attempts);

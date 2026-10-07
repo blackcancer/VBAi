@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.IO;
+using System.Linq;
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
@@ -136,7 +136,8 @@ namespace VBAi
         /// <param name="bookmarkDatabase">Base SQLite des signets ou null pour le stockage par défaut.</param>
         private VbeSession(object vbe, VbeProjectComponents.IExcelHostProbe host, string bookmarkDatabase)
             : this(vbe, host, bookmarkDatabase, () => System.Diagnostics.Process.GetCurrentProcess().ProcessName,
-                () => Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData)) { }
+                () => Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData))
+        { }
 
         /// <summary>Injecte uniquement l'identité du processus et la racine locale avant la restauration native des barres.</summary>
         /// <param name="vbe">Objet COM du VBE utilisé par les services de session.</param>
@@ -145,7 +146,9 @@ namespace VBAi
         /// <param name="toolbarProcessName">Fournit le nom de processus utilisé pour choisir le profil natif.</param>
         /// <param name="localApplicationData">Fournit le dossier de données locales pour le profil des barres.</param>
         internal VbeSession(object vbe, VbeProjectComponents.IExcelHostProbe host, string bookmarkDatabase,
-            Func<string> toolbarProcessName, Func<string> localApplicationData) { this.vbe = vbe; debugger = new VbeDebug(vbe);
+            Func<string> toolbarProcessName, Func<string> localApplicationData)
+        {
+            this.vbe = vbe; debugger = new VbeDebug(vbe);
             forms = new VbeForms(vbe); components = host == null
                 ? new VbeProjectComponents(vbe, forms) : new VbeProjectComponents(vbe, forms, host);
             editorWindows = new VbeEditorWindows(vbe);
@@ -160,7 +163,8 @@ namespace VBAi
             codeEdits = new VbeCodeEdits(Execute);
             codeClipboard = new VbeCodeClipboard(Execute, new WindowsCodeClipboard());
             navigationHistory = new VbeNavigationHistory(vbe, Execute, bookmarkDatabase);
-            SignatureScheduler = request => debugger.QueueSignatureDialog(request); }
+            SignatureScheduler = request => debugger.QueueSignatureDialog(request);
+        }
 
         /// <summary>Vérifie qu’une coupe de formulaire peut être récupérée.</summary>
         /// <param name="request">Identité et version de la sauvegarde.</param>
@@ -250,7 +254,8 @@ namespace VBAi
                 throw new InvalidOperationException("Bridge admission requires the owning STA.");
             bridgeOperationsInFlight++;
             bool released = false;
-            return () => {
+            return () =>
+            {
                 if (System.Threading.Thread.CurrentThread.ManagedThreadId != owner)
                     throw new InvalidOperationException("Bridge admission must be released on its owning STA.");
                 if (released) return;
@@ -269,12 +274,14 @@ namespace VBAi
             if (bridgeOperationsInFlight != 0)
                 throw new InvalidOperationException("A bridge operation is pending. General cannot enter until it settles.");
             int ownerThread = System.Threading.Thread.CurrentThread.ManagedThreadId;
-            Action requireContext = () => {
+            void requireContext()
+            {
                 if (System.Threading.Thread.CurrentThread.ManagedThreadId != ownerThread ||
                     System.Threading.Thread.CurrentThread.GetApartmentState() != System.Threading.ApartmentState.STA)
                     throw new InvalidOperationException("General left its original owning STA.");
-            };
-            Action<VbeProjectGeneralOperation.Result> journal = result => {
+            }
+            void journal(VbeProjectGeneralOperation.Result result)
+            {
                 requireContext();
                 // Claims are durable before dispatch and deliberately omit project data and file paths.
                 LoadLog.AppendText(LoadLog.PathName, DateTime.UtcNow.ToString("o") +
@@ -283,10 +290,11 @@ namespace VBAi
                     " Terminal=" + result.Terminal + " Mutation=" + result.MutationInvoked +
                     " Uncertain=" + result.Uncertain + " Closed=" + result.DialogClosed +
                     " ExecuteReturned=" + result.OriginalExecuteReturned + Environment.NewLine);
-            };
+            }
             generalInFlight = true;
             Action<bool> originalAuthorization = request?.RevalidateProjectPropertyAuthorization;
-            Action<bool> scopedAuthorization = live => {
+            Action<bool> scopedAuthorization = live =>
+            {
                 requireContext();
                 if (originalAuthorization == null) throw new InvalidOperationException("Original General authorization is required.");
                 if (live) generalAuthorizationDepth++;
@@ -343,11 +351,15 @@ namespace VBAi
                     if (TestExplorer == null) return Response.Failure("The session test explorer is unavailable.");
                     return Response.Success(TestExplorer.Command(request, TestExecutionGuard));
                 case "status":
-                    return Response.Success(new { Version = "0.1.0", Connected = true,
+                    return Response.Success(new
+                    {
+                        Version = "0.1.0",
+                        Connected = true,
                         AssemblyPath = typeof(VbeSession).Assembly.Location,
                         AssemblyModuleVersionId = typeof(VbeSession).Module.ModuleVersionId.ToString("D"),
                         HostProcessId = System.Diagnostics.Process.GetCurrentProcess().Id,
-                        ProcessBitness = IntPtr.Size * 8 });
+                        ProcessBitness = IntPtr.Size * 8
+                    });
                 case "preview_procedure_rename": return Response.Success(codeEdits.PreviewProcedureRename(request));
                 case "apply_procedure_rename": return Response.Success(codeEdits.ApplyProcedureRename(request));
                 case "preview_class_member_rename": return Response.Success(codeEdits.PreviewClassMemberRename(request));
@@ -733,10 +745,15 @@ namespace VBAi
                 if (matchingThumbprints.Count != 1 || !matchingThumbprints.Contains(thumbprint))
                     throw new InvalidOperationException("The certificate display name is ambiguous across personal certificate stores.");
                 object scheduled = SignatureScheduler(request);
-                return new { Scheduled = true, Project = request.Project,
-                    CertificateThumbprint = thumbprint, CertificateName = displayName,
+                return new
+                {
+                    Scheduled = true,
+                    request.Project,
+                    CertificateThumbprint = thumbprint,
+                    CertificateName = displayName,
                     UnsignedVerified = unsignedVerified,
-                    NativeCommand = scheduled };
+                    NativeCommand = scheduled
+                };
             }
         }
 
@@ -769,10 +786,12 @@ namespace VBAi
                         certificate.Extensions.OfType<X509EnhancedKeyUsageExtension>()
                             .SelectMany(extension => extension.EnhancedKeyUsages.Cast<System.Security.Cryptography.Oid>())
                             .Any(oid => oid.Value == "1.3.6.1.5.5.7.3.3"))
-                    .Select(certificate => new {
+                    .Select(certificate => new
+                    {
                         certificate.Thumbprint,
                         Name = certificate.GetNameInfo(X509NameType.SimpleName, false),
-                        certificate.Subject, certificate.Issuer,
+                        certificate.Subject,
+                        certificate.Issuer,
                         NotBefore = certificate.NotBefore.ToString("o"),
                         NotAfter = certificate.NotAfter.ToString("o"),
                         EligibleNow = SigningClock() >= certificate.NotBefore && SigningClock() <= certificate.NotAfter
@@ -828,9 +847,16 @@ namespace VBAi
                 string hostPath = null, hostPathError = null;
                 try { hostPath = VbeProjectHostPath.Read((object)project); }
                 catch (Exception error) { hostPathError = error.Message; }
-                result.Add(new { Name = (string)project.Name, FileName = fileName, HostPath = hostPath,
-                    HostPathError = hostPathError, Mode = (int)project.Mode,
-                    FileNameErrorHResult = fileNameErrorHResult, FileNameErrorType = fileNameErrorType });
+                result.Add(new
+                {
+                    Name = (string)project.Name,
+                    FileName = fileName,
+                    HostPath = hostPath,
+                    HostPathError = hostPathError,
+                    Mode = (int)project.Mode,
+                    FileNameErrorHResult = fileNameErrorHResult,
+                    FileNameErrorType = fileNameErrorType
+                });
             }
             return result;
         }
@@ -843,8 +869,12 @@ namespace VBAi
             dynamic project = GetProject(projectName);
             var result = new List<object>();
             foreach (dynamic component in project.VBComponents)
-                result.Add(new { Name = (string)component.Name, Type = (int)component.Type,
-                    Lines = (int)component.CodeModule.CountOfLines });
+                result.Add(new
+                {
+                    Name = (string)component.Name,
+                    Type = (int)component.Type,
+                    Lines = (int)component.CodeModule.CountOfLines
+                });
             return result;
         }
 
@@ -918,9 +948,16 @@ namespace VBAi
                     try { name = (string)reference.Name; } catch { }
                     try { fullPath = (string)reference.FullPath; } catch { }
                 }
-                result.Add(new ReferenceInfo { Name = name, Guid = (string)reference.GUID,
-                    Major = (int)reference.Major, Minor = (int)reference.Minor,
-                    IsBroken = broken, BuiltIn = (bool)reference.BuiltIn, FullPath = fullPath });
+                result.Add(new ReferenceInfo
+                {
+                    Name = name,
+                    Guid = (string)reference.GUID,
+                    Major = (int)reference.Major,
+                    Minor = (int)reference.Minor,
+                    IsBroken = broken,
+                    BuiltIn = (bool)reference.BuiltIn,
+                    FullPath = fullPath
+                });
             }
             return result;
         }
@@ -962,8 +999,7 @@ namespace VBAi
         /// <returns>État des références après l’ajout par GUID.</returns>
         private object AddReferenceGuid(Request request)
         {
-            System.Guid parsed;
-            if (!System.Guid.TryParse(request.Guid, out parsed) || request.Major < 0 || request.Minor < 0)
+            if (!System.Guid.TryParse(request.Guid, out Guid parsed) || request.Major < 0 || request.Minor < 0)
                 throw new ArgumentException("Guid, nonnegative Major and Minor are required.");
             dynamic project = CheckedReferenceProject(request);
             if (((List<ReferenceInfo>)ReadReferences(project)).Any(item => string.Equals(item.Guid, parsed.ToString("B"),
@@ -993,8 +1029,7 @@ namespace VBAi
         /// <returns>État des références après le retrait exact.</returns>
         private object RemoveReference(Request request)
         {
-            System.Guid parsed;
-            if (!System.Guid.TryParse(request.Guid, out parsed) || request.Major < 0 || request.Minor < 0)
+            if (!System.Guid.TryParse(request.Guid, out Guid parsed) || request.Major < 0 || request.Minor < 0)
                 throw new ArgumentException("Guid, nonnegative Major and Minor are required.");
             dynamic project = CheckedReferenceProject(request);
             dynamic target = null;
@@ -1041,8 +1076,15 @@ namespace VBAi
                 throw new InvalidOperationException("The VBE did not create the requested component identity.");
             dynamic module = component.CodeModule;
             string code = GetCode(module);
-            return new { Project = request.Project, Module = actualName, Type = actualType,
-                Lines = (int)module.CountOfLines, Code = code, Sha256 = Hash(code) };
+            return new
+            {
+                request.Project,
+                Module = actualName,
+                Type = actualType,
+                Lines = (int)module.CountOfLines,
+                Code = code,
+                Sha256 = Hash(code)
+            };
         }
 
         /// <summary>Remplace une plage de lignes après vérification du mode, de l’empreinte et des bornes.</summary>

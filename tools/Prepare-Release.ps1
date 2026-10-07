@@ -2,7 +2,9 @@
     [Parameter(Mandatory = $true)][string]$Version,
     [string]$OutputDirectory,
     [string]$InstallerPath,
-    [string]$HelpOutputRoot
+    [string]$HelpOutputRoot,
+    [string]$MSBuildPath,
+    [string]$BuildOutputRoot
 )
 $ErrorActionPreference = 'Stop'
 if ($Version -notmatch '^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(-[0-9A-Za-z-]+(\.[0-9A-Za-z-]+)*)?$') { throw 'Use a semantic product version, for example 1.2.3 or 1.2.3-beta.1.' }
@@ -20,9 +22,14 @@ foreach ($culture in $helpCultures) {
 $output = [IO.Path]::GetFullPath($OutputDirectory)
 if (-not $output.StartsWith($repository + '\', [StringComparison]::OrdinalIgnoreCase)) { throw 'The release output must stay inside this checkout.' }
 if (Test-Path -LiteralPath $output) { throw 'Release output already exists. Choose another directory; preserve the previous package.' }
-$buildRoot = Join-Path $repository "artifacts\release-build\$Version"
+$buildRoot = if ($BuildOutputRoot) { [IO.Path]::GetFullPath($BuildOutputRoot) } else { Join-Path $repository "artifacts\release-build\$Version" }
+if (-not $buildRoot.StartsWith($repository + '\', [StringComparison]::OrdinalIgnoreCase)) { throw 'Build staging must stay inside this checkout.' }
 if (Test-Path -LiteralPath $buildRoot) { throw 'Release build staging already exists. Choose a new version or clean that staging explicitly.' }
-& dotnet build (Join-Path $repository 'src\VBAi\VBAi.csproj') -c Release --nologo "-p:ProductVersion=$Version" "-p:BuildOutputRoot=$buildRoot" "-p:HelpOutputRoot=$helpRoot" -v:q
+if ($MSBuildPath) {
+    & $MSBuildPath (Join-Path $repository 'src\VBAi\VBAi.csproj') /restore /nologo /p:Configuration=Release /p:Platform=x64 "/p:ProductVersion=$Version" "/p:BuildOutputRoot=$buildRoot" "/p:HelpOutputRoot=$helpRoot" /v:minimal
+} else {
+    & dotnet build (Join-Path $repository 'src\VBAi\VBAi.csproj') -c Release --nologo "-p:ProductVersion=$Version" "-p:BuildOutputRoot=$buildRoot" "-p:HelpOutputRoot=$helpRoot" -v:q
+}
 if ($LASTEXITCODE -ne 0) { throw 'Release build failed.' }
 $binary = Join-Path $buildRoot 'VBAi\Release\net48'
 $assembly = Join-Path $binary 'VBAi.dll'
@@ -39,6 +46,13 @@ foreach ($payloadDirectory in @('EditorAssets', 'runtimes', 'ThirdPartyNotices',
     $sourceDirectory = Join-Path $binary $payloadDirectory
     if (Test-Path -LiteralPath $sourceDirectory) { Copy-Item -LiteralPath $sourceDirectory -Destination $package -Recurse }
 }
+# Repository-relative license links do not resolve beside the installed binary.
+$scopePath = Join-Path $package 'Licenses\Scope.md'
+$scope = [IO.File]::ReadAllText($scopePath)
+foreach ($reference in @('LICENSE','LICENSES/MIT.txt','THIRD_PARTY_NOTICES.md')) {
+    $scope = $scope.Replace('](' + $reference + ')', '](https://github.com/blackcancer/VBAi/blob/main/' + $reference + ')')
+}
+[IO.File]::WriteAllText($scopePath, $scope, (New-Object Text.UTF8Encoding($false)))
 # The compiler staging, screenshots and logs are never installer payload.
 $helpSource = Join-Path $binary 'Help'
 if (Test-Path -LiteralPath $helpSource) {

@@ -183,7 +183,7 @@ namespace VBAi
             if (Has(mask, 13)) block.String(source);
             if (Has(mask, 14)) block.String(rows);
             block.Finish();
-            if (node != null) node.AddSite(identity, type, flags, Has(mask, 5), controlName);
+            node?.AddSite(identity, type, flags, Has(mask, 5), controlName);
             if (!streamed) return;
             Reader control = objects.Section(objectSize);
             if (IsMorphType(type)) ParseMorph(control, type);

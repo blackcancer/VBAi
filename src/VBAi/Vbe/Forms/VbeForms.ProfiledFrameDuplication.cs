@@ -126,26 +126,50 @@ namespace VBAi
         private static readonly Dictionary<string, VerifiedChildProfile> FrameChildProfiles =
             new Dictionary<string, VerifiedChildProfile>(StringComparer.OrdinalIgnoreCase)
             {
-                ["Label"] = new VerifiedChildProfile { Type = "Label", ProgId = "Forms.Label.1",
+                ["Label"] = new VerifiedChildProfile
+                {
+                    Type = "Label",
+                    ProgId = "Forms.Label.1",
                     Fields = new[] { "Name", "Caption", "Left", "Top", "Width", "Height",
                         "BackColor", "Font.Name", "Font.Size", "Font.Bold" },
-                    Limitation = "Other Label properties, image, and z-order are not copied." },
-                ["TextBox"] = new VerifiedChildProfile { Type = "TextBox", ProgId = "Forms.TextBox.1",
+                    Limitation = "Other Label properties, image, and z-order are not copied."
+                },
+                ["TextBox"] = new VerifiedChildProfile
+                {
+                    Type = "TextBox",
+                    ProgId = "Forms.TextBox.1",
                     Fields = new[] { "Name", "Left", "Top", "Width", "Height", "Value (text or empty)" },
-                    Limitation = "Bindings, validation, and other TextBox properties are not copied." },
-                ["CheckBox"] = new VerifiedChildProfile { Type = "CheckBox", ProgId = "Forms.CheckBox.1",
+                    Limitation = "Bindings, validation, and other TextBox properties are not copied."
+                },
+                ["CheckBox"] = new VerifiedChildProfile
+                {
+                    Type = "CheckBox",
+                    ProgId = "Forms.CheckBox.1",
                     Fields = new[] { "Name", "Caption", "Left", "Top", "Width", "Height",
                         "Value (Boolean only)" },
-                    Limitation = "TriState/null and other CheckBox properties are not copied." },
-                ["CommandButton"] = new VerifiedChildProfile { Type = "CommandButton", ProgId = "Forms.CommandButton.1",
+                    Limitation = "TriState/null and other CheckBox properties are not copied."
+                },
+                ["CommandButton"] = new VerifiedChildProfile
+                {
+                    Type = "CommandButton",
+                    ProgId = "Forms.CommandButton.1",
                     Fields = new[] { "Name", "Caption", "Left", "Top", "Width", "Height" },
-                    Limitation = "Event procedures and other CommandButton properties are not copied." },
-                ["ComboBox"] = new VerifiedChildProfile { Type = "ComboBox", ProgId = "Forms.ComboBox.1",
+                    Limitation = "Event procedures and other CommandButton properties are not copied."
+                },
+                ["ComboBox"] = new VerifiedChildProfile
+                {
+                    Type = "ComboBox",
+                    ProgId = "Forms.ComboBox.1",
                     Fields = new[] { "Name", "Left", "Top", "Width", "Height", "ListWidth (text)" },
-                    Limitation = "Items, bindings, selection, and other ComboBox properties are not copied." },
-                ["OptionButton"] = new VerifiedChildProfile { Type = "OptionButton", ProgId = "Forms.OptionButton.1",
+                    Limitation = "Items, bindings, selection, and other ComboBox properties are not copied."
+                },
+                ["OptionButton"] = new VerifiedChildProfile
+                {
+                    Type = "OptionButton",
+                    ProgId = "Forms.OptionButton.1",
                     Fields = new[] { "Name", "Caption", "Left", "Top", "Width", "Height" },
-                    Limitation = "Value and GroupName are not copied; copying selection can affect siblings." }
+                    Limitation = "Value and GroupName are not copied; copying selection can affect siblings."
+                }
             };
 
         /// <summary>Retourne en lecture seule les profils d’enfants reconnus et les motifs d’inadmissibilité.</summary>
@@ -154,15 +178,29 @@ namespace VBAi
         public object FrameProfileCopyPlan(Request request)
         {
             ProfiledFrameSnapshot plan = ReadFrameProfilePlan(request);
-            return new { Project = request.Project, Form = request.Form,
-                SourcePath = plan.SourcePath, ProposedFrameName = plan.NewName,
-                ExpectedTreeVersion = plan.TreeVersion, DirectChildCount = plan.Children.Count,
-                Children = plan.Children.Select(child => new { SourcePath = child.SourcePath,
-                    ProposedPath = child.ProposedPath, Type = child.Profile.Type,
-                    CopiedFields = child.Profile.Fields, Limitation = child.Profile.Limitation }).ToArray(),
-                Issues = plan.Issues, EligibleForLimitedProbe = plan.Issues.Count == 0,
-                Completeness = "Partial", MutationVerified = false, ReadOnly = true,
-                Scope = "Root Frame and direct leaf children with explicit positive profiles only." };
+            return new
+            {
+                request.Project,
+                request.Form,
+                plan.SourcePath,
+                ProposedFrameName = plan.NewName,
+                ExpectedTreeVersion = plan.TreeVersion,
+                DirectChildCount = plan.Children.Count,
+                Children = plan.Children.Select(child => new
+                {
+                    child.SourcePath,
+                    child.ProposedPath,
+                    child.Profile.Type,
+                    CopiedFields = child.Profile.Fields,
+                    child.Profile.Limitation
+                }).ToArray(),
+                plan.Issues,
+                EligibleForLimitedProbe = plan.Issues.Count == 0,
+                Completeness = "Partial",
+                MutationVerified = false,
+                ReadOnly = true,
+                Scope = "Root Frame and direct leaf children with explicit positive profiles only."
+            };
         }
 
         /// <summary>Valide la Frame racine et sa version puis capture les enfants directs admissibles sans muter le formulaire.</summary>
@@ -191,9 +229,12 @@ namespace VBAi
                 throw new InvalidOperationException("The selected control is not a native MSForms Frame.");
 
             dynamic frame = target;
-            var plan = new ProfiledFrameSnapshot {
-                SourcePath = request.ControlPath, NewName = request.NewName,
-                TreeVersion = (string)tree.TreeVersion, NodeCount = (int)tree.NodeCount,
+            var plan = new ProfiledFrameSnapshot
+            {
+                SourcePath = request.ControlPath,
+                NewName = request.NewName,
+                TreeVersion = (string)tree.TreeVersion,
+                NodeCount = (int)tree.NodeCount,
                 Caption = (string)frame.Caption,
                 Left = Convert.ToDouble(frame.Left, CultureInfo.InvariantCulture),
                 Top = Convert.ToDouble(frame.Top, CultureInfo.InvariantCulture),
@@ -219,8 +260,7 @@ namespace VBAi
                     throw new InvalidOperationException("Frame exceeds the 128 direct-child copy limit.");
                 string sourceName = (string)child.Name;
                 string type = TypeDescriptor.GetClassName((object)child);
-                VerifiedChildProfile profile;
-                if (!FrameChildProfiles.TryGetValue(type, out profile))
+                if (!FrameChildProfiles.TryGetValue(type, out VerifiedChildProfile profile))
                 {
                     plan.Issues.Add(sourceName + ": no positive copy profile for " + type + ".");
                     continue;
@@ -259,12 +299,17 @@ namespace VBAi
         private static ProfiledChildSnapshot ReadProfiledChild(dynamic child,
             VerifiedChildProfile profile, string sourcePath, string proposedPath, string newName)
         {
-            var item = new ProfiledChildSnapshot { Profile = profile, SourcePath = sourcePath,
-                ProposedName = newName, ProposedPath = proposedPath,
+            var item = new ProfiledChildSnapshot
+            {
+                Profile = profile,
+                SourcePath = sourcePath,
+                ProposedName = newName,
+                ProposedPath = proposedPath,
                 Left = Convert.ToDouble(child.Left, CultureInfo.InvariantCulture),
                 Top = Convert.ToDouble(child.Top, CultureInfo.InvariantCulture),
                 Width = Convert.ToDouble(child.Width, CultureInfo.InvariantCulture),
-                Height = Convert.ToDouble(child.Height, CultureInfo.InvariantCulture) };
+                Height = Convert.ToDouble(child.Height, CultureInfo.InvariantCulture)
+            };
             ValidateCopyBox(item.Left, item.Top, item.Width, item.Height, profile.Type);
             switch (profile.Type)
             {
@@ -297,8 +342,8 @@ namespace VBAi
                     break;
                 case "ComboBox":
                     object listWidth = child.ListWidth;
-                    if (!(listWidth is string) || string.IsNullOrWhiteSpace((string)listWidth) ||
-                        ((string)listWidth).Length > 64)
+                    if (!(listWidth is string v) || string.IsNullOrWhiteSpace(v) ||
+                        v.Length > 64)
                         throw new InvalidOperationException("ComboBox.ListWidth must be nonempty text.");
                     item.ListWidth = (string)listWidth;
                     break;
@@ -359,12 +404,21 @@ namespace VBAi
                         throw new InvalidOperationException("Copied child missing from form_tree: " + item.ProposedPath);
                     VerifyProfiledChild(ResolveTreeItem(form.Designer, item.ProposedPath), item);
                 }
-                return new { SourcePath = plan.SourcePath, NewPath = framePath,
+                return new
+                {
+                    plan.SourcePath,
+                    NewPath = framePath,
                     DirectChildrenCopied = plan.Children.Count,
-                    CopiedChildren = plan.Children.Select(item => new { Path = item.ProposedPath,
-                        Type = item.Profile.Type, CopiedFields = item.Profile.Fields,
-                        Limitation = item.Profile.Limitation }).ToArray(),
-                    Completeness = "Partial", Tree = after };
+                    CopiedChildren = plan.Children.Select(item => new
+                    {
+                        Path = item.ProposedPath,
+                        item.Profile.Type,
+                        CopiedFields = item.Profile.Fields,
+                        item.Profile.Limitation
+                    }).ToArray(),
+                    Completeness = "Partial",
+                    Tree = after
+                };
             }
             catch (Exception originalError)
             {
@@ -440,7 +494,7 @@ namespace VBAi
                     break;
                 case "CheckBox":
                     if ((string)actual.Caption != item.Caption ||
-                        !(actual.Value is bool) || (bool)actual.Value != item.BooleanValue)
+                        !(actual.Value is bool v) || v != item.BooleanValue)
                         throw new InvalidOperationException("Copied CheckBox differs: " + item.ProposedPath);
                     break;
                 case "CommandButton":

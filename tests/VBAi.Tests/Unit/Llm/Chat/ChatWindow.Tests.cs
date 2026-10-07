@@ -1,18 +1,12 @@
 namespace VBAi.Tests.Unit
 {
+    using Microsoft.VisualStudio.TestTools.UnitTesting;
     using System;
-    using System.Collections;
     using System.Collections.Generic;
     using System.IO;
-    using System.Net;
-    using System.Net.Http;
-    using System.Reflection;
-    using System.Threading;
     using System.Threading.Tasks;
-    using System.Web.Script.Serialization;
     using System.Windows.Forms;
     using VBAi;
-    using Microsoft.VisualStudio.TestTools.UnitTesting;
 
     public sealed partial class ChatWindowStateTests
     {
@@ -57,23 +51,23 @@ namespace VBAi.Tests.Unit
         public void ModelSelectorsFitScaledControlsAndFontsAfterRepeatedExpansion()
         {
             foreach (float scale in new[] { 1f, 1.5f, 2f })
-            using (var window = Surfaces())
-            using (var font = new System.Drawing.Font("Segoe UI", 9f * scale))
-            using (var larger = new System.Drawing.Font("Segoe UI", 13f * scale))
-            {
-                window.Scale(new System.Drawing.SizeF(scale, scale)); window.Font = font;
-                var row = Get<TableLayoutPanel>(window, "rootLayout").RowStyles[6];
-                var provider = Get<TableLayoutPanel>(window, "providerLayout");
-                for (int cycle = 0; cycle < 3; cycle++)
+                using (var window = Surfaces())
+                using (var font = new System.Drawing.Font("Segoe UI", 9f * scale))
+                using (var larger = new System.Drawing.Font("Segoe UI", 13f * scale))
                 {
-                    if (cycle == 2) window.Font = larger;
-                    Call(window, "ModelSummary_Click", null, EventArgs.Empty);
-                    foreach (Control control in provider.Controls)
-                        Assert.IsTrue(row.Height >= control.GetPreferredSize(System.Drawing.Size.Empty).Height + control.Margin.Vertical + provider.Padding.Vertical + provider.Margin.Vertical);
-                    Call(window, "ModelSummary_Click", null, EventArgs.Empty);
-                    Assert.AreEqual(0f, row.Height);
+                    window.Scale(new System.Drawing.SizeF(scale, scale)); window.Font = font;
+                    var row = Get<TableLayoutPanel>(window, "rootLayout").RowStyles[6];
+                    var provider = Get<TableLayoutPanel>(window, "providerLayout");
+                    for (int cycle = 0; cycle < 3; cycle++)
+                    {
+                        if (cycle == 2) window.Font = larger;
+                        Call(window, "ModelSummary_Click", null, EventArgs.Empty);
+                        foreach (Control control in provider.Controls)
+                            Assert.IsTrue(row.Height >= control.GetPreferredSize(System.Drawing.Size.Empty).Height + control.Margin.Vertical + provider.Padding.Vertical + provider.Margin.Vertical);
+                        Call(window, "ModelSummary_Click", null, EventArgs.Empty);
+                        Assert.AreEqual(0f, row.Height);
+                    }
                 }
-            }
         }
 
         /// <summary>Checks that the verification menu updates the existing preference while selector expansion is blocked during a run.</summary>
@@ -348,6 +342,7 @@ namespace VBAi.Tests.Unit
 }
 namespace VBAi.Tests.Unit
 {
+    using Microsoft.VisualStudio.TestTools.UnitTesting;
     using System;
     using System.Collections.Generic;
     using System.IO;
@@ -358,7 +353,6 @@ namespace VBAi.Tests.Unit
     using System.Web.Script.Serialization;
     using System.Windows.Forms;
     using VBAi;
-    using Microsoft.VisualStudio.TestTools.UnitTesting;
     public sealed partial class ChatWindowStateTests
     {
         [STATestMethod, TestCategory("Unit")]
@@ -535,7 +529,7 @@ namespace VBAi.Tests.Unit
             using (var runtime = new RuntimeScope())
             using (var window = ReadyHttpWindow(new ChatSessionState { Scope = "temporary:test", Provider = "Ollama" }))
             {
-                Get<LlmSettings>(window, "settings").OllamaEndpoint = "file:///invalid-chat-endpoint"; window.HttpHandlerOverride = null; Get<CheckBox>(window,"verifyAfterEdit").Checked=false; Question(window, "invalid endpoint"); CompleteOnSta((Task)Call(window, "SendAsync")); StringAssert.Contains(Get<List<ChatEntry>>(window, "transcriptEntries").Last().Text, "HTTPS"); Set(window, "currentSession", null);
+                Get<LlmSettings>(window, "settings").OllamaEndpoint = "file:///invalid-chat-endpoint"; window.HttpHandlerOverride = null; Get<CheckBox>(window, "verifyAfterEdit").Checked = false; Question(window, "invalid endpoint"); CompleteOnSta((Task)Call(window, "SendAsync")); StringAssert.Contains(Get<List<ChatEntry>>(window, "transcriptEntries").Last().Text, "HTTPS"); Set(window, "currentSession", null);
             }
             using (var runtime = new RuntimeScope())
             using (var window = ReadyHttpWindow(new ChatSessionState { Scope = "temporary:test", Provider = "Ollama" }))
@@ -550,11 +544,11 @@ namespace VBAi.Tests.Unit
 
 namespace VBAi.Tests.Unit
 {
+    using Microsoft.VisualStudio.TestTools.UnitTesting;
     using System;
     using System.Collections.Generic;
     using System.Threading.Tasks;
     using System.Windows.Forms;
-    using Microsoft.VisualStudio.TestTools.UnitTesting;
 
     public sealed partial class ChatWindowStateTests
     {
@@ -575,7 +569,11 @@ namespace VBAi.Tests.Unit
                 {
                     Set(window, "about", null);
                     Call(window, "DisposeRuntime");
-                    Assert.IsNotNull(about.Image);
+                    Assert.IsNull(about.Image, "Menu ownership must release the icon even when its convenience field is missing.");
+                    Assert.IsNull(Get<ToolStripMenuItem>(window, "github").Image);
+                    Assert.IsNull(Get<ToolStripMenuItem>(window, "configure").Image);
+                    Call(window, "DisposeRuntime");
+                    Assert.IsNull(about.Image, "Repeated cleanup must remain harmless.");
                 }
                 finally { Set(window, "about", about); }
             }
@@ -632,11 +630,15 @@ namespace VBAi.Tests.Unit
             using (var window = ReadyHttpWindow(new ChatSessionState()))
             {
                 var messages = Get<List<object>>(window, "messages");
-                window.HttpHandlerOverride = () => new RuntimeHttpHandler { BeforeResponse = () => {
-                    window.Dispose();
-                    messages.Add(new { role = "assistant", content = new string('x', 10 * 1024 * 1024 + 1) });
-                    throw new System.IO.IOException("reply interrupted after closure");
-                } };
+                window.HttpHandlerOverride = () => new RuntimeHttpHandler
+                {
+                    BeforeResponse = () =>
+                    {
+                        window.Dispose();
+                        messages.Add(new { role = "assistant", content = new string('x', 10 * 1024 * 1024 + 1) });
+                        throw new System.IO.IOException("reply interrupted after closure");
+                    }
+                };
                 Question(window, "continue");
                 var task = (Task)Call(window, "SendAsync");
                 var error = Assert.ThrowsException<InvalidOperationException>(() => CompleteOnSta(task));
@@ -652,30 +654,34 @@ namespace VBAi.Tests.Unit
         public void SendFinalizationReleasesTheTurnWhenTheSessionDisappearsAtTheProviderFailureBoundary()
         {
             foreach (string state in new[] { "absent", "paused", "unpaused" })
-            using (var runtime = new RuntimeScope())
-            using (var window = ReadyHttpWindow(new ChatSessionState()))
-            {
-                var session = Get<ChatSessionState>(window, "currentSession");
-                int replies = 0, compilations = 0;
-                Get<CheckBox>(window, "verifyAfterEdit").Checked = true;
-                ChatWindow.InvokeTool = (tools, name, arguments) => { compilations++; throw new AssertFailedException("A turn without applied changes must not compile."); };
-                window.HttpHandlerOverride = () => new RuntimeHttpHandler { BeforeResponse = () => {
-                    replies++;
-                    if (state == "absent") Set(window, "currentSession", null);
-                    else session.BudgetPaused = state == "paused";
-                    throw new System.IO.IOException("owned provider reply failed");
-                } };
-                Question(window, "owned retry request");
-                CompleteOnSta((Task)Call(window, "SendAsync"));
-                Assert.AreEqual(1, replies); Assert.AreEqual(0, compilations);
-                Assert.IsFalse(window.IsDisposed); Assert.IsFalse(Get<bool>(window, "busy"));
-                Assert.IsNull(Get<LlmChatClient>(window, "activeHttpClient")); Assert.IsNull(Get<string>(window, "activeTurnId"));
-                Assert.AreEqual("owned retry request", Get<System.Windows.Controls.TextBox>(window, "prompt").Text);
-                Assert.IsTrue(Get<List<ChatEntry>>(window, "transcriptEntries").Exists(entry => entry.Speaker == "Erreur" && entry.Text == "owned provider reply failed"));
-                if (state == "absent") Assert.IsNull(Get<ChatSessionState>(window, "currentSession"));
-                else { Assert.AreSame(session, Get<ChatSessionState>(window, "currentSession")); Assert.AreEqual(state == "paused", session.BudgetPaused); }
-                Set(window, "currentSession", null);
-            }
+                using (var runtime = new RuntimeScope())
+                using (var window = ReadyHttpWindow(new ChatSessionState()))
+                {
+                    var session = Get<ChatSessionState>(window, "currentSession");
+                    int replies = 0, compilations = 0;
+                    Get<CheckBox>(window, "verifyAfterEdit").Checked = true;
+                    ChatWindow.InvokeTool = (tools, name, arguments) => { compilations++; throw new AssertFailedException("A turn without applied changes must not compile."); };
+                    window.HttpHandlerOverride = () => new RuntimeHttpHandler
+                    {
+                        BeforeResponse = () =>
+                        {
+                            replies++;
+                            if (state == "absent") Set(window, "currentSession", null);
+                            else session.BudgetPaused = state == "paused";
+                            throw new System.IO.IOException("owned provider reply failed");
+                        }
+                    };
+                    Question(window, "owned retry request");
+                    CompleteOnSta((Task)Call(window, "SendAsync"));
+                    Assert.AreEqual(1, replies); Assert.AreEqual(0, compilations);
+                    Assert.IsFalse(window.IsDisposed); Assert.IsFalse(Get<bool>(window, "busy"));
+                    Assert.IsNull(Get<LlmChatClient>(window, "activeHttpClient")); Assert.IsNull(Get<string>(window, "activeTurnId"));
+                    Assert.AreEqual("owned retry request", Get<System.Windows.Controls.TextBox>(window, "prompt").Text);
+                    Assert.IsTrue(Get<List<ChatEntry>>(window, "transcriptEntries").Exists(entry => entry.Speaker == "Erreur" && entry.Text == "owned provider reply failed"));
+                    if (state == "absent") Assert.IsNull(Get<ChatSessionState>(window, "currentSession"));
+                    else { Assert.AreSame(session, Get<ChatSessionState>(window, "currentSession")); Assert.AreEqual(state == "paused", session.BudgetPaused); }
+                    Set(window, "currentSession", null);
+                }
         }
     }
 }

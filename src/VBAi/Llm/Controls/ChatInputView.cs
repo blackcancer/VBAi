@@ -34,11 +34,14 @@ namespace VBAi
             {
                 if (editor == null)
                 {
-                    editor = new WpfTextBox { AcceptsReturn = true,
+                    editor = new WpfTextBox
+                    {
+                        AcceptsReturn = true,
                         TextWrapping = System.Windows.TextWrapping.Wrap,
                         VerticalScrollBarVisibility = System.Windows.Controls.ScrollBarVisibility.Auto,
                         BorderThickness = new System.Windows.Thickness(0),
-                        Background = System.Windows.Media.Brushes.Transparent };
+                        Background = System.Windows.Media.Brushes.Transparent
+                    };
                     host.Child = editor;
                     ApplyEditorAppearance();
                     previewPanel.Visible = false;

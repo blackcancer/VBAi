@@ -1,7 +1,7 @@
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 using VBAi.Tests.Integration;
 
 namespace VBAi.Tests.Unit
@@ -28,7 +28,8 @@ namespace VBAi.Tests.Unit
         public void ExplicitInvariantSamplingAndOwnedEndpointArePreserved(string temperature, string topP)
         {
             var reads = new List<string>();
-            var values = new Dictionary<string,string> {
+            var values = new Dictionary<string, string>
+            {
                 [OllamaQualificationModel.EnvironmentName] = " synthetic/model:tag ",
                 [OllamaQualificationEndpoint.EnvironmentName] = "http://127.0.0.1:52541/v1/chat/completions",
                 [OllamaQualificationProfile.TemperatureEnvironmentName] = temperature,
@@ -81,13 +82,15 @@ namespace VBAi.Tests.Unit
         public void TestProfileSamplingUsesInvariantParsingAndDiagnosticsDespiteCurrentCulture()
         {
             var before = CultureInfo.CurrentCulture;
-            try {
+            try
+            {
                 CultureInfo.CurrentCulture = CultureInfo.GetCultureInfo("fr-FR");
                 var profile = OllamaQualificationProfile.Resolve(name => null);
                 StringAssert.Contains(profile.Describe(), "TopP=0.8");
                 Assert.ThrowsException<InvalidOperationException>(() => OllamaQualificationProfile.Resolve(name =>
                     name == OllamaQualificationProfile.TopPEnvironmentName ? "0,8" : null));
-            } finally { CultureInfo.CurrentCulture = before; }
+            }
+            finally { CultureInfo.CurrentCulture = before; }
         }
     }
 }

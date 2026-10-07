@@ -1,6 +1,6 @@
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Collections.Generic;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 using VBAi.Tests.Integration;
 
 namespace VBAi.Tests.Unit
@@ -77,7 +77,8 @@ namespace VBAi.Tests.Unit
             string configured = Environment.GetEnvironmentVariable(OllamaQualificationModel.EnvironmentName);
             string expected;
             try { expected = OllamaQualificationModel.Parse(configured); }
-            catch (InvalidOperationException) {
+            catch (InvalidOperationException)
+            {
                 Assert.ThrowsException<InvalidOperationException>(() => OllamaQualificationModel.Resolve());
                 return;
             }

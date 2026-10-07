@@ -1,6 +1,6 @@
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Reflection;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 namespace VBAi.Tests.Unit
 {
     /// <summary>Vérifie le catalogue et la résolution des configurations de fournisseurs LLM.</summary>
@@ -12,7 +12,8 @@ namespace VBAi.Tests.Unit
         [TestMethod]
         public void CatalogueFlagsEndpointsAndDisplayNamesMatchProviderContracts()
         {
-            foreach (var provider in LlmProvider.All) {
+            foreach (var provider in LlmProvider.All)
+            {
                 Assert.IsTrue(provider.Available);
                 Assert.IsNotNull(provider.Name);
                 Assert.AreEqual(provider.Name == "Codex", provider.IsCodex);
@@ -26,16 +27,20 @@ namespace VBAi.Tests.Unit
                 Assert.AreEqual(!provider.Local && !provider.IsCopilot && !provider.IsCustom, provider.RequiresKey);
                 Assert.AreEqual(provider.ModelVariable == null ? null : provider.ModelVariable.Replace("_MODEL", "_ENDPOINT"), provider.EndpointVariable);
                 Assert.IsFalse(string.IsNullOrWhiteSpace(provider.ToString()));
-                if (provider.IsCustom) {
+                if (provider.IsCustom)
+                {
                     var previous = provider.CustomDisplayName;
-                    try {
+                    try
+                    {
                         provider.CustomDisplayName = "  ";
                         Assert.AreEqual(UiText.Get("Custom (OpenAI)"), provider.ToString());
                         provider.CustomDisplayName = "Private";
                         Assert.AreEqual("Private (OpenAI compatible)", provider.ToString());
                         Assert.AreEqual("Private", provider.CustomDisplayName);
-                    } finally { provider.CustomDisplayName = previous; }
-                } else Assert.AreEqual(provider.Name, provider.ToString());
+                    }
+                    finally { provider.CustomDisplayName = previous; }
+                }
+                else Assert.AreEqual(provider.Name, provider.ToString());
                 if (provider.Endpoint != null) Assert.IsTrue(Uri.IsWellFormedUriString(provider.Endpoint, UriKind.Absolute));
                 if (provider.KeyVariable != null) Assert.IsFalse(string.IsNullOrWhiteSpace(provider.KeyVariable));
             }
@@ -55,13 +60,16 @@ namespace VBAi.Tests.Unit
             var key = "VBAi_TEST_PROTOCOL_MODEL";
             var provider = (LlmProvider)ctor.Invoke(new object[] { "Test", true, false, null, key, null });
             var previous = Environment.GetEnvironmentVariable(key);
-            try {
-                foreach (var value in new[] { null, " ", "model-test" }) {
+            try
+            {
+                foreach (var value in new[] { null, " ", "model-test" })
+                {
                     Environment.SetEnvironmentVariable(key, value);
                     if (value == "model-test") Assert.AreEqual(value, provider.ResolveModel());
                     else StringAssert.Contains(Assert.ThrowsException<InvalidOperationException>(() => provider.ResolveModel()).Message, key);
                 }
-            } finally { Environment.SetEnvironmentVariable(key, previous); }
+            }
+            finally { Environment.SetEnvironmentVariable(key, previous); }
         }
     }
 }

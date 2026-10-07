@@ -2,7 +2,6 @@ using System;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Windows.Forms;
 
 namespace VBAi
 {
@@ -35,7 +34,8 @@ namespace VBAi
         /// <summary>Relie les événements de navigation de revue au layout et aux services Git.</summary>
         private void InitializeReview()
         {
-            githubPane.RepositorySelected = (url, selectedBranch) => {
+            githubPane.RepositorySelected = (url, selectedBranch) =>
+            {
                 if (repository != null) { status.Text = UiText.Get("This document is already linked. Reopen GitHub to choose another repository."); return; }
                 remote.Text = url; branch.Text = selectedBranch; tabs.SelectedTab = connectionTab;
                 status.Text = UiText.Get("Repository selected. Click Link repository to connect this document.");
@@ -70,8 +70,12 @@ namespace VBAi
                 var old = baseline?.Manifest.Components.FirstOrDefault(x => x.Name == name);
                 var next = target.Manifest.Components.FirstOrDefault(x => x.Name == name);
                 if (reviewCommit == null && !changed.Any(x => x == old?.FileName || x == next?.FileName || x == name + ".frx")) continue;
-                changes.Items.Add(new ModuleChange { Name = name, Label = (old == null ? "+ " : next == null ? "− " : "~ ") + name +
-                    ((old?.HasResources ?? false) || (next?.HasResources ?? false) ? " · " + UiText.Get("Form resources included") : "") }, reviewCommit == null);
+                changes.Items.Add(new ModuleChange
+                {
+                    Name = name,
+                    Label = (old == null ? "+ " : next == null ? "− " : "~ ") + name +
+                    ((old?.HasResources ?? false) || (next?.HasResources ?? false) ? " · " + UiText.Get("Form resources included") : "")
+                }, reviewCommit == null);
             }
             if (baseline == null || target.Manifest.References != baseline.Manifest.References)
                 changes.Items.Add(new ModuleChange { Label = UiText.Get("VBA references") }, reviewCommit == null);
@@ -103,10 +107,10 @@ namespace VBAi
         private async void PreviewImport_Click(object sender, EventArgs e)
         {
             if (repository == null) return;
-            await Perform(async () => {
+            await Perform(async () =>
+            {
                 cancelOperation.Enabled = true; repository.Cancellation = operationCancellation.Token; repository.Progress = ReportProgress;
-                var target = await Task.Run(() => repository.Read(repository.Fetch()));
-                if (target == null) throw new InvalidOperationException(UiText.Get("The target contains no VBA sources."));
+                var target = await Task.Run(() => repository.Read(repository.Fetch())) ?? throw new InvalidOperationException(UiText.Get("The target contains no VBA sources."));
                 ShowImportSummary(target.ImportSummary(project.Capture()));
                 status.Text = UiText.Get("Preview only. Pull imports these changes with a checkpoint.");
             });
@@ -139,7 +143,8 @@ namespace VBAi
             if (running || repository == null) return;
             var selected = history.SelectedItems.Cast<GitCommitInfo>().ToArray();
             if (selected.Length == 0) return;
-            await Perform(async () => {
+            await Perform(async () =>
+            {
                 var current = selected[0]; reviewCommit = current.Id;
                 historyDetails.Text = await Task.Run(() => repository.CommitDetails(current.Id));
                 string previous = selected.Length > 1 ? selected[1].Id : await Task.Run(() => repository.ParentCommit(current.Id));
@@ -156,8 +161,9 @@ namespace VBAi
         private async void CheckpointChanged(object sender, EventArgs e)
         {
             if (running || repository == null) return;
-            var checkpoint = checkpointList.SelectedItem as GitCheckpoint; if (checkpoint == null) return;
-            await Perform(async () => {
+            if (!(checkpointList.SelectedItem is GitCheckpoint checkpoint)) return;
+            await Perform(async () =>
+            {
                 reviewCommit = checkpoint.Commit;
                 PopulateChanges(await Task.Run(() => repository.Read(checkpoint.Commit)), project.Capture());
                 tabs.SelectedTab = changesTab; status.Text = UiText.Get("Reviewing checkpoint") + " · " + checkpoint.Label;

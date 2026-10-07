@@ -1,8 +1,8 @@
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace VBAi.Tests.Integration
 {
@@ -35,8 +35,17 @@ namespace VBAi.Tests.Integration
                 int calls = 0;
                 foreach (object[] arguments in new[] { new object[0], new object[] { "quoted\"", 7, true, null }, Enumerable.Range(1, 30).Cast<object>().ToArray() })
                 {
-                    var queued = Data(host.Command(new { Command = "run_procedure_values", Project = path, Module = module, Procedure = "Values",
-                        ExpectedHostPath = path, ExpectedSha256 = inspected["Sha256"], ExpectedMode = 2, Arguments = arguments }));
+                    var queued = Data(host.Command(new
+                    {
+                        Command = "run_procedure_values",
+                        Project = path,
+                        Module = module,
+                        Procedure = "Values",
+                        ExpectedHostPath = path,
+                        ExpectedSha256 = inspected["Sha256"],
+                        ExpectedMode = 2,
+                        Arguments = arguments
+                    }));
                     var status = Wait(host, path, queued); var returned = VbeBridgeClient.Object(status["Output"]);
                     Assert.AreEqual("Array", returned["Kind"]); CollectionAssert.AreEqual(arguments, (object[])returned["Value"]);
                     Assert.AreEqual(++calls, Convert.ToInt32(host.ReadCell("A1")));
@@ -45,15 +54,33 @@ namespace VBAi.Tests.Integration
                 }
                 foreach (object[] arguments in new[] { new object[] { "native" }, new object[] { "native", new object[] { 3, 4 } } })
                 {
-                    var queued = Data(host.Command(new { Command = "run_procedure_values", Project = path, Module = module, Procedure = "Tagged",
-                        ExpectedHostPath = path, ExpectedSha256 = inspected["Sha256"], ExpectedMode = 2, Arguments = arguments }));
+                    var queued = Data(host.Command(new
+                    {
+                        Command = "run_procedure_values",
+                        Project = path,
+                        Module = module,
+                        Procedure = "Tagged",
+                        ExpectedHostPath = path,
+                        ExpectedSha256 = inspected["Sha256"],
+                        ExpectedMode = 2,
+                        Arguments = arguments
+                    }));
                     var returned = VbeBridgeClient.Object(Wait(host, path, queued)["Output"]);
                     Assert.AreEqual(arguments.Length == 1 ? "native|0" : "native|1|array", returned["Value"]);
                     Assert.AreEqual(++calls, Convert.ToInt32(host.ReadCell("A1")));
                 }
-                var refused = host.Command(new { Command = "run_procedure_values", Project = path, Module = module, Procedure = "Tagged",
-                    ExpectedHostPath = path, ExpectedSha256 = inspected["Sha256"], ExpectedMode = 2,
-                    Arguments = new object[] { "native" }, ArgumentNames = new[] { "tag" } });
+                var refused = host.Command(new
+                {
+                    Command = "run_procedure_values",
+                    Project = path,
+                    Module = module,
+                    Procedure = "Tagged",
+                    ExpectedHostPath = path,
+                    ExpectedSha256 = inspected["Sha256"],
+                    ExpectedMode = 2,
+                    Arguments = new object[] { "native" },
+                    ArgumentNames = new[] { "tag" }
+                });
                 Assert.AreEqual(false, refused["Ok"]); Assert.AreEqual(calls, Convert.ToInt32(host.ReadCell("A1")));
                 Assert.AreEqual(inspected["Code"], Data(host.Command(new { Command = "read_module", Project = path, Module = module }))["Code"]);
             });
@@ -79,9 +106,17 @@ namespace VBAi.Tests.Integration
                 var properties = Data(host.Command(new { Command = "project_properties", Project = project }));
                 string path = host.File("variant-arrays.xlsm");
                 Data(host.Command(new { Command = "save_host_document_as", Project = project, Path = path, ExpectedProjectVersion = properties["Version"] }));
-                var queued = Data(host.Command(new { Command = "run_procedure_values", Project = path, Module = module, Procedure = "Vector",
-                    ExpectedHostPath = path, ExpectedSha256 = inspected["Sha256"], ExpectedMode = 2,
-                    Arguments = new object[] { new object[] { 7, "quoted\" value", null } } }));
+                var queued = Data(host.Command(new
+                {
+                    Command = "run_procedure_values",
+                    Project = path,
+                    Module = module,
+                    Procedure = "Vector",
+                    ExpectedHostPath = path,
+                    ExpectedSha256 = inspected["Sha256"],
+                    ExpectedMode = 2,
+                    Arguments = new object[] { new object[] { 7, "quoted\" value", null } }
+                }));
                 var first = Wait(host, path, queued); var returned = VbeBridgeClient.Object(first["Output"]);
                 Assert.AreEqual("Returned", first["State"], Convert.ToString(first["Error"])); Assert.AreEqual(true, first["ReturnValueVerified"]);
                 CollectionAssert.AreEqual(new object[] { 1, -2 }, (object[])returned["LowerBounds"]);
@@ -89,9 +124,17 @@ namespace VBAi.Tests.Integration
                 Assert.AreEqual("default", ((object[])rows[1])[1]); Assert.AreEqual(1d, Convert.ToDouble(host.ReadCell("A1")));
                 Data(host.Command(new { Command = "procedure_values_status", Project = path, Query = queued["Query"] }));
                 Assert.AreEqual(1d, Convert.ToDouble(host.ReadCell("A1")), "Polling must not invoke the function again.");
-                queued = Data(host.Command(new { Command = "run_procedure_values", Project = path, Module = module, Procedure = "Matrix",
-                    ExpectedHostPath = path, ExpectedSha256 = inspected["Sha256"], ExpectedMode = 2,
-                    Arguments = new object[] { new object[] { new object[] { 1, 2 }, new object[] { 3, 4 } } } }));
+                queued = Data(host.Command(new
+                {
+                    Command = "run_procedure_values",
+                    Project = path,
+                    Module = module,
+                    Procedure = "Matrix",
+                    ExpectedHostPath = path,
+                    ExpectedSha256 = inspected["Sha256"],
+                    ExpectedMode = 2,
+                    Arguments = new object[] { new object[] { new object[] { 1, 2 }, new object[] { 3, 4 } } }
+                }));
                 var matrix = VbeBridgeClient.Object(Wait(host, path, queued)["Output"]);
                 CollectionAssert.AreEqual(new object[] { 0, 0 }, (object[])matrix["LowerBounds"]);
                 rows = (object[])matrix["Value"]; Assert.AreEqual(4, ((object[])rows[1])[1]);

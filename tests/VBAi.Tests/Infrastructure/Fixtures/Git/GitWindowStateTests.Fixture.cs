@@ -1,13 +1,9 @@
 namespace VBAi.Tests.Unit
 {
-    using System;
-    using System.Drawing;
+    using Microsoft.VisualStudio.TestTools.UnitTesting;
     using System.Reflection;
-    using System.Runtime.Serialization;
-    using System.Threading.Tasks;
     using System.Windows.Forms;
     using VBAi;
-    using Microsoft.VisualStudio.TestTools.UnitTesting;
 
     /// <summary>Fournit des accès réfléchis aux contrôles privés de la fenêtre Git pendant les tests.</summary>
     public sealed partial class GitWindowStateTests

@@ -95,11 +95,11 @@ namespace VBAi
                 if (face.Width < 2 || face.Height < 2) continue;
                 bool selected = i == SelectedIndex, hovered = i == hoveredTab && TabPages[i].Enabled;
                 if (selected || hovered)
-                using (var path = UiInputFrame.Outline(face, DeviceDpi))
-                {
-                    using (var fill = new SolidBrush(UiTheme.SurfaceFor(this))) e.Graphics.FillPath(fill, path);
-                    using (var pen = new Pen(selected && Focused && ShowFocusCues ? UiTheme.FocusBorderFor(this) : UiTheme.BorderFor(this))) e.Graphics.DrawPath(pen, path);
-                }
+                    using (var path = UiInputFrame.Outline(face, DeviceDpi))
+                    {
+                        using (var fill = new SolidBrush(UiTheme.SurfaceFor(this))) e.Graphics.FillPath(fill, path);
+                        using (var pen = new Pen(selected && Focused && ShowFocusCues ? UiTheme.FocusBorderFor(this) : UiTheme.BorderFor(this))) e.Graphics.DrawPath(pen, path);
+                    }
                 Color ink = TabPages[i].Enabled ? UiTheme.ForegroundFor(this) : SystemColors.GrayText;
                 var text = Rectangle.Inflate(face, -6 * DeviceDpi / 96, 0);
                 if (ShowCloseButtons)
@@ -107,8 +107,8 @@ namespace VBAi
                     var close = CloseBounds(i);
                     text.Width = Math.Max(0, close.Left - text.Left - 2);
                     if (closeHovered && hovered)
-                    using (var path = UiInputFrame.Outline(close, DeviceDpi))
-                    using (var fill = new SolidBrush(UiTheme.BackgroundFor(this))) e.Graphics.FillPath(fill, path);
+                        using (var path = UiInputFrame.Outline(close, DeviceDpi))
+                        using (var fill = new SolidBrush(UiTheme.BackgroundFor(this))) e.Graphics.FillPath(fill, path);
                     UiCommandIcons.Draw(e.Graphics, UiSymbol.Close, close, ink, DeviceDpi);
                 }
                 TextRenderer.DrawText(e.Graphics, TabPages[i].Text, Font, text, ink,

@@ -171,8 +171,15 @@ namespace VBAi.Tests.Integration
             }
             if (paths.Length != records.Count + terminals) throw new InvalidOperationException("Partial, extra or temporary shutdown files remain.");
             Invocation[] invocations = Validate(records.ToArray(), nonce, expected);
-            return new { State = "VALID_CLEANUP_OBSERVATIONS_ONLY", Identity = expected, Invocations = invocations,
-                EvidenceFiles = proofs, NativeRcwReleaseProven = false, HostExitProven = false };
+            return new
+            {
+                State = "VALID_CLEANUP_OBSERVATIONS_ONLY",
+                Identity = expected,
+                Invocations = invocations,
+                EvidenceFiles = proofs,
+                NativeRcwReleaseProven = false,
+                HostExitProven = false
+            };
         }
     }
 }

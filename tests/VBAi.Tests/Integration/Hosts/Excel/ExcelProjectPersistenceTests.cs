@@ -1,7 +1,7 @@
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.IO;
 using System.Linq;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace VBAi.Tests.Integration
 {
@@ -34,8 +34,13 @@ namespace VBAi.Tests.Integration
                 Assert.AreEqual(true, projectResponse["Ok"]);
                 string version = Convert.ToString(VbeBridgeClient.Object(projectResponse["Data"])["Version"]);
                 string path = host.File("isolated.xlsm");
-                var saveAsResponse = host.Command(new { Command = "save_host_document_as", Project = project,
-                    Path = path, ExpectedProjectVersion = version });
+                var saveAsResponse = host.Command(new
+                {
+                    Command = "save_host_document_as",
+                    Project = project,
+                    Path = path,
+                    ExpectedProjectVersion = version
+                });
                 Assert.AreEqual(true, saveAsResponse["Ok"], Convert.ToString(saveAsResponse["Error"]));
                 var saveAs = VbeBridgeClient.Object(saveAsResponse["Data"]);
                 Assert.AreEqual(path, Convert.ToString(saveAs["HostPath"]));
@@ -50,8 +55,13 @@ namespace VBAi.Tests.Integration
                 projectResponse = host.Command(new { Command = "project_properties", Project = project });
                 Assert.AreEqual(true, projectResponse["Ok"]);
                 version = Convert.ToString(VbeBridgeClient.Object(projectResponse["Data"])["Version"]);
-                var saveResponse = host.Command(new { Command = "save_host_document", Project = project,
-                    ExpectedProjectVersion = version, ExpectedHostPath = path });
+                var saveResponse = host.Command(new
+                {
+                    Command = "save_host_document",
+                    Project = project,
+                    ExpectedProjectVersion = version,
+                    ExpectedHostPath = path
+                });
                 Assert.AreEqual(true, saveResponse["Ok"], Convert.ToString(saveResponse["Error"]));
                 Assert.AreEqual(true, VbeBridgeClient.Object(saveResponse["Data"])["SaveInvoked"]);
                 var otherProjects = (object[])other.Command("list_projects")["Data"];

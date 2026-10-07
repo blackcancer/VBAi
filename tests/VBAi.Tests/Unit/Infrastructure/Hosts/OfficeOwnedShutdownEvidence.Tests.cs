@@ -1,6 +1,6 @@
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.IO;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 using VBAi.Tests.Integration;
 
 namespace VBAi.Tests.Unit
@@ -35,7 +35,8 @@ namespace VBAi.Tests.Unit
         {
             var state = Create(); int quits = 0, disposals = 0, codeReads = 0;
             state.Prepare(() => { }); state.QuitOnce(() => quits++, () => { });
-            Assert.IsTrue(state.ObserveExit(() => true, () => { codeReads++; return code; }, () => {
+            Assert.IsTrue(state.ObserveExit(() => true, () => { codeReads++; return code; }, () =>
+            {
                 Assert.AreEqual(true, state.Record["ProcessExitObserved"]); Assert.AreEqual(true, state.Record["ExitCodeObserved"]);
                 Assert.AreEqual(code, state.Record["ExitCode"]); disposals++;
             }, () => { }));

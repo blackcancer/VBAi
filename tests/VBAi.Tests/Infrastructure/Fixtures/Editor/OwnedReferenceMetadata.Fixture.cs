@@ -4,15 +4,15 @@ using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.ComTypes;
 using System.Runtime.Remoting.Messaging;
 using System.Runtime.Remoting.Proxies;
-using TYPEATTR = System.Runtime.InteropServices.ComTypes.TYPEATTR;
-using FUNCDESC = System.Runtime.InteropServices.ComTypes.FUNCDESC;
-using TYPEKIND = System.Runtime.InteropServices.ComTypes.TYPEKIND;
-using INVOKEKIND = System.Runtime.InteropServices.ComTypes.INVOKEKIND;
 using ELEMDESC = System.Runtime.InteropServices.ComTypes.ELEMDESC;
+using FUNCDESC = System.Runtime.InteropServices.ComTypes.FUNCDESC;
+using INVOKEKIND = System.Runtime.InteropServices.ComTypes.INVOKEKIND;
 using PARAMDESC = System.Runtime.InteropServices.ComTypes.PARAMDESC;
 using PARAMFLAG = System.Runtime.InteropServices.ComTypes.PARAMFLAG;
-using VARDESC = System.Runtime.InteropServices.ComTypes.VARDESC;
+using TYPEATTR = System.Runtime.InteropServices.ComTypes.TYPEATTR;
 using TYPEDESC = System.Runtime.InteropServices.ComTypes.TYPEDESC;
+using TYPEKIND = System.Runtime.InteropServices.ComTypes.TYPEKIND;
+using VARDESC = System.Runtime.InteropServices.ComTypes.VARDESC;
 
 namespace VBAi.Tests.Infrastructure
 {
@@ -50,8 +50,15 @@ namespace VBAi.Tests.Infrastructure
                             int size = Marshal.SizeOf(typeof(ELEMDESC)); parameters = Marshal.AllocHGlobal(size * Parameters.Length); allocations.Add(parameters);
                             for (int i = 0; i < Parameters.Length; i++) Marshal.StructureToPtr(Parameters[i], IntPtr.Add(parameters, size * i), false);
                         }
-                        args[1] = Allocate(new FUNCDESC { memid = MemberId, invkind = Invocation, wFuncFlags = FunctionFlags, cParams = (short)Parameters.Length,
-                            lprgelemdescParam = parameters, elemdescFunc = Parameter(Return, 0) }); break;
+                        args[1] = Allocate(new FUNCDESC
+                        {
+                            memid = MemberId,
+                            invkind = Invocation,
+                            wFuncFlags = FunctionFlags,
+                            cParams = (short)Parameters.Length,
+                            lprgelemdescParam = parameters,
+                            elemdescFunc = Parameter(Return, 0)
+                        }); break;
                     case "GetNames":
                         var names = (string[])args[1]; int found = Math.Min(NameCount, names.Length);
                         for (int i = 0; i < found; i++) names[i] = i == 0 ? "Run" : "value" + i;

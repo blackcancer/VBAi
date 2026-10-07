@@ -1,10 +1,8 @@
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.ComponentModel;
-using System.Linq;
 using System.Windows.Forms;
-using VBAi;
 using VBAi.Tests.Infrastructure;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace VBAi.Tests.Unit
 {
@@ -128,12 +126,12 @@ namespace VBAi.Tests.Unit
                     Assert.IsNull(AboutWindow.ResolveImageReader(null, new System.ResolveEventArgs("Unrelated.Assembly")));
                     var handle = window.Handle;
                     foreach (bool contrast in new[] { false, true })
-                    foreach (var choice in new[] { ThemeChoice.Light, ThemeChoice.Dark })
-                    {
-                        UiTheme.HighContrast = () => contrast; ThemeScope.SetChoice(choice);
-                        ModernEditorDebugFixture.Wait(System.Threading.Tasks.Task.Run(() => UiInvoke.Call(typeof(AboutWindow), "ApplyAppearance", window)));
-                        Assert.AreEqual(contrast ? System.Drawing.SystemColors.HotTrack : choice == ThemeChoice.Dark ? System.Drawing.Color.FromArgb(147, 197, 253) : System.Drawing.Color.FromArgb(29, 78, 216), UiInvoke.Field<LinkLabel>(window, "projectLink").LinkColor);
-                    }
+                        foreach (var choice in new[] { ThemeChoice.Light, ThemeChoice.Dark })
+                        {
+                            UiTheme.HighContrast = () => contrast; ThemeScope.SetChoice(choice);
+                            ModernEditorDebugFixture.Wait(System.Threading.Tasks.Task.Run(() => UiInvoke.Call(typeof(AboutWindow), "ApplyAppearance", window)));
+                            Assert.AreEqual(contrast ? System.Drawing.SystemColors.HotTrack : choice == ThemeChoice.Dark ? System.Drawing.Color.FromArgb(147, 197, 253) : System.Drawing.Color.FromArgb(29, 78, 216), UiInvoke.Field<LinkLabel>(window, "projectLink").LinkColor);
+                        }
                     window.Dispose(); UiInvoke.Call(typeof(AboutWindow), "ApplyAppearance", window);
                 }
                 var original = AddIn.ShowModal;

@@ -1,11 +1,10 @@
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Web.Script.Serialization;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
-using VBAi;
 using VBAi.Tests.Infrastructure;
 
 namespace VBAi.Tests.Scenarios
@@ -16,8 +15,11 @@ namespace VBAi.Tests.Scenarios
         private static ChatSessionStore.PromotionRow Row(string scope, string draft)
         {
             var session = new ChatSessionState { Scope = scope, Draft = draft };
-            return new ChatSessionStore.PromotionRow {
-                Id = session.Id, Title = session.Title, Payload = new JavaScriptSerializer().Serialize(session)
+            return new ChatSessionStore.PromotionRow
+            {
+                Id = session.Id,
+                Title = session.Title,
+                Payload = new JavaScriptSerializer().Serialize(session)
             };
         }
 
@@ -103,7 +105,8 @@ namespace VBAi.Tests.Scenarios
             using (var first = new ChatSessionStore(Path.Combine(boundary.Root, "concurrent.db")))
             {
                 string path = first.DatabasePath, key = @"C:\OWNED\CONCURRENT.XLSM";
-                var contender = Task.Run(() => {
+                var contender = Task.Run(() =>
+                {
                     using (var second = new ChatSessionStore(path))
                     {
                         ready.Set();
@@ -115,7 +118,8 @@ namespace VBAi.Tests.Scenarios
                 Assert.IsTrue(ready.Wait(2000));
                 var nativeStep = first.StepNative;
                 int steps = 0;
-                first.StepNative = statement => {
+                first.StepNative = statement =>
+                {
                     int result = nativeStep(statement);
                     if (++steps == 1)
                     {

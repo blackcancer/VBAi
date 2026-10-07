@@ -1,13 +1,5 @@
 namespace VBAi.Tests.Unit
 {
-    using System;
-    using System.Collections.Generic;
-    using System.ComponentModel;
-    using System.Globalization;
-    using System.Windows.Forms;
-    using VBAi;
-    using Microsoft.VisualStudio.TestTools.UnitTesting;
-
     /// <summary>Fournit des hôtes simulés aux tests de localisation.</summary>
     public sealed partial class UiLocalizationTests
     {

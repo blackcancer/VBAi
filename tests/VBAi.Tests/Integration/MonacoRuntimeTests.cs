@@ -1,12 +1,11 @@
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Diagnostics;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
-using VBAi;
 using VBAi.Tests.Infrastructure;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 namespace VBAi.Tests.Integration
 {
     [TestClass, TestCategory("MonacoRuntime")]
@@ -245,9 +244,9 @@ namespace VBAi.Tests.Integration
                 PauseAutomaticWork(window);
                 Wait(window.Script("insert", "\n' resolve local")); Wait(() => doc.Dirty);
                 host.Code += "\n' native concurrent"; Wait(window.ProcessDocuments(false)); Assert.IsTrue(doc.Conflict);
-                 Wait(() => UiInvoke.Field<Button>(window, "compare").Visible && !UiInvoke.Field<bool>(window, "busy")); UiInvoke.Field<Button>(window, "compare").PerformClick();
+                Wait(() => UiInvoke.Field<Button>(window, "compare").Visible && !UiInvoke.Field<bool>(window, "busy")); UiInvoke.Field<Button>(window, "compare").PerformClick();
                 Wait(() => UiInvoke.Field<Button>(window, "resolve").Enabled);
-                Wait(() => UiInvoke.Field<Button>(window, "resolve").Visible && !UiInvoke.Field<bool>(window, "busy")); UiInvoke.Field<Button>(window, "resolve").PerformClick();  Wait(() => !doc.Dirty && !UiInvoke.Field<bool>(window, "busy"));
+                Wait(() => UiInvoke.Field<Button>(window, "resolve").Visible && !UiInvoke.Field<bool>(window, "busy")); UiInvoke.Field<Button>(window, "resolve").PerformClick(); Wait(() => !doc.Dirty && !UiInvoke.Field<bool>(window, "busy"));
 
                 StringAssert.Contains(host.Code, "resolve local"); Assert.IsFalse(doc.Conflict);
                 Wait(window.Script("insert", "\n' reload recovery")); Wait(() => doc.Dirty);

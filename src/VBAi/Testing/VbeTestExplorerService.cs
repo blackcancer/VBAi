@@ -84,7 +84,8 @@ namespace VBAi
         internal Func<string, object> ShowExplorer;
 
         /// <summary>Overrideable check for a process that can dispatch native callbacks through VBE.</summary>
-        internal Func<bool> IsNativeExecutionHost = () => {
+        internal Func<bool> IsNativeExecutionHost = () =>
+        {
             using (var process = Process.GetCurrentProcess()) return new[] { "EXCEL", "WINWORD", "POWERPNT", "MSACCESS", "MSPUB", "OUTLOOK", "SLDWORKS", "VISIO", "WINPROJ" }
                 .Contains(process.ProcessName.ToUpperInvariant());
         };
@@ -174,8 +175,13 @@ namespace VBAi
                 try { result.Add(Snapshot(id, project)); }
                 catch (Exception)
                 {
-                    result.Add(new VbaTestProjectSnapshot { Id = id, Name = Convert.ToString(((dynamic)project).Name), Selector = id,
-                        Modules = new VbaTestModuleSnapshot[0] });
+                    result.Add(new VbaTestProjectSnapshot
+                    {
+                        Id = id,
+                        Name = Convert.ToString(((dynamic)project).Name),
+                        Selector = id,
+                        Modules = new VbaTestModuleSnapshot[0]
+                    });
                 }
             }
             foreach (string id in projects.Keys.Where(id => !liveIds.Contains(id)).ToArray()) projects.Remove(id);
@@ -253,8 +259,16 @@ namespace VBAi
                 references.Append((string)reference.Name).Append('|').Append((string)reference.Guid).Append('|')
                     .Append((int)reference.Major).Append('|').Append((int)reference.Minor).Append('|').Append((bool)reference.IsBroken).Append('\n');
             identity.Append(references);
-            return new VbaTestProjectSnapshot { Id = id, Name = name, Selector = !string.IsNullOrEmpty(path) && Path.IsPathRooted(path) ? path : name,
-                HostPath = path, Revision = Hash(identity.ToString()), ReferencesHash = Hash(references.ToString()), Modules = modules.ToArray() };
+            return new VbaTestProjectSnapshot
+            {
+                Id = id,
+                Name = name,
+                Selector = !string.IsNullOrEmpty(path) && Path.IsPathRooted(path) ? path : name,
+                HostPath = path,
+                Revision = Hash(identity.ToString()),
+                ReferencesHash = Hash(references.ToString()),
+                Modules = modules.ToArray()
+            };
         }
 
         /// <summary>Computes a SHA-256 fingerprint of UTF-8 source text.</summary>
@@ -325,7 +339,8 @@ namespace VBAi
             var pending = new PendingCall();
             pendingCalls.Add(pending);
             var completion = pending.Completion;
-            dispatcher.BeginInvoke(new Action(() => {
+            dispatcher.BeginInvoke(new Action(() =>
+            {
                 if (completion.Task.IsCompleted) return;
                 bool invoked = false;
                 object target = null;
@@ -401,8 +416,13 @@ namespace VBAi
             if (tests == null || tests.Count == 0) throw new ArgumentException("Select explicit discovered tests.");
             tests = tests.Select(test => catalog.Tests.Single(item => item.Id == test.Id && item.Module == test.Module && item.Procedure == test.Procedure))
                 .GroupBy(test => test.Id).Select(group => group.First()).ToArray();
-            var entry = new RunEntry { ProjectId = catalog.Project.Id, ExecutionGuard = executionGuard, ReturnedValues = PreferReturnedValues(),
-                Run = new VbaTestRun { Id = Guid.NewGuid().ToString("N"), Project = catalog.Project.Name, Revision = catalog.Project.Revision } };
+            var entry = new RunEntry
+            {
+                ProjectId = catalog.Project.Id,
+                ExecutionGuard = executionGuard,
+                ReturnedValues = PreferReturnedValues(),
+                Run = new VbaTestRun { Id = Guid.NewGuid().ToString("N"), Project = catalog.Project.Name, Revision = catalog.Project.Revision }
+            };
             runs.Add(entry.Run.Id, entry);
             foreach (string expired in runs.Keys.Where(id => id != entry.Run.Id).Take(Math.Max(0, runs.Count - 20)).ToArray()) { runs[expired].Stop.Dispose(); runs.Remove(expired); }
             active = entry;
@@ -427,11 +447,12 @@ namespace VBAi
                 {
                     // Return the query before native copy preparation enters the owning thread.
                     if (measureCoverage) await AwaitOwner(QueueCoverageStart());
-                    Action<VbaTestResult> publish = result => {
+                    void publish(VbaTestResult result)
+                    {
                         entry.Run.Results.Add(result);
                         if (result.Outcome == VbaTestOutcome.OutcomeUnknown) entry.Run.OutcomeUnknown = true;
                         progress?.Invoke(result);
-                    };
+                    }
                     var run = measureCoverage
                         ? await AwaitOwner(ExecuteCoverageAsync(catalog, tests, publish, linked.Token, entry.ExecutionGuard))
                         : await AwaitOwner(runner.RunAsync(catalog, tests, publish, linked.Token));
@@ -501,10 +522,15 @@ namespace VBAi
         /// <returns>Status object containing run state, stale/pending flags, and serialized report page.</returns>
         private static object ReportRunStatus(VbaTestCatalog catalog, string id, RunEntry entry, string format, int offset, int limit)
         {
-            return new { Query = id, entry.State, Pending = entry.State == "Running" || entry.State == "StopRequested",
+            return new
+            {
+                Query = id,
+                entry.State,
+                Pending = entry.State == "Running" || entry.State == "StopRequested",
                 Stale = catalog.Project.Revision != entry.Run.Revision,
                 Report = format == "human" ? (object)VbaTestReports.HumanPage(entry.Run, offset, limit) : new System.Web.Script.Serialization.JavaScriptSerializer()
-                    { MaxJsonLength = 10 * 1024 * 1024 }.DeserializeObject(VbaTestReports.CompactPage(entry.Run, offset, limit)) };
+                { MaxJsonLength = 10 * 1024 * 1024 }.DeserializeObject(VbaTestReports.CompactPage(entry.Run, offset, limit))
+            };
         }
 
         /// <summary>Requests cooperative cancellation for the matching active run.</summary>
@@ -553,8 +579,14 @@ namespace VBAi
         internal object PreviewSupport(string selector)
         {
             var catalog = DiscoverSelector(selector);
-            return new { Project = selector, ExpectedProjectVersion = catalog.Project.Revision, Module = VbaTestRuntimeSource.ModuleName,
-                Text = VbaTestRuntimeSource.Generate(catalog), Coverage = "Unavailable" };
+            return new
+            {
+                Project = selector,
+                ExpectedProjectVersion = catalog.Project.Revision,
+                Module = VbaTestRuntimeSource.ModuleName,
+                Text = VbaTestRuntimeSource.Generate(catalog),
+                Coverage = "Unavailable"
+            };
         }
 
         /// <summary>Bridge operations; assistant permission checks remain in the tool gateway.</summary>
@@ -581,20 +613,40 @@ namespace VBAi
             if (request.Command == "stop_vba_tests") return StopRun(request.Project, request.Query);
             if (request.Command == "preview_vba_test_support") return PreviewSupport(request.Project);
             var catalog = DiscoverSelector(request.Project);
-            if (request.Command == "discover_vba_tests") return new { Project = request.Project, ExpectedProjectVersion = catalog.Project.Revision,
-                Modules = catalog.Modules.Select(module => new { module.Name, module.Diagnostic, module.ModuleInitialize, module.ModuleCleanup,
-                    module.TestInitialize, module.TestCleanup, module.Tests }).ToArray(), catalog.Diagnostics,
-                ExecutionUnavailableReason = ExecutionUnavailableReason(catalog), Coverage = PreviewCoverage(catalog) };
+            if (request.Command == "discover_vba_tests") return new
+            {
+                request.Project,
+                ExpectedProjectVersion = catalog.Project.Revision,
+                Modules = catalog.Modules.Select(module => new
+                {
+                    module.Name,
+                    module.Diagnostic,
+                    module.ModuleInitialize,
+                    module.ModuleCleanup,
+                    module.TestInitialize,
+                    module.TestCleanup,
+                    module.Tests
+                }).ToArray(),
+                catalog.Diagnostics,
+                ExecutionUnavailableReason = ExecutionUnavailableReason(catalog),
+                Coverage = PreviewCoverage(catalog)
+            };
             if (request.Command == "vba_test_coverage")
             {
                 if (!string.IsNullOrEmpty(request.Query))
                 {
                     if (!runs.TryGetValue(request.Query, out RunEntry covered) || covered.ProjectId != catalog.Project.Id)
                         throw new InvalidOperationException("Unknown coverage run in this project/session.");
-                    return new { Project = request.Project, covered.State, Stale = covered.Run.Revision != catalog.Project.Revision,
-                        Uncertain = covered.Run.OutcomeUnknown, Error = covered.Run.Error,
+                    return new
+                    {
+                        request.Project,
+                        covered.State,
+                        Stale = covered.Run.Revision != catalog.Project.Revision,
+                        Uncertain = covered.Run.OutcomeUnknown,
+                        covered.Run.Error,
                         Available = covered.Run.Coverage?.Available == true,
-                        Report = VbaTestReports.CoveragePage(covered.Run.Coverage, request.Offset, request.Limit) };
+                        Report = VbaTestReports.CoveragePage(covered.Run.Coverage, request.Offset, request.Limit)
+                    };
                 }
                 return PreviewCoverage(catalog, request.Offset, request.Limit);
             }

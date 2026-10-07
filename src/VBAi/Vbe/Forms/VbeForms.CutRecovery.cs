@@ -70,12 +70,20 @@ namespace VBAi
             try { after = ClipboardState(request.Project, request.Form, request.ParentPath); }
             catch (Exception ex) { error = error ?? ex.Message; }
             object tree = after == null ? null : (object)((dynamic)after).Tree;
-            return new { RestoredNamesGeometryAndTabOrder = geometryVerified && error == null, FullPropertyFidelityVerified = false,
-                recovery.RecoveryAttempted, recovery.Backup.OmittedFormats, State = after, NativeError = error,
+            return new
+            {
+                RestoredNamesGeometryAndTabOrder = geometryVerified && error == null,
+                FullPropertyFidelityVerified = false,
+                recovery.RecoveryAttempted,
+                recovery.Backup.OmittedFormats,
+                State = after,
+                NativeError = error,
                 RemainingDifferences = tree == null ? null : FormHistoryDiff.Compare(recovery.OriginalTree, tree),
                 ReadErrorsBefore = FormHistoryDiff.ReadErrorCount(recovery.OriginalTree),
-                ReadErrorsAfter = tree == null ? (int?)null : FormHistoryDiff.ReadErrorCount(tree), Saved = false,
-                Limit = "Restores original direct control names, bounds and container tab order after this session's cut. Clipboard is replaced by the recovery. Other properties depend on native serialization; read errors and omitted formats preclude full fidelity claims. A paste attempt consumes automatic recovery even on failure; inspect the tree, never retry blindly." };
+                ReadErrorsAfter = tree == null ? (int?)null : FormHistoryDiff.ReadErrorCount(tree),
+                Saved = false,
+                Limit = "Restores original direct control names, bounds and container tab order after this session's cut. Clipboard is replaced by the recovery. Other properties depend on native serialization; read errors and omitted formats preclude full fidelity claims. A paste attempt consumes automatic recovery even on failure; inspect the tree, never retry blindly."
+            };
         }
     }
 }

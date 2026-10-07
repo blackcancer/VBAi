@@ -1,10 +1,10 @@
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
 using System.Web.Script.Serialization;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 using VBAi.Tests.Integration;
 
 namespace VBAi.Tests.Unit
@@ -15,9 +15,18 @@ namespace VBAi.Tests.Unit
         internal const string Nonce = "dd75799f5ff442b092a1b1fe6b3e53cf";
         internal static readonly JavaScriptSerializer Json = new JavaScriptSerializer();
         internal static AddInShutdownDiagnostic.Identity Identity()
-        { return new AddInShutdownDiagnostic.Identity { ProcessId = 71, ProcessStartedUtc = "2026-10-05T17:27:03.6593947Z",
-            HostImagePath = @"C:\Qualification\EXCEL.EXE", ProductPath = @"C:\Qualification\VBAi.dll",
-            ProductMvid = "f855d463-0d5e-48f3-8c45-1a35db5a1025", ProductSha256 = new string('A', 64), ThreadId = 73 }; }
+        {
+            return new AddInShutdownDiagnostic.Identity
+            {
+                ProcessId = 71,
+                ProcessStartedUtc = "2026-10-05T17:27:03.6593947Z",
+                HostImagePath = @"C:\Qualification\EXCEL.EXE",
+                ProductPath = @"C:\Qualification\VBAi.dll",
+                ProductMvid = "f855d463-0d5e-48f3-8c45-1a35db5a1025",
+                ProductSha256 = new string('A', 64),
+                ThreadId = 73
+            };
+        }
         internal static AddInShutdownDiagnostic.ThreadIdentity Thread()
         { return new AddInShutdownDiagnostic.ThreadIdentity { ManagedThreadId = 7, NativeThreadId = 73, Apartment = "STA" }; }
         internal static string Request(AddInShutdownDiagnostic.Identity identity = null)
@@ -70,7 +79,13 @@ namespace VBAi.Tests.Unit
         }
 
         [DataTestMethod]
-        [DataRow("ProcessId")][DataRow("ProcessStartedUtc")][DataRow("HostImagePath")][DataRow("ProductPath")][DataRow("ProductMvid")][DataRow("ProductSha256")][DataRow("ThreadId")]
+        [DataRow("ProcessId")]
+        [DataRow("ProcessStartedUtc")]
+        [DataRow("HostImagePath")]
+        [DataRow("ProductPath")]
+        [DataRow("ProductMvid")]
+        [DataRow("ProductSha256")]
+        [DataRow("ThreadId")]
         public void AdmissionComparesEveryRequestedMemberAgainstIndependentActualIdentity(string member)
         {
             var identity = ShutdownDiagnosticTestData.Identity();
@@ -88,7 +103,16 @@ namespace VBAi.Tests.Unit
         }
 
         [DataTestMethod]
-        [DataRow("null")][DataRow("truncated")][DataRow("version")][DataRow("missing")][DataRow("extra")][DataRow("duplicate")][DataRow("nonce")][DataRow("string number")][DataRow("oversized")][DataRow("noncanonical")]
+        [DataRow("null")]
+        [DataRow("truncated")]
+        [DataRow("version")]
+        [DataRow("missing")]
+        [DataRow("extra")]
+        [DataRow("duplicate")]
+        [DataRow("nonce")]
+        [DataRow("string number")]
+        [DataRow("oversized")]
+        [DataRow("noncanonical")]
         public void AdmissionRejectsMalformedDuplicateAndNoncanonicalRequestsBeforePublication(string kind)
         {
             string request = ShutdownDiagnosticTestData.Request();
@@ -182,11 +206,15 @@ namespace VBAi.Tests.Unit
         {
             var o = new ShutdownDiagnosticTestData.Observation(); var root = o.Begin("OnBeginShutdown");
             if (kind == "invocations")
-            { for (int i = 1; i < AddInShutdownDiagnostic.MaximumInvocations; i++) { var child = root.Child("Dispose"); Assert.IsNotNull(child); child.Complete(); }
-                Assert.IsNull(root.Child("Dispose")); Assert.IsTrue(root.DiagnosticFailed); }
+            {
+                for (int i = 1; i < AddInShutdownDiagnostic.MaximumInvocations; i++) { var child = root.Child("Dispose"); Assert.IsNotNull(child); child.Complete(); }
+                Assert.IsNull(root.Child("Dispose")); Assert.IsTrue(root.DiagnosticFailed);
+            }
             else
-            { for (int i = 0; i < AddInShutdownDiagnostic.MaximumEvents; i++) { root.Enter("stage" + i); root.Returned("stage" + i); }
-                Assert.IsTrue(root.DiagnosticFailed); Assert.AreEqual(AddInShutdownDiagnostic.MaximumEvents, o.Events.Count); }
+            {
+                for (int i = 0; i < AddInShutdownDiagnostic.MaximumEvents; i++) { root.Enter("stage" + i); root.Returned("stage" + i); }
+                Assert.IsTrue(root.DiagnosticFailed); Assert.AreEqual(AddInShutdownDiagnostic.MaximumEvents, o.Events.Count);
+            }
         }
 
         [DataTestMethod, DataRow("temporary"), DataRow("final"), DataRow("ready")]

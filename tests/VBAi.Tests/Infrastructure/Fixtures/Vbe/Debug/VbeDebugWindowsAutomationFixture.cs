@@ -160,8 +160,10 @@ namespace VBAi.Tests.Unit
             public AutomationHost(AutomationNode root, bool optionsDialog = false, Action<AutomationHost> configure = null, bool noActivate = false)
             {
                 Root = root;
-                thread = new Thread(() => {
-                    try {
+                thread = new Thread(() =>
+                {
+                    try
+                    {
                         if (optionsDialog)
                         {
                             dispatcher = new Control();
@@ -183,7 +185,8 @@ namespace VBAi.Tests.Unit
                         }
                     }
                     catch (Exception error) { startupError = error; ready.Set(); }
-                }) { IsBackground = true };
+                })
+                { IsBackground = true };
                 thread.SetApartmentState(ApartmentState.STA); thread.Start();
                 if (!ready.WaitOne(TimeSpan.FromSeconds(10))) throw new TimeoutException("Isolated UIA provider did not start.");
                 if (startupError != null) throw new InvalidOperationException("Isolated UIA provider failed.", startupError);

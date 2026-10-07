@@ -40,10 +40,20 @@ namespace VBAi
         {
             var snapshot = CaptureClassMemberProject(request);
             var plan = VbaClassMemberRename.Prepare(snapshot.Project.CanonicalProjectName, snapshot.Project.Modules, request);
-            return new { snapshot.Project.Project, snapshot.Project.CanonicalProjectName, request.Module, request.Query, request.NewName,
-                ExpectedProjectVersion = snapshot.Version, snapshot.ExportVersion, Edits = plan.Edits, Changed = plan.Edits.Count > 0,
+            return new
+            {
+                snapshot.Project.Project,
+                snapshot.Project.CanonicalProjectName,
+                request.Module,
+                request.Query,
+                request.NewName,
+                ExpectedProjectVersion = snapshot.Version,
+                snapshot.ExportVersion,
+                plan.Edits,
+                Changed = plan.Edits.Count > 0,
                 Modules = snapshot.Project.Modules.Select(x => new { x.Name, x.Type, Sha256 = VbaProcedureRename.Digest(x.Source) }).ToArray(),
-                Scope = "Explicit Private ordinary-class Sub/Function or complete private Property accessor family. Direct internal references, Me references and return names only. Public/Friend, typed receivers, hidden member attributes, callbacks and dynamic binding are refused." };
+                Scope = "Explicit Private ordinary-class Sub/Function or complete private Property accessor family. Direct internal references, Me references and return names only. Public/Friend, typed receivers, hidden member attributes, callbacks and dynamic binding are refused."
+            };
         }
 
         /// <summary>Vérifie tout le projet et l'export caché avant écriture, puis relit code et attributs après mutation.</summary>
@@ -71,8 +81,15 @@ namespace VBAi
                     current = edit.Module;
                     Write(snapshot.Project.Project, edit.Module, edit.Before, edit.After);
                     string exportVersion = InspectClassMemberExport(snapshot.Project.Project, edit.Module, edit.After);
-                    completed.Add(new { edit.Module, BeforeSha256 = edit.ExpectedSha256, AfterSha256 = VbaProcedureRename.Digest(edit.After),
-                        ExportVersion = exportVersion, edit.Replacements, ReadbackVerified = true });
+                    completed.Add(new
+                    {
+                        edit.Module,
+                        BeforeSha256 = edit.ExpectedSha256,
+                        AfterSha256 = VbaProcedureRename.Digest(edit.After),
+                        ExportVersion = exportVersion,
+                        edit.Replacements,
+                        ReadbackVerified = true
+                    });
                 }
             }
             catch (Exception ex)
@@ -81,10 +98,19 @@ namespace VBAi
                     " module(s) were already verified. The failing module may also have changed. Read every module before continuing; " +
                     "existing per-module history is retained. No automatic rollback or retry was attempted. " + ex.Message, ex);
             }
-            return new { snapshot.Project.Project, request.Module, request.Query, request.NewName, Modules = completed,
-                ReadbackVerified = true, Atomic = false, MultiModuleUndoAvailable = false,
+            return new
+            {
+                snapshot.Project.Project,
+                request.Module,
+                request.Query,
+                request.NewName,
+                Modules = completed,
+                ReadbackVerified = true,
+                Atomic = false,
+                MultiModuleUndoAvailable = false,
                 History = "Existing session history per module; undo only with the current SHA.",
-                Limit = "Private internal member binding only; no compilation or host runtime acceptance is implied." };
+                Limit = "Private internal member binding only; no compilation or host runtime acceptance is implied."
+            };
         }
 
         /// <summary>Ajoute la version de l'export natif au catalogue et SHA de tous les composants.</summary>
@@ -97,8 +123,12 @@ namespace VBAi
             var target = project.Modules.SingleOrDefault(x => string.Equals(x.Name, request.Module, StringComparison.OrdinalIgnoreCase));
             if (target == null || target.Type != 2) throw new InvalidOperationException("An exact ordinary class module is required.");
             string export = InspectClassMemberExport(project.Project, target.Name, target.Source);
-            return new ClassMemberProjectSnapshot { Project = project, ExportVersion = export,
-                Version = VbaProcedureRename.Digest(project.Version + ":" + export) };
+            return new ClassMemberProjectSnapshot
+            {
+                Project = project,
+                ExportVersion = export,
+                Version = VbaProcedureRename.Digest(project.Version + ":" + export)
+            };
         }
 
         /// <summary>Exporte en lecture un seul fichier temporaire possédé pour inspecter les attributs omis par CodeModule.</summary>
@@ -117,8 +147,14 @@ namespace VBAi
             if (File.Exists(path)) throw new InvalidOperationException("The temporary class export path already exists.");
             try
             {
-                var exported = execute(new Request { Command = "export_component", Project = project, Module = module,
-                    Path = path, ExpectedComponentVersion = (string)state.Version });
+                var exported = execute(new Request
+                {
+                    Command = "export_component",
+                    Project = project,
+                    Module = module,
+                    Path = path,
+                    ExpectedComponentVersion = (string)state.Version
+                });
                 if (!exported.Ok) throw new InvalidOperationException(exported.Error);
                 if (!File.Exists(path) || new FileInfo(path).Length > 4 * 1024 * 1024)
                     throw new InvalidOperationException("The native class export is unavailable or exceeds its bound.");

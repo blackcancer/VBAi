@@ -49,11 +49,12 @@ checks separately from simulated protocol tests.
 Keep native appearance experimental until its lifecycle, recovery and rendering
 are qualified across the intended environments. Preserve usable fallback behavior.
 
-## Distribution — later milestone
+## Distribution
 
-Develop and qualify the standalone installer after the current add-in work. Reuse
-the [existing update contract](updates.md) for signed payloads, occupied-host handling,
-upgrade, uninstall and rollback. This is not part of the documentation refactor.
+The 1.0.0 setup and uninstaller are unsigned. Qualify installation, occupied-host
+handling, upgrade, uninstall and recovery on the packaged candidate. Complete
+[code-signing onboarding](code-signing.md) before supplying installers through the
+[automatic updater](updates.md), which continues to require trusted signatures.
 
 Before a public release, include the declared [project licenses](../LICENSING.md),
 complete the payload's third-party notice review and publish only genuine

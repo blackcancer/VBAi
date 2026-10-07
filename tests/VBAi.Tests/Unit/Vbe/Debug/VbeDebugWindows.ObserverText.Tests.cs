@@ -1,8 +1,7 @@
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Collections.Generic;
 using System.Text;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
-using VBAi;
 
 namespace VBAi.Tests.Unit
 {
@@ -17,7 +16,8 @@ namespace VBAi.Tests.Unit
                 scene.Add("#32770", "Quick Watch");
                 int boundedReads = 0, legacyReads = 0;
                 VbeDebugWindows.ReadObserverTextMessage = (IntPtr handle, uint message, IntPtr capacity, StringBuilder text,
-                    uint flags, uint milliseconds, out UIntPtr result) => {
+                    uint flags, uint milliseconds, out UIntPtr result) =>
+                {
                     boundedReads++;
                     Assert.AreEqual(13u, message);
                     Assert.AreEqual(3u, flags);
@@ -47,41 +47,42 @@ namespace VBAi.Tests.Unit
         public void SuccessfulEmptyTextIsNotTimeoutAndTruncatedTextIsNotAccepted()
         {
             foreach (bool truncated in new[] { false, true })
-            using (var scene = new NativeDebugScene())
-            {
-                var dialog = scene.Add("#32770", "Quick Watch");
-                var expression = scene.Add("Edit", "x", dialog);
-                var value = scene.Add("Static", "", dialog);
-                var context = scene.Add("Edit", "P.M.Run", dialog);
-                var cancel = scene.Add("Button", "Cancel", dialog);
-                var oldItem = VbeDebugWindows.GetDlgItem;
-                var oldPost = VbeDebugWindows.PostMessage;
-                var oldPause = VbeDebugWindows.PauseNative;
-                try
+                using (var scene = new NativeDebugScene())
                 {
-                    int closes = 0;
-                    VbeDebugWindows.GetDlgItem = (handle, id) => handle != dialog.Handle ? IntPtr.Zero : id == 4751 ? expression.Handle : id == 4752 ? value.Handle : id == 4753 ? context.Handle : id == 2 ? cancel.Handle : IntPtr.Zero;
-                    VbeDebugWindows.PauseNative = _ => { };
-                    VbeDebugWindows.PostMessage = (handle, message, w, l) => { Assert.AreEqual(cancel.Handle, handle); closes++; dialog.Visible = false; return true; };
-                    VbeDebugWindows.ReadObserverTextMessage = (IntPtr handle, uint message, IntPtr capacity, StringBuilder text,
-                        uint flags, uint milliseconds, out UIntPtr result) => {
-                        text.Append(scene.Find(handle).Caption);
-                        result = new UIntPtr(handle == value.Handle && truncated ? 511u : (uint)text.Length);
-                        return new IntPtr(1);
-                    };
-                    var request = new Request { Project = "P", Module = "M", Procedure = "Run", Expression = "x" };
-                    if (truncated)
-                        StringAssert.Contains(Assert.ThrowsException<InvalidOperationException>(() => VbeDebugWindows.ReadScalarQuickWatch(request)).Message, "truncated");
-                    else
+                    var dialog = scene.Add("#32770", "Quick Watch");
+                    var expression = scene.Add("Edit", "x", dialog);
+                    var value = scene.Add("Static", "", dialog);
+                    var context = scene.Add("Edit", "P.M.Run", dialog);
+                    var cancel = scene.Add("Button", "Cancel", dialog);
+                    var oldItem = VbeDebugWindows.GetDlgItem;
+                    var oldPost = VbeDebugWindows.PostMessage;
+                    var oldPause = VbeDebugWindows.PauseNative;
+                    try
                     {
-                        dynamic observed = VbeDebugWindows.ReadScalarQuickWatch(request);
-                        Assert.AreEqual("", (string)observed.Value);
+                        int closes = 0;
+                        VbeDebugWindows.GetDlgItem = (handle, id) => handle != dialog.Handle ? IntPtr.Zero : id == 4751 ? expression.Handle : id == 4752 ? value.Handle : id == 4753 ? context.Handle : id == 2 ? cancel.Handle : IntPtr.Zero;
+                        VbeDebugWindows.PauseNative = _ => { };
+                        VbeDebugWindows.PostMessage = (handle, message, w, l) => { Assert.AreEqual(cancel.Handle, handle); closes++; dialog.Visible = false; return true; };
+                        VbeDebugWindows.ReadObserverTextMessage = (IntPtr handle, uint message, IntPtr capacity, StringBuilder text,
+                            uint flags, uint milliseconds, out UIntPtr result) =>
+                        {
+                            text.Append(scene.Find(handle).Caption);
+                            result = new UIntPtr(handle == value.Handle && truncated ? 511u : (uint)text.Length);
+                            return new IntPtr(1);
+                        };
+                        var request = new Request { Project = "P", Module = "M", Procedure = "Run", Expression = "x" };
+                        if (truncated)
+                            StringAssert.Contains(Assert.ThrowsException<InvalidOperationException>(() => VbeDebugWindows.ReadScalarQuickWatch(request)).Message, "truncated");
+                        else
+                        {
+                            dynamic observed = VbeDebugWindows.ReadScalarQuickWatch(request);
+                            Assert.AreEqual("", (string)observed.Value);
+                        }
+                        Assert.AreEqual(1, closes);
+                        Assert.IsFalse(dialog.Visible);
                     }
-                    Assert.AreEqual(1, closes);
-                    Assert.IsFalse(dialog.Visible);
+                    finally { VbeDebugWindows.GetDlgItem = oldItem; VbeDebugWindows.PostMessage = oldPost; VbeDebugWindows.PauseNative = oldPause; }
                 }
-                finally { VbeDebugWindows.GetDlgItem = oldItem; VbeDebugWindows.PostMessage = oldPost; VbeDebugWindows.PauseNative = oldPause; }
-            }
         }
     }
 }

@@ -1,9 +1,7 @@
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
-using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
-using VBAi;
 
 namespace VBAi.Tests.Unit
 {
@@ -12,7 +10,8 @@ namespace VBAi.Tests.Unit
         [DataTestMethod, DataRow("none"), DataRow("exact"), DataRow("legacy"), DataRow("both")]
         public void ScopeLookupSelectsOnlyAnUnambiguousExistingBindingWithoutChangingStorage(string state)
         {
-            InRecoveryMarker(repository => {
+            InRecoveryMarker(repository =>
+            {
                 string root = Path.GetDirectoryName(repository.RecoveryFile);
                 string scope = Path.Combine(root, "Développement", "MixedCaseÉté.xlsm");
                 Func<string, string> cache = key => Path.Combine(root, Path.GetFileName(MacroGitRepository.ScopeDirectory(key)));
@@ -40,7 +39,8 @@ namespace VBAi.Tests.Unit
         {
             string scope = @"C:\DÉVELOPPEMENT\ÉTÉ.XLSM"; int observations = 0;
             string expected = MacroGitRepository.ScopeDirectory(scope);
-            Assert.AreEqual(expected, MacroGitRepository.ResolveScopeDirectory(scope, MacroGitRepository.ScopeDirectory, path => {
+            Assert.AreEqual(expected, MacroGitRepository.ResolveScopeDirectory(scope, MacroGitRepository.ScopeDirectory, path =>
+            {
                 observations++; Assert.AreEqual(Path.Combine(expected, "binding.json"), path);
                 if (!bound) throw new DirectoryNotFoundException("known absent parent");
                 return FileAttributes.Archive;
@@ -53,7 +53,8 @@ namespace VBAi.Tests.Unit
         {
             string scope = @"C:\MixedCase\ClasseurÉté.xlsm"; int observations = 0;
             Assert.AreEqual(MacroGitRepository.ScopeDirectory(scope), MacroGitRepository.ResolveScopeDirectory(scope,
-                MacroGitRepository.ScopeDirectory, path => {
+                MacroGitRepository.ScopeDirectory, path =>
+                {
                     bool parent = ++observations == 1 ? exactParent : legacyParent;
                     if (parent) throw new DirectoryNotFoundException("known absent parent");
                     throw new FileNotFoundException("known absent binding");
@@ -67,7 +68,8 @@ namespace VBAi.Tests.Unit
             string scope = @"C:\MixedCase\ClasseurÉté.xlsm"; int observations = 0;
             Exception original = kind == "access" ? (Exception)new UnauthorizedAccessException("synthetic binding metadata failure") :
                 new IOException("synthetic binding I/O failure");
-            var error = RecoveryFailure(() => MacroGitRepository.ResolveScopeDirectory(scope, MacroGitRepository.ScopeDirectory, path => {
+            var error = RecoveryFailure(() => MacroGitRepository.ResolveScopeDirectory(scope, MacroGitRepository.ScopeDirectory, path =>
+            {
                 if (++observations == (legacyFails ? 2 : 1)) throw original;
                 return FileAttributes.Normal;
             }));

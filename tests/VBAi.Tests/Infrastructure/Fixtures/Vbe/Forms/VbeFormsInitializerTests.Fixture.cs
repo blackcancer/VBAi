@@ -9,7 +9,6 @@ namespace VBAi.Tests.Unit
     using System.Security.Cryptography;
     using System.Text;
     using VBAi;
-    using Microsoft.VisualStudio.TestTools.UnitTesting;
 
     public sealed partial class VbeFormsInitializerTests
     {
@@ -264,7 +263,7 @@ namespace VBAi.Tests.Unit
                     this.module = module;
                 }
 
-                public string this[int start, int count] { get { if(module.FailRead) throw new InvalidOperationException("Code read failed"); return string.Join("\r\n", module.lines.Skip(start - 1).Take(count)); } }
+                public string this[int start, int count] { get { if (module.FailRead) throw new InvalidOperationException("Code read failed"); return string.Join("\r\n", module.lines.Skip(start - 1).Take(count)); } }
             }
 
             public sealed class ProcedureAccessor

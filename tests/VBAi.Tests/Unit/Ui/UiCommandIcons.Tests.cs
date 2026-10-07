@@ -1,11 +1,10 @@
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.Globalization;
 using System.Reflection;
-using VBAi;
 using VBAi.Tests.Infrastructure;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace VBAi.Tests.Unit
 {
@@ -19,12 +18,12 @@ namespace VBAi.Tests.Unit
         {
             Assert.IsNull(UiInvoke.Call(typeof(UiCommandIcons), "ReadPath", null, new object[] { null }));
             foreach (var xml in new[] { "<svg />", "<svg><metadata>no path</metadata></svg>", "<svg><path d='M 1 2 L 3 4'/><path d='Q 1 2'/></svg>" })
-            using (var stream = new System.IO.MemoryStream(System.Text.Encoding.UTF8.GetBytes(xml)))
-            using (var path = (GraphicsPath)UiInvoke.Call(typeof(UiCommandIcons), "ReadPath", null, stream))
-            {
-                if (xml.Contains("<path")) { Assert.AreEqual(2, path.PointCount); Assert.AreEqual(new PointF(1, 2), path.PathPoints[0]); }
-                else Assert.IsNull(path);
-            }
+                using (var stream = new System.IO.MemoryStream(System.Text.Encoding.UTF8.GetBytes(xml)))
+                using (var path = (GraphicsPath)UiInvoke.Call(typeof(UiCommandIcons), "ReadPath", null, stream))
+                {
+                    if (xml.Contains("<path")) { Assert.AreEqual(2, path.PointCount); Assert.AreEqual(new PointF(1, 2), path.PathPoints[0]); }
+                    else Assert.IsNull(path);
+                }
             using (var stream = new System.IO.MemoryStream(System.Text.Encoding.UTF8.GetBytes("<!DOCTYPE svg [<!ENTITY unsafe 'expanded'>]><svg>&unsafe;</svg>")))
             {
                 var error = Assert.ThrowsException<TargetInvocationException>(() => UiInvoke.Call(typeof(UiCommandIcons), "ReadPath", null, stream));

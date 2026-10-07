@@ -6,7 +6,6 @@ namespace VBAi.Tests.Unit
     using System.Security.Cryptography;
     using System.Text;
     using VBAi;
-    using Microsoft.VisualStudio.TestTools.UnitTesting;
 
     public sealed partial class VbeCodeNavigationCoverageTests
     {

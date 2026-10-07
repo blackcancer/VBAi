@@ -1,7 +1,6 @@
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Threading;
-using VBAi;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace VBAi.Tests.Unit
 {
@@ -124,30 +123,30 @@ namespace VBAi.Tests.Unit
             Assert.AreEqual(System.Diagnostics.Process.GetCurrentProcess().ProcessName, native.ReadProcessName());
             Assert.ThrowsException<InvalidOperationException>(() => native.ResolveTarget(new object(), @"C:\Temp\fixture.xlsm"));
             foreach (string failure in new[] { "owner", "absent", "duplicate", "path", "unsaved", "relative", "null-path", "limit", "valid" })
-            using (var f = new VBAi.Tests.Infrastructure.NativeProcedureValuesFixture())
-            {
-                if (failure == "owner") f.Application.Hwnd = 0;
-                if (failure == "absent") f.Workbook.VBProject = f.OtherProject;
-                if (failure == "duplicate") f.Application.Workbooks.Add(f.Workbook);
-                if (failure == "path") f.Workbook.FullName = @"C:\Temp\Other.xlsm";
-                if (failure == "unsaved") f.Workbook.Path = " ";
-                if (failure == "relative") f.Workbook.FullName = "fixture.xlsm";
-                if (failure == "null-path") f.Workbook.FullName = null;
-                if (failure == "limit") { f.Application.Workbooks.Clear(); for (int i = 0; i < 1001; i++) f.Application.Workbooks.Add(new VBAi.Tests.Infrastructure.NativeProcedureValuesFixture.WorkbookContract { VBProject = f.OtherProject }); }
-                if (failure != "valid") { Assert.ThrowsException<InvalidOperationException>(() => f.Resolve(), failure); Assert.AreEqual(0, f.Application.Invocations); }
-                else
+                using (var f = new VBAi.Tests.Infrastructure.NativeProcedureValuesFixture())
                 {
-                    f.Application.Workbooks.Insert(0, new VBAi.Tests.Infrastructure.NativeProcedureValuesFixture.WorkbookContract { VBProject = f.OtherProject });
-                    object target = f.Resolve(); object[] array = { 3, "quoted\" value" };
-                    Assert.AreEqual("Native dispatch contract return", f.Host.Invoke(target, "Module1", "TryMe", new object[] { array, 7 }));
-                    Assert.AreEqual("'C:\\Temp\\Owner''s.xlsm'!Module1.TryMe", f.Application.Macro); Assert.AreSame(array, f.Application.Arguments[0]); Assert.AreEqual(7, f.Application.Arguments[1]);
-                    Assert.AreEqual(1, f.Application.Invocations);
-                    f.Workbook.FullName = @"C:\Temp\Changed.xlsm";
-                    Assert.ThrowsException<InvalidOperationException>(() => f.Host.Invoke(target, "Module1", "TryMe", new object[0]));
-                    Assert.AreEqual(1, f.Application.Invocations);
+                    if (failure == "owner") f.Application.Hwnd = 0;
+                    if (failure == "absent") f.Workbook.VBProject = f.OtherProject;
+                    if (failure == "duplicate") f.Application.Workbooks.Add(f.Workbook);
+                    if (failure == "path") f.Workbook.FullName = @"C:\Temp\Other.xlsm";
+                    if (failure == "unsaved") f.Workbook.Path = " ";
+                    if (failure == "relative") f.Workbook.FullName = "fixture.xlsm";
+                    if (failure == "null-path") f.Workbook.FullName = null;
+                    if (failure == "limit") { f.Application.Workbooks.Clear(); for (int i = 0; i < 1001; i++) f.Application.Workbooks.Add(new VBAi.Tests.Infrastructure.NativeProcedureValuesFixture.WorkbookContract { VBProject = f.OtherProject }); }
+                    if (failure != "valid") { Assert.ThrowsException<InvalidOperationException>(() => f.Resolve(), failure); Assert.AreEqual(0, f.Application.Invocations); }
+                    else
+                    {
+                        f.Application.Workbooks.Insert(0, new VBAi.Tests.Infrastructure.NativeProcedureValuesFixture.WorkbookContract { VBProject = f.OtherProject });
+                        object target = f.Resolve(); object[] array = { 3, "quoted\" value" };
+                        Assert.AreEqual("Native dispatch contract return", f.Host.Invoke(target, "Module1", "TryMe", new object[] { array, 7 }));
+                        Assert.AreEqual("'C:\\Temp\\Owner''s.xlsm'!Module1.TryMe", f.Application.Macro); Assert.AreSame(array, f.Application.Arguments[0]); Assert.AreEqual(7, f.Application.Arguments[1]);
+                        Assert.AreEqual(1, f.Application.Invocations);
+                        f.Workbook.FullName = @"C:\Temp\Changed.xlsm";
+                        Assert.ThrowsException<InvalidOperationException>(() => f.Host.Invoke(target, "Module1", "TryMe", new object[0]));
+                        Assert.AreEqual(1, f.Application.Invocations);
+                    }
+                    Assert.ThrowsException<InvalidOperationException>(() => f.Host.Invoke(new object(), "Module1", "TryMe", new object[0]));
                 }
-                Assert.ThrowsException<InvalidOperationException>(() => f.Host.Invoke(new object(), "Module1", "TryMe", new object[0]));
-            }
         }
 
         [STATestMethod]

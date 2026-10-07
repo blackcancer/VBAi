@@ -1,15 +1,9 @@
 namespace VBAi.Tests.Unit
 {
+    using Microsoft.VisualStudio.TestTools.UnitTesting;
     using System;
     using System.Collections.Generic;
-    using System.Linq;
-    using System.Net;
-    using System.Net.Http;
-    using System.Threading;
-    using System.Threading.Tasks;
-    using System.Web.Script.Serialization;
     using VBAi;
-    using Microsoft.VisualStudio.TestTools.UnitTesting;
 
     /// <summary>Vérifie la sélection partielle de fichiers avec ressources et références cohérentes.</summary>
     public sealed partial class GitReviewTests
@@ -36,10 +30,10 @@ namespace VBAi.Tests.Unit
 
 namespace VBAi.Tests.Unit
 {
+    using Microsoft.VisualStudio.TestTools.UnitTesting;
     using System;
     using System.Collections.Generic;
     using VBAi;
-    using Microsoft.VisualStudio.TestTools.UnitTesting;
 
     /// <summary>Vérifie les invariants de manifeste, fichiers, sélection et résumé des snapshots VBA.</summary>
     [TestClass]
@@ -84,9 +78,11 @@ namespace VBAi.Tests.Unit
                 // Build directly so the OLE blob begins after the opaque reference.
                 VbaGitSnapshot shifted(byte[] bytes)
                 {
-                    var files = new Dictionary<string, byte[]> {
+                    var files = new Dictionary<string, byte[]>
+                    {
                         ["Form1.frm"] = VbaGitSnapshot.Utf8.GetBytes("VERSION 5.00\nBegin SyntheticForm\n OleObjectBlob = \"Form1.frx\":0004\n" + declaration + "End\nAttribute VB_Name = \"Form1\"\n"),
-                        ["Form1.frx"] = bytes };
+                        ["Form1.frx"] = bytes
+                    };
                     return new VbaGitSnapshot(Manifest(3, "Form1", true), files);
                 }
                 var left = shifted(first); var right = shifted(second);
@@ -99,10 +95,16 @@ namespace VBAi.Tests.Unit
 
         internal static VbaGitSnapshot LogicalForm(byte[] resources, string extra = "")
         {
-            return new VbaGitSnapshot(new VbaGitManifest { References = "", Components = new[] {
-                new VbaGitComponent { Name = "Form1", Type = 3, HasResources = true } } }, new Dictionary<string, byte[]> {
+            return new VbaGitSnapshot(new VbaGitManifest
+            {
+                References = "",
+                Components = new[] {
+                new VbaGitComponent { Name = "Form1", Type = 3, HasResources = true } }
+            }, new Dictionary<string, byte[]>
+            {
                 ["Form1.frm"] = VbaGitSnapshot.Utf8.GetBytes("VERSION 5.00\nBegin SyntheticForm\n OleObjectBlob = \"Form1.frx\":0000\n" + extra + "End\nAttribute VB_Name = \"Form1\"\n"),
-                ["Form1.frx"] = resources });
+                ["Form1.frx"] = resources
+            });
         }
 
         [TestMethod]
@@ -156,16 +158,20 @@ namespace VBAi.Tests.Unit
         public void DuplicateNamesAcrossComponentTypesAreRejectedBeforeImport()
         {
             foreach (string secondName in new[] { "Module1", "module1" })
-            foreach (int secondType in new[] { 2, 3, 100 })
-            {
-                var manifest = new VbaGitManifest { References = "", Components = new[] {
+                foreach (int secondType in new[] { 2, 3, 100 })
+                {
+                    var manifest = new VbaGitManifest
+                    {
+                        References = "",
+                        Components = new[] {
                     new VbaGitComponent { Name = "Module1", Type = 1 },
-                    new VbaGitComponent { Name = secondName, Type = secondType } } };
-                var files = Files();
-                files.Add(manifest.Components[1].FileName, VbaGitSnapshot.Utf8.GetBytes(secondType == 100
-                    ? "Option Explicit\n" : "Attribute VB_Name = \"" + secondName + "\"\n"));
-                Assert.ThrowsException<InvalidOperationException>(() => new VbaGitSnapshot(manifest, files));
-            }
+                    new VbaGitComponent { Name = secondName, Type = secondType } }
+                    };
+                    var files = Files();
+                    files.Add(manifest.Components[1].FileName, VbaGitSnapshot.Utf8.GetBytes(secondType == 100
+                        ? "Option Explicit\n" : "Attribute VB_Name = \"" + secondName + "\"\n"));
+                    Assert.ThrowsException<InvalidOperationException>(() => new VbaGitSnapshot(manifest, files));
+                }
         }
 
         /// <summary>Crée un manifeste minimal comportant un seul composant.</summary>

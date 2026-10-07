@@ -70,8 +70,14 @@ namespace VBAi
                     if (x < a.Length && y < b.Length && a[x] == b[y]) break;
                     if (y == b.Length || (x < a.Length && lengths[x + 1, y] >= lengths[x, y + 1])) x++; else y++;
                 }
-                result.Add(new CodeHunk { Index = result.Count, BeforeStart = startX, AfterStart = startY,
-                    Before = a.Skip(startX).Take(x - startX).ToArray(), After = b.Skip(startY).Take(y - startY).ToArray() });
+                result.Add(new CodeHunk
+                {
+                    Index = result.Count,
+                    BeforeStart = startX,
+                    AfterStart = startY,
+                    Before = a.Skip(startX).Take(x - startX).ToArray(),
+                    After = b.Skip(startY).Take(y - startY).ToArray()
+                });
             }
             return result.ToArray();
         }

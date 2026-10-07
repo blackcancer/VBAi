@@ -93,8 +93,14 @@ namespace VBAi.Tests.Integration
 
         private void Write(string phase, string pane, string property, bool value, string version, Action terminal)
         {
-            Send(phase, new { Command = "set_vbe_option", Pane = pane, Property = property,
-                Value = value, ExpectedOptionsVersion = version }, true, terminal);
+            Send(phase, new
+            {
+                Command = "set_vbe_option",
+                Pane = pane,
+                Property = property,
+                Value = value,
+                ExpectedOptionsVersion = version
+            }, true, terminal);
         }
 
         private IDictionary<string, object> Send(string phase, object request, bool mutation, Action terminal)
@@ -124,8 +130,17 @@ namespace VBAi.Tests.Integration
                 try { preserve(); } catch (Exception error) { retention = error; }
             }
             string text = primary.ToString();
-            try { evidence("HostRetained", new { Error = Bound(text, 8192), OriginalErrorCharacters = text.Length,
-                ErrorTruncated = text.Length > 8192, NativeReplayAllowed = false, CleanupAllowed = false }); }
+            try
+            {
+                evidence("HostRetained", new
+                {
+                    Error = Bound(text, 8192),
+                    OriginalErrorCharacters = text.Length,
+                    ErrorTruncated = text.Length > 8192,
+                    NativeReplayAllowed = false,
+                    CleanupAllowed = false
+                });
+            }
             catch (Exception error) { recording = error; }
             var failures = new[] { primary, retention, recording }.Where(error => error != null).ToArray();
             return failures.Length == 1 ? primary : new AggregateException("Options failure and preservation/evidence errors are retained.", failures);
@@ -134,15 +149,29 @@ namespace VBAi.Tests.Integration
         internal static object Summary(IDictionary<string, object> data)
         {
             var tabs = Items(data["Tabs"]);
-            return new { OptionsVersion = Version(data), DialogClosed = data["DialogClosed"],
-                TabCount = tabs.Length, Tabs = tabs.Take(8).Select(tab => new {
-                    Tab = Bound(Text(tab["Tab"]), 256), ControlCount = Items(tab["Controls"]).Length,
-                    Controls = Items(tab["Controls"]).Take(128).Select(control => new {
-                        Name = Bound(Text(control["Name"]), 256), Type = Bound(Text(control["Type"]), 64),
-                        Value = Bound(Text(control["Value"]), 128), ValueTruncated = Text(control["Value"]).Length > 128,
-                        Error = Bound(Text(control["Error"]), 256), ErrorTruncated = Text(control["Error"]).Length > 256 }).ToArray(),
-                    ControlsOmitted = Math.Max(0, Items(tab["Controls"]).Length - 128) }).ToArray(),
-                TabsOmitted = Math.Max(0, tabs.Length - 8), CataloguesOmitted = true };
+            return new
+            {
+                OptionsVersion = Version(data),
+                DialogClosed = data["DialogClosed"],
+                TabCount = tabs.Length,
+                Tabs = tabs.Take(8).Select(tab => new
+                {
+                    Tab = Bound(Text(tab["Tab"]), 256),
+                    ControlCount = Items(tab["Controls"]).Length,
+                    Controls = Items(tab["Controls"]).Take(128).Select(control => new
+                    {
+                        Name = Bound(Text(control["Name"]), 256),
+                        Type = Bound(Text(control["Type"]), 64),
+                        Value = Bound(Text(control["Value"]), 128),
+                        ValueTruncated = Text(control["Value"]).Length > 128,
+                        Error = Bound(Text(control["Error"]), 256),
+                        ErrorTruncated = Text(control["Error"]).Length > 256
+                    }).ToArray(),
+                    ControlsOmitted = Math.Max(0, Items(tab["Controls"]).Length - 128)
+                }).ToArray(),
+                TabsOmitted = Math.Max(0, tabs.Length - 8),
+                CataloguesOmitted = true
+            };
         }
 
         private static string Version(IDictionary<string, object> data)

@@ -1,18 +1,13 @@
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.Net;
-using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Web.Script.Serialization;
-using System.Windows.Forms;
-using VBAi;
 using VBAi.Tests.Infrastructure;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 namespace VBAi.Tests.Unit
 {
     [TestClass, TestCategory("Unit"), DoNotParallelize]
@@ -122,33 +117,33 @@ namespace VBAi.Tests.Unit
         public async Task CoordinatorChecksRespectEachPreferenceAndPriorCancellationIdentity()
         {
             foreach (string outcome in new[] { "manual", "no-release", "no-installer", "no-download", "cancel", "uncertain", "other-status", "other-version", "pending", "no-check", "no-install", "unmanaged" })
-            using (var fixture = new UpdatesNativeFixture())
-            {
-                if (outcome != "unmanaged") fixture.Scope.Managed();
-                const string bytes = "fixture installer"; var asset = UpdateFeedTests.Asset(bytes);
-                var release = new UpdateRelease { tag_name = "1.2.3", assets = outcome == "no-installer" ? null : new[] { asset } };
-                var handler = new UpdateFeedTests.Handler(outcome == "no-release" ? "[]" : new JavaScriptSerializer().Serialize(new[] { release }), bytes);
-                UpdateCoordinator.CreateFeed = () => new UpdateFeed(handler, token => throw new AssertFailedException("Unexpected credentials"));
-                int launches = 0; UpdateCoordinator.LaunchWorker = background => launches++;
-                var preferences = new UpdatePreferences { InstallAutomatically = outcome != "no-install", DownloadAutomatically = outcome != "no-download" };
-                UpdateState.Save(preferences);
-                if (new[] { "cancel", "uncertain", "other-status", "other-version", "pending" }.Contains(outcome))
+                using (var fixture = new UpdatesNativeFixture())
                 {
-                    var previous = UpdateInstallerRunnerTests.Job(fixture.Scope);
-                    previous.Completed = outcome != "pending"; previous.Status = outcome == "uncertain" ? "Installation status is uncertain. Check the installed version." : outcome == "other-status" ? "Completed fixture" : "Update cancelled.";
-                    if (outcome == "other-version") previous.TargetVersion = "1.2.2";
-                    previous.Save(fixture.Scope.Root);
+                    if (outcome != "unmanaged") fixture.Scope.Managed();
+                    const string bytes = "fixture installer"; var asset = UpdateFeedTests.Asset(bytes);
+                    var release = new UpdateRelease { tag_name = "1.2.3", assets = outcome == "no-installer" ? null : new[] { asset } };
+                    var handler = new UpdateFeedTests.Handler(outcome == "no-release" ? "[]" : new JavaScriptSerializer().Serialize(new[] { release }), bytes);
+                    UpdateCoordinator.CreateFeed = () => new UpdateFeed(handler, token => throw new AssertFailedException("Unexpected credentials"));
+                    int launches = 0; UpdateCoordinator.LaunchWorker = background => launches++;
+                    var preferences = new UpdatePreferences { InstallAutomatically = outcome != "no-install", DownloadAutomatically = outcome != "no-download" };
+                    UpdateState.Save(preferences);
+                    if (new[] { "cancel", "uncertain", "other-status", "other-version", "pending" }.Contains(outcome))
+                    {
+                        var previous = UpdateInstallerRunnerTests.Job(fixture.Scope);
+                        previous.Completed = outcome != "pending"; previous.Status = outcome == "uncertain" ? "Installation status is uncertain. Check the installed version." : outcome == "other-status" ? "Completed fixture" : "Update cancelled.";
+                        if (outcome == "other-version") previous.TargetVersion = "1.2.2";
+                        previous.Save(fixture.Scope.Root);
+                    }
+                    if (outcome == "no-check") UpdateCoordinator.CreateFeed = () =>
+                    {
+                        var current = UpdateState.Load(); current.CheckAutomatically = false; UpdateState.Save(current);
+                        return new UpdateFeed(handler, token => throw new AssertFailedException("Unexpected credentials"));
+                    };
+                    var result = await UpdateCoordinator.Check(outcome != "manual", null, CancellationToken.None);
+                    Assert.AreEqual(outcome == "other-status" || outcome == "other-version" ? 1 : 0, launches, outcome);
+                    Assert.AreEqual(outcome != "no-release", result != null);
+                    Assert.IsTrue(UpdateState.Load().LastCheckUtc > DateTime.MinValue);
                 }
-                if (outcome == "no-check") UpdateCoordinator.CreateFeed = () =>
-                {
-                    var current = UpdateState.Load(); current.CheckAutomatically = false; UpdateState.Save(current);
-                    return new UpdateFeed(handler, token => throw new AssertFailedException("Unexpected credentials"));
-                };
-                var result = await UpdateCoordinator.Check(outcome != "manual", null, CancellationToken.None);
-                Assert.AreEqual(outcome == "other-status" || outcome == "other-version" ? 1 : 0, launches, outcome);
-                Assert.AreEqual(outcome != "no-release", result != null);
-                Assert.IsTrue(UpdateState.Load().LastCheckUtc > DateTime.MinValue);
-            }
             using (var fixture = new UpdatesNativeFixture())
             using (File.Open(Path.Combine(fixture.Scope.Root, "operation.lock"), FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None))
                 await Assert.ThrowsExceptionAsync<InvalidOperationException>(() => UpdateCoordinator.Check(false, null, CancellationToken.None));

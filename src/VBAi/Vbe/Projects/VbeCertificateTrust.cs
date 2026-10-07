@@ -52,8 +52,11 @@ namespace VBAi
             try
             {
                 pointers = AllocatePointers(IntPtr.Size); Marshal.WriteIntPtr(pointers, oid);
-                var parameters = new ChainParameters { Size = Marshal.SizeOf(typeof(ChainParameters)),
-                    Usage = new UsageMatch { Usage = new EnhancedUsage { Count = 1, Identifiers = pointers } } };
+                var parameters = new ChainParameters
+                {
+                    Size = Marshal.SizeOf(typeof(ChainParameters)),
+                    Usage = new UsageMatch { Usage = new EnhancedUsage { Count = 1, Identifiers = pointers } }
+                };
                 // Cache-only chain AND revocation, no automatic root update, excluding root from revocation.
                 const uint flags = 0x00000004u | 0x00000100u | 0x40000000u | 0x80000000u;
                 if (!ReadChain(IntPtr.Zero, certificate.Handle, IntPtr.Zero, IntPtr.Zero,
@@ -68,12 +71,23 @@ namespace VBAi
                 string state = errors == 0 && status.Error == 0 ? "Trusted" :
                     (errors & ~revocationUnknown) == 0 && (errors & revocationUnknown) != 0 &&
                     (status.Error == 0 || status.Error == 0x80092013u || status.Error == 0x800B010Eu) ? "IndeterminateOffline" : "NotTrusted";
-                return new { certificate.Thumbprint, certificate.Subject, certificate.Issuer,
-                    CheckedAtUtc = DateTime.UtcNow.ToString("o"), State = state,
-                    Trusted = state == "Trusted", ChainErrorStatus = "0x" + errors.ToString("X8"),
-                    PolicyError = "0x" + status.Error.ToString("X8"), status.ChainIndex, status.ElementIndex,
-                    OfflineOnly = true, PrivateKeyAccessed = false, MacroSignatureVerified = false,
-                    Limit = "Current Windows trust and cached revocation only; no VBA digest, signer binding or timestamp verification. Missing cached evidence is not trust." };
+                return new
+                {
+                    certificate.Thumbprint,
+                    certificate.Subject,
+                    certificate.Issuer,
+                    CheckedAtUtc = DateTime.UtcNow.ToString("o"),
+                    State = state,
+                    Trusted = state == "Trusted",
+                    ChainErrorStatus = "0x" + errors.ToString("X8"),
+                    PolicyError = "0x" + status.Error.ToString("X8"),
+                    status.ChainIndex,
+                    status.ElementIndex,
+                    OfflineOnly = true,
+                    PrivateKeyAccessed = false,
+                    MacroSignatureVerified = false,
+                    Limit = "Current Windows trust and cached revocation only; no VBA digest, signer binding or timestamp verification. Missing cached evidence is not trust."
+                };
             }
             finally
             {
@@ -84,97 +98,112 @@ namespace VBAi
         }
 
         /// <summary>Structure CRYPT_OID_INFO contenant la liste d’identifiants d’usage.</summary>
-        [StructLayout(LayoutKind.Sequential)] internal struct EnhancedUsage {
+        [StructLayout(LayoutKind.Sequential)]
+        internal struct EnhancedUsage
+        {
 
-/// <summary>Nombre d’identifiants OID présents.</summary>
-internal uint Count;
+            /// <summary>Nombre d’identifiants OID présents.</summary>
+            internal uint Count;
 
-/// <summary>Pointeur vers le tableau natif d’OID.</summary>
-internal IntPtr Identifiers; }
+            /// <summary>Pointeur vers le tableau natif d’OID.</summary>
+            internal IntPtr Identifiers;
+        }
 
         /// <summary>Association entre un mode de correspondance et des usages étendus.</summary>
-        [StructLayout(LayoutKind.Sequential)] internal struct UsageMatch {
+        [StructLayout(LayoutKind.Sequential)]
+        internal struct UsageMatch
+        {
 
-/// <summary>Mode de correspondance défini par Crypt32.</summary>
-internal uint Type;
+            /// <summary>Mode de correspondance défini par Crypt32.</summary>
+            internal uint Type;
 
-/// <summary>Liste des usages recherchés.</summary>
-internal EnhancedUsage Usage; }
+            /// <summary>Liste des usages recherchés.</summary>
+            internal EnhancedUsage Usage;
+        }
 
         /// <summary>Paramètres CERT_CHAIN_PARA utilisés pour construire une chaîne de certificat.</summary>
-        [StructLayout(LayoutKind.Sequential)] internal struct ChainParameters
+        [StructLayout(LayoutKind.Sequential)]
+        internal struct ChainParameters
         {
 
             /// <summary>Taille de cette structure native en octets.</summary>
             internal int Size;
 
-/// <summary>Usages étendus exigés pour la chaîne.</summary>
-internal UsageMatch Usage;
+            /// <summary>Usages étendus exigés pour la chaîne.</summary>
+            internal UsageMatch Usage;
 
-/// <summary>Politique d’émission exigée, laissée vide pour l’évaluation Authenticode.</summary>
-internal UsageMatch IssuancePolicy;
+            /// <summary>Politique d’émission exigée, laissée vide pour l’évaluation Authenticode.</summary>
+            internal UsageMatch IssuancePolicy;
 
             /// <summary>Délai maximal accordé aux requêtes d’URL, nul en validation hors ligne.</summary>
             internal uint UrlTimeout;
 
-/// <summary>Indique si la fraîcheur de la chaîne doit être vérifiée.</summary>
-internal int CheckFreshness;
+            /// <summary>Indique si la fraîcheur de la chaîne doit être vérifiée.</summary>
+            internal int CheckFreshness;
 
-/// <summary>Durée de fraîcheur demandée lorsque ce contrôle est activé.</summary>
-internal uint Freshness;
+            /// <summary>Durée de fraîcheur demandée lorsque ce contrôle est activé.</summary>
+            internal uint Freshness;
 
             /// <summary>Instant de resynchronisation du cache, nul pour ce contrôle hors ligne.</summary>
             internal IntPtr CacheResync;
 
-/// <summary>Paramètres de vérification de signature forte facultatifs.</summary>
-internal IntPtr StrongSignature;
+            /// <summary>Paramètres de vérification de signature forte facultatifs.</summary>
+            internal IntPtr StrongSignature;
 
-/// <summary>Drapeaux complémentaires de signature forte.</summary>
-internal uint StrongFlags;
+            /// <summary>Drapeaux complémentaires de signature forte.</summary>
+            internal uint StrongFlags;
         }
 
         /// <summary>En-tête CERT_CHAIN_CONTEXT lu pour obtenir les indicateurs d’erreur.</summary>
-        [StructLayout(LayoutKind.Sequential)] internal struct ChainHeader {
-
-/// <summary>Taille de la structure native.</summary>
-internal int Size;
-
-/// <summary>Indicateurs d’erreur de la chaîne.</summary>
-internal uint ErrorStatus;
-
-/// <summary>Indicateurs informatifs de la chaîne.</summary>
-internal uint InfoStatus; }
-
-        /// <summary>Paramètres utilisés par CertVerifyCertificateChainPolicy.</summary>
-        [StructLayout(LayoutKind.Sequential)] internal struct PolicyParameters {
-
-/// <summary>Taille de la structure native.</summary>
-internal int Size;
-
-/// <summary>Drapeaux propres à la politique.</summary>
-internal uint Flags;
-
-/// <summary>Données supplémentaires facultatives.</summary>
-internal IntPtr Extra; }
-
-        /// <summary>Résultat POLICY_STATUS comprenant l’erreur et son emplacement dans la chaîne.</summary>
-        [StructLayout(LayoutKind.Sequential)] internal struct PolicyStatus
+        [StructLayout(LayoutKind.Sequential)]
+        internal struct ChainHeader
         {
 
-/// <summary>Taille de la structure native.</summary>
-internal int Size;
+            /// <summary>Taille de la structure native.</summary>
+            internal int Size;
 
-/// <summary>Code d’erreur de politique.</summary>
-internal uint Error;
+            /// <summary>Indicateurs d’erreur de la chaîne.</summary>
+            internal uint ErrorStatus;
 
-/// <summary>Index du maillon fautif, s’il est fourni.</summary>
-internal int ChainIndex;
+            /// <summary>Indicateurs informatifs de la chaîne.</summary>
+            internal uint InfoStatus;
+        }
 
-/// <summary>Index de l’élément fautif dans le maillon.</summary>
-internal int ElementIndex;
+        /// <summary>Paramètres utilisés par CertVerifyCertificateChainPolicy.</summary>
+        [StructLayout(LayoutKind.Sequential)]
+        internal struct PolicyParameters
+        {
 
-/// <summary>Données supplémentaires retournées par Crypt32.</summary>
-internal IntPtr Extra; }
+            /// <summary>Taille de la structure native.</summary>
+            internal int Size;
+
+            /// <summary>Drapeaux propres à la politique.</summary>
+            internal uint Flags;
+
+            /// <summary>Données supplémentaires facultatives.</summary>
+            internal IntPtr Extra;
+        }
+
+        /// <summary>Résultat POLICY_STATUS comprenant l’erreur et son emplacement dans la chaîne.</summary>
+        [StructLayout(LayoutKind.Sequential)]
+        internal struct PolicyStatus
+        {
+
+            /// <summary>Taille de la structure native.</summary>
+            internal int Size;
+
+            /// <summary>Code d’erreur de politique.</summary>
+            internal uint Error;
+
+            /// <summary>Index du maillon fautif, s’il est fourni.</summary>
+            internal int ChainIndex;
+
+            /// <summary>Index de l’élément fautif dans le maillon.</summary>
+            internal int ElementIndex;
+
+            /// <summary>Données supplémentaires retournées par Crypt32.</summary>
+            internal IntPtr Extra;
+        }
 
         /// <summary>Construit la chaîne locale d’un certificat selon les paramètres fournis.</summary>
         /// <param name="engine">Moteur de chaîne facultatif.</param>

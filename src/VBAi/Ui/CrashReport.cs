@@ -165,7 +165,7 @@ namespace VBAi
         {
             if (new FileInfo(path).Length > 50000) throw new InvalidDataException("Invalid report size.");
             var snapshot = new JavaScriptSerializer().Deserialize<Snapshot>(File.ReadAllText(path));
-            if (snapshot == null || !Guid.TryParseExact(snapshot.Id, "N", out var id) ||
+            if (snapshot == null || !Guid.TryParseExact(snapshot.Id, "N", out _) ||
                 snapshot.Id != Path.GetFileNameWithoutExtension(path) || string.IsNullOrEmpty(snapshot.Details) ||
                 string.IsNullOrWhiteSpace(snapshot.Title) || snapshot.Title.Length > 180)
                 throw new InvalidDataException("Invalid report snapshot.");

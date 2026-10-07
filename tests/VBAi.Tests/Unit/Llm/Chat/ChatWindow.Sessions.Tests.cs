@@ -1,19 +1,16 @@
 namespace VBAi.Tests.Unit
 {
+    using Microsoft.VisualStudio.TestTools.UnitTesting;
     using System;
-    using System.Collections;
     using System.Collections.Generic;
     using System.IO;
     using System.Linq;
-    using System.Net;
-    using System.Net.Http;
     using System.Reflection;
     using System.Threading;
     using System.Threading.Tasks;
     using System.Web.Script.Serialization;
     using System.Windows.Forms;
     using VBAi;
-    using Microsoft.VisualStudio.TestTools.UnitTesting;
 
     /// <summary>Vérifie l’historique, la persistance locale et la réparation des conversations.</summary>
     public sealed partial class ChatWindowStateTests
@@ -62,8 +59,10 @@ namespace VBAi.Tests.Unit
         private static void UseLiveProjectCatalogue(RuntimeScope runtime)
         {
             runtime.Host = request => request.Command == "list_projects"
-                ? Response.Success(runtime.Vbe.VBProjects.ConvertAll(project => new {
-                    project.Name, HostPath = project.ThrowFileName ? null : project.FileName
+                ? Response.Success(runtime.Vbe.VBProjects.ConvertAll(project => new
+                {
+                    project.Name,
+                    HostPath = project.ThrowFileName ? null : project.FileName
                 }).ToArray()) : Response.Success(new { SelectedProject = "P" });
         }
 
@@ -327,7 +326,8 @@ namespace VBAi.Tests.Unit
                     Call(window, "NewSession", (object)null); var second = Get<ChatSessionState>(window, "currentSession");
                     var previous = Get<ChatPersistenceWorker>(window, "persistenceWorker"); Assert.IsTrue(previous.Flush(5000)); previous.Dispose();
                     int callbacks = 0;
-                    using (var worker = new ChatPersistenceWorker(ChatWindow.HistoryPath(), (snapshot, version, error) => {
+                    using (var worker = new ChatPersistenceWorker(ChatWindow.HistoryPath(), (snapshot, version, error) =>
+                    {
                         if (Interlocked.Increment(ref callbacks) == 1) { inFlight.Set(); release.Wait(10000); }
                     }))
                     {
@@ -401,7 +401,8 @@ namespace VBAi.Tests.Unit
                 var store = Get<ChatSessionStore>(window, "sessionStore");
                 store.SaveMemory(deleted.Scope, "keep notes");
                 int confirmations = 0;
-                ChatWindow.ShowNotice = (owner, text, caption, buttons, icon) => {
+                ChatWindow.ShowNotice = (owner, text, caption, buttons, icon) =>
+                {
                     confirmations++; StringAssert.Contains(text, deleted.DisplayTitle);
                     Assert.AreEqual(MessageBoxButtons.YesNo, buttons); return DialogResult.Yes;
                 };
@@ -521,7 +522,8 @@ namespace VBAi.Tests.Unit
             var ready = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
             var dispatcher = System.Windows.Threading.Dispatcher.CurrentDispatcher;
             bool observing = true;
-            Action observe = () => {
+            Action observe = () =>
+            {
                 dispatcher.VerifyAccess();
                 if (!observing) return;
                 if (refresh.Enabled && models.Enabled && models.Items.Count != 0 &&
@@ -529,7 +531,8 @@ namespace VBAi.Tests.Unit
                     ready.TrySetResult(true);
             };
             EventHandler catalogueChanged = (sender, args) => observe();
-            Action<string> threadReady = id => {
+            Action<string> threadReady = id =>
+            {
                 if (!dispatcher.HasShutdownStarted) dispatcher.BeginInvoke(observe);
             };
             refresh.EnabledChanged += catalogueChanged;
@@ -581,7 +584,8 @@ namespace VBAi.Tests.Unit
                 Exception saveFailure = null;
                 string firstVersion = null;
                 Exception firstError = null;
-                using (var worker = new ChatPersistenceWorker(ChatWindow.HistoryPath(), (snapshot, version, error) => {
+                using (var worker = new ChatPersistenceWorker(ChatWindow.HistoryPath(), (snapshot, version, error) =>
+                {
                     if (error != null) Interlocked.CompareExchange(ref saveFailure, error, null);
                     if (Interlocked.Increment(ref writes) == 1) { firstVersion = version; firstError = error; inFlight.Set(); release.Wait(5000); }
                 }))
@@ -591,7 +595,8 @@ namespace VBAi.Tests.Unit
                     var nextScope = AddScope(window, "temporary:next");
                     var status = Get<Label>(window, "status");
                     bool deletionReported = false;
-                    EventHandler deletionStatus = (sender, args) => {
+                    EventHandler deletionStatus = (sender, args) =>
+                    {
                         deletionReported |= status.Text.StartsWith(UiText.Get("Conversation deleted from local history"), StringComparison.Ordinal);
                     };
                     status.TextChanged += deletionStatus;
@@ -702,7 +707,8 @@ namespace VBAi.Tests.Unit
                 var first = new TaskCompletionSource<ChatSessionStore.ScopeSnapshot>();
                 var latest = new TaskCompletionSource<ChatSessionStore.ScopeSnapshot>();
                 var requested = new List<string>();
-                window.ReadScope = (path, scope, includeSessions) => {
+                window.ReadScope = (path, scope, includeSessions) =>
+                {
                     requested.Add(scope);
                     return scope == @"C:\Owned\ScopeB.xlsm" ? first.Task : latest.Task;
                 };
@@ -718,8 +724,10 @@ namespace VBAi.Tests.Unit
                     Assert.ThrowsException<TargetInvocationException>(() => Call(window, "EnsureCurrentScope"));
                     scopes.SelectedItem = c;
                     Call(window, "ChangeScope");
-                    first.SetResult(new ChatSessionStore.ScopeSnapshot {
-                        Sessions = new List<ChatSessionState> { new ChatSessionState { Scope = @"C:\Owned\ScopeB.xlsm", Title = "Stale" } }, Memory = "stale memory"
+                    first.SetResult(new ChatSessionStore.ScopeSnapshot
+                    {
+                        Sessions = new List<ChatSessionState> { new ChatSessionState { Scope = @"C:\Owned\ScopeB.xlsm", Title = "Stale" } },
+                        Memory = "stale memory"
                     });
                     CompleteOnSta(staleLoad);
                     Assert.AreSame(original, Get<ChatSessionState>(window, "currentSession"));
@@ -758,8 +766,10 @@ namespace VBAi.Tests.Unit
                 Call(window, "ChangeScope");
                 Task loading = Get<Task>(window, "scopeLoad");
                 window.Dispose();
-                read.SetResult(new ChatSessionStore.ScopeSnapshot {
-                    Sessions = new List<ChatSessionState> { new ChatSessionState { Scope = @"C:\Owned\ScopeB.xlsm" } }, Memory = "ignored"
+                read.SetResult(new ChatSessionStore.ScopeSnapshot
+                {
+                    Sessions = new List<ChatSessionState> { new ChatSessionState { Scope = @"C:\Owned\ScopeB.xlsm" } },
+                    Memory = "ignored"
                 });
                 CompleteOnSta(loading);
                 Assert.AreSame(original, Get<ChatSessionState>(window, "currentSession"));
@@ -777,8 +787,12 @@ namespace VBAi.Tests.Unit
             {
                 var session = new ChatSessionState { Provider = "missing-provider", Entries = new List<ChatEntry>() };
                 foreach (var kind in new[] { "reasoning", "commandExecution" })
-                    session.Entries.Add(new ChatEntry { Speaker = kind == "reasoning" ? "Réflexion" : "Outil", StreamId = kind,
-                        Activity = new CodexAgentActivity { Id = kind, Kind = kind, Title = "Saved activity", Detail = "Original partial output", Status = "inProgress" } });
+                    session.Entries.Add(new ChatEntry
+                    {
+                        Speaker = kind == "reasoning" ? "Réflexion" : "Outil",
+                        StreamId = kind,
+                        Activity = new CodexAgentActivity { Id = kind, Kind = kind, Title = "Saved activity", Detail = "Original partial output", Status = "inProgress" }
+                    });
                 Call(window, "ActivateSession", session, false);
                 foreach (var entry in session.Entries)
                 {
@@ -917,20 +931,17 @@ namespace VBAi.Tests.Unit
 }
 namespace VBAi.Tests.Unit
 {
+    using Microsoft.VisualStudio.TestTools.UnitTesting;
     using System;
     using System.Collections.Generic;
     using System.IO;
-    using System.Linq;
-    using System.Threading.Tasks;
-    using System.Web.Script.Serialization;
     using System.Windows.Threading;
     using VBAi;
-    using Microsoft.VisualStudio.TestTools.UnitTesting;
     /// <summary>Vérifie la découverte des sessions, leur activation et la validité de leur historique.</summary>
     public sealed partial class ChatWindowStateTests
     {
-                /// <summary>Gère les projets enregistrés ou non, les réponses mal formées et les erreurs de stockage ou d’hôte.</summary>
-[STATestMethod, TestCategory("Unit")]
+        /// <summary>Gère les projets enregistrés ou non, les réponses mal formées et les erreurs de stockage ou d’hôte.</summary>
+        [STATestMethod, TestCategory("Unit")]
         public void SessionDiscoveryHandlesSavedUnsavedEmptyMalformedAndFailingProjectResponses()
         {
             using (var runtime = new RuntimeScope())
@@ -949,8 +960,8 @@ namespace VBAi.Tests.Unit
                 using (var window = LoadedWindow(runtime.Session)) { Assert.IsTrue(Get<bool>(window, "storageFailed")); var timer = Get<DispatcherTimer>(window, "projectRetryTimer"); TimerTick(timer); runtime.Host = r => { throw new IOException("retry failure"); }; TimerTick(timer); window.Dispose(); TimerTick(timer); }
             }
         }
-                /// <summary>Vérifie la découverte, les événements de sélection et l’état valide lorsque le stockage est indisponible.</summary>
-[STATestMethod, TestCategory("Unit")]
+        /// <summary>Vérifie la découverte, les événements de sélection et l’état valide lorsque le stockage est indisponible.</summary>
+        [STATestMethod, TestCategory("Unit")]
         public void SessionsDiscoveryEventsAndUnavailableStorageKeepValidState()
         {
             using (var runtime = new RuntimeScope())
@@ -980,8 +991,8 @@ namespace VBAi.Tests.Unit
                 }
             }
         }
-                /// <summary>Active, restaure, renomme et archive des sessions puis persiste leur état localement.</summary>
-[STATestMethod, TestCategory("Unit")]
+        /// <summary>Active, restaure, renomme et archive des sessions puis persiste leur état localement.</summary>
+        [STATestMethod, TestCategory("Unit")]
         public void SessionsActivateRestoreRenameArchiveCacheAndPersistLocally()
         {
             using (var runtime = new RuntimeScope())
@@ -1009,8 +1020,8 @@ namespace VBAi.Tests.Unit
                 store.Dispose(); Call(window, "SaveProjectMemory"); Call(window, "ChangeScope"); CompleteScopeLoad(window);
             }
         }
-                /// <summary>Préserve les tours terminés et répare uniquement les tours utilisateur incomplets.</summary>
-[STATestMethod, TestCategory("Unit")]
+        /// <summary>Préserve les tours terminés et répare uniquement les tours utilisateur incomplets.</summary>
+        [STATestMethod, TestCategory("Unit")]
         public void InterruptedHistoryValidationPreservesCompletedAndRepairsOnlyPendingUserTurns()
         {
             using (var window = Surfaces())
@@ -1024,8 +1035,8 @@ namespace VBAi.Tests.Unit
                 Set(window, "currentSession", null); Call(window, "RenameFromQuestion", "ignored"); Call(window, "RenameCurrentChat"); Call(window, "ToggleArchiveCurrentChat"); Call(window, "ScheduleSessionSave"); Call(window, "NewSession", (object)null); Call(window, "SaveProjectMemory");
             }
         }
-                /// <summary>Refuse une identité de scope obsolète au moment de sélectionner une session.</summary>
-[STATestMethod, TestCategory("Unit")]
+        /// <summary>Refuse une identité de scope obsolète au moment de sélectionner une session.</summary>
+        [STATestMethod, TestCategory("Unit")]
         public void SessionsRejectStaleScopeIdentityAtTheSelectionBoundary()
         {
             using (var runtime = new RuntimeScope())

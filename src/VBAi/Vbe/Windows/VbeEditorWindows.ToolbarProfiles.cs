@@ -77,11 +77,17 @@ namespace VBAi
             string name = (string)bar.Name;
             if (!create && !ToolbarProfiles.Read().Any(x => x.Name.Equals(name, StringComparison.OrdinalIgnoreCase))) return;
             var controls = ReadToolbarCommands((object)bar).Controls;
-            var profile = new VbeToolbarProfiles.Bar { Name = name, Position = (int)bar.Position, Visible = (bool)bar.Visible,
-                Left = (int)bar.Position == 4 ? (int?)(int)bar.Left : null, Top = (int)bar.Position == 4 ? (int?)(int)bar.Top : null,
+            var profile = new VbeToolbarProfiles.Bar
+            {
+                Name = name,
+                Position = (int)bar.Position,
+                Visible = (bool)bar.Visible,
+                Left = (int)bar.Position == 4 ? (int?)(int)bar.Left : null,
+                Top = (int)bar.Position == 4 ? (int?)(int)bar.Top : null,
                 RowIndex = (int)bar.Position == 4 ? null : (int?)(int)bar.RowIndex,
                 Commands = controls.Where(x => x.Tag.StartsWith(PersistentCommandTag, StringComparison.Ordinal)).Select(x =>
-                    new VbeToolbarProfiles.Command { Id = x.Id, Caption = x.Caption, Tag = x.Tag }).ToArray() };
+                    new VbeToolbarProfiles.Command { Id = x.Id, Caption = x.Caption, Tag = x.Tag }).ToArray()
+            };
             ToolbarProfiles.Update(name, profile);
         }
 

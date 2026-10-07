@@ -1,8 +1,8 @@
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace VBAi.Tests.Integration
 {
@@ -24,11 +24,13 @@ namespace VBAi.Tests.Integration
             using (var fixture = OfficeVbeFixture.Start(host))
             {
                 bool formCreated = false;
-                fixture.Scenario("IDE inventory", () => {
+                fixture.Scenario("IDE inventory", () =>
+                {
                     fixture.Data("project_properties"); fixture.Data("list_references");
                     fixture.Data("debug_state"); fixture.Data("vbe_environment");
                 });
-                fixture.Scenario("Host library inspection and dynamic references", () => {
+                fixture.Scenario("Host library inspection and dynamic references", () =>
+                {
                     var snapshot = fixture.Data("list_references");
                     var references = ((object[])snapshot["References"]).Select(VbeBridgeClient.Object).ToArray();
                     var library = references.Single(r => (string)r["Name"] == host);
@@ -50,7 +52,8 @@ namespace VBAi.Tests.Integration
                         Assert.AreEqual(snapshot["Version"], restored["Version"], "Original references must be restored exactly.");
                     }
                 });
-                fixture.Scenario("Module and class editing, exports and stale-write guard", () => {
+                fixture.Scenario("Module and class editing, exports and stale-write guard", () =>
+                {
                     foreach (var name in new[] { "VBAiOfficeModule", "VBAiOfficeClass" })
                     {
                         bool isClass = name.EndsWith("Class", StringComparison.Ordinal);
@@ -80,7 +83,8 @@ namespace VBAi.Tests.Integration
                         StringAssert.Contains((string)fixture.Data("read_module", "Module", name)["Code"], "VBAi office été");
                     }
                 });
-                fixture.Scenario("Native form capability", () => {
+                fixture.Scenario("Native form capability", () =>
+                {
                     var before = fixture.Items("list_modules").Select(m => (string)m["Name"]).OrderBy(n => n).ToArray();
                     var created = fixture.Response("create_form", "Form", "VBAiOfficeForm");
                     if (host == "Access" && !Convert.ToBoolean(created["Ok"]))
@@ -99,7 +103,8 @@ namespace VBAi.Tests.Integration
                         "ExpectedFormVersion", fixture.Data("form_state", "Form", "VBAiOfficeForm")["Version"]);
                     AssertLabel(fixture);
                 });
-                fixture.Scenario("Host save capability and policy guards", () => {
+                fixture.Scenario("Host save capability and policy guards", () =>
+                {
                     bool accessOrPublisher = host == "Access" || host == "Publisher";
                     const string description = "VBAi owned adapter persistence été";
                     if (accessOrPublisher)
@@ -180,13 +185,15 @@ namespace VBAi.Tests.Integration
                         fixture.CompatibilityGap("save_host_document", Convert.ToString(persistence["Reason"]));
                     }
                 });
-                fixture.Scenario("Code navigation and native compilation", () => {
+                fixture.Scenario("Code navigation and native compilation", () =>
+                {
                     var module = fixture.Data("read_module", "Module", "VBAiOfficeModule");
                     fixture.Data("select_code", "Module", "VBAiOfficeModule", "StartLine", 2, "ExpectedSha256", module["Sha256"]);
                     Assert.AreEqual(true, fixture.Data("compile_project", "ExpectedMode", 2)["Compiled"]);
                     Assert.AreEqual(2, Convert.ToInt32(fixture.Data("debug_state")["Mode"]));
                 });
-                fixture.Scenario("Native save and reopen preserves VBA", () => {
+                fixture.Scenario("Native save and reopen preserves VBA", () =>
+                {
                     fixture.Reopen();
                     AssertPersistedContent(fixture, formCreated);
                 });

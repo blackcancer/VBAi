@@ -1,7 +1,6 @@
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.IO;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
-using VBAi;
 
 namespace VBAi.Tests.Unit
 {
@@ -10,7 +9,8 @@ namespace VBAi.Tests.Unit
         [TestMethod]
         public void RealDirectoryRecoveryMarkerIsPendingAndCannotBeCompletedAsAnAbsentFile()
         {
-            InRecoveryMarker(repository => {
+            InRecoveryMarker(repository =>
+            {
                 Directory.CreateDirectory(repository.RecoveryFile);
                 string retained = Path.Combine(repository.RecoveryFile, "retained.txt");
                 File.WriteAllText(retained, "synthetic recovery evidence");
@@ -23,11 +23,15 @@ namespace VBAi.Tests.Unit
         [DataTestMethod, DataRow(false), DataRow(true)]
         public void OnlyDefiniteMissingMarkerExceptionsMeanNoPendingRecoveryAndDoNotDelete(bool parentMissing)
         {
-            InRecoveryMarker(repository => {
+            InRecoveryMarker(repository =>
+            {
                 int deletions = 0, observations = 0;
-                repository.RecoveryAttributes = path => { observations++; Assert.AreEqual(repository.RecoveryFile, path);
+                repository.RecoveryAttributes = path =>
+                {
+                    observations++; Assert.AreEqual(repository.RecoveryFile, path);
                     if (parentMissing) throw new DirectoryNotFoundException("synthetic missing parent");
-                    throw new FileNotFoundException("synthetic missing marker"); };
+                    throw new FileNotFoundException("synthetic missing marker");
+                };
                 repository.DeleteRecoveryMarker = path => deletions++;
                 Assert.IsFalse(repository.RecoveryPending); repository.RequireValidRecoveryMarker(); repository.CompleteRecovery();
                 Assert.AreEqual(3, observations); Assert.AreEqual(0, deletions);
@@ -37,7 +41,8 @@ namespace VBAi.Tests.Unit
         [DataTestMethod, DataRow("access"), DataRow("io"), DataRow("path")]
         public void MetadataFailuresPropagateUnchangedForPendingRollbackValidationAndCompletion(string kind)
         {
-            InRecoveryMarker(repository => {
+            InRecoveryMarker(repository =>
+            {
                 var original = RecoveryMetadataError(kind); int deletions = 0;
                 repository.RecoveryAttributes = path => { Assert.AreEqual(repository.RecoveryFile, path); throw original; };
                 repository.DeleteRecoveryMarker = path => deletions++;
@@ -51,7 +56,8 @@ namespace VBAi.Tests.Unit
         [DataRow(FileAttributes.ReparsePoint), DataRow(FileAttributes.Directory | FileAttributes.ReparsePoint)]
         public void EveryExistingEntryIsPendingButInvalidMarkerTypesNeverAuthorizeDelete(FileAttributes attributes)
         {
-            InRecoveryMarker(repository => {
+            InRecoveryMarker(repository =>
+            {
                 int deletions = 0; repository.RecoveryAttributes = path => attributes;
                 repository.DeleteRecoveryMarker = path => deletions++;
                 Assert.IsTrue(repository.RecoveryPending);
@@ -68,7 +74,8 @@ namespace VBAi.Tests.Unit
         [TestMethod]
         public void MarkerObserversAndDeleteBoundariesBelongToOneRepositoryInstance()
         {
-            InRecoveryMarker(repository => {
+            InRecoveryMarker(repository =>
+            {
                 var other = new MacroGitRepository(Path.GetDirectoryName(repository.RecoveryFile), "other");
                 var original = new IOException("instance-only marker metadata failure");
                 repository.RecoveryAttributes = path => { throw original; };
@@ -83,7 +90,8 @@ namespace VBAi.Tests.Unit
         [TestMethod]
         public void RealRegularMarkerIsDeletedOnceAndItsAbsenceIsIndependentlyObserved()
         {
-            InRecoveryMarker(repository => {
+            InRecoveryMarker(repository =>
+            {
                 File.WriteAllText(repository.RecoveryFile, "synthetic backup identity"); int observations = 0, deletions = 0;
                 repository.RecoveryAttributes = path => { observations++; return File.GetAttributes(path); };
                 repository.DeleteRecoveryMarker = path => { deletions++; File.Delete(path); };
@@ -96,9 +104,11 @@ namespace VBAi.Tests.Unit
         [DataTestMethod, DataRow(false), DataRow(true)]
         public void DefiniteFileOrParentAbsenceAfterSingleDeletionVerifiesCompletion(bool parentMissing)
         {
-            InRecoveryMarker(repository => {
+            InRecoveryMarker(repository =>
+            {
                 File.WriteAllText(repository.RecoveryFile, "owned marker"); int observations = 0, deletions = 0;
-                repository.RecoveryAttributes = path => {
+                repository.RecoveryAttributes = path =>
+                {
                     Assert.AreEqual(repository.RecoveryFile, path);
                     if (++observations == 1) return File.GetAttributes(path);
                     if (parentMissing) throw new DirectoryNotFoundException("known absent parent after deletion");
@@ -113,7 +123,8 @@ namespace VBAi.Tests.Unit
         [DataTestMethod, DataRow("access"), DataRow("io")]
         public void DeleteFailureIsNeverRetriedAndPreservesOriginalMarker(string kind)
         {
-            InRecoveryMarker(repository => {
+            InRecoveryMarker(repository =>
+            {
                 File.WriteAllText(repository.RecoveryFile, "retained backup identity"); int deletions = 0, observations = 0;
                 var original = RecoveryMetadataError(kind);
                 repository.RecoveryAttributes = path => { observations++; return File.GetAttributes(path); };
@@ -126,7 +137,8 @@ namespace VBAi.Tests.Unit
         [TestMethod]
         public void DeleteAppliedThenLostOutcomeDoesNotObserveAgainRecreateMarkerOrReplayDeletion()
         {
-            InRecoveryMarker(repository => {
+            InRecoveryMarker(repository =>
+            {
                 File.WriteAllText(repository.RecoveryFile, "owned marker"); int deletions = 0, observations = 0;
                 var original = new IOException("single deletion applied but outcome failed");
                 repository.RecoveryAttributes = path => { observations++; return File.GetAttributes(path); };
@@ -139,10 +151,12 @@ namespace VBAi.Tests.Unit
         [DataTestMethod, DataRow(false), DataRow(true)]
         public void ConcurrentEntryAfterSingleDeleteMakesCompletionFailWithoutDeletingTheNewEntry(bool directory)
         {
-            InRecoveryMarker(repository => {
+            InRecoveryMarker(repository =>
+            {
                 File.WriteAllText(repository.RecoveryFile, "initial marker"); int deletions = 0, observations = 0;
                 repository.RecoveryAttributes = path => { observations++; return File.GetAttributes(path); };
-                repository.DeleteRecoveryMarker = path => {
+                repository.DeleteRecoveryMarker = path =>
+                {
                     deletions++; File.Delete(path);
                     if (directory) { Directory.CreateDirectory(path); File.WriteAllText(Path.Combine(path, "new.txt"), "concurrent entry"); }
                     else File.WriteAllText(path, "concurrent entry");
@@ -157,7 +171,8 @@ namespace VBAi.Tests.Unit
         [DataTestMethod, DataRow("access"), DataRow("io")]
         public void PostDeletionMetadataFailureCannotBecomeVerifiedCompletionOrCauseAnotherDelete(string kind)
         {
-            InRecoveryMarker(repository => {
+            InRecoveryMarker(repository =>
+            {
                 File.WriteAllText(repository.RecoveryFile, "owned marker"); int deletions = 0, observations = 0;
                 var original = RecoveryMetadataError(kind);
                 repository.RecoveryAttributes = path => { if (++observations == 2) throw original; return File.GetAttributes(path); };

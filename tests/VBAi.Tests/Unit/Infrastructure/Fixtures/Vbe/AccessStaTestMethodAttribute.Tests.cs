@@ -1,11 +1,9 @@
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Diagnostics;
-using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
-using VBAi;
 
 namespace VBAi.Tests.Unit
 {
@@ -15,11 +13,13 @@ namespace VBAi.Tests.Unit
         [ThreadStatic] private static int testMarker;
 
         [DataTestMethod]
-        [DataRow(false)] [DataRow(true)]
+        [DataRow(false)]
+        [DataRow(true)]
         public void EachInvocationOwnsAFreshStaLoopAndPreservesItsOriginalOutcome(bool throws)
         {
             int caller = Thread.CurrentThread.ManagedThreadId; var original = new InvalidOperationException("original synthetic failure");
-            var first = AccessStaTestMethodAttribute.RunOnFreshSta(() => {
+            var first = AccessStaTestMethodAttribute.RunOnFreshSta(() =>
+            {
                 Assert.AreEqual(ApartmentState.STA, Thread.CurrentThread.GetApartmentState());
                 Assert.IsTrue(Application.MessageLoop); Assert.AreEqual(0, testMarker); testMarker = 1;
                 if (throws) throw original; return 17;
@@ -33,11 +33,13 @@ namespace VBAi.Tests.Unit
         }
 
         [DataTestMethod]
-        [DataRow(false)] [DataRow(true)]
+        [DataRow(false)]
+        [DataRow(true)]
         public void UnfinishedTaskParksOnlyItsOriginalDispatcherAndCannotContaminateTheNextScenario(bool throws)
         {
             var pending = new TaskCompletionSource<object>(); var original = new InvalidOperationException("first failure");
-            var retained = AccessStaTestMethodAttribute.RunOnFreshSta(() => {
+            var retained = AccessStaTestMethodAttribute.RunOnFreshSta(() =>
+            {
                 testMarker = 99;
                 Assert.AreSame(pending.Task, AccessStaTestMethodAttribute.StartSave(() => pending.Task));
                 if (throws) throw original; return 23;
@@ -46,7 +48,8 @@ namespace VBAi.Tests.Unit
             if (throws) Assert.AreSame(original, retained.Error); else Assert.AreEqual(23, retained.Value);
             StringAssert.Contains(retained.Diagnostic, "LateCompletionAccepted=false");
             StringAssert.Contains(retained.Diagnostic, "SaveReplay=0");
-            var clean = AccessStaTestMethodAttribute.RunOnFreshSta(() => {
+            var clean = AccessStaTestMethodAttribute.RunOnFreshSta(() =>
+            {
                 Assert.AreEqual(0, testMarker);
                 return AccessStaTestMethodAttribute.StartSave(() => Task.FromResult<object>("next")).GetAwaiter().GetResult();
             });
@@ -59,14 +62,17 @@ namespace VBAi.Tests.Unit
         }
 
         [DataTestMethod]
-        [DataRow(false)] [DataRow(true)]
+        [DataRow(false)]
+        [DataRow(true)]
         public void RealVbeUiTaskTraceIsCapturedBeforeAdmissionAndKeepsOwnerStaContinuations(bool throws)
         {
             var original = new InvalidOperationException("async original");
-            var run = AccessStaTestMethodAttribute.RunOnFreshSta(() => {
+            var run = AccessStaTestMethodAttribute.RunOnFreshSta(() =>
+            {
                 int owner = Thread.CurrentThread.ManagedThreadId;
                 var gate = new TaskCompletionSource<object>();
-                var pending = AccessStaTestMethodAttribute.StartSave(() => VbeUiTask.Run(async () => {
+                var pending = AccessStaTestMethodAttribute.StartSave(() => VbeUiTask.Run(async () =>
+                {
                     await gate.Task;
                     Assert.AreEqual(owner, Thread.CurrentThread.ManagedThreadId);
                     Assert.AreEqual(ApartmentState.STA, Thread.CurrentThread.GetApartmentState());
@@ -88,7 +94,8 @@ namespace VBAi.Tests.Unit
         }
 
         [DataTestMethod]
-        [DataRow(false)] [DataRow(true)]
+        [DataRow(false)]
+        [DataRow(true)]
         public void OriginalDataRowArrayAndFailureObjectsSurviveRetention(bool retained)
         {
             var original = new AssertFailedException("original bound failed");
@@ -108,18 +115,21 @@ namespace VBAi.Tests.Unit
         public void SaveTrackingCannotRunOutsideItsDedicatedScope()
         {
             int attempts = 0;
-            Assert.ThrowsException<InvalidOperationException>(() => AccessStaTestMethodAttribute.StartSave(() => {
+            Assert.ThrowsException<InvalidOperationException>(() => AccessStaTestMethodAttribute.StartSave(() =>
+            {
                 attempts++; return Task.FromResult<object>(null);
             }));
             Assert.AreEqual(0, attempts);
         }
 
         [DataTestMethod]
-        [DataRow(false)] [DataRow(true)]
+        [DataRow(false)]
+        [DataRow(true)]
         public void NullOrSynchronouslyThrowingAdmissionDoesNotInventAnOutstandingTask(bool throws)
         {
             var original = new InvalidOperationException("admission refused"); int attempts = 0;
-            var run = AccessStaTestMethodAttribute.RunOnFreshSta(() => AccessStaTestMethodAttribute.StartSave(() => {
+            var run = AccessStaTestMethodAttribute.RunOnFreshSta(() => AccessStaTestMethodAttribute.StartSave(() =>
+            {
                 attempts++; if (throws) throw original; return null;
             }));
             Assert.AreEqual(1, attempts); Assert.IsFalse(run.Retained); Assert.IsTrue(run.DispatcherDisposed);
@@ -131,7 +141,8 @@ namespace VBAi.Tests.Unit
         {
             SynchronizationContext context = null; int callbacks = 0;
             var pending = new TaskCompletionSource<object>();
-            var run = AccessStaTestMethodAttribute.RunOnFreshSta(() => {
+            var run = AccessStaTestMethodAttribute.RunOnFreshSta(() =>
+            {
                 context = SynchronizationContext.Current;
                 AccessStaTestMethodAttribute.StartSave(() => pending.Task);
                 // Queue before publication, behind this original callback. Retention must not pump it.
@@ -145,11 +156,13 @@ namespace VBAi.Tests.Unit
         }
 
         [DataTestMethod]
-        [DataRow(false)] [DataRow(true)]
+        [DataRow(false)]
+        [DataRow(true)]
         public void AlreadyFaultedOrCanceledTasksAreTerminalAndNeverRetained(bool canceled)
         {
             var expected = new InvalidOperationException("faulted terminal");
-            var run = AccessStaTestMethodAttribute.RunOnFreshSta(() => {
+            var run = AccessStaTestMethodAttribute.RunOnFreshSta(() =>
+            {
                 var task = new TaskCompletionSource<object>();
                 if (canceled) task.SetCanceled(); else task.SetException(expected);
                 AccessStaTestMethodAttribute.StartSave(() => task.Task);

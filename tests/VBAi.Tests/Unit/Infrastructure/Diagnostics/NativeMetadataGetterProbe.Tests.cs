@@ -1,8 +1,7 @@
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
-using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using System.Text;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 using VBAi.Tests.Integration;
 
 namespace VBAi.Tests.Unit
@@ -14,7 +13,8 @@ namespace VBAi.Tests.Unit
         [TestMethod]
         public void FullX64VariantUnionAndI4ResultPreserveCanary()
         {
-            var row = NativeMetadataGetterProbe.ReadVariant(pointer => {
+            var row = NativeMetadataGetterProbe.ReadVariant(pointer =>
+            {
                 // A native callee may write all 24 ABI bytes, even for an I4 result.
                 Marshal.Copy(new byte[24], 0, pointer, 24);
                 Marshal.GetNativeVariantForObject(321, pointer);
@@ -51,7 +51,8 @@ namespace VBAi.Tests.Unit
         [TestMethod]
         public void FailedInvokePreservesNativeHresultAndStillClearsAllocatedBstr()
         {
-            var row = NativeMetadataGetterProbe.ReadVariant(pointer => {
+            var row = NativeMetadataGetterProbe.ReadVariant(pointer =>
+            {
                 Marshal.GetNativeVariantForObject("Owned failure marker", pointer);
                 return unchecked((int)0x80020009);
             });
@@ -68,7 +69,8 @@ namespace VBAi.Tests.Unit
             Assert.AreEqual(false, overrun["CanaryIntact"]);
             Assert.AreEqual("ERROR", overrun["State"]);
             Assert.AreEqual("0x00000000", overrun["HResult"], "Diagnostic failure must not replace the original Invoke HRESULT.");
-            var byref = NativeMetadataGetterProbe.ReadVariant(pointer => {
+            var byref = NativeMetadataGetterProbe.ReadVariant(pointer =>
+            {
                 Marshal.WriteInt16(pointer, unchecked((short)((int)VarEnum.VT_BYREF | (int)VarEnum.VT_I4)));
                 return 0;
             });

@@ -1,7 +1,7 @@
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 using VBAi.Tests.Integration;
 
 namespace VBAi.Tests.Unit
@@ -9,19 +9,45 @@ namespace VBAi.Tests.Unit
     [TestClass, TestCategory("Unit")]
     public sealed class OfficeVbeFixtureMainWordDesktopTests
     {
+        [TestMethod]
+        public void GenericMainOptInSelectsOnlyWordWithoutChangingOtherHostFlag()
+        {
+            Assert.AreEqual("1", OfficeVbeFixture.OfficeMainWordOptIn("Word", "1", null));
+            Assert.AreEqual("1", OfficeVbeFixture.OfficeMainWordOptIn("Word", "1", "0"));
+            Assert.IsNull(OfficeVbeFixture.OfficeMainWordOptIn("Publisher", "1", null));
+            Assert.IsNull(OfficeVbeFixture.OfficeMainWordOptIn("Access", "1", null));
+            Assert.IsNull(OfficeVbeFixture.OfficeMainWordOptIn("PowerPoint", "1", null));
+            Assert.AreEqual("1", OfficeVbeFixture.OfficeMainWordOptIn("Word", null, "1"));
+        }
+
         [DataTestMethod]
-        [DataRow(0)] [DataRow(1)] [DataRow(2)] [DataRow(3)] [DataRow(4)] [DataRow(5)] [DataRow(6)]
-        [DataRow(7)] [DataRow(8)] [DataRow(9)] [DataRow(10)] [DataRow(11)]
+        [DataRow(0)]
+        [DataRow(1)]
+        [DataRow(2)]
+        [DataRow(3)]
+        [DataRow(4)]
+        [DataRow(5)]
+        [DataRow(6)]
+        [DataRow(7)]
+        [DataRow(8)]
+        [DataRow(9)]
+        [DataRow(10)]
+        [DataRow(11)]
         public void ExactObservedRootIsRequiredAndHiddenStartupIsOnlyObservation(int fault)
         {
             var observed = IsolatedTestDesktopMainTests.Inventory().Windows[0];
             IntPtr root = new IntPtr(11); uint pid = 42, tid = 7; string expectedClass = "OpusApp"; bool requireVisible = true;
             switch (fault)
             {
-                case 1: observed = null; break; case 2: root = IntPtr.Zero; break;
-                case 3: pid = 0; break; case 4: tid = 0; break; case 5: observed.Handle = 13; break;
-                case 6: observed.ProcessId = 43; break; case 7: observed.ThreadId = 8; break;
-                case 8: expectedClass = null; break; case 9: observed.ClassName = "Other"; break;
+                case 1: observed = null; break;
+                case 2: root = IntPtr.Zero; break;
+                case 3: pid = 0; break;
+                case 4: tid = 0; break;
+                case 5: observed.Handle = 13; break;
+                case 6: observed.ProcessId = 43; break;
+                case 7: observed.ThreadId = 8; break;
+                case 8: expectedClass = null; break;
+                case 9: observed.ClassName = "Other"; break;
                 case 10: observed.Visible = false; break;
                 case 11: observed.Visible = false; requireVisible = false; break;
             }
@@ -30,7 +56,12 @@ namespace VBAi.Tests.Unit
         }
 
         [DataTestMethod]
-        [DataRow(null)] [DataRow("")] [DataRow("0")] [DataRow("true")] [DataRow("1 ")] [DataRow(" 1")]
+        [DataRow(null)]
+        [DataRow("")]
+        [DataRow("0")]
+        [DataRow("true")]
+        [DataRow("1 ")]
+        [DataRow(" 1")]
         public void MainSelectionRequiresTheExactOptInAndDoesNotInvokeItsGuardOtherwise(string optIn)
         {
             int guard = 0;
@@ -40,10 +71,14 @@ namespace VBAi.Tests.Unit
         }
 
         [DataTestMethod]
-        [DataRow("Word", null, null, true)] [DataRow("Word", "", "", true)]
-        [DataRow("Word", "Private", "Private", false)] [DataRow("Word", null, "Default", false)]
-        [DataRow("Word", "Default", null, false)] [DataRow("Word", " ", null, false)]
-        [DataRow("PowerPoint", null, null, false)] [DataRow(null, null, null, false)]
+        [DataRow("Word", null, null, true)]
+        [DataRow("Word", "", "", true)]
+        [DataRow("Word", "Private", "Private", false)]
+        [DataRow("Word", null, "Default", false)]
+        [DataRow("Word", "Default", null, false)]
+        [DataRow("Word", " ", null, false)]
+        [DataRow("PowerPoint", null, null, false)]
+        [DataRow(null, null, null, false)]
         public void MainSelectionNeverOverridesPrivateSelectionOrAnotherHost(string kind, string required, string configured, bool valid)
         {
             int count = 0;
@@ -64,7 +99,13 @@ namespace VBAi.Tests.Unit
         }
 
         [DataTestMethod]
-        [DataRow(-1)] [DataRow(0)] [DataRow(1)] [DataRow(2)] [DataRow(3)] [DataRow(4)] [DataRow(5)]
+        [DataRow(-1)]
+        [DataRow(0)]
+        [DataRow(1)]
+        [DataRow(2)]
+        [DataRow(3)]
+        [DataRow(4)]
+        [DataRow(5)]
         public void MainLaunchPersistsTheOriginalBeforeAnyAttachAndStopsAtEveryFailure(int fault)
         {
             var log = new List<string>(); int step = 0; var error = new InvalidOperationException("preserved");
@@ -77,8 +118,15 @@ namespace VBAi.Tests.Unit
         }
 
         [DataTestMethod]
-        [DataRow(-1)] [DataRow(0)] [DataRow(1)] [DataRow(2)] [DataRow(3)] [DataRow(4)] [DataRow(5)]
-        [DataRow(6)] [DataRow(7)]
+        [DataRow(-1)]
+        [DataRow(0)]
+        [DataRow(1)]
+        [DataRow(2)]
+        [DataRow(3)]
+        [DataRow(4)]
+        [DataRow(5)]
+        [DataRow(6)]
+        [DataRow(7)]
         public void SeedTransitionPreservesUncertainCreateCloseAndReleaseWithoutReplay(int fault)
         {
             var log = new List<string>(); int guards = 0; bool newDocument = false, closed = false, released = false, cleared = false;
@@ -98,14 +146,22 @@ namespace VBAi.Tests.Unit
         }
 
         [DataTestMethod]
-        [DataRow(0)] [DataRow(1)] [DataRow(2)] [DataRow(3)] [DataRow(4)] [DataRow(5)]
+        [DataRow(0)]
+        [DataRow(1)]
+        [DataRow(2)]
+        [DataRow(3)]
+        [DataRow(4)]
+        [DataRow(5)]
         public void PlacementObservationChecksOriginalBeforeAndAfterAndNeverRetries(int fault)
         {
             int guards = 0, reads = 0; var original = new InvalidOperationException("original generation changed");
             Func<IsolatedTestDesktop.MainInventory> run = () => OfficeVbeFixture.ObserveMainWordPlacement(
                 () => { guards++; if ((fault == 1 && guards == 1) || (fault == 2 && guards == 2)) throw original; },
-                () => { reads++; if (fault == 3) throw original; var data = IsolatedTestDesktopMainTests.Inventory();
-                    if (fault == 4) data.Complete = false; if (fault == 5) data.Windows[0].ProcessId = 99; return data; },
+                () =>
+                {
+                    reads++; if (fault == 3) throw original; var data = IsolatedTestDesktopMainTests.Inventory();
+                    if (fault == 4) data.Complete = false; if (fault == 5) data.Windows[0].ProcessId = 99; return data;
+                },
                 42, new IntPtr(11), true, true);
             if (fault == 0) Assert.IsNotNull(run());
             else { var caught = Assert.ThrowsException<InvalidOperationException>(() => run()); if (fault <= 3) Assert.AreSame(original, caught); }
@@ -114,7 +170,17 @@ namespace VBAi.Tests.Unit
         }
 
         [DataTestMethod]
-        [DataRow(0)] [DataRow(1)] [DataRow(2)] [DataRow(3)] [DataRow(4)] [DataRow(5)] [DataRow(6)] [DataRow(7)] [DataRow(8)] [DataRow(9)] [DataRow(10)]
+        [DataRow(0)]
+        [DataRow(1)]
+        [DataRow(2)]
+        [DataRow(3)]
+        [DataRow(4)]
+        [DataRow(5)]
+        [DataRow(6)]
+        [DataRow(7)]
+        [DataRow(8)]
+        [DataRow(9)]
+        [DataRow(10)]
         public void OriginalNativeHandleAndCapturedGenerationMustBothRemainExact(int fault)
         {
             Action run = () => OfficeVbeFixture.RequireMainWordGeneration(fault == 1 ? 0 : 42,
@@ -126,25 +192,44 @@ namespace VBAi.Tests.Unit
         }
 
         [DataTestMethod]
-        [DataRow(0)] [DataRow(1)] [DataRow(2)] [DataRow(3)] [DataRow(4)] [DataRow(5)] [DataRow(6)]
-        [DataRow(7)] [DataRow(8)] [DataRow(9)] [DataRow(10)] [DataRow(11)] [DataRow(12)] [DataRow(13)]
+        [DataRow(0)]
+        [DataRow(1)]
+        [DataRow(2)]
+        [DataRow(3)]
+        [DataRow(4)]
+        [DataRow(5)]
+        [DataRow(6)]
+        [DataRow(7)]
+        [DataRow(8)]
+        [DataRow(9)]
+        [DataRow(10)]
+        [DataRow(11)]
+        [DataRow(12)]
+        [DataRow(13)]
         public void ReadyProductUsesActualStatusWithFrozenMvidAndFileHash(int fault)
         {
             Guid mvid = Guid.NewGuid(); string pin = mvid.ToString("D"), sha = new string('A', 64);
             var status = new Dictionary<string, object> { ["HostProcessId"] = 42, ["AssemblyPath"] = @"C:\Candidate\VBAi.dll", ["AssemblyModuleVersionId"] = pin };
             switch (fault)
             {
-                case 1: status = null; break; case 2: status.Remove("HostProcessId"); break;
-                case 3: status["HostProcessId"] = "42"; break; case 4: status["HostProcessId"] = 43; break;
-                case 5: status.Remove("AssemblyPath"); break; case 6: status["AssemblyModuleVersionId"] = Guid.NewGuid().ToString("D"); break;
-                case 7: pin = null; break; case 8: pin = Guid.NewGuid().ToString("D"); break;
-                case 9: sha = new string('X', 64); break; case 10: sha = "A"; break;
+                case 1: status = null; break;
+                case 2: status.Remove("HostProcessId"); break;
+                case 3: status["HostProcessId"] = "42"; break;
+                case 4: status["HostProcessId"] = 43; break;
+                case 5: status.Remove("AssemblyPath"); break;
+                case 6: status["AssemblyModuleVersionId"] = Guid.NewGuid().ToString("D"); break;
+                case 7: pin = null; break;
+                case 8: pin = Guid.NewGuid().ToString("D"); break;
+                case 9: sha = new string('X', 64); break;
+                case 10: sha = "A"; break;
                 case 11: status["AssemblyPath"] = "relative.dll"; break;
             }
             int reads = 0; var readError = new InvalidOperationException("file read failed");
-            Func<string> run = () => OfficeVbeFixture.RequireMainWordProduct(status, 42, pin, sha, mvid, path => {
+            Func<string> run = () => OfficeVbeFixture.RequireMainWordProduct(status, 42, pin, sha, mvid, path =>
+            {
                 reads++; Assert.AreEqual(@"C:\Candidate\VBAi.dll", path); if (fault == 13) throw readError;
-                return fault == 12 ? new string('B', 64) : sha.ToLowerInvariant(); });
+                return fault == 12 ? new string('B', 64) : sha.ToLowerInvariant();
+            });
             if (fault == 0) Assert.AreEqual(@"C:\Candidate\VBAi.dll", run());
             else if (fault == 11) Assert.ThrowsException<ArgumentException>(() => run());
             else { var error = Assert.ThrowsException<InvalidOperationException>(() => run()); if (fault == 13) Assert.AreSame(readError, error); }

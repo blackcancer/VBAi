@@ -1,5 +1,5 @@
-using System.IO;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+using System.IO;
 using VBAi.Tests.Infrastructure;
 
 namespace VBAi.Tests.Integration

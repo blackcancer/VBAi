@@ -1,9 +1,8 @@
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Reflection;
 using System.Threading.Tasks;
-using VBAi;
 using VBAi.Tests.Infrastructure;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace VBAi.Tests.Unit.Editor
 {
@@ -71,8 +70,13 @@ namespace VBAi.Tests.Unit.Editor
         private static object Message(ModernEditorToolFixture f, int baseVersion, int version, string text)
         {
             var type = typeof(ModernEditorWindow).GetNestedType("EditorMessage", BindingFlags.NonPublic);
-            return f.Json.Deserialize(f.Json.Serialize(new { id = f.Document.Id, baseVersion, version,
-                changes = new[] { new { rangeOffset = 0, rangeLength = f.Document.Text.Length, text } } }), type);
+            return f.Json.Deserialize(f.Json.Serialize(new
+            {
+                id = f.Document.Id,
+                baseVersion,
+                version,
+                changes = new[] { new { rangeOffset = 0, rangeLength = f.Document.Text.Length, text } }
+            }), type);
         }
         private static void Call(ModernEditorToolFixture f, string method, params object[] values)
             => ModernEditorDebugFixture.Wait((Task)f.Private(method, values));

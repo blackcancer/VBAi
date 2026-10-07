@@ -1,9 +1,9 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Text;
-using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Web.Script.Serialization;
@@ -143,7 +143,8 @@ namespace VBAi
             if (provider == null || !provider.Available || provider.IsCodex)
                 throw new InvalidOperationException(UiText.Get("Model list unavailable for this provider."));
             if (provider.IsCopilot) { using (var client = new CopilotClient()) return await client.ListModelsAsync(); }
-            if (provider.ManualModels) {
+            if (provider.ManualModels)
+            {
                 var ids = (settings.GetManualModels(provider) ?? "").Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries).Select(x => x.Trim()).Where(x => x.Length > 0).Distinct(StringComparer.Ordinal).ToArray();
                 if (ids.Length == 0) throw new InvalidOperationException(UiText.Get("Enter the ") + (provider.IsAzure ? UiText.Get("Azure deployments") : UiText.Get("model identifiers")) + UiText.Get(" in provider settings."));
                 return ids.Select(id => new LlmModelOption(id, id)).ToArray();
@@ -160,40 +161,40 @@ namespace VBAi
             var cursors = new HashSet<string>();
             using (var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(20)))
             using (var client = new HttpClient(handler ?? HttpHandlerFactory()) { Timeout = TimeSpan.FromSeconds(20) })
-            for (int page = 0; page < 100; page++)
-            {
-                using (var request = new HttpRequestMessage(HttpMethod.Get, catalogue)) {
-                string key = settings.GetKey(provider);
-                if (string.IsNullOrWhiteSpace(key) && provider.RequiresKey)
-                    throw new InvalidOperationException(UiText.Get("Configure the API key for ") + provider.Name + UiText.Get(" to load models."));
-                Authenticate(request, provider, key, settings.AzureUseEntraToken);
-                using (var response = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, timeout.Token).ConfigureAwait(false))
+                for (int page = 0; page < 100; page++)
                 {
-                    if (!response.IsSuccessStatusCode)
-                        throw new InvalidOperationException("Catalogue HTTP " + (int)response.StatusCode + ": " +
-                            UiText.Get("Check credentials, URL and provider limits."));
-                    string body = await ChatStreamReader.ReadBodyAsync(await response.Content.ReadAsStreamAsync().ConfigureAwait(false), timeout.Token).ConfigureAwait(false);
-                    var root = new JavaScriptSerializer { MaxJsonLength = 10 * 1024 * 1024 }.DeserializeObject(body) as IDictionary<string, object>;
-                    object raw;
-                    var data = root != null && root.TryGetValue(provider.IsOllama ? "models" : "data", out raw)
-                        ? raw as object[] : null;
-                    if (data == null) throw new InvalidOperationException(UiText.Get("The provider did not return a model list."));
-                    foreach (var entry in data)
+                    using (var request = new HttpRequestMessage(HttpMethod.Get, catalogue))
                     {
-                        var item = entry as IDictionary<string, object>;
-                        if (item == null) continue;
-                        string field = provider.IsOllama ? "name" : "id";
-                        string id = item.ContainsKey(field) ? Convert.ToString(item[field]) : null;
-                        if (!string.IsNullOrWhiteSpace(id)) models.Add(new LlmModelOption(id, ClaudeProtocol.Text(item, "display_name") ?? ClaudeProtocol.Text(item, "name") ?? id));
+                        string key = settings.GetKey(provider);
+                        if (string.IsNullOrWhiteSpace(key) && provider.RequiresKey)
+                            throw new InvalidOperationException(UiText.Get("Configure the API key for ") + provider.Name + UiText.Get(" to load models."));
+                        Authenticate(request, provider, key, settings.AzureUseEntraToken);
+                        using (var response = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, timeout.Token).ConfigureAwait(false))
+                        {
+                            if (!response.IsSuccessStatusCode)
+                                throw new InvalidOperationException("Catalogue HTTP " + (int)response.StatusCode + ": " +
+                                    UiText.Get("Check credentials, URL and provider limits."));
+                            string body = await ChatStreamReader.ReadBodyAsync(await response.Content.ReadAsStreamAsync().ConfigureAwait(false), timeout.Token).ConfigureAwait(false);
+                            var root = new JavaScriptSerializer { MaxJsonLength = 10 * 1024 * 1024 }.DeserializeObject(body) as IDictionary<string, object>;
+                            var data = (root != null && root.TryGetValue(provider.IsOllama ? "models" : "data", out object raw)
+                                ? raw as object[] : null) ?? throw new InvalidOperationException(UiText.Get("The provider did not return a model list."));
+                            foreach (var entry in data)
+                            {
+                                if (!(entry is IDictionary<string, object> item)) continue;
+                                string field = provider.IsOllama ? "name" : "id";
+                                string id = item.ContainsKey(field) ? Convert.ToString(item[field]) : null;
+                                if (!string.IsNullOrWhiteSpace(id)) models.Add(new LlmModelOption(id, ClaudeProtocol.Text(item, "display_name") ?? ClaudeProtocol.Text(item, "name") ?? id));
+                            }
+                            if (!provider.IsClaude || !root.ContainsKey("has_more") || !Equals(root["has_more"], true)) return models.ToArray();
+                            string cursor = ClaudeProtocol.Text(root, "last_id");
+                            if (string.IsNullOrWhiteSpace(cursor) || !cursors.Add(cursor)) throw new InvalidOperationException(UiText.Get("Invalid Claude model list pagination."));
+                            var next = new UriBuilder(catalogue)
+                            {
+                                Query = "after_id=" + Uri.EscapeDataString(cursor)
+                            }; catalogue = next.Uri;
+                        }
                     }
-                    if (!provider.IsClaude || !root.ContainsKey("has_more") || !Equals(root["has_more"], true)) return models.ToArray();
-                    string cursor = ClaudeProtocol.Text(root, "last_id");
-                    if (string.IsNullOrWhiteSpace(cursor) || !cursors.Add(cursor)) throw new InvalidOperationException(UiText.Get("Invalid Claude model list pagination."));
-                    var next = new UriBuilder(catalogue); next.Query = "after_id=" + Uri.EscapeDataString(cursor);
-                    catalogue = next.Uri;
                 }
-                }
-            }
             throw new InvalidOperationException(UiText.Get("The model list exceeds the pagination limit."));
         }
 
@@ -209,7 +210,8 @@ namespace VBAi
             bool streaming = TextDelta != null && !provider.IsBedrock;
             if (provider.IsBedrock) payload = BedrockProtocol.Request(messages, tools);
             else if (provider.IsClaude) { var data = ClaudeProtocol.Object(ClaudeProtocol.Request(model, messages, tools)); if (streaming) data["stream"] = true; payload = data; }
-            else {
+            else
+            {
                 var data = new Dictionary<string, object> { ["model"] = model, ["messages"] = messages, ["tools"] = tools };
                 if (!provider.Local) data["tool_choice"] = "auto";
                 if (provider.Name == "OpenAI API") data["store"] = false;
@@ -250,8 +252,7 @@ namespace VBAi
                     if (finish == "length" || finish == "content_filter") throw new InvalidOperationException(UiText.Get("Response truncated or filtered; tool calls were not executed."));
                     if (choice == null || !choice.ContainsKey("message"))
                         throw new InvalidOperationException("The LLM response has no message.");
-                    var message = choice["message"] as IDictionary<string, object>;
-                    if (message == null) throw new InvalidOperationException("Invalid LLM message.");
+                    if (!(choice["message"] is IDictionary<string, object> message)) throw new InvalidOperationException("Invalid LLM message.");
                     return message;
                 }
             }
@@ -268,7 +269,8 @@ namespace VBAi
         private static void Authenticate(HttpRequestMessage request, LlmProvider provider, string key, bool azureEntra)
         {
             if (provider.IsAzure && !azureEntra) { if (!string.IsNullOrWhiteSpace(key)) request.Headers.Add("api-key", key); }
-            else if (provider.IsClaude) {
+            else if (provider.IsClaude)
+            {
                 request.Headers.Add("anthropic-version", "2023-06-01");
                 if (!string.IsNullOrWhiteSpace(key)) request.Headers.Add("x-api-key", key);
             }

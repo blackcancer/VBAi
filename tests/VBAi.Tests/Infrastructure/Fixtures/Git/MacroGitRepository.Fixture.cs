@@ -1,6 +1,5 @@
 namespace VBAi.Tests.Unit
 {
-    using System;
     using System.Reflection;
     using System.Text;
     using VBAi;
@@ -11,8 +10,11 @@ namespace VBAi.Tests.Unit
             => new MacroGitRepository.Result { Bytes = Encoding.UTF8.GetBytes(text), ExitCode = exitCode };
         internal static MacroGitRepository.Result Run(MacroGitRepository repository, string[] args, byte[] input = null, bool useRepository = true, bool allowFailure = false)
         {
-            try { return (MacroGitRepository.Result)typeof(MacroGitRepository).GetMethod("Run", BindingFlags.Instance | BindingFlags.NonPublic)
-                    .Invoke(repository, new object[] { args, input, useRepository, allowFailure }); }
+            try
+            {
+                return (MacroGitRepository.Result)typeof(MacroGitRepository).GetMethod("Run", BindingFlags.Instance | BindingFlags.NonPublic)
+                    .Invoke(repository, new object[] { args, input, useRepository, allowFailure });
+            }
             catch (TargetInvocationException ex) { System.Runtime.ExceptionServices.ExceptionDispatchInfo.Capture(ex.InnerException).Throw(); throw; }
         }
         internal static object Call(MacroGitRepository repository, string method, params object[] args)

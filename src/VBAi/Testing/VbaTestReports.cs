@@ -147,15 +147,27 @@ namespace VBAi
             int passed = run.Results.Count(result => result.Outcome == VbaTestOutcome.Passed);
             int completed = run.Results.Count(result => result.Outcome == VbaTestOutcome.Passed || result.Outcome == VbaTestOutcome.Failed || result.Outcome == VbaTestOutcome.Error);
             var selected = offset.HasValue ? run.Results.Skip(offset.Value).Take(limit) : run.Results;
-            var data = new Dictionary<string, object> {
-                ["v"] = 1, ["run"] = run.Id, ["project"] = run.Project, ["revision"] = run.Revision,
-                ["uncertain"] = run.OutcomeUnknown, ["error"] = run.Error,
+            var data = new Dictionary<string, object>
+            {
+                ["v"] = 1,
+                ["run"] = run.Id,
+                ["project"] = run.Project,
+                ["revision"] = run.Revision,
+                ["uncertain"] = run.OutcomeUnknown,
+                ["error"] = run.Error,
                 ["counts"] = run.Results.GroupBy(result => result.Outcome.ToString()).ToDictionary(group => group.Key, group => group.Count()),
                 ["passRate"] = completed == 0 ? (double?)null : Math.Round(100d * passed / completed, 4),
                 ["coverage"] = CompactCoverage(run.Coverage, offset, limit),
-                ["tests"] = selected.Select(result => new { id = result.Test.Id, name = result.Test.Module + "." + result.Test.Procedure,
-                    outcome = result.Outcome.ToString(), ms = Math.Round(result.Duration.TotalMilliseconds, 3), phase = result.Phase,
-                    message = result.Message, error = result.ErrorNumber }).ToArray()
+                ["tests"] = selected.Select(result => new
+                {
+                    id = result.Test.Id,
+                    name = result.Test.Module + "." + result.Test.Procedure,
+                    outcome = result.Outcome.ToString(),
+                    ms = Math.Round(result.Duration.TotalMilliseconds, 3),
+                    phase = result.Phase,
+                    message = result.Message,
+                    error = result.ErrorNumber
+                }).ToArray()
             };
             if (offset.HasValue)
             {
@@ -192,13 +204,29 @@ namespace VBAi
             limit = PageLimit(offset, limit);
             if (report == null) return null;
             // Preserve every existing public report field and its global summary; only collection payloads are paged.
-            return new { report.Original, report.Revision, report.Metric, report.Available, report.Complete,
-                report.DenominatorKnown, report.Eligible, report.Hit, report.Percent, report.StatementCoverageAvailable,
-                Hits = report.Hits.Skip(offset).Take(limit).ToArray(), Exclusions = report.Exclusions.Skip(offset).Take(limit).ToArray(),
+            return new
+            {
+                report.Original,
+                report.Revision,
+                report.Metric,
+                report.Available,
+                report.Complete,
+                report.DenominatorKnown,
+                report.Eligible,
+                report.Hit,
+                report.Percent,
+                report.StatementCoverageAvailable,
+                Hits = report.Hits.Skip(offset).Take(limit).ToArray(),
+                Exclusions = report.Exclusions.Skip(offset).Take(limit).ToArray(),
                 Diagnostics = report.Diagnostics.Skip(offset).Take(limit).ToArray(),
-                Total = CoverageTotal(report), HitTotal = report.Hits.Count, ExclusionTotal = report.Exclusions.Count,
-                DiagnosticTotal = report.Diagnostics.Count, Offset = offset, Limit = limit,
-                NextOffset = NextOffset(offset, limit, CoverageTotal(report)) };
+                Total = CoverageTotal(report),
+                HitTotal = report.Hits.Count,
+                ExclusionTotal = report.Exclusions.Count,
+                DiagnosticTotal = report.Diagnostics.Count,
+                Offset = offset,
+                Limit = limit,
+                NextOffset = NextOffset(offset, limit, CoverageTotal(report))
+            };
         }
 
         /// <summary>Builds the compact JSON coverage object with procedure-entry probes and optional paging metadata.</summary>
@@ -212,16 +240,40 @@ namespace VBAi
             var hits = offset.HasValue ? report.Hits.Skip(offset.Value).Take(limit) : report.Hits;
             var exclusions = offset.HasValue ? report.Exclusions.Skip(offset.Value).Take(limit) : report.Exclusions;
             var diagnostics = offset.HasValue ? report.Diagnostics.Skip(offset.Value).Take(limit) : report.Diagnostics;
-            var data = new Dictionary<string, object> {
-                ["available"] = report.Available, ["metric"] = report.Metric, ["complete"] = report.Complete,
-                ["revision"] = report.Revision, ["original"] = report.Original, ["denominatorKnown"] = report.DenominatorKnown,
-                ["eligible"] = report.Eligible, ["hit"] = report.Hit, ["percent"] = report.Percent,
-                ["statementCoverageAvailable"] = false, ["branchCoverageAvailable"] = false,
-                ["probes"] = hits.Select(hit => new { id = hit.Probe.Id, module = hit.Probe.Module, procedure = hit.Probe.Procedure,
-                    kind = hit.Probe.Kind, line = hit.Probe.OriginalLine, column = hit.Probe.OriginalColumn, entered = hit.Entered }).ToArray(),
-                ["exclusions"] = exclusions.Select(item => new { module = item.Module, procedure = item.Procedure, kind = item.Kind,
-                    line = item.OriginalLine, reason = item.Reason, intentional = item.Intentional }).ToArray(),
-                ["diagnostics"] = diagnostics.ToArray() };
+            var data = new Dictionary<string, object>
+            {
+                ["available"] = report.Available,
+                ["metric"] = report.Metric,
+                ["complete"] = report.Complete,
+                ["revision"] = report.Revision,
+                ["original"] = report.Original,
+                ["denominatorKnown"] = report.DenominatorKnown,
+                ["eligible"] = report.Eligible,
+                ["hit"] = report.Hit,
+                ["percent"] = report.Percent,
+                ["statementCoverageAvailable"] = false,
+                ["branchCoverageAvailable"] = false,
+                ["probes"] = hits.Select(hit => new
+                {
+                    id = hit.Probe.Id,
+                    module = hit.Probe.Module,
+                    procedure = hit.Probe.Procedure,
+                    kind = hit.Probe.Kind,
+                    line = hit.Probe.OriginalLine,
+                    column = hit.Probe.OriginalColumn,
+                    entered = hit.Entered
+                }).ToArray(),
+                ["exclusions"] = exclusions.Select(item => new
+                {
+                    module = item.Module,
+                    procedure = item.Procedure,
+                    kind = item.Kind,
+                    line = item.OriginalLine,
+                    reason = item.Reason,
+                    intentional = item.Intentional
+                }).ToArray(),
+                ["diagnostics"] = diagnostics.ToArray()
+            };
             if (offset.HasValue)
             {
                 data["total"] = CoverageTotal(report); data["probeTotal"] = report.Hits.Count;

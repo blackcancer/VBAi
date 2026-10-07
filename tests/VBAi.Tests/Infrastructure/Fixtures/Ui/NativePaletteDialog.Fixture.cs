@@ -1,12 +1,10 @@
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Windows.Forms;
-using VBAi;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Row = VBAi.VbeNativePaletteState.ColorRow;
 
 namespace VBAi.Tests.Unit
@@ -40,7 +38,8 @@ namespace VBAi.Tests.Unit
             internal IntPtr Data;
         }
         [StructLayout(LayoutKind.Sequential)] private struct Notification { internal IntPtr Window; internal UIntPtr Id; internal int Code; }
-        [DllImport("user32.dll", CharSet = CharSet.Unicode)] private static extern IntPtr CreateWindowEx(int exStyle, string className,
+        [DllImport("user32.dll", CharSet = CharSet.Unicode)]
+        private static extern IntPtr CreateWindowEx(int exStyle, string className,
             string title, int style, int x, int y, int width, int height, IntPtr parent, IntPtr id, IntPtr instance, IntPtr parameter);
         [DllImport("user32.dll")] private static extern bool DestroyWindow(IntPtr window);
         [DllImport("user32.dll")] internal static extern bool ShowWindow(IntPtr window, int command);
@@ -56,8 +55,13 @@ namespace VBAi.Tests.Unit
         private readonly Func<Thread, int, bool> previousJoin = VbeNativePaletteDialog.WaitWorker;
         private readonly Func<IntPtr, HashSet<IntPtr>> previousWindows = VbeNativePaletteDialog.OwnedWindows;
         private readonly ManualResetEventSlim dialogsPublished = new ManualResetEventSlim();
-        internal readonly Form Owner = new Form { ShowInTaskbar = false, StartPosition = FormStartPosition.Manual,
-            Location = new System.Drawing.Point(-10000, -10000), Size = new System.Drawing.Size(480, 360) };
+        internal readonly Form Owner = new Form
+        {
+            ShowInTaskbar = false,
+            StartPosition = FormStartPosition.Manual,
+            Location = new System.Drawing.Point(-10000, -10000),
+            Size = new System.Drawing.Size(480, 360)
+        };
         internal readonly SyntheticPaletteVbe Vbe;
         internal Row[] Current = NativePaletteFixture.Rows();
         internal readonly List<Dialog> Dialogs = new List<Dialog>();
@@ -75,8 +79,11 @@ namespace VBAi.Tests.Unit
             VbeNativePaletteDialog.PageTimeoutMilliseconds = 80;
             Owner.Show();
             using (var initialize = new TabControl()) { var unused = initialize.Handle; }
-            Vbe = new SyntheticPaletteVbe { MainWindow = new SyntheticPaletteMainWindow { HWnd = Owner.Handle.ToInt64() },
-                CommandBars = new SyntheticPaletteCommandBars { Command = new SyntheticPaletteCommand { Open = () => { Open(); AfterOpen?.Invoke(); } } } };
+            Vbe = new SyntheticPaletteVbe
+            {
+                MainWindow = new SyntheticPaletteMainWindow { HWnd = Owner.Handle.ToInt64() },
+                CommandBars = new SyntheticPaletteCommandBars { Command = new SyntheticPaletteCommand { Open = () => { Open(); AfterOpen?.Invoke(); } } }
+            };
         }
         internal void ConfigureAmbiguousOpen()
         {

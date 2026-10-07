@@ -109,16 +109,23 @@ namespace VBAi.Tests.Integration
                 ")\n" + (exactGuard ? "sxd clr\ndx @$scriptContents.armGuardBreakpoint(" + Convert.ToInt32(plan["GuardILOffset"]) + ")\n" :
                     "sxe -c \"dx @$scriptContents.capture();gn\" clr\n") + "g\n";
             File.WriteAllText(commands, content, Encoding.GetEncoding(checked((int)GetACP()), EncoderFallback.ExceptionFallback, DecoderFallback.ExceptionFallback));
-            var info = new ProcessStartInfo(cdb, "-pd -p " + host.ProcessId + " -netsyms:no -cf \"" + commands + "\"") {
-                UseShellExecute = false, CreateNoWindow = true, RedirectStandardInput = true, RedirectStandardOutput = true, RedirectStandardError = true
+            var info = new ProcessStartInfo(cdb, "-pd -p " + host.ProcessId + " -netsyms:no -cf \"" + commands + "\"")
+            {
+                UseShellExecute = false,
+                CreateNoWindow = true,
+                RedirectStandardInput = true,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true
             };
             debugger = Process.Start(info); stdout = debugger.StandardOutput.ReadToEndAsync(); stderr = debugger.StandardError.ReadToEndAsync();
             var watch = Stopwatch.StartNew();
-            while (!debugger.HasExited && watch.Elapsed.TotalSeconds < 10) {
+            while (!debugger.HasExited && watch.Elapsed.TotalSeconds < 10)
+            {
                 string output = ReadLog();
                 if (output.Contains("Q026_OPTIONS_TRACE_READY pid=" + host.ProcessId) &&
                     (!exactGuard || output.Contains("Q026_GUARD_IL_ARMED offset=" + Convert.ToInt32(plan["GuardILOffset"]) + " breakpoint=")) &&
-                    CheckRemoteDebuggerPresent(target.Handle, out present) && present) {
+                    CheckRemoteDebuggerPresent(target.Handle, out present) && present)
+                {
                     record["State"] = "ARMED"; record["DebuggerProcessId"] = debugger.Id; Save(); return;
                 }
                 Thread.Sleep(50);
@@ -130,29 +137,37 @@ namespace VBAi.Tests.Integration
         {
             if (stopped) return;
             stopped = true; // A failed detach is uncertain; never issue the break/detach again.
-            try {
-                if (debugger != null && !debugger.HasExited) {
-                    if (target.HasExited) {
+            try
+            {
+                if (debugger != null && !debugger.HasExited)
+                {
+                    if (target.HasExited)
+                    {
                         if (!debugger.WaitForExit(10000)) throw new InvalidOperationException("Target exited but debugger did not exit; no forced cleanup.");
-                    } else {
+                    }
+                    else
+                    {
                         debugger.StandardInput.WriteLine("sxd clr"); debugger.StandardInput.WriteLine("bc *");
                         debugger.StandardInput.WriteLine(".logclose"); debugger.StandardInput.WriteLine("qd"); debugger.StandardInput.Flush();
                         if (!DebugBreakProcess(target.Handle) || !debugger.WaitForExit(10000))
                             throw new InvalidOperationException("One owned debugger detach could not be verified; retain the host without replay.");
                     }
                 }
-                if (debugger != null) {
+                if (debugger != null)
+                {
                     record["DebuggerExitCode"] = debugger.ExitCode;
                     File.WriteAllText(Path.Combine(directory, "cdb.stdout.log"), stdout.GetAwaiter().GetResult());
                     File.WriteAllText(Path.Combine(directory, "cdb.stderr.log"), stderr.GetAwaiter().GetResult());
                     if (debugger.ExitCode != 0) throw new InvalidOperationException("Debugger exited abnormally; retain the host.");
                 }
-                if (target != null && !target.HasExited) {
+                if (target != null && !target.HasExited)
+                {
                     bool present;
                     if (!CheckRemoteDebuggerPresent(target.Handle, out present) || present) throw new InvalidOperationException("Debugger detachment is not independently verified.");
                 }
                 record["DebuggerDetachedVerified"] = true; record["State"] = "DETACHED";
-            } catch (Exception error) { record["State"] = "DETACH_UNVERIFIED"; record["Error"] = error.ToString(); throw; }
+            }
+            catch (Exception error) { record["State"] = "DETACH_UNVERIFIED"; record["Error"] = error.ToString(); throw; }
             finally { Save(); }
         }
 

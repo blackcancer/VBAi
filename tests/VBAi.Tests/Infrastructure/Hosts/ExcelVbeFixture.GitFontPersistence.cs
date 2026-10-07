@@ -12,7 +12,8 @@ namespace VBAi.Tests.Integration
         /// <summary>Loads synthetic observed StdFont descriptors into each imported font once, before owner transfer.</summary>
         internal void RestoreGitLayoutPersistedFonts(string form, string layout, IDictionary<string, object> expected, bool distinctObject = false)
         {
-            WithGitLayoutDesigner(form, (component, designer) => {
+            WithGitLayoutDesigner(form, (component, designer) =>
+            {
                 LoadGitFontOnce(designer, "Form.Font", expected, distinctObject);
                 if (layout != "FrameMultiPage") return;
                 object controls = null, frame = null;
@@ -71,7 +72,8 @@ namespace VBAi.Tests.Integration
         /// <summary>Creates a separately owned standard font without invoking its metric-normalizing property getters.</summary>
         private static object CreateDistinctGitFont(IDictionary<string, object> expected, string prefix)
         {
-            var descriptor = new GitDiagnosticFontDescriptor {
+            var descriptor = new GitDiagnosticFontDescriptor
+            {
                 StructureSize = (uint)Marshal.SizeOf(typeof(GitDiagnosticFontDescriptor)),
                 Name = Convert.ToString(expected[prefix + ".Name"]),
                 Size = checked((long)(Convert.ToDecimal(expected[prefix + ".Size"]) * 10000m)),

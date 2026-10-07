@@ -1,9 +1,9 @@
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Text;
-using System.Collections.Generic;
 using System.Web.Script.Serialization;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace VBAi.Tests.Integration
 {
@@ -14,7 +14,8 @@ namespace VBAi.Tests.Integration
         [TestMethod]
         public void ChildRecoveryMarkerRefusesSaveWhenDocumentRootHasNoMarker()
         {
-            WithBoundFiles((cache, child, proof) => {
+            WithBoundFiles((cache, child, proof) =>
+            {
                 Assert.IsFalse(File.Exists(Path.Combine(cache, "codex-recovery")));
                 File.WriteAllText(Path.Combine(child, "codex-recovery"), "synthetic-backup");
                 Assert.ThrowsException<InvalidOperationException>(() => proof.RequireReadyForSave(cache, Remote, Branch));
@@ -25,7 +26,8 @@ namespace VBAi.Tests.Integration
         [TestMethod]
         public void AbsentSelectedMarkerUsesTheProductionSelectedChildObserver()
         {
-            WithBoundFiles((cache, child, proof) => {
+            WithBoundFiles((cache, child, proof) =>
+            {
                 var repository = proof.RequireReadyForSave(cache, Remote, Branch);
                 Assert.AreEqual(Path.Combine(child, "codex-recovery"), repository.RecoveryFile);
                 Assert.IsFalse(repository.RecoveryPending);
@@ -35,7 +37,8 @@ namespace VBAi.Tests.Integration
         [TestMethod]
         public void MetadataDenialPropagatesUnchangedAndObservesOnlyTheSelectedMarker()
         {
-            WithBoundFiles((cache, child, proof) => {
+            WithBoundFiles((cache, child, proof) =>
+            {
                 var denied = new UnauthorizedAccessException("Synthetic selected-marker access denial");
                 int calls = 0;
                 var observed = Assert.ThrowsException<UnauthorizedAccessException>(() => proof.RequireReadyForSave(cache, Remote, Branch,
@@ -47,7 +50,8 @@ namespace VBAi.Tests.Integration
         [TestMethod]
         public void ExistingMarkerDirectoryAlsoRefusesSaveWithoutDeletingIt()
         {
-            WithBoundFiles((cache, child, proof) => {
+            WithBoundFiles((cache, child, proof) =>
+            {
                 string marker = Path.Combine(child, "codex-recovery"); Directory.CreateDirectory(marker);
                 Assert.ThrowsException<InvalidOperationException>(() => proof.RequireReadyForSave(cache, Remote, Branch));
                 Assert.IsTrue(Directory.Exists(marker));
@@ -57,7 +61,8 @@ namespace VBAi.Tests.Integration
         [TestMethod]
         public void MissingSelectedRepositoryIsNeverInterpretedAsNoRecovery()
         {
-            WithBoundFiles((cache, child, proof) => {
+            WithBoundFiles((cache, child, proof) =>
+            {
                 Directory.Move(child, child + ".retained");
                 Assert.ThrowsException<FileNotFoundException>(() => proof.RequireReadyForSave(cache, Remote, Branch));
                 Assert.ThrowsException<FileNotFoundException>(() => EmbeddedGitRepositoryBinding.Capture(cache, Remote, Branch));
@@ -67,7 +72,8 @@ namespace VBAi.Tests.Integration
         [TestMethod]
         public void BindingMustStillSelectTheValidatedRemoteAndBranch()
         {
-            WithBoundFiles((cache, child, proof) => {
+            WithBoundFiles((cache, child, proof) =>
+            {
                 WriteBinding(cache, Remote, "different-branch");
                 Assert.ThrowsException<InvalidOperationException>(() => proof.RequireReadyForSave(cache, Remote, Branch));
                 Assert.ThrowsException<InvalidOperationException>(() => EmbeddedGitRepositoryBinding.Capture(cache, Remote, Branch));
@@ -75,10 +81,13 @@ namespace VBAi.Tests.Integration
         }
 
         [TestMethod]
-        [DataRow("config")][DataRow("HEAD")][DataRow("binding.json")]
+        [DataRow("config")]
+        [DataRow("HEAD")]
+        [DataRow("binding.json")]
         public void RepositoryIdentityBytesMustNotChangeBeforeSave(string file)
         {
-            WithBoundFiles((cache, child, proof) => {
+            WithBoundFiles((cache, child, proof) =>
+            {
                 File.AppendAllText(Path.Combine(file == "binding.json" ? cache : child, file), "\n");
                 Assert.ThrowsException<InvalidOperationException>(() => proof.RequireReadyForSave(cache, Remote, Branch));
             });
@@ -87,7 +96,8 @@ namespace VBAi.Tests.Integration
         [TestMethod]
         public void AnotherBranchCannotReuseAnExistingProofOrWrongRoot()
         {
-            WithBoundFiles((cache, child, proof) => {
+            WithBoundFiles((cache, child, proof) =>
+            {
                 Assert.AreNotEqual(child, EmbeddedGitRepositoryBinding.SelectedPath(cache, Remote, "other-branch"));
                 Assert.ThrowsException<InvalidOperationException>(() => proof.RequireReadyForSave(cache, Remote, "other-branch"));
                 Assert.ThrowsException<InvalidOperationException>(() => proof.RequireReadyForSave(child, Remote, Branch));

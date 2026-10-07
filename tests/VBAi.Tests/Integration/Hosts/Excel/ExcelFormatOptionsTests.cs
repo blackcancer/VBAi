@@ -1,3 +1,4 @@
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -5,8 +6,6 @@ using System.IO;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Web.Script.Serialization;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
-using VBAi.Tests.Integration;
 
 namespace VBAi.Tests.Integration.Hosts.Excel
 {
@@ -59,10 +58,12 @@ namespace VBAi.Tests.Integration.Hosts.Excel
                 "options-evidence-" + Guid.NewGuid().ToString("N"));
             ExcelFormatOptionsQualification.RunOwned(Environment.GetEnvironmentVariable("VBAi_RUN_EXCEL_TESTS") == "1",
                 Environment.GetEnvironmentVariable("VBAi_EXCEL_RESULTS"), evidenceDirectory,
-                Environment.GetEnvironmentVariable(PathVisibilityDiagnostic.EnvironmentName), () => {
+                Environment.GetEnvironmentVariable(PathVisibilityDiagnostic.EnvironmentName), () =>
+                {
                     Directory.CreateDirectory(evidenceDirectory);
                     TestContext.WriteLine("Retained options evidence: " + evidenceDirectory);
-                }, trace => {
+                }, trace =>
+                {
                     // The private child inherits this testhost's exact per-case trace opt-in.
                     if (!string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("VBAi_TEST_DESKTOP_NAME")))
                         Environment.SetEnvironmentVariable(VbeInspectionTrace.EnvironmentName, trace);
@@ -91,12 +92,14 @@ namespace VBAi.Tests.Integration.Hosts.Excel
                 historicalFullMatrix: historicalFullMatrix);
             Exception primary = null, detach = null;
             bool runStarted = false;
-            try {
+            try
+            {
                 if (Q026OptionsGuardTrace.NeedsGuardWarmupIfRequested()) lifecycle.WarmGuardForBreakpoint();
                 trace = Q026OptionsGuardTrace.StartIfRequested(host, startUtc, evidenceDirectory);
                 runStarted = true;
                 lifecycle.Run();
-            } catch (Exception error) { primary = error; if (!runStarted) RetainHost(host); }
+            }
+            catch (Exception error) { primary = error; if (!runStarted) RetainHost(host); }
             try { trace?.Dispose(); } catch (Exception error) { detach = error; RetainHost(host); }
             if (primary != null && detach != null) throw new AggregateException("Format qualification and CLR detachment failures are both retained.", primary, detach);
             if (primary != null) System.Runtime.ExceptionServices.ExceptionDispatchInfo.Capture(primary).Throw();
@@ -123,8 +126,15 @@ namespace VBAi.Tests.Integration.Hosts.Excel
                 System.Threading.Thread.Sleep(50);
                 last = ObserveOptionsClosure(host.ProcessId, expectedStartUtc); observations++;
             }
-            AttachEvidence(host, expectedStartUtc, "ClosureObservation", new { First = first, Last = last,
-                Observations = observations, ElapsedMilliseconds = timer.ElapsedMilliseconds, NativeInput = 0, BridgeRequests = 0 });
+            AttachEvidence(host, expectedStartUtc, "ClosureObservation", new
+            {
+                First = first,
+                Last = last,
+                Observations = observations,
+                ElapsedMilliseconds = timer.ElapsedMilliseconds,
+                NativeInput = 0,
+                BridgeRequests = 0
+            });
             return last;
         }
 
@@ -141,8 +151,14 @@ namespace VBAi.Tests.Integration.Hosts.Excel
                             ownedAlive = true;
                         else competitors.Add(new { ProcessId = process.Id, Name = name, ProcessStartUtc = actualStart.ToString("o") });
                     }
-            AttachEvidence(host, startUtc, "HostExclusivityObservation", new { OwnedAlive = ownedAlive, Competitors = competitors,
-                BeforeDispatch = true, NativeInput = 0, BridgeRequests = 0 });
+            AttachEvidence(host, startUtc, "HostExclusivityObservation", new
+            {
+                OwnedAlive = ownedAlive,
+                Competitors = competitors,
+                BeforeDispatch = true,
+                NativeInput = 0,
+                BridgeRequests = 0
+            });
             if (!ownedAlive || competitors.Count != 0)
                 throw new InvalidOperationException("The owned Excel identity or exclusive VBE-host interval changed; retain without further native dispatch.");
         }
@@ -159,7 +175,8 @@ namespace VBAi.Tests.Integration.Hosts.Excel
                     beforeStart = process.StartTime.ToUniversalTime();
                     if (process.HasExited || beforeStart != expectedStartUtc)
                         throw new InvalidOperationException("The owned process identity changed before native window enumeration.");
-                    complete = EnumWindows((handle, parameter) => {
+                    complete = EnumWindows((handle, parameter) =>
+                    {
                         try
                         {
                             uint? pid = NativeWindowEnumerationOwnership.ReadProcessId(handle,
@@ -188,24 +205,44 @@ namespace VBAi.Tests.Integration.Hosts.Excel
                 }
             }
             catch (Exception failure) { error = failure.ToString(); }
-            return new Dictionary<string, object> { ["ProcessId"] = processId, ["ExpectedStartUtc"] = expectedStartUtc.ToString("o"),
-                ["BeforeStartUtc"] = beforeStart.ToString("o"), ["AfterStartUtc"] = afterStart.ToString("o"),
-                ["ProcessIdentityVerified"] = identity, ["EnumerationSucceeded"] = complete && error == null,
-                ["OptionsDialogAbsent"] = complete && identity && error == null && optionsAbsent, ["OwnedWindows"] = windows.ToArray(),
+            return new Dictionary<string, object>
+            {
+                ["ProcessId"] = processId,
+                ["ExpectedStartUtc"] = expectedStartUtc.ToString("o"),
+                ["BeforeStartUtc"] = beforeStart.ToString("o"),
+                ["AfterStartUtc"] = afterStart.ToString("o"),
+                ["ProcessIdentityVerified"] = identity,
+                ["EnumerationSucceeded"] = complete && error == null,
+                ["OptionsDialogAbsent"] = complete && identity && error == null && optionsAbsent,
+                ["OwnedWindows"] = windows.ToArray(),
                 ["ConfirmedGoneDuringEnumeration"] = confirmedGone.ToArray(),
-                ["Error"] = error, ["ObservationOnly"] = true };
+                ["Error"] = error,
+                ["ObservationOnly"] = true
+            };
         }
 
         private void AttachEvidence(ExcelVbeFixture host, DateTime startUtc, string phase, object evidence)
         {
             int sequence = ++evidenceSequence;
             string path = Path.Combine(evidenceDirectory, "options-" + sequence.ToString("D4") + "-" + phase + "-" + host.ProcessId + ".json");
-            var record = new { Phase = phase, Sequence = sequence, ObservedUtc = DateTime.UtcNow.ToString("o"),
-                host.ProcessId, ProcessStartUtc = startUtc.ToString("o"), FixtureRoot = host.Root, StartupEvidence = host.File("startup.json"),
-                OwnedBootstrapEvidence = host.File("owned-bootstrap.json"), PhaseTrace = Path.Combine(evidenceDirectory, "owned-bootstrap-phases.jsonl"),
-                LaunchContext = "ExplicitXAutomation", PathVisibilityManifestSupplied = false,
-                ProductMvid = typeof(VbeSession).Module.ModuleVersionId.ToString("D"), TestMvid = typeof(ExcelFormatOptionsTests).Module.ModuleVersionId.ToString("D"),
-                EvidenceRoot = evidenceDirectory, Data = evidence };
+            var record = new
+            {
+                Phase = phase,
+                Sequence = sequence,
+                ObservedUtc = DateTime.UtcNow.ToString("o"),
+                host.ProcessId,
+                ProcessStartUtc = startUtc.ToString("o"),
+                FixtureRoot = host.Root,
+                StartupEvidence = host.File("startup.json"),
+                OwnedBootstrapEvidence = host.File("owned-bootstrap.json"),
+                PhaseTrace = Path.Combine(evidenceDirectory, "owned-bootstrap-phases.jsonl"),
+                LaunchContext = "ExplicitXAutomation",
+                PathVisibilityManifestSupplied = false,
+                ProductMvid = typeof(VbeSession).Module.ModuleVersionId.ToString("D"),
+                TestMvid = typeof(ExcelFormatOptionsTests).Module.ModuleVersionId.ToString("D"),
+                EvidenceRoot = evidenceDirectory,
+                Data = evidence
+            };
             File.WriteAllText(path, new JavaScriptSerializer { MaxJsonLength = 10 * 1024 * 1024 }.Serialize(record), new UTF8Encoding(false));
             try { TestContext.AddResultFile(path); }
             catch (Exception error) { TestContext.WriteLine("Evidence retained at " + path + "; result attachment failed: " + error); }

@@ -1,4 +1,3 @@
-using VBAi;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace VBAi.Tests.Unit

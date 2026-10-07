@@ -1,11 +1,10 @@
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
-using VBAi;
 
 namespace VBAi.Tests.Unit
 {
@@ -27,20 +26,32 @@ namespace VBAi.Tests.Unit
             bool absent = false, duplicate = false;
             int ownerThread = Thread.CurrentThread.ManagedThreadId;
             f.Probe.ReadApplication = () => application;
-            f.Probe.ReadDocuments = app => {
+            f.Probe.ReadDocuments = app =>
+            {
                 Assert.AreEqual(ownerThread, Thread.CurrentThread.ManagedThreadId);
-                var wrapper = new AccessFactoryDocument { Project = mappedProject, Path = f.Probe.Observation.Path,
-                    Format = f.Probe.Observation.Format, ReadOnly = f.Probe.Observation.ReadOnly };
+                var wrapper = new AccessFactoryDocument
+                {
+                    Project = mappedProject,
+                    Path = f.Probe.Observation.Path,
+                    Format = f.Probe.Observation.Format,
+                    ReadOnly = f.Probe.Observation.ReadOnly
+                };
                 wrappers.Add(wrapper);
                 if (wrappers.Count >= 4) f.Probe.Project.Saved = true;
                 return absent ? new List<object>() : duplicate ? new List<object> { wrapper, wrapper } : new List<object> { wrapper };
             };
             f.Probe.ReadDocumentProject = document => ((AccessFactoryDocument)document).Project;
-            f.Probe.ReadDocumentState = document => {
+            f.Probe.ReadDocumentState = document =>
+            {
                 var wrapper = (AccessFactoryDocument)document;
                 stateReads.Add(wrapper);
-                return new VbeProjectComponents.OtherHostDocumentState { Path = wrapper.Path,
-                    Format = wrapper.Format, ReadOnly = wrapper.ReadOnly, Saved = null };
+                return new VbeProjectComponents.OtherHostDocumentState
+                {
+                    Path = wrapper.Path,
+                    Format = wrapper.Format,
+                    ReadOnly = wrapper.ReadOnly,
+                    Saved = null
+                };
             };
             f.Probe.AfterInvocation = () => { f.Probe.Observation.Format = 12; f.Probe.Project.Saved = false; };
             var pending = f.SaveAsync(f.Probe.Request());
@@ -100,11 +111,13 @@ namespace VBAi.Tests.Unit
             using (var ui = new Control())
             {
                 _ = ui.Handle;
-                f.Probe.AfterInvocation = () => {
+                f.Probe.AfterInvocation = () =>
+                {
                     f.Probe.Observation.Format = 12;
                     f.Probe.Observation.Saved = null;
                     f.Probe.Project.Saved = false;
-                    ui.BeginInvoke(new Action(() => {
+                    ui.BeginInvoke(new Action(() =>
+                    {
                         Assert.AreEqual(owner, Thread.CurrentThread.ManagedThreadId);
                         f.Probe.Project.Saved = true;
                     }));
@@ -166,7 +179,11 @@ namespace VBAi.Tests.Unit
         {
             var f = new AsyncAccessFixture();
             f.Service.AccessSaveVerificationTimeout = TimeSpan.FromMilliseconds(80);
-            f.Probe.AfterInvocation = () => { f.Probe.Observation.Format = 12; f.Probe.Project.Saved = false; };
+            f.Probe.AfterInvocation = () =>
+            {
+                AccessStaTestMethodAttribute.CaptureCurrentContextAtProbe();
+                f.Probe.Observation.Format = 12; f.Probe.Project.Saved = false;
+            };
             var pending = f.SaveAsync(f.Probe.Request());
             StringAssert.Contains(Assert.ThrowsException<InvalidOperationException>(() => CompleteAccessSave(f.SaveAsync(f.Probe.Request()))).Message,
                 "An Access save is already awaiting verification");
@@ -237,8 +254,10 @@ namespace VBAi.Tests.Unit
             editor.ActiveCodePane = new AsyncAccessPane { CodeModule = new AsyncAccessCode { Parent = component } };
             var app = new PathApplication(); var document = new PathDocument { Application = app, FullName = project.FileName };
             app.CurrentProject = document;
-            var native = new VbeProjectComponents.NativeOtherHostProbe {
-                ReadHostKind = () => "Access", ReadIdentity = ReferenceEquals,
+            var native = new VbeProjectComponents.NativeOtherHostProbe
+            {
+                ReadHostKind = () => "Access",
+                ReadIdentity = ReferenceEquals,
                 ReadOwner = window => (uint)Process.GetCurrentProcess().Id,
                 ReadActiveApplication = name => app
             };
@@ -248,7 +267,8 @@ namespace VBAi.Tests.Unit
             if (change == "pane") editor.ActiveCodePane = new AsyncAccessPane { CodeModule = new AsyncAccessCode { Parent = component } };
             if (change == "component") editor.ActiveCodePane.CodeModule.Parent = new object();
             if (change == "closed") editor.ActiveCodePane = null;
-            if (change == "beforeSaveGuard") native.AccessBeforeSave = () => {
+            if (change == "beforeSaveGuard") native.AccessBeforeSave = () =>
+            {
                 Assert.IsFalse(native.SaveInvocationStarted);
                 throw new InvalidOperationException("An owned modal or revoked authorization prevents the command.");
             };
@@ -310,10 +330,12 @@ namespace VBAi.Tests.Unit
             f.Probe.ReadApplication = () => application;
             var request = f.Probe.Request();
             if (change == "authorization")
-                request.RevalidateSaveAuthorization = () => {
+                request.RevalidateSaveAuthorization = () =>
+                {
                     if (f.Probe.Attempts != 0) throw new InvalidOperationException("Save authorization was revoked before confirmation.");
                 };
-            confirmation.BeforeContextCheck = () => {
+            confirmation.BeforeContextCheck = () =>
+            {
                 switch (change)
                 {
                     case "owner": f.Probe.Owner++; break;
@@ -393,7 +415,8 @@ namespace VBAi.Tests.Unit
         private static FakeAccessConfirmation AttachAccessConfirmation(AsyncAccessFixture fixture)
         {
             var confirmation = new FakeAccessConfirmation();
-            fixture.Service.AccessSaveConfirmationFactory = (window, pid, components) => {
+            fixture.Service.AccessSaveConfirmationFactory = (window, pid, components) =>
+            {
                 Assert.AreEqual(new IntPtr(77), window); Assert.AreEqual(fixture.Probe.ProcessId, pid);
                 int count = 0;
                 foreach (var component in components)
@@ -403,7 +426,8 @@ namespace VBAi.Tests.Unit
                 }
                 Assert.AreEqual(1, count); return confirmation;
             };
-            fixture.Probe.AfterInvocation = () => {
+            fixture.Probe.AfterInvocation = () =>
+            {
                 fixture.Probe.Observation.Format = 12; fixture.Probe.Observation.Saved = null;
                 fixture.Probe.Project.Saved = false;
             };
@@ -425,8 +449,11 @@ namespace VBAi.Tests.Unit
             internal FakeAccessConfirmation()
             {
                 candidate = new VbeProjectComponents.AccessSaveConfirmationCandidate(this,
-                    new VbeProjectComponents.AccessSaveDialogSnapshot {
-                        Window = new IntPtr(1), ProcessId = 42, ThreadId = 7,
+                    new VbeProjectComponents.AccessSaveDialogSnapshot
+                    {
+                        Window = new IntPtr(1),
+                        ProcessId = 42,
+                        ThreadId = 7,
                         Controls = new[] { new VbeProjectComponents.AccessSaveDialogControl { Id = 1, Window = new IntPtr(2) } }
                     }, "synthetic-owner-thread-candidate");
             }
@@ -458,9 +485,10 @@ namespace VBAi.Tests.Unit
         private static object CompleteAccessSave(Task<object> pending)
         {
             var watch = Stopwatch.StartNew();
+            int doEventsTurns = 0;
             while (!pending.IsCompleted && watch.Elapsed.TotalSeconds < 5)
-            { Application.DoEvents(); Thread.Sleep(1); }
-            if (!pending.IsCompleted) Assert.Fail("Deferred Access verification did not complete. " + AccessStaTestMethodAttribute.Describe(pending));
+            { doEventsTurns++; Application.DoEvents(); Thread.Sleep(1); }
+            if (!pending.IsCompleted) Assert.Fail("Deferred Access verification did not complete. " + AccessStaTestMethodAttribute.DescribeTimeout(pending, doEventsTurns));
             return pending.GetAwaiter().GetResult();
         }
 

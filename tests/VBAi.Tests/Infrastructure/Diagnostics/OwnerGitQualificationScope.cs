@@ -38,13 +38,16 @@ namespace VBAi.Tests.Integration
         internal static OwnerGitQualificationStep Step(string verb, string expectedDirectory, string targetDirectory,
             string checkpoint = null, string expectedError = null)
         {
-            return new OwnerGitQualificationStep {
-                Id = Guid.NewGuid().ToString("N"), Verb = verb,
+            return new OwnerGitQualificationStep
+            {
+                Id = Guid.NewGuid().ToString("N"),
+                Verb = verb,
                 ExpectedSnapshotDirectory = Path.GetFullPath(expectedDirectory),
                 ExpectedSnapshotSha256 = OwnerGitQualificationManifest.SnapshotDirectoryHash(expectedDirectory),
                 TargetSnapshotDirectory = Path.GetFullPath(targetDirectory),
                 TargetSnapshotSha256 = OwnerGitQualificationManifest.SnapshotDirectoryHash(targetDirectory),
-                CheckpointId = checkpoint, ExpectedErrorSubstring = expectedError
+                CheckpointId = checkpoint,
+                ExpectedErrorSubstring = expectedError
             };
         }
 

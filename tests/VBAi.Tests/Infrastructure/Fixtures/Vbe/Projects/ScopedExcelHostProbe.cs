@@ -14,7 +14,7 @@ namespace VBAi.Tests.Infrastructure
         public bool IsExcel => true;
         public int CurrentProcessId => ProcessId;
         public object ExcelApplication() => Application;
-        public uint WindowProcessId(IntPtr window) { GetWindowThreadProcessId(window,out uint pid);return pid; }
-        [DllImport("user32.dll")] private static extern uint GetWindowThreadProcessId(IntPtr window,out uint pid);
+        public uint WindowProcessId(IntPtr window) { GetWindowThreadProcessId(window, out uint pid); return pid; }
+        [DllImport("user32.dll")] private static extern uint GetWindowThreadProcessId(IntPtr window, out uint pid);
     }
 }

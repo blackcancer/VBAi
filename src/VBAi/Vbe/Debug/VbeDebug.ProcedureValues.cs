@@ -72,7 +72,7 @@ namespace VBAi
                     if (!string.Equals(ReadProcessName(), "EXCEL", StringComparison.OrdinalIgnoreCase))
                         throw new InvalidOperationException("Returned procedure values currently require the in-process Excel host.");
                     dynamic application = ResolveApplication(process.Id, () => ReadActiveApplication("Excel.Application"));
-                    uint owner; VbeDebugWindows.GetWindowThreadProcessId(new IntPtr(Convert.ToInt64(application.Hwnd)), out owner);
+                    VbeDebugWindows.GetWindowThreadProcessId(new IntPtr(Convert.ToInt64(application.Hwnd)), out uint owner);
                     if (owner != (uint)process.Id) throw new InvalidOperationException("The Excel application belongs to another PID.");
                     object match = null; int count = 0;
                     foreach (dynamic workbook in application.Workbooks)
@@ -97,8 +97,7 @@ namespace VBAi
             /// <returns>Objet natif que la procédure retourne, avant sa normalisation JSON.</returns>
             public object Invoke(object target, string module, string procedure, object[] arguments)
             {
-                var owned = target as OwnedTarget;
-                if (owned == null) throw new InvalidOperationException("An owned Excel target is required.");
+                if (!(target is OwnedTarget owned)) throw new InvalidOperationException("An owned Excel target is required.");
                 if (!SameValuesPath((string)((dynamic)owned.Workbook).FullName, owned.Path))
                     throw new InvalidOperationException("The workbook path changed before invocation.");
                 var invokeArguments = new object[arguments.Length + 1];
@@ -147,17 +146,30 @@ namespace VBAi
         public object RunProcedureValues(Request request)
         {
             if (request == null) throw new ArgumentNullException(nameof(request));
-            var context = SynchronizationContext.Current;
-            if (context == null) throw new InvalidOperationException("The VBE UI context is unavailable.");
+            var context = SynchronizationContext.Current ?? throw new InvalidOperationException("The VBE UI context is unavailable.");
             if (procedureOperations.Any(x => x.State == "Queued" || x.State == "Delivering"))
                 throw new InvalidOperationException("A procedure call is pending; inspect its status instead of retrying.");
-            var captured = new Request { Project = request.Project, Module = request.Module, Procedure = request.Procedure,
-                ExpectedSha256 = request.ExpectedSha256, ExpectedHostPath = request.ExpectedHostPath, ExpectedMode = request.ExpectedMode,
+            var captured = new Request
+            {
+                Project = request.Project,
+                Module = request.Module,
+                Procedure = request.Procedure,
+                ExpectedSha256 = request.ExpectedSha256,
+                ExpectedHostPath = request.ExpectedHostPath,
+                ExpectedMode = request.ExpectedMode,
                 Arguments = VbaProcedureValues.Capture(request.Arguments),
-                ArgumentNames = request.ArgumentNames == null ? null : (string[])request.ArgumentNames.Clone() };
+                ArgumentNames = request.ArgumentNames == null ? null : (string[])request.ArgumentNames.Clone()
+            };
             var prepared = PrepareProcedureValues(captured);
-            var operation = new ProcedureOperation { Id = Guid.NewGuid().ToString("N"), Project = captured.Project, Module = prepared.Module,
-                Procedure = prepared.Procedure, Command = prepared.Identity, State = "Queued" };
+            var operation = new ProcedureOperation
+            {
+                Id = Guid.NewGuid().ToString("N"),
+                Project = captured.Project,
+                Module = prepared.Module,
+                Procedure = prepared.Procedure,
+                Command = prepared.Identity,
+                State = "Queued"
+            };
             procedureOperations.Add(operation); procedureValueInvocations.Add(operation.Id, false);
             if (procedureOperations.Count > 20)
             { procedureValueInvocations.Remove(procedureOperations[0].Id); procedureOperations.RemoveAt(0); }
@@ -165,7 +177,8 @@ namespace VBAi
                 procedureValueInvocations.Remove(expired);
             try
             {
-                context.Post(_ => {
+                context.Post(_ =>
+                {
                     try
                     {
                         var live = PrepareProcedureValues(captured);
@@ -194,8 +207,7 @@ namespace VBAi
         {
             if (request == null) throw new ArgumentNullException(nameof(request));
             var operation = procedureOperations.FirstOrDefault(x => x.Id == request.Query && procedureValueInvocations.ContainsKey(x.Id) &&
-                string.Equals(x.Project, request.Project, StringComparison.OrdinalIgnoreCase));
-            if (operation == null) throw new InvalidOperationException("Unknown values operation in this project/session.");
+                string.Equals(x.Project, request.Project, StringComparison.OrdinalIgnoreCase)) ?? throw new InvalidOperationException("Unknown values operation in this project/session.");
             return ProcedureValuesResult(operation);
         }
 
@@ -229,20 +241,37 @@ namespace VBAi
             if ((int)project.Mode != 2 || !SameValuesPath((string)project.FileName, expectedPath) ||
                 !string.Equals(Hash(finalSource), request.ExpectedSha256, StringComparison.OrdinalIgnoreCase))
                 throw new InvalidOperationException("Source, mode or host path changed while resolving the owned invocation target.");
-            return new ValuesCall { Module = module, Procedure = request.Procedure, Target = target, Arguments = bound,
-                Identity = expectedPath + "!" + module + "." + request.Procedure + ":" + request.ExpectedSha256 };
+            return new ValuesCall
+            {
+                Module = module,
+                Procedure = request.Procedure,
+                Target = target,
+                Arguments = bound,
+                Identity = expectedPath + "!" + module + "." + request.Procedure + ":" + request.ExpectedSha256
+            };
         }
 
         /// <summary>Décrit la preuve du retour, distincte de la correction de la macro et de ses effets de bord.</summary>
         /// <param name="operation">État suivi de l’invocation.</param>
         /// <returns>Résultat sérialisable avec statut, sortie, erreur et limites de vérification.</returns>
-        private object ProcedureValuesResult(ProcedureOperation operation) => new { operation.Project, operation.Module, operation.Procedure,
-            Query = operation.Id, operation.State, operation.Output, operation.Error,
-            Pending = operation.State == "Queued" || operation.State == "Delivering", InvocationInvoked = procedureValueInvocations[operation.Id],
-            ReturnValueVerified = operation.State == "Returned", RuntimeSuccessVerified = false,
-            Uncertain = procedureValueInvocations[operation.Id] && operation.State == "Failed", Transport = "OwnedExcelApplicationRun",
+        private object ProcedureValuesResult(ProcedureOperation operation) => new
+        {
+            operation.Project,
+            operation.Module,
+            operation.Procedure,
+            Query = operation.Id,
+            operation.State,
+            operation.Output,
+            operation.Error,
+            Pending = operation.State == "Queued" || operation.State == "Delivering",
+            InvocationInvoked = procedureValueInvocations[operation.Id],
+            ReturnValueVerified = operation.State == "Returned",
+            RuntimeSuccessVerified = false,
+            Uncertain = procedureValueInvocations[operation.Id] && operation.State == "Failed",
+            Transport = "OwnedExcelApplicationRun",
             NextRead = "procedure_values_status, debug_state, debug_dialog",
-            Limit = "Excel owned-process Application.Run only. Fixed ByVal scalar/Variant parameters, positional/named binding; ParamArray Variant accepts positional values only and no Optional prefix, up to 30 total arguments. Rectangular zero-based JSON inputs rank 1/2; scalar-array returns preserve native bounds. No ByRef mutation contract, class/object/Date values or injected helper. Native calls can block on modal/runtime code. One invocation; never retry automatically." };
+            Limit = "Excel owned-process Application.Run only. Fixed ByVal scalar/Variant parameters, positional/named binding; ParamArray Variant accepts positional values only and no Optional prefix, up to 30 total arguments. Rectangular zero-based JSON inputs rank 1/2; scalar-array returns preserve native bounds. No ByRef mutation contract, class/object/Date values or injected helper. Native calls can block on modal/runtime code. One invocation; never retry automatically."
+        };
 
         /// <summary>Exige un chemin Windows absolu de fichier macro Excel déjà associé au projet.</summary>
         /// <param name="path">Chemin reçu dans la requête.</param>

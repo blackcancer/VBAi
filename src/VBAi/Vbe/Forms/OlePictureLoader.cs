@@ -1,6 +1,6 @@
 using System;
-using System.IO;
 using System.Globalization;
+using System.IO;
 using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.ComTypes;
 using System.Security.Cryptography;
@@ -33,7 +33,7 @@ namespace VBAi
     }
 
     // IPersistStream inherits IPersist: keep the complete native vtable order.
-        /// <summary>Managed declaration of the native IPersistStream vtable used by OLE pictures.</summary>
+    /// <summary>Managed declaration of the native IPersistStream vtable used by OLE pictures.</summary>
     [ComImport, Guid("00000109-0000-0000-C000-000000000046"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
     internal interface IOlePicturePersistence
     {
@@ -105,8 +105,7 @@ namespace VBAi
                 throw new ArgumentException("Picture path must be a fully qualified local or UNC path.");
             string fullPath = System.IO.Path.GetFullPath(path);
             if (!File.Exists(fullPath)) throw new FileNotFoundException("Picture file not found.", fullPath);
-            object picture;
-            ReadPicture(fullPath, out picture);
+            ReadPicture(fullPath, out object picture);
             if (picture == null || !Marshal.IsComObject(picture))
                 throw new InvalidOperationException("Windows did not load an OLE picture from the supplied file.");
             return picture;
@@ -118,18 +117,15 @@ namespace VBAi
         public static string Fingerprint(object picture)
         {
             if (picture == null) return null;
-            var typed = picture as IOlePictureDisp;
-            if (typed == null)
+            if (!(picture is IOlePictureDisp typed))
                 throw new InvalidOperationException("The UserForm Picture is not an OLE picture.");
             short type = typed.Type;
             if (type == 0 || type == -1) return null;
             int width = typed.Width, height = typed.Height;
             if (type < 1 || type > 4 || width <= 0 || height <= 0)
                 throw new InvalidOperationException("Unsupported OLE picture type or dimensions.");
-            var persistence = picture as IOlePicturePersistence;
-            if (persistence == null) throw new InvalidOperationException("The OLE picture cannot persist its content.");
-            ulong maximum;
-            Marshal.ThrowExceptionForHR(persistence.GetSizeMax(out maximum));
+            if (!(picture is IOlePicturePersistence persistence)) throw new InvalidOperationException("The OLE picture cannot persist its content.");
+            Marshal.ThrowExceptionForHR(persistence.GetSizeMax(out ulong maximum));
             if (maximum == 0 || maximum > (ulong)MaximumPersistenceBytes)
                 throw new InvalidOperationException("OLE picture persistence exceeds the bounded content budget.");
             int dirtyBefore = persistence.IsDirty();
@@ -140,8 +136,7 @@ namespace VBAi
                 // This stream alone is owned here; the picture and its GDI handle remain borrowed.
                 CreateStreamOnHGlobal(IntPtr.Zero, true, out stream);
                 Marshal.ThrowExceptionForHR(persistence.Save(stream, false));
-                System.Runtime.InteropServices.ComTypes.STATSTG stat;
-                stream.Stat(out stat, 1);
+                stream.Stat(out System.Runtime.InteropServices.ComTypes.STATSTG stat, 1);
                 if (stat.cbSize <= 0 || stat.cbSize > MaximumPersistenceBytes || (ulong)stat.cbSize > maximum)
                     throw new InvalidOperationException("OLE picture persisted size differs from its bounded size contract.");
                 stream.Seek(0, 0, IntPtr.Zero);

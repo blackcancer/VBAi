@@ -96,10 +96,18 @@ namespace VBAi
                     if (native.Dialog(request.Caption) == IntPtr.Zero) { closed = true; break; }
                     native.Pause(50);
                 }
-                return new { Available = true, Project = request.Project, ProjectName = request.Caption,
-                    LockedForViewing = state.Locked, PasswordPresent = state.PasswordLength > 0,
+                return new
+                {
+                    Available = true,
+                    request.Project,
+                    ProjectName = request.Caption,
+                    LockedForViewing = state.Locked,
+                    PasswordPresent = state.PasswordLength > 0,
                     ConfirmationPresent = state.ConfirmationLength > 0,
-                    OptionsVersion = version, DialogClosed = closed, PersistenceVerified = false };
+                    OptionsVersion = version,
+                    DialogClosed = closed,
+                    PersistenceVerified = false
+                };
             }
             catch { return ProtectionUnavailable(); }
             finally { if (!cancelRequested) TryCancelProtection(native, dialog, request.Caption); }
@@ -144,17 +152,34 @@ namespace VBAi
                     if (native.Dialog(request.Caption) == IntPtr.Zero) { closed = true; break; }
                     native.Pause(50);
                 }
-                return new { Available = true, Project = request.Project, ProjectName = request.Caption,
-                    CommittedRequested = true, DialogClosed = closed, Closed = closed, ControlValueVerified = true,
-                    LockedForViewing = locked, PersistenceVerified = false, RetryAllowed = false,
-                    Limit = "Save the host document and reopen it to verify project protection persistence. No save was invoked." };
+                return new
+                {
+                    Available = true,
+                    request.Project,
+                    ProjectName = request.Caption,
+                    CommittedRequested = true,
+                    DialogClosed = closed,
+                    Closed = closed,
+                    ControlValueVerified = true,
+                    LockedForViewing = locked,
+                    PersistenceVerified = false,
+                    RetryAllowed = false,
+                    Limit = "Save the host document and reopen it to verify project protection persistence. No save was invoked."
+                };
             }
             catch
             {
-                return new { Available = false, Uncertain = started, MutationInvoked = started,
-                    CommittedRequested = commitRequested, PersistenceVerified = false, RetryAllowed = false,
+                return new
+                {
+                    Available = false,
+                    Uncertain = started,
+                    MutationInvoked = started,
+                    CommittedRequested = commitRequested,
+                    PersistenceVerified = false,
+                    RetryAllowed = false,
                     Reason = started ? "Native protection configuration could not be verified; inspect the project before another operation."
-                        : "Protection options are unavailable or changed; inspect them again." };
+                        : "Protection options are unavailable or changed; inspect them again."
+                };
             }
             finally
             {
@@ -191,8 +216,12 @@ namespace VBAi
         /// <returns>Résultat sérialisable indiquant l’absence de contrôles natifs fiables.</returns>
         private static object ProtectionUnavailable()
         {
-            return new { Available = false, PersistenceVerified = false,
-                Reason = "The exact project Protection dialog or its required native controls are unavailable." };
+            return new
+            {
+                Available = false,
+                PersistenceVerified = false,
+                Reason = "The exact project Protection dialog or its required native controls are unavailable."
+            };
         }
 
         /// <summary>Demande Cancel seulement si le dialogue exact reste ouvert, sans exposer les erreurs natives.</summary>
@@ -310,8 +339,7 @@ namespace VBAi
         /// <param name="window">Handle dont le processus propriétaire doit être vérifié.</param>
         private static void RequireProtectionOwner(IntPtr window)
         {
-            uint pid;
-            if (window == IntPtr.Zero || GetWindowThreadProcessId(window, out pid) == 0 ||
+            if (window == IntPtr.Zero || GetWindowThreadProcessId(window, out uint pid) == 0 ||
                 pid != (uint)Process.GetCurrentProcess().Id)
                 throw new InvalidOperationException("The protection window does not belong to this host process.");
         }
@@ -375,7 +403,7 @@ namespace VBAi
                 string[] titles = { projectName + " - Project Properties", projectName + " - Propriétés du projet" };
                 EnumWindows((window, data) =>
                 {
-                    uint pid; GetWindowThreadProcessId(window, out pid);
+                    GetWindowThreadProcessId(window, out uint pid);
                     if (pid == owner && ClassName(window) == "#32770" && IsWindowVisible(window) &&
                         titles.Contains(WindowText(window), StringComparer.Ordinal)) matches.Add(window);
                     return true;
@@ -393,11 +421,14 @@ namespace VBAi
             {
                 var controls = ProtectionControls(dialog, projectName);
                 int checkedState = ReadProtectionCheck(controls[0]);
-                return new ProjectProtectionState {
+                return new ProjectProtectionState
+                {
                     Identity = projectName + "|" + WindowText(dialog) + "|" + string.Join("|", controls.Select(item => GetDlgCtrlID(item).ToString())),
                     NativeIdentity = dialog.ToInt64() + "|" + string.Join("|", controls.Select(item => item.ToInt64().ToString())),
                     Locked = checkedState == 1,
-                    PasswordLength = PasswordLength(controls[1]), ConfirmationLength = PasswordLength(controls[2]) };
+                    PasswordLength = PasswordLength(controls[1]),
+                    ConfirmationLength = PasswordLength(controls[2])
+                };
             }
 
             /// <summary>Configure la case par BM_CLICK et les deux secrets par EM_REPLACESEL, sans clavier.</summary>
@@ -494,7 +525,8 @@ namespace VBAi
             private static List<IntPtr> ProtectionChildren(IntPtr dialog)
             {
                 var result = new List<IntPtr>();
-                EnumChildWindows(dialog, (window, ignored) => {
+                EnumChildWindows(dialog, (window, ignored) =>
+                {
                     if (result.Count >= 256) throw new InvalidOperationException("The native protection dialog has too many child windows.");
                     result.Add(window); return true;
                 }, IntPtr.Zero);

@@ -312,8 +312,12 @@ namespace VBAi
                 bool testModule = normalized.Split('\n').Take(firstProcedureLine - 1).Any(line => TestMarker.IsMatch(line));
                 if (testModule || string.Equals(module.Name, VbaTestRuntimeSource.ModuleName, StringComparison.OrdinalIgnoreCase))
                 {
-                    plan.Exclusions.Add(new VbaCoverageExclusion { Module = module.Name, Intentional = true,
-                        Reason = testModule ? "Explicit @TestModule: tests and fixtures are excluded from production coverage." : "VBAi test framework support is excluded from production coverage." });
+                    plan.Exclusions.Add(new VbaCoverageExclusion
+                    {
+                        Module = module.Name,
+                        Intentional = true,
+                        Reason = testModule ? "Explicit @TestModule: tests and fixtures are excluded from production coverage." : "VBAi test framework support is excluded from production coverage."
+                    });
                     continue;
                 }
                 if (module.ComponentType != 1 && module.ComponentType != 2 && module.ComponentType != 3 && module.ComponentType != 100)
@@ -321,8 +325,14 @@ namespace VBAi
                 if (!NamePattern.IsMatch(module.Name ?? ""))
                 { Diagnose(plan, module.Name, 0, "The module identifier is unsupported.", true); continue; }
 
-                var instrumented = new VbaCoverageModule { Name = module.Name, ComponentType = module.ComponentType,
-                    OriginalSource = source, OriginalHash = Hash(source), InstrumentedSource = source };
+                var instrumented = new VbaCoverageModule
+                {
+                    Name = module.Name,
+                    ComponentType = module.ComponentType,
+                    OriginalSource = source,
+                    OriginalHash = Hash(source),
+                    InstrumentedSource = source
+                };
                 plan.Modules.Add(instrumented);
                 var edits = new List<Insertion>();
                 var offsets = LineOffsets(normalized);
@@ -372,9 +382,15 @@ namespace VBAi
                             if (depth < 0) break;
                         }
                         if (depth != 0) Diagnose(plan, module.Name, tokens[0].Line, "The procedure signature has unmatched parentheses.", true);
-                        var probe = new VbaCoverageProbe { Module = module.Name, Procedure = name, Kind = kind,
-                            OriginalLine = tokens[nameIndex].Line, OriginalColumn = tokens[nameIndex].Column,
-                            Id = Hash((snapshot.Id ?? "") + "\0" + module.Name.ToLowerInvariant() + "\0" + kind.ToLowerInvariant() + "\0" + name.ToLowerInvariant()) };
+                        var probe = new VbaCoverageProbe
+                        {
+                            Module = module.Name,
+                            Procedure = name,
+                            Kind = kind,
+                            OriginalLine = tokens[nameIndex].Line,
+                            OriginalColumn = tokens[nameIndex].Column,
+                            Id = Hash((snapshot.Id ?? "") + "\0" + module.Name.ToLowerInvariant() + "\0" + kind.ToLowerInvariant() + "\0" + name.ToLowerInvariant())
+                        };
                         if (current != null) Diagnose(plan, module.Name, tokens[0].Line, "Nested or unterminated procedure declaration.", true);
                         current = probe;
                         bool duplicate = !identities.Add(kind + "." + name);
@@ -384,8 +400,15 @@ namespace VBAi
                         if (conditionalDepth != 0)
                         {
                             Diagnose(plan, module.Name, tokens[0].Line, "Conditional procedure declarations have an unresolved eligible denominator.", true);
-                            plan.Exclusions.Add(new VbaCoverageExclusion { Module = module.Name, Procedure = name, Kind = kind,
-                                OriginalLine = probe.OriginalLine, Reason = "Unresolved conditional declaration; this blocks project coverage.", Intentional = false });
+                            plan.Exclusions.Add(new VbaCoverageExclusion
+                            {
+                                Module = module.Name,
+                                Procedure = name,
+                                Kind = kind,
+                                OriginalLine = probe.OriginalLine,
+                                Reason = "Unresolved conditional declaration; this blocks project coverage.",
+                                Intentional = false
+                            });
                         }
                         probe.Index1Based = plan.Probes.Count + 1;
                         plan.Probes.Add(probe);
@@ -398,15 +421,27 @@ namespace VBAi
                         {
                             const string reason = "An inline procedure header would require replacing its declaration; preservation of hidden member attributes is not qualified.";
                             Diagnose(plan, module.Name, probe.OriginalLine, reason, false);
-                            plan.Exclusions.Add(new VbaCoverageExclusion { Module = module.Name, Procedure = name, Kind = kind,
-                                OriginalLine = probe.OriginalLine, Reason = reason + " This blocks project coverage.", Intentional = false });
+                            plan.Exclusions.Add(new VbaCoverageExclusion
+                            {
+                                Module = module.Name,
+                                Procedure = name,
+                                Kind = kind,
+                                OriginalLine = probe.OriginalLine,
+                                Reason = reason + " This blocks project coverage.",
+                                Intentional = false
+                            });
                             continue;
                         }
                         string text = "    " + marker + "\n";
                         edits.Add(new Insertion { Offset = offset, Text = text });
                         int physicalLine = PhysicalLine(offsets, offset);
-                        instrumented.Edits.Add(new VbaCoverageEdit { OriginalLine = physicalLine + 1,
-                            OriginalColumn = offset - offsets[physicalLine] + 1, Text = text.TrimEnd('\r', '\n'), IsWholeLine = true });
+                        instrumented.Edits.Add(new VbaCoverageEdit
+                        {
+                            OriginalLine = physicalLine + 1,
+                            OriginalColumn = offset - offsets[physicalLine] + 1,
+                            Text = text.TrimEnd('\r', '\n'),
+                            IsWholeLine = true
+                        });
                         continue;
                     }
                     if (Word(0) == "end" && (Word(1) == "sub" || Word(1) == "function" || Word(1) == "property"))
@@ -480,9 +515,15 @@ namespace VBAi
         /// <summary>Copies plan identity, known-denominator state, exclusions, and diagnostics into a report.</summary>
         /// <param name="plan">Validated instrumentation plan.</param>
         /// <returns>Initial report without hit measurements.</returns>
-        private static VbaCoverageReport Report(VbaCoveragePlan plan) => new VbaCoverageReport { Original = plan.Original, Revision = plan.Revision,
-            DenominatorKnown = plan.DenominatorKnown, Eligible = plan.DenominatorKnown ? plan.EligibleProcedureCount : (int?)null,
-            Exclusions = plan.Exclusions.ToList(), Diagnostics = plan.Diagnostics.ToList() };
+        private static VbaCoverageReport Report(VbaCoveragePlan plan) => new VbaCoverageReport
+        {
+            Original = plan.Original,
+            Revision = plan.Revision,
+            DenominatorKnown = plan.DenominatorKnown,
+            Eligible = plan.DenominatorKnown ? plan.EligibleProcedureCount : (int?)null,
+            Exclusions = plan.Exclusions.ToList(),
+            Diagnostics = plan.Diagnostics.ToList()
+        };
 
         /// <summary>Finds the member-kind token in a declaration after any supported visibility modifiers.</summary>
         /// <param name="tokens">Tokenized VBA statement.</param>

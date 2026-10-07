@@ -1,3 +1,4 @@
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -7,7 +8,6 @@ using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace VBAi.Tests.Unit
 {
@@ -18,35 +18,36 @@ namespace VBAi.Tests.Unit
         public void ReturnedWordValidationAndDispatchBalanceKnownLeasesAndRetainUnknown()
         {
             foreach (string outcome in new[] { "passed", "predispatch", "unknown" })
-            using (var fixture = new Fixture())
-            using (var leases = new ServiceWordLeaseRecorder())
-            {
-                fixture.InstallFixtureSupport();
-                fixture.Host.TargetFactory = leases.Acquire;
-                Assert.IsNull(fixture.Service.ExecutionUnavailableReason(fixture.Catalog()));
-                Assert.AreEqual(leases.Targets.Count, leases.Released);
-                if (outcome == "predispatch") fixture.Host.Resolving = count => {
-                    if (count == 4) fixture.Project.Mode = 1;
-                };
-                fixture.Host.ThrowOnInvoke = outcome == "unknown";
-                var catalog = fixture.Catalog();
-                var run = Pump(fixture.Service.RunAsync(catalog, new[] { catalog.Tests.First() }, null, CancellationToken.None));
-                if (outcome == "unknown")
+                using (var fixture = new Fixture())
+                using (var leases = new ServiceWordLeaseRecorder())
                 {
-                    Assert.IsTrue(run.OutcomeUnknown);
-                    Assert.AreEqual(1, leases.Targets.Count(target => target.IsRetained));
-                    Assert.AreEqual(leases.Targets.Count - 1, leases.Released);
-                    var retained = leases.Targets.Single(target => target.IsRetained);
-                    retained.Dispose(); Assert.IsNotNull(retained.Document);
-                }
-                else
-                {
-                    Assert.IsFalse(run.OutcomeUnknown);
+                    fixture.InstallFixtureSupport();
+                    fixture.Host.TargetFactory = leases.Acquire;
+                    Assert.IsNull(fixture.Service.ExecutionUnavailableReason(fixture.Catalog()));
                     Assert.AreEqual(leases.Targets.Count, leases.Released);
-                    Assert.IsTrue(leases.Targets.All(target => target.Document == null));
+                    if (outcome == "predispatch") fixture.Host.Resolving = count =>
+                    {
+                        if (count == 4) fixture.Project.Mode = 1;
+                    };
+                    fixture.Host.ThrowOnInvoke = outcome == "unknown";
+                    var catalog = fixture.Catalog();
+                    var run = Pump(fixture.Service.RunAsync(catalog, new[] { catalog.Tests.First() }, null, CancellationToken.None));
+                    if (outcome == "unknown")
+                    {
+                        Assert.IsTrue(run.OutcomeUnknown);
+                        Assert.AreEqual(1, leases.Targets.Count(target => target.IsRetained));
+                        Assert.AreEqual(leases.Targets.Count - 1, leases.Released);
+                        var retained = leases.Targets.Single(target => target.IsRetained);
+                        retained.Dispose(); Assert.IsNotNull(retained.Document);
+                    }
+                    else
+                    {
+                        Assert.IsFalse(run.OutcomeUnknown);
+                        Assert.AreEqual(leases.Targets.Count, leases.Released);
+                        Assert.IsTrue(leases.Targets.All(target => target.Document == null));
+                    }
+                    Assert.AreEqual(outcome == "predispatch" ? 0 : 1, fixture.Host.Invocations);
                 }
-                Assert.AreEqual(outcome == "predispatch" ? 0 : 1, fixture.Host.Invocations);
-            }
         }
 
         [STATestMethod]
@@ -115,21 +116,21 @@ namespace VBAi.Tests.Unit
         public void ValidationFingerprintsCalleesReferencesPathModeAndProtection()
         {
             foreach (string change in new[] { "callee", "reference", "path", "mode", "protection" })
-            using (var fixture = new Fixture())
-            {
-                fixture.InstallFixtureSupport();
-                var catalog = fixture.Catalog();
-                if (change == "callee") fixture.Project.VBComponents[0].CodeModule.Source += "\n' production edit";
-                if (change == "reference") fixture.Project.References[0].Minor++;
-                if (change == "path") fixture.Project.FileName = @"C:\Temp\Moved.xlsm";
-                if (change == "mode") fixture.Project.Mode = 1;
-                if (change == "protection") fixture.Project.Protection = 1;
-                Exception refusal = null;
-                try { fixture.Service.Validate(catalog); }
-                catch (Exception error) { refusal = error; }
-                Assert.IsNotNull(refusal, change);
-                Assert.AreEqual(0, fixture.Host.Invocations);
-            }
+                using (var fixture = new Fixture())
+                {
+                    fixture.InstallFixtureSupport();
+                    var catalog = fixture.Catalog();
+                    if (change == "callee") fixture.Project.VBComponents[0].CodeModule.Source += "\n' production edit";
+                    if (change == "reference") fixture.Project.References[0].Minor++;
+                    if (change == "path") fixture.Project.FileName = @"C:\Temp\Moved.xlsm";
+                    if (change == "mode") fixture.Project.Mode = 1;
+                    if (change == "protection") fixture.Project.Protection = 1;
+                    Exception refusal = null;
+                    try { fixture.Service.Validate(catalog); }
+                    catch (Exception error) { refusal = error; }
+                    Assert.IsNotNull(refusal, change);
+                    Assert.AreEqual(0, fixture.Host.Invocations);
+                }
         }
 
         [STATestMethod]
@@ -161,67 +162,67 @@ namespace VBAi.Tests.Unit
         public void QueuedRunRevalidatesSourceModeAndLiveIdentityBeforeNativeInvocation()
         {
             foreach (string change in new[] { "source", "mode", "replacement" })
-            using (var fixture = new Fixture())
-            {
-                fixture.InstallFixtureSupport();
-                var catalog = fixture.Catalog();
-                var task = fixture.Service.RunAsync(catalog, catalog.Tests.ToArray(), null, CancellationToken.None);
-                if (change == "source") fixture.Project.VBComponents[0].CodeModule.Source += "\n' changed after scheduling";
-                if (change == "mode") fixture.Project.Mode = 1;
-                if (change == "replacement") fixture.Vbe.VBProjects[0] = Project(fixture.Project.Name, fixture.Project.FileName);
-                var run = Pump(task);
-                Assert.AreEqual(0, fixture.Host.Invocations, change);
-                Assert.IsFalse(run.OutcomeUnknown, change);
-                Assert.IsTrue(run.Results.All(result => result.Outcome == VbaTestOutcome.Blocked), change);
-            }
+                using (var fixture = new Fixture())
+                {
+                    fixture.InstallFixtureSupport();
+                    var catalog = fixture.Catalog();
+                    var task = fixture.Service.RunAsync(catalog, catalog.Tests.ToArray(), null, CancellationToken.None);
+                    if (change == "source") fixture.Project.VBComponents[0].CodeModule.Source += "\n' changed after scheduling";
+                    if (change == "mode") fixture.Project.Mode = 1;
+                    if (change == "replacement") fixture.Vbe.VBProjects[0] = Project(fixture.Project.Name, fixture.Project.FileName);
+                    var run = Pump(task);
+                    Assert.AreEqual(0, fixture.Host.Invocations, change);
+                    Assert.IsFalse(run.OutcomeUnknown, change);
+                    Assert.IsTrue(run.Results.All(result => result.Outcome == VbaTestOutcome.Blocked), change);
+                }
         }
 
         [STATestMethod]
         public void FinalTargetResolutionCannotBypassRevisionOrPermissionRevalidation()
         {
             foreach (bool changesPermission in new[] { false, true })
-            using (var fixture = new Fixture())
-            {
-                fixture.InstallFixtureSupport();
-                var catalog = fixture.Catalog();
-                bool allowed = true;
-                fixture.Host.Resolving = count =>
+                using (var fixture = new Fixture())
                 {
-                    if (count < 3) return;
-                    if (changesPermission) allowed = false;
-                    else fixture.Project.VBComponents[0].CodeModule.Source += "\n' changed during target resolution";
-                };
-                dynamic start = fixture.Service.StartRun(fixture.Project.FileName, catalog.Project.Revision,
-                    catalog.Tests.Select(test => test.Id).ToArray(), () => { if (!allowed) throw new InvalidOperationException("Permission withdrawn"); });
-                PumpMessagesUntil(() => !((bool)((dynamic)fixture.Service.RunStatus(fixture.Project.FileName, (string)start.Query, "compact")).Pending));
-                Assert.AreEqual(0, fixture.Host.Invocations, changesPermission ? "Permission changed" : "Revision changed");
-            }
+                    fixture.InstallFixtureSupport();
+                    var catalog = fixture.Catalog();
+                    bool allowed = true;
+                    fixture.Host.Resolving = count =>
+                    {
+                        if (count < 3) return;
+                        if (changesPermission) allowed = false;
+                        else fixture.Project.VBComponents[0].CodeModule.Source += "\n' changed during target resolution";
+                    };
+                    dynamic start = fixture.Service.StartRun(fixture.Project.FileName, catalog.Project.Revision,
+                        catalog.Tests.Select(test => test.Id).ToArray(), () => { if (!allowed) throw new InvalidOperationException("Permission withdrawn"); });
+                    PumpMessagesUntil(() => !((bool)((dynamic)fixture.Service.RunStatus(fixture.Project.FileName, (string)start.Query, "compact")).Pending));
+                    Assert.AreEqual(0, fixture.Host.Invocations, changesPermission ? "Permission changed" : "Revision changed");
+                }
         }
 
         [STATestMethod]
         public void InvalidNativeReturnAndTransportFailureLatchUnknownAndNeverRetry()
         {
             foreach (bool throws in new[] { false, true })
-            using (var fixture = new Fixture())
-            {
-                fixture.InstallFixtureSupport();
-                var catalog = fixture.Catalog();
-                fixture.Host.Returned = new object();
-                fixture.Host.ThrowOnInvoke = throws;
-                var run = Pump(fixture.Service.RunAsync(catalog, catalog.Tests.ToArray(), null, CancellationToken.None));
-                Assert.IsTrue(run.OutcomeUnknown);
-                Assert.AreEqual(VbaTestOutcome.OutcomeUnknown, run.Results[0].Outcome);
-                Assert.AreEqual(1, fixture.Host.Invocations);
-                StringAssert.Contains(fixture.Service.ExecutionUnavailableReason(catalog), "uncertain");
-                Assert.ThrowsException<InvalidOperationException>(() => fixture.Service.RunAsync(catalog, catalog.Tests.ToArray(), null, CancellationToken.None));
-                for (int i = 0; i < 3; i++)
+                using (var fixture = new Fixture())
                 {
-                    dynamic status = fixture.Service.RunStatus(fixture.Project.FileName, run.Id, "compact");
-                    Assert.AreEqual("OutcomeUnknown", (string)status.State);
-                    Assert.IsFalse((bool)status.Pending);
+                    fixture.InstallFixtureSupport();
+                    var catalog = fixture.Catalog();
+                    fixture.Host.Returned = new object();
+                    fixture.Host.ThrowOnInvoke = throws;
+                    var run = Pump(fixture.Service.RunAsync(catalog, catalog.Tests.ToArray(), null, CancellationToken.None));
+                    Assert.IsTrue(run.OutcomeUnknown);
+                    Assert.AreEqual(VbaTestOutcome.OutcomeUnknown, run.Results[0].Outcome);
+                    Assert.AreEqual(1, fixture.Host.Invocations);
+                    StringAssert.Contains(fixture.Service.ExecutionUnavailableReason(catalog), "uncertain");
+                    Assert.ThrowsException<InvalidOperationException>(() => fixture.Service.RunAsync(catalog, catalog.Tests.ToArray(), null, CancellationToken.None));
+                    for (int i = 0; i < 3; i++)
+                    {
+                        dynamic status = fixture.Service.RunStatus(fixture.Project.FileName, run.Id, "compact");
+                        Assert.AreEqual("OutcomeUnknown", (string)status.State);
+                        Assert.IsFalse((bool)status.Pending);
+                    }
+                    Assert.AreEqual(1, fixture.Host.Invocations);
                 }
-                Assert.AreEqual(1, fixture.Host.Invocations);
-            }
         }
 
         [STATestMethod]
@@ -397,66 +398,67 @@ namespace VBAi.Tests.Unit
         public void QueuedCoverageRevalidatesRevisionModeIdentityAndPermissionBeforeOpeningTheCopy()
         {
             foreach (string change in new[] { "source", "mode", "identity", "permission" })
-            using (var fixture = new Fixture())
-            using (var coverage = new CoverageFixture(fixture))
-            {
-                var catalog = fixture.Catalog();
-                bool allowed = true;
-                dynamic start = fixture.Service.StartRun(fixture.Project.FileName, catalog.Project.Revision,
-                    catalog.Tests.Select(test => test.Id).ToArray(), () => {
-                        if (!allowed) throw new InvalidOperationException("Coverage permission withdrawn.");
-                    }, true);
-                string query = start.Query;
-                var entries = (System.Collections.IDictionary)typeof(VbeTestExplorerService)
-                    .GetField("runs", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(fixture.Service);
-                var entry = entries[query];
-                var task = (Task<VbaTestRun>)entry.GetType().GetField("Completion", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(entry);
-                if (change == "source") fixture.Project.VBComponents[0].CodeModule.Source += "\n' changed before coverage preparation";
-                if (change == "mode") fixture.Project.Mode = 1;
-                if (change == "identity") fixture.Vbe.VBProjects[0] = Project(fixture.Project.Name, fixture.Project.FileName);
-                if (change == "permission") allowed = false;
-                var run = Pump(task);
-                Assert.IsNull(coverage.Clone, change);
-                Assert.AreEqual(0, coverage.Events.Count, change);
-                Assert.IsFalse(run.OutcomeUnknown, change);
-                Assert.IsTrue(run.Results.All(result => result.Outcome == VbaTestOutcome.Blocked), change);
-                Assert.AreEqual("Aborted", entry.GetType().GetField("State", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(entry), change);
-            }
+                using (var fixture = new Fixture())
+                using (var coverage = new CoverageFixture(fixture))
+                {
+                    var catalog = fixture.Catalog();
+                    bool allowed = true;
+                    dynamic start = fixture.Service.StartRun(fixture.Project.FileName, catalog.Project.Revision,
+                        catalog.Tests.Select(test => test.Id).ToArray(), () =>
+                        {
+                            if (!allowed) throw new InvalidOperationException("Coverage permission withdrawn.");
+                        }, true);
+                    string query = start.Query;
+                    var entries = (System.Collections.IDictionary)typeof(VbeTestExplorerService)
+                        .GetField("runs", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(fixture.Service);
+                    var entry = entries[query];
+                    var task = (Task<VbaTestRun>)entry.GetType().GetField("Completion", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(entry);
+                    if (change == "source") fixture.Project.VBComponents[0].CodeModule.Source += "\n' changed before coverage preparation";
+                    if (change == "mode") fixture.Project.Mode = 1;
+                    if (change == "identity") fixture.Vbe.VBProjects[0] = Project(fixture.Project.Name, fixture.Project.FileName);
+                    if (change == "permission") allowed = false;
+                    var run = Pump(task);
+                    Assert.IsNull(coverage.Clone, change);
+                    Assert.AreEqual(0, coverage.Events.Count, change);
+                    Assert.IsFalse(run.OutcomeUnknown, change);
+                    Assert.IsTrue(run.Results.All(result => result.Outcome == VbaTestOutcome.Blocked), change);
+                    Assert.AreEqual("Aborted", entry.GetType().GetField("State", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(entry), change);
+                }
         }
 
         [STATestMethod]
         public void StopAndExternalCancellationBeforeQueuedCoveragePreparationDoNotOpenACopy()
         {
             foreach (bool external in new[] { false, true })
-            using (var fixture = new Fixture())
-            using (var coverage = new CoverageFixture(fixture))
-            using (var cancellation = new CancellationTokenSource())
-            {
-                var catalog = fixture.Catalog();
-                Task<VbaTestRun> task;
-                if (external)
+                using (var fixture = new Fixture())
+                using (var coverage = new CoverageFixture(fixture))
+                using (var cancellation = new CancellationTokenSource())
                 {
-                    task = fixture.Service.RunCoverageAsync(catalog, catalog.Tests.ToArray(), null, cancellation.Token);
-                    cancellation.Cancel();
+                    var catalog = fixture.Catalog();
+                    Task<VbaTestRun> task;
+                    if (external)
+                    {
+                        task = fixture.Service.RunCoverageAsync(catalog, catalog.Tests.ToArray(), null, cancellation.Token);
+                        cancellation.Cancel();
+                    }
+                    else
+                    {
+                        dynamic start = fixture.Service.StartRun(fixture.Project.FileName, catalog.Project.Revision,
+                            catalog.Tests.Select(test => test.Id).ToArray(), null, true);
+                        string query = start.Query;
+                        fixture.Service.StopRun(fixture.Project.FileName, query);
+                        var entries = (System.Collections.IDictionary)typeof(VbeTestExplorerService)
+                            .GetField("runs", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(fixture.Service);
+                        var entry = entries[query];
+                        task = (Task<VbaTestRun>)entry.GetType().GetField("Completion", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(entry);
+                    }
+                    var run = Pump(task);
+                    Assert.IsNull(coverage.Clone);
+                    Assert.AreEqual(0, coverage.Events.Count);
+                    Assert.IsFalse(run.OutcomeUnknown);
+                    Assert.IsTrue(run.Results.All(result => result.Outcome == VbaTestOutcome.Cancelled));
+                    Assert.AreEqual("Cancelled", (string)((dynamic)fixture.Service.RunStatus(fixture.Project.FileName, run.Id, "compact")).State);
                 }
-                else
-                {
-                    dynamic start = fixture.Service.StartRun(fixture.Project.FileName, catalog.Project.Revision,
-                        catalog.Tests.Select(test => test.Id).ToArray(), null, true);
-                    string query = start.Query;
-                    fixture.Service.StopRun(fixture.Project.FileName, query);
-                    var entries = (System.Collections.IDictionary)typeof(VbeTestExplorerService)
-                        .GetField("runs", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(fixture.Service);
-                    var entry = entries[query];
-                    task = (Task<VbaTestRun>)entry.GetType().GetField("Completion", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(entry);
-                }
-                var run = Pump(task);
-                Assert.IsNull(coverage.Clone);
-                Assert.AreEqual(0, coverage.Events.Count);
-                Assert.IsFalse(run.OutcomeUnknown);
-                Assert.IsTrue(run.Results.All(result => result.Outcome == VbaTestOutcome.Cancelled));
-                Assert.AreEqual("Cancelled", (string)((dynamic)fixture.Service.RunStatus(fixture.Project.FileName, run.Id, "compact")).State);
-            }
         }
 
         [STATestMethod]
@@ -563,8 +565,12 @@ namespace VBAi.Tests.Unit
                 fixture.Project.VBComponents[0].CodeModule.Source += "\n' changed location";
                 Assert.ThrowsException<InvalidOperationException>(() => fixture.Service.Navigate(catalog, catalog.Tests.First()));
                 Assert.AreEqual(1, fixture.Project.VBComponents[0].CodeModule.CodePane.Shows);
-                fixture.Project.VBComponents.Add(new FakeComponent { Name = VbaTestRuntimeSource.ModuleName, Type = 1,
-                    CodeModule = new FakeCode { Source = "Public Sub UserCode()\nEnd Sub" } });
+                fixture.Project.VBComponents.Add(new FakeComponent
+                {
+                    Name = VbaTestRuntimeSource.ModuleName,
+                    Type = 1,
+                    CodeModule = new FakeCode { Source = "Public Sub UserCode()\nEnd Sub" }
+                });
                 Assert.ThrowsException<InvalidOperationException>(() => fixture.Service.ApplySupport(fixture.Catalog(), "unreviewed"));
                 Assert.AreEqual(0, fixture.Project.VBComponents.Additions);
                 Assert.IsFalse(Directory.Exists(fixture.BackupRoot));
@@ -578,8 +584,14 @@ namespace VBAi.Tests.Unit
             {
                 fixture.InstallFixtureSupport();
                 var catalog = fixture.Catalog();
-                var request = new Request { Command = "run_vba_tests", Project = fixture.Project.FileName,
-                    ExpectedProjectVersion = "stale", ExpectedMode = 2, Items = catalog.Tests.Select(test => test.Id).ToArray() };
+                var request = new Request
+                {
+                    Command = "run_vba_tests",
+                    Project = fixture.Project.FileName,
+                    ExpectedProjectVersion = "stale",
+                    ExpectedMode = 2,
+                    Items = catalog.Tests.Select(test => test.Id).ToArray()
+                };
                 Assert.ThrowsException<InvalidOperationException>(() => fixture.Service.Command(request));
                 request.ExpectedProjectVersion = catalog.Project.Revision;
                 request.ExpectedMode = 1;
@@ -604,8 +616,14 @@ namespace VBAi.Tests.Unit
             {
                 foreach (string command in new[] { "vba_test_run_status", "vba_test_coverage" })
                     foreach (var pair in new[] { new[] { -1, 100 }, new[] { 0, -1 }, new[] { 0, 101 } })
-                        Assert.ThrowsException<ArgumentException>(() => fixture.Service.Command(new Request {
-                            Command = command, Project = "missing-project", Query = "missing-run", Offset = pair[0], Limit = pair[1] }));
+                        Assert.ThrowsException<ArgumentException>(() => fixture.Service.Command(new Request
+                        {
+                            Command = command,
+                            Project = "missing-project",
+                            Query = "missing-run",
+                            Offset = pair[0],
+                            Limit = pair[1]
+                        }));
                 Assert.AreEqual(0, fixture.Host.Invocations);
                 Assert.AreEqual(0, fixture.Project.VBComponents.Additions);
             }
@@ -620,10 +638,22 @@ namespace VBAi.Tests.Unit
                 var catalog = fixture.Catalog();
                 var run = Pump(fixture.Service.RunAsync(catalog, catalog.Tests.ToArray(), null, CancellationToken.None));
                 int invocations = fixture.Host.Invocations;
-                dynamic first = fixture.Service.Command(new Request { Command = "vba_test_run_status", Project = fixture.Project.FileName,
-                    Query = run.Id, Offset = 0, Limit = 1 });
-                dynamic second = fixture.Service.Command(new Request { Command = "vba_test_run_status", Project = fixture.Project.FileName,
-                    Query = run.Id, Offset = 1, Limit = 1 });
+                dynamic first = fixture.Service.Command(new Request
+                {
+                    Command = "vba_test_run_status",
+                    Project = fixture.Project.FileName,
+                    Query = run.Id,
+                    Offset = 0,
+                    Limit = 1
+                });
+                dynamic second = fixture.Service.Command(new Request
+                {
+                    Command = "vba_test_run_status",
+                    Project = fixture.Project.FileName,
+                    Query = run.Id,
+                    Offset = 1,
+                    Limit = 1
+                });
                 var left = (IDictionary<string, object>)first.Report;
                 var right = (IDictionary<string, object>)second.Report;
                 Assert.AreEqual(2, left["total"]); Assert.AreEqual(left["total"], right["total"]);
@@ -660,8 +690,12 @@ namespace VBAi.Tests.Unit
         private static FakeProject Project(string name, string path)
         {
             var project = new FakeProject { Name = name, FileName = path };
-            project.VBComponents.Add(new FakeComponent { Name = "TestsOne", Type = 1,
-                CodeModule = new FakeCode { Source = "Option Explicit\n'@TestModule\n'@TestMethod\nPublic Sub Alpha()\nEnd Sub\n'@TestMethod\nPublic Sub Beta()\nEnd Sub" } });
+            project.VBComponents.Add(new FakeComponent
+            {
+                Name = "TestsOne",
+                Type = 1,
+                CodeModule = new FakeCode { Source = "Option Explicit\n'@TestModule\n'@TestMethod\nPublic Sub Alpha()\nEnd Sub\n'@TestMethod\nPublic Sub Beta()\nEnd Sub" }
+            });
             project.References.Add(new FakeReference { Name = "VBA", Guid = "reference-guid", Major = 4, Minor = 2 });
             return project;
         }
@@ -676,9 +710,15 @@ namespace VBAi.Tests.Unit
                 Assert.IsInstanceOfType(host, name.Equals("WINWORD", StringComparison.OrdinalIgnoreCase) ? typeof(VbaTestWordValuesHost)
                     : name.Equals("POWERPNT", StringComparison.OrdinalIgnoreCase) ? typeof(VbaTestPowerPointValuesHost) : typeof(VbeDebug.NativeProcedureValuesHost));
             }
-            var values = new Dictionary<string, object> { ["CodeBase"] = new Uri(typeof(VbaTestRuntime).Assembly.Location).AbsoluteUri,
-                ["Class"] = typeof(VbaTestRuntime).FullName, ["Assembly"] = typeof(VbaTestRuntime).Assembly.FullName,
-                ["RuntimeVersion"] = "v4.0.30319", ["ThreadingModel"] = "Both", [""] = "mscoree.dll" };
+            var values = new Dictionary<string, object>
+            {
+                ["CodeBase"] = new Uri(typeof(VbaTestRuntime).Assembly.Location).AbsoluteUri,
+                ["Class"] = typeof(VbaTestRuntime).FullName,
+                ["Assembly"] = typeof(VbaTestRuntime).Assembly.FullName,
+                ["RuntimeVersion"] = "v4.0.30319",
+                ["ThreadingModel"] = "Both",
+                [""] = "mscoree.dll"
+            };
             Func<string, string, object> read = (key, name) => name == null ? (object)true
                 : key.StartsWith("VBAi.", StringComparison.Ordinal) ? "{5AF2F40B-939B-4CC6-A06C-F0C79841C031}" : values[name];
             Assert.IsNull(VbeTestExplorerService.NativeRuntimeRegistrationReason(read));
@@ -738,8 +778,14 @@ namespace VBAi.Tests.Unit
             using (var fixture = new Fixture())
             {
                 var catalog = fixture.Catalog();
-                Func<string, Request> request = command => new Request { Command = command, Project = fixture.Project.FileName,
-                    ExpectedProjectVersion = catalog.Project.Revision, ExpectedMode = 2, Items = new[] { catalog.Tests.First().Id } };
+                Func<string, Request> request = command => new Request
+                {
+                    Command = command,
+                    Project = fixture.Project.FileName,
+                    ExpectedProjectVersion = catalog.Project.Revision,
+                    ExpectedMode = 2,
+                    Items = new[] { catalog.Tests.First().Id }
+                };
                 Assert.ThrowsException<InvalidOperationException>(() => fixture.Service.Command(request("show_vba_test_explorer")));
                 fixture.Service.ShowExplorer = projectId => projectId;
                 Assert.AreEqual(catalog.Project.Id, fixture.Service.Command(request("show_vba_test_explorer")));
@@ -844,30 +890,31 @@ namespace VBAi.Tests.Unit
         public void NativeServiceRoutesVerifiedVerdictsAndLatchesUncertainTransportFailures()
         {
             foreach (string failure in new[] { "none", "prepare", "execute" })
-            using (var fixture = new Fixture())
-            {
-                fixture.InstallFixtureSupport(); var catalog = fixture.Catalog();
-                fixture.Service.IsExecutionHost = () => false;
-                fixture.Service.IsNativeExecutionHost = () => true;
-                fixture.Service.NativeRuntimeReason = () => null;
-                var native = (VbaNativeTestExecutionHost)typeof(VbeTestExplorerService).GetField("nativeExecutionHost", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(fixture.Service);
-                var probe = new ServiceNativeProbe(); native.Probe = probe;
-                probe.Preparing = () => { if (failure == "prepare") throw new InvalidOperationException("Preparation refused"); };
-                probe.Executing = () => {
-                    if (failure == "execute") throw new InvalidOperationException("Native completion unavailable");
-                    var runtime = new VbaTestRuntime();
-                    var job = (object[])runtime.Request(VbaTestRuntimeSource.Version, VbaTestRuntimeSource.DispatchSignature(catalog));
-                    Assert.IsTrue(runtime.Publish((string)job[0], (string)job[4], (string)job[5], (string)job[6], "Passed", "Verified callback", 0));
-                };
-                Assert.IsNull(fixture.Service.ExecutionUnavailableReason(catalog));
-                var run = Pump(fixture.Service.RunAsync(catalog, catalog.Tests.ToArray(), null, CancellationToken.None));
-                Assert.AreEqual(failure == "execute", run.OutcomeUnknown);
-                Assert.AreEqual(failure == "none" ? VbaTestOutcome.Passed : failure == "prepare" ? VbaTestOutcome.Blocked : VbaTestOutcome.OutcomeUnknown, run.Results.First().Outcome, failure);
-                Assert.AreEqual(2, run.Results.Count);
-                Assert.AreEqual(failure == "none" ? 2 : failure == "prepare" ? 0 : 1, probe.Executions);
-                Assert.AreEqual(0, fixture.Host.Invocations);
-                if (failure == "execute") Assert.ThrowsException<VbaTestInvocationException>(() => fixture.Service.Validate(catalog));
-            }
+                using (var fixture = new Fixture())
+                {
+                    fixture.InstallFixtureSupport(); var catalog = fixture.Catalog();
+                    fixture.Service.IsExecutionHost = () => false;
+                    fixture.Service.IsNativeExecutionHost = () => true;
+                    fixture.Service.NativeRuntimeReason = () => null;
+                    var native = (VbaNativeTestExecutionHost)typeof(VbeTestExplorerService).GetField("nativeExecutionHost", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(fixture.Service);
+                    var probe = new ServiceNativeProbe(); native.Probe = probe;
+                    probe.Preparing = () => { if (failure == "prepare") throw new InvalidOperationException("Preparation refused"); };
+                    probe.Executing = () =>
+                    {
+                        if (failure == "execute") throw new InvalidOperationException("Native completion unavailable");
+                        var runtime = new VbaTestRuntime();
+                        var job = (object[])runtime.Request(VbaTestRuntimeSource.Version, VbaTestRuntimeSource.DispatchSignature(catalog));
+                        Assert.IsTrue(runtime.Publish((string)job[0], (string)job[4], (string)job[5], (string)job[6], "Passed", "Verified callback", 0));
+                    };
+                    Assert.IsNull(fixture.Service.ExecutionUnavailableReason(catalog));
+                    var run = Pump(fixture.Service.RunAsync(catalog, catalog.Tests.ToArray(), null, CancellationToken.None));
+                    Assert.AreEqual(failure == "execute", run.OutcomeUnknown);
+                    Assert.AreEqual(failure == "none" ? VbaTestOutcome.Passed : failure == "prepare" ? VbaTestOutcome.Blocked : VbaTestOutcome.OutcomeUnknown, run.Results.First().Outcome, failure);
+                    Assert.AreEqual(2, run.Results.Count);
+                    Assert.AreEqual(failure == "none" ? 2 : failure == "prepare" ? 0 : 1, probe.Executions);
+                    Assert.AreEqual(0, fixture.Host.Invocations);
+                    if (failure == "execute") Assert.ThrowsException<VbaTestInvocationException>(() => fixture.Service.Validate(catalog));
+                }
         }
 
         [STATestMethod]
@@ -929,7 +976,8 @@ namespace VBAi.Tests.Unit
                 Assert.IsInstanceOfType(error, typeof(InvalidOperationException));
                 using (var timer = new System.Windows.Forms.Timer { Interval = 20 })
                 {
-                    timer.Tick += (_, __) => {
+                    timer.Tick += (_, __) =>
+                    {
                         foreach (Form form in Application.OpenForms)
                             if (form is TestSupportReviewDialog) { timer.Stop(); form.DialogResult = DialogResult.Cancel; break; }
                     };
@@ -953,14 +1001,14 @@ namespace VBAi.Tests.Unit
                 Assert.ThrowsException<InvalidOperationException>(() => fixture.Catalog());
             }
             foreach (string path in new[] { null, "relative.xlsm" })
-            using (var fixture = new Fixture())
-            {
-                fixture.Project.FileName = path; fixture.InstallFixtureSupport();
-                var catalog = fixture.Catalog();
-                StringAssert.Contains(fixture.Service.CoverageUnavailableReason(catalog), "Save");
-                StringAssert.Contains(fixture.Service.ExecutionUnavailableReason(catalog), "Save");
-                Assert.AreEqual(0, fixture.Host.Invocations);
-            }
+                using (var fixture = new Fixture())
+                {
+                    fixture.Project.FileName = path; fixture.InstallFixtureSupport();
+                    var catalog = fixture.Catalog();
+                    StringAssert.Contains(fixture.Service.CoverageUnavailableReason(catalog), "Save");
+                    StringAssert.Contains(fixture.Service.ExecutionUnavailableReason(catalog), "Save");
+                    Assert.AreEqual(0, fixture.Host.Invocations);
+                }
         }
 
         [STATestMethod]

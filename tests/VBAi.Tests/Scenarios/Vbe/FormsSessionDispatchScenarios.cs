@@ -1,8 +1,8 @@
 namespace VBAi.Tests.Unit
 {
+    using Microsoft.VisualStudio.TestTools.UnitTesting;
     using System.Threading;
     using VBAi;
-    using Microsoft.VisualStudio.TestTools.UnitTesting;
 
     // Exercise protocol dispatch against the same live Designer contracts as the service tests.
     [TestClass, TestCategory("Unit"), DoNotParallelize]

@@ -53,8 +53,7 @@ namespace VBAi
                 document = MatchOtherHost(projectObject, native, application);
                 string path = RequireAbsolutePath(request.ExpectedHostPath);
                 int format = OtherHostFormat("Access", path), processId = native.CurrentProcessId;
-                object pane = vbe.ActiveCodePane;
-                if (pane == null) throw new InvalidOperationException("Access Save requires an active code pane in the approved project.");
+                object pane = vbe.ActiveCodePane ?? throw new InvalidOperationException("Access Save requires an active code pane in the approved project.");
                 object component = ((dynamic)pane).CodeModule.Parent;
                 RequireAccessSaveSelection(projectObject, pane, component, native);
                 if (native is NativeOtherHostProbe nativeProbe) nativeProbe.BindAccessSaveSelection(pane, component);
@@ -72,12 +71,12 @@ namespace VBAi
                 if (AccessSaveConfirmationFactory != null || native is NativeOtherHostProbe)
                 {
                     var window = new IntPtr(Convert.ToInt64(vbe.MainWindow.HWnd));
-                    confirmation = AccessSaveConfirmationFactory != null
+                    confirmation = (AccessSaveConfirmationFactory != null
                         ? AccessSaveConfirmationFactory(window, processId, approvedComponents)
-                        : CreateNativeAccessSaveConfirmation(window, processId, approvedComponents);
-                    if (confirmation == null) throw new InvalidOperationException("Access Save confirmation guard is unavailable.");
+                        : CreateNativeAccessSaveConfirmation(window, processId, approvedComponents)) ?? throw new InvalidOperationException("Access Save confirmation guard is unavailable.");
                     confirmation.Prepare();
-                    if (native is NativeOtherHostProbe guardedProbe) guardedProbe.AccessBeforeSave = () => {
+                    if (native is NativeOtherHostProbe guardedProbe) guardedProbe.AccessBeforeSave = () =>
+                    {
                         if (Thread.CurrentThread.ManagedThreadId != ownerThread || native.HostKind != "Access" ||
                             native.CurrentProcessId != processId || native.ApplicationProcessId(application) != (uint)processId ||
                             (int)project.Mode != 2 || (int)project.Protection != 0 ||
@@ -138,7 +137,8 @@ namespace VBAi
                                     if (elapsed.Elapsed >= AccessSaveVerificationTimeout)
                                         throw new InvalidOperationException("Access Save confirmation remains pending; no confirmation or Save is retried.");
                                     if (confirmation.ConfirmationAttempts == 0)
-                                        confirmation.Confirm(candidate, () => {
+                                        confirmation.Confirm(candidate, () =>
+                                        {
                                             if (Thread.CurrentThread.ManagedThreadId != ownerThread ||
                                                 native.HostKind != "Access" || native.CurrentProcessId != processId ||
                                                 native.ApplicationProcessId(application) != (uint)processId ||
@@ -161,7 +161,8 @@ namespace VBAi
                                                 request.RevalidateSaveAuthorization?.Invoke();
                                             }
                                             finally { ReleaseAccessObservation(confirmedDocument); }
-                                        }, () => {
+                                        }, () =>
+                                        {
                                             if (elapsed.Elapsed >= AccessSaveVerificationTimeout)
                                                 throw new InvalidOperationException("Access Save confirmation delivery deadline expired; no native confirmation was queued.");
                                         });
@@ -173,29 +174,57 @@ namespace VBAi
                                     if (elapsed.Elapsed < AccessSaveVerificationTimeout) continue;
                                     throw new InvalidOperationException("Access Save verification timed out: ProjectSaved remains false.");
                                 }
-                                return new { Project = request.Project, Host = "Access", HostPath = path, SaveApi = "VBE.CommandBars.ID3",
-                                    SaveInvoked = true, SaveAsInvoked = false, MutationInvoked = true, Verified = true, Uncertain = false,
-                                    ProjectSaved = true, HostSaved = (bool?)null, Bytes = native.FileLength(path), OwnerProcessId = processId,
-                                    SourceSha256 = sourceSha, CodePreserved = true, NativeFileFormatVerified = true,
-                                    NativeQualification = "NOT_RUN", PersistenceReopenVerified = false,
-                                    Verification = "DeferredOwnerThreadSavedReadback", VerificationMilliseconds = elapsed.ElapsedMilliseconds,
+                                return new
+                                {
+                                    request.Project,
+                                    Host = "Access",
+                                    HostPath = path,
+                                    SaveApi = "VBE.CommandBars.ID3",
+                                    SaveInvoked = true,
+                                    SaveAsInvoked = false,
+                                    MutationInvoked = true,
+                                    Verified = true,
+                                    Uncertain = false,
+                                    ProjectSaved = true,
+                                    HostSaved = (bool?)null,
+                                    Bytes = native.FileLength(path),
+                                    OwnerProcessId = processId,
+                                    SourceSha256 = sourceSha,
+                                    CodePreserved = true,
+                                    NativeFileFormatVerified = true,
+                                    NativeQualification = "NOT_RUN",
+                                    PersistenceReopenVerified = false,
+                                    Verification = "DeferredOwnerThreadSavedReadback",
+                                    VerificationMilliseconds = elapsed.ElapsedMilliseconds,
                                     ConfirmationAttempts = confirmation?.ConfirmationAttempts ?? 0,
                                     ConfirmationQueued = confirmation?.ConfirmationQueued ?? false,
                                     ConfirmationPending = confirmation?.ConfirmationPending ?? false,
-                                    Limit = "Access saved-state, identity, path, metadata and unchanged live source were verified after one native Save. Access has no document Saved flag; reopen the database to verify persisted content." };
+                                    Limit = "Access saved-state, identity, path, metadata and unchanged live source were verified after one native Save. Access has no document Saved flag; reopen the database to verify persisted content."
+                                };
                             }
                             finally { ReleaseAccessObservation(observedDocument); }
                         }
                     }
                     catch (Exception error)
                     {
-                        return new { Project = request.Project, Host = "Access", HostPath = path, SaveApi = "VBE.CommandBars.ID3",
-                            SaveInvoked = true, SaveAsInvoked = false, MutationInvoked = true, Verified = false, Uncertain = true,
-                            NativeQualification = "NOT_RUN", Reason = error.Message,
+                        return new
+                        {
+                            request.Project,
+                            Host = "Access",
+                            HostPath = path,
+                            SaveApi = "VBE.CommandBars.ID3",
+                            SaveInvoked = true,
+                            SaveAsInvoked = false,
+                            MutationInvoked = true,
+                            Verified = false,
+                            Uncertain = true,
+                            NativeQualification = "NOT_RUN",
+                            Reason = error.Message,
                             ConfirmationAttempts = confirmation?.ConfirmationAttempts ?? 0,
                             ConfirmationQueued = confirmation?.ConfirmationQueued ?? false,
                             ConfirmationPending = confirmation?.ConfirmationPending ?? false,
-                            Next = "Inspect project_persistence_status and the database; do not retry automatically." };
+                            Next = "Inspect project_persistence_status and the database; do not retry automatically."
+                        };
                     }
                 }
                 finally

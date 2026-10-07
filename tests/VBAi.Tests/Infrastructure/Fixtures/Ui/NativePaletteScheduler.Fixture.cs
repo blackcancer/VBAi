@@ -1,9 +1,8 @@
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Collections.Generic;
 using System.Reflection;
 using System.Runtime.InteropServices;
-using VBAi;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace VBAi.Tests.Unit
 {
@@ -22,7 +21,8 @@ namespace VBAi.Tests.Unit
         internal Action DuringChange;
         internal Exception Failure;
 
-        [DllImport("user32.dll", CharSet = CharSet.Unicode)] private static extern IntPtr CreateWindowEx(int exStyle, string className,
+        [DllImport("user32.dll", CharSet = CharSet.Unicode)]
+        private static extern IntPtr CreateWindowEx(int exStyle, string className,
             string title, int style, int x, int y, int width, int height, IntPtr parent, IntPtr id, IntPtr instance, IntPtr parameter);
         [DllImport("user32.dll")] private static extern bool DestroyWindow(IntPtr window);
         [DllImport("user32.dll")] private static extern bool ShowWindow(IntPtr window, int command);

@@ -1,11 +1,9 @@
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Reflection;
 using System.Runtime.InteropServices;
-using System.Text;
-using VBAi;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace VBAi.Tests.Unit
 {
@@ -38,7 +36,8 @@ namespace VBAi.Tests.Unit
         internal Action<IntPtr, uint, IntPtr, IntPtr> DuringNative { get; set; }
         internal IntPtr Main => State.Handle;
 
-        [DllImport("user32.dll", CharSet = CharSet.Unicode)] private static extern IntPtr CreateWindowEx(int exStyle, string className,
+        [DllImport("user32.dll", CharSet = CharSet.Unicode)]
+        private static extern IntPtr CreateWindowEx(int exStyle, string className,
             string title, int style, int x, int y, int width, int height, IntPtr parent, IntPtr id, IntPtr instance, IntPtr parameter);
         [DllImport("user32.dll")] private static extern bool DestroyWindow(IntPtr window);
         [DllImport("gdi32.dll")] private static extern uint GetObjectType(IntPtr value);

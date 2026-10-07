@@ -1,3 +1,4 @@
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -5,7 +6,6 @@ using System.IO;
 using System.Security.Cryptography;
 using System.Text;
 using System.Web.Script.Serialization;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace VBAi.Tests.Unit
 {
@@ -27,11 +27,17 @@ namespace VBAi.Tests.Unit
                 string assembly = Path.Combine(root, "VBAi.dll"); File.WriteAllText(assembly, "Synthetic identity; not an assembly", new UTF8Encoding(false));
                 string hash; using (var sha = SHA256.Create()) hash = BitConverter.ToString(sha.ComputeHash(File.ReadAllBytes(assembly))).Replace("-", "");
                 string mvid = Guid.NewGuid().ToString("D");
-                var pending = new Dictionary<string, object> { ["Root"] = root, ["ProcessId"] = 424242,
-                    ["ProcessStartedUtc"] = DateTime.UtcNow.ToString("o"), ["Nonce"] = variation == "WrongNonce" ? "stale" : Guid.NewGuid().ToString("N"),
-                    ["Executable"] = @"C:\Owned\EXCEL.EXE", ["AssemblyPath"] = assembly,
+                var pending = new Dictionary<string, object>
+                {
+                    ["Root"] = root,
+                    ["ProcessId"] = 424242,
+                    ["ProcessStartedUtc"] = DateTime.UtcNow.ToString("o"),
+                    ["Nonce"] = variation == "WrongNonce" ? "stale" : Guid.NewGuid().ToString("N"),
+                    ["Executable"] = @"C:\Owned\EXCEL.EXE",
+                    ["AssemblyPath"] = assembly,
                     ["AssemblyMvid"] = variation == "WrongCandidate" ? Guid.NewGuid().ToString("D") : mvid,
-                    ["Scenario"] = variation == "WrongScenario" ? "UserMacro" : "NativeVariantArraysRoundTripWithBoundsAndOneInvocation" };
+                    ["Scenario"] = variation == "WrongScenario" ? "UserMacro" : "NativeVariantArraysRoundTripWithBoundsAndOneInvocation"
+                };
                 string path = Path.Combine(root, "teardown.pending.json");
                 File.WriteAllText(path, new JavaScriptSerializer().Serialize(pending), new UTF8Encoding(false));
                 string controller = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "tools", "probes", "Trace-OwnedExcelTeardown.ps1");
@@ -40,9 +46,15 @@ namespace VBAi.Tests.Unit
                     " -PendingReport " + Quote(path) + " -ExpectedMvid " + Quote(mvid) + " -ExpectedAssemblySha256 " + Quote(hash) +
                     " -CdbPath " + Quote(assembly) + (variation == "ExecuteWithoutPreflight" ? " -Execute" : "");
                 string ps = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.System), "WindowsPowerShell", "v1.0", "powershell.exe");
-                var info = new ProcessStartInfo(ps, "-NoLogo -NoProfile -NonInteractive -EncodedCommand " + Convert.ToBase64String(Encoding.Unicode.GetBytes(command))) {
-                    UseShellExecute = false, CreateNoWindow = true, RedirectStandardOutput = true, RedirectStandardError = true,
-                    StandardOutputEncoding = Encoding.UTF8, StandardErrorEncoding = Encoding.UTF8 };
+                var info = new ProcessStartInfo(ps, "-NoLogo -NoProfile -NonInteractive -EncodedCommand " + Convert.ToBase64String(Encoding.Unicode.GetBytes(command)))
+                {
+                    UseShellExecute = false,
+                    CreateNoWindow = true,
+                    RedirectStandardOutput = true,
+                    RedirectStandardError = true,
+                    StandardOutputEncoding = Encoding.UTF8,
+                    StandardErrorEncoding = Encoding.UTF8
+                };
                 info.EnvironmentVariables["PSModulePath"] = Path.Combine(Path.GetDirectoryName(ps), "Modules");
                 using (var child = Process.Start(info))
                 {
@@ -80,8 +92,13 @@ namespace VBAi.Tests.Unit
                 "if($commands -notmatch '(?m)^sxn -c \"qd\" epr$'){throw 'Debugger may quit automatically only after process exit'};" +
                 "if($commands -notmatch '(?m)^\\.echo VBAI_TEARDOWN_READY 424242 0123456789abcdef0123456789abcdef$'){throw 'Owned readiness identity missing'}";
             string ps = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.System), "WindowsPowerShell", "v1.0", "powershell.exe");
-            var info = new ProcessStartInfo(ps, "-NoLogo -NoProfile -NonInteractive -EncodedCommand " + Convert.ToBase64String(Encoding.Unicode.GetBytes(command))) {
-                UseShellExecute = false, CreateNoWindow = true, RedirectStandardOutput = true, RedirectStandardError = true };
+            var info = new ProcessStartInfo(ps, "-NoLogo -NoProfile -NonInteractive -EncodedCommand " + Convert.ToBase64String(Encoding.Unicode.GetBytes(command)))
+            {
+                UseShellExecute = false,
+                CreateNoWindow = true,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true
+            };
             info.EnvironmentVariables["PSModulePath"] = Path.Combine(Path.GetDirectoryName(ps), "Modules");
             using (var child = Process.Start(info))
             {
@@ -105,8 +122,13 @@ namespace VBAi.Tests.Unit
                 "if(Test-OwnedTeardownReady " + Quote(line + " trailing") + " 424242 $nonce){throw 'Readiness suffix accepted'};" +
                 "if(Test-OwnedTeardownReady " + Quote(line) + " 424242 '.*'){throw 'Regex nonce accepted'}";
             string ps = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.System), "WindowsPowerShell", "v1.0", "powershell.exe");
-            var info = new ProcessStartInfo(ps, "-NoLogo -NoProfile -NonInteractive -EncodedCommand " + Convert.ToBase64String(Encoding.Unicode.GetBytes(command))) {
-                UseShellExecute = false, CreateNoWindow = true, RedirectStandardOutput = true, RedirectStandardError = true };
+            var info = new ProcessStartInfo(ps, "-NoLogo -NoProfile -NonInteractive -EncodedCommand " + Convert.ToBase64String(Encoding.Unicode.GetBytes(command)))
+            {
+                UseShellExecute = false,
+                CreateNoWindow = true,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true
+            };
             info.EnvironmentVariables["PSModulePath"] = Path.Combine(Path.GetDirectoryName(ps), "Modules");
             using (var child = Process.Start(info))
             {
@@ -135,8 +157,13 @@ namespace VBAi.Tests.Unit
                 "if(Test-OwnedFirstChanceAv ($av.Replace('first chance','second chance')) 424242 $nonce){throw 'Second-chance AV called forwarding'};" +
                 "if(Test-OwnedFirstChanceAv ('0:000> .echo '+$av) 424242 $nonce){throw 'Echoed forwarding accepted'}";
             string ps = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.System), "WindowsPowerShell", "v1.0", "powershell.exe");
-            var info = new ProcessStartInfo(ps, "-NoLogo -NoProfile -NonInteractive -EncodedCommand " + Convert.ToBase64String(Encoding.Unicode.GetBytes(command))) {
-                UseShellExecute = false, CreateNoWindow = true, RedirectStandardOutput = true, RedirectStandardError = true };
+            var info = new ProcessStartInfo(ps, "-NoLogo -NoProfile -NonInteractive -EncodedCommand " + Convert.ToBase64String(Encoding.Unicode.GetBytes(command)))
+            {
+                UseShellExecute = false,
+                CreateNoWindow = true,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true
+            };
             info.EnvironmentVariables["PSModulePath"] = Path.Combine(Path.GetDirectoryName(ps), "Modules");
             using (var child = Process.Start(info))
             {
@@ -172,8 +199,13 @@ namespace VBAi.Tests.Unit
                 "if(Test-OwnedTeardownFatalExit -1073740791 $true -1073740791 $av 424242){throw 'Captured and exit codes differ'};" +
                 "if(Test-TeardownExceptionCapture ($av.Replace('second chance','first chance')) 424242){throw 'First-chance AV promoted to fatal'}";
             string ps = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.System), "WindowsPowerShell", "v1.0", "powershell.exe");
-            var info = new ProcessStartInfo(ps, "-NoLogo -NoProfile -NonInteractive -EncodedCommand " + Convert.ToBase64String(Encoding.Unicode.GetBytes(command))) {
-                UseShellExecute = false, CreateNoWindow = true, RedirectStandardOutput = true, RedirectStandardError = true };
+            var info = new ProcessStartInfo(ps, "-NoLogo -NoProfile -NonInteractive -EncodedCommand " + Convert.ToBase64String(Encoding.Unicode.GetBytes(command)))
+            {
+                UseShellExecute = false,
+                CreateNoWindow = true,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true
+            };
             info.EnvironmentVariables["PSModulePath"] = Path.Combine(Path.GetDirectoryName(ps), "Modules");
             using (var child = Process.Start(info))
             {

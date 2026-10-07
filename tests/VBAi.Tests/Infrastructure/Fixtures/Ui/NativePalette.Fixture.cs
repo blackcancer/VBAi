@@ -1,7 +1,6 @@
 using System;
 using System.IO;
 using System.Linq;
-using VBAi;
 
 namespace VBAi.Tests.Unit
 {

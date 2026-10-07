@@ -68,9 +68,19 @@ namespace VBAi
             }
             catch (Exception ex) { readError = ex.Message; }
             bool verified = error == null && readError == null && actual == desired;
-            return new { Applied = error == null ? (bool?)true : null, Verified = verified, VerificationPending = !verified,
-                Before = before, After = after, ActualState = actual, NativeError = error, ReadbackError = readError,
-                PersistenceVerified = false, NextRead = verified ? null : "vbe_windows" };
+            return new
+            {
+                Applied = error == null ? (bool?)true : null,
+                Verified = verified,
+                VerificationPending = !verified,
+                Before = before,
+                After = after,
+                ActualState = actual,
+                NativeError = error,
+                ReadbackError = readError,
+                PersistenceVerified = false,
+                NextRead = verified ? null : "vbe_windows"
+            };
         }
 
         /// <summary>Modifie les coordonnées et dimensions entières d’une fenêtre normale, avec restauration en cas d’échec.</summary>
@@ -107,8 +117,14 @@ namespace VBAi
                 catch (Exception rollback) { throw new InvalidOperationException(error.Message + " Bounds rollback failed: " + rollback.Message, error); }
                 throw new InvalidOperationException(error.Message + " Original bounds restored.", error);
             }
-            return new { Applied = true, Verified = true, Before = (object)before,
-                After = WindowLayout(request.WindowCaption, request.WindowType), PersistenceVerified = false };
+            return new
+            {
+                Applied = true,
+                Verified = true,
+                Before = (object)before,
+                After = WindowLayout(request.WindowCaption, request.WindowType),
+                PersistenceVerified = false
+            };
         }
 
         /// <summary>Lie un volet à une frame existante ou le détache après validation des deux versions concernées.</summary>
@@ -131,8 +147,7 @@ namespace VBAi
                     throw new ArgumentException("A window cannot be linked to itself.");
                 dynamic anchor = FindExactWindow(request.TargetWindowCaption, request.TargetWindowType);
                 CheckedLayout(request.TargetWindowCaption, request.TargetWindowType, request.ExpectedTargetWindowVersion);
-                destination = request.TargetWindowType == 11 || request.TargetWindowType == 12 ? anchor : anchor.LinkedWindowFrame;
-                if (destination == null) throw new InvalidOperationException("The target has no linked frame. Select an existing frame or the VBE main window.");
+                destination = (request.TargetWindowType == 11 || request.TargetWindowType == 12 ? anchor : anchor.LinkedWindowFrame) ?? throw new InvalidOperationException("The target has no linked frame. Select an existing frame or the VBE main window.");
                 // Reading the collection before mutation detects unsupported host surfaces.
                 int count = 0; foreach (dynamic member in destination.LinkedWindows) count++;
             }
@@ -146,8 +161,15 @@ namespace VBAi
                 bool verified = request.Action == "link"
                     ? currentFrame != null && object.Equals((object)currentFrame, (object)destination) && FrameContains(destination, request.WindowCaption, request.WindowType)
                     : currentFrame == null || (!object.Equals((object)currentFrame, (object)oldFrame) && SingleMemberFrame(currentFrame, request.WindowCaption, request.WindowType));
-                return new { Applied = (bool?)true, Verified = verified, VerificationPending = !verified,
-                    Before = before, After = WindowLayout(request.WindowCaption, request.WindowType), PersistenceVerified = false };
+                return new
+                {
+                    Applied = (bool?)true,
+                    Verified = verified,
+                    VerificationPending = !verified,
+                    Before = before,
+                    After = WindowLayout(request.WindowCaption, request.WindowType),
+                    PersistenceVerified = false
+                };
             }
             catch (Exception error)
             {
@@ -155,9 +177,18 @@ namespace VBAi
                 // reconstruct the original topology after a partially completed native call.
                 object after = null; string readError = null;
                 try { after = WindowLayout(request.WindowCaption, request.WindowType); } catch (Exception read) { readError = read.Message; }
-                return new { Applied = (bool?)null, Verified = false, VerificationPending = true,
-                    Before = before, After = after, NativeError = error.Message, ReadbackError = readError,
-                    PersistenceVerified = false, NextRead = "window_layout" };
+                return new
+                {
+                    Applied = (bool?)null,
+                    Verified = false,
+                    VerificationPending = true,
+                    Before = before,
+                    After = after,
+                    NativeError = error.Message,
+                    ReadbackError = readError,
+                    PersistenceVerified = false,
+                    NextRead = "window_layout"
+                };
             }
         }
 

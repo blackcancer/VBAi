@@ -1,5 +1,6 @@
 namespace VBAi.Tests.Unit
 {
+    using Microsoft.VisualStudio.TestTools.UnitTesting;
     using System;
     using System.Collections.Generic;
     using System.Linq;
@@ -7,7 +8,6 @@ namespace VBAi.Tests.Unit
     using System.Web.Script.Serialization;
     using VBAi;
     using VBAi.Tests.Infrastructure;
-    using Microsoft.VisualStudio.TestTools.UnitTesting;
 
     /// <summary>Fournit un proxy autour des vraies orchestrations d’outils et des frontières hôte simulées.</summary>
     public sealed partial class LlmVbeToolsBoundaryTests
@@ -67,10 +67,10 @@ namespace VBAi.Tests.Unit
             internal ChatMode Mode { set { fixture.Tools.Mode = value; } }
             /// <summary>Définit le gestionnaire de confirmation de fichier.</summary>
             /// <value>Délégué appelé pour confirmer une opération sur fichier.</value>
-            internal Func<System.Windows.Forms.IWin32Window,string,string,System.Windows.Forms.DialogResult> ConfirmFile { set { fixture.Tools.ConfirmFile = value; } }
+            internal Func<System.Windows.Forms.IWin32Window, string, string, System.Windows.Forms.DialogResult> ConfirmFile { set { fixture.Tools.ConfirmFile = value; } }
             /// <summary>Définit le gestionnaire d’approbation des actions VBE.</summary>
             /// <value>Délégué appelé pour afficher l’approbation VBE.</value>
-            internal Func<VbeApprovalDialog,System.Windows.Forms.IWin32Window,System.Windows.Forms.DialogResult> ShowApproval { set { fixture.Tools.ShowApproval = value; } }
+            internal Func<VbeApprovalDialog, System.Windows.Forms.IWin32Window, System.Windows.Forms.DialogResult> ShowApproval { set { fixture.Tools.ShowApproval = value; } }
             /// <summary>Enregistre une demande de l’utilisateur dans le contexte des outils.</summary>
             /// <param name="text">Texte de la demande utilisateur.</param>
             internal void NoteUserRequest(string text) { fixture.Tools.NoteUserRequest(text); }
@@ -78,12 +78,12 @@ namespace VBAi.Tests.Unit
             /// <param name="name">Nom de l’outil.</param>
             /// <param name="arguments">Arguments JSON de l’outil.</param>
             /// <returns>Réponse sérialisée de l’outil.</returns>
-            internal string Invoke(string name,string arguments) { return fixture.Tools.Invoke(name,arguments); }
+            internal string Invoke(string name, string arguments) { return fixture.Tools.Invoke(name, arguments); }
             /// <summary>Invoque un outil de façon asynchrone.</summary>
             /// <param name="name">Nom de l’outil.</param>
             /// <param name="arguments">Arguments JSON de l’outil.</param>
             /// <returns>Tâche qui produit la réponse sérialisée.</returns>
-            internal System.Threading.Tasks.Task<string> InvokeAsync(string name,string arguments) { return fixture.Tools.InvokeAsync(name,arguments); }
+            internal System.Threading.Tasks.Task<string> InvokeAsync(string name, string arguments) { return fixture.Tools.InvokeAsync(name, arguments); }
         }
         /// <summary>Construit des arguments JSON valides à partir du schéma d’un outil nommé.</summary>
         /// <param name="name">Nom de l’outil dont le schéma définit les champs.</param>
@@ -105,27 +105,27 @@ namespace VBAi.Tests.Unit
         /// <returns>Arguments spécifiques, ou ceux générés par <see cref="Arguments"/>.</returns>
         private static Dictionary<string, object> AsyncArguments(string name)
         {
-            if (name == "debug_item") return new Dictionary<string, object> { ["Pane"]="locals",["Action"]="expand",["PathSegments"]=new[] {"item"} };
-            if (name == "immediate_execute") return new Dictionary<string, object> { ["Project"]="P",["ExpectedMode"]=2,["Text"]="Debug.Print 1" };
+            if (name == "debug_item") return new Dictionary<string, object> { ["Pane"] = "locals", ["Action"] = "expand", ["PathSegments"] = new[] { "item" } };
+            if (name == "immediate_execute") return new Dictionary<string, object> { ["Project"] = "P", ["ExpectedMode"] = 2, ["Text"] = "Debug.Print 1" };
             if (name == "debug_dialog") return new Dictionary<string, object>();
-            if (name == "respond_debug_dialog") return new Dictionary<string, object> { ["Diagnostic"]="fixture",["Button"]="ok" };
+            if (name == "respond_debug_dialog") return new Dictionary<string, object> { ["Diagnostic"] = "fixture", ["Button"] = "ok" };
             return Arguments(name);
         }
         /// <summary>Vérifie qu’une réponse d’outil sérialisée indique une réussite.</summary>
         /// <param name="json">Réponse JSON à examiner.</param>
         /// <param name="context">Contexte ajouté au message d’assertion.</param>
-        private static void Success(string json,string context)
-        { var response=Json.Deserialize<Response>(json); Assert.IsTrue(response.Ok,context+": "+response.Error); }
+        private static void Success(string json, string context)
+        { var response = Json.Deserialize<Response>(json); Assert.IsTrue(response.Ok, context + ": " + response.Error); }
         /// <summary>Vérifie qu’une réponse d’outil contient un échec avec un message non vide.</summary>
         /// <param name="json">Réponse JSON à examiner.</param>
         /// <param name="context">Contexte ajouté au message d’assertion.</param>
-        private static void Failed(string json,string context)
-        { var response=Json.Deserialize<Response>(json); Assert.IsFalse(response.Ok,context); Assert.IsFalse(string.IsNullOrWhiteSpace(response.Error),context); }
+        private static void Failed(string json, string context)
+        { var response = Json.Deserialize<Response>(json); Assert.IsFalse(response.Ok, context); Assert.IsFalse(string.IsNullOrWhiteSpace(response.Error), context); }
         /// <summary>Valide une réponse positive et renvoie son objet de données.</summary>
         /// <param name="json">Réponse JSON d’un outil.</param>
         /// <returns>Dictionnaire contenu dans la propriété Data.</returns>
-        private static IDictionary<string,object> Data(string json)
-        { Success(json,"response"); return Dict(Json.Deserialize<Response>(json).Data); }
+        private static IDictionary<string, object> Data(string json)
+        { Success(json, "response"); return Dict(Json.Deserialize<Response>(json).Data); }
         /// <summary>Exécute immédiatement les callbacks postés sur le contexte.</summary>
         private sealed class ImmediateContext : SynchronizationContext
         {
@@ -142,7 +142,7 @@ namespace VBAi.Tests.Unit
             /// <summary>Ignore le premier callback puis programme les suivants sur le pool de threads.</summary>
             /// <param name="callback">Délégué à exécuter.</param>
             /// <param name="state">État transmis au callback.</param>
-            public override void Post(SendOrPostCallback callback, object state) { if (Interlocked.Increment(ref posts)>1) ThreadPool.QueueUserWorkItem(_=>callback(state)); }
+            public override void Post(SendOrPostCallback callback, object state) { if (Interlocked.Increment(ref posts) > 1) ThreadPool.QueueUserWorkItem(_ => callback(state)); }
         }
     }
 }

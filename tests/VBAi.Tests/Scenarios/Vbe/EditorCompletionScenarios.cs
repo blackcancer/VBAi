@@ -1,11 +1,11 @@
 namespace VBAi.Tests.Unit
 {
+    using Microsoft.VisualStudio.TestTools.UnitTesting;
     using System;
     using System.Security.Cryptography;
     using System.Text;
     using System.Web.Script.Serialization;
     using VBAi;
-    using Microsoft.VisualStudio.TestTools.UnitTesting;
 
     [TestClass]
     [TestCategory("Unit")]
@@ -45,7 +45,8 @@ namespace VBAi.Tests.Unit
         public void UndoRedoRejectsExternalChangesAndNewEditsClearRedo()
         {
             string code = "one"; int writes = 0; VbeCodeEdits edits = null;
-            edits = new VbeCodeEdits(r => {
+            edits = new VbeCodeEdits(r =>
+            {
                 if (r.Command == "read_module") return Response.Success(new CodeSnapshot { Code = code });
                 Assert.AreEqual(Hash(code), r.ExpectedSha256);
                 string before = code; code = r.Text; writes++;
@@ -124,7 +125,8 @@ namespace VBAi.Tests.Unit
         public void ContextMonitorDetectsSameLineCountEditsWithoutKeyCollisions()
         {
             string hash = "one"; int changed = 0;
-            var monitor = new VbeContextMonitor(r => {
+            var monitor = new VbeContextMonitor(r =>
+            {
                 if (r.Command == "list_projects") return Response.Success(new[] { new { Name = "p" } });
                 if (r.Command == "list_modules") return Response.Success(new[] { new { Name = "projects", Lines = 1 } });
                 if (r.Command == "read_module") return Response.Success(new { Sha256 = hash });
@@ -142,7 +144,8 @@ namespace VBAi.Tests.Unit
         public void BookmarksReturnNamesAndRejectStaleTargets()
         {
             string code = "abc"; Request selection = null;
-            var navigation = new VbeNavigationHistory(null, r => {
+            var navigation = new VbeNavigationHistory(null, r =>
+            {
                 if (r.Command == "read_module") return Response.Success(new CodeSnapshot { Code = code, Sha256 = Hash(code) });
                 selection = r; return Response.Success(new { Selected = true });
             });

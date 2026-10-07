@@ -1,12 +1,9 @@
 namespace VBAi.Tests.Unit
 {
-    using System;
-    using System.Collections.Generic;
-    using System.Threading;
-    using System.Web.Script.Serialization;
-    using System.Threading.Tasks;
-    using VBAi;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
+    using System.Threading.Tasks;
+    using System.Web.Script.Serialization;
+    using VBAi;
 
     /// <summary>Fournit la désérialisation et les assertions communes aux validations asynchrones des outils VBE.</summary>
     public sealed partial class LlmVbeAsyncValidationTests

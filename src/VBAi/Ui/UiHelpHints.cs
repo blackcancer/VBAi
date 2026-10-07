@@ -1,4 +1,3 @@
-using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.IO;
@@ -48,8 +47,7 @@ namespace VBAi
         internal static void Apply(ToolStripItem item)
         {
             if (item == null || item is ToolStripSeparator || !string.IsNullOrEmpty(item.ToolTipText)) return;
-            string key;
-            if (Rules.TryGetValue("menu." + item.Name, out key) || Rules.TryGetValue("menu." + item.Text, out key))
+            if (Rules.TryGetValue("menu." + item.Name, out string key) || Rules.TryGetValue("menu." + item.Text, out key))
             {
                 item.ToolTipText = UiText.Get(key);
                 if (string.IsNullOrEmpty(item.AccessibleDescription)) item.AccessibleDescription = item.ToolTipText;
@@ -81,7 +79,8 @@ namespace VBAi
             if (selected == null)
             {
                 var owner = (Control)control.FindForm() ?? control;
-                selected = OwnedTips.GetValue(owner, root => {
+                selected = OwnedTips.GetValue(owner, root =>
+                {
                     var value = new ToolTip { ShowAlways = true, AutoPopDelay = 12000 };
                     root.Disposed += (sender, args) => value.Dispose();
                     return value;

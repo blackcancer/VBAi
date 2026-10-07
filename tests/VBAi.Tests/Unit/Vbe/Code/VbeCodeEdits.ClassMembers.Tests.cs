@@ -1,8 +1,7 @@
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.IO;
 using System.Linq;
-using VBAi;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace VBAi.Tests.Unit
 {
@@ -22,8 +21,12 @@ namespace VBAi.Tests.Unit
             Assert.IsTrue((bool)result.ReadbackVerified); Assert.IsFalse((bool)result.Atomic); Assert.AreEqual(1, fixture.Writes);
             StringAssert.Contains(fixture.Sources["CalcClass"], "Me.Compute(2)"); Assert.IsTrue(fixture.Selectors.All(x => x == request.Project));
             Assert.IsTrue(fixture.ExportPaths.All(x => !File.Exists(x)));
-            fixture.Service.Replay(new Request { Project = request.Project, Module = request.Module,
-                ExpectedSha256 = VbaProcedureRename.Digest(fixture.Sources[request.Module]) }, false);
+            fixture.Service.Replay(new Request
+            {
+                Project = request.Project,
+                Module = request.Module,
+                ExpectedSha256 = VbaProcedureRename.Digest(fixture.Sources[request.Module])
+            }, false);
             Assert.AreEqual(ClassMemberRenameFixture.Target, fixture.Sources[request.Module]);
         }
 

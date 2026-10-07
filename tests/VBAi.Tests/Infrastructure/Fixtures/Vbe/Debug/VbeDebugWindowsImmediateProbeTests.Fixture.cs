@@ -3,7 +3,6 @@ namespace VBAi.Tests.Unit
     using System;
     using System.Collections.Generic;
     using VBAi;
-    using Microsoft.VisualStudio.TestTools.UnitTesting;
 
     public sealed partial class VbeDebugWindowsImmediateProbeTests
     {

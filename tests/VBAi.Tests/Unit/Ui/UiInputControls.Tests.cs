@@ -1,13 +1,12 @@
-using System.Drawing;
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Diagnostics;
+using System.Drawing;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Windows.Forms;
-using VBAi;
 using VBAi.Tests.Infrastructure;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace VBAi.Tests.Unit
 {
@@ -85,27 +84,27 @@ namespace VBAi.Tests.Unit
         public void MultiModeNativeSelectionRepairsPrimedCacheWithoutDuplicateManagedEvents()
         {
             foreach (var mode in new[] { SelectionMode.MultiExtended, SelectionMode.MultiSimple })
-            using (var list = new UiListBox { SelectionMode = mode })
-            {
-                list.Items.Add("First"); list.Items.Add("Second");
-                IntPtr handle = list.Handle;
-                foreach (object item in list.SelectedItems) Assert.Fail("Unexpected initial selection.");
-                int changes = 0; list.SelectedIndexChanged += (sender, args) => changes++;
-                SendExternalSelection(handle, 1, 0x185, 0);
-                CollectionAssert.AreEqual(new[] { "First" }, System.Linq.Enumerable.Cast<string>(list.SelectedItems).ToArray());
-                Assert.AreEqual(1, changes);
-                SendExternalSelection(handle, 1, 0x185, 0);
-                SendExternalSelection(handle, 1, 0x185, 99);
-                Assert.AreEqual(1, changes);
-                list.SetSelected(1, true);
-                CollectionAssert.AreEqual(new[] { "First", "Second" }, System.Linq.Enumerable.Cast<string>(list.SelectedItems).ToArray());
-                Assert.AreEqual(2, changes);
-                SendExternalSelection(handle, 0, 0x185, 0);
-                CollectionAssert.AreEqual(new[] { "Second" }, System.Linq.Enumerable.Cast<string>(list.SelectedItems).ToArray());
-                Assert.AreEqual(3, changes);
-                list.BorderStyle = BorderStyle.None;
-                CollectionAssert.AreEqual(new[] { "Second" }, System.Linq.Enumerable.Cast<string>(list.SelectedItems).ToArray());
-            }
+                using (var list = new UiListBox { SelectionMode = mode })
+                {
+                    list.Items.Add("First"); list.Items.Add("Second");
+                    IntPtr handle = list.Handle;
+                    foreach (object item in list.SelectedItems) Assert.Fail("Unexpected initial selection.");
+                    int changes = 0; list.SelectedIndexChanged += (sender, args) => changes++;
+                    SendExternalSelection(handle, 1, 0x185, 0);
+                    CollectionAssert.AreEqual(new[] { "First" }, System.Linq.Enumerable.Cast<string>(list.SelectedItems).ToArray());
+                    Assert.AreEqual(1, changes);
+                    SendExternalSelection(handle, 1, 0x185, 0);
+                    SendExternalSelection(handle, 1, 0x185, 99);
+                    Assert.AreEqual(1, changes);
+                    list.SetSelected(1, true);
+                    CollectionAssert.AreEqual(new[] { "First", "Second" }, System.Linq.Enumerable.Cast<string>(list.SelectedItems).ToArray());
+                    Assert.AreEqual(2, changes);
+                    SendExternalSelection(handle, 0, 0x185, 0);
+                    CollectionAssert.AreEqual(new[] { "Second" }, System.Linq.Enumerable.Cast<string>(list.SelectedItems).ToArray());
+                    Assert.AreEqual(3, changes);
+                    list.BorderStyle = BorderStyle.None;
+                    CollectionAssert.AreEqual(new[] { "Second" }, System.Linq.Enumerable.Cast<string>(list.SelectedItems).ToArray());
+                }
         }
 
         private static void SendExternalSelection(IntPtr handle, int index)
@@ -116,11 +115,13 @@ namespace VBAi.Tests.Unit
         private static void SendExternalSelection(IntPtr handle, int index, uint message, int lParam)
         {
             bool done = false; IntPtr delivery = IntPtr.Zero;
-            var sender = new Thread(() => {
+            var sender = new Thread(() =>
+            {
                 IntPtr result;
                 delivery = SendMessageTimeout(handle, message, new IntPtr(index), new IntPtr(lParam), 2, 5000, out result);
                 Volatile.Write(ref done, true);
-            }) { IsBackground = true };
+            })
+            { IsBackground = true };
             sender.Start(); var clock = Stopwatch.StartNew();
             while (!Volatile.Read(ref done) && clock.ElapsedMilliseconds < 6000)
             { Application.DoEvents(); Thread.Sleep(1); }
@@ -139,25 +140,25 @@ namespace VBAi.Tests.Unit
             {
                 var handle = combo.Handle; combo.Items.Add("Selected model"); combo.SelectedIndex = 0;
                 foreach (var direction in new[] { RightToLeft.No, RightToLeft.Yes })
-                foreach (bool selected in new[] { false, true })
-                {
-                    combo.RightToLeft = direction; combo.BackColor = Color.FromArgb(30, 34, 42); combo.ForeColor = Color.White;
-                    UiInvoke.Call(typeof(UiComboBox), "OnDrawItem", combo, new DrawItemEventArgs(graphics, combo.Font, new Rectangle(0, 0, 180, 40), 0, selected ? DrawItemState.Selected : DrawItemState.None));
-                    Assert.AreEqual((selected ? SystemColors.Highlight : combo.BackColor).ToArgb(), image.GetPixel(1, 20).ToArgb());
-                    Assert.AreEqual(0, combo.SelectedIndex);
-                }
+                    foreach (bool selected in new[] { false, true })
+                    {
+                        combo.RightToLeft = direction; combo.BackColor = Color.FromArgb(30, 34, 42); combo.ForeColor = Color.White;
+                        UiInvoke.Call(typeof(UiComboBox), "OnDrawItem", combo, new DrawItemEventArgs(graphics, combo.Font, new Rectangle(0, 0, 180, 40), 0, selected ? DrawItemState.Selected : DrawItemState.None));
+                        Assert.AreEqual((selected ? SystemColors.Highlight : combo.BackColor).ToArgb(), image.GetPixel(1, 20).ToArgb());
+                        Assert.AreEqual(0, combo.SelectedIndex);
+                    }
                 UiInvoke.Call(typeof(UiComboBox), "OnDrawItem", combo, new DrawItemEventArgs(graphics, combo.Font, new Rectangle(0, 0, 180, 40), -1, DrawItemState.None));
                 var dc = graphics.GetHdc();
                 try
                 {
                     foreach (bool enabled in new[] { true, false })
-                    foreach (int messageId in new[] { 0x133, 0x138 })
-                    {
-                        combo.Enabled = enabled;
-                        var args = new object[] { Message.Create(handle, messageId, dc, System.IntPtr.Zero) };
-                        UiInvoke.Call(typeof(UiComboBox), "WndProc", combo, args);
-                        Assert.AreNotEqual(System.IntPtr.Zero, ((Message)args[0]).Result);
-                    }
+                        foreach (int messageId in new[] { 0x133, 0x138 })
+                        {
+                            combo.Enabled = enabled;
+                            var args = new object[] { Message.Create(handle, messageId, dc, System.IntPtr.Zero) };
+                            UiInvoke.Call(typeof(UiComboBox), "WndProc", combo, args);
+                            Assert.AreNotEqual(System.IntPtr.Zero, ((Message)args[0]).Result);
+                        }
                 }
                 finally { graphics.ReleaseHdc(dc); }
                 Assert.AreNotEqual(System.IntPtr.Zero, UiInvoke.Field<System.IntPtr>(combo, "inputBrush"));

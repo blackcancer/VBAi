@@ -8,7 +8,7 @@ namespace VBAi
     {
 
         /// <summary>Creates the fixed controls from the WinForms Designer.</summary>
-        public ChatWelcomeView() { InitializeComponent(); UiText.Apply(this, components); UiTheme.Apply(this);  }
+        public ChatWelcomeView() { InitializeComponent(); UiText.Apply(this, components); UiTheme.Apply(this); }
 
         /// <summary>Measures wrapped labels at the native width assigned by the transcript host.</summary>
         /// <param name="proposedSize">Available native pixel dimensions after WindowsFormsHost DPI conversion.</param>

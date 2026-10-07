@@ -1,11 +1,10 @@
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Collections;
-using System.Linq;
 using System.IO;
+using System.Linq;
 using System.Reflection;
 using System.Threading;
-using VBAi;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace VBAi.Tests.Unit
 {
@@ -44,8 +43,15 @@ namespace VBAi.Tests.Unit
             foreach (string command in new[] { "set_toolbar_visibility", "set_toolbar_position", "set_toolbar_placement" })
             {
                 dynamic state = ((dynamic)Run(session, new Request(), "list_toolbars").Data).Toolbars[0];
-                var r = new Request { ObjectName = "Standard", ExpectedWindowVersion = state.WindowVersion, ExpectedToolbarLayoutVersion = state.ToolbarLayoutVersion,
-                    Action = command == "set_toolbar_visibility" ? "hide" : "float", ToolbarLeft = 20, ToolbarTop = 30 };
+                var r = new Request
+                {
+                    ObjectName = "Standard",
+                    ExpectedWindowVersion = state.WindowVersion,
+                    ExpectedToolbarLayoutVersion = state.ToolbarLayoutVersion,
+                    Action = command == "set_toolbar_visibility" ? "hide" : "float",
+                    ToolbarLeft = 20,
+                    ToolbarTop = 30
+                };
                 Assert.IsTrue((bool)((dynamic)Run(session, r, command).Data).Verified);
             }
             dynamic addin = ((dynamic)Run(session, new Request(), "list_addins").Data).AddIns[0];
@@ -125,21 +131,29 @@ namespace VBAi.Tests.Unit
         public void SessionRollbackRestoresEmptyAndNonemptySourcesAfterPartialNativeWrites()
         {
             foreach (string original in new[] { "original", "" })
-            foreach (string partial in new[] { "partial", "" })
-            for (int repeat = 0; repeat < 2; repeat++)
-            {
-                var host = new SessionDispatchFixture.Host(); var project = new SessionDispatchFixture.CorruptProject();
-                var component = new SessionDispatchFixture.CorruptComponent();
-                component.CodeModule.Code = original;
-                component.CodeModule.PartialAfterFailure = partial;
-                component.CodeModule.RestoreExactly = true;
-                project.VBComponents.Add(component); host.VBProjects.Add(project);
-                var response = new VbeSession(host).Execute(new Request { Command = "replace_lines", Project = "P", Module = "M",
-                    StartLine = 1, Count = original.Length == 0 ? 0 : 1, Text = "replacement", ExpectedSha256 = VbeCodeClipboard.Hash(original) });
-                Assert.IsFalse(response.Ok);
-                StringAssert.Contains(response.Error, "original source restored");
-                Assert.AreEqual(original, component.CodeModule.Code, "Rollback must restore the exact original, including empty source.");
-            }
+                foreach (string partial in new[] { "partial", "" })
+                    for (int repeat = 0; repeat < 2; repeat++)
+                    {
+                        var host = new SessionDispatchFixture.Host(); var project = new SessionDispatchFixture.CorruptProject();
+                        var component = new SessionDispatchFixture.CorruptComponent();
+                        component.CodeModule.Code = original;
+                        component.CodeModule.PartialAfterFailure = partial;
+                        component.CodeModule.RestoreExactly = true;
+                        project.VBComponents.Add(component); host.VBProjects.Add(project);
+                        var response = new VbeSession(host).Execute(new Request
+                        {
+                            Command = "replace_lines",
+                            Project = "P",
+                            Module = "M",
+                            StartLine = 1,
+                            Count = original.Length == 0 ? 0 : 1,
+                            Text = "replacement",
+                            ExpectedSha256 = VbeCodeClipboard.Hash(original)
+                        });
+                        Assert.IsFalse(response.Ok);
+                        StringAssert.Contains(response.Error, "original source restored");
+                        Assert.AreEqual(original, component.CodeModule.Code, "Rollback must restore the exact original, including empty source.");
+                    }
         }
 
         [TestMethod]
@@ -154,8 +168,16 @@ namespace VBAi.Tests.Unit
                 project.VBComponents.Items.Add(new VbeSessionTests.FakeComponent { Name = "M", Type = 1, CodeModule = new VbeSessionTests.FakeModule("abc") });
                 host.VBProjects.Add(project);
                 var session = new VbeSession(host, database);
-                Run(session, new Request { Project = "P", Module = "M", Action = "add", Query = "mark", StartLine = 1, StartColumn = 1,
-                    ExpectedSha256 = VbeCodeClipboard.Hash("abc") }, "code_bookmark");
+                Run(session, new Request
+                {
+                    Project = "P",
+                    Module = "M",
+                    Action = "add",
+                    Query = "mark",
+                    StartLine = 1,
+                    StartColumn = 1,
+                    ExpectedSha256 = VbeCodeClipboard.Hash("abc")
+                }, "code_bookmark");
                 Assert.IsTrue(File.Exists(database));
                 dynamic state = Run(new VbeSession(host, database), new Request { Project = "P", Action = "list" }, "code_bookmark").Data;
                 Assert.AreEqual("SQLite", (string)state.Persistence);

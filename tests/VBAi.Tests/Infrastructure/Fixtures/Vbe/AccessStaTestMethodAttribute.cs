@@ -1,14 +1,15 @@
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using System.Reflection;
 using System.Runtime.ExceptionServices;
+using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
-using VBAi;
 
 namespace VBAi.Tests.Unit
 {
@@ -16,11 +17,13 @@ namespace VBAi.Tests.Unit
     internal sealed class AccessStaTestMethodAttribute : TestMethodAttribute
     {
         [ThreadStatic] private static Scope current;
+        [ThreadStatic] private static Tracked starting;
         private static readonly List<Scope> retained = new List<Scope>();
 
         internal sealed class Tracked
         {
             internal Task Task;
+            internal SynchronizationContext ContextAtProbe;
             internal readonly ConcurrentQueue<string> Events = new ConcurrentQueue<string>();
             internal string Diagnostic => "TaskStatus=" + Task.Status + "; TraceBound=" + VbeInspectionTrace.MaximumEvents +
                 "; Trace=" + string.Join(Environment.NewLine, Events.ToArray());
@@ -33,6 +36,7 @@ namespace VBAi.Tests.Unit
             internal Control Dispatcher;
             internal Thread Thread;
             internal int Owner;
+            internal uint NativeOwnerThread;
         }
 
         internal sealed class RunResult<T>
@@ -75,15 +79,18 @@ namespace VBAi.Tests.Unit
             var finished = new ManualResetEventSlim();
             var scope = new Scope();
             var adapterClock = Stopwatch.StartNew();
-            scope.Thread = new Thread(() => {
-                current = scope; scope.Owner = Thread.CurrentThread.ManagedThreadId; run.OwnerThread = scope.Owner;
+            scope.Thread = new Thread(() =>
+            {
+                current = scope; scope.Owner = Thread.CurrentThread.ManagedThreadId;
+                scope.NativeOwnerThread = GetCurrentThreadId(); run.OwnerThread = scope.Owner;
                 try
                 {
                     using (var dispatcher = new Control())
                     {
                         scope.Dispatcher = dispatcher;
                         _ = dispatcher.Handle;
-                        dispatcher.BeginInvoke(new Action(() => {
+                        dispatcher.BeginInvoke(new Action(() =>
+                        {
                             try { run.Value = invoke(); }
                             catch (Exception error) { run.Error = error; }
                             finally
@@ -109,7 +116,8 @@ namespace VBAi.Tests.Unit
                 }
                 catch (Exception error) { run.Error = run.Error == null ? error : new AggregateException(run.Error, error); }
                 finally { current = null; finished.Set(); }
-            }) { IsBackground = true };
+            })
+            { IsBackground = true };
             scope.Thread.SetApartmentState(ApartmentState.STA);
             scope.Thread.Start();
             // This bounds the test adapter itself, as the existing WinForms attribute does. Each persistence completion remains bounded to five seconds.
@@ -135,10 +143,62 @@ namespace VBAi.Tests.Unit
                 throw new InvalidOperationException("Synthetic VBE persistence Save requires its dedicated test STA scope.");
             var tracked = new Tracked();
             var trace = new VbeInspectionTrace(tracked.Events.Enqueue);
-            using (trace.Enter()) tracked.Task = start();
+            var previousStarting = starting;
+            try
+            {
+                starting = tracked;
+                using (trace.Enter()) tracked.Task = start();
+            }
+            finally { starting = previousStarting; }
             if (tracked.Task == null) throw new InvalidOperationException("The original VBE persistence task is absent.");
             current.Tasks.Add(tracked);
             return (Task<object>)tracked.Task;
+        }
+
+        /// <summary>Retains only the already installed owner context when the synthetic native probe is invoked.</summary>
+        internal static void CaptureCurrentContextAtProbe()
+        {
+            if (starting != null) starting.ContextAtProbe = SynchronizationContext.Current;
+        }
+
+        [DllImport("user32.dll", SetLastError = true)]
+        private static extern uint GetWindowThreadProcessId(IntPtr window, out uint processId);
+
+        [DllImport("kernel32.dll")]
+        private static extern uint GetCurrentThreadId();
+
+        [DllImport("user32.dll")]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        private static extern bool IsWindow(IntPtr window);
+
+        private static string DescribeDispatcher(Control dispatcher)
+        {
+            if (dispatcher == null) return "Unavailable";
+            try
+            {
+                // Never read Handle before IsHandleCreated: doing so could create a new HWND.
+                if (!dispatcher.IsHandleCreated)
+                    return "HandleCreated=false; Disposing=" + dispatcher.Disposing + "; Disposed=" + dispatcher.IsDisposed;
+                IntPtr handle = dispatcher.Handle;
+                uint processId;
+                uint nativeThread = GetWindowThreadProcessId(handle, out processId);
+                return "HWND=0x" + handle.ToInt64().ToString("X") + "; IsWindow=" + IsWindow(handle) +
+                    "; NativeThread=" + nativeThread + "; NativePid=" + processId +
+                    "; Disposing=" + dispatcher.Disposing + "; Disposed=" + dispatcher.IsDisposed;
+            }
+            catch (Exception error) { return "DiagnosticUnavailable=" + error.GetType().Name; }
+        }
+
+        private static string DescribeContextDispatcher(SynchronizationContext context)
+        {
+            if (context == null) return "UnavailableAtProbe";
+            try
+            {
+                var field = context.GetType().GetField("dispatcher", BindingFlags.Instance | BindingFlags.NonPublic);
+                if (field == null) return "Context=" + context.GetType().FullName + "; DispatcherFieldUnavailable";
+                return "Context=" + context.GetType().FullName + "; " + DescribeDispatcher(field.GetValue(context) as Control);
+            }
+            catch (Exception error) { return "DiagnosticUnavailable=" + error.GetType().Name; }
         }
 
         internal static string Describe(Task task)
@@ -146,6 +206,21 @@ namespace VBAi.Tests.Unit
             var tracked = current?.Tasks.SingleOrDefault(item => ReferenceEquals(item.Task, task));
             return "OwnerThread=" + Thread.CurrentThread.ManagedThreadId + "; Apartment=" + Thread.CurrentThread.GetApartmentState() +
                 "; MessageLoop=" + Application.MessageLoop + "; " + (tracked?.Diagnostic ?? "OriginalTaskTraceUnavailable");
+        }
+
+        internal static string DescribeTimeout(Task task, int doEventsTurns)
+        {
+            try
+            {
+                var tracked = current?.Tasks.SingleOrDefault(item => ReferenceEquals(item.Task, task));
+                return Describe(task) + "; DoEventsTurns=" + doEventsTurns +
+                    "; ProcessId=" + Process.GetCurrentProcess().Id + "; FixtureOwnerThread=" + current?.Owner +
+                    "; FixtureNativeOwnerThread=" + current?.NativeOwnerThread +
+                    "; FixtureDispatcher={" + DescribeDispatcher(current?.Dispatcher) + "}" +
+                    "; OriginalContextDispatcher={" + DescribeContextDispatcher(tracked?.ContextAtProbe) + "}" +
+                    "; QueueState=UnavailableWithoutChangingMessageQueueObservation";
+            }
+            catch (Exception error) { return "TimeoutDiagnosticUnavailable=" + error.GetType().Name; }
         }
     }
 }

@@ -158,8 +158,20 @@ namespace VBAi
                 {
                     var procedure = procedures.FirstOrDefault(s => s.Name.Equals(d.Scope, StringComparison.OrdinalIgnoreCase) && d.Line >= s.Line && d.Line <= s.EndLine);
                     string declaration = lines[d.Line - 1].Trim();
-                    result.Add(new EditorSymbol { Name = d.Name, Module = source.Module, Kind = d.Kind, Scope = d.Scope, TypeName = d.TypeName, Line = d.Line, Column = d.Column, EndLine = procedure?.EndLine ?? lines.Length, Conditional = d.Conditional, Declaration = declaration,
-                        Private = Regex.IsMatch(declaration, @"^(Private|Dim)\b", RegexOptions.IgnoreCase) });
+                    result.Add(new EditorSymbol
+                    {
+                        Name = d.Name,
+                        Module = source.Module,
+                        Kind = d.Kind,
+                        Scope = d.Scope,
+                        TypeName = d.TypeName,
+                        Line = d.Line,
+                        Column = d.Column,
+                        EndLine = procedure?.EndLine ?? lines.Length,
+                        Conditional = d.Conditional,
+                        Declaration = declaration,
+                        Private = Regex.IsMatch(declaration, @"^(Private|Dim)\b", RegexOptions.IgnoreCase)
+                    });
                 }
             }
             return result.ToArray();

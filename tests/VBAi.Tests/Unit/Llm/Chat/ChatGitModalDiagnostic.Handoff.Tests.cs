@@ -1,7 +1,7 @@
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Linq;
 using System.Threading.Tasks;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 using VBAi.Tests.Integration;
 
 namespace VBAi.Tests.Unit
@@ -12,7 +12,8 @@ namespace VBAi.Tests.Unit
         public void OwnerDispatcherKeepsAsyncDiagnosticDisposalAndPostOnStaWithoutAmbientContext(bool fail)
         {
             int thread = System.Threading.Thread.CurrentThread.ManagedThreadId;
-            Action requireOwner = () => {
+            Action requireOwner = () =>
+            {
                 Assert.AreEqual(thread, System.Threading.Thread.CurrentThread.ManagedThreadId);
                 Assert.AreEqual(System.Threading.ApartmentState.STA, System.Threading.Thread.CurrentThread.GetApartmentState());
             };
@@ -22,7 +23,8 @@ namespace VBAi.Tests.Unit
             try
             {
                 System.Threading.SynchronizationContext.SetSynchronizationContext(null);
-                operation = VbeUiTask.Run(async () => {
+                operation = VbeUiTask.Run(async () =>
+                {
                     try
                     {
                         await d.RunModalAsync(async () => { await gate.Task; requireOwner(); if (fail) throw original; },
@@ -79,8 +81,11 @@ namespace VBAi.Tests.Unit
             var o = new Observation(); var d = o.Begin(); int disposals = 0;
             var first = new InvalidOperationException("session"); var second = new InvalidOperationException("dispose");
             Exception observed = null;
-            try { await d.RunModalAsync(() => stage == "dispose" ? Task.CompletedTask : Task.FromException(first),
-                () => { disposals++; if (stage != "session") throw second; }); }
+            try
+            {
+                await d.RunModalAsync(() => stage == "dispose" ? Task.CompletedTask : Task.FromException(first),
+                () => { disposals++; if (stage != "session") throw second; });
+            }
             catch (Exception error) { observed = error; }
             Assert.AreEqual(1, disposals);
             if (stage == "both") CollectionAssert.AreEqual(new Exception[] { first, second }, ((AggregateException)observed).InnerExceptions.ToArray());

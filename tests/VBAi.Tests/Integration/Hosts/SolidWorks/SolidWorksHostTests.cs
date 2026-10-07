@@ -1,7 +1,7 @@
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Diagnostics;
 using System.Linq;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace VBAi.Tests.Integration
 {
@@ -46,7 +46,8 @@ namespace VBAi.Tests.Integration
                 var addIns = VbeBridgeClient.Read(processId, "list_addins");
                 Assert.IsNotNull(addIns, "The VBAi bridge disconnected while reading VBE add-ins.");
                 Assert.AreEqual(true, addIns["Ok"]);
-                Assert.IsTrue(((object[])VbeBridgeClient.Object(addIns["Data"])["AddIns"]).Any(addIn => {
+                Assert.IsTrue(((object[])VbeBridgeClient.Object(addIns["Data"])["AddIns"]).Any(addIn =>
+                {
                     var properties = VbeBridgeClient.Object(VbeBridgeClient.Object(addIn)["Properties"]);
                     return Convert.ToString(properties["ProgId"]) == "VBAi.AddIn" &&
                         Convert.ToBoolean(properties["Connect"]);

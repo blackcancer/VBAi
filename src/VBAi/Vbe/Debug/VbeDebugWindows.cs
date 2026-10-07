@@ -104,7 +104,8 @@ namespace VBAi
         /// <param name="interfaceId">GUID de l’interface demandée.</param>
         /// <param name="accessible">Reçoit l’objet d’accessibilité.</param>
         /// <returns>Code HRESULT de l’appel.</returns>
-        [DllImport("oleacc.dll", EntryPoint = "AccessibleObjectFromWindow")] private static extern int NativeAccessibleObjectFromWindow(IntPtr handle, uint objectId,
+        [DllImport("oleacc.dll", EntryPoint = "AccessibleObjectFromWindow")]
+        private static extern int NativeAccessibleObjectFromWindow(IntPtr handle, uint objectId,
             ref Guid interfaceId, [MarshalAs(UnmanagedType.Interface)] out object accessible);
 
         /// <summary>Fonction injectable qui retourne le processus propriétaire d’une fenêtre native.</summary>
@@ -509,8 +510,12 @@ namespace VBAi
                 {
                     try
                     {
-                        children.Add(new SignatureChild { Index = index, Name = accessible.get_accName(index),
-                            Role = Convert.ToInt32(accessible.get_accRole(index)) });
+                        children.Add(new SignatureChild
+                        {
+                            Index = index,
+                            Name = accessible.get_accName(index),
+                            Role = Convert.ToInt32(accessible.get_accRole(index))
+                        });
                     }
                     catch { /* A single inaccessible MSAA child is skipped. */ }
                 }
@@ -663,9 +668,13 @@ namespace VBAi
                         ControlType kind = element.Current.ControlType;
                         if (kind == ControlType.Edit && element.Current.NativeWindowHandle != 0 &&
                             ClassName(OptionsComboParent(new IntPtr(element.Current.NativeWindowHandle))) == "ComboBox") continue;
-                        var control = new OptionsControl { Name = element.Current.Name,
-                            Type = kind.ProgrammaticName, Visible = !element.Current.IsOffscreen,
-                            Enabled = element.Current.IsEnabled };
+                        var control = new OptionsControl
+                        {
+                            Name = element.Current.Name,
+                            Type = kind.ProgrammaticName,
+                            Visible = !element.Current.IsOffscreen,
+                            Enabled = element.Current.IsEnabled
+                        };
                         if (!control.Visible || (!control.Enabled && kind != ControlType.ComboBox)) { controls.Add(control); continue; }
                         try
                         {
@@ -685,9 +694,12 @@ namespace VBAi
                                     controls.Add(control); continue;
                                 }
                                 if (kind == ControlType.ComboBox)
-                                    VbeInspectionTrace.Current?.RecordOptionsCombo(new VbeInspectionTrace.OptionsComboEvidence {
+                                    VbeInspectionTrace.Current?.RecordOptionsCombo(new VbeInspectionTrace.OptionsComboEvidence
+                                    {
                                         Reader = VbeInspectionTrace.OptionsReader.UiAutomationCombo,
-                                        Role = OptionsDiagnosticRole(control.Name), Window = element.Current.NativeWindowHandle });
+                                        Role = OptionsDiagnosticRole(control.Name),
+                                        Window = element.Current.NativeWindowHandle
+                                    });
                                 var choices = element.FindAll(TreeScope.Descendants,
                                     new PropertyCondition(AutomationElement.ControlTypeProperty, ControlType.ListItem))
                                     .Cast<AutomationElement>().Where(x => x.Current.IsEnabled &&
@@ -790,8 +802,11 @@ namespace VBAi
                 for (int index = 0; index < radios.Count; index++)
                 {
                     AutomationElement radio = radios[index];
-                    var choice = new OptionsChoice { Name = radio.Current.Name };
-                    choice.Readable = radio.TryGetCurrentPattern(SelectionItemPattern.Pattern, out object pattern);
+                    var choice = new OptionsChoice
+                    {
+                        Name = radio.Current.Name,
+                        Readable = radio.TryGetCurrentPattern(SelectionItemPattern.Pattern, out object pattern)
+                    };
                     if (choice.Readable) choice.Selected = ((SelectionItemPattern)pattern).Current.IsSelected;
                     result.Add(choice);
                 }
@@ -822,7 +837,8 @@ namespace VBAi
                 bool present = false;
                 bool identity = true;
                 uint ownPid = checked((uint)Process.GetCurrentProcess().Id);
-                if (!EnumWindows((handle, parameter) => {
+                if (!EnumWindows((handle, parameter) =>
+                {
                     if (handle == dialog)
                     {
                         present = true;
@@ -1002,9 +1018,15 @@ namespace VBAi
             public List<NativeControl> DialogControls(IntPtr dialog)
             {
                 var controls = new List<NativeControl>();
-                EnumChildWindows(dialog, (handle, parameter) => {
-                    controls.Add(new NativeControl { Handle = handle, Kind = ClassName(handle),
-                        Text = WindowText(handle), Visible = IsWindowVisible(handle) });
+                EnumChildWindows(dialog, (handle, parameter) =>
+                {
+                    controls.Add(new NativeControl
+                    {
+                        Handle = handle,
+                        Kind = ClassName(handle),
+                        Text = WindowText(handle),
+                        Visible = IsWindowVisible(handle)
+                    });
                     return true;
                 }, IntPtr.Zero);
                 return controls;
@@ -1055,7 +1077,8 @@ namespace VBAi
             IntPtr watches = native.Pane(panes, "Espions", "Watch", "Watches");
             IntPtr immediate = native.Pane(panes, "Exécution", "Immediate");
             object stack = includeCallStack ? native.CallStack(locals) : null;
-            return new {
+            return new
+            {
                 HostProcessId = Process.GetCurrentProcess().Id,
                 Locals = native.List(locals),
                 Watches = native.List(watches),
@@ -1109,8 +1132,13 @@ namespace VBAi
             IntPtr dialog = native.Dialog("Microsoft Visual Basic pour Applications",
                 "Microsoft Visual Basic for Applications", "Microsoft Visual Basic");
             if (dialog == IntPtr.Zero)
-                return new { Available = false, Diagnostic = (string)null,
-                    Buttons = new string[0], Error = (string)null };
+                return new
+                {
+                    Available = false,
+                    Diagnostic = (string)null,
+                    Buttons = new string[0],
+                    Error = (string)null
+                };
             var messages = new List<string>();
             var buttons = new List<string>();
             foreach (var control in native.DialogControls(dialog))
@@ -1122,10 +1150,20 @@ namespace VBAi
                 else if (kind == "Button") buttons.Add(title);
             }
             if (messages.Count != 1)
-                return new { Available = true, Diagnostic = (string)null,
-                    Buttons = buttons.ToArray(), Error = "Expected one native diagnostic message; found " + messages.Count + "." };
-            return new { Available = true, Diagnostic = messages[0],
-                Buttons = buttons.ToArray(), Error = (string)null };
+                return new
+                {
+                    Available = true,
+                    Diagnostic = (string)null,
+                    Buttons = buttons.ToArray(),
+                    Error = "Expected one native diagnostic message; found " + messages.Count + "."
+                };
+            return new
+            {
+                Available = true,
+                Diagnostic = messages[0],
+                Buttons = buttons.ToArray(),
+                Error = (string)null
+            };
         }
 
         /// <summary>Échoue si le dialogue natif des options de débogage est ouvert.</summary>
@@ -1211,10 +1249,17 @@ namespace VBAi
             string currentCertificate = CertificateBeforeHeading(labels,
                 "Signature actuelle du projet VBA", "The VBA project is currently signed as");
             string signAsCertificate = CertificateBeforeHeading(labels, "Signer en tant que", "Sign as");
-            return new { Project = project, CurrentCertificate = currentCertificate,
-                SignAsCertificate = signAsCertificate, Labels = labels.ToArray(), Buttons = buttons.ToArray(),
-                DialogClosed = true, Verification = "NativeSignatureDialogReadback",
-                Limit = "Labels reflect the native dialog; no certificate was selected, assigned, removed or cryptographically validated." };
+            return new
+            {
+                Project = project,
+                CurrentCertificate = currentCertificate,
+                SignAsCertificate = signAsCertificate,
+                Labels = labels.ToArray(),
+                Buttons = buttons.ToArray(),
+                DialogClosed = true,
+                Verification = "NativeSignatureDialogReadback",
+                Limit = "Labels reflect the native dialog; no certificate was selected, assigned, removed or cryptographically validated."
+            };
         }
 
         // Windows' protected certificate picker does not expose its buttons to
@@ -1272,13 +1317,18 @@ namespace VBAi
                     PauseNative(50);
                 }
                 if (!completed) throw new InvalidOperationException("The native VBE signature dialog did not close after OK.");
-                return new { Project = project, CertificateThumbprint = thumbprint,
-                    CertificateName = certificateName, SignatureAssigned = true,
+                return new
+                {
+                    Project = project,
+                    CertificateThumbprint = thumbprint,
+                    CertificateName = certificateName,
+                    SignatureAssigned = true,
                     Verification = "NativeVbeCertificateReadbackAndDialogClose",
                     SelectionSource = pickerOpened ? "WindowsCertificatePicker" : "NativeVbeExistingCertificate",
                     CertificatePicker = pickerOpened
                         ? "The Windows certificate picker returned the named certificate; the add-in did not interact with its protected controls."
-                        : "The named certificate was already associated with the project in the native VBE dialog." };
+                        : "The named certificate was already associated with the project in the native VBE dialog."
+                };
             }
             finally
             {
@@ -1292,9 +1342,8 @@ namespace VBAi
         /// <returns>Interface accessible du dialogue.</returns>
         private static Accessibility.IAccessible SignatureAccessible(IntPtr dialog)
         {
-            object accessible;
             Guid iid = IidAccessible;
-            int hr = AccessibleObjectFromWindow(dialog, ObjidClient, ref iid, out accessible);
+            int hr = AccessibleObjectFromWindow(dialog, ObjidClient, ref iid, out object accessible);
             if (hr != 0 || !(accessible is Accessibility.IAccessible))
                 throw new COMException("The native signature dialog is not accessible through MSAA.", hr);
             return (Accessibility.IAccessible)accessible;
@@ -1370,9 +1419,9 @@ namespace VBAi
         {
             IntPtr result = IntPtr.Zero;
             uint currentPid = (uint)Process.GetCurrentProcess().Id;
-            EnumWindows((handle, parameter) => {
-                uint pid;
-                GetWindowThreadProcessId(handle, out pid);
+            EnumWindows((handle, parameter) =>
+            {
+                GetWindowThreadProcessId(handle, out uint pid);
                 if (pid != currentPid || !IsWindowVisible(handle)) return true;
                 string title = WindowText(handle);
                 if (!string.Equals(title, "Signature numérique", StringComparison.OrdinalIgnoreCase) &&
@@ -1431,9 +1480,15 @@ namespace VBAi
             }
             catch (Exception error) { primary = error; }
             CompleteOptionsRead(native, dialog, primary);
-            return new { Scope = "VBE", ErrorTrapping = selected, Choices = choices,
-                Verification = "NativeOptionsReadback", DialogClosed = true,
-                Limit = "This is the currently displayed VBE-wide preference, not a diagnosis of an active runtime error." };
+            return new
+            {
+                Scope = "VBE",
+                ErrorTrapping = selected,
+                Choices = choices,
+                Verification = "NativeOptionsReadback",
+                DialogClosed = true,
+                Limit = "This is the currently displayed VBE-wide preference, not a diagnosis of an active runtime error."
+            };
         }
 
         /// <summary>Lit les onglets et contrôles du dialogue Options sans enregistrer ni modifier les préférences.</summary>
@@ -1458,9 +1513,16 @@ namespace VBAi
             try { tabs = CaptureOptionsTabs(native, dialog); }
             catch (Exception error) { primary = error; }
             CompleteOptionsRead(native, dialog, primary);
-            return new { Scope = "VBE", Tabs = tabs, Count = tabs.Count,
-                OptionsVersion = OptionsRevision(tabs), DialogClosed = true, Verification = "NativeOptionsReadback",
-                Limit = "Only visible native controls were observed; no settings were changed." };
+            return new
+            {
+                Scope = "VBE",
+                Tabs = tabs,
+                tabs.Count,
+                OptionsVersion = OptionsRevision(tabs),
+                DialogClosed = true,
+                Verification = "NativeOptionsReadback",
+                Limit = "Only visible native controls were observed; no settings were changed."
+            };
         }
 
         /// <summary>Exécute une ligne texte dans le volet Immediate visible en vérifiant le contenu avant et après.</summary>
@@ -1517,7 +1579,8 @@ namespace VBAi
             bool enterAttempted = false;
             try
             {
-                submitEnter(() => {
+                submitEnter(() =>
+                {
                     if (enterAttempted) throw new InvalidOperationException("Immediate Enter cannot be attempted twice.");
                     enterAttempted = true;
                     if (!native.PostEnter(pane))
@@ -1536,13 +1599,18 @@ namespace VBAi
                 after = native.Text(pane);
                 if (after != echoed) break;
             }
-            return new { Command = command, TextBefore = before, TextAfter = after,
+            return new
+            {
+                Command = command,
+                TextBefore = before,
+                TextAfter = after,
                 OutputDelta = after.StartsWith(before, StringComparison.Ordinal)
                     ? after.Substring(before.Length) : (string)null,
                 CommandEchoObserved = true,
                 Verification = after != echoed ? "ImmediateTextChangedAfterEnter" : "Pending",
                 VerificationPending = after == echoed,
-                Limit = "Text changed after Enter, but this does not prove an arbitrary VBA statement had the intended side effect. Read debug_state and relevant values separately." };
+                Limit = "Text changed after Enter, but this does not prove an arbitrary VBA statement had the intended side effect. Read debug_state and relevant values separately."
+            };
         }
 
         /// <summary>Déplie ou replie une ligne des volets Locals ou Watches par son chemin hiérarchique.</summary>
@@ -1577,8 +1645,7 @@ namespace VBAi
             }
             if (matches != 1)
                 throw new InvalidOperationException("Expected one matching debug item; found " + matches + ".");
-            object rawPattern;
-            if (!target.TryGetCurrentPattern(ExpandCollapsePattern.Pattern, out rawPattern))
+            if (!target.TryGetCurrentPattern(ExpandCollapsePattern.Pattern, out object rawPattern))
                 throw new InvalidOperationException("The selected debug item cannot be expanded or collapsed.");
             var pattern = (ExpandCollapsePattern)rawPattern;
             if (request.Action == "expand") pattern.Expand();
@@ -1586,11 +1653,17 @@ namespace VBAi
             PauseNative(50);
             int childCount = target.FindAll(TreeScope.Children, condition).Count;
             bool verified = request.Action == "expand" ? childCount > 0 : childCount == 0;
-            return new { request.Pane, request.Action, request.PathSegments,
-                ChildCount = childCount, Verification = verified ? "Observed" : "Pending",
+            return new
+            {
+                request.Pane,
+                request.Action,
+                request.PathSegments,
+                ChildCount = childCount,
+                Verification = verified ? "Observed" : "Pending",
                 VerificationPending = !verified,
                 CountLimit = "ChildCount counts UIA-exposed children at this moment; long native trees may expose only a subset.",
-                NextRead = "Call debug_windows to read the current hierarchical rows." };
+                NextRead = "Call debug_windows to read the current hierarchical rows."
+            };
         }
 
         /// <summary>Active le bouton demandé dans un dialogue de diagnostic VBA visible.</summary>
@@ -1637,11 +1710,23 @@ namespace VBAi
             {
                 native.Pause(50);
                 if (!native.Visible(dialog))
-                    return new { Activated = true, request.Button, Diagnostic = message,
-                        Verification = "DialogClosed", VerificationPending = false };
+                    return new
+                    {
+                        Activated = true,
+                        request.Button,
+                        Diagnostic = message,
+                        Verification = "DialogClosed",
+                        VerificationPending = false
+                    };
             }
-            return new { Activated = true, request.Button, Diagnostic = message,
-                Verification = "Pending", VerificationPending = true };
+            return new
+            {
+                Activated = true,
+                request.Button,
+                Diagnostic = message,
+                Verification = "Pending",
+                VerificationPending = true
+            };
         }
 
         /// <summary>Attend une compilation et retourne le texte d’un dialogue natif de compilation s’il apparaît.</summary>
@@ -1771,15 +1856,23 @@ namespace VBAi
                 IntPtr watches = root == IntPtr.Zero ? IntPtr.Zero :
                     native.Pane(native.Children(root), "Espions", "Watch", "Watches");
                 object watchState = native.List(watches);
-                return new { Added = true, request.Expression,
+                return new
+                {
+                    Added = true,
+                    request.Expression,
                     WatchType = string.IsNullOrWhiteSpace(request.WatchType) ? "expression" : request.WatchType,
-                    Context = new {
-                    Project = shownProject, Module = shownModule, Procedure = shownProcedure },
+                    Context = new
+                    {
+                        Project = shownProject,
+                        Module = shownModule,
+                        Procedure = shownProcedure
+                    },
                     Watches = watchState,
                     Verification = watches == IntPtr.Zero ? "Pending" : "ReadbackAvailable",
                     NextRead = watches == IntPtr.Zero ?
                         "Open the Watches pane and call debug_windows in a separate request to verify the expression and value." :
-                        "Call debug_windows in a separate request to confirm the watch value after VBE refresh." };
+                        "Call debug_windows in a separate request to confirm the watch value after VBE refresh."
+                };
             }
             finally
             {
@@ -1864,9 +1957,16 @@ namespace VBAi
                 IntPtr pane = root == IntPtr.Zero ? IntPtr.Zero :
                     native.Pane(native.Children(root), "Espions", "Watch", "Watches");
                 if (pane == IntPtr.Zero)
-                    return new { Edited = true, OldExpression = request.Expression, request.NewExpression,
-                        request.Context, Verification = "Pending", VerificationPending = true,
-                        Limit = "The Watches pane is not visible; edit cannot be read back." };
+                    return new
+                    {
+                        Edited = true,
+                        OldExpression = request.Expression,
+                        request.NewExpression,
+                        request.Context,
+                        Verification = "Pending",
+                        VerificationPending = true,
+                        Limit = "The Watches pane is not visible; edit cannot be read back."
+                    };
                 bool verified = false;
                 for (int attempt = 0; attempt < 20; attempt++)
                 {
@@ -1876,10 +1976,16 @@ namespace VBAi
                     if (newPresent && oldAbsent) { verified = true; break; }
                     native.Pause(50);
                 }
-                return new { Edited = true, OldExpression = request.Expression, request.NewExpression,
-                    request.Context, Verification = verified ? "ReadbackVerified" : "Pending",
+                return new
+                {
+                    Edited = true,
+                    OldExpression = request.Expression,
+                    request.NewExpression,
+                    request.Context,
+                    Verification = verified ? "ReadbackVerified" : "Pending",
                     VerificationPending = !verified,
-                    Limit = "Expression readback does not independently prove a changed watch break condition." };
+                    Limit = "Expression readback does not independently prove a changed watch break condition."
+                };
             }
             finally
             {
@@ -1926,9 +2032,14 @@ namespace VBAi
                      !string.Equals(context, request.Project + "." + request.Module + "." + request.Procedure,
                          StringComparison.OrdinalIgnoreCase)))
                     throw new InvalidOperationException("Quick Watch expression or context differs from the selected code.");
-                return new { Expression = expression, Value = value, Context = context,
+                return new
+                {
+                    Expression = expression,
+                    Value = value,
+                    Context = context,
                     Verification = "NativeDialogReadback",
-                    Limit = "Evaluating a VBA expression may call user code; a displayed value is valid for this paused context only." };
+                    Limit = "Evaluating a VBA expression may call user code; a displayed value is valid for this paused context only."
+                };
             }
             finally { native.Close(dialog); }
         }
@@ -1980,16 +2091,24 @@ namespace VBAi
             IntPtr pane = root == IntPtr.Zero ? IntPtr.Zero :
                 native.Pane(native.Children(root), "Espions", "Watch", "Watches");
             if (pane == IntPtr.Zero)
-                return new { Removed = false, VerificationPending = true,
-                    Error = "The Watches pane is no longer visible; absence cannot be verified." };
+                return new
+                {
+                    Removed = false,
+                    VerificationPending = true,
+                    Error = "The Watches pane is no longer visible; absence cannot be verified."
+                };
             for (int attempt = 0; attempt < 20; attempt++)
             {
                 if (native.WatchMatches(pane, request.Expression, request.Context) == 0)
                     return new { Removed = true, VerificationPending = false, Error = (string)null };
                 native.Pause(50);
             }
-            return new { Removed = false, VerificationPending = true,
-                Error = "The selected watch is still visible after the native command." };
+            return new
+            {
+                Removed = false,
+                VerificationPending = true,
+                Error = "The selected watch is still visible after the native command."
+            };
         }
 
         /// <summary>Retourne les lignes UI Automation du volet Watches qui correspondent à l’expression et au contexte.</summary>
@@ -2053,9 +2172,9 @@ namespace VBAi
         {
             IntPtr result = IntPtr.Zero;
             uint currentPid = checked((uint)processId);
-            EnumWindows((handle, parameter) => {
-                uint pid;
-                GetWindowThreadProcessId(handle, out pid);
+            EnumWindows((handle, parameter) =>
+            {
+                GetWindowThreadProcessId(handle, out uint pid);
                 if (pid != currentPid || ClassName(handle) != "#32770" || !IsWindowVisible(handle)) return true;
                 string title = WindowText(handle);
                 foreach (string candidate in titles)
@@ -2072,9 +2191,9 @@ namespace VBAi
         {
             IntPtr result = IntPtr.Zero;
             uint currentPid = (uint)Process.GetCurrentProcess().Id;
-            EnumWindows((handle, parameter) => {
-                uint pid;
-                GetWindowThreadProcessId(handle, out pid);
+            EnumWindows((handle, parameter) =>
+            {
+                GetWindowThreadProcessId(handle, out uint pid);
                 if (pid == currentPid && ClassName(handle) == "wndclass_desked_gsk" && IsWindowVisible(handle))
                 { result = handle; return false; }
                 return true;
@@ -2088,7 +2207,8 @@ namespace VBAi
         private static List<IntPtr> ChildWindows(IntPtr root)
         {
             var result = new List<IntPtr>();
-            EnumChildWindows(root, (handle, parameter) => {
+            EnumChildWindows(root, (handle, parameter) =>
+            {
                 if (ClassName(handle) == "VbaWindow" && IsWindowVisible(handle)) result.Add(handle);
                 return true;
             }, IntPtr.Zero);
@@ -2115,8 +2235,13 @@ namespace VBAi
         /// <returns>Éléments et valeurs lisibles du volet.</returns>
         private static object ReadList(IntPtr handle)
         {
-            if (handle == IntPtr.Zero) return new { Available = false, Items = new object[0], Error = "Window is not visible.",
-                Coverage = "UIAExposedRowsOnly" };
+            if (handle == IntPtr.Zero) return new
+            {
+                Available = false,
+                Items = new object[0],
+                Error = "Window is not visible.",
+                Coverage = "UIAExposedRowsOnly"
+            };
             try
             {
                 AutomationElement root = AutomationElement.FromHandle(handle);
@@ -2134,8 +2259,7 @@ namespace VBAi
                 {
                     AutomationElement element = elements[index];
                     string raw = element.Current.Name;
-                    object pattern;
-                    if (element.TryGetCurrentPattern(ValuePattern.Pattern, out pattern))
+                    if (element.TryGetCurrentPattern(ValuePattern.Pattern, out object pattern))
                         raw = ((ValuePattern)pattern).Current.Value;
                     // Skip the native empty-list placeholder before querying its UIA ancestry.
                     if (ParseDebugRow(raw, null) == null) continue;
@@ -2147,11 +2271,25 @@ namespace VBAi
                         else duplicates++;
                     }
                 }
-                return new { Available = true, Items = items.ToArray(), Error = (string)null,
-                    Coverage = "UIAExposedRowsOnly", DuplicateRowsOmitted = duplicates };
+                return new
+                {
+                    Available = true,
+                    Items = items.ToArray(),
+                    Error = (string)null,
+                    Coverage = "UIAExposedRowsOnly",
+                    DuplicateRowsOmitted = duplicates
+                };
             }
-            catch (Exception ex) { return new { Available = true, Items = new object[0], Error = ex.Message,
-                Coverage = "UIAExposedRowsOnly" }; }
+            catch (Exception ex)
+            {
+                return new
+                {
+                    Available = true,
+                    Items = new object[0],
+                    Error = ex.Message,
+                    Coverage = "UIAExposedRowsOnly"
+                };
+            }
         }
 
         /// <summary>Identifie une observation complète, en conservant le contexte et chaque segment du chemin.</summary>
@@ -2183,7 +2321,10 @@ namespace VBAi
                  match.Groups[2].Value.IndexOf("No variables", StringComparison.OrdinalIgnoreCase) >= 0))
                 return null;
             itemPath = itemPath ?? new string[0];
-            return new { Raw = raw, Expression = match.Success ? match.Groups[1].Value :
+            return new
+            {
+                Raw = raw,
+                Expression = match.Success ? match.Groups[1].Value :
                     watch.Success ? watch.Groups[1].Value : null,
                 Value = match.Success ? match.Groups[2].Value.Trim() :
                     watch.Success ? watch.Groups[2].Value.Trim() : null,
@@ -2192,7 +2333,8 @@ namespace VBAi
                 Context = watch.Success ? watch.Groups[4].Value : null,
                 PathSegments = itemPath,
                 Depth = Math.Max(0, itemPath.Length - 1),
-                Parsed = match.Success || watch.Success };
+                Parsed = match.Success || watch.Success
+            };
         }
 
         /// <summary>Construit le chemin hiérarchique des noms accessibles entre la racine du volet et un élément.</summary>
@@ -2302,7 +2444,8 @@ namespace VBAi
                 if (locals == IntPtr.Zero)
                     return new { Available = false, Frames = new string[0], Error = "Locals window must be visible to open Call Stack without a shortcut." };
                 IntPtr button = IntPtr.Zero;
-                EnumChildWindows(locals, (handle, parameter) => {
+                EnumChildWindows(locals, (handle, parameter) =>
+                {
                     if (ClassName(handle) == "Button" && GetDlgCtrlID(handle) == 4601 && IsWindowVisible(handle))
                     { button = handle; return false; }
                     return true;
@@ -2317,14 +2460,14 @@ namespace VBAi
             try
             {
                 IntPtr list = IntPtr.Zero;
-                EnumChildWindows(dialog, (handle, parameter) => {
+                EnumChildWindows(dialog, (handle, parameter) =>
+                {
                     if (ClassName(handle) == "ListBox") { list = handle; return false; }
                     return true;
                 }, IntPtr.Zero);
                 if (list == IntPtr.Zero) throw new InvalidOperationException("Call Stack list was not found.");
-                object accessible;
                 Guid iid = IidAccessible;
-                int hr = AccessibleObjectFromWindow(list, ObjidClient, ref iid, out accessible);
+                int hr = AccessibleObjectFromWindow(list, ObjidClient, ref iid, out object accessible);
                 if (hr != 0 || !(accessible is Accessibility.IAccessible))
                     throw new COMException("Call Stack MSAA object was unavailable.", hr);
                 var listAccess = (Accessibility.IAccessible)accessible;
@@ -2338,7 +2481,8 @@ namespace VBAi
             {
                 if (openedHere)
                 {
-                    EnumChildWindows(dialog, (handle, parameter) => {
+                    EnumChildWindows(dialog, (handle, parameter) =>
+                    {
                         if (ClassName(handle) == "Button" && GetDlgCtrlID(handle) == 2)
                         { PostMessage(handle, BmClick, IntPtr.Zero, IntPtr.Zero); return false; }
                         return true;
@@ -2353,9 +2497,9 @@ namespace VBAi
         {
             IntPtr result = IntPtr.Zero;
             uint currentPid = (uint)Process.GetCurrentProcess().Id;
-            EnumWindows((handle, parameter) => {
-                uint pid;
-                GetWindowThreadProcessId(handle, out pid);
+            EnumWindows((handle, parameter) =>
+            {
+                GetWindowThreadProcessId(handle, out uint pid);
                 string title = WindowText(handle);
                 if (pid == currentPid && ClassName(handle) == "#32770" && IsWindowVisible(handle) &&
                     (title == "Pile des appels" || title == "Call Stack"))

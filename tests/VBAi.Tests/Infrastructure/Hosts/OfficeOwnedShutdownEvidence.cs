@@ -18,13 +18,25 @@ namespace VBAi.Tests.Integration
         {
             if (pid <= 0 || string.IsNullOrWhiteSpace(startedUtc) || string.IsNullOrWhiteSpace(image) || string.IsNullOrWhiteSpace(handle))
                 throw new ArgumentException("Exact original PID/start/image/retained-handle identity is required.");
-            Record = new Dictionary<string, object> {
-                ["ProcessId"] = pid, ["ProcessStartedUtc"] = startedUtc, ["ProcessImage"] = image,
-                ["OriginalProcessHandle"] = handle, ["ExpectedAssemblyMvid"] = mvid,
-                ["State"] = "OWNED", ["TeardownPrepared"] = false, ["QuitEntries"] = 0,
-                ["QuitOutcome"] = "NOT_ENTERED", ["ProcessExitObserved"] = false,
-                ["ExitCodeObserved"] = false, ["ExitCode"] = null, ["OwnershipRetained"] = true,
-                ["ProcessHandleRetained"] = true, ["ForcedTermination"] = false, ["NativeCleanupReplayAllowed"] = false };
+            Record = new Dictionary<string, object>
+            {
+                ["ProcessId"] = pid,
+                ["ProcessStartedUtc"] = startedUtc,
+                ["ProcessImage"] = image,
+                ["OriginalProcessHandle"] = handle,
+                ["ExpectedAssemblyMvid"] = mvid,
+                ["State"] = "OWNED",
+                ["TeardownPrepared"] = false,
+                ["QuitEntries"] = 0,
+                ["QuitOutcome"] = "NOT_ENTERED",
+                ["ProcessExitObserved"] = false,
+                ["ExitCodeObserved"] = false,
+                ["ExitCode"] = null,
+                ["OwnershipRetained"] = true,
+                ["ProcessHandleRetained"] = true,
+                ["ForcedTermination"] = false,
+                ["NativeCleanupReplayAllowed"] = false
+            };
             Record["ExitObservationAttempts"] = 0;
         }
 

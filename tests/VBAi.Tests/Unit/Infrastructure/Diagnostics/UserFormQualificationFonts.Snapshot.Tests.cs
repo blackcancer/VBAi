@@ -1,7 +1,7 @@
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 using VBAi.Tests.Integration;
 
 namespace VBAi.Tests.Unit
@@ -14,11 +14,13 @@ namespace VBAi.Tests.Unit
         [DataRow(true)]
         public void ExplicitAndImplicitRootRequireCurrentNativeProofWithoutChangingResources(bool implicitRoot)
         {
-            WithQualification(() => {
+            WithQualification(() =>
+            {
                 var snapshot = Snapshot(implicitRoot);
                 var original = (byte[])snapshot.Files["Form1.frx"].Clone();
                 int calls = 0;
-                UserFormQualificationFonts.RequireSnapshot(snapshot, (form, layout) => {
+                UserFormQualificationFonts.RequireSnapshot(snapshot, (form, layout) =>
+                {
                     calls++;
                     Assert.AreEqual("Form1", form);
                     Assert.AreEqual("FrameMultiPage", layout, "The declared Frame requires native proof even without a layout marker.");
@@ -35,13 +37,22 @@ namespace VBAi.Tests.Unit
         [DataRow(true)]
         public void MissingOrChangedCurrentNativeProofCannotPassAnExactResource(bool implicitRoot)
         {
-            WithQualification(() => {
+            WithQualification(() =>
+            {
                 var snapshot = Snapshot(implicitRoot);
                 Assert.ThrowsException<AssertFailedException>(() => UserFormQualificationFonts.RequireSnapshot(snapshot, null));
                 Assert.ThrowsException<AssertFailedException>(() => UserFormQualificationFonts.RequireSnapshot(snapshot, (form, layout) => null));
-                foreach (var change in new Dictionary<string, object> {
-                    ["Name"] = "Arial", ["Size"] = 9d, ["Bold"] = true, ["Italic"] = true,
-                    ["Underline"] = true, ["Strikethrough"] = true, ["Charset"] = 1, ["Weight"] = 700 })
+                foreach (var change in new Dictionary<string, object>
+                {
+                    ["Name"] = "Arial",
+                    ["Size"] = 9d,
+                    ["Bold"] = true,
+                    ["Italic"] = true,
+                    ["Underline"] = true,
+                    ["Strikethrough"] = true,
+                    ["Charset"] = 1,
+                    ["Weight"] = 700
+                })
                 {
                     var native = Fonts(); native["Form.Font." + change.Key] = change.Value;
                     Assert.ThrowsException<AssertFailedException>(() => UserFormQualificationFonts.RequireSnapshot(snapshot, (form, layout) => native), change.Key);
@@ -57,7 +68,8 @@ namespace VBAi.Tests.Unit
         [DataRow("Frame")]
         public void DeclaredInexactFontCannotBeHiddenByExactNativeReadback(string owner)
         {
-            WithQualification(() => {
+            WithQualification(() =>
+            {
                 byte[] resource = ResourceWithChangedDeclaredFont(owner, owner == "Root" ? 9m : 8.25m);
                 var snapshot = Snapshot(resource);
                 Assert.ThrowsException<AssertFailedException>(() => UserFormQualificationFonts.RequireSnapshot(snapshot, (form, layout) => Fonts()));
@@ -67,7 +79,8 @@ namespace VBAi.Tests.Unit
         [TestMethod]
         public void OpaqueResourceAndMissingDeclaredFrameCannotProducePartialFontAcceptance()
         {
-            WithQualification(() => {
+            WithQualification(() =>
+            {
                 var opaque = Snapshot(FormStreamPaddingTests.ContainerResourceBefore(), "Picture = \"Form1.frx\":0001\n");
                 int calls = 0;
                 Assert.ThrowsException<AssertFailedException>(() => UserFormQualificationFonts.RequireSnapshot(opaque, (form, layout) => { calls++; return Fonts(); }));
@@ -139,9 +152,11 @@ namespace VBAi.Tests.Unit
         {
             var component = new VbaGitComponent { Name = "Form1", Type = 3, HasResources = true };
             return new VbaGitSnapshot(new VbaGitManifest { References = "", Components = new[] { component } },
-                new Dictionary<string, byte[]> {
+                new Dictionary<string, byte[]>
+                {
                     ["Form1.frm"] = VbaGitSnapshot.Utf8.GetBytes("OleObjectBlob = \"Form1.frx\":0000\n" + metadata + "Attribute VB_Name = \"Form1\"\nOption Explicit\n"),
-                    ["Form1.frx"] = resource });
+                    ["Form1.frx"] = resource
+                });
         }
 
         /// <summary>Removes only the declared Form font and updates the existing bounded CFB stream extent.</summary>

@@ -1,3 +1,4 @@
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -9,7 +10,6 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Threading;
 using System.Web.Script.Serialization;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace VBAi.Tests.Integration
 {
@@ -64,55 +64,81 @@ namespace VBAi.Tests.Integration
                 IsolatedTestDesktop.Launch(executable, WordPrivateArguments(seed), Root, desktopName);
             ProcessId = privateWordChild.ProcessId;
             Action persist = () => PersistPrivateWordLaunch(seed, seedHash, executable, expectedHash, desktopName);
-            Action capture = () => {
-                    Assert.IsFalse(privateWordChild.Wait(0), "Original Word exited before its identity capture.");
-                    CaptureOwnedProcess();
-                    mainWordBirth = mainWordDesktop ? ownedProcess.StartTime.ToUniversalTime().ToString("o") : null;
-                    Assert.AreEqual(ProcessId, ownedProcess.Id);
-                    Assert.AreEqual(executable, ExcelOwnedProcessImage.Read(privateWordChild.ProcessHandle), true);
-                    Assert.IsFalse(privateWordChild.Wait(0), "Original Word exited during its identity capture.");
-                    steps.Add(new { Phase = mainWordDesktop ? "MainWordOriginalProcessCaptured" : "PrivateWordOriginalProcessCaptured", Identity = shutdownEvidence.Record });
-                    FlushAdapterEvidence();
-                };
-            Action inventory = () => {
-                    var wordProcesses = Process.GetProcessesByName("WINWORD");
-                    try
-                    {
-                        Assert.AreEqual(1, wordProcesses.Length, "Private Word ownership requires one process after the owned launch.");
-                        Assert.AreEqual(ProcessId, wordProcesses[0].Id);
-                    }
-                    finally { foreach (var process in wordProcesses) process.Dispose(); }
-                };
+            Action capture = () =>
+            {
+                Assert.IsFalse(privateWordChild.Wait(0), "Original Word exited before its identity capture.");
+                CaptureOwnedProcess();
+                mainWordBirth = mainWordDesktop ? ownedProcess.StartTime.ToUniversalTime().ToString("o") : null;
+                Assert.AreEqual(ProcessId, ownedProcess.Id);
+                Assert.AreEqual(executable, ExcelOwnedProcessImage.Read(privateWordChild.ProcessHandle), true);
+                Assert.IsFalse(privateWordChild.Wait(0), "Original Word exited during its identity capture.");
+                steps.Add(new { Phase = mainWordDesktop ? "MainWordOriginalProcessCaptured" : "PrivateWordOriginalProcessCaptured", Identity = shutdownEvidence.Record });
+                FlushAdapterEvidence();
+            };
+            Action inventory = () =>
+            {
+                var wordProcesses = Process.GetProcessesByName("WINWORD");
+                try
+                {
+                    Assert.AreEqual(1, wordProcesses.Length, "Private Word ownership requires one process after the owned launch.");
+                    Assert.AreEqual(ProcessId, wordProcesses[0].Id);
+                }
+                finally { foreach (var process in wordProcesses) process.Dispose(); }
+            };
             Action attach = () => AttachOnlyLaunchedWordNativeObjectModel(seed, desktopName);
             if (mainWordDesktop) PrepareMainWordLaunch(persist, capture, inventory, RequireMainWordOriginal, attach);
             else PreparePrivateWordLaunch(desktopName, privateWordChild.ThreadId, persist, capture, inventory,
                 () => IsolatedTestDesktop.ReadThreadDesktop(privateWordChild.ThreadId),
-                observation => {
-                    steps.Add(new { Phase = "PrivateWordPrimaryThreadObservation", Observation = observation,
-                        PlacementProved = false, ActualDocumentUiDesktopRequired = true });
+                observation =>
+                {
+                    steps.Add(new
+                    {
+                        Phase = "PrivateWordPrimaryThreadObservation",
+                        Observation = observation,
+                        PlacementProved = false,
+                        ActualDocumentUiDesktopRequired = true
+                    });
                     FlushAdapterEvidence();
                 },
                 attach);
             string observedSeedHash = RequireUnchangedOpenWordSeed(seed, seedHash);
             owned = true;
             privateWordSeed = document;
-            steps.Add(new { ApplicationOwnershipVerifiedBeforeMutation = true, Method = mainWordDesktop ? "LaunchedMainWordNativeObjectModel" : "LaunchedPrivateWordNativeObjectModel",
-                ProcessId, LaunchThreadId = privateWordChild.ThreadId, Desktop = desktopName,
-                SeedPath = seed, SeedSha256 = observedSeedHash, Executable = executable,
-                ExecutableSha256 = expectedHash.ToUpperInvariant(), ForceTermination = false });
+            steps.Add(new
+            {
+                ApplicationOwnershipVerifiedBeforeMutation = true,
+                Method = mainWordDesktop ? "LaunchedMainWordNativeObjectModel" : "LaunchedPrivateWordNativeObjectModel",
+                ProcessId,
+                LaunchThreadId = privateWordChild.ThreadId,
+                Desktop = desktopName,
+                SeedPath = seed,
+                SeedSha256 = observedSeedHash,
+                Executable = executable,
+                ExecutableSha256 = expectedHash.ToUpperInvariant(),
+                ForceTermination = false
+            });
         }
 
         private void PersistPrivateWordLaunch(string seed, string seedHash, string executable, string hash, string desktop)
         {
-            var receipt = new { Phase = mainWordDesktop ? "MainWordCreateProcessReturned" : "PrivateWordCreateProcessReturned", ProcessId,
+            var receipt = new
+            {
+                Phase = mainWordDesktop ? "MainWordCreateProcessReturned" : "PrivateWordCreateProcessReturned",
+                ProcessId,
                 LaunchThreadId = privateWordChild.ThreadId,
                 OriginalLaunchProcessHandle = privateWordChild.ProcessHandle.ToInt64(),
-                Desktop = desktop, Executable = executable, ExecutableSha256 = hash,
+                Desktop = desktop,
+                Executable = executable,
+                ExecutableSha256 = hash,
                 RequestedCommandLine = IsolatedTestDesktop.CommandLine(executable, WordPrivateArguments(seed)),
-                SeedPath = seed, SeedSha256 = seedHash,
-                OwnershipVerified = false, ComCalls = 0, UiActions = 0,
+                SeedPath = seed,
+                SeedSha256 = seedHash,
+                OwnershipVerified = false,
+                ComCalls = 0,
+                UiActions = 0,
                 ExpectedAssemblyMvid = typeof(VbeSession).Module.ModuleVersionId.ToString("D"),
-                Utc = DateTime.UtcNow.ToString("o") };
+                Utc = DateTime.UtcNow.ToString("o")
+            };
             using (var stream = new FileStream(Path.Combine(Root, "private-word-launch.json"), FileMode.CreateNew, FileAccess.Write))
             using (var writer = new StreamWriter(stream, new UTF8Encoding(false)))
                 writer.Write(new JavaScriptSerializer().Serialize(receipt));
@@ -217,15 +243,18 @@ namespace VBAi.Tests.Integration
         private IntPtr[] LaunchedWordDocumentWindows(string desktop)
         {
             return CollectPrivateWordDocumentWindows((uint)ProcessId,
-                callback => {
+                callback =>
+                {
                     if (!mainWordDesktop) { IsolatedTestDesktop.InventoryWindows(desktop, callback); return; }
                     var windows = ObserveMainWord(IntPtr.Zero, false, false);
                     foreach (var window in windows.Windows) if (!callback(new IntPtr(window.Handle))) break;
                     RequireMainWordOriginal();
                 },
-                (root, callback) => {
+                (root, callback) =>
+                {
                     Exception failure = null;
-                    EnumChildWindows(root, (child, unused) => {
+                    EnumChildWindows(root, (child, unused) =>
+                    {
                         try { return callback(child); }
                         catch (Exception error) { failure = error; return false; }
                     }, IntPtr.Zero);
@@ -242,10 +271,12 @@ namespace VBAi.Tests.Integration
             if (visitRoots == null || visitChildren == null || readPid == null || readClass == null)
                 throw new ArgumentNullException("Private Word window inventory dependencies");
             var found = new HashSet<IntPtr>(); int topVisited = 0, childVisited = 0;
-            visitRoots(window => {
+            visitRoots(window =>
+            {
                 if (++topVisited > 4096) return false;
                 if (readPid(window) != expectedPid) return true;
-                visitChildren(window, child => {
+                visitChildren(window, child =>
+                {
                     if (++childVisited > 2048) return false;
                     if (readPid(child) == expectedPid && readClass(child) == "_WwG") found.Add(child);
                     return true;
@@ -304,10 +335,18 @@ namespace VBAi.Tests.Integration
                 else Assert.AreEqual(desktopName, IsolatedTestDesktop.DesktopName(activeThread), true);
                 application = app; document = seed;
                 app = null; seed = null;
-                steps.Add(new { Phase = mainWordDesktop ? "MainWordNativeObjectModelAttached" : "PrivateWordNativeObjectModelAttached", ProcessId,
-                    NativeObjectModelHandle = documentWindow.ToInt64(), UiThreadId = uiThread,
-                    ActiveWindowHandle = activeHandle.ToInt64(), ActiveWindowThreadId = activeThread,
-                    Desktop = desktopName, SeedPath = seedPath, OpenDocumentCount = 1 });
+                steps.Add(new
+                {
+                    Phase = mainWordDesktop ? "MainWordNativeObjectModelAttached" : "PrivateWordNativeObjectModelAttached",
+                    ProcessId,
+                    NativeObjectModelHandle = documentWindow.ToInt64(),
+                    UiThreadId = uiThread,
+                    ActiveWindowHandle = activeHandle.ToInt64(),
+                    ActiveWindowThreadId = activeThread,
+                    Desktop = desktopName,
+                    SeedPath = seedPath,
+                    OpenDocumentCount = 1
+                });
             }
             finally
             {
@@ -380,10 +419,22 @@ namespace VBAi.Tests.Integration
             GetClassName(handle, childClass, childClass.Capacity);
             GetClassName(root, rootClass, rootClass.Capacity);
             bool visible = IsWindowVisible(handle), rootVisible = IsWindowVisible(root);
-            steps.Add(new { Phase = mainWordDesktop ? "MainWordWindowReadinessObserved" : "PrivateWordWindowReadinessObserved", Handle = handle.ToInt64(),
-                Root = root.ToInt64(), ProcessId = pid, RootProcessId = rootPid, ThreadId = tid,
-                RootThreadId = rootTid, ChildClass = childClass.ToString(), RootClass = rootClass.ToString(),
-                Visible = visible, RootVisible = rootVisible, ComCalls = 0, UiActions = 0 });
+            steps.Add(new
+            {
+                Phase = mainWordDesktop ? "MainWordWindowReadinessObserved" : "PrivateWordWindowReadinessObserved",
+                Handle = handle.ToInt64(),
+                Root = root.ToInt64(),
+                ProcessId = pid,
+                RootProcessId = rootPid,
+                ThreadId = tid,
+                RootThreadId = rootTid,
+                ChildClass = childClass.ToString(),
+                RootClass = rootClass.ToString(),
+                Visible = visible,
+                RootVisible = rootVisible,
+                ComCalls = 0,
+                UiActions = 0
+            });
             FlushAdapterEvidence();
             if (mainWordDesktop)
             {

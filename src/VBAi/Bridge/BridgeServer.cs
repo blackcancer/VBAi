@@ -3,7 +3,6 @@ using System.IO;
 using System.IO.Pipes;
 using System.Security.AccessControl;
 using System.Security.Principal;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Web.Script.Serialization;
@@ -226,7 +225,8 @@ namespace VBAi
                                 {
                                     OwnerGitQualificationManifest.RequireExactRequest(line);
                                     var completion = new TaskCompletionSource<Response>(TaskCreationOptions.RunContinuationsAsynchronously);
-                                    dispatcher.BeginInvoke(new Action(async () => {
+                                    dispatcher.BeginInvoke(new Action(async () =>
+                                    {
                                         try
                                         {
                                             var result = await VbeUiTask.Run(() => ownerGitQualification.ExecuteAsync(request, line));
@@ -269,7 +269,8 @@ namespace VBAi
                                     else
                                     {
                                         VbeImmediateContext.RequireProject(request.Project, state.Data);
-                                        response = Response.Success(Native.ExecuteImmediate(request.Text, enter => dispatcher.Invoke(new Action(() => {
+                                        response = Response.Success(Native.ExecuteImmediate(request.Text, enter => dispatcher.Invoke(new Action(() =>
+                                        {
                                             VbeImmediateContext.RequireCurrent(request.Project, request.ExpectedMode, Execute);
                                             enter();
                                         }))));
@@ -278,13 +279,15 @@ namespace VBAi
                                 else if (request != null && (request.Command == "read_project_general" || request.Command == "set_project_general"))
                                 {
                                     var completion = new TaskCompletionSource<Response>(TaskCreationOptions.RunContinuationsAsynchronously);
-                                    dispatcher.BeginInvoke(new Action(async () => {
+                                    dispatcher.BeginInvoke(new Action(async () =>
+                                    {
                                         int ownerThread = Thread.CurrentThread.ManagedThreadId;
                                         string command = request.Command, project = request.Project;
                                         string version = request.ExpectedProjectVersion, options = request.ExpectedOptionsVersion;
                                         string property = request.Property, caption = request.ControlCaption;
                                         object value = request.Value;
-                                        request.RevalidateProjectPropertyAuthorization = live => {
+                                        request.RevalidateProjectPropertyAuthorization = live =>
+                                        {
                                             if (dispatcher.IsDisposed || !dispatcher.IsHandleCreated || dispatcher.InvokeRequired ||
                                                 Thread.CurrentThread.ManagedThreadId != ownerThread ||
                                                 Thread.CurrentThread.GetApartmentState() != ApartmentState.STA ||
@@ -302,12 +305,14 @@ namespace VBAi
                                 else if (request != null && (request.Command == "create_solidworks_macro" || request.Command == "publish_solidworks_macro"))
                                 {
                                     var completion = new TaskCompletionSource<Response>(TaskCreationOptions.RunContinuationsAsynchronously);
-                                    dispatcher.BeginInvoke(new Action(async () => {
+                                    dispatcher.BeginInvoke(new Action(async () =>
+                                    {
                                         int ownerThread = Thread.CurrentThread.ManagedThreadId;
                                         string command = request.Command, project = request.Project, path = request.Path;
                                         string version = request.ExpectedProjectVersion;
                                         int mode = request.ExpectedMode;
-                                        request.RevalidateMacroAuthorization = live => {
+                                        request.RevalidateMacroAuthorization = live =>
+                                        {
                                             if (dispatcher.IsDisposed || !dispatcher.IsHandleCreated || dispatcher.InvokeRequired ||
                                                 Thread.CurrentThread.ManagedThreadId != ownerThread ||
                                                 Thread.CurrentThread.GetApartmentState() != ApartmentState.STA ||
@@ -325,7 +330,8 @@ namespace VBAi
                                 {
                                     // Defer on the owning STA outside the current native/UI callback.
                                     var completion = new TaskCompletionSource<Response>(TaskCreationOptions.RunContinuationsAsynchronously);
-                                    dispatcher.BeginInvoke(new Action(async () => {
+                                    dispatcher.BeginInvoke(new Action(async () =>
+                                    {
                                         try { completion.TrySetResult(Response.Success(await SaveHostDocumentNative(request))); }
                                         catch (Exception ex) { completion.TrySetResult(Response.Failure(ex.Message)); }
                                     }));
@@ -334,7 +340,8 @@ namespace VBAi
                                 else if (request != null && request.Command == "read_immediate")
                                 {
                                     var completion = new TaskCompletionSource<Response>(TaskCreationOptions.RunContinuationsAsynchronously);
-                                    dispatcher.BeginInvoke(new Action(async () => {
+                                    dispatcher.BeginInvoke(new Action(async () =>
+                                    {
                                         try { completion.TrySetResult(Response.Success(await ReadImmediateNative(request))); }
                                         catch (Exception ex) { completion.TrySetResult(Response.Failure(ex.Message)); }
                                     }));
@@ -347,7 +354,8 @@ namespace VBAi
                                     var completion = new TaskCompletionSource<Response>(TaskCreationOptions.RunContinuationsAsynchronously);
                                     try
                                     {
-                                        dispatcher.BeginInvoke(new Action(async () => {
+                                        dispatcher.BeginInvoke(new Action(async () =>
+                                        {
                                             using (trace?.Enter())
                                             {
                                                 trace?.Record(VbeInspectionTrace.Phase.CallbackEntered);
@@ -368,7 +376,8 @@ namespace VBAi
                                     var completed = new ManualResetEventSlim(false);
                                     // Keep the event alive if a timeout occurs while the UI
                                     // callback is still pending; its finally block will signal it.
-                                    dispatcher.BeginInvoke(new Action(() => {
+                                    dispatcher.BeginInvoke(new Action(() =>
+                                    {
                                         try { compileResponse = Execute(request); }
                                         catch (Exception ex) { compileResponse = Response.Failure(ex.Message); }
                                         finally { completed.Set(); }
@@ -378,8 +387,9 @@ namespace VBAi
                                         response = Response.Failure("The native Compile command did not return a result.");
                                     else if (!compileResponse.Ok)
                                         response = compileResponse;
-                                    else response = Response.Success(new {
-                                        Project = request.Project,
+                                    else response = Response.Success(new
+                                    {
+                                        request.Project,
                                         Compiled = diagnostic == null,
                                         Diagnostic = diagnostic,
                                         Verification = diagnostic == null ? "NoNativeDiagnosticObserved" : "NativeDiagnosticCaptured",
@@ -462,11 +472,15 @@ namespace VBAi
                                         }
                                         Response status = (Response)dispatcher.Invoke(new Func<Response>(() =>
                                             Execute(new Request { Command = "project_signature_status", Project = request.Project })));
-                                        response = Response.Success(new { Signature = signed,
-                                            Persistence = persistence, PersistenceError = persistenceError,
+                                        response = Response.Success(new
+                                        {
+                                            Signature = signed,
+                                            Persistence = persistence,
+                                            PersistenceError = persistenceError,
                                             SaveRequired = persistence == null || !((bool)((dynamic)persistence).Saved),
                                             HostStatus = status.Ok ? status.Data : null,
-                                            HostStatusError = status.Ok ? null : status.Error });
+                                            HostStatusError = status.Ok ? null : status.Error
+                                        });
                                     }
                                 }
                                 else if (request != null && request.Command == "remove_watch")
@@ -511,7 +525,8 @@ namespace VBAi
         private Action AdmitSessionRequest(Request request)
         {
             if (request?.Command == "status" || session == null) return null;
-            return (Action)dispatcher.Invoke(new Func<Action>(() => {
+            return (Action)dispatcher.Invoke(new Func<Action>(() =>
+            {
                 if (dispatcher.IsDisposed || !dispatcher.IsHandleCreated || dispatcher.InvokeRequired ||
                     Thread.CurrentThread.GetApartmentState() != ApartmentState.STA)
                     throw new InvalidOperationException("Bridge admission requires its owning VBE UI STA.");

@@ -1,9 +1,9 @@
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Globalization;
 using System.Linq;
 using System.Security.Cryptography;
 using System.Text.RegularExpressions;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace VBAi.Tests.Integration
 {
@@ -22,9 +22,14 @@ namespace VBAi.Tests.Integration
         internal static object Describe(VbaGitSnapshot snapshot)
         {
             var compared = snapshot.ComparisonFiles();
-            return snapshot.Files.Select(pair => new { Path = pair.Key, Bytes = pair.Value.Length,
-                RawSha256 = Hash(pair.Value), ComparisonSha256 = Hash(compared[pair.Key]),
-                OleOffsets = pair.Key.EndsWith(".frm", StringComparison.Ordinal) ? Offsets(VbaGitSnapshot.Utf8.GetString(pair.Value)) : new int[0] }).ToArray();
+            return snapshot.Files.Select(pair => new
+            {
+                Path = pair.Key,
+                Bytes = pair.Value.Length,
+                RawSha256 = Hash(pair.Value),
+                ComparisonSha256 = Hash(compared[pair.Key]),
+                OleOffsets = pair.Key.EndsWith(".frm", StringComparison.Ordinal) ? Offsets(VbaGitSnapshot.Utf8.GetString(pair.Value)) : new int[0]
+            }).ToArray();
         }
 
         internal static int[] Offsets(string text)

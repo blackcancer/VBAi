@@ -2,13 +2,9 @@ namespace VBAi.Tests.Unit
 {
     using System;
     using System.Collections.Generic;
-    using System.Collections;
-    using System.IO;
     using System.Runtime.InteropServices;
     using System.Runtime.InteropServices.ComTypes;
     using TYPELIBATTR = System.Runtime.InteropServices.ComTypes.TYPELIBATTR;
-    using VBAi;
-    using Microsoft.VisualStudio.TestTools.UnitTesting;
 
     public sealed partial class VbeReferenceTypesTests
     {

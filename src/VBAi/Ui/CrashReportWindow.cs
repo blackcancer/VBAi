@@ -15,7 +15,10 @@ namespace VBAi
         private CrashReport report;
 
         /// <summary>Delivery in progress, completed submission, uncertain outcome, and theme-subscription flags.</summary>
-        private bool busy, submitted, uncertain, runtimeInitialized;
+        private bool busy;
+        private bool submitted;
+        private bool uncertain;
+        private readonly bool runtimeInitialized;
 
         /// <summary>Cancellation source used when the dialog closes during an asynchronous send.</summary>
         private readonly CancellationTokenSource cancellation = new CancellationTokenSource();

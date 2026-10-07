@@ -2184,4 +2184,628 @@ Git Credential Manager でサインインします。コミットの作成者情
   <data name="User guide" xml:space="preserve"><value>ユーザーガイド</value></data>
   <data name="Open the local VBAi user guide in the interface language" xml:space="preserve"><value>インターフェイスの言語でローカルの VBAi ガイドを開く</value></data>
   <data name="Local help is not included in this build. Place the VBAi help files in the Help folder beside the application." xml:space="preserve"><value>このビルドにはローカルヘルプが含まれていません。VBAi のヘルプファイルをアプリケーションと同じ場所にある Help フォルダーに配置してください。</value></data>
+  <data name="Close this window without starting another operation." xml:space="preserve">
+    <value>別の操作を開始せずにこのウィンドウを閉じます。</value>
+  </data>
+  <data name="Save the settings edited in this window." xml:space="preserve">
+    <value>このウィンドウで編集した設定を保存します。</value>
+  </data>
+  <data name="Choose the provider; authentication fields and available models depend on this selection." xml:space="preserve">
+    <value>プロバイダーを選びます。認証欄と使用できるモデルは選択によって変わります。</value>
+  </data>
+  <data name="Choose an available model for this conversation after the provider catalogue has loaded." xml:space="preserve">
+    <value>プロバイダーのカタログ読み込み後、この会話で使用できるモデルを選びます。</value>
+  </data>
+  <data name="Choose the reasoning level supported by this model for the current conversation." xml:space="preserve">
+    <value>現在の会話で、このモデルが対応する推論レベルを選びます。</value>
+  </data>
+  <data name="Select the project bound to this conversation and its VBE operations." xml:space="preserve">
+    <value>この会話と VBE 操作に関連付けるプロジェクトを選びます。</value>
+  </data>
+  <data name="Choose when VBA edits need confirmation; project identity, privacy and revision checks still apply." xml:space="preserve">
+    <value>VBA 編集の確認が必要なタイミングを選びます。プロジェクト識別、プライバシー、リビジョンのチェックは引き続き適用されます。</value>
+  </data>
+  <data name="Choose the agent&#x27;s work mode for the next request." xml:space="preserve">
+    <value>次の依頼に対するエージェントの作業モードを選びます。</value>
+  </data>
+  <data name="Start account authentication for the selected provider." xml:space="preserve">
+    <value>選択したプロバイダーのアカウント認証を開始します。</value>
+  </data>
+  <data name="Read the selected provider&#x27;s account status again without starting login." xml:space="preserve">
+    <value>ログインを開始せず、選択プロバイダーのアカウント状態を再確認します。</value>
+  </data>
+  <data name="Connection status for the selected account-based provider." xml:space="preserve">
+    <value>選択したアカウント接続型プロバイダーの接続状態です。</value>
+  </data>
+  <data name="Set this provider&#x27;s API address; an incorrect URL can prevent models or requests from loading." xml:space="preserve">
+    <value>このプロバイダーの API アドレスを設定します。URL が誤っているとモデルや依頼を読み込めない場合があります。</value>
+  </data>
+  <data name="Enter a new key for this provider; leave it empty to keep the saved key." xml:space="preserve">
+    <value>このプロバイダーの新しいキーを入力します。空欄なら保存済みキーを保持します。</value>
+  </data>
+  <data name="Remove the saved key when settings are saved; an environment fallback may remain active." xml:space="preserve">
+    <value>設定の保存時に保存済みキーを削除します。環境変数による代替キーは有効なままの場合があります。</value>
+  </data>
+  <data name="Enter the model or deployment identifiers required by this provider, one per line." xml:space="preserve">
+    <value>このプロバイダーに必要なモデルまたはデプロイ識別子を 1 行に 1 つ入力します。</value>
+  </data>
+  <data name="Name this custom provider so it can be recognized in the chat picker." xml:space="preserve">
+    <value>チャットの選択欄で識別できるよう、このカスタムプロバイダーに名前を付けます。</value>
+  </data>
+  <data name="Use an Entra bearer token for Azure; renew the token after it expires." xml:space="preserve">
+    <value>Azure には Entra ベアラートークンを使います。有効期限が切れたら更新してください。</value>
+  </data>
+  <data name="Set Ollama sampling temperature from 0 to 2; a lower value reduces variation." xml:space="preserve">
+    <value>Ollama のサンプリング温度を 0～2 に設定します。低い値ほど変化が少なくなります。</value>
+  </data>
+  <data name="Set Ollama nucleus sampling above 0 and at most 1." xml:space="preserve">
+    <value>Ollama の nucleus sampling を 0 より大きく 1 以下に設定します。</value>
+  </data>
+  <data name="Choose the GitHub account for repositories; this is separate from Copilot authentication." xml:space="preserve">
+    <value>リポジトリ用の GitHub アカウントを選びます。Copilot 認証とは別です。</value>
+  </data>
+  <data name="Connect a GitHub account through Git Credential Manager." xml:space="preserve">
+    <value>Git Credential Manager を通じて GitHub アカウントを接続します。</value>
+  </data>
+  <data name="Reload the GitHub accounts available in Git Credential Manager." xml:space="preserve">
+    <value>Git Credential Manager で利用できる GitHub アカウントを再読み込みします。</value>
+  </data>
+  <data name="Status of GitHub repository authentication, separate from the chat provider." xml:space="preserve">
+    <value>チャットプロバイダーとは別の GitHub リポジトリ認証の状態です。</value>
+  </data>
+  <data name="Choose light, dark or Windows-following appearance for VBAi." xml:space="preserve">
+    <value>VBAi の外観をライト、ダーク、Windows に合わせる設定から選びます。</value>
+  </data>
+  <data name="Apply experimental dark styling to native VBE surfaces; original editor colors are retained for restoration." xml:space="preserve">
+    <value>VBE のネイティブ画面に試験的なダーク表示を適用します。元のエディターの色は復元用に保持します。</value>
+  </data>
+  <data name="Start a separate conversation for the selected project." xml:space="preserve">
+    <value>選択したプロジェクトで別の会話を開始します。</value>
+  </data>
+  <data name="Open conversation settings and additional actions." xml:space="preserve">
+    <value>会話の設定と追加操作を開きます。</value>
+  </data>
+  <data name="Show the conversations associated with the current document." xml:space="preserve">
+    <value>現在のドキュメントに関連する会話を表示します。</value>
+  </data>
+  <data name="Filter this document&#x27;s conversation history by text." xml:space="preserve">
+    <value>このドキュメントの会話履歴をテキストで絞り込みます。</value>
+  </data>
+  <data name="Select a stored or temporary conversation to reopen." xml:space="preserve">
+    <value>再開する保存済みまたは一時的な会話を選びます。</value>
+  </data>
+  <data name="Include archived conversations so they can be reopened or restored." xml:space="preserve">
+    <value>再開または復元できるよう、アーカイブ済みの会話を含めます。</value>
+  </data>
+  <data name="Edit the selected conversation&#x27;s title before renaming it." xml:space="preserve">
+    <value>名前を変更する前に、選択した会話のタイトルを編集します。</value>
+  </data>
+  <data name="Rename the selected conversation using the title entered above." xml:space="preserve">
+    <value>上に入力したタイトルで選択した会話の名前を変更します。</value>
+  </data>
+  <data name="Archive the selected conversation, or restore it if already archived." xml:space="preserve">
+    <value>選択した会話をアーカイブします。アーカイブ済みなら復元します。</value>
+  </data>
+  <data name="Pin or unpin the selected conversation in the history list." xml:space="preserve">
+    <value>履歴一覧で選択した会話をピン留め、または解除します。</value>
+  </data>
+  <data name="Permanently remove the selected conversation from VBAi local history." xml:space="preserve">
+    <value>選択した会話を VBAi のローカル履歴から完全に削除します。</value>
+  </data>
+  <data name="Export the selected conversation as Markdown; review its contents before sharing." xml:space="preserve">
+    <value>選択した会話を Markdown にエクスポートします。共有前に内容を確認してください。</value>
+  </data>
+  <data name="Show the local notes associated with this document." xml:space="preserve">
+    <value>このドキュメントに関連するローカルメモを表示します。</value>
+  </data>
+  <data name="Edit local project notes; they are transmitted only when attached to outgoing context." xml:space="preserve">
+    <value>ローカルのプロジェクトメモを編集します。送信コンテキストに添付した場合だけ送信されます。</value>
+  </data>
+  <data name="Save the edited notes locally for this document." xml:space="preserve">
+    <value>編集したメモをこのドキュメント用にローカル保存します。</value>
+  </data>
+  <data name="Include these notes in the next message sent to the selected provider." xml:space="preserve">
+    <value>これらのメモを選択プロバイダーへ送る次のメッセージに含めます。</value>
+  </data>
+  <data name="Attach the currently selected VBA code to the message being prepared." xml:space="preserve">
+    <value>現在選択した VBA コードを準備中のメッセージに添付します。</value>
+  </data>
+  <data name="Compile the selected VBA project and read the compiler result." xml:space="preserve">
+    <value>選択した VBA プロジェクトをコンパイルして結果を読みます。</value>
+  </data>
+  <data name="Request compilation after agent code changes when supported by the current workflow." xml:space="preserve">
+    <value>現在の手順が対応する場合、エージェントのコード変更後のコンパイルを要求します。</value>
+  </data>
+  <data name="Choose a module reference to add to the outgoing message." xml:space="preserve">
+    <value>送信するメッセージに追加するモジュール参照を選びます。</value>
+  </data>
+  <data name="Choose a procedure reference to add to the outgoing message." xml:space="preserve">
+    <value>送信するメッセージに追加するプロシージャ参照を選びます。</value>
+  </data>
+  <data name="Send the prepared message and its selected context to the provider." xml:space="preserve">
+    <value>準備したメッセージと選択したコンテキストをプロバイダーに送ります。</value>
+  </data>
+  <data name="Inspect and refresh the project data and attachments that will be sent." xml:space="preserve">
+    <value>送信予定のプロジェクトデータと添付を確認して更新します。</value>
+  </data>
+  <data name="Scroll back to the most recent message without changing the conversation." xml:space="preserve">
+    <value>会話を変更せずに最新メッセージへスクロールします。</value>
+  </data>
+  <data name="Inspect code changes and the available revision-checked undo actions." xml:space="preserve">
+    <value>コード変更と、リビジョン確認付きで可能な取り消し操作を調べます。</value>
+  </data>
+  <data name="Open this referenced module or procedure if its target is still available." xml:space="preserve">
+    <value>対象がまだ利用できる場合、参照したモジュールやプロシージャを開きます。</value>
+  </data>
+  <data name="Remove this reference from the message being prepared." xml:space="preserve">
+    <value>準備中のメッセージからこの参照を削除します。</value>
+  </data>
+  <data name="Open the attached code&#x27;s target in the VBE when available." xml:space="preserve">
+    <value>利用できる場合、添付コードの対象を VBE で開きます。</value>
+  </data>
+  <data name="Open the displayed external link through the safe-link handler." xml:space="preserve">
+    <value>表示された外部リンクを安全なリンク処理機能から開きます。</value>
+  </data>
+  <data name="Copy this message&#x27;s content to the system clipboard." xml:space="preserve">
+    <value>このメッセージの内容をシステムのクリップボードにコピーします。</value>
+  </data>
+  <data name="Start a separate conversation from this message." xml:space="preserve">
+    <value>このメッセージから別の会話を開始します。</value>
+  </data>
+  <data name="Prepare a correction request from the issue shown in this message." xml:space="preserve">
+    <value>このメッセージに示された問題から修正依頼を準備します。</value>
+  </data>
+  <data name="Undo this code change if the current revision still allows it." xml:space="preserve">
+    <value>現在のリビジョンが許す場合、このコード変更を取り消します。</value>
+  </data>
+  <data name="Undo the code changes of this agent turn subject to revision checks." xml:space="preserve">
+    <value>リビジョン確認に従い、このエージェントターンのコード変更を取り消します。</value>
+  </data>
+  <data name="Choose a changed code block to undo rather than the whole change." xml:space="preserve">
+    <value>変更全体ではなく、取り消すコードブロックを選びます。</value>
+  </data>
+  <data name="Open the module affected by this code change." xml:space="preserve">
+    <value>このコード変更の対象モジュールを開きます。</value>
+  </data>
+  <data name="Expand or collapse this section to read its details." xml:space="preserve">
+    <value>この節を展開または折りたたんで詳細を読みます。</value>
+  </data>
+  <data name="Restore the cut form controls when the saved recovery state is still usable." xml:space="preserve">
+    <value>保存された復旧状態がまだ使える場合、切り取ったフォームのコントロールを復元します。</value>
+  </data>
+  <data name="Request sending this queued message according to the current turn state." xml:space="preserve">
+    <value>現在のターン状態に従い、このキューメッセージの送信を要求します。</value>
+  </data>
+  <data name="Edit this queued message before it is sent." xml:space="preserve">
+    <value>送信前にこのキューメッセージを編集します。</value>
+  </data>
+  <data name="Remove this unsent message from the queue." xml:space="preserve">
+    <value>まだ送信していないこのメッセージをキューから削除します。</value>
+  </data>
+  <data name="Prepare a request to explain a VBA procedure." xml:space="preserve">
+    <value>VBA プロシージャを説明する依頼を準備します。</value>
+  </data>
+  <data name="Prepare a request to improve the current VBA code." xml:space="preserve">
+    <value>現在の VBA コードを改善する依頼を準備します。</value>
+  </data>
+  <data name="Prepare a request to diagnose and fix a VBA error." xml:space="preserve">
+    <value>VBA エラーの診断と修正を依頼する準備をします。</value>
+  </data>
+  <data name="Choose one of the matching VBA targets for this reference." xml:space="preserve">
+    <value>この参照に一致する VBA 対象の 1 つを選びます。</value>
+  </data>
+  <data name="Type a message; add module or procedure references before sending." xml:space="preserve">
+    <value>メッセージを入力します。送信前にモジュールやプロシージャの参照を追加してください。</value>
+  </data>
+  <data name="Show deletions and additions together instead of side by side." xml:space="preserve">
+    <value>左右表示の代わりに、削除と追加をまとめて表示します。</value>
+  </data>
+  <data name="Fold unchanged lines to concentrate on the changed code." xml:space="preserve">
+    <value>未変更の行を折りたたんで変更コードに集中します。</value>
+  </data>
+  <data name="Move to the previous changed block in this comparison." xml:space="preserve">
+    <value>この比較で前の変更ブロックに移動します。</value>
+  </data>
+  <data name="Move to the next changed block in this comparison." xml:space="preserve">
+    <value>この比較で次の変更ブロックに移動します。</value>
+  </data>
+  <data name="Enter text to find within this code comparison." xml:space="preserve">
+    <value>コード比較内で探すテキストを入力します。</value>
+  </data>
+  <data name="Find the entered text in this comparison." xml:space="preserve">
+    <value>この比較で入力したテキストを検索します。</value>
+  </data>
+  <data name="Read the before and after source with highlighted additions and deletions." xml:space="preserve">
+    <value>追加と削除を強調表示した変更前後のソースを読みます。</value>
+  </data>
+  <data name="Choose the projects included in this view&#x27;s read or discovery scope." xml:space="preserve">
+    <value>このビューの読み取りまたは検出範囲に含めるプロジェクトを選びます。</value>
+  </data>
+  <data name="Allow read access to shared debugger, native inventory and clipboard data; no additional project write permission is granted." xml:space="preserve">
+    <value>共有デバッガー、ネイティブ構成一覧、クリップボードの読み取りを許可します。追加のプロジェクト書き込み権限は与えません。</value>
+  </data>
+  <data name="Apply the selected project read scope to a new conversation." xml:space="preserve">
+    <value>選んだプロジェクト読み取り範囲を新しい会話に適用します。</value>
+  </data>
+  <data name="Allow the specific VBE action described in this dialog." xml:space="preserve">
+    <value>このダイアログに記載された特定の VBE 操作を許可します。</value>
+  </data>
+  <data name="Deny the specific VBE action described in this dialog." xml:space="preserve">
+    <value>このダイアログに記載された特定の VBE 操作を拒否します。</value>
+  </data>
+  <data name="Review the proposed action and its project before allowing or denying it." xml:space="preserve">
+    <value>許可または拒否の前に、提案された操作とプロジェクトを確認します。</value>
+  </data>
+  <data name="Apply the edited Monaco version after the conflict has been reviewed and the project revalidated." xml:space="preserve">
+    <value>競合を確認してプロジェクトを再検証した後、編集した Monaco の版を適用します。</value>
+  </data>
+  <data name="Compare the Monaco text with the current native VBA text." xml:space="preserve">
+    <value>Monaco のテキストを現在のネイティブ VBA テキストと比較します。</value>
+  </data>
+  <data name="Reload the current VBA version instead of the conflicting local edit." xml:space="preserve">
+    <value>競合したローカル編集の代わりに現在の VBA の版を再読み込みします。</value>
+  </data>
+  <data name="Review and restore an available local editor draft." xml:space="preserve">
+    <value>利用できるローカルエディターの下書きを確認して復元します。</value>
+  </data>
+  <data name="Return to the editable code surface from the comparison." xml:space="preserve">
+    <value>比較から編集可能なコード画面に戻ります。</value>
+  </data>
+  <data name="Choose the section to display; changing tabs alone does not submit an operation." xml:space="preserve">
+    <value>表示する節を選びます。タブを切り替えるだけでは操作を送信しません。</value>
+  </data>
+  <data name="Enter the GitHub repository to link to this VBA project." xml:space="preserve">
+    <value>この VBA プロジェクトに関連付ける GitHub リポジトリを入力します。</value>
+  </data>
+  <data name="Enter the repository branch used for this VBA project." xml:space="preserve">
+    <value>この VBA プロジェクトに使うリポジトリのブランチを入力します。</value>
+  </data>
+  <data name="Link the selected repository and branch to the current VBA project." xml:space="preserve">
+    <value>選択したリポジトリとブランチを現在の VBA プロジェクトに関連付けます。</value>
+  </data>
+  <data name="Compare current VBA sources with their repository baseline." xml:space="preserve">
+    <value>現在の VBA ソースをリポジトリの基準と比較します。</value>
+  </data>
+  <data name="Fetch remote references without treating that alone as a VBA import." xml:space="preserve">
+    <value>リモート参照を Fetch します。それだけで VBA インポートとはみなしません。</value>
+  </data>
+  <data name="Publish local commits to the selected remote branch." xml:space="preserve">
+    <value>ローカルコミットを選択したリモートブランチに公開します。</value>
+  </data>
+  <data name="Pull sources and run the guarded VBA import; inspect the result and save the document." xml:space="preserve">
+    <value>ソースを Pull し、保護付きの VBA インポートを実行します。結果を確認してドキュメントを保存してください。</value>
+  </data>
+  <data name="Restore VBA from the available backup and inspect the recovery result." xml:space="preserve">
+    <value>利用できるバックアップから VBA を復元し、復旧結果を確認します。</value>
+  </data>
+  <data name="Preview the source changes that an import would apply before changing VBA." xml:space="preserve">
+    <value>VBA を変更する前に、インポートで適用するソース変更をプレビューします。</value>
+  </data>
+  <data name="Request cancellation of the current operation; a native mutation already in progress may still finish." xml:space="preserve">
+    <value>現在の操作の取り消しを要求します。進行中のネイティブ変更は完了する場合があります。</value>
+  </data>
+  <data name="Describe the selected source changes in the commit message." xml:space="preserve">
+    <value>選択したソース変更をコミットメッセージに記述します。</value>
+  </data>
+  <data name="Create a local commit from the selected source changes; Push publishes it separately." xml:space="preserve">
+    <value>選択したソース変更からローカルコミットを作ります。公開は別途 Push します。</value>
+  </data>
+  <data name="Select the VBA source changes to review and include in a commit." xml:space="preserve">
+    <value>確認しコミットに含める VBA ソース変更を選びます。</value>
+  </data>
+  <data name="Open the selected module in the VBE without restoring its source." xml:space="preserve">
+    <value>ソースを復元せずに選択モジュールを VBE で開きます。</value>
+  </data>
+  <data name="Replace the selected module using the available repository version; review before applying." xml:space="preserve">
+    <value>利用できるリポジトリの版で選択モジュールを置き換えます。適用前に確認してください。</value>
+  </data>
+  <data name="Select a commit to inspect its details or compare revisions." xml:space="preserve">
+    <value>詳細の確認やリビジョン比較のためコミットを選びます。</value>
+  </data>
+  <data name="Compare the chosen repository revisions without applying them to VBA." xml:space="preserve">
+    <value>選んだリポジトリのリビジョンを VBA に適用せず比較します。</value>
+  </data>
+  <data name="Select a local or remote branch for the branch actions." xml:space="preserve">
+    <value>ブランチ操作の対象となるローカルまたはリモートブランチを選びます。</value>
+  </data>
+  <data name="Enter the new local branch name." xml:space="preserve">
+    <value>新しいローカルブランチ名を入力します。</value>
+  </data>
+  <data name="Include remote branch references in the branch list." xml:space="preserve">
+    <value>ブランチ一覧にリモートブランチ参照を含めます。</value>
+  </data>
+  <data name="Create the named local branch." xml:space="preserve">
+    <value>指定名のローカルブランチを作ります。</value>
+  </data>
+  <data name="Create local tracking for the selected remote branch." xml:space="preserve">
+    <value>選択したリモートブランチのローカル追跡を作ります。</value>
+  </data>
+  <data name="Switch to the selected branch subject to the current Git and VBA state checks." xml:space="preserve">
+    <value>現在の Git と VBA 状態のチェックに従って、選択ブランチに切り替えます。</value>
+  </data>
+  <data name="Merge the selected branch into the current branch; review the direction first." xml:space="preserve">
+    <value>選択ブランチを現在のブランチにマージします。先に方向を確認してください。</value>
+  </data>
+  <data name="Select a stored checkpoint to inspect or restore." xml:space="preserve">
+    <value>調べる、または復元する保存済みチェックポイントを選びます。</value>
+  </data>
+  <data name="Name the checkpoint so its purpose is recognizable later." xml:space="preserve">
+    <value>後から目的を識別できる名前をチェックポイントに付けます。</value>
+  </data>
+  <data name="Create a checkpoint of the current VBA source state." xml:space="preserve">
+    <value>現在の VBA ソース状態のチェックポイントを作ります。</value>
+  </data>
+  <data name="Restore the selected checkpoint through the guarded recovery workflow." xml:space="preserve">
+    <value>保護付きの復旧手順で選択したチェックポイントを復元します。</value>
+  </data>
+  <data name="Choose the source file whose merge conflict you want to resolve." xml:space="preserve">
+    <value>マージ競合を解決するソースファイルを選びます。</value>
+  </data>
+  <data name="Enter the complete resolved file content, not only the changed lines." xml:space="preserve">
+    <value>変更行だけでなく、解決済みファイルの全内容を入力します。</value>
+  </data>
+  <data name="Use the local side as the resolution for this selected file." xml:space="preserve">
+    <value>このファイルの解決にローカル側を使います。</value>
+  </data>
+  <data name="Use the incoming side as the resolution for this selected file." xml:space="preserve">
+    <value>このファイルの解決に受信側を使います。</value>
+  </data>
+  <data name="Use the complete text in the resolution editor for this selected file." xml:space="preserve">
+    <value>このファイルの解決に解決エディターの全テキストを使います。</value>
+  </data>
+  <data name="Complete the prepared merge after all conflicts have been resolved." xml:space="preserve">
+    <value>すべての競合を解決した後、準備したマージを完了します。</value>
+  </data>
+  <data name="Abort the prepared merge through the repository recovery workflow." xml:space="preserve">
+    <value>リポジトリの復旧手順で準備したマージを中止します。</value>
+  </data>
+  <data name="Read the common ancestor to understand how the conflicting edits diverged." xml:space="preserve">
+    <value>共通の祖先を読んで、競合した編集がどう分岐したか調べます。</value>
+  </data>
+  <data name="Filter repositories available to the connected GitHub account." xml:space="preserve">
+    <value>接続した GitHub アカウントで利用できるリポジトリを絞り込みます。</value>
+  </data>
+  <data name="Select a GitHub repository before choosing its branch or using it." xml:space="preserve">
+    <value>ブランチを選ぶ、または使用する前に GitHub リポジトリを選びます。</value>
+  </data>
+  <data name="Choose the branch of the selected GitHub repository." xml:space="preserve">
+    <value>選択した GitHub リポジトリのブランチを選びます。</value>
+  </data>
+  <data name="Choose the account or organization that will own the new repository." xml:space="preserve">
+    <value>新しいリポジトリの所有者となるアカウントまたは組織を選びます。</value>
+  </data>
+  <data name="Enter the new GitHub repository name." xml:space="preserve">
+    <value>新しい GitHub リポジトリ名を入力します。</value>
+  </data>
+  <data name="Choose private visibility for the new repository before creating it." xml:space="preserve">
+    <value>新しいリポジトリの作成前に非公開を選びます。</value>
+  </data>
+  <data name="Load repositories accessible to the connected GitHub account." xml:space="preserve">
+    <value>接続した GitHub アカウントがアクセスできるリポジトリを読み込みます。</value>
+  </data>
+  <data name="Use the selected repository and branch for this VBA project&#x27;s connection." xml:space="preserve">
+    <value>この VBA プロジェクトの接続に、選択リポジトリとブランチを使います。</value>
+  </data>
+  <data name="Create a GitHub repository with the entered owner, name and visibility." xml:space="preserve">
+    <value>入力した所有者、名前、公開範囲で GitHub リポジトリを作ります。</value>
+  </data>
+  <data name="Choose a pull request to inspect its details, files, comments and checks." xml:space="preserve">
+    <value>詳細、ファイル、コメント、チェックを調べるプルリクエストを選びます。</value>
+  </data>
+  <data name="Load pull requests from the selected repository." xml:space="preserve">
+    <value>選択したリポジトリからプルリクエストを読み込みます。</value>
+  </data>
+  <data name="Open the selected pull request on GitHub." xml:space="preserve">
+    <value>選択したプルリクエストを GitHub で開きます。</value>
+  </data>
+  <data name="Load the prepared pull request draft and review it before publication." xml:space="preserve">
+    <value>準備したプルリクエストの下書きを読み込み、公開前に確認します。</value>
+  </data>
+  <data name="Choose the destination branch for the new pull request." xml:space="preserve">
+    <value>新しいプルリクエストの宛先ブランチを選びます。</value>
+  </data>
+  <data name="Describe the proposed change in the pull request title." xml:space="preserve">
+    <value>提案する変更をプルリクエストのタイトルに記述します。</value>
+  </data>
+  <data name="Explain the change, validation and remaining limits before creating the pull request." xml:space="preserve">
+    <value>プルリクエストの作成前に、変更、検証、残る制限を説明します。</value>
+  </data>
+  <data name="Create the pull request as a draft when it is not ready for final review." xml:space="preserve">
+    <value>最終レビューの準備ができていない場合、下書きとしてプルリクエストを作ります。</value>
+  </data>
+  <data name="Publish the prepared pull request using the selected source and target branches." xml:space="preserve">
+    <value>選択したソースと対象ブランチで、準備したプルリクエストを公開します。</value>
+  </data>
+  <data name="Read the selected pull request&#x27;s title, state and description." xml:space="preserve">
+    <value>選択したプルリクエストのタイトル、状態、説明を読みます。</value>
+  </data>
+  <data name="Inspect the files changed by the selected pull request." xml:space="preserve">
+    <value>選択したプルリクエストで変更されたファイルを調べます。</value>
+  </data>
+  <data name="Read the comments of the selected pull request." xml:space="preserve">
+    <value>選択したプルリクエストのコメントを読みます。</value>
+  </data>
+  <data name="Read the content of the selected review comment." xml:space="preserve">
+    <value>選択したレビューコメントの内容を読みます。</value>
+  </data>
+  <data name="Inspect the status checks reported by GitHub for this pull request." xml:space="preserve">
+    <value>このプルリクエストに GitHub が報告したステータスチェックを調べます。</value>
+  </data>
+  <data name="Filter discovered VBA tests by name or category." xml:space="preserve">
+    <value>検出した VBA テストを名前やカテゴリーで絞り込みます。</value>
+  </data>
+  <data name="Filter tests by their last reported outcome." xml:space="preserve">
+    <value>テストを最後に報告された結果で絞り込みます。</value>
+  </data>
+  <data name="Choose how discovered tests are grouped in the tree." xml:space="preserve">
+    <value>検出したテストのツリーでのグループ分けを選びます。</value>
+  </data>
+  <data name="Select tests or check them to define the next execution scope." xml:space="preserve">
+    <value>テストを選択またはチェックして次の実行範囲を決めます。</value>
+  </data>
+  <data name="Read the selected test&#x27;s source identity, outcome and failure details." xml:space="preserve">
+    <value>選択したテストのソース識別情報、結果、失敗の詳細を読みます。</value>
+  </data>
+  <data name="Read the human-readable report for the current VBA test run." xml:space="preserve">
+    <value>現在の VBA テスト実行の読みやすいレポートを読みます。</value>
+  </data>
+  <data name="Read the structured JSON report for the current VBA test run." xml:space="preserve">
+    <value>現在の VBA テスト実行の構造化 JSON レポートを読みます。</value>
+  </data>
+  <data name="Copy the current VBA test result report to the clipboard." xml:space="preserve">
+    <value>現在の VBA テスト結果レポートをクリップボードにコピーします。</value>
+  </data>
+  <data name="Export the current VBA test result report to a chosen file." xml:space="preserve">
+    <value>現在の VBA テスト結果レポートを選んだファイルにエクスポートします。</value>
+  </data>
+  <data name="Discover the tests currently present in the selected projects." xml:space="preserve">
+    <value>選択したプロジェクトに現在存在するテストを検出します。</value>
+  </data>
+  <data name="Run the selected or checked VBA tests." xml:space="preserve">
+    <value>選択またはチェックした VBA テストを実行します。</value>
+  </data>
+  <data name="Run the tests in the current visible scope." xml:space="preserve">
+    <value>現在の表示範囲のテストを実行します。</value>
+  </data>
+  <data name="Run the selected tests with the supported VBA procedure coverage workflow." xml:space="preserve">
+    <value>対応する VBA プロシージャのカバレッジ手順で選択テストを実行します。</value>
+  </data>
+  <data name="Run the visible scope with the supported VBA procedure coverage workflow." xml:space="preserve">
+    <value>対応する VBA プロシージャのカバレッジ手順で表示範囲を実行します。</value>
+  </data>
+  <data name="Run again the tests whose current recorded result is a failure." xml:space="preserve">
+    <value>現在記録された結果が失敗のテストを再実行します。</value>
+  </data>
+  <data name="Request stopping between tests after the current VBA test finishes." xml:space="preserve">
+    <value>現在の VBA テスト完了後、テスト間で停止するよう要求します。</value>
+  </data>
+  <data name="Open the selected test&#x27;s source in the VBE." xml:space="preserve">
+    <value>選択したテストのソースを VBE で開きます。</value>
+  </data>
+  <data name="Review the test support module and its source backup before applying it." xml:space="preserve">
+    <value>適用前にテスト支援モジュールとそのソースのバックアップを確認します。</value>
+  </data>
+  <data name="Apply the reviewed test support after project revalidation and backup." xml:space="preserve">
+    <value>プロジェクトの再検証とバックアップ後、確認したテスト支援を適用します。</value>
+  </data>
+  <data name="Give the issue a concise title that describes the observed symptom." xml:space="preserve">
+    <value>観測した症状を表す簡潔なタイトルを問題に付けます。</value>
+  </data>
+  <data name="Describe reproduction steps, expected behavior and observed behavior; remove sensitive details." xml:space="preserve">
+    <value>再現手順、期待する動作、観測した動作を説明します。機密情報は除いてください。</value>
+  </data>
+  <data name="Review the complete report that will be copied, saved or sent." xml:space="preserve">
+    <value>コピー、保存、送信されるレポート全体を確認します。</value>
+  </data>
+  <data name="Send the reviewed issue report through the GitHub-first reporting workflow." xml:space="preserve">
+    <value>確認した問題レポートを GitHub を優先する報告手順で送ります。</value>
+  </data>
+  <data name="Prepare the reviewed issue report for the available email workflow." xml:space="preserve">
+    <value>利用できるメール手順のため、確認した問題レポートを準備します。</value>
+  </data>
+  <data name="Copy the reviewed issue report to the clipboard." xml:space="preserve">
+    <value>確認した問題レポートをクリップボードにコピーします。</value>
+  </data>
+  <data name="Save the reviewed report to a chosen local file." xml:space="preserve">
+    <value>確認したレポートを選んだローカルファイルに保存します。</value>
+  </data>
+  <data name="Open the created GitHub issue when its link is available." xml:space="preserve">
+    <value>リンクが利用できる場合、作成した GitHub Issue を開きます。</value>
+  </data>
+  <data name="Open the VBAi source repository on GitHub." xml:space="preserve">
+    <value>VBAi のソースリポジトリを GitHub で開きます。</value>
+  </data>
+  <data name="Open the maintained VBAi documentation on GitHub." xml:space="preserve">
+    <value>保守されている VBAi の文書を GitHub で開きます。</value>
+  </data>
+  <data name="Open the GitHub issue form to report a VBAi problem." xml:space="preserve">
+    <value>VBAi の問題を報告する GitHub Issue フォームを開きます。</value>
+  </data>
+  <data name="Copy version and environment metadata for support without project source or personal paths." xml:space="preserve">
+    <value>プロジェクトのソースや個人パスを含めず、サポート用の版と環境メタデータをコピーします。</value>
+  </data>
+  <data name="Check the configured release feed and display the available version." xml:space="preserve">
+    <value>設定したリリース取得元を確認し、利用できる版を表示します。</value>
+  </data>
+  <data name="Allow the scheduled daily check for an eligible update." xml:space="preserve">
+    <value>適用対象の更新を毎日確認する予定を許可します。</value>
+  </data>
+  <data name="Download eligible updates automatically when their package is available." xml:space="preserve">
+    <value>適用対象の更新パッケージがあれば自動的にダウンロードします。</value>
+  </data>
+  <data name="Schedule installation after VBA hosts close when package trust and installation policy allow it." xml:space="preserve">
+    <value>パッケージの信頼性とインストールポリシーが許す場合、VBA ホスト終了後のインストールを予定します。</value>
+  </data>
+  <data name="Include prerelease versions when checking for updates." xml:space="preserve">
+    <value>更新確認時にプレリリースの版を含めます。</value>
+  </data>
+  <data name="Download the selected update package and verify its identity." xml:space="preserve">
+    <value>選択した更新パッケージをダウンロードし、識別情報を検証します。</value>
+  </data>
+  <data name="Install the verified update only when the host and publisher policy permit it." xml:space="preserve">
+    <value>ホストと発行元ポリシーが許す場合だけ、検証済み更新をインストールします。</value>
+  </data>
+  <data name="Ignore this proposed update version." xml:space="preserve">
+    <value>この提案された更新の版を無視します。</value>
+  </data>
+  <data name="Save the automatic-update and prerelease preferences." xml:space="preserve">
+    <value>自動更新とプレリリースの設定を保存します。</value>
+  </data>
+  <data name="Cancel the scheduled update before its installation starts." xml:space="preserve">
+    <value>インストール開始前に予定した更新を取り消します。</value>
+  </data>
+  <data name="Read the notes of the proposed update before downloading or installing it." xml:space="preserve">
+    <value>ダウンロードまたはインストール前に、提案された更新の説明を読みます。</value>
+  </data>
+  <data name="Open the local French user guide." xml:space="preserve">
+    <value>ローカルのフランス語ユーザーガイドを開きます。</value>
+  </data>
+  <data name="Local help is not included in this build. Build or obtain VBAi.fr-FR.chm and place it in the Help folder beside VBAi.dll." xml:space="preserve">
+    <value>このビルドにはローカルヘルプが含まれません。VBAi.fr-FR.chm をビルドまたは入手し、VBAi.dll の隣の Help フォルダーに置いてください。</value>
+  </data>
+  <data name="Write your request. Enter sends it; Shift+Enter adds a line. Use # or @ to reference VBA code and / to see chat commands." xml:space="preserve">
+    <value>依頼を入力します。Enter は送信、Shift+Enter は改行です。# または @ で VBA コードを参照し、/ でチャットコマンドを表示できます。</value>
+  </data>
+  <data name="Open the modified module" xml:space="preserve">
+    <value>変更したモジュールを開く</value>
+  </data>
+  <data name="Read the exact context prepared for the next message; refresh it after changing referenced code." xml:space="preserve">
+    <value>次のメッセージ用に準備された正確なコンテキストを読みます。参照コードを変更した後は更新してください。</value>
+  </data>
+  <data name="Select response text to copy it; use the context menu to copy a complete code block." xml:space="preserve">
+    <value>応答のテキストを選択してコピーできます。コードブロック全体はコンテキストメニューからコピーします。</value>
+  </data>
+  <data name="Open the provider, model and reasoning choices for this conversation." xml:space="preserve">
+    <value>この会話のプロバイダー、モデル、推論の選択を開きます。</value>
+  </data>
+  <data name="Compare the current and incoming versions of the selected conflict before choosing a complete resolution." xml:space="preserve">
+    <value>完全な解決を選ぶ前に、選択した競合の現在版と受信版を比較します。</value>
+  </data>
+  <data name="Read the selected commit and its changed sources without importing that revision." xml:space="preserve">
+    <value>そのリビジョンをインポートせず、選択コミットと変更ソースを読みます。</value>
+  </data>
+  <data name="Review the incoming VBA components and changes before importing them into the current project." xml:space="preserve">
+    <value>現在のプロジェクトへインポートする前に、受信した VBA コンポーネントと変更を確認します。</value>
+  </data>
+  <data name="Configure provider authentication, editing approvals and the repository account." xml:space="preserve">
+    <value>プロバイダー認証、編集承認、リポジトリアカウントを設定します。</value>
+  </data>
+  <data name="Reload the model catalogue from the selected provider without sending a chat message." xml:space="preserve">
+    <value>チャットメッセージを送らず、選択したプロバイダーのモデルカタログを再読み込みします。</value>
+  </data>
+  <data name="Switch the chat between a VBE docked pane and a floating window." xml:space="preserve">
+    <value>チャットを VBE のドッキングパネルとフローティングウィンドウの間で切り替えます。</value>
+  </data>
+  <data name="Choose whether to compile the project automatically after agent code edits." xml:space="preserve">
+    <value>エージェントのコード編集後、プロジェクトを自動コンパイルするか選びます。</value>
+  </data>
+  <data name="Copy the selected response text to the clipboard." xml:space="preserve">
+    <value>選択した応答テキストをクリップボードにコピーします。</value>
+  </data>
+  <data name="Copy the complete code block under the pointer without its surrounding explanation." xml:space="preserve">
+    <value>周囲の説明を含めず、ポインター下のコードブロック全体をコピーします。</value>
+  </data>
+  <data name="Back to conversation" xml:space="preserve">
+    <value>会話に戻る</value>
+  </data>
 </root>

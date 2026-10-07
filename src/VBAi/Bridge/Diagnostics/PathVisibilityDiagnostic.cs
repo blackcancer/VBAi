@@ -44,9 +44,8 @@ namespace VBAi
                 ExcelLocalPath(manifest);
                 string name = Path.GetFileName(manifest);
                 const string suffix = ".visibility.json";
-                Guid guid;
                 if (!name.EndsWith(suffix, StringComparison.Ordinal) ||
-                    !Guid.TryParseExact(name.Substring(0, name.Length - suffix.Length), "N", out guid))
+                    !Guid.TryParseExact(name.Substring(0, name.Length - suffix.Length), "N", out Guid guid))
                     throw new ArgumentException("A GUID-owned manifest filename is required.");
                 var drive = new DriveInfo(Path.GetPathRoot(manifest));
                 if (drive.DriveType != DriveType.Fixed && drive.DriveType != DriveType.Removable && drive.DriveType != DriveType.Ram)
@@ -82,8 +81,7 @@ namespace VBAi
         internal static string[] ValidateManifest(string json, string localParent, string tempParent)
         {
             if (json == null || json.Length > 4096) throw new ArgumentException("A bounded synthetic manifest is required.");
-            var value = new JavaScriptSerializer().DeserializeObject(json) as IDictionary<string, object>;
-            if (value == null || value.Count != 3 || !value.ContainsKey("Version") ||
+            if (!(new JavaScriptSerializer().DeserializeObject(json) is IDictionary<string, object> value) || value.Count != 3 || !value.ContainsKey("Version") ||
                 !(value["Version"] is int version) || version != 1 || !value.ContainsKey("LocalAppData") || !value.ContainsKey("Temp"))
                 throw new ArgumentException("Exactly Version=1, LocalAppData and Temp are required.");
             string local = RequireGuidChild(value["LocalAppData"] as string, localParent);
@@ -97,8 +95,7 @@ namespace VBAi
         /// <param name="request">Original request JSON, required to contain only the exact diagnostic Command field.</param>
         internal static void RequireParameterFree(string request)
         {
-            var value = new JavaScriptSerializer().DeserializeObject(request) as IDictionary<string, object>;
-            if (value == null || value.Count != 1 || !value.ContainsKey("Command") ||
+            if (!(new JavaScriptSerializer().DeserializeObject(request) is IDictionary<string, object> value) || value.Count != 1 || !value.ContainsKey("Command") ||
                 !string.Equals(value["Command"] as string, CommandName, StringComparison.Ordinal))
                 throw new ArgumentException("Only the fixed diagnostic Command is permitted.");
         }
@@ -123,9 +120,8 @@ namespace VBAi
         {
             ExcelLocalPath(directory); ExcelLocalPath(parent);
             string exact = Path.GetFullPath(directory).TrimEnd(Path.DirectorySeparatorChar);
-            Guid guid;
             if (!string.Equals(directory, exact, StringComparison.OrdinalIgnoreCase) ||
-                !Guid.TryParseExact(Path.GetFileName(exact), "N", out guid) ||
+                !Guid.TryParseExact(Path.GetFileName(exact), "N", out _) ||
                 !string.Equals(Path.GetDirectoryName(exact), Path.GetFullPath(parent).TrimEnd(Path.DirectorySeparatorChar), StringComparison.OrdinalIgnoreCase))
                 throw new ArgumentException("Only a direct GUID child of the specified synthetic parent is permitted.");
             RejectReparseAncestors(exact);

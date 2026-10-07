@@ -112,8 +112,11 @@ namespace VBAi
                         string kind = external ? "Declare" : CultureInfo.InvariantCulture.TextInfo.ToTitleCase(Word(member));
                         var test = new VbaTestDescriptor
                         {
-                            Id = Identity(project.Id, module.Name, name), Module = module.Name,
-                            Procedure = name, Line = firstLine, Kind = kind
+                            Id = Identity(project.Id, module.Name, name),
+                            Module = module.Name,
+                            Procedure = name,
+                            Line = firstLine,
+                            Kind = kind
                         };
                         if (roles.Length != 1) test.Diagnostic = "Duplicate or conflicting test/fixture annotations.";
                         bool fixture = !roles.Any(x => EqualsName(x.Name, "TestMethod"));

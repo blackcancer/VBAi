@@ -42,10 +42,9 @@ namespace VBAi
         /// <summary>Rejects calls unless this is the original x64 STA thread and the root still belongs to its captured process and thread.</summary>
         public void RequireOwner()
         {
-            uint owner;
             Require(IntPtr.Size == 8 && Thread.CurrentThread.GetApartmentState() == ApartmentState.STA &&
                 GetCurrentProcessId() == pid && GetCurrentThreadId() == thread && root != IntPtr.Zero &&
-                GetWindowThreadProcessId(root, out owner) == thread && owner == pid && GetAncestor(root, 2) == root,
+                GetWindowThreadProcessId(root, out uint owner) == thread && owner == pid && GetAncestor(root, 2) == root,
                 "General must remain on its original current-process x64 VBE UI STA/root.");
             requireNativeContext(); // Caller can additionally bind private/input/sentinel proof for qualification.
         }
@@ -61,11 +60,12 @@ namespace VBAi
         private List<IntPtr> Dialogs()
         {
             RequireOwner(); var found = new List<IntPtr>(); var watch = Stopwatch.StartNew(); int visited = 0; Exception failure = null;
-            bool complete = EnumWindows((window, state) => {
+            bool complete = EnumWindows((window, state) =>
+            {
                 try
                 {
                     if (++visited > 8192 || watch.ElapsedMilliseconds > 5000) return false;
-                    uint owner; uint tid = GetWindowThreadProcessId(window, out owner);
+                    uint tid = GetWindowThreadProcessId(window, out uint owner);
                     if (owner == pid && IsWindowVisible(window))
                     {
                         string kind = Class(window);
@@ -86,8 +86,8 @@ namespace VBAi
         /// <param name="window">Candidate HWND to validate against the captured process and UI thread.</param>
         private void RequireWindow(IntPtr window)
         {
-            RequireOwner(); uint owner;
-            Require(window != IntPtr.Zero && GetWindowThreadProcessId(window, out owner) == thread && owner == pid,
+            RequireOwner();
+            Require(window != IntPtr.Zero && GetWindowThreadProcessId(window, out uint owner) == thread && owner == pid,
                 "General native target changed PID/UI thread.");
         }
 
@@ -102,9 +102,9 @@ namespace VBAi
         private string Text(IntPtr window, Stopwatch watch)
         {
             Budget(watch); RequireWindow(window);
-            var text = new StringBuilder(4096); UIntPtr result;
+            var text = new StringBuilder(4096);
             // This is an owning-thread trusted native getter; SendMessageTimeout is not a hard wall timeout on that same thread.
-            Require(SendMessageTimeoutText(window, 13, new UIntPtr(4096), text, 0x23, 150, out result) != IntPtr.Zero && result.ToUInt64() < 4095,
+            Require(SendMessageTimeoutText(window, 13, new UIntPtr(4096), text, 0x23, 150, out UIntPtr result) != IntPtr.Zero && result.ToUInt64() < 4095,
                 "General text getter is unavailable/truncated.");
             Budget(watch); RequireWindow(window); return text.ToString();
         }
@@ -215,9 +215,8 @@ namespace VBAi
                 && GetParent(child) == dialog && IsWindowVisible(child) && IsWindowEnabled(child)).ToArray();
             Require(tabs.Length == 1, "General exact native tab is unavailable.");
             RequireWindow(tabs[0]);
-            UIntPtr selected;
             Require(SendMessageTimeoutScalar(tabs[0], 0x130B, UIntPtr.Zero, IntPtr.Zero,
-                0x23, 150, out selected) != IntPtr.Zero && selected.ToUInt64() == 0,
+                0x23, 150, out UIntPtr selected) != IntPtr.Zero && selected.ToUInt64() == 0,
                 "General tab0 must already be selected; tab changes are forbidden.");
             return tabs[0];
         }
@@ -309,10 +308,10 @@ namespace VBAi
         private void WriteField(VbeProjectGeneralOperation.Snapshot expected, IntPtr target, string value, Action beforeEntry)
         {
             Require(!fieldConsumed, "Original General field write is already consumed."); fieldConsumed = true;
-            RequireSame(expected, true); RequireOwner(); UIntPtr result;
+            RequireSame(expected, true); RequireOwner();
             RequireTextRepresentable(target, value);
             Require(beforeEntry != null, "Final General field authorization is required."); beforeEntry(); RequireOwner();
-            Require(SendMessageTimeoutWrite(target, 12, UIntPtr.Zero, value, 0x23, 150, out result) != IntPtr.Zero && result.ToUInt64() != 0,
+            Require(SendMessageTimeoutWrite(target, 12, UIntPtr.Zero, value, 0x23, 150, out UIntPtr result) != IntPtr.Zero && result.ToUInt64() != 0,
                 "The single General field write is uncertain; no alternative write or retry.");
         }
 

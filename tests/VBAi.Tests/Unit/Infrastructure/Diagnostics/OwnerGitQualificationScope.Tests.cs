@@ -1,8 +1,8 @@
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Web.Script.Serialization;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 using VBAi.Tests.Integration;
 
 namespace VBAi.Tests.Unit
@@ -30,10 +30,14 @@ namespace VBAi.Tests.Unit
 
         private void WriteSnapshot(string name)
         {
-            var snapshot = new VbaGitSnapshot(new VbaGitManifest {
-                References = "[]", Components = new[] { new VbaGitComponent { Name = "Module1", Type = 1 } }
-            }, new Dictionary<string, byte[]> {
-                ["Module1.bas"] = System.Text.Encoding.UTF8.GetBytes("Attribute VB_Name = \"Module1\"\r\nOption Explicit\r\n' " + name + "\r\n") });
+            var snapshot = new VbaGitSnapshot(new VbaGitManifest
+            {
+                References = "[]",
+                Components = new[] { new VbaGitComponent { Name = "Module1", Type = 1 } }
+            }, new Dictionary<string, byte[]>
+            {
+                ["Module1.bas"] = System.Text.Encoding.UTF8.GetBytes("Attribute VB_Name = \"Module1\"\r\nOption Explicit\r\n' " + name + "\r\n")
+            });
             foreach (var file in snapshot.Serialize()) File.WriteAllBytes(Path.Combine(evidence, name, file.Key), file.Value);
         }
 
@@ -47,13 +51,21 @@ namespace VBAi.Tests.Unit
         private OwnerGitQualificationManifest Plan()
         {
             string before = Path.Combine(evidence, "before"), changed = Path.Combine(evidence, "changed");
-            return new OwnerGitQualificationManifest {
-                Version = 1, OwnerPid = 42, OwnerBirthUtcTicks = 638000000000000000,
-                OwnerNativeTid = 77, VbeHandle = 99,
-                AssemblyMvid = "00000000-0000-0000-0000-000000000001", AssemblySha256 = Sha,
-                FixtureRoot = root, WorkbookPath = Path.Combine(root, "owned.xlsm"),
-                Project = Path.Combine(root, "owned.xlsm"), EvidenceRoot = evidence,
-                RepoRelativePath = "local.git", Branch = "qualification-layout",
+            return new OwnerGitQualificationManifest
+            {
+                Version = 1,
+                OwnerPid = 42,
+                OwnerBirthUtcTicks = 638000000000000000,
+                OwnerNativeTid = 77,
+                VbeHandle = 99,
+                AssemblyMvid = "00000000-0000-0000-0000-000000000001",
+                AssemblySha256 = Sha,
+                FixtureRoot = root,
+                WorkbookPath = Path.Combine(root, "owned.xlsm"),
+                Project = Path.Combine(root, "owned.xlsm"),
+                EvidenceRoot = evidence,
+                RepoRelativePath = "local.git",
+                Branch = "qualification-layout",
                 Steps = new[] {
                     OwnerGitQualificationScope.Step("checkpoint_restore", changed, before, "20261006000000000-abcdef12"),
                     OwnerGitQualificationScope.Step("controlled_interruption", before, changed),
@@ -185,8 +197,12 @@ namespace VBAi.Tests.Unit
         public void OnlyClassifiedSettledOutcomesAllowNormalCleanup(bool ok, string outcome, bool started, bool pending, bool retain)
         {
             var reply = new Dictionary<string, object> { ["Ok"] = ok };
-            var terminal = new Dictionary<string, object> {
-                ["Outcome"] = outcome, ["MutationStarted"] = started, ["RecoveryPending"] = pending };
+            var terminal = new Dictionary<string, object>
+            {
+                ["Outcome"] = outcome,
+                ["MutationStarted"] = started,
+                ["RecoveryPending"] = pending
+            };
             Assert.AreEqual(retain, OwnerGitQualificationScope.MustRetain(reply, terminal));
         }
 
@@ -225,8 +241,13 @@ namespace VBAi.Tests.Unit
         public void SuccessfulBridgePayloadMustMatchStepReceiptAndActualResult()
         {
             const string id = "0123456789abcdef0123456789abcdef", receipt = "exact terminal path";
-            var data = new Dictionary<string, object> { ["StepId"] = id, ["Outcome"] = "Succeeded",
-                ["ReceiptPath"] = receipt, ["Result"] = new Dictionary<string, object>() };
+            var data = new Dictionary<string, object>
+            {
+                ["StepId"] = id,
+                ["Outcome"] = "Succeeded",
+                ["ReceiptPath"] = receipt,
+                ["Result"] = new Dictionary<string, object>()
+            };
             var reply = new Dictionary<string, object> { ["Ok"] = true, ["Data"] = data };
             Assert.AreSame(data, OwnerGitQualificationScope.ValidateSuccess(id, receipt, reply));
             Assert.ThrowsException<IOException>(() => OwnerGitQualificationScope.ValidateSuccess("other", receipt, reply));

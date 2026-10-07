@@ -1,3 +1,4 @@
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -6,7 +7,6 @@ using System.Runtime.ExceptionServices;
 using System.Security.Cryptography;
 using System.Text;
 using System.Web.Script.Serialization;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace VBAi.Tests.Integration
 {
@@ -42,24 +42,37 @@ namespace VBAi.Tests.Integration
             var leases = new List<FileStream>();
             ExcelVbeFixture host = null;
             bool bootstrapPending = false;
-            var report = new Dictionary<string, object> { ["Scope"] = "Two owned GUID paths observed immediately before one export on the same bridge dispatcher/owner STA; no atomic token-context claim, Git normalization/import or save/reopen acceptance.",
-                ["DestinationKind"] = destinationKind, ["Destination"] = destination, ["Manifest"] = manifest,
-                ["MacroExecutions"] = 0, ["Saves"] = 0, ["AttributeAclOrTokenMutations"] = 0, ["LaunchMechanism"] = "Explicit owned /x /automation with child manifest; not COM activation",
+            var report = new Dictionary<string, object>
+            {
+                ["Scope"] = "Two owned GUID paths observed immediately before one export on the same bridge dispatcher/owner STA; no atomic token-context claim, Git normalization/import or save/reopen acceptance.",
+                ["DestinationKind"] = destinationKind,
+                ["Destination"] = destination,
+                ["Manifest"] = manifest,
+                ["MacroExecutions"] = 0,
+                ["Saves"] = 0,
+                ["AttributeAclOrTokenMutations"] = 0,
+                ["LaunchMechanism"] = "Explicit owned /x /automation with child manifest; not COM activation",
                 ["AssemblyMvid"] = typeof(VbeSession).Module.ModuleVersionId.ToString("D"),
                 ["ReferencedAssemblySha256"] = Hash(typeof(VbeSession).Assembly.Location),
-                ["TestAssemblySha256"] = Hash(typeof(ExcelPairedExportPathVisibilityTests).Assembly.Location) };
-            Action save = () => { report["Stage"] = state.Stage; report["DeliveryPending"] = state.Pending;
+                ["TestAssemblySha256"] = Hash(typeof(ExcelPairedExportPathVisibilityTests).Assembly.Location)
+            };
+            Action save = () =>
+            {
+                report["Stage"] = state.Stage; report["DeliveryPending"] = state.Pending;
                 report["BootstrapPending"] = bootstrapPending;
                 report["NativeExportRequests"] = state.ExportRequests;
                 report["TerminalExportOutcome"] = state.TerminalExportOutcome;
                 report["ShutdownCompleted"] = state.ShutdownCompleted;
-                File.WriteAllText(reportPath, json.Serialize(report), new UTF8Encoding(false)); };
+                File.WriteAllText(reportPath, json.Serialize(report), new UTF8Encoding(false));
+            };
             var lifecycle = new ExcelScalarQualificationEvidence(Path.Combine(trial, "scenario-lifecycle.json"), 0, trial, "One export paired with owner-STA synthetic visibility, no retry or host cleanup on uncertainty");
             ExcelScalarQualificationEvidence requests = null;
-            Func<object, IDictionary<string, object>> send = request => {
+            Func<object, IDictionary<string, object>> send = request =>
+            {
                 string command = Convert.ToString(VbeBridgeClient.Object(json.DeserializeObject(json.Serialize(request)))["Command"]);
                 state.Begin(command); save();
-                return requests.Send(request, () => VbeBridgeClient.Read("VBAi." + host.ProcessId, request, 20000), response => {
+                return requests.Send(request, () => VbeBridgeClient.Read("VBAi." + host.ProcessId, request, 20000), response =>
+                {
                     state.Receive(command, response); report["LastResponse"] = response;
                     if (command == "export_component") { report["ExportResponse"] = response; report["ExportTerminalStage"] = state.Stage; }
                     save();
@@ -67,7 +80,8 @@ namespace VBAi.Tests.Integration
                 });
             };
             Func<object, IDictionary<string, object>> data = request => VbeBridgeClient.Object(send(request)["Data"]);
-            lifecycle.Run(() => {
+            lifecycle.Run(() =>
+            {
                 foreach (string directory in new[] { local, temp })
                 {
                     Assert.IsFalse(Directory.Exists(directory)); Directory.CreateDirectory(directory);
@@ -99,8 +113,20 @@ namespace VBAi.Tests.Integration
                 string project = Convert.ToString(VbeBridgeClient.Object(projects[0])["Name"]);
                 data(new { Command = "create_form", Project = project, Form = form });
                 var formState = data(new { Command = "form_state", Project = project, Form = form });
-                data(new { Command = "add_form_control", Project = project, Form = form, ExpectedFormVersion = formState["Version"],
-                    ControlType = "Forms.Label.1", Control = "SyntheticLabel", Caption = "VBAi synthetic export", Left = 12d, Top = 18d, Width = 96d, Height = 24d });
+                data(new
+                {
+                    Command = "add_form_control",
+                    Project = project,
+                    Form = form,
+                    ExpectedFormVersion = formState["Version"],
+                    ControlType = "Forms.Label.1",
+                    Control = "SyntheticLabel",
+                    Caption = "VBAi synthetic export",
+                    Left = 12d,
+                    Top = 18d,
+                    Width = 96d,
+                    Height = 24d
+                });
                 var before = host.ReadGitExportContext(form); report["Before"] = before;
                 Assert.AreEqual(project, before["ProjectName"]);
                 report["NativeLabelBefore"] = host.ReadPairedExportLabel(form);
@@ -111,8 +137,14 @@ namespace VBAi.Tests.Integration
                 Assert.IsFalse(File.Exists(destination)); Assert.IsFalse(File.Exists(Path.ChangeExtension(destination, ".frx")));
                 report["TestHostImmediatelyBeforeDiagnostic"] = PathVisibilityObservation.Read(paths);
                 RequireVisible(VbeBridgeClient.Object(report["TestHostImmediatelyBeforeDiagnostic"]));
-                var exportRequest = new { Command = "export_component", Project = project, Module = form,
-                    ExpectedComponentVersion = component["Version"], Path = destination };
+                var exportRequest = new
+                {
+                    Command = "export_component",
+                    Project = project,
+                    Module = form,
+                    ExpectedComponentVersion = component["Version"],
+                    Path = destination
+                };
                 var observed = data(new { Command = PathVisibilityDiagnostic.CommandName }); report["OwnerStaImmediatelyBeforeExport"] = observed;
                 state.VerifyOwner(observed, host.ProcessId, tid, Convert.ToString(report["AssemblyMvid"]), paths); save();
                 report["SelectedOwnerDirectoryObservation"] = ((object[])observed["Paths"]).Select(VbeBridgeClient.Object)
@@ -135,16 +167,21 @@ namespace VBAi.Tests.Integration
                     Assert.AreEqual(tree["TreeVersion"], treeAfter["TreeVersion"]);
                     report["TestHostAfterExport"] = PathVisibilityObservation.Read(paths); RequireVisible(VbeBridgeClient.Object(report["TestHostAfterExport"]));
                     CollectionAssert.AreEqual((string[])report["SyntheticSha256Before"], new[] { Hash(paths[1]), Hash(paths[3]) });
-                    report["RawExportFiles"] = new[] { destination, Path.ChangeExtension(destination, ".frx") }.Select(path => new {
-                        Path = path, Exists = File.Exists(path), Bytes = File.Exists(path) ? (long?)new FileInfo(path).Length : null,
-                        Sha256 = File.Exists(path) ? Hash(path) : null }).ToArray();
+                    report["RawExportFiles"] = new[] { destination, Path.ChangeExtension(destination, ".frx") }.Select(path => new
+                    {
+                        Path = path,
+                        Exists = File.Exists(path),
+                        Bytes = File.Exists(path) ? (long?)new FileInfo(path).Length : null,
+                        Sha256 = File.Exists(path) ? Hash(path) : null
+                    }).ToArray();
                     save();
                 }
                 catch (Exception readback) { if (exportFailure != null) throw new AggregateException("Native export and independent after-readback both failed; no retry.", exportFailure, readback); throw; }
                 if (exportFailure != null) ExceptionDispatchInfo.Capture(exportFailure).Throw();
                 Assert.IsTrue(File.Exists(destination) && new FileInfo(destination).Length > 0, "No nonempty native FRM.");
                 Assert.IsTrue(File.Exists(Path.ChangeExtension(destination, ".frx")), "Synthetic Label native FRX companion is absent.");
-            }, () => {
+            }, () =>
+            {
                 if (state.Pending || bootstrapPending)
                 {
                     report["Recovery"] = "Uncertain startup/delivery/export; exact host and synthetic/manifest read leases retained; no Close/Quit/replay/deletion";
@@ -154,7 +191,8 @@ namespace VBAi.Tests.Integration
                 }
                 if (host != null)
                 {
-                    try {
+                    try
+                    {
                         host.Dispose(); report["Shutdown"] = host.ShutdownDiagnostics; lifecycle.Shutdown = "Normal owned exit verified";
                         if (state.ExportRequests == 1) state.CompleteOwnedShutdown(host.ShutdownDiagnostics);
                     }
@@ -163,8 +201,11 @@ namespace VBAi.Tests.Integration
                 foreach (var lease in leases) lease.Dispose();
                 // Keep exact synthetic GUID paths, manifest and native/partial FRM+FRX as evidence, including failed exports.
                 save();
-            }, () => { save(); TestContext.AddResultFile(reportPath);
-                string requestPath = Path.Combine(trial, "request-ledger.json"); if (File.Exists(requestPath)) TestContext.AddResultFile(requestPath); });
+            }, () =>
+            {
+                save(); TestContext.AddResultFile(reportPath);
+                string requestPath = Path.Combine(trial, "request-ledger.json"); if (File.Exists(requestPath)) TestContext.AddResultFile(requestPath);
+            });
         }
 
         private static void RequireVisible(IDictionary<string, object> observation)

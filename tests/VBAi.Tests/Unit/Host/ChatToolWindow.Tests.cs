@@ -1,15 +1,14 @@
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Drawing;
 using System.Runtime.InteropServices;
 using System.Windows.Forms;
-using VBAi;
 using VBAi.Tests.Infrastructure;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace VBAi.Tests.Unit
 {
-        /// <summary>Vérifie le dimensionnement natif et le cycle d’attachement de ChatToolWindow.</summary>
-[TestClass, TestCategory("Unit")]
+    /// <summary>Vérifie le dimensionnement natif et le cycle d’attachement de ChatToolWindow.</summary>
+    [TestClass, TestCategory("Unit")]
     public sealed class ChatToolWindowCoverageTests
     {
         /// <summary>Preserves focus events while tolerating a detached native ActiveX site.</summary>
@@ -68,14 +67,14 @@ namespace VBAi.Tests.Unit
         [STATestMethod]
         public void NativeSiteSizeClampsBothDimensionsWithoutUsingTheControlBounds()
         {
-            using(var tool=new ChatToolWindow())
+            using (var tool = new ChatToolWindow())
             {
-                var handle=tool.Handle;tool.ParentReader=h=>new IntPtr(123);
-                foreach(var rect in new[] {new ChatToolWindow.NativeRect {Left=10,Top=20,Right=210,Bottom=320},new ChatToolWindow.NativeRect {Left=10,Top=20,Right=5,Bottom=3},new ChatToolWindow.NativeRect()})
+                var handle = tool.Handle; tool.ParentReader = h => new IntPtr(123);
+                foreach (var rect in new[] { new ChatToolWindow.NativeRect { Left = 10, Top = 20, Right = 210, Bottom = 320 }, new ChatToolWindow.NativeRect { Left = 10, Top = 20, Right = 5, Bottom = 3 }, new ChatToolWindow.NativeRect() })
                 {
-                    tool.ClientReader=(IntPtr h,out ChatToolWindow.NativeRect result)=>{Assert.AreEqual(new IntPtr(123),h);result=rect;return true;};
-                    Size size;Assert.IsTrue(tool.TryGetNativeSiteSize(out size));
-                    Assert.AreEqual(new Size(Math.Max(0,rect.Right-rect.Left),Math.Max(0,rect.Bottom-rect.Top)),size);
+                    tool.ClientReader = (IntPtr h, out ChatToolWindow.NativeRect result) => { Assert.AreEqual(new IntPtr(123), h); result = rect; return true; };
+                    Size size; Assert.IsTrue(tool.TryGetNativeSiteSize(out size));
+                    Assert.AreEqual(new Size(Math.Max(0, rect.Right - rect.Left), Math.Max(0, rect.Bottom - rect.Top)), size);
                 }
             }
         }
@@ -102,8 +101,8 @@ namespace VBAi.Tests.Unit
                 Assert.IsFalse(tool.TryGetNativeSiteSize(out size));
             }
         }
-                /// <summary>Utilise des handles WinForms réels pour vérifier le redimensionnement, l’attachement et la destruction.</summary>
-[STATestMethod]
+        /// <summary>Utilise des handles WinForms réels pour vérifier le redimensionnement, l’attachement et la destruction.</summary>
+        [STATestMethod]
         public void NativeSiteResizingAttachDetachTimerAndDisposeUseActualWinFormsHandles()
         {
             using (var scope = new HostUiScope())
@@ -124,8 +123,8 @@ namespace VBAi.Tests.Unit
             }
             using (var tool = new ChatToolWindow()) LlmBoundaryScope.Call(tool, "Dispose", false);
         }
-                /// <summary>Vérifie les garde-fous d’interop et les dimensions minimales en cas de géométrie invalide.</summary>
-[STATestMethod]
+        /// <summary>Vérifie les garde-fous d’interop et les dimensions minimales en cas de géométrie invalide.</summary>
+        [STATestMethod]
         public void InteropFailureGuardsAndClampedDimensionsPreserveTheNativeSite()
         {
             using (var tool = new ChatToolWindow())

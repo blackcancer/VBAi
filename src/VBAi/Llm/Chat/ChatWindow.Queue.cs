@@ -54,8 +54,11 @@ namespace VBAi
             if (currentSession == null || string.IsNullOrWhiteSpace(prompt.Text)) return;
             try { EnsureCurrentScope(); }
             catch (Exception error) { SetStatus(error.Message); return; }
-            PendingMessages.Add(new QueuedChatMessage {
-                Text = prompt.Text.Trim(), References = CurrentReferences(prompt.Text), Attachments = draftAttachments.ToArray(),
+            PendingMessages.Add(new QueuedChatMessage
+            {
+                Text = prompt.Text.Trim(),
+                References = CurrentReferences(prompt.Text),
+                Attachments = draftAttachments.ToArray(),
                 Memory = attachMemory.Checked ? queuedDraftMemory ?? projectMemory : null
             });
             queuedDraftMemory = null; prompt.Clear(); selectedReferences.Clear(); draftAttachments.Clear(); attachMemory.Checked = false;

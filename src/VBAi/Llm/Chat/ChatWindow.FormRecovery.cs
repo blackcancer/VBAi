@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.Windows;
-using System.Windows.Controls;
 namespace VBAi
 {
 
@@ -20,7 +19,8 @@ namespace VBAi
             var card = new ChatFormRecoveryView();
             card.title.Text = change.Form + (string.IsNullOrEmpty(change.ParentPath) ? "" : " / " + change.ParentPath);
             card.count.Text = change.ControlCount + " · " + UiText.Get("Controls cut");
-            card.recover.Click += (sender,args) => {
+            card.recover.Click += (sender, args) =>
+            {
                 if (busy || tools == null || !tools.CanRecoverFormCut(change)) return;
                 card.recover.Enabled = false;
                 var result = tools.RecoverFormCut(change);
@@ -30,7 +30,7 @@ namespace VBAi
                 RefreshFormCutCards(); SaveCurrentSession();
             };
             formCutButtons[change] = card.recover; RefreshFormCutCards();
-            return new ChatDesignerHost(card) { Margin = new Thickness(0,0,4,14) };
+            return new ChatDesignerHost(card) { Margin = new Thickness(0, 0, 4, 14) };
         }
 
         /// <summary>Met à jour disponibilité et libellé des boutons selon l’état des récupérations.</summary>

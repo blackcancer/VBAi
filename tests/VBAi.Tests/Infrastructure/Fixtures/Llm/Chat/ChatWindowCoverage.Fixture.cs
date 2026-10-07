@@ -9,9 +9,7 @@ using System.Web.Script.Serialization;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
-using VBAi;
 using VBAi.Tests.Infrastructure;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 namespace VBAi.Tests.Unit
 {
     /// <summary>Héberge les doubles runtime et les utilitaires visuels partagés par les tests de fenêtre de discussion.</summary>

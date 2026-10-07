@@ -44,13 +44,12 @@ namespace VBAi
                 if (active == null || !SameComObject((object)active.CodeModule, (object)code))
                     throw new InvalidOperationException("The module to print must already be the active code pane.");
             }
-            var command = EnumerateCommands().FirstOrDefault(c => c.Id == id && c.Enabled && c.Caption == request.ControlCaption);
-            if (command == null) throw new InvalidOperationException("The exact native IDE command is absent or disabled.");
-            var context = SynchronizationContext.Current;
-            if (context == null) throw new InvalidOperationException("The VBE UI context is unavailable.");
+            var command = EnumerateCommands().FirstOrDefault(c => c.Id == id && c.Enabled && c.Caption == request.ControlCaption) ?? throw new InvalidOperationException("The exact native IDE command is absent or disabled.");
+            var context = SynchronizationContext.Current ?? throw new InvalidOperationException("The VBE UI context is unavailable.");
             string selector = request.Project, caption = request.ControlCaption, action = request.Action;
             int mode = request.ExpectedMode;
-            context.Post(_ => {
+            context.Post(_ =>
+            {
                 try
                 {
                     object current = GetProject(selector);
@@ -69,10 +68,18 @@ namespace VBAi
                 }
                 catch { LoadLog.Write("Native IDE surface was not opened because its context changed or the command failed."); }
             }, null);
-            return new { Scheduled = true, Project = selector, Action = action, ControlId = id,
-                CommandReturned = false, Verified = false, PrintSubmitted = false,
+            return new
+            {
+                Scheduled = true,
+                Project = selector,
+                Action = action,
+                ControlId = id,
+                CommandReturned = false,
+                Verified = false,
+                PrintSubmitted = false,
                 NextRead = action == "macros" ? "read_navigation_surface Pane=macros" : "debug_dialog",
-                Limit = "Scheduling only. Native Help may open in another application; no topic, print job or installed control is certified." };
+                Limit = "Scheduling only. Native Help may open in another application; no topic, print job or installed control is certified."
+            };
         }
     }
 
@@ -85,7 +92,8 @@ namespace VBAi
         {
             bool found = false;
             uint current = (uint)System.Diagnostics.Process.GetCurrentProcess().Id;
-            EnumWindows((handle, ignored) => {
+            EnumWindows((handle, ignored) =>
+            {
                 GetWindowThreadProcessId(handle, out uint pid);
                 if (pid == current && ClassName(handle) == "#32770" && IsWindowVisible(handle))
                 {

@@ -1,10 +1,9 @@
 namespace VBAi.Tests.Unit
 {
+    using Microsoft.VisualStudio.TestTools.UnitTesting;
     using System;
     using System.Collections;
     using System.Linq;
-    using VBAi;
-    using Microsoft.VisualStudio.TestTools.UnitTesting;
 
     public sealed partial class VbeFormsValueDuplicationTests
     {
@@ -121,11 +120,11 @@ namespace VBAi.Tests.Unit
 }
 namespace VBAi.Tests.Unit
 {
+    using Microsoft.VisualStudio.TestTools.UnitTesting;
     using System;
     using System.Collections;
     using System.Linq;
     using System.Reflection;
-    using Microsoft.VisualStudio.TestTools.UnitTesting;
     public sealed partial class VbeFormsFrameDuplicationTests
     {
         [TestMethod] public void ProfiledFrameChecksPreflightGeometryFontsAndConcurrentTreeChanges() { FramePreflightFailures("profiled"); }
@@ -135,55 +134,61 @@ namespace VBAi.Tests.Unit
         [TestMethod]
         public void ProfiledPlanValidatesRootPrefixVersionControlTypeNamesAndDirectOwnership()
         {
-            var f=FrameWithChildren("profiled");
-            foreach(var path in new[]{null,"Controls/Frame1/Controls/Title","Pages/Frame1","Controls/missing"}) {
-                var r=f.Request();r.ControlPath=path;
-                if(path=="Controls/missing") Assert.ThrowsException<InvalidOperationException>(()=>f.Service.FrameProfileCopyPlan(r));
-                else Assert.ThrowsException<ArgumentException>(()=>f.Service.FrameProfileCopyPlan(r));
+            var f = FrameWithChildren("profiled");
+            foreach (var path in new[] { null, "Controls/Frame1/Controls/Title", "Pages/Frame1", "Controls/missing" })
+            {
+                var r = f.Request(); r.ControlPath = path;
+                if (path == "Controls/missing") Assert.ThrowsException<InvalidOperationException>(() => f.Service.FrameProfileCopyPlan(r));
+                else Assert.ThrowsException<ArgumentException>(() => f.Service.FrameProfileCopyPlan(r));
             }
-            var missing=f.Request();missing.ExpectedTreeVersion=null;
-            Assert.ThrowsException<ArgumentException>(()=>f.Service.FrameProfileCopyPlan(missing));
-            f.Form.Designer.Controls.AddExisting("Label","Wrong");var wrong=f.Request();wrong.ControlPath="Controls/Wrong";
-            Assert.ThrowsException<InvalidOperationException>(()=>f.Service.FrameProfileCopyPlan(wrong));
-            dynamic collision=f.Service.FrameProfileCopyPlan(f.Request("Frame1"));
-            Assert.IsTrue(((IEnumerable)collision.Issues).Cast<string>().Any(issue=>issue.StartsWith("New Frame name already exists",StringComparison.Ordinal)));
-            dynamic longNames=f.Service.FrameProfileCopyPlan(f.Request(new string('F',41)));
-            Assert.IsTrue(((IEnumerable)longNames.Issues).Cast<string>().Any(issue=>issue=="New Frame name exceeds 40 characters."));
-            Assert.IsTrue(((IEnumerable)longNames.Issues).Cast<string>().Any(issue=>issue.Contains("proposed child name exceeds")));
-            f.Frame.Controls.Item("Title").Parent=f.Form.Designer;
-            dynamic indirect=f.Service.FrameProfileCopyPlan(f.Request());
-            Assert.AreEqual(0,(int)indirect.DirectChildCount);
+            var missing = f.Request(); missing.ExpectedTreeVersion = null;
+            Assert.ThrowsException<ArgumentException>(() => f.Service.FrameProfileCopyPlan(missing));
+            f.Form.Designer.Controls.AddExisting("Label", "Wrong"); var wrong = f.Request(); wrong.ControlPath = "Controls/Wrong";
+            Assert.ThrowsException<InvalidOperationException>(() => f.Service.FrameProfileCopyPlan(wrong));
+            dynamic collision = f.Service.FrameProfileCopyPlan(f.Request("Frame1"));
+            Assert.IsTrue(((IEnumerable)collision.Issues).Cast<string>().Any(issue => issue.StartsWith("New Frame name already exists", StringComparison.Ordinal)));
+            dynamic longNames = f.Service.FrameProfileCopyPlan(f.Request(new string('F', 41)));
+            Assert.IsTrue(((IEnumerable)longNames.Issues).Cast<string>().Any(issue => issue == "New Frame name exceeds 40 characters."));
+            Assert.IsTrue(((IEnumerable)longNames.Issues).Cast<string>().Any(issue => issue.Contains("proposed child name exceeds")));
+            f.Frame.Controls.Item("Title").Parent = f.Form.Designer;
+            dynamic indirect = f.Service.FrameProfileCopyPlan(f.Request());
+            Assert.AreEqual(0, (int)indirect.DirectChildCount);
             Assert.IsFalse((bool)indirect.EligibleForLimitedProbe);
         }
 
         [TestMethod]
         public void ProfiledPlanCoversNullableTextFalseCheckAndInvalidComboWidths()
         {
-            foreach(var type in new[]{"TextBox","CheckBox"}) {
-                var f=FrameWithChildren("profiled",type);
-                dynamic result=f.Service.DuplicateFrameProfiled(f.Request());
-                Assert.AreEqual(1,(int)result.DirectChildrenCopied);
-                Assert.AreEqual(type=="TextBox"?null:(object)false,f.Form.Designer.Controls.Item("FrameCopy").Controls.Item("FrameCopy_Title").Value);
+            foreach (var type in new[] { "TextBox", "CheckBox" })
+            {
+                var f = FrameWithChildren("profiled", type);
+                dynamic result = f.Service.DuplicateFrameProfiled(f.Request());
+                Assert.AreEqual(1, (int)result.DirectChildrenCopied);
+                Assert.AreEqual(type == "TextBox" ? null : (object)false, f.Form.Designer.Controls.Item("FrameCopy").Controls.Item("FrameCopy_Title").Value);
             }
-            foreach(var width in new object[]{null,42," ",new string('x',65)}) {
-                var f=FrameWithChildren("profiled","ComboBox");f.Frame.Controls.Item("Title").ListWidth=width;
-                dynamic plan=f.Service.FrameProfileCopyPlan(f.Request());
+            foreach (var width in new object[] { null, 42, " ", new string('x', 65) })
+            {
+                var f = FrameWithChildren("profiled", "ComboBox"); f.Frame.Controls.Item("Title").ListWidth = width;
+                dynamic plan = f.Service.FrameProfileCopyPlan(f.Request());
                 Assert.IsFalse((bool)plan.EligibleForLimitedProbe);
-                Assert.IsTrue(((IEnumerable)plan.Issues).Cast<string>().Any(issue=>issue.Contains("ListWidth must be nonempty text")));
+                Assert.IsTrue(((IEnumerable)plan.Issues).Cast<string>().Any(issue => issue.Contains("ListWidth must be nonempty text")));
             }
         }
 
         [TestMethod]
         public void ProfiledFrameRejectsReadbackForEachNonLabelProfile()
         {
-            foreach(var type in new[]{"TextBox","CheckBox","CommandButton","OptionButton","ComboBox"}) {
-                foreach(var field in type=="CheckBox"?new[]{"Caption","ValueType","Value"}:new[]{type=="TextBox"?"Value":type=="ComboBox"?"ListWidth":"Caption"}) {
-                    var f=FrameWithChildren("profiled",type);var request=f.Request();
-                    f.Form.Designer.Controls.ConfigureAdded=frame=>frame.Controls.ConfigureAdded=c=>{
-                        if(field=="ValueType") c.ReadOverrides["Value"]="invalid Boolean";
-                        else c.ReadOverrides[field]=field=="Value"&&type=="CheckBox"?(object)true:"changed";
+            foreach (var type in new[] { "TextBox", "CheckBox", "CommandButton", "OptionButton", "ComboBox" })
+            {
+                foreach (var field in type == "CheckBox" ? new[] { "Caption", "ValueType", "Value" } : new[] { type == "TextBox" ? "Value" : type == "ComboBox" ? "ListWidth" : "Caption" })
+                {
+                    var f = FrameWithChildren("profiled", type); var request = f.Request();
+                    f.Form.Designer.Controls.ConfigureAdded = frame => frame.Controls.ConfigureAdded = c =>
+                    {
+                        if (field == "ValueType") c.ReadOverrides["Value"] = "invalid Boolean";
+                        else c.ReadOverrides[field] = field == "Value" && type == "CheckBox" ? (object)true : "changed";
                     };
-                    AssertRolledBack(f,request,"profiled","Copied "+(type=="CommandButton"||type=="OptionButton"?"button caption":type=="TextBox"?"TextBox value":type=="ComboBox"?"ComboBox ListWidth":type)+" differs");
+                    AssertRolledBack(f, request, "profiled", "Copied " + (type == "CommandButton" || type == "OptionButton" ? "button caption" : type == "TextBox" ? "TextBox value" : type == "ComboBox" ? "ComboBox ListWidth" : type) + " differs");
                 }
             }
         }
@@ -191,26 +196,27 @@ namespace VBAi.Tests.Unit
         [TestMethod]
         public void ProfileHelpersRejectUnregisteredTypesForReadApplyAndVerify()
         {
-            var production=typeof(VBAi.VbeForms);
-            var profileType=production.GetNestedType("VerifiedChildProfile",BindingFlags.NonPublic);
-            var snapshotType=production.GetNestedType("ProfiledChildSnapshot",BindingFlags.NonPublic);
-            var profile=Activator.CreateInstance(profileType,true);
-            profileType.GetField("Type").SetValue(profile,"Unknown");
-            var snapshot=Activator.CreateInstance(snapshotType,true);
-            snapshotType.GetField("Profile").SetValue(snapshot,profile);
-            snapshotType.GetField("Width").SetValue(snapshot,20d);
-            snapshotType.GetField("Height").SetValue(snapshot,10d);
-            var f=Create();var child=f.Frame.Controls.AddExisting("Label","Title");
-            var read=production.GetMethod("ReadProfiledChild",BindingFlags.NonPublic|BindingFlags.Static);
-            var apply=production.GetMethod("ApplyProfiledChild",BindingFlags.NonPublic|BindingFlags.Static);
-            var verify=production.GetMethod("VerifyProfiledChild",BindingFlags.NonPublic|BindingFlags.Static);
-            foreach(var invocation in new Action[]{
+            var production = typeof(VBAi.VbeForms);
+            var profileType = production.GetNestedType("VerifiedChildProfile", BindingFlags.NonPublic);
+            var snapshotType = production.GetNestedType("ProfiledChildSnapshot", BindingFlags.NonPublic);
+            var profile = Activator.CreateInstance(profileType, true);
+            profileType.GetField("Type").SetValue(profile, "Unknown");
+            var snapshot = Activator.CreateInstance(snapshotType, true);
+            snapshotType.GetField("Profile").SetValue(snapshot, profile);
+            snapshotType.GetField("Width").SetValue(snapshot, 20d);
+            snapshotType.GetField("Height").SetValue(snapshot, 10d);
+            var f = Create(); var child = f.Frame.Controls.AddExisting("Label", "Title");
+            var read = production.GetMethod("ReadProfiledChild", BindingFlags.NonPublic | BindingFlags.Static);
+            var apply = production.GetMethod("ApplyProfiledChild", BindingFlags.NonPublic | BindingFlags.Static);
+            var verify = production.GetMethod("VerifyProfiledChild", BindingFlags.NonPublic | BindingFlags.Static);
+            foreach (var invocation in new Action[]{
                 ()=>read.Invoke(null,new object[]{child,profile,"source","proposed","name"}),
                 ()=>apply.Invoke(null,new object[]{child,snapshot}),
-                ()=>verify.Invoke(null,new object[]{child,snapshot})}) {
-                var error=Assert.ThrowsException<TargetInvocationException>(invocation);
-                Assert.IsInstanceOfType(error.InnerException,typeof(InvalidOperationException));
-                StringAssert.Contains(error.InnerException.Message,"Profile has no");
+                ()=>verify.Invoke(null,new object[]{child,snapshot})})
+            {
+                var error = Assert.ThrowsException<TargetInvocationException>(invocation);
+                Assert.IsInstanceOfType(error.InnerException, typeof(InvalidOperationException));
+                StringAssert.Contains(error.InnerException.Message, "Profile has no");
             }
         }
     }

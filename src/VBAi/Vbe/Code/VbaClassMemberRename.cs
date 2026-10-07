@@ -96,8 +96,7 @@ namespace VBAi
                                 throw new InvalidOperationException("Only direct Me qualification proves this private member receiver.");
                             start = i - 2;
                         }
-                        var owner = members.SingleOrDefault(x => token.Line > x.Token.Line && token.Line < x.EndLine);
-                        if (owner == null) throw new InvalidOperationException("The reference is outside a closed class procedure.");
+                        var owner = members.SingleOrDefault(x => token.Line > x.Token.Line && token.Line < x.EndLine) ?? throw new InvalidOperationException("The reference is outside a closed class procedure.");
                         bool statementStart = start == 0 || new[] { "call", "then", "else" }.Contains(statement[start - 1].Text.ToLowerInvariant());
                         bool assignmentStart = start == 0 || new[] { "let", "set", "then", "else" }.Contains(statement[start - 1].Text.ToLowerInvariant());
                         bool assignment = assignmentStart && i + 1 < statement.Count && statement[i + 1].Text == "=";
@@ -163,8 +162,14 @@ namespace VBAi
                     kind = accessor == "get" ? 3 : accessor == "let" ? 1 : accessor == "set" ? 2 : -1;
                     if (kind < 0) throw new InvalidOperationException("The property accessor kind is unreadable.");
                 }
-                active = new Member { Name = Bare(tokens[name].Text), Token = tokens[name], ProcKind = kind,
-                    Kind = property ? "Property" : Same(tokens[first].Text, "Sub") ? "Sub" : "Function", Access = Same(access, "Private") ? "Private" : access };
+                active = new Member
+                {
+                    Name = Bare(tokens[name].Text),
+                    Token = tokens[name],
+                    ProcKind = kind,
+                    Kind = property ? "Property" : Same(tokens[first].Text, "Sub") ? "Sub" : "Function",
+                    Access = Same(access, "Private") ? "Private" : access
+                };
                 result.Add(active);
             }
             if (active != null) throw new InvalidOperationException("The matching End statement is required.");

@@ -1,7 +1,6 @@
 using System;
 using System.ComponentModel;
 using System.IO;
-using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 
@@ -27,7 +26,8 @@ namespace VBAi
         [UnmanagedFunctionPointer(CallingConvention.Cdecl)] private delegate uint StatusCall(ref RendererStatus status);
 
         /// <summary>Native ABI structure containing compatibility data and rendering diagnostics.</summary>
-        [StructLayout(LayoutKind.Sequential)] internal struct RendererStatus
+        [StructLayout(LayoutKind.Sequential)]
+        internal struct RendererStatus
         {
 
             /// <summary>Structure size, ABI version, active state, registered windows, and import totals.</summary>

@@ -1,5 +1,5 @@
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
@@ -10,7 +10,6 @@ using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace VBAi.Tests.Integration
 {
@@ -146,16 +145,29 @@ namespace VBAi.Tests.Integration
                         int routeCount = Regex.Matches(generated, @"(?m)^Private Function VBAiDispatchRoute").Count;
                         Assert.IsTrue(leafCount > 32, "The fixture must cross a complete route fanout.");
                         Assert.IsTrue(routeCount > 1);
-                        WriteEvidence(root, "before-install", new { PID = pid, ExcelVersion = Convert.ToString(((dynamic)application).Version),
-                            Assembly = typeof(VbeTestExplorerService).Assembly.Location, MVID = typeof(VbeTestExplorerService).Module.ModuleVersionId,
-                            CurrentSourceRevision = sourceRevision, SourceStatus = sourceStatus,
-                            ProjectRevision = before.Project.Revision, ReferencesHash = before.Project.ReferencesHash,
-                            SupportVersion = VbaTestRuntimeSource.Version, SupportSignature = VbaTestRuntimeSource.DispatchSignature(before),
-                            SupportHash = VbeTestExplorerService.Hash(generated), SupportCharacters = generated.Length,
-                            TextLimit, LeafCount = leafCount, RouteCount = routeCount, TestCount = before.Tests.Count(),
-                            Modules = before.Project.Modules.Select(module => new { module.Name, module.Hash, module.ComponentType }).ToArray() });
+                        WriteEvidence(root, "before-install", new
+                        {
+                            PID = pid,
+                            ExcelVersion = Convert.ToString(((dynamic)application).Version),
+                            Assembly = typeof(VbeTestExplorerService).Assembly.Location,
+                            MVID = typeof(VbeTestExplorerService).Module.ModuleVersionId,
+                            CurrentSourceRevision = sourceRevision,
+                            SourceStatus = sourceStatus,
+                            ProjectRevision = before.Project.Revision,
+                            ReferencesHash = before.Project.ReferencesHash,
+                            SupportVersion = VbaTestRuntimeSource.Version,
+                            SupportSignature = VbaTestRuntimeSource.DispatchSignature(before),
+                            SupportHash = VbeTestExplorerService.Hash(generated),
+                            SupportCharacters = generated.Length,
+                            TextLimit,
+                            LeafCount = leafCount,
+                            RouteCount = routeCount,
+                            TestCount = before.Tests.Count(),
+                            Modules = before.Project.Modules.Select(module => new { module.Name, module.Hash, module.ComponentType }).ToArray()
+                        });
                         File.WriteAllText(Path.Combine(root, "generated-support.bas"), generated, new UTF8Encoding(false));
-                        service.ConfirmSupport = (review, oldSource, newSource) => {
+                        service.ConfirmSupport = (review, oldSource, newSource) =>
+                        {
                             Assert.AreEqual(Canonical(generated), Canonical(newSource));
                             Assert.IsTrue(newSource.Length <= TextLimit);
                             return true;
@@ -203,13 +215,21 @@ namespace VBAi.Tests.Integration
                         AssertSources(before, after);
                         Assert.AreEqual(installed.Project.Revision, after.Project.Revision);
                         Assert.AreEqual(10004, after.Tests.Count());
-                        WriteEvidence(root, "verified", new { PID = pid, MVID = typeof(VbeTestExplorerService).Module.ModuleVersionId,
-                            BeforeRevision = before.Project.Revision, InstalledRevision = installed.Project.Revision, FinalRevision = after.Project.Revision,
-                            NativeCompileVerdict = verdict, SelectedIds = selected.Select(test => test.Id).ToArray(),
-                            Positions = positions, Passed = run.Results.Count(result => result.Outcome == VbaTestOutcome.Passed),
+                        WriteEvidence(root, "verified", new
+                        {
+                            PID = pid,
+                            MVID = typeof(VbeTestExplorerService).Module.ModuleVersionId,
+                            BeforeRevision = before.Project.Revision,
+                            InstalledRevision = installed.Project.Revision,
+                            FinalRevision = after.Project.Revision,
+                            NativeCompileVerdict = verdict,
+                            SelectedIds = selected.Select(test => test.Id).ToArray(),
+                            Positions = positions,
+                            Passed = run.Results.Count(result => result.Outcome == VbaTestOutcome.Passed),
                             Failed = run.Results.Count(result => result.Outcome == VbaTestOutcome.Failed),
                             Errors = run.Results.Count(result => result.Outcome == VbaTestOutcome.Error),
-                            Boundary = "external STA adapter; installed add-in loading is not qualified" });
+                            Boundary = "external STA adapter; installed add-in loading is not qualified"
+                        });
                     }
                 }
             }
@@ -247,8 +267,14 @@ namespace VBAi.Tests.Integration
         }
         private static string Git(string arguments)
         {
-            var start = new ProcessStartInfo("git", arguments) { WorkingDirectory = Environment.CurrentDirectory,
-                UseShellExecute = false, CreateNoWindow = true, RedirectStandardOutput = true, RedirectStandardError = true };
+            var start = new ProcessStartInfo("git", arguments)
+            {
+                WorkingDirectory = Environment.CurrentDirectory,
+                UseShellExecute = false,
+                CreateNoWindow = true,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true
+            };
             using (var process = Process.Start(start))
             {
                 var output = process.StandardOutput.ReadToEndAsync();

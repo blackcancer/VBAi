@@ -61,22 +61,32 @@ namespace VBAi.Tests.Integration
                 try
                 {
                     guard();
-                    probe.Observe(operation + ".NativeOM", () => {
+                    probe.Observe(operation + ".NativeOM", () =>
+                    {
                         acquire(native);
-                        return new Dictionary<string, object> { ["HResult"] = "0x" + unchecked((uint)native.HResult).ToString("X8"),
-                            ["Pointer"] = native.Pointer.ToInt64(), ["RequestedInterfaceId"] = InterfaceId.ToString("D") };
+                        return new Dictionary<string, object>
+                        {
+                            ["HResult"] = "0x" + unchecked((uint)native.HResult).ToString("X8"),
+                            ["Pointer"] = native.Pointer.ToInt64(),
+                            ["RequestedInterfaceId"] = InterfaceId.ToString("D")
+                        };
                     }, record);
                     if (native.HResult != 0 || native.Pointer == IntPtr.Zero)
                         throw new COMException("Exact CommandBar NativeOM interface was not returned; no fallback or retry.",
                             native.HResult == 0 ? unchecked((int)0x80004005) : native.HResult);
                     guard();
-                    probe.Observe(operation + ".TypedInterface", () => {
+                    probe.Observe(operation + ".TypedInterface", () =>
+                    {
                         bar = wrap(native.Pointer);
                         bool supported = bar != null && typed(bar);
                         if (!supported) throw new InvalidOperationException("NativeOM cannot be marshaled as the exact CommandBar interface; no fallback.");
-                        return new Dictionary<string, object> { ["InterfaceId"] = InterfaceId.ToString("D"),
-                            ["ManagedType"] = bar.GetType().FullName, ["TypedInterfaceSupported"] = true,
-                            ["ApplicationDispId"] = "0x60020000" };
+                        return new Dictionary<string, object>
+                        {
+                            ["InterfaceId"] = InterfaceId.ToString("D"),
+                            ["ManagedType"] = bar.GetType().FullName,
+                            ["TypedInterfaceSupported"] = true,
+                            ["ApplicationDispId"] = "0x60020000"
+                        };
                     }, record);
                     guard();
                     probe.Observe(operation + ".Application", () => { container = readApplication(bar); return container; }, record);
@@ -126,30 +136,59 @@ namespace VBAi.Tests.Integration
 
             internal T Observe<T>(string operation, Func<T> read, Action<IDictionary<string, object>> record)
             {
-                record(new Dictionary<string, object> { ["PublisherOwnershipRead"] = operation, ["State"] = "PENDING",
-                    ["ProcessId"] = pid, ["OriginalHandle"] = processHandle, ["AutomaticRetry"] = false,
-                    ["MutationInvoked"] = false, ["Utc"] = DateTime.UtcNow.ToString("o") });
+                record(new Dictionary<string, object>
+                {
+                    ["PublisherOwnershipRead"] = operation,
+                    ["State"] = "PENDING",
+                    ["ProcessId"] = pid,
+                    ["OriginalHandle"] = processHandle,
+                    ["AutomaticRetry"] = false,
+                    ["MutationInvoked"] = false,
+                    ["Utc"] = DateTime.UtcNow.ToString("o")
+                });
                 T value;
                 try { value = read(); }
                 catch (Exception error)
                 {
-                    try { record(new Dictionary<string, object> { ["PublisherOwnershipRead"] = operation, ["State"] = "FAILED",
-                        ["Error"] = error.ToString(), ["HResult"] = "0x" + unchecked((uint)error.HResult).ToString("X8"),
-                        ["AutomaticRetry"] = false, ["MutationInvoked"] = false }); }
+                    try
+                    {
+                        record(new Dictionary<string, object>
+                        {
+                            ["PublisherOwnershipRead"] = operation,
+                            ["State"] = "FAILED",
+                            ["Error"] = error.ToString(),
+                            ["HResult"] = "0x" + unchecked((uint)error.HResult).ToString("X8"),
+                            ["AutomaticRetry"] = false,
+                            ["MutationInvoked"] = false
+                        });
+                    }
                     catch (Exception evidence) { throw new AggregateException("Publisher ownership read and durable failure evidence failed.", error, evidence); }
                     throw;
                 }
-                record(new Dictionary<string, object> { ["PublisherOwnershipRead"] = operation, ["State"] = "RETURNED",
-                    ["Value"] = EvidenceValue(value), ["AutomaticRetry"] = false, ["MutationInvoked"] = false });
+                record(new Dictionary<string, object>
+                {
+                    ["PublisherOwnershipRead"] = operation,
+                    ["State"] = "RETURNED",
+                    ["Value"] = EvidenceValue(value),
+                    ["AutomaticRetry"] = false,
+                    ["MutationInvoked"] = false
+                });
                 return value;
             }
 
             internal static object EvidenceValue(object value)
             {
                 var window = value as PublisherOwnerWindow;
-                if (window != null) return new Dictionary<string, object> { ["Hwnd"] = window.Window.ToInt64(),
-                    ["RootHwnd"] = window.Root.ToInt64(), ["ProcessId"] = window.Process, ["NativeThreadId"] = window.Thread,
-                    ["RootProcessId"] = window.RootProcess, ["RootThreadId"] = window.RootThread, ["Class"] = window.Class };
+                if (window != null) return new Dictionary<string, object>
+                {
+                    ["Hwnd"] = window.Window.ToInt64(),
+                    ["RootHwnd"] = window.Root.ToInt64(),
+                    ["ProcessId"] = window.Process,
+                    ["NativeThreadId"] = window.Thread,
+                    ["RootProcessId"] = window.RootProcess,
+                    ["RootThreadId"] = window.RootThread,
+                    ["Class"] = window.Class
+                };
                 var windows = value as PublisherOwnerWindow[];
                 if (windows == null) return value != null && Marshal.IsComObject(value) ? "COM_GETTER_RETURNED" : value;
                 var rows = new object[windows.Length];
@@ -188,8 +227,13 @@ namespace VBAi.Tests.Integration
                 }
                 else if (result == NoInterface)
                 {
-                    record(new Dictionary<string, object> { ["PublisherOwnershipCapability"] = "IOleWindow",
-                        ["State"] = "KNOWN_UNSUPPORTED", ["HResult"] = "0x80004002", ["AutomaticRetry"] = false });
+                    record(new Dictionary<string, object>
+                    {
+                        ["PublisherOwnershipCapability"] = "IOleWindow",
+                        ["State"] = "KNOWN_UNSUPPORTED",
+                        ["HResult"] = "0x80004002",
+                        ["AutomaticRetry"] = false
+                    });
                     guard();
                     var bars = Observe("ExistingOwnedMsoCommandBarInventory", findCommandBars, record);
                     if (bars == null || bars.Length == 0 || bars.Length > MaximumCommandBars)
@@ -200,9 +244,13 @@ namespace VBAi.Tests.Integration
                         RequireWindow(bar, true);
                         if (!distinct.Add(bar.Window)) throw new InvalidOperationException("BLOCKED: duplicate command-bar HWND in the frozen ownership inventory; no NativeOM call is permitted.");
                     }
-                    record(new Dictionary<string, object> { ["PublisherCommandBarInventoryValidated"] = true,
-                        ["DistinctWindowCount"] = bars.Length, ["MaximumNativeObjectModelWindows"] = MaximumCommandBars,
-                        ["ApplicationIdentityAdoptionAllowed"] = false });
+                    record(new Dictionary<string, object>
+                    {
+                        ["PublisherCommandBarInventoryValidated"] = true,
+                        ["DistinctWindowCount"] = bars.Length,
+                        ["MaximumNativeObjectModelWindows"] = MaximumCommandBars,
+                        ["ApplicationIdentityAdoptionAllowed"] = false
+                    });
                     candidate = null;
                     foreach (var bar in bars)
                     {
@@ -222,9 +270,15 @@ namespace VBAi.Tests.Integration
                         if (!bar.Same(afterBar)) throw new InvalidOperationException("Publisher command-bar identity changed during native object-model retrieval.");
                         if (Observe(operation + ".Application.IUnknown.After", readIdentity, record) != identity)
                             throw new InvalidOperationException("Publisher application identity changed during native object-model retrieval.");
-                        record(new Dictionary<string, object> { ["PublisherCommandBarAssociation"] = container == identity ? "EXACT_MATCH" : "KNOWN_MISMATCH",
-                            ["Hwnd"] = bar.Window.ToInt64(), ["ContainerIUnknown"] = container, ["RetainedApplicationIUnknown"] = identity,
-                            ["NativeObjectModelAttemptsForWindow"] = 1, ["AutomaticRetry"] = false });
+                        record(new Dictionary<string, object>
+                        {
+                            ["PublisherCommandBarAssociation"] = container == identity ? "EXACT_MATCH" : "KNOWN_MISMATCH",
+                            ["Hwnd"] = bar.Window.ToInt64(),
+                            ["ContainerIUnknown"] = container,
+                            ["RetainedApplicationIUnknown"] = identity,
+                            ["NativeObjectModelAttemptsForWindow"] = 1,
+                            ["AutomaticRetry"] = false
+                        });
                         if (container == identity) { candidate = bar; break; }
                     }
                     if (candidate == null) throw new InvalidOperationException("BLOCKED: every returned command-bar container differs from the retained ROT application; no publication operation is permitted.");
@@ -237,11 +291,20 @@ namespace VBAi.Tests.Integration
                 if (!candidate.Same(after)) throw new InvalidOperationException("Publisher ownership window changed during its read-only binding.");
                 if (Observe("Application.IUnknown.AfterBinding", readIdentity, record) != identity)
                     throw new InvalidOperationException("Publisher application identity changed during ownership discovery.");
-                record(new Dictionary<string, object> { ["PublisherPrePublicationOwnership"] = "VERIFIED", ["Route"] = route,
-                    ["ProcessId"] = pid, ["OriginalHandle"] = processHandle, ["ApplicationIUnknown"] = identity,
-                    ["Hwnd"] = candidate.Window.ToInt64(), ["RootHwnd"] = candidate.Root.ToInt64(),
-                    ["NativeThreadId"] = candidate.Thread, ["RootThreadId"] = candidate.RootThread,
-                    ["Class"] = candidate.Class, ["MutationInvoked"] = false });
+                record(new Dictionary<string, object>
+                {
+                    ["PublisherPrePublicationOwnership"] = "VERIFIED",
+                    ["Route"] = route,
+                    ["ProcessId"] = pid,
+                    ["OriginalHandle"] = processHandle,
+                    ["ApplicationIUnknown"] = identity,
+                    ["Hwnd"] = candidate.Window.ToInt64(),
+                    ["RootHwnd"] = candidate.Root.ToInt64(),
+                    ["NativeThreadId"] = candidate.Thread,
+                    ["RootThreadId"] = candidate.RootThread,
+                    ["Class"] = candidate.Class,
+                    ["MutationInvoked"] = false
+                });
                 bound = candidate; verified = true;
             }
 
@@ -268,7 +331,7 @@ namespace VBAi.Tests.Integration
         private PublisherOwnerWindow ReadPrivatePublisherOwnerWindow(IntPtr window)
         {
             RequirePrivatePublisherOwnershipHost();
-            IsolatedTestDesktop.RequireOfficeWindowInventory(privateDesktop, (uint)ProcessId, true, window);
+            RequireSelectedOfficeWindow(privateDesktop, mainPublisherDesktop, (uint)ProcessId, true, window);
             var result = new PublisherOwnerWindow { Window = window, Root = GetAncestor(window, 2), Class = PublisherStartupClass(window) };
             result.Thread = GetWindowThreadProcessId(window, out result.Process);
             result.RootThread = GetWindowThreadProcessId(result.Root, out result.RootProcess);
@@ -281,7 +344,8 @@ namespace VBAi.Tests.Integration
             var bars = new List<PublisherOwnerWindow>(); bool complete = true; int visited = 0, ownedRoots = 0; Exception failure = null;
             string refusal = null;
             var clock = Stopwatch.StartNew();
-            DialogWindowCallback inspect = (window, state) => {
+            DialogWindowCallback inspect = (window, state) =>
+            {
                 if (!complete) return false;
                 try
                 {
@@ -298,20 +362,30 @@ namespace VBAi.Tests.Integration
                 }
                 catch (Exception error) { failure = error; refusal = "NativeWindowGuardFailed"; complete = false; return false; }
             };
-            bool rootsComplete = EnumWindows((window, state) => {
+            bool rootsComplete = EnumWindows((window, state) =>
+            {
                 if (!inspect(window, state)) return false;
                 uint pid; GetWindowThreadProcessId(window, out pid);
                 if (pid == (uint)ProcessId) { ownedRoots++; EnumChildWindows(window, inspect, IntPtr.Zero); }
                 return complete;
             }, IntPtr.Zero);
             if (clock.ElapsedMilliseconds > 5000) { refusal = "ElapsedTimeBoundExceeded"; complete = false; }
-            RecordPublisherStartup(new Dictionary<string, object> { ["PublisherCommandBarNativeInventory"] = "TERMINAL",
-                ["ProcessId"] = ProcessId, ["EnumWindowsReturned"] = rootsComplete, ["CallbacksCompleted"] = complete,
-                ["VisitedWindowCount"] = visited, ["OwnedRootCount"] = ownedRoots, ["CommandBarCount"] = bars.Count,
-                ["ElapsedMilliseconds"] = clock.ElapsedMilliseconds, ["MaximumVisitedWindows"] = 8192,
-                ["MaximumCommandBars"] = PublisherOwnershipProbe.MaximumCommandBars, ["MaximumElapsedMilliseconds"] = 5000,
+            RecordPublisherStartup(new Dictionary<string, object>
+            {
+                ["PublisherCommandBarNativeInventory"] = "TERMINAL",
+                ["ProcessId"] = ProcessId,
+                ["EnumWindowsReturned"] = rootsComplete,
+                ["CallbacksCompleted"] = complete,
+                ["VisitedWindowCount"] = visited,
+                ["OwnedRootCount"] = ownedRoots,
+                ["CommandBarCount"] = bars.Count,
+                ["ElapsedMilliseconds"] = clock.ElapsedMilliseconds,
+                ["MaximumVisitedWindows"] = 8192,
+                ["MaximumCommandBars"] = PublisherOwnershipProbe.MaximumCommandBars,
+                ["MaximumElapsedMilliseconds"] = 5000,
                 ["RefusalReason"] = refusal ?? (rootsComplete ? null : "EnumWindowsFailed"),
-                ["Windows"] = PublisherOwnershipProbe.EvidenceValue(bars.ToArray()) });
+                ["Windows"] = PublisherOwnershipProbe.EvidenceValue(bars.ToArray())
+            });
             if (!rootsComplete || !complete) throw new InvalidOperationException("BLOCKED: Publisher command-bar inventory is incomplete or exceeds its bound.", failure);
             RequirePrivatePublisherOwnershipHost();
             return bars.ToArray();
@@ -339,7 +413,8 @@ namespace VBAi.Tests.Integration
             // The only documented Office native-object-model window class used here is MsoCommandBar.
             // https://learn.microsoft.com/en-us/windows/win32/api/oleacc/nf-oleacc-accessibleobjectfromwindow
             // https://learn.microsoft.com/en-us/office/vba/api/office.commandbar.application
-            Action guard = () => {
+            Action guard = () =>
+            {
                 var current = ReadPrivatePublisherOwnerWindow(window.Window);
                 if (current.Class != "MsoCommandBar" || !window.Same(current))
                     throw new InvalidOperationException("The exact documented command-bar window changed during its only NativeOM attempt.");
@@ -347,18 +422,21 @@ namespace VBAi.Tests.Integration
             var acquisition = new PublisherCommandBarAcquisition();
             PublisherNativeCommandBar typedBar = null;
             return acquisition.Read(publisherOwnership, "NativeCommandBar[" + window.Window.ToInt64() + "]", guard,
-                native => {
+                native =>
+                {
                     Guid commandBar = PublisherCommandBarAcquisition.InterfaceId;
                     native.HResult = AccessibleObjectFromWindow(window.Window, unchecked((uint)-16), ref commandBar, out native.Pointer);
-                // GetTypedObjectForIUnknown requires an imported COM class, not this interface.
-                // Retain the RCW before the explicit cast so a refused cast still releases it.
+                    // GetTypedObjectForIUnknown requires an imported COM class, not this interface.
+                    // Retain the RCW before the explicit cast so a refused cast still releases it.
                 }, pointer => Marshal.GetObjectForIUnknown(pointer),
                 bar => { typedBar = (PublisherNativeCommandBar)bar; return typedBar != null; }, bar => typedBar.Application,
-                container => {
+                container =>
+                {
                     if (!Marshal.IsComObject(container)) throw new InvalidOperationException("Typed CommandBar.Application did not return a COM container.");
                     IntPtr unknown = Marshal.GetIUnknownForObject(container);
                     try { return unknown.ToInt64(); } finally { Marshal.Release(unknown); }
-                }, pointer => { Marshal.Release(pointer); }, value => {
+                }, pointer => { Marshal.Release(pointer); }, value =>
+                {
                     if (Marshal.IsComObject(value)) Marshal.ReleaseComObject(value);
                 }, RecordPublisherStartup);
         }
@@ -370,7 +448,8 @@ namespace VBAi.Tests.Integration
             var child = privateDesktopChild; var candidate = application;
             publisherOwnershipChild = child;
             publisherOwnership = new PublisherOwnershipProbe((uint)ProcessId, child.ProcessHandle.ToInt64());
-            Action guard = () => {
+            Action guard = () =>
+            {
                 if (!ReferenceEquals(child, privateDesktopChild) || !ReferenceEquals(candidate, application))
                     throw new InvalidOperationException("Publisher native child or ROT application changed during ownership discovery.");
                 RequirePrivatePublisherOwnershipHost();
@@ -378,18 +457,21 @@ namespace VBAi.Tests.Integration
             IntPtr ole = IntPtr.Zero;
             try
             {
-                publisherOwnership.Bind(() => {
+                publisherOwnership.Bind(() =>
+                {
                     if (publisherOwnershipUnknown == IntPtr.Zero) publisherOwnershipUnknown = Marshal.GetIUnknownForObject(candidate);
                     IntPtr current = Marshal.GetIUnknownForObject(candidate);
                     try { if (current != publisherOwnershipUnknown) throw new InvalidOperationException("Canonical Publisher application identity changed."); return current.ToInt64(); }
                     finally { Marshal.Release(current); }
-                }, guard, () => {
+                }, guard, () =>
+                {
                     Guid iid = typeof(PublisherOleWindow).GUID;
                     int result = Marshal.QueryInterface(publisherOwnershipUnknown, ref iid, out ole);
                     if ((result == 0) != (ole != IntPtr.Zero) || (result != 0 && ole != IntPtr.Zero))
                         throw new InvalidOperationException("Publisher IOleWindow query returned an inconsistent pointer; no fallback.");
                     return result;
-                }, () => {
+                }, () =>
+                {
                     // Invoke slot 3 on the exact successfully queried interface. No RCW cast can repeat QI.
                     IntPtr slot = Marshal.ReadIntPtr(Marshal.ReadIntPtr(ole), 3 * IntPtr.Size);
                     var getWindow = Marshal.GetDelegateForFunctionPointer<PublisherGetWindow>(slot);
@@ -407,7 +489,8 @@ namespace VBAi.Tests.Integration
             if (publisherOwnership == null || publisherOwnershipUnknown == IntPtr.Zero || privateDesktopChild == null ||
                 !ReferenceEquals(publisherOwnershipChild, privateDesktopChild))
                 throw new InvalidOperationException("BLOCKED: Publisher has no retained pre-publication ownership proof.");
-            publisherOwnership.Recheck((uint)ProcessId, privateDesktopChild.ProcessHandle.ToInt64(), () => {
+            publisherOwnership.Recheck((uint)ProcessId, privateDesktopChild.ProcessHandle.ToInt64(), () =>
+            {
                 IntPtr current = Marshal.GetIUnknownForObject(application);
                 try { return current.ToInt64(); } finally { Marshal.Release(current); }
             }, RequirePrivatePublisherOwnershipHost, ReadPrivatePublisherOwnerWindow);
@@ -424,14 +507,25 @@ namespace VBAi.Tests.Integration
                 !Equals(shutdownEvidence.Record["ProcessId"], ProcessId) || !Equals(shutdownEvidence.Record["QuitEntries"], 1) ||
                 !Equals(shutdownEvidence.Record["QuitOutcome"], "RETURNED"))
                 throw new InvalidOperationException("Publisher canonical reference release requires settled original-host Quit and COM scopes on their owning STA.");
-            RecordPublisherStartup(new Dictionary<string, object> { ["PublisherOwnershipReferenceRelease"] = "PENDING",
-                ["ProcessId"] = ProcessId, ["OriginalHandle"] = privateDesktopChild.ProcessHandle.ToInt64(), ["ReleaseAttempts"] = 1 });
-            publisherOwnership.Close(() => {
+            RecordPublisherStartup(new Dictionary<string, object>
+            {
+                ["PublisherOwnershipReferenceRelease"] = "PENDING",
+                ["ProcessId"] = ProcessId,
+                ["OriginalHandle"] = privateDesktopChild.ProcessHandle.ToInt64(),
+                ["ReleaseAttempts"] = 1
+            });
+            publisherOwnership.Close(() =>
+            {
                 IntPtr held = publisherOwnershipUnknown; publisherOwnershipUnknown = IntPtr.Zero;
                 if (held != IntPtr.Zero) Marshal.Release(held);
             });
-            RecordPublisherStartup(new Dictionary<string, object> { ["PublisherOwnershipReferenceRelease"] = "RETURNED",
-                ["ProcessId"] = ProcessId, ["ReleaseAttempts"] = 1, ["CanonicalReferenceReacquisitionAllowed"] = false });
+            RecordPublisherStartup(new Dictionary<string, object>
+            {
+                ["PublisherOwnershipReferenceRelease"] = "RETURNED",
+                ["ProcessId"] = ProcessId,
+                ["ReleaseAttempts"] = 1,
+                ["CanonicalReferenceReacquisitionAllowed"] = false
+            });
         }
     }
 }

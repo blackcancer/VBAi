@@ -1,11 +1,6 @@
-using System;
-using System.Collections.Generic;
-using System.Reflection;
-using System.Windows;
-using System.Windows.Controls;
-using VBAi;
-using VBAi.Tests.Infrastructure;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+using System.Windows.Controls;
+using VBAi.Tests.Infrastructure;
 namespace VBAi.Tests.Unit
 {
     [TestClass, TestCategory("Unit")]

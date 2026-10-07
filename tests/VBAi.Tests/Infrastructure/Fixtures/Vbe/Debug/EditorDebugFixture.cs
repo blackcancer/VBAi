@@ -35,8 +35,16 @@ namespace VBAi.Tests.Unit
         }
         internal Request Location(string action = null)
         {
-            return new Request { Project = Project.Name, Module = Module.Parent.Name, StartLine = 1,
-                ExpectedSha256 = Hash(Module.Code), ExpectedMode = Project.Mode, Action = action, ControlCaption = action };
+            return new Request
+            {
+                Project = Project.Name,
+                Module = Module.Parent.Name,
+                StartLine = 1,
+                ExpectedSha256 = Hash(Module.Code),
+                ExpectedMode = Project.Mode,
+                Action = action,
+                ControlCaption = action
+            };
         }
         internal Request Inspect(string action = null)
         {

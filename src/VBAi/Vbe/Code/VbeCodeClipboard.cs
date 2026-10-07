@@ -73,8 +73,12 @@ namespace VBAi
             string text = hasText ? GetNative(TextDataFormat.UnicodeText) : null;
             if (sequence != SequenceNative()) throw new InvalidOperationException("Clipboard changed during inspection; read it again.");
             if (text != null && text.Length > 1024 * 1024) throw new InvalidOperationException("Clipboard text exceeds one million characters.");
-            return new CodeClipboardSnapshot { HasText = hasText, Text = text,
-                Version = sequence.ToString(CultureInfo.InvariantCulture) + ":" + VbeCodeClipboard.Hash(text ?? "") };
+            return new CodeClipboardSnapshot
+            {
+                HasText = hasText,
+                Text = text,
+                Version = sequence.ToString(CultureInfo.InvariantCulture) + ":" + VbeCodeClipboard.Hash(text ?? "")
+            };
         }
 
         /// <summary>Écrit un texte Unicode borné puis confirme sa relecture exacte.</summary>
@@ -132,8 +136,7 @@ namespace VBAi
             string before = (string)((dynamic)read.Data).Code;
             if (string.IsNullOrWhiteSpace(request.ExpectedSha256) || !string.Equals(Hash(before), request.ExpectedSha256, StringComparison.OrdinalIgnoreCase))
                 throw new InvalidOperationException("The module changed since it was read.");
-            int start, length;
-            Range(before, request, out start, out length);
+            Range(before, request, out int start, out int length);
             if (action != "paste" && length == 0) throw new ArgumentException("Copy and cut require a nonempty range.");
             CodeClipboardSnapshot snapshot;
             string replacement = "";
@@ -151,14 +154,29 @@ namespace VBAi
             if (action == "copy") return new { Copied = true, Characters = length, ClipboardVersion = snapshot.Version, SourceChanged = false };
             string after = before.Remove(start, length).Insert(start, replacement);
             if (after == before) return new { Applied = false, Verified = true, Sha256 = Hash(before), ClipboardVersion = snapshot.Version, SourceChanged = false };
-            var result = execute(new Request { Command = "replace_lines", Project = request.Project, Module = request.Module,
-                StartLine = 1, Count = CodeRollback.Lines(before).Length, Text = after, ExpectedSha256 = request.ExpectedSha256 });
+            var result = execute(new Request
+            {
+                Command = "replace_lines",
+                Project = request.Project,
+                Module = request.Module,
+                StartLine = 1,
+                Count = CodeRollback.Lines(before).Length,
+                Text = after,
+                ExpectedSha256 = request.ExpectedSha256
+            });
             if (!result.Ok) throw new InvalidOperationException(result.Error + (action == "cut" ? " Selected text was copied to the clipboard before the edit failed." : ""));
             var actual = execute(new Request { Command = "read_module", Project = request.Project, Module = request.Module });
-            if (!actual.Ok) return new { Applied = true, Verified = false, Error = actual.Error, NextRead = "read_module" };
+            if (!actual.Ok) return new { Applied = true, Verified = false, actual.Error, NextRead = "read_module" };
             string code = (string)((dynamic)actual.Data).Code;
-            return new { Applied = true, Verified = code == after, Sha256 = Hash(code), ClipboardVersion = snapshot.Version,
-                SourceChanged = code != before, NextRead = code == after ? null : "read_module: VBE normalized or changed the requested text" };
+            return new
+            {
+                Applied = true,
+                Verified = code == after,
+                Sha256 = Hash(code),
+                ClipboardVersion = snapshot.Version,
+                SourceChanged = code != before,
+                NextRead = code == after ? null : "read_module: VBE normalized or changed the requested text"
+            };
         }
 
         /// <summary>Convertit une plage de caractères à base un avec fin exclusive en décalage de chaîne.</summary>

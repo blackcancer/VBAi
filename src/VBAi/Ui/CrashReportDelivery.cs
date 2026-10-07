@@ -1,28 +1,29 @@
+using Microsoft.Win32;
 using System;
 using System.Diagnostics;
-using System.Net.Http;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
-using Microsoft.Win32;
 
 namespace VBAi
 {
 
     /// <summary>Résultat explicite : une création incertaine ne doit jamais déclencher un second envoi automatique.</summary>
-    internal enum CrashDeliveryResult {
+    internal enum CrashDeliveryResult
+    {
 
-/// <summary>Issue creation completed on GitHub.</summary>
-GitHub,
+        /// <summary>Issue creation completed on GitHub.</summary>
+        GitHub,
 
-/// <summary>Report was handed to a configured Outlook account.</summary>
-Outlook,
+        /// <summary>Report was handed to a configured Outlook account.</summary>
+        Outlook,
 
-/// <summary>Local mail client draft opened for the user to send.</summary>
-Draft,
+        /// <summary>Local mail client draft opened for the user to send.</summary>
+        Draft,
 
-/// <summary>Delivery may have completed, so automatic retries are unsafe.</summary>
-Uncertain }
+        /// <summary>Delivery may have completed, so automatic retries are unsafe.</summary>
+        Uncertain
+    }
 
     /// <summary>Publie sur le dépôt du produit avec GCM, ou utilise Outlook puis le client mail local.</summary>
     internal sealed class CrashReportDelivery

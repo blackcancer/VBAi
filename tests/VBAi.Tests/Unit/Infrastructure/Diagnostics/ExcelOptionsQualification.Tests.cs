@@ -1,9 +1,9 @@
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Web.Script.Serialization;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 using VBAi.Tests.Integration;
 
 namespace VBAi.Tests.Unit
@@ -22,9 +22,11 @@ namespace VBAi.Tests.Unit
             internal readonly List<string> Phases = new List<string>();
             internal readonly List<IDictionary<string, object>> Requests = new List<IDictionary<string, object>>();
             internal readonly List<object> Records = new List<object>();
-            internal ExcelOptionsQualification Create() => new ExcelOptionsQualification(Dispatch, () => Preserved++, () => {
+            internal ExcelOptionsQualification Create() => new ExcelOptionsQualification(Dispatch, () => Preserved++, () =>
+            {
                 Cleanup++; if (Fault == "Cleanup" || Fault == "PrimaryAndCleanup") throw new IOException("cleanup failure");
-            }, (phase, value) => {
+            }, (phase, value) =>
+            {
                 Phases.Add(phase); Records.Add(value);
                 if (EvidenceFault == phase) { EvidenceFault = null; throw new IOException("evidence failure: " + phase); }
             });
@@ -52,20 +54,31 @@ namespace VBAi.Tests.Unit
                 bool next = (bool)item["Value"];
                 Value = next;
                 if (Fault == "WritePipeClosed") throw new IOException("write response lost after emission");
-                var data = new Dictionary<string, object> { ["CommitRequested"] = true, ["ControlValueVerified"] = true,
-                    ["DialogClosed"] = Fault != "DialogPending", ["After"] = Value ? "On" : "Off" };
+                var data = new Dictionary<string, object>
+                {
+                    ["CommitRequested"] = true,
+                    ["ControlValueVerified"] = true,
+                    ["DialogClosed"] = Fault != "DialogPending",
+                    ["After"] = Value ? "On" : "Off"
+                };
                 if (Fault == "ReplyUncertain") data["Uncertain"] = true;
                 if (Fault == "ReplyPending") data["Pending"] = true;
                 return Reply(data);
             }
         }
         private static IDictionary<string, object> Reply(object data) => new Dictionary<string, object> { ["Ok"] = true, ["Data"] = data };
-        private static IDictionary<string, object> State(bool value) => new Dictionary<string, object> {
-            ["OptionsVersion"] = value ? Baseline : Changed, ["DialogClosed"] = true,
-            ["Tabs"] = new object[] { Tab("Format de l'éditeur", "Barre des indicateurs en marge", value), Tab("Ancrage", "Exécution", value) } };
-        private static IDictionary<string, object> Tab(string name, string property, bool value) => new Dictionary<string, object> {
-            ["Tab"] = name, ["Controls"] = new object[] { new Dictionary<string, object> {
-                ["Name"] = property, ["Type"] = "ControlType.CheckBox", ["Value"] = value ? "On" : "Off", ["Error"] = null } } };
+        private static IDictionary<string, object> State(bool value) => new Dictionary<string, object>
+        {
+            ["OptionsVersion"] = value ? Baseline : Changed,
+            ["DialogClosed"] = true,
+            ["Tabs"] = new object[] { Tab("Format de l'éditeur", "Barre des indicateurs en marge", value), Tab("Ancrage", "Exécution", value) }
+        };
+        private static IDictionary<string, object> Tab(string name, string property, bool value) => new Dictionary<string, object>
+        {
+            ["Tab"] = name,
+            ["Controls"] = new object[] { new Dictionary<string, object> {
+                ["Name"] = property, ["Type"] = "ControlType.CheckBox", ["Value"] = value ? "On" : "Off", ["Error"] = null } }
+        };
 
         [TestMethod]
         public void BothNativeTabsRestoreTheCompleteBaselineAndUseFreshRevisionGuards()

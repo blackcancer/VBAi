@@ -1,7 +1,7 @@
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace VBAi.Tests.Unit
 {
@@ -27,16 +27,34 @@ namespace VBAi.Tests.Unit
             }
             internal void Add(int handle, int parent, string kind)
             {
-                Items[new IntPtr(handle)] = new VbaNativeTestWindowFocus.Window { Handle = new IntPtr(handle), Parent = new IntPtr(parent),
-                    Class = kind, Process = 7, Thread = 8, Exists = true, Enabled = true, Visible = true };
+                Items[new IntPtr(handle)] = new VbaNativeTestWindowFocus.Window
+                {
+                    Handle = new IntPtr(handle),
+                    Parent = new IntPtr(parent),
+                    Class = kind,
+                    Process = 7,
+                    Thread = 8,
+                    Exists = true,
+                    Enabled = true,
+                    Visible = true
+                };
             }
             public VbaNativeTestWindowFocus.Window Read(IntPtr handle)
             {
                 if (ReadOverride != null) return ReadOverride(handle);
                 VbaNativeTestWindowFocus.Window item;
                 if (!Items.TryGetValue(handle, out item)) return new VbaNativeTestWindowFocus.Window { Handle = handle };
-                return new VbaNativeTestWindowFocus.Window { Handle = item.Handle, Parent = item.Parent, Class = item.Class,
-                    Process = item.Process, Thread = item.Thread, Exists = item.Exists, Visible = item.Visible, Enabled = item.Enabled };
+                return new VbaNativeTestWindowFocus.Window
+                {
+                    Handle = item.Handle,
+                    Parent = item.Parent,
+                    Class = item.Class,
+                    Process = item.Process,
+                    Thread = item.Thread,
+                    Exists = item.Exists,
+                    Visible = item.Visible,
+                    Enabled = item.Enabled
+                };
             }
             public IntPtr[] Children(IntPtr parent) => ChildrenOverride == null ? Items.Values.Where(item => item.Parent == parent).Select(item => item.Handle).ToArray() : ChildrenOverride(parent);
             public string Caption(IntPtr handle) { CaptionReads.Add(handle); string value; return Captions.TryGetValue(handle, out value) ? value : null; }
@@ -252,7 +270,8 @@ namespace VBAi.Tests.Unit
         [TestMethod]
         public void ChangedCaptionLengthCannotProduceAnUnverifiedCaption()
         {
-            OnSta(() => {
+            OnSta(() =>
+            {
                 using (var window = new CaptionRaceWindow())
                     Assert.IsNull(new VbaNativeTestWindowFocus.NativeWindows().Caption(window.Handle));
             });

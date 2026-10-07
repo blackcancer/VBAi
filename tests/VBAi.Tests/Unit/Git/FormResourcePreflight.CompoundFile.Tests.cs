@@ -1,19 +1,30 @@
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Linq;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace VBAi.Tests.Unit
 {
     public sealed partial class FormResourcePreflightTests
     {
         [DataTestMethod]
-        [DataRow("fat marker")] [DataRow("directory absent")]
-        [DataRow("root kind")] [DataRow("root name")] [DataRow("root left")] [DataRow("root right")]
-        [DataRow("duplicate path")] [DataRow("unreachable entry")] [DataRow("stream child")]
-        [DataRow("unknown directory kind")] [DataRow("short name")]
-        [DataRow("long name")] [DataRow("odd name")] [DataRow("unterminated name")]
-        [DataRow("empty name")] [DataRow("forbidden name")]
-        [DataRow("missing mini FAT")] [DataRow("short root chain")]
+        [DataRow("fat marker")]
+        [DataRow("directory absent")]
+        [DataRow("root kind")]
+        [DataRow("root name")]
+        [DataRow("root left")]
+        [DataRow("root right")]
+        [DataRow("duplicate path")]
+        [DataRow("unreachable entry")]
+        [DataRow("stream child")]
+        [DataRow("unknown directory kind")]
+        [DataRow("short name")]
+        [DataRow("long name")]
+        [DataRow("odd name")]
+        [DataRow("unterminated name")]
+        [DataRow("empty name")]
+        [DataRow("forbidden name")]
+        [DataRow("missing mini FAT")]
+        [DataRow("short root chain")]
         public void EveryReachableCompoundDirectoryAndAllocationGuardRefusesMalformedPreflight(string defect)
         {
             byte[] bytes = Resource();

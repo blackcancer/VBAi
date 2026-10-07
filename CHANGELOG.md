@@ -4,9 +4,13 @@ This file summarizes user-visible changes. Development work is grouped under
 **Unreleased** until it is associated with an actual release tag. Commit-by-commit
 investigations and test transcripts belong in Git history and test artifacts.
 
-## Unreleased
+## 1.0.0 — 2026-10-07
 
 ### Added
+
+- Windows x64 setup and uninstall integration, per-user registration, installation
+  identity, compiled offline help and preserved user data. This release is unsigned;
+  automatic updates continue to require trusted Authenticode signatures.
 
 - A draft VBA test explorer with annotated discovery, guarded single/batch runs,
   fixtures and assertions, themed result icons, human/JSON reports, LLM tools and

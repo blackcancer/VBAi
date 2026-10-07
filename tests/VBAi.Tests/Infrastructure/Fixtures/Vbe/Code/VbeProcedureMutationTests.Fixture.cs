@@ -8,7 +8,6 @@ namespace VBAi.Tests.Unit
     using System.Text;
     using System.Text.RegularExpressions;
     using VBAi;
-    using Microsoft.VisualStudio.TestTools.UnitTesting;
 
     public sealed partial class VbeProcedureMutationTests
     {

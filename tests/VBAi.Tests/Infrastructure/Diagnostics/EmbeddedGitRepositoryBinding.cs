@@ -1,10 +1,10 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
 using System.Web.Script.Serialization;
-using System.Collections.Generic;
 
 namespace VBAi.Tests.Integration
 {
@@ -24,8 +24,13 @@ namespace VBAi.Tests.Integration
         /// <summary>Reads only existing files; the caller must separately attest the selected commit through production Resolve.</summary>
         internal static EmbeddedGitRepositoryBinding Capture(string cache, string remote, string branch)
         {
-            var proof = new EmbeddedGitRepositoryBinding { Cache = Path.GetFullPath(cache), Remote = remote, Branch = branch,
-                RepositoryPath = SelectedPath(cache, remote, branch) };
+            var proof = new EmbeddedGitRepositoryBinding
+            {
+                Cache = Path.GetFullPath(cache),
+                Remote = remote,
+                Branch = branch,
+                RepositoryPath = SelectedPath(cache, remote, branch)
+            };
             RequireDirectory(proof.Cache); RequireDirectory(proof.RepositoryPath);
             proof.BindingBytes = ReadRegular(Path.Combine(proof.Cache, "binding.json"));
             RequireBinding(proof.BindingBytes, remote, branch);

@@ -17,7 +17,8 @@ namespace VBAi.Tests.Integration
         /// <summary>Optional synthetic receipt writer; no live host or file service is needed in mirrors.</summary>
         internal Action<IDictionary<string, object>> WriteShutdownReceipt;
         /// <summary>Collects only after the scenario frame returns; mirrors record the order without invoking the GC.</summary>
-        internal Action CollectScenarioReferences = () => {
+        internal Action CollectScenarioReferences = () =>
+        {
             GC.Collect(); GC.WaitForPendingFinalizers(); GC.Collect(); GC.WaitForPendingFinalizers();
         };
         private readonly int shutdownOwnerThread = Thread.CurrentThread.ManagedThreadId;
@@ -49,7 +50,8 @@ namespace VBAi.Tests.Integration
         {
             var aggregate = error as AggregateException;
             if (aggregate == null) RememberShutdownFailure(error);
-            else {
+            else
+            {
                 var flattened = aggregate.Flatten();
                 foreach (Exception inner in flattened.InnerExceptions) RememberShutdownFailure(inner);
                 if (shutdownFailures.All(known => flattened.InnerExceptions.Any(inner => ReferenceEquals(inner, known)))) return error;

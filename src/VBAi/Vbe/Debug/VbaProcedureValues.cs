@@ -74,8 +74,7 @@ namespace VBAi
             var statements = VbaDeclarationIndex.Statements(source).ToArray();
             if (statements.Any(x => x.Count > 0 && (x[0].Text == "#" || Regex.IsMatch(x[0].Text, @"^Def(?:Bool|Byte|Int|Lng|LngLng|LngPtr|Sng|Dbl|Cur|Date|Str|Obj|Var)$", RegexOptions.IgnoreCase))))
                 throw new InvalidOperationException("Conditional and implicit-type signatures are unsupported.");
-            var header = statements.SingleOrDefault(x => x.Count > 0 && x[0].Line == bodyLine);
-            if (header == null) throw new InvalidOperationException("The exact live signature is absent.");
+            var header = statements.SingleOrDefault(x => x.Count > 0 && x[0].Line == bodyLine) ?? throw new InvalidOperationException("The exact live signature is absent.");
             int signatures = 0;
             foreach (var statement in statements)
             {

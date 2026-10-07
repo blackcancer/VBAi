@@ -152,7 +152,8 @@ namespace VBAi
         internal GitCheckpoint[] Checkpoints()
         {
             return Text("for-each-ref", "--sort=-refname", "--format=%(refname:strip=3)%09%(objectname)%09%(subject)", "refs/codex/checkpoints/")
-                .Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries).Select(line => {
+                .Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries).Select(line =>
+                {
                     var parts = line.Split(new[] { '\t' }, 3); return new GitCheckpoint { Id = parts[0], Commit = parts[1], Label = parts[2] };
                 }).ToArray();
         }
@@ -196,8 +197,14 @@ namespace VBAi
             var output = Run(new[] { "merge-tree", "--write-tree", "--name-only", "-z", ours, theirs }, null, true, true);
             if (output.ExitCode != 0 && output.ExitCode != 1) throw new InvalidOperationException(UiText.Get("Unable to merge: check common ancestors and Git 2.38 or later."));
             var records = Encoding.UTF8.GetString(output.Bytes).Split('\0');
-            var plan = new GitMergePlan { Branch = Branch, Ours = ours, Theirs = theirs, Tree = records[0].Trim(),
-                Conflicts = output.ExitCode == 0 ? new string[0] : records.Skip(1).TakeWhile(x => x.Length != 0).ToArray() };
+            var plan = new GitMergePlan
+            {
+                Branch = Branch,
+                Ours = ours,
+                Theirs = theirs,
+                Tree = records[0].Trim(),
+                Conflicts = output.ExitCode == 0 ? new string[0] : records.Skip(1).TakeWhile(x => x.Length != 0).ToArray()
+            };
             if (!System.Text.RegularExpressions.Regex.IsMatch(plan.Tree, "^[0-9a-f]{40}$")) throw new InvalidOperationException(UiText.Get("Invalid Git merge result."));
             SaveMerge(plan); return plan;
         }

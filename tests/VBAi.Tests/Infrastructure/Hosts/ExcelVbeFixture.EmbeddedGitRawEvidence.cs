@@ -6,7 +6,6 @@ using System.Runtime.ExceptionServices;
 using System.Security.Cryptography;
 using System.Text;
 using System.Web.Script.Serialization;
-using VBAi;
 
 namespace VBAi.Tests.Integration
 {
@@ -28,9 +27,17 @@ namespace VBAi.Tests.Integration
             Directory.CreateDirectory(root);
             var targetRows = RetainEmbeddedRawSide(root, "target", target);
             var actualRows = RetainEmbeddedRawSide(root, "actual", actual);
-            var receipt = new { Phase = "PostImportRawSnapshotsRetained", Root = root,
-                TargetRole = "PreparedBaseline", ActualRole = "ActualPostImportCapture",
-                Target = targetRows, Actual = actualRows, CaptureCount = 1, ImportReplay = false };
+            var receipt = new
+            {
+                Phase = "PostImportRawSnapshotsRetained",
+                Root = root,
+                TargetRole = "PreparedBaseline",
+                ActualRole = "ActualPostImportCapture",
+                Target = targetRows,
+                Actual = actualRows,
+                CaptureCount = 1,
+                ImportReplay = false
+            };
             System.IO.File.WriteAllText(Path.Combine(root, "raw-evidence.json"),
                 new JavaScriptSerializer().Serialize(receipt), new UTF8Encoding(false));
             evidence(receipt);
@@ -54,10 +61,16 @@ namespace VBAi.Tests.Integration
                 using (var sha = SHA256.Create())
                     hash = BitConverter.ToString(sha.ComputeHash(pair.Value)).Replace("-", "");
                 bool binary = pair.Key.EndsWith(".frx", StringComparison.Ordinal);
-                rows.Add(new { Name = pair.Key, Path = path, Bytes = pair.Value.Length, Sha256 = hash,
+                rows.Add(new
+                {
+                    Name = pair.Key,
+                    Path = path,
+                    Bytes = pair.Value.Length,
+                    Sha256 = hash,
                     Encoding = binary ? "binary" : "UTF-8",
                     OleOffsets = pair.Key.EndsWith(".frm", StringComparison.Ordinal)
-                        ? EmbeddedGitSnapshotOracle.Offsets(VbaGitSnapshot.Utf8.GetString(pair.Value)) : new int[0] });
+                        ? EmbeddedGitSnapshotOracle.Offsets(VbaGitSnapshot.Utf8.GetString(pair.Value)) : new int[0]
+                });
             }
             return rows.ToArray();
         }

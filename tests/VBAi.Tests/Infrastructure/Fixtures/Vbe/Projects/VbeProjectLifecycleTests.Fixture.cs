@@ -25,8 +25,12 @@ namespace VBAi.Tests.Unit
             public Request CloseRequest(LifecycleProject project)
             {
                 dynamic state = Service.ProjectProperties(project.Name);
-                return new Request { Project = project.Name, ExpectedHostPath = project.FileName,
-                    ExpectedProjectVersion = state.Version };
+                return new Request
+                {
+                    Project = project.Name,
+                    ExpectedHostPath = project.FileName,
+                    ExpectedProjectVersion = state.Version
+                };
             }
         }
         public sealed class LifecycleVbe

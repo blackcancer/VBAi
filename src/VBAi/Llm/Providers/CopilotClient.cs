@@ -85,14 +85,17 @@ namespace VBAi
 
         /// <summary>Ouvre la commande interactive de connexion Copilot.</summary>
         public static void StartLogin()
-        { var info = new ProcessStartInfo(Executable, "login") { UseShellExecute = false, CreateNoWindow = false };
-            ProviderSessionStorage.ConfigureCopilot(info); Process.Start(info); }
+        {
+            var info = new ProcessStartInfo(Executable, "login") { UseShellExecute = false, CreateNoWindow = false };
+            ProviderSessionStorage.ConfigureCopilot(info); Process.Start(info);
+        }
 
         /// <summary>Démarre brièvement le CLI, charge son catalogue de modèles et retourne un état d’accessibilité.</summary>
         /// <returns>Texte qui indique si Copilot est accessible et le nombre de modèles.</returns>
         public static async Task<string> ReadStatusAsync()
         {
-            using (var client = new CopilotClient()) {
+            using (var client = new CopilotClient())
+            {
                 var models = await client.ListModelsAsync();
                 return "Copilot accessible · " + models.Length + UiText.Get(" models. Authentication is managed by the GitHub CLI.");
             }
@@ -104,16 +107,22 @@ namespace VBAi
         {
             if (disposed) throw new ObjectDisposedException(nameof(CopilotClient));
             if (process != null) return;
-            var info = new ProcessStartInfo(Executable, "--headless --stdio --no-auto-update --log-level error") {
-                UseShellExecute = false, CreateNoWindow = true, RedirectStandardInput = true,
-                RedirectStandardOutput = true, RedirectStandardError = true,
+            var info = new ProcessStartInfo(Executable, "--headless --stdio --no-auto-update --log-level error")
+            {
+                UseShellExecute = false,
+                CreateNoWindow = true,
+                RedirectStandardInput = true,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
                 WorkingDirectory = Path.GetTempPath()
             };
             ProviderSessionStorage.ConfigureCopilot(info);
             process = new Process { StartInfo = info };
-            try {
+            try
+            {
                 if (!StartProcess(process)) throw new InvalidOperationException(UiText.Get("Unable to start Copilot."));
-            } catch (Exception ex) { process.Dispose(); process = null; throw new InvalidOperationException(UiText.Get("Install GitHub Copilot CLI and set VBAi_COPILOT_CLI to its executable if needed."), ex); }
+            }
+            catch (Exception ex) { process.Dispose(); process = null; throw new InvalidOperationException(UiText.Get("Install GitHub Copilot CLI and set VBAi_COPILOT_CLI to its executable if needed."), ex); }
             process.ErrorDataReceived += (s, e) => { }; // Drain without logging tokens or prompts.
             process.BeginErrorReadLine();
             _ = Task.Run(ReadLoop);
@@ -150,18 +159,32 @@ namespace VBAi
             allowedTools = new HashSet<string>(definitions.Select(x => Text(x, "name")), StringComparer.Ordinal);
             sessionId = Guid.NewGuid().ToString();
             completion = new TaskCompletionSource<string>(TaskCreationOptions.RunContinuationsAsynchronously);
-            var created = await RequestAsync("session.create", new {
-                sessionId, model, clientName = "VBAi", tools = definitions, availableTools = allowedTools.ToArray(),
-                requestPermission = true, streaming = TextDelta != null,
-                systemMessage = new { mode = "replace", content = "You are a VBA assistant embedded in the VBE. Use only the supplied VBA tools. The prompt contains JSON conversation history; answer its last user request. Re-read live VBA before any change.\n" +
-                    string.Join("\n", history.Select(ClaudeProtocol.Object).Where(x => Text(x, "role") == "system").Select(x => Text(x, "content"))) },
-                enableFileHooks = false, enableSkills = false, enableHostGitOperations = false,
-                enableOnDemandInstructionDiscovery = false, customAgents = new object[0],
+            var created = await RequestAsync("session.create", new
+            {
+                sessionId,
+                model,
+                clientName = "VBAi",
+                tools = definitions,
+                availableTools = allowedTools.ToArray(),
+                requestPermission = true,
+                streaming = TextDelta != null,
+                systemMessage = new
+                {
+                    mode = "replace",
+                    content = "You are a VBA assistant embedded in the VBE. Use only the supplied VBA tools. The prompt contains JSON conversation history; answer its last user request. Re-read live VBA before any change.\n" +
+                    string.Join("\n", history.Select(ClaudeProtocol.Object).Where(x => Text(x, "role") == "system").Select(x => Text(x, "content")))
+                },
+                enableFileHooks = false,
+                enableSkills = false,
+                enableHostGitOperations = false,
+                enableOnDemandInstructionDiscovery = false,
+                customAgents = new object[0],
                 mcpServers = new Dictionary<string, object>()
             });
             if (Text(created, "sessionId") != sessionId) throw new InvalidOperationException("Session Copilot inattendue.");
             await RequestAsync("session.send", new { sessionId, prompt = Json().Serialize(history) });
-            if (await Task.WhenAny(completion.Task, Delay(TimeSpan.FromMinutes(5))) != completion.Task) {
+            if (await Task.WhenAny(completion.Task, Delay(TimeSpan.FromMinutes(5))) != completion.Task)
+            {
                 Dispose(); throw new TimeoutException(UiText.Get("Copilot did not finish its response within the time limit."));
             }
             return new Dictionary<string, object> { ["role"] = "assistant", ["content"] = await completion.Task };
@@ -176,12 +199,14 @@ namespace VBAi
             var source = new TaskCompletionSource<IDictionary<string, object>>(TaskCreationOptions.RunContinuationsAsynchronously);
             int id;
             lock (gate) { if (disposed) throw new ObjectDisposedException(nameof(CopilotClient)); id = ++nextId; pending.Add(id, source); }
-            try {
+            try
+            {
                 Send(new { jsonrpc = "2.0", id, method, @params = parameters });
                 if (await Task.WhenAny(source.Task, Delay(TimeSpan.FromSeconds(45))) != source.Task)
                     throw new TimeoutException(UiText.Get("Copilot is not responding to ") + method + UiText.Get(". Check the CLI connection."));
                 return await source.Task;
-            } finally { lock (gate) pending.Remove(id); }
+            }
+            finally { lock (gate) pending.Remove(id); }
         }
 
         /// <summary>Encode puis écrit un message avec son en-tête Content-Length sur l’entrée standard.</summary>
@@ -190,7 +215,8 @@ namespace VBAi
         {
             byte[] bytes = Encoding.UTF8.GetBytes(Json().Serialize(message));
             byte[] header = Encoding.ASCII.GetBytes("Content-Length: " + bytes.Length + "\r\n\r\n");
-            lock (gate) {
+            lock (gate)
+            {
                 if (disposed) throw new ObjectDisposedException(nameof(CopilotClient));
                 var stream = process.StandardInput.BaseStream;
                 stream.Write(header, 0, header.Length); stream.Write(bytes, 0, bytes.Length); stream.Flush();
@@ -200,11 +226,14 @@ namespace VBAi
         /// <summary>Lit les en-têtes et corps encadrés, valide leur taille puis transmet chaque message au répartiteur.</summary>
         private void ReadLoop()
         {
-            try {
+            try
+            {
                 var stream = process.StandardOutput.BaseStream;
-                while (!disposed) {
+                while (!disposed)
+                {
                     var header = new StringBuilder();
-                    while (!header.ToString().EndsWith("\r\n\r\n", StringComparison.Ordinal)) {
+                    while (!header.ToString().EndsWith("\r\n\r\n", StringComparison.Ordinal))
+                    {
                         int next = stream.ReadByte(); if (next < 0) throw new EndOfStreamException(UiText.Get("Copilot stopped."));
                         header.Append((char)next); if (header.Length > 4096) throw new InvalidDataException(UiText.Get("Invalid Copilot header."));
                     }
@@ -216,7 +245,8 @@ namespace VBAi
                     while (offset < size) { int count = stream.Read(bytes, offset, size - offset); if (count == 0) throw new EndOfStreamException(); offset += count; }
                     Dispatch(Json().DeserializeObject(Encoding.UTF8.GetString(bytes)) as IDictionary<string, object>);
                 }
-            } catch (Exception ex) { Fail(ex); }
+            }
+            catch (Exception ex) { Fail(ex); }
         }
 
         /// <summary>Associe les réponses aux requêtes et traite événements, appels d’outils et décisions de permission.</summary>
@@ -224,21 +254,26 @@ namespace VBAi
         private void Dispatch(IDictionary<string, object> message)
         {
             string method = Text(message, "method");
-            if (method == null) {
+            if (method == null)
+            {
                 int id; TaskCompletionSource<IDictionary<string, object>> source;
-                if (int.TryParse(Text(message, "id"), out id)) lock (gate) if (pending.TryGetValue(id, out source)) {
+                if (int.TryParse(Text(message, "id"), out id)) lock (gate) if (pending.TryGetValue(id, out source))
+                {
                     if (message.ContainsKey("error")) source.TrySetException(new InvalidOperationException(UiText.Get("Copilot refused the request. Check sign-in, subscription and model in the CLI.")));
                     else source.TrySetResult(Object(message, "result") ?? new Dictionary<string, object>());
                 }
                 return;
             }
             var parameters = Object(message, "params");
-            if (method == "session.event" && Text(parameters, "sessionId") == sessionId && completion != null && !completion.Task.IsCompleted) {
+            if (method == "session.event" && Text(parameters, "sessionId") == sessionId && completion != null && !completion.Task.IsCompleted)
+            {
                 var evt = Object(parameters, "event"); var data = Object(evt, "data"); string type = Text(evt, "type");
                 if (type == "assistant.message") answer = Text(data, "content");
-                else if (type == "assistant.message_delta") {
+                else if (type == "assistant.message_delta")
+                {
                     string fragment = Text(data, "deltaContent");
-                    if (!string.IsNullOrEmpty(fragment)) {
+                    if (!string.IsNullOrEmpty(fragment))
+                    {
                         if (ui != null) ui.Post(_ => { if (!disposed) TextDelta?.Invoke(fragment); }, null);
                         else TextDelta?.Invoke(fragment);
                     }
@@ -250,7 +285,8 @@ namespace VBAi
                 return;
             }
             object requestId;
-            if (message.TryGetValue("id", out requestId)) {
+            if (message.TryGetValue("id", out requestId))
+            {
                 if (method == "tool.call" && Text(parameters, "sessionId") == sessionId) RunTool(parameters, requestId);
                 else if (method == "permission.request") Send(new { jsonrpc = "2.0", id = requestId, result = new { result = new { kind = Text(parameters, "sessionId") == sessionId ? PermissionDecision(Object(parameters, "permissionRequest")) : "denied-by-rules" } } });
                 else Send(new { jsonrpc = "2.0", id = requestId, error = new { code = -32601, message = "Unsupported client method" } });
@@ -273,8 +309,10 @@ namespace VBAi
         {
             string requestId = Text(data, "requestId") ?? Convert.ToString(legacyId);
             lock (gate) if (!handledTools.Add(requestId)) return;
-            Func<Task> run = async () => {
-                try {
+            Func<Task> run = async () =>
+            {
+                try
+                {
                     if (disposed || completion == null || completion.Task.IsCompleted) return;
                     string name = Text(data, "toolName");
                     string arguments = Json().Serialize(data.ContainsKey("arguments") ? data["arguments"] : new { });
@@ -287,7 +325,8 @@ namespace VBAi
                     var result = new { textResultForLlm = output, resultType = "success" };
                     if (legacyId != null) Send(new { jsonrpc = "2.0", id = legacyId, result = new { result } });
                     else await RequestAsync("session.tools.handlePendingToolCall", new { sessionId, requestId, result });
-                } catch (Exception ex) { Fail(ex); }
+                }
+                catch (Exception ex) { Fail(ex); }
             };
             if (ui != null) ui.Post(async _ => await run(), null); else _ = run();
         }

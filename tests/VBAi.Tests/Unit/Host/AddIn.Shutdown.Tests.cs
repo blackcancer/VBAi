@@ -1,3 +1,4 @@
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -6,7 +7,6 @@ using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Web.Script.Serialization;
 using System.Windows.Forms;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 using VBAi.Tests.Infrastructure;
 
 namespace VBAi.Tests.Unit
@@ -41,9 +41,13 @@ namespace VBAi.Tests.Unit
             {
                 var identity = new AddInShutdownDiagnostic.Identity
                 {
-                    ProcessId = 71, ProcessStartedUtc = "2026-10-05T17:27:03.6593947Z",
-                    HostImagePath = @"C:\Qualification\EXCEL.EXE", ProductPath = @"C:\Qualification\VBAi.dll",
-                    ProductMvid = "f855d463-0d5e-48f3-8c45-1a35db5a1025", ProductSha256 = new string('A', 64), ThreadId = 73
+                    ProcessId = 71,
+                    ProcessStartedUtc = "2026-10-05T17:27:03.6593947Z",
+                    HostImagePath = @"C:\Qualification\EXCEL.EXE",
+                    ProductPath = @"C:\Qualification\VBAi.dll",
+                    ProductMvid = "f855d463-0d5e-48f3-8c45-1a35db5a1025",
+                    ProductSha256 = new string('A', 64),
+                    ThreadId = 73
                 };
                 var diagnostic = AddInShutdownDiagnostic.Begin(Json.Serialize(new { Version = 1, Nonce, Identity = identity }),
                     Nonce, entry, () => identity,
@@ -93,7 +97,8 @@ namespace VBAi.Tests.Unit
         }
 
         [STATestMethod]
-        [DataRow(false)] [DataRow(true)]
+        [DataRow(false)]
+        [DataRow(true)]
         public void NullResourcesHaveNoInventedCallsAndEachRealAssignmentFollowsItsWrite(bool begin)
         {
             using (var scope = new ObservationScope())
@@ -118,7 +123,8 @@ namespace VBAi.Tests.Unit
         }
 
         [STATestMethod]
-        [DataRow(false)] [DataRow(true)]
+        [DataRow(false)]
+        [DataRow(true)]
         public void RepeatedCallbacksHaveDistinctParentsAndCloseOnlyTheStillPresentWindow(bool firstBegin)
         {
             using (var scope = new ObservationScope())
@@ -158,8 +164,12 @@ namespace VBAi.Tests.Unit
         }
 
         [STATestMethod]
-        [DataRow(false, 0)] [DataRow(false, 1)] [DataRow(false, 2)]
-        [DataRow(true, 0)] [DataRow(true, 1)] [DataRow(true, 2)]
+        [DataRow(false, 0)]
+        [DataRow(false, 1)]
+        [DataRow(false, 2)]
+        [DataRow(true, 0)]
+        [DataRow(true, 1)]
+        [DataRow(true, 2)]
         public void NativeClosePreservesTheTestComOnlyAndChatUniversalCatchPolicies(bool testWindow, int failure)
         {
             using (var scope = new ObservationScope())
@@ -186,7 +196,8 @@ namespace VBAi.Tests.Unit
         }
 
         [STATestMethod]
-        [DataRow(false)] [DataRow(true)]
+        [DataRow(false)]
+        [DataRow(true)]
         public void StopUpdateFailureKeepsTheSameExceptionAndPreventsLaterChatServerAndDispatcherCleanup(bool begin)
         {
             using (var host = new HostUiScope())
@@ -212,12 +223,18 @@ namespace VBAi.Tests.Unit
         }
 
         [STATestMethod]
-        [DataRow("RootEntry", false)] [DataRow("RootEntry", true)]
-        [DataRow("ChildEntry", false)] [DataRow("ChildEntry", true)]
-        [DataRow("StageEntry", false)] [DataRow("StageEntry", true)]
-        [DataRow("StageReturn", false)] [DataRow("StageReturn", true)]
-        [DataRow("Clear", false)] [DataRow("Clear", true)]
-        [DataRow("Terminal", false)] [DataRow("Terminal", true)]
+        [DataRow("RootEntry", false)]
+        [DataRow("RootEntry", true)]
+        [DataRow("ChildEntry", false)]
+        [DataRow("ChildEntry", true)]
+        [DataRow("StageEntry", false)]
+        [DataRow("StageEntry", true)]
+        [DataRow("StageReturn", false)]
+        [DataRow("StageReturn", true)]
+        [DataRow("Clear", false)]
+        [DataRow("Clear", true)]
+        [DataRow("Terminal", false)]
+        [DataRow("Terminal", true)]
         public void PublicationFailureCannotReplaceTheOriginalExceptionOrSkipAnOriginalCall(string boundary, bool nativeFailure)
         {
             using (var scope = new ObservationScope())
@@ -254,7 +271,8 @@ namespace VBAi.Tests.Unit
         }
 
         [STATestMethod]
-        [DataRow(false)] [DataRow(true)]
+        [DataRow(false)]
+        [DataRow(true)]
         public void AdmissionSeamFailureDoesNotPreventCleanupOrReplaceItsException(bool nativeFailure)
         {
             using (var scope = new ObservationScope())
@@ -272,7 +290,8 @@ namespace VBAi.Tests.Unit
         }
 
         [STATestMethod]
-        [DataRow(false)] [DataRow(true)]
+        [DataRow(false)]
+        [DataRow(true)]
         public void NullAdmissionKeepsBothOriginalCallbackPaths(bool begin)
         {
             using (var scope = new ObservationScope())
@@ -308,7 +327,8 @@ namespace VBAi.Tests.Unit
         }
 
         [STATestMethod]
-        [DataRow(false)] [DataRow(true)]
+        [DataRow(false)]
+        [DataRow(true)]
         public void ThemeFaultRemainsCaughtAndCannotHideALaterOriginalFailure(bool failStop)
         {
             using (var scope = new ObservationScope())
@@ -338,7 +358,8 @@ namespace VBAi.Tests.Unit
         }
 
         [STATestMethod]
-        [DataRow(false)] [DataRow(true)]
+        [DataRow(false)]
+        [DataRow(true)]
         public void ToolbarCleanupRecordsItsExistingCaughtFaultAndStillDisposes(bool rejectDelete)
         {
             using (var scope = new ObservationScope())
@@ -357,7 +378,8 @@ namespace VBAi.Tests.Unit
         }
 
         [STATestMethod]
-        [DataRow(false)] [DataRow(true)]
+        [DataRow(false)]
+        [DataRow(true)]
         public void ChatDetachmentIsObservedOnlyForTheExistingDockedOwnerCondition(bool docked)
         {
             using (var host = new HostUiScope())
@@ -380,7 +402,8 @@ namespace VBAi.Tests.Unit
         }
 
         [STATestMethod]
-        [DataRow(false)] [DataRow(true)]
+        [DataRow(false)]
+        [DataRow(true)]
         public void TestWindowDetachmentIsObservedOnlyForAnAttachedLiveWindow(bool attached)
         {
             using (var scope = new ObservationScope())

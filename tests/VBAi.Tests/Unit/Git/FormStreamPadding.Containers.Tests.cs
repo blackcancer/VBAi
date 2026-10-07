@@ -1,7 +1,7 @@
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace VBAi.Tests.Unit
 {
@@ -87,7 +87,7 @@ namespace VBAi.Tests.Unit
             {
                 var extra = CopyStreams(original); extra[path] = new byte[0]; AssertGraphFallback(extra, metadata);
             }
-            var extraStorage = CopyStreams(metadata); extraStorage["/i99"] = (byte[])metadata[""] .Clone(); AssertGraphFallback(original, extraStorage);
+            var extraStorage = CopyStreams(metadata); extraStorage["/i99"] = (byte[])metadata[""].Clone(); AssertGraphFallback(original, extraStorage);
             var nullStream = CopyStreams(original); nullStream["/f"] = null; AssertGraphFallback(nullStream, metadata);
             Assert.AreSame(original, FormStreamPadding.NormalizeGraph(original, null));
             Assert.AreSame(original, FormStreamPadding.NormalizeGraph(original, metadata, null));
@@ -263,7 +263,8 @@ namespace VBAi.Tests.Unit
         }
 
         [TestMethod]
-        [DataRow(64, true)] [DataRow(65, false)]
+        [DataRow(64, true)]
+        [DataRow(65, false)]
         public void DeepParentGraphsUseAnExplicitBoundAndCannotExhaustCallStack(int depth, bool accepted)
         {
             var streams = new Dictionary<string, byte[]>(StringComparer.Ordinal);
@@ -294,14 +295,27 @@ namespace VBAi.Tests.Unit
         }
 
         [TestMethod]
-        [DataRow(0u, "i00")] [DataRow(9u, "i09")] [DataRow(10u, "i10")]
-        [DataRow(11u, "i11")] [DataRow(16u, "i16")] [DataRow(99u, "i99")] [DataRow(2147483647u, "i2147483647")]
+        [DataRow(0u, "i00")]
+        [DataRow(9u, "i09")]
+        [DataRow(10u, "i10")]
+        [DataRow(11u, "i11")]
+        [DataRow(16u, "i16")]
+        [DataRow(99u, "i99")]
+        [DataRow(2147483647u, "i2147483647")]
         public void ParentStorageNamesUseDecimalIDsWithExactlyOneLeadingZeroBelowTen(uint id, string child)
         {
-            var streams = new Dictionary<string, byte[]> { ["/f"] = OneFrameParent(id), ["/o"] = new byte[0],
-                ["/" + child + "/f"] = EmptyForm(0x8004, 0, 0), ["/" + child + "/o"] = new byte[0] };
-            var metadata = new Dictionary<string, byte[]> { [""] = Metadata("C62A69F0-16DC-11CE-9E98-00AA00574A4F"),
-                ["/" + child] = Metadata("6E182020-F460-11CE-9BCD-00AA00608E01") };
+            var streams = new Dictionary<string, byte[]>
+            {
+                ["/f"] = OneFrameParent(id),
+                ["/o"] = new byte[0],
+                ["/" + child + "/f"] = EmptyForm(0x8004, 0, 0),
+                ["/" + child + "/o"] = new byte[0]
+            };
+            var metadata = new Dictionary<string, byte[]>
+            {
+                [""] = Metadata("C62A69F0-16DC-11CE-9E98-00AA00574A4F"),
+                ["/" + child] = Metadata("6E182020-F460-11CE-9BCD-00AA00608E01")
+            };
             Assert.AreNotSame(streams, FormStreamPadding.NormalizeGraph(streams, metadata));
             foreach (string wrong in new[] { "i" + id, "i0" + id, "i" + id.ToString("X2"), "i" + id + "0" }.Distinct().Where(x => x != child))
             {
@@ -321,11 +335,17 @@ namespace VBAi.Tests.Unit
             aggregate["/o"] = new byte[16 * 1024 * 1024 + 1];
             Assert.AreSame(aggregate, FormStreamPadding.NormalizeGraph(aggregate, metadata));
             byte[] rootObjects, childObjects;
-            var many = new Dictionary<string, byte[]> { ["/f"] = ManyLeavesForm(8192, true, out rootObjects),
-                ["/i01/f"] = ManyLeavesForm(8192, false, out childObjects) };
+            var many = new Dictionary<string, byte[]>
+            {
+                ["/f"] = ManyLeavesForm(8192, true, out rootObjects),
+                ["/i01/f"] = ManyLeavesForm(8192, false, out childObjects)
+            };
             many["/o"] = rootObjects; many["/i01/o"] = childObjects;
-            var known = new Dictionary<string, byte[]> { [""] = Metadata("C62A69F0-16DC-11CE-9E98-00AA00574A4F"),
-                ["/i01"] = Metadata("6E182020-F460-11CE-9BCD-00AA00608E01") };
+            var known = new Dictionary<string, byte[]>
+            {
+                [""] = Metadata("C62A69F0-16DC-11CE-9E98-00AA00574A4F"),
+                ["/i01"] = Metadata("6E182020-F460-11CE-9BCD-00AA00608E01")
+            };
             AssertGraphFallback(many, known); // 8193 + 8192 exceeds the whole graph limit although each form fits.
             many["/i01/f"] = ManyLeavesForm(8191, false, out childObjects); many["/i01/o"] = childObjects;
             Assert.AreNotSame(many, FormStreamPadding.NormalizeGraph(many, known),

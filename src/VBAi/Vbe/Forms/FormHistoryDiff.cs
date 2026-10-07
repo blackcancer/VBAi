@@ -78,8 +78,13 @@ namespace VBAi
             return left.Keys.Union(right.Keys).OrderBy(x => x, StringComparer.Ordinal)
                 .Where(k => (!left.ContainsKey(k) || Readable(left[k])) && (!right.ContainsKey(k) || Readable(right[k])))
                 .Where(k => !left.ContainsKey(k) || !right.ContainsKey(k) || json.Serialize(left[k]) != json.Serialize(right[k]))
-                .Select(k => new Change { Path = k.Substring(0, k.IndexOf('	')), Property = k.Substring(k.IndexOf('	') + 1),
-                    Before = left.ContainsKey(k) ? left[k] : null, After = right.ContainsKey(k) ? right[k] : null }).ToArray();
+                .Select(k => new Change
+                {
+                    Path = k.Substring(0, k.IndexOf('	')),
+                    Property = k.Substring(k.IndexOf('	') + 1),
+                    Before = left.ContainsKey(k) ? left[k] : null,
+                    After = right.ContainsKey(k) ? right[k] : null
+                }).ToArray();
         }
 
         /// <summary>Convertit l’arbre JSON en clés chemin/propriété pour comparer ses instantanés.</summary>
@@ -100,7 +105,7 @@ namespace VBAi
         private static void ReadNodes(IDictionary<string, object> owner, string key, Dictionary<string, object> result)
         {
             if (!owner.TryGetValue(key, out object raw) || !(raw is object[] nodes)) return;
-            foreach (IDictionary<string, object> node in nodes)
+            foreach (IDictionary<string, object> node in nodes.Cast<IDictionary<string, object>>())
             {
                 string path = Convert.ToString(node["Path"]);
                 result[path + "\t$exists"] = true;
@@ -117,7 +122,7 @@ namespace VBAi
         private static void ReadProperties(IDictionary<string, object> owner, string path, Dictionary<string, object> result)
         {
             if (!owner.TryGetValue("Properties", out object raw) || !(raw is object[] properties)) return;
-            foreach (IDictionary<string, object> property in properties)
+            foreach (IDictionary<string, object> property in properties.Cast<IDictionary<string, object>>())
             {
                 string name = Convert.ToString(property["Name"]);
                 // These are history/clipboard availability, not Designer edits.

@@ -1,21 +1,21 @@
 namespace VBAi.Tests.Unit
 {
+    using Microsoft.VisualStudio.TestTools.UnitTesting;
     using System;
     using System.IO;
     using System.Linq;
     using System.Text;
     using System.Threading;
     using VBAi;
-    using Microsoft.VisualStudio.TestTools.UnitTesting;
 
     [TestClass]
     [TestCategory("Unit")]
-        /// <summary>Vérifie les règles de dépôt, les arbres de fichiers et le lancement des commandes Git natives.</summary>
-[DoNotParallelize]
+    /// <summary>Vérifie les règles de dépôt, les arbres de fichiers et le lancement des commandes Git natives.</summary>
+    [DoNotParallelize]
     public sealed partial class MacroGitRepositoryTests
     {
-                /// <summary>Vérifie les noms de branche, comptes, URL distantes et chemins de scope acceptés ou refusés.</summary>
-[TestMethod]
+        /// <summary>Vérifie les noms de branche, comptes, URL distantes et chemins de scope acceptés ou refusés.</summary>
+        [TestMethod]
         public void BranchAccountRemoteAndScopeValidationMatrix()
         {
             foreach (string branch in new[] { null, "", "with space", "-invalid", "a..b", "a//b", "a/", "a/.hidden", "a/trailing.", "a/file.lock", new string('x', 129) })
@@ -55,8 +55,8 @@ namespace VBAi.Tests.Unit
             }
         }
 
-                /// <summary>Initialise un dépôt Git et vérifie la récupération, la synchronisation et l’ascendance des commits.</summary>
-[TestMethod]
+        /// <summary>Initialise un dépôt Git et vérifie la récupération, la synchronisation et l’ascendance des commits.</summary>
+        [TestMethod]
         public void NativeInitializeFetchSynchronizationAndAncestryMatrix()
         {
             using (var f = new MacroGitOperationsTests.Fixture())
@@ -93,8 +93,8 @@ namespace VBAi.Tests.Unit
             }
         }
 
-                /// <summary>Vérifie les noms de fichiers du dépôt, sa structure et les limites de ressources d’export.</summary>
-[TestMethod]
+        /// <summary>Vérifie les noms de fichiers du dépôt, sa structure et les limites de ressources d’export.</summary>
+        [TestMethod]
         public void RepositoryTreeShapeNamesAndPackageResourceLimitsMatrix()
         {
             using (var f = new MacroGitOperationsTests.Fixture())
@@ -109,7 +109,8 @@ namespace VBAi.Tests.Unit
                 foreach (bool countLimit in new[] { false, true })
                 {
                     string entries = countLimit ? string.Join("\0", Enumerable.Range(0, 2050).Select(i => "100644 blob blob-id\tM" + i + ".bas")) + "\0" : "100644 blob blob-id\tlarge.bas\0";
-                    f.Repository.CommandOverride = (args, input, use, allow) => {
+                    f.Repository.CommandOverride = (args, input, use, allow) =>
+                    {
                         if (args[0] == "ls-tree") return Reply(args[2] == "root" ? "040000 tree subtree\tvba\0" : entries);
                         if (args[1] == "-s") return Reply(countLimit ? "0" : (VbaGitSnapshot.MaxBytes + 1).ToString(System.Globalization.CultureInfo.InvariantCulture));
                         return Reply("");
@@ -121,8 +122,8 @@ namespace VBAi.Tests.Unit
             }
         }
 
-                /// <summary>Vérifie l’environnement du processus Git, les identifiants et les erreurs ou délais dépassés.</summary>
-[TestMethod]
+        /// <summary>Vérifie l’environnement du processus Git, les identifiants et les erreurs ou délais dépassés.</summary>
+        [TestMethod]
         public void NativeProcessEnvironmentCredentialsFailureAndTimeoutMatrix()
         {
             using (var f = new MacroGitOperationsTests.Fixture())
@@ -133,7 +134,8 @@ namespace VBAi.Tests.Unit
                 {
                     Environment.SetEnvironmentVariable("GIT_COVERAGE_DISPOSABLE", "remove from child");
                     var start = withAccount.StartProcess;
-                    withAccount.StartProcess = process => {
+                    withAccount.StartProcess = process =>
+                    {
                         Assert.IsNull(process.StartInfo.EnvironmentVariables["GIT_COVERAGE_DISPOSABLE"]);
                         Assert.AreEqual("0", process.StartInfo.EnvironmentVariables["GIT_TERMINAL_PROMPT"]);
                         StringAssert.Contains(process.StartInfo.Arguments, "credential.https://github.com.username=coverage-fixture");
@@ -155,8 +157,8 @@ namespace VBAi.Tests.Unit
             }
         }
 
-                /// <summary>Vérifie l’annulation du processus Git avant, pendant et après sa terminaison.</summary>
-[TestMethod]
+        /// <summary>Vérifie l’annulation du processus Git avant, pendant et après sa terminaison.</summary>
+        [TestMethod]
         public void NativeProcessCancellationBeforeDuringAndAfterExitMatrix()
         {
             using (var f = new MacroGitOperationsTests.Fixture())
@@ -167,19 +169,21 @@ namespace VBAi.Tests.Unit
                     Assert.ThrowsException<OperationCanceledException>(() => Run(f.Repository, new[] { "--version" }));
                 }
                 foreach (int mode in new[] { 0, 1, 2 })
-                using (var pending = new CancellationTokenSource())
-                {
-                    f.Repository.Cancellation = pending.Token;
-                    f.Repository.WaitForExit = (process, timeout) => {
-                        if (mode == 2) process.WaitForExit();
-                        pending.Cancel(); return process.WaitForExit(timeout);
-                    };
-                    f.Repository.StopProcess = process => {
-                        if (mode == 1) throw new InvalidOperationException("Disposable cancellation race");
-                        process.Kill();
-                    };
-                    Assert.ThrowsException<OperationCanceledException>(() => Run(f.Repository, new[] { "hash-object", "--stdin" }, new byte[64 * 1024 * 1024]));
-                }
+                    using (var pending = new CancellationTokenSource())
+                    {
+                        f.Repository.Cancellation = pending.Token;
+                        f.Repository.WaitForExit = (process, timeout) =>
+                        {
+                            if (mode == 2) process.WaitForExit();
+                            pending.Cancel(); return process.WaitForExit(timeout);
+                        };
+                        f.Repository.StopProcess = process =>
+                        {
+                            if (mode == 1) throw new InvalidOperationException("Disposable cancellation race");
+                            process.Kill();
+                        };
+                        Assert.ThrowsException<OperationCanceledException>(() => Run(f.Repository, new[] { "hash-object", "--stdin" }, new byte[64 * 1024 * 1024]));
+                    }
                 f.Repository.Cancellation = CancellationToken.None;
             }
         }

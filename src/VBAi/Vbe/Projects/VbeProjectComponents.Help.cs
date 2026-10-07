@@ -42,9 +42,16 @@ namespace VBAi
             if (!uint.TryParse(Convert.ToString(project.HelpContextID, CultureInfo.InvariantCulture), NumberStyles.None, CultureInfo.InvariantCulture, out uint context))
                 throw new InvalidOperationException("The project help context is not an unsigned integer.");
             IntPtr window = HelpLauncher(file, context);
-            return new { request.Project, HelpFile = file, HelpContextID = context,
-                Invoked = true, HelpWindowCreated = window != IntPtr.Zero, TopicVerified = false,
-                Limit = "A help window handle does not verify that the requested context exists or that CHM security permits its content." };
+            return new
+            {
+                request.Project,
+                HelpFile = file,
+                HelpContextID = context,
+                Invoked = true,
+                HelpWindowCreated = window != IntPtr.Zero,
+                TopicVerified = false,
+                Limit = "A help window handle does not verify that the requested context exists or that CHM security permits its content."
+            };
         }
     }
 }

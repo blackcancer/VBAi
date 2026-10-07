@@ -1,7 +1,7 @@
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Collections.Generic;
 using System.IO;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace VBAi.Tests.Integration
 {
@@ -13,7 +13,8 @@ namespace VBAi.Tests.Integration
             bool terminal = false;
             try
             {
-                return RecordCommand(request, () => {
+                return RecordCommand(request, () =>
+                {
                     var reply = VbeBridgeClient.Read("VBAi." + ProcessId, request, 180000);
                     terminal = reply != null;
                     return reply;

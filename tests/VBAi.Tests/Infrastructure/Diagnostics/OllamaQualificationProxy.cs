@@ -33,8 +33,10 @@ namespace VBAi.Tests.Integration
             if (!Path.IsPathRooted(evidenceRoot) || Directory.Exists(root)) throw new InvalidOperationException("A fresh absolute proxy evidence directory is required.");
             Directory.CreateDirectory(root);
             Endpoint = "http://127.0.0.1:" + port + "/v1/chat/completions";
-            client = new HttpClient(new HttpClientHandler { AllowAutoRedirect = false, UseProxy = false }) {
-                Timeout = TimeSpan.FromSeconds(150) };
+            client = new HttpClient(new HttpClientHandler { AllowAutoRedirect = false, UseProxy = false })
+            {
+                Timeout = TimeSpan.FromSeconds(150)
+            };
             listener.Prefixes.Add("http://127.0.0.1:" + port + "/"); listener.Start();
             accepting = Accept();
         }
@@ -54,8 +56,13 @@ namespace VBAi.Tests.Integration
         private async Task Forward(HttpListenerContext context, int number)
         {
             string prefix = Path.Combine(root, number.ToString("D4"));
-            var receipt = new Dictionary<string, object> { ["State"] = "STARTED", ["Sequence"] = number,
-                ["Path"] = context.Request.Url.AbsolutePath, ["StartedUtc"] = DateTime.UtcNow.ToString("o") };
+            var receipt = new Dictionary<string, object>
+            {
+                ["State"] = "STARTED",
+                ["Sequence"] = number,
+                ["Path"] = context.Request.Url.AbsolutePath,
+                ["StartedUtc"] = DateTime.UtcNow.ToString("o")
+            };
             Action flush = () => File.WriteAllText(prefix + "-receipt.json", new JavaScriptSerializer().Serialize(receipt));
             flush();
             using (var captured = new MemoryStream())

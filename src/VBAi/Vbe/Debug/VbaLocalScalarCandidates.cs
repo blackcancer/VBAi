@@ -47,7 +47,8 @@ namespace VBAi
                 (d.Kind == "Variable" || d.Kind == "Parameter" || d.Kind == "Constant")).ToArray();
             var duplicateNames = new HashSet<string>(declarations.GroupBy(d => d.Name, StringComparer.OrdinalIgnoreCase)
                 .Where(g => g.Count() > 1).Select(g => g.Key), StringComparer.OrdinalIgnoreCase);
-            return declarations.Select(d => {
+            return declarations.Select(d =>
+            {
                 locations.TryGetValue(d.Line + ":" + d.Column, out var location);
                 var token = location?.Token;
                 var statement = location?.Statement;
@@ -57,8 +58,17 @@ namespace VBAi
                     index + 1 < statement.Count && statement[index + 1].Text == "(" ? "ArrayDeclaration" :
                     statement.Skip(index + 1).TakeWhile(t => t.Text != ",").Any(t => t.Text.Equals("New", StringComparison.OrdinalIgnoreCase)) ? "AutoInstantiatedDeclaration" :
                     !ScalarTypes.Contains(d.TypeName ?? "") ? "NonScalarOrVariantType" : null;
-                return new Candidate { Name = d.Name, Expression = token?.Text, Kind = d.Kind, TypeName = d.TypeName,
-                    Line = d.Line, Column = d.Column, Eligible = reason == null, Reason = reason };
+                return new Candidate
+                {
+                    Name = d.Name,
+                    Expression = token?.Text,
+                    Kind = d.Kind,
+                    TypeName = d.TypeName,
+                    Line = d.Line,
+                    Column = d.Column,
+                    Eligible = reason == null,
+                    Reason = reason
+                };
             }).ToArray();
         }
     }

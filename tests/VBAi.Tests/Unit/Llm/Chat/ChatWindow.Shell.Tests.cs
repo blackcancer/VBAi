@@ -1,18 +1,11 @@
 ﻿namespace VBAi.Tests.Unit
 {
+    using Microsoft.VisualStudio.TestTools.UnitTesting;
     using System;
-    using System.Collections;
     using System.Collections.Generic;
     using System.IO;
-    using System.Net;
-    using System.Net.Http;
-    using System.Reflection;
-    using System.Threading;
-    using System.Threading.Tasks;
-    using System.Web.Script.Serialization;
     using System.Windows.Forms;
     using VBAi;
-    using Microsoft.VisualStudio.TestTools.UnitTesting;
 
     /// <summary>Vérifie les actions d’édition et le changement de mode dans la fenêtre de discussion.</summary>
     public sealed partial class ChatWindowStateTests
@@ -180,8 +173,16 @@
                 {
                     foreach (string action in new[] { "/expliquer", "/corriger", "/refactoriser" })
                     {
-                        window.PrepareMonacoAction(action, new ChatAttachment { Project = @"C:\Temp\P.xlsm", Module = "M", Label = "Monaco selection", Text = "Debug.Print 1",
-                            EditorDocumentId = document.Id, Sha256 = EditorDocument.Hash(document.Text), StartLine = 3 });
+                        window.PrepareMonacoAction(action, new ChatAttachment
+                        {
+                            Project = @"C:\Temp\P.xlsm",
+                            Module = "M",
+                            Label = "Monaco selection",
+                            Text = "Debug.Print 1",
+                            EditorDocumentId = document.Id,
+                            Sha256 = EditorDocument.Hash(document.Text),
+                            StartLine = 3
+                        });
                         Assert.AreEqual(action + " ", Get<System.Windows.Controls.TextBox>(window, "prompt").Text);
                         Assert.AreEqual(action == "/expliquer" ? ChatMode.Discussion : ChatMode.Agent, Get<ComboBox>(window, "modePicker").SelectedItem);
                         var attachments = (ChatAttachment[])Call(window, "PrepareAttachments", action);
@@ -221,17 +222,13 @@
 }
 namespace VBAi.Tests.Unit
 {
-    using System;
-    using System.Linq;
-    using System.IO;
-    using System.Collections.Generic;
-    using System.Web.Script.Serialization;
-    using System.Threading.Tasks;
-    using System.Windows;
-    using System.Windows.Controls;
-    using System.Windows.Input;
-    using VBAi;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
+    using System;
+    using System.Collections.Generic;
+    using System.IO;
+    using System.Web.Script.Serialization;
+    using System.Windows.Controls;
+    using VBAi;
     /// <summary>Vérifie les commandes de shell, les garde-fous du concepteur et l’ouverture Git locale.</summary>
     public sealed partial class ChatWindowStateTests
     {
@@ -277,45 +274,45 @@ namespace VBAi.Tests.Unit
         public void GitShellUsesNativeDocumentScopeAndPreservesLegacyBindingAndConversationGuards()
         {
             foreach (string state in new[] { "none", "exact", "legacy", "both" })
-            using (var runtime = new RuntimeScope())
-            {
-                var priorCache = GitWindow.CacheDirectory;
-                try
+                using (var runtime = new RuntimeScope())
                 {
-                    string document = Path.GetFullPath(Path.Combine(runtime.Root, "MixedCase", "ClasseurÉté.xlsm"));
-                    runtime.Vbe.VBProjects[0].FileName = document;
-                    runtime.Host = r => Response.Success(r.Command == "list_projects" ? (object)new[] { new { Name = "P", FileName = document } } :
-                        new { SelectedProject = "P", SelectedProjectPath = document });
-                    Func<string, string> rawCache = key => Path.Combine(runtime.Root, "git-scope-cache", Path.GetFileName(MacroGitRepository.ScopeDirectory(key)));
-                    string exact = rawCache(document), legacy = rawCache(document.ToUpperInvariant());
-                    byte[] binding = System.Text.Encoding.UTF8.GetBytes(new JavaScriptSerializer().Serialize(new { Remote = "https://github.com/fixture/repository.git", Branch = "main" }));
-                    foreach (string cache in new[] { exact, legacy })
-                        if (state == "both" || state == (cache == exact ? "exact" : "legacy"))
-                        { Directory.CreateDirectory(cache); File.WriteAllBytes(Path.Combine(cache, "binding.json"), binding); }
-                    var scopes = new List<string>(); int dialogs = 0;
-                    GitWindow.CacheDirectory = key => { scopes.Add(key); return MacroGitRepository.ResolveScopeDirectory(key, rawCache, File.GetAttributes); };
-                    ChatWindow.ShowModal = (dialog, owner) => { Assert.IsInstanceOfType<GitWindow>(dialog); dialogs++; return System.Windows.Forms.DialogResult.Cancel; };
-                    using (var window = LoadedWindow(runtime.Session))
+                    var priorCache = GitWindow.CacheDirectory;
+                    try
                     {
-                        Call(window, "GitHub_Click", null, EventArgs.Empty);
-                        CollectionAssert.AreEqual(new[] { document }, scopes.ToArray());
-                        Assert.AreEqual(state == "both" ? 0 : 1, dialogs);
-                        if (state == "both") StringAssert.Contains(Get<System.Windows.Forms.Label>(window, "status").Text, "both");
-                        else Assert.IsTrue(Directory.Exists(state == "legacy" ? legacy : exact));
-                        if (state == "none" || state == "exact") Assert.IsFalse(Directory.Exists(legacy));
-                        if (state == "legacy") Assert.IsFalse(Directory.Exists(exact));
+                        string document = Path.GetFullPath(Path.Combine(runtime.Root, "MixedCase", "ClasseurÉté.xlsm"));
+                        runtime.Vbe.VBProjects[0].FileName = document;
+                        runtime.Host = r => Response.Success(r.Command == "list_projects" ? (object)new[] { new { Name = "P", FileName = document } } :
+                            new { SelectedProject = "P", SelectedProjectPath = document });
+                        Func<string, string> rawCache = key => Path.Combine(runtime.Root, "git-scope-cache", Path.GetFileName(MacroGitRepository.ScopeDirectory(key)));
+                        string exact = rawCache(document), legacy = rawCache(document.ToUpperInvariant());
+                        byte[] binding = System.Text.Encoding.UTF8.GetBytes(new JavaScriptSerializer().Serialize(new { Remote = "https://github.com/fixture/repository.git", Branch = "main" }));
                         foreach (string cache in new[] { exact, legacy })
-                            if (File.Exists(Path.Combine(cache, "binding.json"))) CollectionAssert.AreEqual(binding, File.ReadAllBytes(Path.Combine(cache, "binding.json")));
-                        Set(window, "busy", true); Call(window, "GitHub_Click", null, EventArgs.Empty); Set(window, "busy", false);
-                        Assert.AreEqual(1, scopes.Count, "A busy chat must not look up another cache.");
-                        runtime.Host = r => Response.Success(new[] { new { Name = "P", FileName = document }, new { Name = "Other", FileName = document } });
-                        Call(window, "GitHub_Click", null, EventArgs.Empty);
-                        StringAssert.Contains(Get<System.Windows.Forms.Label>(window, "status").Text, UiText.Get("The project for this conversation is closed or ambiguous."));
-                        Assert.AreEqual(1, scopes.Count, "An ambiguous conversation must refuse before cache lookup.");
+                            if (state == "both" || state == (cache == exact ? "exact" : "legacy"))
+                            { Directory.CreateDirectory(cache); File.WriteAllBytes(Path.Combine(cache, "binding.json"), binding); }
+                        var scopes = new List<string>(); int dialogs = 0;
+                        GitWindow.CacheDirectory = key => { scopes.Add(key); return MacroGitRepository.ResolveScopeDirectory(key, rawCache, File.GetAttributes); };
+                        ChatWindow.ShowModal = (dialog, owner) => { Assert.IsInstanceOfType<GitWindow>(dialog); dialogs++; return System.Windows.Forms.DialogResult.Cancel; };
+                        using (var window = LoadedWindow(runtime.Session))
+                        {
+                            Call(window, "GitHub_Click", null, EventArgs.Empty);
+                            CollectionAssert.AreEqual(new[] { document }, scopes.ToArray());
+                            Assert.AreEqual(state == "both" ? 0 : 1, dialogs);
+                            if (state == "both") StringAssert.Contains(Get<System.Windows.Forms.Label>(window, "status").Text, "both");
+                            else Assert.IsTrue(Directory.Exists(state == "legacy" ? legacy : exact));
+                            if (state == "none" || state == "exact") Assert.IsFalse(Directory.Exists(legacy));
+                            if (state == "legacy") Assert.IsFalse(Directory.Exists(exact));
+                            foreach (string cache in new[] { exact, legacy })
+                                if (File.Exists(Path.Combine(cache, "binding.json"))) CollectionAssert.AreEqual(binding, File.ReadAllBytes(Path.Combine(cache, "binding.json")));
+                            Set(window, "busy", true); Call(window, "GitHub_Click", null, EventArgs.Empty); Set(window, "busy", false);
+                            Assert.AreEqual(1, scopes.Count, "A busy chat must not look up another cache.");
+                            runtime.Host = r => Response.Success(new[] { new { Name = "P", FileName = document }, new { Name = "Other", FileName = document } });
+                            Call(window, "GitHub_Click", null, EventArgs.Empty);
+                            StringAssert.Contains(Get<System.Windows.Forms.Label>(window, "status").Text, UiText.Get("The project for this conversation is closed or ambiguous."));
+                            Assert.AreEqual(1, scopes.Count, "An ambiguous conversation must refuse before cache lookup.");
+                        }
                     }
+                    finally { GitWindow.CacheDirectory = priorCache; }
                 }
-                finally { GitWindow.CacheDirectory = priorCache; }
-            }
         }
     }
 }

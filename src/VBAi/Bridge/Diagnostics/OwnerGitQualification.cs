@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
@@ -91,10 +90,20 @@ namespace VBAi
                 if (step.Verb == "pull") operations.ExpectedIncomingCommit = manifest.RemoteCommit;
 
                 string prefix = Path.Combine(manifest.EvidenceRoot, "owner-git-" + step.Id);
-                var intent = new { StepId = step.Id, Step = nextStep, step.Verb, ManifestSha256 = manifestHash,
-                    ExpectedState = request.ExpectedSha256, BeforeSnapshotSha256 = OwnerGitQualificationManifest.SnapshotHash(before),
-                    CandidateMvid = manifest.AssemblyMvid, CandidateSha256 = manifest.AssemblySha256,
-                    OwnerPid = manifest.OwnerPid, OwnerNativeTid = manifest.OwnerNativeTid, StartedUtc = DateTime.UtcNow.ToString("o") };
+                var intent = new
+                {
+                    StepId = step.Id,
+                    Step = nextStep,
+                    step.Verb,
+                    ManifestSha256 = manifestHash,
+                    ExpectedState = request.ExpectedSha256,
+                    BeforeSnapshotSha256 = OwnerGitQualificationManifest.SnapshotHash(before),
+                    CandidateMvid = manifest.AssemblyMvid,
+                    CandidateSha256 = manifest.AssemblySha256,
+                    manifest.OwnerPid,
+                    manifest.OwnerNativeTid,
+                    StartedUtc = DateTime.UtcNow.ToString("o")
+                };
                 WriteNew(prefix + ".intent.json", intent);
                 bool mutationStarted = false;
                 Exception primary = null;
@@ -113,7 +122,8 @@ namespace VBAi
                         if (!repository.RecoveryPending || backup == null || !backup.SameAs(target))
                             throw new InvalidOperationException("Frozen rollback backup changed.");
                     }
-                    Action boundary = () => {
+                    void boundary()
+                    {
                         RequireContext();
                         OwnerGitQualificationManifest.ReadSnapshot(step.ExpectedSnapshotDirectory, step.ExpectedSnapshotSha256);
                         OwnerGitQualificationManifest.ReadSnapshot(step.TargetSnapshotDirectory, step.TargetSnapshotSha256);
@@ -121,7 +131,7 @@ namespace VBAi
                         if (mutationStarted) throw new InvalidOperationException("Native mutation was already admitted.");
                         mutationStarted = true;
                         WriteNew(prefix + ".mutation.json", new { StepId = step.Id, NativeMutationAdmittedUtc = DateTime.UtcNow.ToString("o") });
-                    };
+                    }
                     if (step.Verb == "controlled_interruption")
                     {
                         repository.PrepareRecovery(expected);
@@ -142,14 +152,23 @@ namespace VBAi
                     RequireContext();
                     var after = project.Capture();
                     if (!after.SameAs(target)) throw new InvalidOperationException("Native readback differs from frozen target.");
-                    result = new { AfterSnapshotSha256 = OwnerGitQualificationManifest.SnapshotHash(after),
+                    result = new
+                    {
+                        AfterSnapshotSha256 = OwnerGitQualificationManifest.SnapshotHash(after),
                         BackupCommit = repository.Resolve(MacroGitRepository.Backup),
                         AfterImportCommit = repository.Resolve(MacroGitRepository.AfterImport),
-                        RecoveryPending = repository.RecoveryPending,
-                        Measured = result };
+                        repository.RecoveryPending,
+                        Measured = result
+                    };
                     nextStep++;
-                    WriteNew(prefix + ".terminal.json", new { StepId = step.Id, Outcome = "Succeeded", MutationStarted = mutationStarted,
-                        Result = result, FinishedUtc = DateTime.UtcNow.ToString("o") });
+                    WriteNew(prefix + ".terminal.json", new
+                    {
+                        StepId = step.Id,
+                        Outcome = "Succeeded",
+                        MutationStarted = mutationStarted,
+                        Result = result,
+                        FinishedUtc = DateTime.UtcNow.ToString("o")
+                    });
                     return new { StepId = step.Id, Outcome = "Succeeded", Result = result, ReceiptPath = prefix + ".terminal.json" };
                 }
                 catch (Exception error)
@@ -173,14 +192,24 @@ namespace VBAi
                     bool? pending = null;
                     string pendingError = null;
                     try { pending = repository.RecoveryPending; } catch (Exception observation) { pendingError = observation.ToString(); quarantined = true; }
-                    try { WriteNew(prefix + ".terminal.json", new { StepId = step.Id,
-                        Outcome = expectedRefusal ? "ExpectedPrewriteRefusal" : mutationStarted ? "FailedAfterMutationAdmission" : "FailedBeforeMutation",
-                        MutationStarted = mutationStarted, Error = primary.ToString(), RecoveryPending = pending,
-                        RecoveryObservationError = pendingError, RefusalObservationError = refusalObservationError,
-                        BackupCommitBefore = backupBefore, AfterImportCommitBefore = afterImportBefore,
-                        BackupCommitAfter = repository.Resolve(MacroGitRepository.Backup),
-                        AfterImportCommitAfter = repository.Resolve(MacroGitRepository.AfterImport),
-                        FinishedUtc = DateTime.UtcNow.ToString("o") }); }
+                    try
+                    {
+                        WriteNew(prefix + ".terminal.json", new
+                        {
+                            StepId = step.Id,
+                            Outcome = expectedRefusal ? "ExpectedPrewriteRefusal" : mutationStarted ? "FailedAfterMutationAdmission" : "FailedBeforeMutation",
+                            MutationStarted = mutationStarted,
+                            Error = primary.ToString(),
+                            RecoveryPending = pending,
+                            RecoveryObservationError = pendingError,
+                            RefusalObservationError = refusalObservationError,
+                            BackupCommitBefore = backupBefore,
+                            AfterImportCommitBefore = afterImportBefore,
+                            BackupCommitAfter = repository.Resolve(MacroGitRepository.Backup),
+                            AfterImportCommitAfter = repository.Resolve(MacroGitRepository.AfterImport),
+                            FinishedUtc = DateTime.UtcNow.ToString("o")
+                        });
+                    }
                     catch (Exception receiptError) { quarantined = true; throw new AggregateException(primary, receiptError); }
                     throw;
                 }
@@ -192,9 +221,8 @@ namespace VBAi
         {
             if (manifest != null) return;
             string name = Path.GetFileName(manifestPath);
-            Guid id;
             if (!name.EndsWith(".owner-git.json", StringComparison.Ordinal) ||
-                !Guid.TryParseExact(name.Substring(0, name.Length - ".owner-git.json".Length), "N", out id))
+                !Guid.TryParseExact(name.Substring(0, name.Length - ".owner-git.json".Length), "N", out _))
                 throw new InvalidOperationException("GUID-named owner Git manifest required.");
             OwnerGitQualificationManifest.RequireClassicFilePath(manifestPath);
             OwnerGitQualificationManifest.RequireNoReparse(manifestPath);
@@ -214,8 +242,7 @@ namespace VBAi
                 throw new InvalidOperationException("Pinned owner Git manifest changed.");
             int pid; long birth;
             using (var process = Process.GetCurrentProcess()) { pid = process.Id; birth = process.StartTime.ToUniversalTime().Ticks; }
-            uint windowPid;
-            uint windowTid = OwnerGitQualificationManifest.GetWindowThreadProcessId(new IntPtr(manifest.VbeHandle), out windowPid);
+            uint windowTid = OwnerGitQualificationManifest.GetWindowThreadProcessId(new IntPtr(manifest.VbeHandle), out uint windowPid);
             OwnerGitQualificationManifest.RequireOwnerIdentity(manifest, pid, birth, windowPid, windowTid,
                 OwnerGitQualificationManifest.GetCurrentThreadId(), session.GitOwnerHandle(manifest.Project),
                 session.GitActiveProjectMatches(manifest.Project, manifest.WorkbookPath) &&

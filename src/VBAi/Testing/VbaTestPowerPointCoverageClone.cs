@@ -72,12 +72,17 @@ namespace VBAi
                 if (!Host.SameIdentity(((VbaTestPowerPointValuesHost.OwnedTarget)ownedCopy).Presentation, copy))
                     throw new InvalidOperationException("The opened coverage copy identity could not be verified. It was not closed.");
                 Host.ValidateTarget(source);
-                return new VbaTestCoverageClone { Project = ((dynamic)copy).VBProject, Path = copyPath, Close = () =>
+                return new VbaTestCoverageClone
+                {
+                    Project = ((dynamic)copy).VBProject,
+                    Path = copyPath,
+                    Close = () =>
                 {
                     var current = Host.ValidateTarget(ownedCopy);
                     if (Host.SameIdentity(current.Project, source.Project) || Host.SameIdentity(current.Presentation, source.Presentation))
                         throw new InvalidOperationException("Closing the original presentation is forbidden.");
-                    try {
+                    try
+                    {
                         // Saved=msoTrue explicitly discards only the verified copy's instrumentation
                         // without writing it to disk (Presentation.Saved/Close, Microsoft VBA API).
                         ((dynamic)current.Presentation).Saved = -1;
@@ -92,7 +97,8 @@ namespace VBAi
                                 throw new InvalidOperationException("The owned presentation remains open after Close returned.");
                     }
                     catch (Exception error) { throw Uncertain("Closing the owned PPTM copy", copyPath, error); }
-                } };
+                }
+                };
             }
             catch (Exception error)
             { throw Uncertain("Verifying ownership after opening the PPTM copy", copyPath, error); }

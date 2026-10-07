@@ -1,7 +1,7 @@
 namespace VBAi.Tests.Unit
 {
-    using VBAi;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
+    using VBAi;
 
     [TestClass, TestCategory("Unit")]
     public sealed class VbePropertyInfoTests

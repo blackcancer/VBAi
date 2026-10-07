@@ -1,17 +1,18 @@
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace VBAi.Tests.Integration
 {
     internal sealed partial class OfficeVbeFixture
     {
         // Observations only: neither seam adopts a discovered process or changes the COM application.
-        internal Func<IntPtr, uint> ReadPublisherWindowOwner = window => {
+        internal Func<IntPtr, uint> ReadPublisherWindowOwner = window =>
+        {
             uint pid; GetWindowThreadProcessId(window, out pid); return pid;
         };
         internal Func<object[]> ReadPublisherProcessCanary = ObservePublisherProcesses;
@@ -36,8 +37,13 @@ namespace VBAi.Tests.Integration
 
         private void RecordPublisherActivationCanary()
         {
-            steps.Add(new { PublisherStartupCanary = "AfterActivationBeforeNewDocument", ProcessId,
-                ObservedProcesses = ReadPublisherProcessCanary(), AutomaticRebind = false });
+            steps.Add(new
+            {
+                PublisherStartupCanary = "AfterActivationBeforeNewDocument",
+                ProcessId,
+                ObservedProcesses = ReadPublisherProcessCanary(),
+                AutomaticRebind = false
+            });
             FlushAdapterEvidence();
         }
 
@@ -62,9 +68,15 @@ namespace VBAi.Tests.Integration
             commandContainment.RequireTerminal();
             if (publisherBootstrap != null) RecheckPrivatePublisherBootstrap();
             object active = null, collection = null, sole = null, appWindow = null;
-            var proof = new Dictionary<string, object> { ["PublisherStartupCanary"] = phase, ["ProcessId"] = ProcessId,
-                ["ExpectedDocumentPath"] = DocumentPath, ["RequireSavedPath"] = requireSavedPath,
-                ["CaptureState"] = "Reading", ["AutomaticRebind"] = false };
+            var proof = new Dictionary<string, object>
+            {
+                ["PublisherStartupCanary"] = phase,
+                ["ProcessId"] = ProcessId,
+                ["ExpectedDocumentPath"] = DocumentPath,
+                ["RequireSavedPath"] = requireSavedPath,
+                ["CaptureState"] = "Reading",
+                ["AutomaticRebind"] = false
+            };
             steps.Add(proof); FlushAdapterEvidence();
             try
             {
@@ -100,7 +112,8 @@ namespace VBAi.Tests.Integration
                         Assert.AreEqual(retained.FullName, identity.FullName, true, "The returned new publication is not the active sole publication.");
                 }
                 if (publisherBootstrap != null)
-                    publisherBootstrap.ConfirmNativePublication(() => {
+                    publisherBootstrap.ConfirmNativePublication(() =>
+                    {
                         var nativeWindows = new List<PublisherOwnerWindow>();
                         foreach (var window in windows)
                         {
@@ -138,8 +151,13 @@ namespace VBAi.Tests.Integration
             try
             {
                 window = ((dynamic)value).ActiveWindow;
-                return new PublicationIdentity { FullName = (string)((dynamic)value).FullName, Saved = (bool)((dynamic)value).Saved,
-                    IUnknown = PublicationComIdentity(value), Window = CapturePublicationWindow(window) };
+                return new PublicationIdentity
+                {
+                    FullName = (string)((dynamic)value).FullName,
+                    Saved = (bool)((dynamic)value).Saved,
+                    IUnknown = PublicationComIdentity(value),
+                    Window = CapturePublicationWindow(window)
+                };
             }
             finally { BalancePublicationGetter(window); }
         }
@@ -148,8 +166,12 @@ namespace VBAi.Tests.Integration
         {
             Assert.IsNotNull(window, "Publisher did not return a document window.");
             long handle = Convert.ToInt64(((dynamic)window).Hwnd);
-            return new PublicationWindow { Handle = handle, ProcessId = ReadPublisherWindowOwner(new IntPtr(handle)),
-                Caption = (string)((dynamic)window).Caption };
+            return new PublicationWindow
+            {
+                Handle = handle,
+                ProcessId = ReadPublisherWindowOwner(new IntPtr(handle)),
+                Caption = (string)((dynamic)window).Caption
+            };
         }
 
         private static string PublicationComIdentity(object value)
@@ -204,8 +226,14 @@ namespace VBAi.Tests.Integration
                 string selector = SamePublicationPath(Field(candidate, "FileName") as string, DocumentPath) ? DocumentPath : name;
                 var persistence = Data("project_persistence_status", "Project", selector);
                 var selection = Data("debug_state", "Project", selector);
-                steps.Add(new { PublisherStartupProject = candidate, Persistence = persistence, Selection = selection,
-                    ProvisionalSelector = selector, SolePathlessProject = solePathless });
+                steps.Add(new
+                {
+                    PublisherStartupProject = candidate,
+                    Persistence = persistence,
+                    Selection = selection,
+                    ProvisionalSelector = selector,
+                    SolePathlessProject = solePathless
+                });
                 RequirePublisherPersistenceProof(persistence, selector);
                 Assert.AreEqual(2, Convert.ToInt32(Field(selection, "Mode")), "The selected publication must be in design mode.");
                 if (Field(selection, "SelectedProject") == null)
@@ -229,8 +257,13 @@ namespace VBAi.Tests.Integration
                             "The no-pane native project acquired a foreign path: " + key);
                     }
                     var finalPersistence = Data("project_persistence_status", "Project", selector);
-                    steps.Add(new { PublisherNoCodePaneAssociation = true, CurrentProjects = currentProjects, FinalPersistence = finalPersistence,
-                        Proof = "Exact singleton native document/VBE association; no code-pane selection is inferred" });
+                    steps.Add(new
+                    {
+                        PublisherNoCodePaneAssociation = true,
+                        CurrentProjects = currentProjects,
+                        FinalPersistence = finalPersistence,
+                        Proof = "Exact singleton native document/VBE association; no code-pane selection is inferred"
+                    });
                     RequirePublisherPersistenceProof(finalPersistence, selector);
                 }
                 else Assert.AreEqual(name, Field(selection, "SelectedProject") as string, true, "The active VBE project is not the mapped publication.");
@@ -280,7 +313,8 @@ namespace VBAi.Tests.Integration
             var processes = Process.GetProcessesByName("MSPUB");
             try
             {
-                return processes.Select(process => {
+                return processes.Select(process =>
+                {
                     var record = new Dictionary<string, object> { ["ProcessId"] = process.Id, ["ObservedOnly"] = true, ["Adopted"] = false };
                     uint parent; record["ParentProcessId"] = parents.TryGetValue((uint)process.Id, out parent) ? (object)parent : null;
                     record["ParentObservationError"] = snapshotError == 0 ? null : (object)snapshotError;

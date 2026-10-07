@@ -82,8 +82,7 @@ namespace VBAi
                 if (launching || running != null && !running.IsCompleted) throw new InvalidOperationException("A pending Git session retains its original owner lease.");
                 lock (owners)
                 {
-                    OwnerLease current;
-                    if (!owners.TryGetValue(handle, out current) || !ReferenceEquals(current, this))
+                    if (!owners.TryGetValue(handle, out OwnerLease current) || !ReferenceEquals(current, this))
                         throw new InvalidOperationException("The exact owner lease changed.");
                     owners.Remove(handle); disposed = true;
                 }

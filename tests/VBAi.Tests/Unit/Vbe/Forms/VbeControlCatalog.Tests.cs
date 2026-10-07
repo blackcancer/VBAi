@@ -1,11 +1,11 @@
 namespace VBAi.Tests.Unit
 {
+    using Microsoft.VisualStudio.TestTools.UnitTesting;
+    using Microsoft.Win32;
     using System;
     using System.Collections.Generic;
     using System.Linq;
-    using Microsoft.Win32;
     using VBAi;
-    using Microsoft.VisualStudio.TestTools.UnitTesting;
 
     [TestClass]
     [TestCategory("Unit")]

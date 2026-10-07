@@ -1,3 +1,4 @@
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
@@ -6,7 +7,6 @@ using System.Linq;
 using System.Runtime.ExceptionServices;
 using System.Security.Cryptography;
 using System.Text;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace VBAi.Tests.Integration
 {
@@ -49,13 +49,27 @@ namespace VBAi.Tests.Integration
                 fixture = host == "Publisher" ? OfficeVbeFixture.StartPublisherSerializedQualificationSeed() : OfficeVbeFixture.Start(host);
                 fixture.RequireAdapterOnlyCleanup();
                 Assert.AreEqual(host, fixture.Kind, "The launched host must match the selected native qualification.");
-                fixture.RecordAdapterStage(host + "GeneralQualificationScope", new { Host = fixture.Kind, Property = property,
-                    NativeWriteInvocationLimit = 1, AdapterSaveInvocationLimit = 1, ComMetadataSetterInvoked = false,
-                    MacroExecutionAllowed = false, HelpInvoked = false, CompileAllowed = false,
-                    PostAdapterHelperSaveAllowed = false, RetryAllowed = false });
-                fixture.RecordAdapterStage(host + "GeneralEncodingScenario", new { Host = fixture.Kind, ExpectedEncodingRefusal = expectEncodingRefusal,
+                fixture.RecordAdapterStage(host + "GeneralQualificationScope", new
+                {
+                    Host = fixture.Kind,
+                    Property = property,
+                    NativeWriteInvocationLimit = 1,
+                    AdapterSaveInvocationLimit = 1,
+                    ComMetadataSetterInvoked = false,
+                    MacroExecutionAllowed = false,
+                    HelpInvoked = false,
+                    CompileAllowed = false,
+                    PostAdapterHelperSaveAllowed = false,
+                    RetryAllowed = false
+                });
+                fixture.RecordAdapterStage(host + "GeneralEncodingScenario", new
+                {
+                    Host = fixture.Kind,
+                    ExpectedEncodingRefusal = expectEncodingRefusal,
                     HelpFileMarker = property == "HelpFile" ? helpFileMarker : null,
-                    RetainedModalIsNormalCleanupSuccess = false, UnsupportedUnicodePersistenceQualified = false });
+                    RetainedModalIsNormalCleanupSuccess = false,
+                    UnsupportedUnicodePersistenceQualified = false
+                });
                 RequireBridge(fixture);
                 if (expectEncodingRefusal)
                 {
@@ -66,10 +80,17 @@ namespace VBAi.Tests.Integration
                     string sourceSha;
                     using (var hash = SHA256.Create()) sourceSha = BitConverter.ToString(hash.ComputeHash(refusalBaselineBytes)).Replace("-", "");
                     OfficeVbeFixture.RequirePublisherSeedBytes(OfficeVbeFixture.PublisherSeedPath, refusalBaselineBytes.LongLength, sourceSha);
-                    fixture.RecordAdapterStage("PublisherEncodingRefusalClosedSeedBaseline", new {
-                        Source = OfficeVbeFixture.PublisherSeedPath, SourceSha256 = sourceSha, SourceBytes = refusalBaselineBytes.LongLength,
-                        OwnedCopy = refusalDocumentPath, BaselineFromAuditedPreOpenSeedCopy = true,
-                        LivePublicationBytesRead = false, SourceWrites = 0, PreparationSaveAttempts = 0 });
+                    fixture.RecordAdapterStage("PublisherEncodingRefusalClosedSeedBaseline", new
+                    {
+                        Source = OfficeVbeFixture.PublisherSeedPath,
+                        SourceSha256 = sourceSha,
+                        SourceBytes = refusalBaselineBytes.LongLength,
+                        OwnedCopy = refusalDocumentPath,
+                        BaselineFromAuditedPreOpenSeedCopy = true,
+                        LivePublicationBytesRead = false,
+                        SourceWrites = 0,
+                        PreparationSaveAttempts = 0
+                    });
                 }
                 else
                 {
@@ -94,8 +115,13 @@ namespace VBAi.Tests.Integration
                     Assert.IsFalse(File.Exists(marker), "The owned inert HelpFile marker must be fresh.");
                     File.WriteAllText(marker, "VBAi disposable path-storage marker; not compiled CHM content.\r\n", new UTF8Encoding(false));
                     expected = marker;
-                    fixture.RecordAdapterStage("OwnedExactHelpFileMarker", new { Path = marker,
-                        CompiledHelpContent = false, ContentQualification = false, HelpInvoked = false });
+                    fixture.RecordAdapterStage("OwnedExactHelpFileMarker", new
+                    {
+                        Path = marker,
+                        CompiledHelpContent = false,
+                        ContentQualification = false,
+                        HelpInvoked = false
+                    });
                 }
                 else
                 {
@@ -121,76 +147,107 @@ namespace VBAi.Tests.Integration
                 }
                 else
                 {
-                var originalWrite = WriteGeneral(fixture, property, expected, before);
-                AssertUnchangedOtherFields(before, originalWrite, nativeField);
-                Assert.AreEqual(Convert.ToString(expected, CultureInfo.InvariantCulture), Text(originalWrite, nativeField),
-                    "The original native General result did not retain the exact requested value.");
-                var live = ReadGeneral(fixture, "AfterOriginalNativeWrite");
-                AssertUnchangedOtherFields(before, live, nativeField);
-                Assert.AreEqual(Convert.ToString(expected, CultureInfo.InvariantCulture), Text(live, nativeField));
-                CollectionAssert.AreEqual(baselineHashes, ReadHashes(fixture), "General must not change synthetic source.");
-                OfficeAdapterOnlyProjectQualification.AssertReferencesEqual(baselineReferences, fixture.Data("list_references"));
+                    var originalWrite = WriteGeneral(fixture, property, expected, before);
+                    AssertUnchangedOtherFields(before, originalWrite, nativeField);
+                    Assert.AreEqual(Convert.ToString(expected, CultureInfo.InvariantCulture), Text(originalWrite, nativeField),
+                        "The original native General result did not retain the exact requested value.");
+                    var live = ReadGeneral(fixture, "AfterOriginalNativeWrite");
+                    AssertUnchangedOtherFields(before, live, nativeField);
+                    Assert.AreEqual(Convert.ToString(expected, CultureInfo.InvariantCulture), Text(live, nativeField));
+                    CollectionAssert.AreEqual(baselineHashes, ReadHashes(fixture), "General must not change synthetic source.");
+                    OfficeAdapterOnlyProjectQualification.AssertReferencesEqual(baselineReferences, fixture.Data("list_references"));
 
-                // Pending source guarantees the adapter itself is exercised even if metadata was written immediately.
-                foreach (string name in Modules) ReplaceMarker(fixture, name, "pending-" + Guid.NewGuid().ToString("N"));
-                var expectedHashes = ReadHashes(fixture);
-                for (int i = 0; i < Modules.Length; i++) Assert.AreNotEqual(baselineHashes[i], expectedHashes[i]);
-                SelectOwnedCode(fixture);
-                var selected = fixture.RecordAdapterObservation("Before" + host + "GeneralAdapter");
-                Assert.AreEqual(Modules[0], selected["ActiveCodeComponent"]);
-                Assert.AreEqual(false, selected["ProjectSaved"]);
-                string path = fixture.DocumentPath, previousSelector = fixture.Project;
-                int previousPid = fixture.ProcessId;
-                string version = (string)fixture.Data("project_properties")["Version"];
-                fixture.RecordAdapterStage("Single" + host + "GeneralAdapterSaveStarting", new { Host = fixture.Kind, Property = property,
-                    ExpectedHostPath = path, ExpectedProjectVersion = version, ProcessId = previousPid,
-                    ExpectedNativeMetadata = NativeMetadata(live), ExpectedHashes = expectedHashes, RetryAllowed = false });
-                var saveResponse = fixture.Response("save_host_document", "ExpectedHostPath", path, "ExpectedProjectVersion", version);
-                fixture.RecordAdapterStage("Original" + host + "GeneralAdapterResponse", saveResponse);
-                if (!Equals(Field(saveResponse, "Ok"), true)) fixture.NativeExecutionUnsettled = true;
-                Assert.AreEqual(true, saveResponse["Ok"], Convert.ToString(saveResponse["Error"]));
-                var save = VbeBridgeClient.Object(saveResponse["Data"]);
-                Assert.AreEqual(host, Field(save, "Host"), "The original adapter response must identify the selected host.");
-                if (host == "Access")
-                {
-                    Assert.AreEqual("VBE.CommandBars.ID3", Field(save, "SaveApi"));
-                    Assert.IsNull(Field(save, "HostSaved"), "Access must not fabricate a document Saved property.");
-                }
-                if (!Equals(Field(save, "Uncertain"), false)) fixture.NativeExecutionUnsettled = true;
-                Assert.AreEqual(true, Field(save, "Verified"), "Fresh readback cannot promote the original adapter response.");
-                Assert.AreEqual(false, Field(save, "Uncertain"));
-                Assert.AreEqual(true, Field(save, "MutationInvoked"));
-                Assert.AreEqual(false, Field(save, "PersistenceReopenVerified"));
-                fixture.ObserveAdapterOutcome(saveResponse);
-                CollectionAssert.AreEqual(expectedHashes, ReadHashes(fixture), "Save changed synthetic source.");
-                OfficeAdapterOnlyProjectQualification.AssertReferencesEqual(baselineReferences, fixture.Data("list_references"));
-                var afterSave = ReadGeneral(fixture, "AfterOriginalAdapterSave");
-                CollectionAssert.AreEqual(NativeMetadata(live), NativeMetadata(afterSave), "Save changed native General fields.");
+                    // Pending source guarantees the adapter itself is exercised even if metadata was written immediately.
+                    foreach (string name in Modules) ReplaceMarker(fixture, name, "pending-" + Guid.NewGuid().ToString("N"));
+                    var expectedHashes = ReadHashes(fixture);
+                    for (int i = 0; i < Modules.Length; i++) Assert.AreNotEqual(baselineHashes[i], expectedHashes[i]);
+                    SelectOwnedCode(fixture);
+                    var selected = fixture.RecordAdapterObservation("Before" + host + "GeneralAdapter");
+                    Assert.AreEqual(Modules[0], selected["ActiveCodeComponent"]);
+                    Assert.AreEqual(false, selected["ProjectSaved"]);
+                    string path = fixture.DocumentPath, previousSelector = fixture.Project;
+                    int previousPid = fixture.ProcessId;
+                    string version = (string)fixture.Data("project_properties")["Version"];
+                    fixture.RecordAdapterStage("Single" + host + "GeneralAdapterSaveStarting", new
+                    {
+                        Host = fixture.Kind,
+                        Property = property,
+                        ExpectedHostPath = path,
+                        ExpectedProjectVersion = version,
+                        ProcessId = previousPid,
+                        ExpectedNativeMetadata = NativeMetadata(live),
+                        ExpectedHashes = expectedHashes,
+                        RetryAllowed = false
+                    });
+                    var saveResponse = fixture.Response("save_host_document", "ExpectedHostPath", path, "ExpectedProjectVersion", version);
+                    fixture.RecordAdapterStage("Original" + host + "GeneralAdapterResponse", saveResponse);
+                    if (!Equals(Field(saveResponse, "Ok"), true)) fixture.NativeExecutionUnsettled = true;
+                    Assert.AreEqual(true, saveResponse["Ok"], Convert.ToString(saveResponse["Error"]));
+                    var save = VbeBridgeClient.Object(saveResponse["Data"]);
+                    Assert.AreEqual(host, Field(save, "Host"), "The original adapter response must identify the selected host.");
+                    if (host == "Access")
+                    {
+                        Assert.AreEqual("VBE.CommandBars.ID3", Field(save, "SaveApi"));
+                        Assert.IsNull(Field(save, "HostSaved"), "Access must not fabricate a document Saved property.");
+                    }
+                    if (!Equals(Field(save, "Uncertain"), false)) fixture.NativeExecutionUnsettled = true;
+                    Assert.AreEqual(true, Field(save, "Verified"), "Fresh readback cannot promote the original adapter response.");
+                    Assert.AreEqual(false, Field(save, "Uncertain"));
+                    Assert.AreEqual(true, Field(save, "MutationInvoked"));
+                    Assert.AreEqual(false, Field(save, "PersistenceReopenVerified"));
+                    fixture.ObserveAdapterOutcome(saveResponse);
+                    CollectionAssert.AreEqual(expectedHashes, ReadHashes(fixture), "Save changed synthetic source.");
+                    OfficeAdapterOnlyProjectQualification.AssertReferencesEqual(baselineReferences, fixture.Data("list_references"));
+                    var afterSave = ReadGeneral(fixture, "AfterOriginalAdapterSave");
+                    CollectionAssert.AreEqual(NativeMetadata(live), NativeMetadata(afterSave), "Save changed native General fields.");
 
-                fixture.ReopenFromDisk(() => {
-                    using (var stream = File.OpenRead(path))
-                    using (var hash = SHA256.Create())
-                        fixture.RecordAdapterStage(host + "GeneralClosedFileEvidence", new { Host = host, Path = path, Bytes = stream.Length,
-                            Sha256 = BitConverter.ToString(hash.ComputeHash(stream)).Replace("-", ""),
-                            PreviousProcessId = previousPid, HostExitedBeforeHash = true });
-                });
-                var status = RequireBridge(fixture);
-                var fresh = ReadGeneral(fixture, "IndependentFreshDiskRead");
-                var reopened = fixture.RecordAdapterObservation(host + "GeneralFreshDiskReopen");
-                Assert.AreEqual(true, reopened["ProjectSaved"], "The independent reopened native project is not saved.");
-                OfficeProjectReopenIdentity.Require(host, path, previousSelector, previousPid, NativeMetadata(live),
-                    typeof(VbeSession).Module.ModuleVersionId, new OfficeProjectReopenIdentity.Evidence {
-                        Host = fixture.Kind, DocumentPath = fixture.DocumentPath, Selector = fixture.Project,
-                        ProcessId = fixture.ProcessId, Metadata = NativeMetadata(fresh), Observation = reopened, Status = status });
-                CollectionAssert.AreEqual(NativeMetadata(live), NativeMetadata(fresh), "Fresh disk native General differs.");
-                Assert.AreEqual(Convert.ToString(expected, CultureInfo.InvariantCulture), Text(fresh, nativeField));
-                CollectionAssert.AreEqual(expectedHashes, ReadHashes(fixture), "Fresh disk source differs.");
-                OfficeAdapterOnlyProjectQualification.AssertReferencesEqual(baselineReferences, fixture.Data("list_references"));
-                fixture.RecordAdapterStage(host + "GeneralIndependentReadbackVerified", new { Host = fixture.Kind, Property = property,
-                    OriginalProcessId = previousPid, FreshProcessId = fixture.ProcessId, Expected = expected,
-                    OriginalGeneralWriteVerified = true, OriginalAdapterResponseVerified = true,
-                    NativeFreshDiskReadbackVerified = true, ComMetadataGetterAcceptanceRequired = false,
-                    HelpContentQualified = false, MacroExecuted = false });
+                    fixture.ReopenFromDisk(() =>
+                    {
+                        using (var stream = File.OpenRead(path))
+                        using (var hash = SHA256.Create())
+                            fixture.RecordAdapterStage(host + "GeneralClosedFileEvidence", new
+                            {
+                                Host = host,
+                                Path = path,
+                                Bytes = stream.Length,
+                                Sha256 = BitConverter.ToString(hash.ComputeHash(stream)).Replace("-", ""),
+                                PreviousProcessId = previousPid,
+                                HostExitedBeforeHash = true
+                            });
+                    });
+                    var status = RequireBridge(fixture);
+                    var fresh = ReadGeneral(fixture, "IndependentFreshDiskRead");
+                    var reopened = fixture.RecordAdapterObservation(host + "GeneralFreshDiskReopen");
+                    Assert.AreEqual(true, reopened["ProjectSaved"], "The independent reopened native project is not saved.");
+                    OfficeProjectReopenIdentity.Require(host, path, previousSelector, previousPid, NativeMetadata(live),
+                        typeof(VbeSession).Module.ModuleVersionId, new OfficeProjectReopenIdentity.Evidence
+                        {
+                            Host = fixture.Kind,
+                            DocumentPath = fixture.DocumentPath,
+                            Selector = fixture.Project,
+                            ProcessId = fixture.ProcessId,
+                            Metadata = NativeMetadata(fresh),
+                            Observation = reopened,
+                            Status = status
+                        });
+                    CollectionAssert.AreEqual(NativeMetadata(live), NativeMetadata(fresh), "Fresh disk native General differs.");
+                    Assert.AreEqual(Convert.ToString(expected, CultureInfo.InvariantCulture), Text(fresh, nativeField));
+                    CollectionAssert.AreEqual(expectedHashes, ReadHashes(fixture), "Fresh disk source differs.");
+                    OfficeAdapterOnlyProjectQualification.AssertReferencesEqual(baselineReferences, fixture.Data("list_references"));
+                    fixture.RecordAdapterStage(host + "GeneralIndependentReadbackVerified", new
+                    {
+                        Host = fixture.Kind,
+                        Property = property,
+                        OriginalProcessId = previousPid,
+                        FreshProcessId = fixture.ProcessId,
+                        Expected = expected,
+                        OriginalGeneralWriteVerified = true,
+                        OriginalAdapterResponseVerified = true,
+                        NativeFreshDiskReadbackVerified = true,
+                        ComMetadataGetterAcceptanceRequired = false,
+                        HelpContentQualified = false,
+                        MacroExecuted = false
+                    });
                 }
             }
             catch (Exception error)
@@ -216,11 +273,20 @@ namespace VBAi.Tests.Integration
                             string closedSha;
                             using (var hash = SHA256.Create()) closedSha = BitConverter.ToString(hash.ComputeHash(closedBytes)).Replace("-", "");
                             Assert.AreEqual(OfficeVbeFixture.PublisherSeedSha, closedSha);
-                            fixture.RecordAdapterStage("PublisherEncodingRefusalClosedCopyVerified", new {
-                                Path = refusalDocumentPath, Bytes = closedBytes.LongLength, Sha256 = closedSha,
-                                OriginalSource = OfficeVbeFixture.PublisherSeedPath, OriginalSourceSha256 = OfficeVbeFixture.PublisherSeedSha,
-                                HostExitedBeforeRead = true, NormalOriginalDisposeVerified = true,
-                                RefusedBeforeWrite = true, SaveAttempts = 0, FreshReopenAttempts = 0, RetryAllowed = false });
+                            fixture.RecordAdapterStage("PublisherEncodingRefusalClosedCopyVerified", new
+                            {
+                                Path = refusalDocumentPath,
+                                Bytes = closedBytes.LongLength,
+                                Sha256 = closedSha,
+                                OriginalSource = OfficeVbeFixture.PublisherSeedPath,
+                                OriginalSourceSha256 = OfficeVbeFixture.PublisherSeedSha,
+                                HostExitedBeforeRead = true,
+                                NormalOriginalDisposeVerified = true,
+                                RefusedBeforeWrite = true,
+                                SaveAttempts = 0,
+                                FreshReopenAttempts = 0,
+                                RetryAllowed = false
+                            });
                         }
                         catch (Exception disk) { failure = disk; }
                     }
@@ -243,10 +309,7 @@ namespace VBAi.Tests.Integration
             Assert.IsTrue(host == "Publisher" || host == "Access", "Only explicitly selected native hosts are supported.");
             if (Environment.GetEnvironmentVariable("VBAi_RUN_OFFICE_TESTS") != "1")
                 Assert.Inconclusive("Set VBAi_RUN_OFFICE_TESTS=1 for disposable " + host + " qualification.");
-            string desktop = Environment.GetEnvironmentVariable("VBAi_TEST_DESKTOP_NAME");
-            if (string.IsNullOrWhiteSpace(desktop))
-                Assert.Inconclusive(host + " General qualification requires the existing isolated private desktop helper.");
-            IsolatedTestDesktop.RequireCurrent(desktop);
+            NativeTestDesktop.Current();
         }
 
         private static IDictionary<string, object> RequireBridge(OfficeVbeFixture fixture)
@@ -271,8 +334,15 @@ namespace VBAi.Tests.Integration
         private static IDictionary<string, object> ReadGeneral(OfficeVbeFixture fixture, string phase)
         {
             string caption = GeneralCaption(fixture), version = (string)fixture.Data("project_properties")["Version"];
-            fixture.RecordAdapterStage(fixture.Kind + "NativeGeneralReadStarting", new { Host = fixture.Kind, Phase = phase,
-                ExpectedProjectVersion = version, ControlCaption = caption, ProcessId = fixture.ProcessId, RetryAllowed = false });
+            fixture.RecordAdapterStage(fixture.Kind + "NativeGeneralReadStarting", new
+            {
+                Host = fixture.Kind,
+                Phase = phase,
+                ExpectedProjectVersion = version,
+                ControlCaption = caption,
+                ProcessId = fixture.ProcessId,
+                RetryAllowed = false
+            });
             var response = fixture.Response("read_project_general", "ExpectedMode", 2,
                 "ExpectedProjectVersion", version, "ControlCaption", caption);
             return AssertGeneralResponse(fixture, response, false, phase);
@@ -282,9 +352,17 @@ namespace VBAi.Tests.Integration
             IDictionary<string, object> before)
         {
             string caption = GeneralCaption(fixture), version = (string)fixture.Data("project_properties")["Version"];
-            fixture.RecordAdapterStage("Single" + fixture.Kind + "NativeGeneralWriteStarting", new { Host = fixture.Kind, Property = property, Value = value,
-                ExpectedProjectVersion = version, ExpectedOptionsVersion = Text(before, "OptionsVersion"),
-                ControlCaption = caption, ProcessId = fixture.ProcessId, RetryAllowed = false });
+            fixture.RecordAdapterStage("Single" + fixture.Kind + "NativeGeneralWriteStarting", new
+            {
+                Host = fixture.Kind,
+                Property = property,
+                Value = value,
+                ExpectedProjectVersion = version,
+                ExpectedOptionsVersion = Text(before, "OptionsVersion"),
+                ControlCaption = caption,
+                ProcessId = fixture.ProcessId,
+                RetryAllowed = false
+            });
             var response = fixture.Response("set_project_general", "Property", property, "Value", value,
                 "ExpectedMode", 2, "ExpectedProjectVersion", version, "ControlCaption", caption,
                 "ExpectedOptionsVersion", Text(before, "OptionsVersion"));
@@ -294,15 +372,28 @@ namespace VBAi.Tests.Integration
         private static void AssertEncodingRefusal(OfficeVbeFixture fixture, object value, IDictionary<string, object> before)
         {
             string caption = GeneralCaption(fixture), version = (string)fixture.Data("project_properties")["Version"];
-            fixture.RecordAdapterStage("Single" + fixture.Kind + "NativeEncodingRefusalStarting", new { Host = fixture.Kind, Value = value,
-                ExpectedProjectVersion = version, ExpectedOptionsVersion = Text(before, "OptionsVersion"),
-                ControlCaption = caption, ProcessId = fixture.ProcessId, FieldInvocationLimit = 0,
-                AdapterSaveInvocationLimit = 0, FreshReopenAllowed = false, RetryAllowed = false });
+            fixture.RecordAdapterStage("Single" + fixture.Kind + "NativeEncodingRefusalStarting", new
+            {
+                Host = fixture.Kind,
+                Value = value,
+                ExpectedProjectVersion = version,
+                ExpectedOptionsVersion = Text(before, "OptionsVersion"),
+                ControlCaption = caption,
+                ProcessId = fixture.ProcessId,
+                FieldInvocationLimit = 0,
+                AdapterSaveInvocationLimit = 0,
+                FreshReopenAllowed = false,
+                RetryAllowed = false
+            });
             var response = fixture.Response("set_project_general", "Property", "HelpFile", "Value", value,
                 "ExpectedMode", 2, "ExpectedProjectVersion", version, "ControlCaption", caption,
                 "ExpectedOptionsVersion", Text(before, "OptionsVersion"));
-            fixture.RecordAdapterStage("Original" + fixture.Kind + "NativeGeneralResponse", new {
-                Phase = "OriginalUnsupportedEncodingRefusal", Write = true, Response = response });
+            fixture.RecordAdapterStage("Original" + fixture.Kind + "NativeGeneralResponse", new
+            {
+                Phase = "OriginalUnsupportedEncodingRefusal",
+                Write = true,
+                Response = response
+            });
             // Mark before assertions: an unknown or mismatched original refusal remains quarantined without cleanup retry.
             fixture.NativeExecutionUnsettled = true;
             Assert.AreEqual(true, Field(response, "Ok"), "An explicit General result is required for the no-write claim.");
@@ -328,11 +419,21 @@ namespace VBAi.Tests.Integration
             string error = Convert.ToString(Field(result, "Error"));
             StringAssert.Contains(error, "cannot preserve the exact requested value");
             StringAssert.Contains(error, "no field write was entered");
-            fixture.RecordAdapterStage(fixture.Kind + "NativeEncodingRefusalVerified", new {
-                ExpectedNativeEncodingRefusal = true, FieldMutationInvoked = false, FieldAttempts = 0,
-                OkAttempts = 0, CancelAttempts = 1, SaveAttempts = 0, FreshReopenAttempts = 0,
-                MetadataRedacted = true, OriginalModalRetained = false, NormalHostCleanupRequired = true,
-                UnsupportedUnicodePersistenceQualified = false, RetryAllowed = false });
+            fixture.RecordAdapterStage(fixture.Kind + "NativeEncodingRefusalVerified", new
+            {
+                ExpectedNativeEncodingRefusal = true,
+                FieldMutationInvoked = false,
+                FieldAttempts = 0,
+                OkAttempts = 0,
+                CancelAttempts = 1,
+                SaveAttempts = 0,
+                FreshReopenAttempts = 0,
+                MetadataRedacted = true,
+                OriginalModalRetained = false,
+                NormalHostCleanupRequired = true,
+                UnsupportedUnicodePersistenceQualified = false,
+                RetryAllowed = false
+            });
             fixture.NativeExecutionUnsettled = false; // Only the fully verified original Cancel makes ordinary read-only checks and cleanup safe.
         }
 

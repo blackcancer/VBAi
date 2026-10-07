@@ -1,3 +1,4 @@
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Diagnostics;
 using System.IO;
@@ -7,7 +8,6 @@ using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace VBAi.Tests.Integration
 {
@@ -92,7 +92,8 @@ namespace VBAi.Tests.Integration
                     service.IsExecutionHost = () => true;
                     service.Host = new FixtureHost(application, workbook, (int)pid);
                     service.CoverageRoot = () => Path.Combine(root, "coverage-runs");
-                    service.CreateCoverageClone = (sourceProject, sourcePath, folder) => {
+                    service.CreateCoverageClone = (sourceProject, sourcePath, folder) =>
+                    {
                         Assert.IsTrue(VbeDebug.NativeProcedureValuesHost.SameComIdentity(sourceProject, (object)project));
                         Directory.CreateDirectory(folder);
                         string copyPath = Path.Combine(folder, "coverage.xlsm");
@@ -101,8 +102,12 @@ namespace VBAi.Tests.Integration
                         object copied = null;
                         try { excel.EnableEvents = false; copied = excel.Workbooks.Open(copyPath, 0, false); }
                         finally { excel.EnableEvents = events; }
-                        return new VbaTestCoverageClone { Project = ((dynamic)copied).VBProject, Path = copyPath,
-                            Close = () => { bool previous = (bool)excel.EnableEvents; try { excel.EnableEvents = false; ((dynamic)copied).Close(false); } finally { excel.EnableEvents = previous; } } };
+                        return new VbaTestCoverageClone
+                        {
+                            Project = ((dynamic)copied).VBProject,
+                            Path = copyPath,
+                            Close = () => { bool previous = (bool)excel.EnableEvents; try { excel.EnableEvents = false; ((dynamic)copied).Close(false); } finally { excel.EnableEvents = previous; } }
+                        };
                     };
                     service.ConfirmSupport = (review, before, after) => true;
                     var catalog = service.DiscoverSelector(path);
@@ -122,11 +127,11 @@ namespace VBAi.Tests.Integration
                     Assert.AreEqual(VbaTestOutcome.Failed, Result(run, "SwallowedAssertion").Outcome);
                     Assert.AreEqual(VbaTestOutcome.Inconclusive, Result(run, "Placeholder").Outcome);
                     StringAssert.Contains(VbaTestReports.Human(run), "AssertionFail");
-                        StringAssert.Contains(VbaTestReports.Compact(run), "\"available\":false");
-                        string reports = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "test-explorer-native");
-                        Directory.CreateDirectory(reports);
-                        File.WriteAllText(Path.Combine(reports, "results-human.txt"), VbaTestReports.Human(run), new System.Text.UTF8Encoding(false));
-                        File.WriteAllText(Path.Combine(reports, "results-llm.json"), VbaTestReports.Compact(run), new System.Text.UTF8Encoding(false));
+                    StringAssert.Contains(VbaTestReports.Compact(run), "\"available\":false");
+                    string reports = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "test-explorer-native");
+                    Directory.CreateDirectory(reports);
+                    File.WriteAllText(Path.Combine(reports, "results-human.txt"), VbaTestReports.Human(run), new System.Text.UTF8Encoding(false));
+                    File.WriteAllText(Path.Combine(reports, "results-llm.json"), VbaTestReports.Compact(run), new System.Text.UTF8Encoding(false));
                     Assert.AreEqual(original, (string)tests.CodeModule.Lines[1, (int)tests.CodeModule.CountOfLines]);
                     // Every completed test invokes cleanup, including assertions and VBA errors.
                     Assert.AreEqual(6, Convert.ToInt32(excel.Run("'" + path + "'!ExplorerTests.CleanupCount")));

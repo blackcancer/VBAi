@@ -1,9 +1,7 @@
 namespace VBAi.Tests.Unit
 {
-    using System;
-    using System.Windows.Forms;
-    using VBAi;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
+    using System.Windows.Forms;
 
     /// <summary>Fournit une recherche vérifiable des contrôles créés par les fenêtres Designer.</summary>
     public sealed partial class WinFormsDesignerTests

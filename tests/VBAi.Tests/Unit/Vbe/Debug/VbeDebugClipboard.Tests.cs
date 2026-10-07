@@ -1,11 +1,8 @@
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.IO;
-using System.Linq;
-using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
-using VBAi;
 
 namespace VBAi.Tests.Unit
 {
@@ -106,7 +103,8 @@ namespace VBAi.Tests.Unit
             var clipboard = new VbeDebugClipboard
             {
                 Sequence = () => sequence,
-                YieldNative = () => {
+                YieldNative = () =>
+                {
                     if (++yields == 3 && copyIssued) { current = Text("delayed output"); sequence++; }
                     return Task.CompletedTask;
                 },
@@ -135,7 +133,8 @@ namespace VBAi.Tests.Unit
                 IsHostOwner = () => true,
                 WriteData = data => { restorations++; current = data; sequence++; }
             };
-            var error = Assert.ThrowsException<InvalidOperationException>(() => clipboard.ReadAsync(() => { }, () => {
+            var error = Assert.ThrowsException<InvalidOperationException>(() => clipboard.ReadAsync(() => { }, () =>
+            {
                 current = Text("partial copy"); sequence++;
                 throw new InvalidOperationException("Copy failed after changing clipboard.");
             }).GetAwaiter().GetResult());

@@ -1,11 +1,10 @@
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Web.Script.Serialization;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
-using VBAi;
 
 namespace VBAi.Tests.Unit
 {
@@ -24,7 +23,8 @@ namespace VBAi.Tests.Unit
                 outer.Record(VbeInspectionTrace.Phase.Enqueue);
                 using (inner.Enter()) Assert.AreSame(inner, VbeInspectionTrace.Current);
                 Assert.AreSame(outer, VbeInspectionTrace.Current);
-                Task.Run(() => {
+                Task.Run(() =>
+                {
                     Assert.AreSame(outer, VbeInspectionTrace.Current);
                     outer.Record(VbeInspectionTrace.Phase.ObserverEntered);
                     outer.Record(VbeInspectionTrace.Phase.ObserverTerminal, new InvalidOperationException("SECRET_SOURCE_AND_VALUE"));
@@ -48,7 +48,8 @@ namespace VBAi.Tests.Unit
             var trace = new VbeInspectionTrace(_ => { writes++; throw new IOException("private path"); });
             var original = VbeInspectionTrace.Current;
             var expected = new InvalidOperationException("native failure");
-            var actual = Assert.ThrowsException<InvalidOperationException>(() => {
+            var actual = Assert.ThrowsException<InvalidOperationException>(() =>
+            {
                 using (trace.Enter())
                 {
                     for (int index = 0; index < 1000; index++) trace.Record(VbeInspectionTrace.Phase.ContextValidation);
@@ -73,9 +74,15 @@ namespace VBAi.Tests.Unit
         {
             var rows = new List<string>();
             var trace = new VbeInspectionTrace(rows.Add);
-            var observed = new VbeInspectionTrace.OptionsComboEvidence {
-                Reader = VbeInspectionTrace.OptionsReader.NativeCombo, Role = VbeInspectionTrace.OptionsRole.Size,
-                Window = 17, CountBefore = 0, CountAfterExpansion = 0, ExpansionAttempted = true };
+            var observed = new VbeInspectionTrace.OptionsComboEvidence
+            {
+                Reader = VbeInspectionTrace.OptionsReader.NativeCombo,
+                Role = VbeInspectionTrace.OptionsRole.Size,
+                Window = 17,
+                CountBefore = 0,
+                CountAfterExpansion = 0,
+                ExpansionAttempted = true
+            };
             trace.RecordOptionsCombo(observed, new InvalidOperationException("SECRET_NATIVE_CONTROL_TEXT"));
             for (int index = 0; index < 1000; index++)
             {

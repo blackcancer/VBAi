@@ -47,7 +47,8 @@ namespace VBAi
                 case "uncomment":
                     replacement = string.Join("\r\n", lines.Skip(first).Take(request.Count).Select(line => Regex.Replace(line, @"^(\s*)'", "$1")));
                     break;
-                case "indent": case "unindent":
+                case "indent":
+                case "unindent":
                     int size = request.InsertIndex ?? 4;
                     if (size < 1 || size > 16) throw new ArgumentException("Indent size must be between 1 and 16.");
                     replacement = string.Join("\r\n", lines.Skip(first).Take(request.Count).Select(line => request.Action == "indent"
@@ -97,7 +98,7 @@ namespace VBAi
                         if (end == '"' && i < text.Length && text[i] == '"') { output.Append(text[i++]); continue; }
                         break;
                     }
-                     continue;
+                    continue;
                 }
                 if (char.IsLetter(c) || c == '_')
                 {

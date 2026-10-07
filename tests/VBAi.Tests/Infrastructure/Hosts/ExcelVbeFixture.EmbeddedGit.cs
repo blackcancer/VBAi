@@ -1,3 +1,4 @@
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -6,7 +7,6 @@ using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Text;
 using System.Web.Script.Serialization;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace VBAi.Tests.Integration
 {
@@ -51,25 +51,40 @@ namespace VBAi.Tests.Integration
             object project = null, components = null;
             if (retained)
             {
-                Action replace = () => {
-                    evidence(new { Phase = "RetainedCopyIntent", SourceWorkbook = fontObservation.SourceWorkbook,
-                        SourceSha256 = RetainedRootFontWorkbook.SourceSha256, Destination = path,
-                        BaselineFontSeedProfile = rootFontSeedProfile, CorrelationNonce = marker,
-                        SourceMarker = RetainedRootFontWorkbook.SourceMarker });
+                Action replace = () =>
+                {
+                    evidence(new
+                    {
+                        Phase = "RetainedCopyIntent",
+                        SourceWorkbook = fontObservation.SourceWorkbook,
+                        SourceSha256 = RetainedRootFontWorkbook.SourceSha256,
+                        Destination = path,
+                        BaselineFontSeedProfile = rootFontSeedProfile,
+                        CorrelationNonce = marker,
+                        SourceMarker = RetainedRootFontWorkbook.SourceMarker
+                    });
                     pending(true);
                     OpenRetainedSyntheticWorkbook(fontObservation.SourceWorkbook, path, pending);
-                    evidence(new { Phase = "RetainedCopyVerified", Destination = path,
+                    evidence(new
+                    {
+                        Phase = "RetainedCopyVerified",
+                        Destination = path,
                         WorkbookSha256 = RetainedRootFontWorkbook.SourceSha256,
                         SourceSha256 = RetainedRootFontWorkbook.SourceSha256,
-                        SourceMarker = RetainedRootFontWorkbook.SourceMarker });
+                        SourceMarker = RetainedRootFontWorkbook.SourceMarker
+                    });
                 };
                 if (lifetime)
                 {
-                    evidence(new { Phase = "RetainedVbeLifetimePolicy", ProcessId,
+                    evidence(new
+                    {
+                        Phase = "RetainedVbeLifetimePolicy",
+                        ProcessId,
                         EnableEvents = Convert.ToBoolean(((dynamic)application).EnableEvents),
                         AutomationSecurity = Convert.ToInt32(((dynamic)application).AutomationSecurity),
                         WorkbookCount = Convert.ToInt32(((dynamic)workbooks).Count),
-                        WorkbookPath = Convert.ToString(((dynamic)workbook).FullName) });
+                        WorkbookPath = Convert.ToString(((dynamic)workbook).FullName)
+                    });
                     pending(false);
                     ObserveRetainedVbeBeforeCopy(() => ((dynamic)application).VBE, Release, replace, evidence, ProcessId);
                 }
@@ -97,9 +112,13 @@ namespace VBAi.Tests.Integration
                 else
                 {
                     if (rootFontSeedProfile != null)
-                        evidence(new { Phase = "BaselineFontSeedIntent", BaselineFontSeedProfile = rootFontSeedProfile,
+                        evidence(new
+                        {
+                            Phase = "BaselineFontSeedIntent",
+                            BaselineFontSeedProfile = rootFontSeedProfile,
                             TargetDescriptorHex = BitConverter.ToString(RootFontObservationManifest.SyntheticArial9Descriptor()).Replace("-", ""),
-                            PlannedNativeDeliveryCount = 1 });
+                            PlannedNativeDeliveryCount = 1
+                        });
                     PrepareGitLayout("EmbeddedForm", layout, path, persistedBaseline: true,
                         rootFontSeedProfile: rootFontSeedProfile);
                 }
@@ -130,9 +149,15 @@ namespace VBAi.Tests.Integration
                 var hwnd = new IntPtr(Convert.ToInt64(((dynamic)main).HWnd));
                 uint pid; uint tid = GetWindowThreadProcessId(hwnd, out pid);
                 Assert.AreEqual((uint)ProcessId, pid); Assert.AreNotEqual(0u, tid);
-                var scope = new EmbeddedGitScope { Path = path, Marker = retained ? RetainedRootFontWorkbook.SourceMarker : marker,
-                    VbeHandle = hwnd, ThreadId = tid,
-                    Cache = cache, Layout = layout };
+                var scope = new EmbeddedGitScope
+                {
+                    Path = path,
+                    Marker = retained ? RetainedRootFontWorkbook.SourceMarker : marker,
+                    VbeHandle = hwnd,
+                    ThreadId = tid,
+                    Cache = cache,
+                    Layout = layout
+                };
                 VbaGitSnapshot preGetter = null;
                 if (retained)
                 {
@@ -144,10 +169,15 @@ namespace VBAi.Tests.Integration
                     preGetter = RetainedRootFontWorkbook.AttestFirstCapture(
                         () => { VbaGitSnapshot snapshot = null; WithGitProject(path, git => snapshot = git.Capture()); return snapshot; },
                         RetainedRootFontWorkbook.RequirePinnedBaseline,
-                        (snapshot, first) => evidence(new { Phase = "RetainedPreGetterCaptureExact", SourceMarker = scope.Marker,
-                            CorrelationNonce = marker, RootDescriptorHex = BitConverter.ToString(first).Replace("-", ""),
+                        (snapshot, first) => evidence(new
+                        {
+                            Phase = "RetainedPreGetterCaptureExact",
+                            SourceMarker = scope.Marker,
+                            CorrelationNonce = marker,
+                            RootDescriptorHex = BitConverter.ToString(first).Replace("-", ""),
                             ResourceBytes = snapshot.Files["EmbeddedForm.frx"].Length,
-                            SnapshotFiles = EmbeddedGitSnapshotOracle.Describe(snapshot) }));
+                            SnapshotFiles = EmbeddedGitSnapshotOracle.Describe(snapshot)
+                        }));
                 }
                 if (layout != null)
                 {
@@ -163,18 +193,27 @@ namespace VBAi.Tests.Integration
                     Assert.IsTrue(preGetter.SameAs(scope.Baseline), "The retained baseline changed after scalar readback or bridge export.");
                     Assert.AreEqual(RetainedRootFontWorkbook.SourceSha256, EmbeddedRawHash(path),
                         "The copied workbook changed before menu execution.");
-                    evidence(new { Phase = "RetainedBridgeBaselineExact", SourceMarker = scope.Marker,
-                        CorrelationNonce = marker, RootDescriptorHex = BitConverter.ToString(reopened).Replace("-", ""),
-                        ResourceBytes = scope.Baseline.Files["EmbeddedForm.frx"].Length });
+                    evidence(new
+                    {
+                        Phase = "RetainedBridgeBaselineExact",
+                        SourceMarker = scope.Marker,
+                        CorrelationNonce = marker,
+                        RootDescriptorHex = BitConverter.ToString(reopened).Replace("-", ""),
+                        ResourceBytes = scope.Baseline.Files["EmbeddedForm.frx"].Length
+                    });
                 }
                 if (rootFontSeedProfile != null && !retained)
                 {
                     var rootForm = scope.Baseline.Manifest.Components.Single(item => item.Name == "EmbeddedForm" && item.Type == 3);
                     byte[] persisted = RootFontObservationManifest.RequireRoot(scope.Baseline.FormFonts(rootForm),
                         "AfterInitialCapture", rootFontSeedProfile);
-                    evidence(new { Phase = "BaselineFontSeedReopenedExact", BaselineFontSeedProfile = rootFontSeedProfile,
+                    evidence(new
+                    {
+                        Phase = "BaselineFontSeedReopenedExact",
+                        BaselineFontSeedProfile = rootFontSeedProfile,
                         DescriptorHex = BitConverter.ToString(persisted).Replace("-", ""),
-                        ResourceBytes = scope.Baseline.Files["EmbeddedForm.frx"].Length });
+                        ResourceBytes = scope.Baseline.Files["EmbeddedForm.frx"].Length
+                    });
                 }
                 VerifyEmbeddedGitState(scope);
                 return scope;
@@ -231,7 +270,8 @@ namespace VBAi.Tests.Integration
             catch (Exception error) { primary = error; throw; }
             finally
             {
-                FormFontRestoration.ReleaseOwnedReferences(new[] { active }, value => {
+                FormFontRestoration.ReleaseOwnedReferences(new[] { active }, value =>
+                {
                     if (value != null && Marshal.IsComObject(value)) Marshal.ReleaseComObject(value);
                 }, primary);
             }
@@ -250,21 +290,38 @@ namespace VBAi.Tests.Integration
                 {
                     var state = EmbeddedData(new Request { Command = "component_properties", Project = scope.Path, Module = item.Key }, pending, evidence);
                     string path = Path.Combine(directory, component.FileName);
-                    EmbeddedData(new Request { Command = "export_component", Project = scope.Path, Module = item.Key,
-                        Path = path, ExpectedComponentVersion = Convert.ToString(state["Version"]) }, pending, evidence);
+                    EmbeddedData(new Request
+                    {
+                        Command = "export_component",
+                        Project = scope.Path,
+                        Module = item.Key,
+                        Path = path,
+                        ExpectedComponentVersion = Convert.ToString(state["Version"])
+                    }, pending, evidence);
                     var codec = EmbeddedData(new Request { Command = "inspect_code_file", Path = path }, pending, evidence);
                     int codePage = Convert.ToInt32(codec["SystemAnsiCodePage"]);
                     string text = Encoding.GetEncoding(codePage, EncoderFallback.ExceptionFallback, DecoderFallback.ExceptionFallback).GetString(System.IO.File.ReadAllBytes(path));
                     files.Add(component.FileName, VbaGitSnapshot.Utf8.GetBytes(text));
-                    evidence(new { Phase = "BaselineCodecAttested", component.Name, CodePage = codePage, Path = path,
-                        NativeExportSha256 = EmbeddedRawHash(path), Codec = codec });
+                    evidence(new
+                    {
+                        Phase = "BaselineCodecAttested",
+                        component.Name,
+                        CodePage = codePage,
+                        Path = path,
+                        NativeExportSha256 = EmbeddedRawHash(path),
+                        Codec = codec
+                    });
                     if (item.Value == 3)
                     {
                         component.HasResources = System.IO.File.Exists(Path.ChangeExtension(path, ".frx"));
                         Assert.IsTrue(component.HasResources, "Independent owner-bridge export must retain the actual form resources.");
                         files.Add(component.Name + ".frx", System.IO.File.ReadAllBytes(Path.ChangeExtension(path, ".frx")));
-                        evidence(new { Phase = "BaselineRawResourceRetained", component.Name,
-                            NativeResourceSha256 = EmbeddedRawHash(Path.ChangeExtension(path, ".frx")) });
+                        evidence(new
+                        {
+                            Phase = "BaselineRawResourceRetained",
+                            component.Name,
+                            NativeResourceSha256 = EmbeddedRawHash(Path.ChangeExtension(path, ".frx"))
+                        });
                     }
                 }
                 manifest.Add(component);
@@ -289,9 +346,16 @@ namespace VBAi.Tests.Integration
             {
                 try
                 {
-                    evidence(new { Phase = "VbeAccessFailed", Getter = getter, Stage = stage, ProcessId = processId,
-                        OwnerThread = thread, HResult = "0x" + unchecked((uint)error.HResult).ToString("X8"),
-                        ErrorType = error.GetType().FullName });
+                    evidence(new
+                    {
+                        Phase = "VbeAccessFailed",
+                        Getter = getter,
+                        Stage = stage,
+                        ProcessId = processId,
+                        OwnerThread = thread,
+                        HResult = "0x" + unchecked((uint)error.HResult).ToString("X8"),
+                        ErrorType = error.GetType().FullName
+                    });
                 }
                 catch (Exception reportError) { error.Data["VbeAccessEvidenceError"] = reportError.ToString(); }
                 throw;
@@ -322,7 +386,8 @@ namespace VBAi.Tests.Integration
             Exception primary = null;
             try
             {
-                ObserveEmbeddedVbeRead("Application.VBE", () => {
+                ObserveEmbeddedVbeRead("Application.VBE", () =>
+                {
                     lease = read();
                     if (lease == null) throw new InvalidOperationException("The seed workbook VBE getter returned no object.");
                 }, evidence, processId, "BeforeCopy");
@@ -374,8 +439,14 @@ namespace VBAi.Tests.Integration
                 }
                 Assert.AreEqual(1, matches.Count, "Only one exact VBAi.GitHub button is allowed.");
                 dynamic button = matches[0]; Assert.AreEqual("VBAi.GitHub", (string)button.Tag); Assert.IsTrue((bool)button.Enabled);
-                evidence(new { Phase = "MenuExecuteIntent", Tag = (string)button.Tag, ControlId = (int)button.Id,
-                    Caption = (string)button.Caption, OwnerSta = System.Threading.Thread.CurrentThread.ManagedThreadId });
+                evidence(new
+                {
+                    Phase = "MenuExecuteIntent",
+                    Tag = (string)button.Tag,
+                    ControlId = (int)button.Id,
+                    Caption = (string)button.Caption,
+                    OwnerSta = System.Threading.Thread.CurrentThread.ManagedThreadId
+                });
                 button.Execute();
                 evidence(new { Phase = "MenuExecuteReturned" });
             }
@@ -416,15 +487,22 @@ namespace VBAi.Tests.Integration
         {
             RequireEmbeddedProcess(scope);
             VbaGitSnapshot actual = null;
-            WithGitProject(scope.Path, project => {
+            WithGitProject(scope.Path, project =>
+            {
                 actual = project.Capture();
                 RetainEmbeddedImportRawEvidence(Root, scope.Baseline.Serialize(), actual.Serialize(), evidence);
-                evidence(new { Phase = "IndependentPostImportSnapshot", Exact = scope.Baseline.SameAs(actual),
-                    Changes = actual.Changes(scope.Baseline), Files = EmbeddedGitSnapshotOracle.Describe(actual) });
+                evidence(new
+                {
+                    Phase = "IndependentPostImportSnapshot",
+                    Exact = scope.Baseline.SameAs(actual),
+                    Changes = actual.Changes(scope.Baseline),
+                    Files = EmbeddedGitSnapshotOracle.Describe(actual)
+                });
             });
             VerifyEmbeddedImportReadbacks(
                 () => Assert.IsTrue(scope.Baseline.SameAs(actual), "Owner-dispatched import did not preserve the complete snapshot."),
-                () => {
+                () =>
+                {
                     var layout = ReadGitLayout("EmbeddedForm", scope.Layout);
                     var fonts = ReadGitLayoutFonts("EmbeddedForm", scope.Layout);
                     evidence(new { Phase = "IndependentPostImportNativeReadback", Properties = layout, Fonts = fonts });
@@ -473,10 +551,19 @@ namespace VBAi.Tests.Integration
                 int a = 0, b = 0, c = 0, d = 0; ((dynamic)pane).GetSelection(ref a, ref b, ref c, ref d);
                 long identity; IntPtr unknown = Marshal.GetIUnknownForObject(project);
                 try { identity = unknown.ToInt64(); } finally { Marshal.Release(unknown); }
-                return new JavaScriptSerializer().Serialize(new { Identity = identity, Mode = (int)((dynamic)project).Mode,
-                    Path = (string)((dynamic)workbook).FullName, Saved = (bool)((dynamic)workbook).Saved,
-                    Code = source.OrderBy(x => x.Key).ToArray(), Types = types.OrderBy(x => x.Key).ToArray(), References = referenceRevision,
-                    ActiveModule = activeModule, Selection = new[] { a, b, c, d }, Form = ReadGitForm("EmbeddedForm") });
+                return new JavaScriptSerializer().Serialize(new
+                {
+                    Identity = identity,
+                    Mode = (int)((dynamic)project).Mode,
+                    Path = (string)((dynamic)workbook).FullName,
+                    Saved = (bool)((dynamic)workbook).Saved,
+                    Code = source.OrderBy(x => x.Key).ToArray(),
+                    Types = types.OrderBy(x => x.Key).ToArray(),
+                    References = referenceRevision,
+                    ActiveModule = activeModule,
+                    Selection = new[] { a, b, c, d },
+                    Form = ReadGitForm("EmbeddedForm")
+                });
             }
             finally { Release(pane); Release(editor); Release(references); Release(components); Release(project); }
         }

@@ -115,7 +115,7 @@ namespace VBAi
             using (var process = Process.GetCurrentProcess())
                 if (!string.Equals(process.ProcessName, "WINWORD", StringComparison.OrdinalIgnoreCase))
                     throw new InvalidOperationException("This diagnostic is restricted to the explicitly owned Word qualification.");
-            Func<Identity> capture = () => Capture(chat, scope);
+            Identity capture() => Capture(chat, scope);
             return Begin(File.ReadAllText(manifest, new UTF8Encoding(false, true)), Path.GetFileName(root), capture,
                 (phase, value) => Publish(root, phase, value));
         }
@@ -129,11 +129,9 @@ namespace VBAi
         internal static ChatGitModalDiagnostic Begin(string json, string rootNonce, Func<Identity> readIdentity, Action<string, object> writer)
         {
             if (readIdentity == null || writer == null) throw new ArgumentNullException("Diagnostic dependencies");
-            Guid parsed;
-            if (!Guid.TryParseExact(rootNonce, "N", out parsed)) throw new ArgumentException("An owned GUID invocation is required.");
+            if (!Guid.TryParseExact(rootNonce, "N", out Guid parsed)) throw new ArgumentException("An owned GUID invocation is required.");
             var serializer = new JavaScriptSerializer();
-            var request = serializer.DeserializeObject(json) as IDictionary<string, object>;
-            if (request == null || request.Count != 3 || !request.ContainsKey("Version") || !(request["Version"] is int) || (int)request["Version"] != 1 ||
+            if (!(serializer.DeserializeObject(json) is IDictionary<string, object> request) || request.Count != 3 || !request.ContainsKey("Version") || !(request["Version"] is int v) || v != 1 ||
                 !request.ContainsKey("Nonce") || !string.Equals(request["Nonce"] as string, rootNonce, StringComparison.Ordinal) || !request.ContainsKey("Identity"))
                 throw new InvalidOperationException("The diagnostic request version and invocation must be exact.");
             Identity expected = DecodeIdentity(request["Identity"]);
@@ -227,17 +225,28 @@ namespace VBAi
         /// <param name="phase">Fixed stage name written into the invocation receipt.</param>
         /// <param name="success">Whether this stage can report success; any retained failure forces the serialized value false.</param>
         private void Record(string phase, bool success)
-        { write(phase, new { Version = 1, Nonce = nonce, Phase = phase, Identity = identity, ModalReturned = modalReturned, DisposeReturned = disposeReturned,
-            Success = success && !Failed, Errors = errors.Select(error => error.ToString()).ToArray(), Utc = DateTime.UtcNow.ToString("o") }); }
+        {
+            write(phase, new
+            {
+                Version = 1,
+                Nonce = nonce,
+                Phase = phase,
+                Identity = identity,
+                ModalReturned = modalReturned,
+                DisposeReturned = disposeReturned,
+                Success = success && !Failed,
+                Errors = errors.Select(error => error.ToString()).ToArray(),
+                Utc = DateTime.UtcNow.ToString("o")
+            });
+        }
 
         /// <summary>Decodes exactly the identity fields and rejects implicit string-to-number coercion.</summary>
         /// <param name="value">JSON-decoded identity object with exactly the supported field names and integer native IDs.</param>
         /// <returns>Typed identity decoded without accepting string-to-number coercion.</returns>
         internal static Identity DecodeIdentity(object value)
         {
-            var fields = value as IDictionary<string, object>;
             string[] names = { "DocumentPath", "ProcessId", "ProcessStartedUtc", "ThreadId", "ChatHandle", "RootHandle", "ProductMvid", "ProductSha256" };
-            if (fields == null || fields.Count != names.Length || names.Any(name => !fields.ContainsKey(name))) throw new InvalidOperationException("The identity fields must be exact.");
+            if (!(value is IDictionary<string, object> fields) || fields.Count != names.Length || names.Any(name => !fields.ContainsKey(name))) throw new InvalidOperationException("The identity fields must be exact.");
             foreach (string name in new[] { "ProcessId", "ThreadId", "ChatHandle", "RootHandle" })
                 if (!(fields[name] is int) && !(fields[name] is long)) throw new InvalidOperationException("Native identity numbers must be integers.");
             var serializer = new JavaScriptSerializer();
@@ -249,11 +258,10 @@ namespace VBAi
         /// <param name="actual">Identity captured from the current live Word/chat process and windows.</param>
         internal static void RequireSameIdentity(Identity expected, Identity actual)
         {
-            DateTime birth; Guid mvid;
             if (expected == null || actual == null || !Path.IsPathRooted(expected.DocumentPath ?? "") ||
                 !string.Equals(expected.DocumentPath, Path.GetFullPath(expected.DocumentPath), StringComparison.OrdinalIgnoreCase) || expected.ProcessId <= 0 || expected.ThreadId == 0 ||
                 expected.ChatHandle == 0 || expected.RootHandle == 0 || !DateTime.TryParseExact(expected.ProcessStartedUtc, "o", System.Globalization.CultureInfo.InvariantCulture,
-                System.Globalization.DateTimeStyles.RoundtripKind, out birth) || birth.Kind != DateTimeKind.Utc || !Guid.TryParse(expected.ProductMvid, out mvid) ||
+                System.Globalization.DateTimeStyles.RoundtripKind, out DateTime birth) || birth.Kind != DateTimeKind.Utc || !Guid.TryParse(expected.ProductMvid, out Guid mvid) ||
                 expected.ProductSha256 == null || expected.ProductSha256.Length != 64 || expected.ProductSha256.Any(value => !Uri.IsHexDigit(value)) ||
                 !string.Equals(expected.DocumentPath, actual.DocumentPath, StringComparison.OrdinalIgnoreCase) || expected.ProcessId != actual.ProcessId ||
                 expected.ProcessStartedUtc != actual.ProcessStartedUtc || expected.ThreadId != actual.ThreadId || expected.ChatHandle != actual.ChatHandle ||
@@ -271,8 +279,8 @@ namespace VBAi
             if (string.IsNullOrWhiteSpace(path) || !Path.IsPathRooted(path) || path.StartsWith(@"\\", StringComparison.Ordinal) ||
                 !string.Equals(path, Path.GetFullPath(path), StringComparison.Ordinal) || Path.GetFileName(path) != "request.json")
                 throw new ArgumentException("A canonical local request.json path is required.");
-            string root = Path.GetDirectoryName(path); Guid nonce;
-            if (!Guid.TryParseExact(Path.GetFileName(root), "N", out nonce) ||
+            string root = Path.GetDirectoryName(path);
+            if (!Guid.TryParseExact(Path.GetFileName(root), "N", out _) ||
                 !string.Equals(Path.GetDirectoryName(root), Path.Combine(Path.GetFullPath(temporaryRoot), DirectoryName).TrimEnd(Path.DirectorySeparatorChar), StringComparison.OrdinalIgnoreCase))
                 throw new ArgumentException("Only an owned diagnostic temporary GUID child is permitted.");
             return root;
@@ -302,8 +310,8 @@ namespace VBAi
         {
             if (chat == null || chat.IsDisposed || !chat.IsHandleCreated || Thread.CurrentThread.GetApartmentState() != ApartmentState.STA)
                 throw new InvalidOperationException("The existing live chat on its owning STA is required.");
-            uint chatPid, rootPid; IntPtr handle = chat.Handle, root = GetAncestor(handle, 2);
-            uint chatTid = GetWindowThreadProcessId(handle, out chatPid), rootTid = GetWindowThreadProcessId(root, out rootPid), caller = GetCurrentThreadId();
+            IntPtr handle = chat.Handle, root = GetAncestor(handle, 2);
+            uint chatTid = GetWindowThreadProcessId(handle, out uint chatPid), rootTid = GetWindowThreadProcessId(root, out uint rootPid), caller = GetCurrentThreadId();
             using (var process = Process.GetCurrentProcess())
             {
                 if (root == IntPtr.Zero || chatPid != process.Id || rootPid != chatPid || chatTid != caller || rootTid != caller)
@@ -311,8 +319,17 @@ namespace VBAi
                 string hash;
                 using (var file = new FileStream(typeof(ChatWindow).Assembly.Location, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
                 using (var sha = SHA256.Create()) hash = BitConverter.ToString(sha.ComputeHash(file)).Replace("-", "");
-                return new Identity { DocumentPath = scope, ProcessId = process.Id, ProcessStartedUtc = process.StartTime.ToUniversalTime().ToString("o"), ThreadId = caller,
-                    ChatHandle = handle.ToInt64(), RootHandle = root.ToInt64(), ProductMvid = typeof(ChatWindow).Module.ModuleVersionId.ToString("D"), ProductSha256 = hash };
+                return new Identity
+                {
+                    DocumentPath = scope,
+                    ProcessId = process.Id,
+                    ProcessStartedUtc = process.StartTime.ToUniversalTime().ToString("o"),
+                    ThreadId = caller,
+                    ChatHandle = handle.ToInt64(),
+                    RootHandle = root.ToInt64(),
+                    ProductMvid = typeof(ChatWindow).Module.ModuleVersionId.ToString("D"),
+                    ProductSha256 = hash
+                };
             }
         }
 

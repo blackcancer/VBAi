@@ -1,5 +1,4 @@
 using System;
-using System.Windows.Forms;
 namespace VBAi
 {
 
@@ -9,7 +8,7 @@ namespace VBAi
     {
 
         /// <summary>Creates the fixed controls from the WinForms Designer.</summary>
-        public ChatDisclosureView() { InitializeComponent(); UiText.Apply(this, components); UiTheme.Apply(this); toggle.Click += (s,e) => Expanded = !Expanded; UpdateExpansion(); }
+        public ChatDisclosureView() { InitializeComponent(); UiText.Apply(this, components); UiTheme.Apply(this); toggle.Click += (s, e) => Expanded = !Expanded; UpdateExpansion(); }
 
         /// <summary>Gets the flow panel used to add section specific controls in the Designer.</summary>
         /// <value>Flow panel for controls serialized into this disclosure section by the Designer.</value>

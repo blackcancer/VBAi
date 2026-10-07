@@ -1,11 +1,10 @@
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
-using VBAi;
 
 namespace VBAi.Tests.Unit
 {
@@ -37,7 +36,8 @@ namespace VBAi.Tests.Unit
             var ambient = new SynchronizationContext();
             int ownerThread = Thread.CurrentThread.ManagedThreadId;
             int yields = 0;
-            Action verifyThread = () => {
+            Action verifyThread = () =>
+            {
                 Assert.AreEqual(ownerThread, Thread.CurrentThread.ManagedThreadId);
                 Assert.AreEqual(ApartmentState.STA, Thread.CurrentThread.GetApartmentState());
             };
@@ -45,10 +45,12 @@ namespace VBAi.Tests.Unit
             {
                 SynchronizationContext.SetSynchronizationContext(ambient);
                 fixture.Select.OnExecute = verifyThread;
-                fixture.Copy.OnExecute = () => {
+                fixture.Copy.OnExecute = () =>
+                {
                     verifyThread(); fixture.Data = Text("auditValue = 41"); fixture.Sequence++;
                 };
-                fixture.Service.ImmediateClipboard = new VbeDebugClipboard {
+                fixture.Service.ImmediateClipboard = new VbeDebugClipboard
+                {
                     Sequence = () => { verifyThread(); return fixture.Sequence; },
                     YieldNative = async () => { await Task.Delay(30); verifyThread(); yields++; },
                     ReadData = () => { verifyThread(); return fixture.Data; },
@@ -154,7 +156,8 @@ namespace VBAi.Tests.Unit
             fixture.Service = new VbeDebug(fixture.Vbe);
             fixture.Select.OnExecute = () => { };
             fixture.Copy.OnExecute = () => { fixture.Data = Text("auditValue = 41"); fixture.Sequence++; };
-            fixture.Service.ImmediateClipboard = new VbeDebugClipboard {
+            fixture.Service.ImmediateClipboard = new VbeDebugClipboard
+            {
                 Sequence = () => fixture.Sequence,
                 YieldNative = () => Task.CompletedTask,
                 ReadData = () => fixture.Data,

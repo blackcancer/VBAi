@@ -1,8 +1,5 @@
-using System;
-using System.Collections.Generic;
-using System.Windows.Controls;
-using VBAi;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+using System.Collections.Generic;
 
 namespace VBAi.Tests.Unit
 {

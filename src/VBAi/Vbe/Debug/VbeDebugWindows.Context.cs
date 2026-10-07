@@ -30,8 +30,7 @@ namespace VBAi
             var panes = ChildWindows(root).Where(h => WindowText(h) == "Variables locales" || WindowText(h) == "Locals").ToArray();
             if (panes.Length != 1) throw new InvalidOperationException("Exactly one visible Locals pane is required; open_debug_pane can open it.");
             IntPtr edit = GetDlgItem(panes[0], 4604), button = GetDlgItem(panes[0], 4601);
-            uint owner;
-            GetWindowThreadProcessId(edit, out owner);
+            GetWindowThreadProcessId(edit, out uint owner);
             if (edit == IntPtr.Zero || owner != (uint)Process.GetCurrentProcess().Id || ClassName(edit) != "Edit" ||
                 !IsWindowVisible(edit) || (ContextWindowStyle(edit) & 0x800) == 0 ||
                 button == IntPtr.Zero || ClassName(button) != "Button" || !IsWindowVisible(button))

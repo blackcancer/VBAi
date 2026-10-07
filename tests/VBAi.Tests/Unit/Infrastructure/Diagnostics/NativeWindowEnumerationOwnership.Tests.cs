@@ -1,8 +1,8 @@
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 using VBAi.Tests.Integration;
 
 namespace VBAi.Tests.Unit
@@ -12,7 +12,8 @@ namespace VBAi.Tests.Unit
     {
         [DllImport("user32.dll", SetLastError = true)] private static extern uint GetWindowThreadProcessId(IntPtr window, out uint processId);
         [DllImport("user32.dll")] private static extern bool IsWindow(IntPtr window);
-        [DllImport("user32.dll", CharSet = CharSet.Unicode)] private static extern IntPtr CreateWindowExW(uint extended, string cls, string title, uint style,
+        [DllImport("user32.dll", CharSet = CharSet.Unicode)]
+        private static extern IntPtr CreateWindowExW(uint extended, string cls, string title, uint style,
             int x, int y, int width, int height, IntPtr parent, IntPtr menu, IntPtr instance, IntPtr data);
         [DllImport("user32.dll")] private static extern bool DestroyWindow(IntPtr window);
 

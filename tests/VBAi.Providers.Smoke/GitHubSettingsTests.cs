@@ -21,7 +21,8 @@ internal static partial class ProviderTests
         int logins = 0; string accounts = "alice\nbob\n";
         using (var form = new LlmSettingsWindow(settings))
         {
-            typeof(LlmSettingsWindow).GetField("githubService", flags).SetValue(form, new GitHubAccountService((command, token) => {
+            typeof(LlmSettingsWindow).GetField("githubService", flags).SetValue(form, new GitHubAccountService((command, token) =>
+            {
                 token.ThrowIfCancellationRequested();
                 if (command.Contains(" login ")) { Assert(command.Contains("--browser") && !command.Contains("--pat"), "Browser authentication without token argument"); logins++; return Task.FromResult(""); }
                 Assert(command.Contains(" list ") && command.Contains("--no-ui"), "Account refresh must be noninteractive");

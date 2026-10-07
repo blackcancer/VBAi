@@ -1,9 +1,9 @@
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.IO;
 using System.Web.Script.Serialization;
 using VBAi.Tests.Infrastructure;
 using VBAi.Tests.Integration;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace VBAi.Tests.Unit
 {
@@ -32,7 +32,8 @@ namespace VBAi.Tests.Unit
             string name = "VBAi.Tests." + Guid.NewGuid().ToString("N"); BridgeClientPipeFixture pipe = null; int retries = 0;
             try
             {
-                var response = VbeBridgeClient.Read(name, new { Command = "mutate" }, 2000, 30, 3, 0, attempt => {
+                var response = VbeBridgeClient.Read(name, new { Command = "mutate" }, 2000, 30, 3, 0, attempt =>
+                {
                     retries++; Assert.AreEqual(1, attempt);
                     pipe = new BridgeClientPipeFixture("{\"Ok\":true}", pipeName: name); Assert.IsTrue(pipe.Ready.Wait(3000));
                 });

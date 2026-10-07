@@ -93,8 +93,14 @@ namespace VBAi.Tests.Unit
             public Request Request(string thumbprint)
             {
                 dynamic state = Session.Execute(new Request { Command = "project_properties", Project = Project.Name }).Data;
-                return new Request { Command = "sign_project", Project = Project.Name, ExpectedMode = 2,
-                    ExpectedProjectVersion = state.Version, CertificateThumbprint = thumbprint };
+                return new Request
+                {
+                    Command = "sign_project",
+                    Project = Project.Name,
+                    ExpectedMode = 2,
+                    ExpectedProjectVersion = state.Version,
+                    CertificateThumbprint = thumbprint
+                };
             }
             public void Dispose() { File.Delete(FilePath); }
         }

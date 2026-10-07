@@ -102,7 +102,7 @@ namespace VBAi
             internal AccessSaveDialogSnapshot[] Dialogs;
         }
 
-            /// <summary>Read-only native identity and visible state captured for one Access dialog.</summary>
+        /// <summary>Read-only native identity and visible state captured for one Access dialog.</summary>
         internal sealed class AccessSaveDialogSnapshot
         {
 
@@ -122,7 +122,7 @@ namespace VBAi
             internal AccessSaveDialogControl[] Controls;
         }
 
-            /// <summary>Native identity, style, text, and item state captured for one dialog child control.</summary>
+        /// <summary>Native identity, style, text, and item state captured for one dialog child control.</summary>
         internal sealed class AccessSaveDialogControl
         {
 
@@ -145,7 +145,7 @@ namespace VBAi
             internal AccessSaveDialogItem[] Items;
         }
 
-            /// <summary>Text and selection state of one item in the Access save prompt's object list.</summary>
+        /// <summary>Text and selection state of one item in the Access save prompt's object list.</summary>
         internal sealed class AccessSaveDialogItem
         {
 
@@ -639,9 +639,8 @@ namespace VBAi
             /// <summary>Requires current process/thread and the VBE HWND owner to match the captured identity.</summary>
             internal void RequireOwner()
             {
-                uint actual;
                 if (GetCurrentProcessId() != processId || GetCurrentThreadId() != OwnerThreadId ||
-                    GetWindowThreadProcessId(vbeWindow, out actual) != OwnerThreadId || actual != processId)
+                    GetWindowThreadProcessId(vbeWindow, out uint actual) != OwnerThreadId || actual != processId)
                     throw new InvalidOperationException("Access save confirmation left the exact native VBE process/UI thread.");
             }
 
@@ -650,9 +649,9 @@ namespace VBAi
             private void RequireWindow(IntPtr window)
             {
                 RequireOwner();
-                uint actual, rootPid; IntPtr root = GetAncestor(window, 2);
-                if (window == IntPtr.Zero || GetWindowThreadProcessId(window, out actual) != OwnerThreadId ||
-                    actual != processId || GetWindowThreadProcessId(root, out rootPid) != OwnerThreadId || rootPid != processId)
+                IntPtr root = GetAncestor(window, 2);
+                if (window == IntPtr.Zero || GetWindowThreadProcessId(window, out uint actual) != OwnerThreadId ||
+                    actual != processId || GetWindowThreadProcessId(root, out uint rootPid) != OwnerThreadId || rootPid != processId)
                     throw new InvalidOperationException("The Access confirmation window or root identity changed.");
             }
 
@@ -707,38 +706,51 @@ namespace VBAi
                 snapshotReadWatch = Stopwatch.StartNew();
                 try
                 {
-                RequireOwner();
-                var dialogs = new List<AccessSaveDialogSnapshot>(); int visited = 0;
-                bool bounded = true; Exception error = null;
-                Visitor visitor = (window, state) => {
-                    try
+                    RequireOwner();
+                    var dialogs = new List<AccessSaveDialogSnapshot>(); int visited = 0;
+                    bool bounded = true; Exception error = null;
+                    Visitor visitor = (window, state) =>
                     {
-                        if (++visited > WindowBound) { bounded = false; return false; }
-                        uint pid; uint thread = GetWindowThreadProcessId(window, out pid);
-                        if (pid != processId || !IsWindowVisible(window) || ClassName(window) != "#32770") return true;
-                        dialogs.Add(new AccessSaveDialogSnapshot { Window = window, ProcessId = pid, ThreadId = thread,
-                            Class = "#32770", Visible = true, Enabled = IsWindowEnabled(window) });
-                        return true;
-                    }
-                    catch (Exception failure) { error = failure; return false; }
-                };
-                bool complete = EnumWindows(visitor, IntPtr.Zero);
-                GC.KeepAlive(visitor);
-                if (error != null) throw error;
-                var inventory = new AccessSaveDialogInventory { Complete = complete && bounded,
-                    ProcessId = processId, OwnerThreadId = OwnerThreadId, Dialogs = dialogs.ToArray() };
-                if (!inventory.Complete || dialogs.Count != 1 || dialogs[0].ThreadId != OwnerThreadId) return inventory;
-                var dialog = dialogs[0]; RequireWindow(dialog.Window);
-                dialog.Caption = Text(dialog.Window); dialog.Style = Style(dialog.Window);
-                if (dialog.Caption != "Enregistrer") return inventory;
-                dialog.Controls = ReadChildren(dialog.Window, out bool childrenComplete);
-                dialog.ChildrenComplete = childrenComplete;
-                var lists = dialog.Controls.Where(control => control.Id == 5142 && control.Class == "ListBox").ToArray();
-                // Do not interpret owner-draw item data as strings, or read an unknown prompt's list.
-                bool knownPrompt = dialog.Controls.Count(control => control.Id == 5271 && control.Class == "Static" &&
-                    control.Text == "Enregistrer les modifications apportées aux objets suivants\u00A0?") == 1;
-                if (childrenComplete && knownPrompt && lists.Length == 1) ReadItems(lists[0]);
-                return inventory;
+                        try
+                        {
+                            if (++visited > WindowBound) { bounded = false; return false; }
+                            uint thread = GetWindowThreadProcessId(window, out uint pid);
+                            if (pid != processId || !IsWindowVisible(window) || ClassName(window) != "#32770") return true;
+                            dialogs.Add(new AccessSaveDialogSnapshot
+                            {
+                                Window = window,
+                                ProcessId = pid,
+                                ThreadId = thread,
+                                Class = "#32770",
+                                Visible = true,
+                                Enabled = IsWindowEnabled(window)
+                            });
+                            return true;
+                        }
+                        catch (Exception failure) { error = failure; return false; }
+                    };
+                    bool complete = EnumWindows(visitor, IntPtr.Zero);
+                    GC.KeepAlive(visitor);
+                    if (error != null) throw error;
+                    var inventory = new AccessSaveDialogInventory
+                    {
+                        Complete = complete && bounded,
+                        ProcessId = processId,
+                        OwnerThreadId = OwnerThreadId,
+                        Dialogs = dialogs.ToArray()
+                    };
+                    if (!inventory.Complete || dialogs.Count != 1 || dialogs[0].ThreadId != OwnerThreadId) return inventory;
+                    var dialog = dialogs[0]; RequireWindow(dialog.Window);
+                    dialog.Caption = Text(dialog.Window); dialog.Style = Style(dialog.Window);
+                    if (dialog.Caption != "Enregistrer") return inventory;
+                    dialog.Controls = ReadChildren(dialog.Window, out bool childrenComplete);
+                    dialog.ChildrenComplete = childrenComplete;
+                    var lists = dialog.Controls.Where(control => control.Id == 5142 && control.Class == "ListBox").ToArray();
+                    // Do not interpret owner-draw item data as strings, or read an unknown prompt's list.
+                    bool knownPrompt = dialog.Controls.Count(control => control.Id == 5271 && control.Class == "Static" &&
+                        control.Text == "Enregistrer les modifications apportées aux objets suivants\u00A0?") == 1;
+                    if (childrenComplete && knownPrompt && lists.Length == 1) ReadItems(lists[0]);
+                    return inventory;
 
                 }
                 finally
@@ -756,15 +768,24 @@ namespace VBAi
             {
                 var controls = new List<AccessSaveDialogControl>(); int visited = 0;
                 bool bounded = true; Exception error = null;
-                Visitor visitor = (window, state) => {
+                Visitor visitor = (window, state) =>
+                {
                     try
                     {
                         if (++visited > ChildBound) { bounded = false; return false; }
                         RequireWindow(window);
                         if (GetAncestor(window, 2) != parent) throw new InvalidOperationException("Access dialog child ancestry changed.");
-                        var control = new AccessSaveDialogControl { Window = window, ProcessId = processId, ThreadId = OwnerThreadId,
-                            Id = GetDlgCtrlID(window), Class = ClassName(window), Style = Style(window),
-                            Visible = IsWindowVisible(window), Enabled = IsWindowEnabled(window) };
+                        var control = new AccessSaveDialogControl
+                        {
+                            Window = window,
+                            ProcessId = processId,
+                            ThreadId = OwnerThreadId,
+                            Id = GetDlgCtrlID(window),
+                            Class = ClassName(window),
+                            Style = Style(window),
+                            Visible = IsWindowVisible(window),
+                            Enabled = IsWindowEnabled(window)
+                        };
                         if (control.Class == "Button" || control.Class == "Static") control.Text = Text(window);
                         controls.Add(control); return true;
                     }

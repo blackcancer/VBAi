@@ -90,11 +90,27 @@ namespace VBAi
             if (!IsFinite(afterX) || !IsFinite(afterY) || afterX <= 0 || afterY <= 0 ||
                 afterX > 32767 || afterY > 32767)
                 throw new InvalidOperationException("The proposed native dimensions are outside supported point bounds.");
-            var plan = new { Project = request.Project, Form = request.Form, ContainerPath = root ? "UserForm" : path,
-                Action = request.Action, HorizontalProperty = horizontal, VerticalProperty = vertical,
-                WidthBefore = beforeX, HeightBefore = beforeY, WidthAfter = afterX, HeightAfter = afterY,
-                InsideWidth = insideX, InsideHeight = insideY, PaddingHorizontal = request.Left, PaddingVertical = request.Top,
-                Children = children, ExpectedTreeVersion = request.ExpectedTreeVersion, TolerancePoints = tolerance, RuntimeQualified = false };
+            var plan = new
+            {
+                request.Project,
+                request.Form,
+                ContainerPath = root ? "UserForm" : path,
+                request.Action,
+                HorizontalProperty = horizontal,
+                VerticalProperty = vertical,
+                WidthBefore = beforeX,
+                HeightBefore = beforeY,
+                WidthAfter = afterX,
+                HeightAfter = afterY,
+                InsideWidth = insideX,
+                InsideHeight = insideY,
+                PaddingHorizontal = request.Left,
+                PaddingVertical = request.Top,
+                Children = children,
+                request.ExpectedTreeVersion,
+                TolerancePoints = tolerance,
+                RuntimeQualified = false
+            };
             if (preview) return new { ReadOnly = true, Plan = plan };
             try
             {
@@ -113,15 +129,32 @@ namespace VBAi
                 var serializer = new JavaScriptSerializer();
                 if (serializer.Serialize(children) != serializer.Serialize(ReadFitChildren(container, (string)form.Name)))
                     throw new InvalidOperationException("Native resizing changed the observed child geometry.");
-                return new { Applied = true, Verified = true, Uncertain = false, Saved = false, Plan = plan,
-                    ActualInsideWidth = actualInsideX, ActualInsideHeight = actualInsideY,
-                    Tree = Tree(request.Project, request.Form), RuntimeQualified = false };
+                return new
+                {
+                    Applied = true,
+                    Verified = true,
+                    Uncertain = false,
+                    Saved = false,
+                    Plan = plan,
+                    ActualInsideWidth = actualInsideX,
+                    ActualInsideHeight = actualInsideY,
+                    Tree = Tree(request.Project, request.Form),
+                    RuntimeQualified = false
+                };
             }
             catch (Exception error)
             {
-                return new { Applied = false, Verified = false, Uncertain = true, MutationInvoked = true,
-                    Reason = error.Message, Plan = plan, RetryAllowed = false,
-                    Limit = "Inspect the designer before another operation. No retry or automatic rollback was performed." };
+                return new
+                {
+                    Applied = false,
+                    Verified = false,
+                    Uncertain = true,
+                    MutationInvoked = true,
+                    Reason = error.Message,
+                    Plan = plan,
+                    RetryAllowed = false,
+                    Limit = "Inspect the designer before another operation. No retry or automatic rollback was performed."
+                };
             }
         }
 
@@ -235,8 +268,7 @@ namespace VBAi
         /// <exception cref="InvalidOperationException">La valeur est nulle, non numérique, négative ou hors bornes.</exception>
         private static double ReadFitNumber(object target, PropertyDescriptor property)
         {
-            object value = property.GetValue(target);
-            if (value == null) throw new InvalidOperationException("Native measurement is null: " + property.Name);
+            object value = property.GetValue(target) ?? throw new InvalidOperationException("Native measurement is null: " + property.Name);
             double result = Convert.ToDouble(value, CultureInfo.InvariantCulture);
             if (!IsFinite(result) || result < 0 || result > 32767)
                 throw new InvalidOperationException("Native measurement is not finite or is out of bounds: " + property.Name);
@@ -251,7 +283,7 @@ namespace VBAi
         private static List<FormLayoutBox> ReadFitChildren(object container, string formName)
         {
             var controls = TypeDescriptor.GetProperties(container).Find("Controls", false);
-            object collection = controls == null ? null : controls.GetValue(container);
+            object collection = controls?.GetValue(container);
             if (!(collection is IEnumerable))
                 throw new InvalidOperationException("This native container does not expose an enumerable Controls property.");
             var result = new List<FormLayoutBox>();
@@ -265,11 +297,14 @@ namespace VBAi
                 if (!BuiltInControls.Contains("Forms." + type + ".1") || !names.Add(name))
                     throw new InvalidOperationException("Unknown or ambiguous direct child control: " + name);
                 if (result.Count >= 512) throw new InvalidOperationException("More than 512 direct controls.");
-                result.Add(new FormLayoutBox { Path = name,
+                result.Add(new FormLayoutBox
+                {
+                    Path = name,
                     Left = ReadFitNumber(child, RequireFitProperty(child, "Left", false)),
                     Top = ReadFitNumber(child, RequireFitProperty(child, "Top", false)),
                     Width = ReadFitNumber(child, RequireFitProperty(child, "Width", false)),
-                    Height = ReadFitNumber(child, RequireFitProperty(child, "Height", false)) });
+                    Height = ReadFitNumber(child, RequireFitProperty(child, "Height", false))
+                });
             }
             return result;
         }

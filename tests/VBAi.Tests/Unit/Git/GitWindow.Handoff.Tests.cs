@@ -1,23 +1,35 @@
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.IO;
 using System.Threading.Tasks;
 using System.Windows.Forms;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace VBAi.Tests.Unit
 {
     public sealed partial class GitWindowCoverageTests
     {
         [WinFormsTestMethod]
-        [DataRow("checkpoint_restore")][DataRow("branch_switch")][DataRow("module_restore")]
-        [DataRow("pull")][DataRow("merge_complete")][DataRow("rollback")]
+        [DataRow("checkpoint_restore")]
+        [DataRow("branch_switch")]
+        [DataRow("module_restore")]
+        [DataRow("pull")]
+        [DataRow("merge_complete")]
+        [DataRow("rollback")]
         public void ActualWindowHandsOffEachImportOnceAndKeepsTheCacheLeaseThroughReadback(string action)
         { ExerciseHandoff(action, null); }
 
         [WinFormsTestMethod]
-        [DataRow("identity")][DataRow("path")][DataRow("mode")][DataRow("protection")]
-        [DataRow("vba")][DataRow("head")][DataRow("branch")][DataRow("recovery")]
-        [DataRow("native-uncertain")][DataRow("recovery-directory")][DataRow("owner-before-import")]
+        [DataRow("identity")]
+        [DataRow("path")]
+        [DataRow("mode")]
+        [DataRow("protection")]
+        [DataRow("vba")]
+        [DataRow("head")]
+        [DataRow("branch")]
+        [DataRow("recovery")]
+        [DataRow("native-uncertain")]
+        [DataRow("recovery-directory")]
+        [DataRow("owner-before-import")]
         public void DriftOrUncertainNativeFailureAfterActualModalReturnCannotReplayImport(string fault)
         { ExerciseHandoff("checkpoint_restore", fault); }
 
@@ -40,20 +52,23 @@ namespace VBAi.Tests.Unit
                 f.Compare(); f.Window.Hide();
                 var resolved = f.Git.Host; int executingReads = 0;
                 string lease = Path.Combine(f.UiCache, "session.lock");
-                f.Set("project", new VbaGitProject(() => resolved, f.Git.Host.FileName, value => {
+                f.Set("project", new VbaGitProject(() => resolved, f.Git.Host.FileName, value =>
+                {
                     var request = f.Get<GitModalSession.Request>("modalRequest");
                     if (request != null && request.Phase == "Executing")
                     { executingReads++; Assert.ThrowsException<IOException>(() => { using (File.Open(lease, FileMode.Open, FileAccess.ReadWrite, FileShare.None)) { } }); }
                     return ((global::FakeProject)value).FileName;
                 }));
                 Task operation = null; int shows = 0, admissions = 0; bool showReturned = false;
-                timer.Tick += (sender, args) => {
+                timer.Tick += (sender, args) =>
+                {
                     if (!f.Window.Modal) return;
                     if (shows == 2) { f.Window.Close(); return; }
                     if (operation == null) operation = (Task)f.Call("RunGitAction", action, name, "merge", null, path);
                     else if (operation.IsCompleted && !f.Get<bool>("running")) f.Window.Close();
                 };
-                var session = new GitModalSession(() => {
+                var session = new GitModalSession(() =>
+                {
                     if (++shows == 1)
                     {
                         timer.Start(); f.Window.DialogResult = DialogResult.None; f.Window.ShowDialog(); timer.Stop();
@@ -71,7 +86,8 @@ namespace VBAi.Tests.Unit
                         f.Window.DialogResult = DialogResult.None; timer.Start(); f.Window.ShowDialog(); timer.Stop();
                         Assert.IsFalse(f.Window.IsDisposed, "The same owned form must survive the modal handoff and final modal return.");
                     }
-                }, () => {
+                }, () =>
+                {
                     admissions++; Assert.IsTrue(showReturned);
                     Assert.ThrowsException<IOException>(() => { using (File.Open(lease, FileMode.Open, FileAccess.ReadWrite, FileShare.None)) { } });
                     Assert.AreEqual(0, f.Git.Host.VBComponents.ImportAttempts);
@@ -108,7 +124,10 @@ namespace VBAi.Tests.Unit
         private sealed class HandoffOwner : IWin32Window { internal IntPtr Value; public IntPtr Handle => Value; }
 
         [STATestMethod]
-        [DataRow("zero")][DataRow("disabled")][DataRow("destroyed")][DataRow("valid")]
+        [DataRow("zero")]
+        [DataRow("disabled")]
+        [DataRow("destroyed")]
+        [DataRow("valid")]
         public void ActualModalEntryValidatesTheOwnerBeforeCallingShow(string state)
         {
             using (var owner = new Form())
@@ -126,8 +145,10 @@ namespace VBAi.Tests.Unit
         }
 
         [STATestMethod]
-        [DataRow(CloseReason.None, true, true)][DataRow(CloseReason.UserClosing, true, false)]
-        [DataRow(CloseReason.ApplicationExitCall, true, false)][DataRow(CloseReason.WindowsShutDown, true, false)]
+        [DataRow(CloseReason.None, true, true)]
+        [DataRow(CloseReason.UserClosing, true, false)]
+        [DataRow(CloseReason.ApplicationExitCall, true, false)]
+        [DataRow(CloseReason.WindowsShutDown, true, false)]
         [DataRow(CloseReason.None, false, false)]
         public void RunningCloseRequiresTheExactPreparedHandoffAndDialogResult(CloseReason reason, bool resultSet, bool permitted)
         {

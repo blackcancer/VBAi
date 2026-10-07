@@ -1,3 +1,4 @@
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -5,7 +6,6 @@ using System.IO;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Web.Script.Serialization;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace VBAi.Tests.Integration
 {
@@ -20,14 +20,22 @@ namespace VBAi.Tests.Integration
             commandContainment.RequireTerminal();
             var acquisitions = new List<object>();
             var observations = new List<object>();
-            var evidence = new Dictionary<string, object> {
-                ["Phase"] = "Prepared", ["Utc"] = DateTime.UtcNow.ToString("O"),
-                ["ProcessId"] = ProcessId, ["DocumentPath"] = DocumentPath,
-                ["Project"] = Project, ["ExpectedMvid"] = typeof(VbeSession).Module.ModuleVersionId.ToString("D"),
-                ["Samples"] = observations, ["SampleLimit"] = 5,
-                ["NativeMutationAllowed"] = false, ["SaveAllowed"] = false,
-                ["ObjectsHeldAcrossSamples"] = true };
-            Action<string> persist = phase => {
+            var evidence = new Dictionary<string, object>
+            {
+                ["Phase"] = "Prepared",
+                ["Utc"] = DateTime.UtcNow.ToString("O"),
+                ["ProcessId"] = ProcessId,
+                ["DocumentPath"] = DocumentPath,
+                ["Project"] = Project,
+                ["ExpectedMvid"] = typeof(VbeSession).Module.ModuleVersionId.ToString("D"),
+                ["Samples"] = observations,
+                ["SampleLimit"] = 5,
+                ["NativeMutationAllowed"] = false,
+                ["SaveAllowed"] = false,
+                ["ObjectsHeldAcrossSamples"] = true
+            };
+            Action<string> persist = phase =>
+            {
                 evidence["Phase"] = phase;
                 File.WriteAllText(Path.Combine(Root, "access-identity-probe.json"),
                     new JavaScriptSerializer().Serialize(evidence));
@@ -66,9 +74,13 @@ namespace VBAi.Tests.Integration
                     object current = acquired(((dynamic)application).CurrentProject);
                     string fullName = Convert.ToString(((dynamic)current).FullName);
                     Assert.AreEqual(Path.GetFullPath(DocumentPath), Path.GetFullPath(fullName), true);
-                    var row = new Dictionary<string, object> {
-                        ["Index"] = sample, ["Utc"] = DateTime.UtcNow.ToString("O"),
-                        ["CurrentProjectIUnknown"] = Identity(current), ["CurrentProjectFullName"] = fullName };
+                    var row = new Dictionary<string, object>
+                    {
+                        ["Index"] = sample,
+                        ["Utc"] = DateTime.UtcNow.ToString("O"),
+                        ["CurrentProjectIUnknown"] = Identity(current),
+                        ["CurrentProjectFullName"] = fullName
+                    };
                     observations.Add(row);
                     persist("MappedProjectReadPending");
                     int matches = 0;
@@ -104,8 +116,14 @@ namespace VBAi.Tests.Integration
                     acquisitions.RemoveAt(index);
                 }
                 persist("BalancedReferencesReleased");
-                RecordAdapterStage("ReadOnlyAccessIdentityComplete", new { Samples = observations.Count,
-                    CurrentProjectEqualityRequired = false, SourceEdited = false, PropertiesEdited = false, AdapterSaveInvoked = false });
+                RecordAdapterStage("ReadOnlyAccessIdentityComplete", new
+                {
+                    Samples = observations.Count,
+                    CurrentProjectEqualityRequired = false,
+                    SourceEdited = false,
+                    PropertiesEdited = false,
+                    AdapterSaveInvoked = false
+                });
             }
             catch (Exception error)
             {

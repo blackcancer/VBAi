@@ -1,10 +1,9 @@
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Collections;
 using System.Reflection;
 using System.Security.Cryptography;
 using System.Text;
-using VBAi;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace VBAi.Tests.Unit
 {
@@ -43,7 +42,8 @@ namespace VBAi.Tests.Unit
         public void ReadWriteReadbackAndRevisionFailuresPreserveHistory()
         {
             string code = "one"; bool failRead = false, failWrite = false, wrongReadback = false;
-            var edits = new VbeCodeEdits(command => {
+            var edits = new VbeCodeEdits(command =>
+            {
                 if (command.Command == "read_module") return failRead ? Response.Failure("read failed") : Response.Success(new Snapshot { Code = code });
                 if (failWrite) return Response.Failure("write failed");
                 code = wrongReadback ? "different" : command.Text;
@@ -72,7 +72,8 @@ namespace VBAi.Tests.Unit
             string current = source; bool catalogFailure = false, stateFailure = false; int writes = 0, mode = 2;
             var match = new ProcedureRow { Name = "Run", Kind = 0, BodyLine = 1, EndLine = 4 };
             var catalog = new ProcedureCatalog { Sha256 = Hash(source), Procedures = new[] { match } };
-            var edits = new VbeCodeEdits(command => {
+            var edits = new VbeCodeEdits(command =>
+            {
                 switch (command.Command)
                 {
                     case "read_module": return Response.Success(new Snapshot { Code = current });
@@ -82,8 +83,19 @@ namespace VBAi.Tests.Unit
                     default: throw new InvalidOperationException(command.Command);
                 }
             });
-            var request = new Request { Project = "P", Module = "M", Procedure = "Run", ProcKind = 0,
-                Query = "value", NewName = "amount", StartLine = 2, StartColumn = 5, ExpectedSha256 = Hash(source), ExpectedMode = 2 };
+            var request = new Request
+            {
+                Project = "P",
+                Module = "M",
+                Procedure = "Run",
+                ProcKind = 0,
+                Query = "value",
+                NewName = "amount",
+                StartLine = 2,
+                StartColumn = 5,
+                ExpectedSha256 = Hash(source),
+                ExpectedMode = 2
+            };
             catalogFailure = true; StringAssert.Contains(Assert.ThrowsException<InvalidOperationException>(() => edits.RenameLocal(request, true)).Message, "catalog unavailable"); catalogFailure = false;
             catalog.Sha256 = "stale"; Assert.ThrowsException<InvalidOperationException>(() => edits.RenameLocal(request, true)); catalog.Sha256 = Hash(source).ToUpperInvariant();
             catalog.Procedures = new[] { new ProcedureRow { Name = "Run", Kind = 1 }, new ProcedureRow { Name = "Other", Kind = 0 } };

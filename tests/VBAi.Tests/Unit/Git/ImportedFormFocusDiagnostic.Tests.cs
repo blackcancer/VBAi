@@ -1,8 +1,8 @@
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Collections.Generic;
 using System.Runtime.ExceptionServices;
 using System.Threading;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace VBAi.Tests.Unit
 {
@@ -28,10 +28,14 @@ namespace VBAi.Tests.Unit
         }
 
         [DataTestMethod]
-        [DataRow(false, false)] [DataRow(false, true)] [DataRow(true, false)] [DataRow(true, true)]
+        [DataRow(false, false)]
+        [DataRow(false, true)]
+        [DataRow(true, false)]
+        [DataRow(true, true)]
         public void EnabledAndDisabledRootsDoNotChangeObservedComIdentityAndEveryGetterIsReadOnce(bool enabled, bool same)
         {
-            Sta(() => {
+            Sta(() =>
+            {
                 var p = new Probe { Enabled = enabled, PreviousMatches = true }; var value = p.Observe(same: same);
                 Assert.AreEqual(same ? "expected" : "different", value.ActiveIdentity);
                 Assert.AreEqual(enabled.ToString(), value.RootEnabled); Assert.AreEqual("True", value.ActiveMatchesPrevious);
@@ -45,7 +49,8 @@ namespace VBAi.Tests.Unit
         [DataTestMethod, DataRow(false), DataRow(true)]
         public void NullActiveWindowNeverInvokesItsGettersOrPreviousIdentityComparison(bool previous)
         {
-            Sta(() => {
+            Sta(() =>
+            {
                 var p = new Probe(); var value = p.Observe(active: false, previous: previous);
                 Assert.AreEqual("null", value.ActiveIdentity); Assert.AreEqual(previous, value.PreviousPresent);
                 Assert.AreEqual("not-observed-null-active", value.ActiveType);
@@ -59,7 +64,8 @@ namespace VBAi.Tests.Unit
         [DataTestMethod, DataRow(false), DataRow(true)]
         public void PriorViewIsObservedWithoutChangingTheActiveIdentity(bool matches)
         {
-            Sta(() => {
+            Sta(() =>
+            {
                 var p = new Probe { PreviousMatches = matches }; var value = p.Observe();
                 Assert.AreEqual(matches.ToString(), value.ActiveMatchesPrevious); Assert.AreEqual("different", value.ActiveIdentity);
                 Assert.AreEqual(1, p.Reads["previous"]);
@@ -69,7 +75,8 @@ namespace VBAi.Tests.Unit
         [TestMethod]
         public void MissingPriorViewAndZeroRootAreNotQueriedOrReplacedWithInventedFalseValues()
         {
-            Sta(() => {
+            Sta(() =>
+            {
                 var p = new Probe(); var value = p.Observe(previous: false, root: false);
                 Assert.AreEqual("not-observed-no-previous", value.ActiveMatchesPrevious);
                 Assert.AreEqual("not-observed-zero-root", value.RootEnabled);
@@ -78,11 +85,16 @@ namespace VBAi.Tests.Unit
         }
 
         [DataTestMethod]
-        [DataRow("type")] [DataRow("handle")] [DataRow("active-caption")]
-        [DataRow("expected-caption")] [DataRow("enabled")] [DataRow("previous")]
+        [DataRow("type")]
+        [DataRow("handle")]
+        [DataRow("active-caption")]
+        [DataRow("expected-caption")]
+        [DataRow("enabled")]
+        [DataRow("previous")]
         public void UnavailableGetterIsNeverRetriedAndDoesNotSuppressOtherObservations(string failed)
         {
-            Sta(() => {
+            Sta(() =>
+            {
                 var p = new Probe { Failed = failed }; var value = p.Observe();
                 string text = ImportedFormFocusDiagnostic.Format(value);
                 StringAssert.Contains(text, "unavailable(InvalidOperationException:0x80131509)");
@@ -94,7 +106,8 @@ namespace VBAi.Tests.Unit
         [TestMethod]
         public void FailedCaptionOfTheSameComWindowIsNotReadAgainThroughItsActiveAlias()
         {
-            Sta(() => {
+            Sta(() =>
+            {
                 var p = new Probe { Failed = "expected-caption" }; var value = p.Observe(same: true);
                 Assert.AreEqual(value.ExpectedCaption, value.ActiveCaption);
                 Assert.AreEqual(1, p.Reads["expected-caption"]); Assert.IsFalse(p.Reads.ContainsKey("active-caption"));
@@ -105,7 +118,8 @@ namespace VBAi.Tests.Unit
         [TestMethod]
         public void MissingDiagnosticGetterIsReportedWithoutNativeFallback()
         {
-            Sta(() => {
+            Sta(() =>
+            {
                 var value = ImportedFormFocusDiagnostic.Observe(true, false, true, true, 1, 0, null, null, null, null, null, null);
                 Assert.AreEqual("unavailable-missing-getter", value.ActiveType);
                 Assert.AreEqual("unavailable-missing-getter", value.ActiveHandle);
@@ -117,7 +131,11 @@ namespace VBAi.Tests.Unit
         }
 
         [DataTestMethod]
-        [DataRow("null")] [DataRow("controls")] [DataRow("long")] [DataRow("surrogate")] [DataRow("normal")]
+        [DataRow("null")]
+        [DataRow("controls")]
+        [DataRow("long")]
+        [DataRow("surrogate")]
+        [DataRow("normal")]
         public void CaptionFormattingIsBoundedSingleLineAndCannotForgeFields(string kind)
         {
             string input = kind == "null" ? null : kind == "controls" ? "a\r\n\t\0;=|\u2028\u2029b" :
@@ -137,7 +155,8 @@ namespace VBAi.Tests.Unit
         [TestMethod]
         public void WrongApartmentCannotInvokeAnyAdditionalComOrWindowGetter()
         {
-            Run(ApartmentState.MTA, () => {
+            Run(ApartmentState.MTA, () =>
+            {
                 var p = new Probe(); var value = p.Observe();
                 Assert.AreEqual("not-observed-non-STA", value.State); Assert.AreEqual(0, p.Reads.Count);
             });
@@ -146,7 +165,8 @@ namespace VBAi.Tests.Unit
         [DataTestMethod, DataRow(0), DataRow(12)]
         public void PassingSelectorPerformsNoDiagnosticReadsAndKeepsItsExistingOwnerChecks(int designer)
         {
-            Sta(() => {
+            Sta(() =>
+            {
                 int owners = 0;
                 IntPtr result = ImportedFormMaterialization.SelectObservedTarget("before-first-render", new IntPtr(11),
                     new IntPtr(designer), true, true, true, true, 1, 42, _ => { owners++; return 42; },
@@ -159,7 +179,8 @@ namespace VBAi.Tests.Unit
         [DataTestMethod, DataRow("ownership"), DataRow("focus"), DataRow("format")]
         public void DiagnosticFailurePreservesTheExactOriginalRefusalWithoutReplayingOwners(string phase)
         {
-            Sta(() => {
+            Sta(() =>
+            {
                 var original = new InvalidOperationException("Original ownership refusal"); int owners = 0, diagnostics = 0;
                 var thrown = Assert.ThrowsException<InvalidOperationException>(() => ImportedFormMaterialization.SelectObservedTarget(
                     "before-first-render", new IntPtr(11), IntPtr.Zero, true, true, true, true, 1, 42,
@@ -170,14 +191,18 @@ namespace VBAi.Tests.Unit
         }
 
         [DataTestMethod]
-        [DataRow("before-first-render")] [DataRow("immediately-before-PrintWindow")] [DataRow("after-PrintWindow")]
+        [DataRow("before-first-render")]
+        [DataRow("immediately-before-PrintWindow")]
+        [DataRow("after-PrintWindow")]
         public void EqualCaptionAndDesignerTypeNeverSubstituteForExactComIdentity(string stage)
         {
-            Sta(() => {
+            Sta(() =>
+            {
                 int owners = 0, observations = 0;
                 var thrown = Assert.ThrowsException<InvalidOperationException>(() => ImportedFormMaterialization.SelectObservedTarget(
                     stage, new IntPtr(11), IntPtr.Zero, true, false, true, true, 1, 42,
-                    _ => { owners++; return 42; }, () => "not-evaluated", () => {
+                    _ => { owners++; return 42; }, () => "not-evaluated", () =>
+                    {
                         observations++;
                         return ImportedFormFocusDiagnostic.Format(ImportedFormFocusDiagnostic.Observe(true, false, false, true, 1, 0,
                             () => 1, () => 0L, () => "Same caption", () => "Same caption", () => false, null));
@@ -192,7 +217,8 @@ namespace VBAi.Tests.Unit
         [TestMethod]
         public void OtherOriginalFailuresAreNotConvertedOrObservedAgain()
         {
-            Sta(() => {
+            Sta(() =>
+            {
                 var original = new System.Runtime.InteropServices.COMException("Native owner query failed");
                 var thrown = Assert.ThrowsException<System.Runtime.InteropServices.COMException>(() => ImportedFormMaterialization.SelectObservedTarget(
                     "before-first-render", new IntPtr(11), IntPtr.Zero, true, true, true, true, 1, 42,

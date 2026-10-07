@@ -1,11 +1,10 @@
 namespace VBAi.Tests.Unit
 {
+    using Microsoft.VisualStudio.TestTools.UnitTesting;
     using System;
     using System.IO;
-    using System.Security.Cryptography;
     using System.Text;
     using VBAi;
-    using Microsoft.VisualStudio.TestTools.UnitTesting;
 
     public sealed partial class VbeProcedureMutationTests
     {
@@ -553,13 +552,10 @@ namespace VBAi.Tests.Unit
 
 namespace VBAi.Tests.Unit
 {
-    using System;
-    using System.Collections.Generic;
-    using System.Linq;
-    using System.Security.Cryptography;
-    using System.Text;
-    using VBAi;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
+    using System;
+    using System.Linq;
+    using VBAi;
 
     [TestClass]
     [TestCategory("Unit")]
@@ -600,7 +596,7 @@ namespace VBAi.Tests.Unit
         {
             var navigation = CreateNavigation("abc", "def");
             Assert.ThrowsException<ArgumentException>(() => navigation.Find(new Request { Project = "Projet", Query = "" }));
-            Assert.ThrowsException<ArgumentException>(() => navigation.Find(new Request { Project = "Projet", Query = new string ('x', 201) }));
+            Assert.ThrowsException<ArgumentException>(() => navigation.Find(new Request { Project = "Projet", Query = new string('x', 201) }));
             Assert.ThrowsException<ArgumentException>(() => navigation.Find(new Request { Project = "Projet", Query = "***", PatternSearch = true }));
             Assert.ThrowsException<InvalidOperationException>(() => navigation.Find(new Request { Project = "Projet", Module = "Missing", Query = "abc" }));
         }
@@ -755,15 +751,9 @@ namespace VBAi.Tests.Unit
 
 namespace VBAi.Tests.Unit
 {
-    using System;
-    using System.Collections.Generic;
-    using System.Dynamic;
-    using System.Linq;
-    using System.Security.Cryptography;
-    using System.Text;
-    using System.Text.RegularExpressions;
-    using VBAi;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
+    using System;
+    using VBAi;
 
     [TestClass]
     [TestCategory("Unit")]

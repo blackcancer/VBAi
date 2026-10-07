@@ -1,10 +1,10 @@
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Diagnostics;
 using System.IO;
 using System.Threading;
-using System.Windows.Forms;
 using System.Web.Script.Serialization;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
+using System.Windows.Forms;
 
 namespace VBAi.Tests.Integration
 {
@@ -79,7 +79,8 @@ namespace VBAi.Tests.Integration
                 pause((int)Math.Min(25, remaining));
             }
         }
-        internal Action CollectSettledWordReferences = () => {
+        internal Action CollectSettledWordReferences = () =>
+        {
             GC.Collect(); GC.WaitForPendingFinalizers(); GC.Collect();
         };
 
@@ -97,12 +98,19 @@ namespace VBAi.Tests.Integration
             string handle = "0x" + unchecked((ulong)ownedProcess.Handle.ToInt64()).ToString("X16");
             Assert.AreEqual(shutdownEvidence.Record["OriginalProcessHandle"], handle);
             Assert.AreEqual(shutdownEvidence.Record["ProcessImage"], ExcelOwnedProcessImage.Read(ownedProcess.Handle));
-            var diagnostic = new System.Collections.Generic.Dictionary<string, object> {
-                ["DiagnosticOnly"] = true, ["ProcessId"] = ProcessId, ["OriginalProcessHandle"] = handle,
-                ["ScopeReturnedUtc"] = DateTime.UtcNow.ToString("o"), ["NativeExecutionUnsettled"] = false,
-                ["BridgePending"] = commandContainment.Pending, ["BridgeUncertain"] = commandContainment.Uncertain,
+            var diagnostic = new System.Collections.Generic.Dictionary<string, object>
+            {
+                ["DiagnosticOnly"] = true,
+                ["ProcessId"] = ProcessId,
+                ["OriginalProcessHandle"] = handle,
+                ["ScopeReturnedUtc"] = DateTime.UtcNow.ToString("o"),
+                ["NativeExecutionUnsettled"] = false,
+                ["BridgePending"] = commandContainment.Pending,
+                ["BridgeUncertain"] = commandContainment.Uncertain,
                 ["CollectionCountsBefore"] = new[] { GC.CollectionCount(0), GC.CollectionCount(1), GC.CollectionCount(2) },
-                ["CollectStartedUtc"] = DateTime.UtcNow.ToString("o"), ["CollectCompleted"] = false };
+                ["CollectStartedUtc"] = DateTime.UtcNow.ToString("o"),
+                ["CollectCompleted"] = false
+            };
             string path = Path.Combine(Root, "word-settled-scope-gc.json");
             var serializer = new JavaScriptSerializer();
             File.WriteAllText(path, serializer.Serialize(diagnostic));
@@ -137,8 +145,13 @@ namespace VBAi.Tests.Integration
 
         private void FlushShutdownEvidence()
         {
-            File.WriteAllText(Path.Combine(Root, "shutdown-lifecycle.json"), new JavaScriptSerializer().Serialize(new {
-                Host = Kind, Project, DocumentPath, Lifecycle = shutdownEvidence.Record }));
+            File.WriteAllText(Path.Combine(Root, "shutdown-lifecycle.json"), new JavaScriptSerializer().Serialize(new
+            {
+                Host = Kind,
+                Project,
+                DocumentPath,
+                Lifecycle = shutdownEvidence.Record
+            }));
         }
     }
 }

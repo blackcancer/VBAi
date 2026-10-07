@@ -12,7 +12,8 @@ namespace VBAi.Tests.Integration
         internal const string SourceSha256 = "B5264F941E0FD398A9DE03B203DB7A31A6DB9FF939B894E7829A0203C76F4B73";
         internal const string SourceMarker = "EMBEDDED_67b6b3d058ac43b591316d7a00f584b4";
         private const string SourceSuffix = "\\artifacts\\root-font-owner-observation-20261002\\native-labelbutton-diagnostic\\hosts\\29a84356e87e4f03a08d7025b20dd947\\EmbeddedGit.xlsm";
-        private static readonly IDictionary<string, string> ComparisonHashes = new Dictionary<string, string>(StringComparer.Ordinal) {
+        private static readonly IDictionary<string, string> ComparisonHashes = new Dictionary<string, string>(StringComparer.Ordinal)
+        {
             ["EmbeddedClass.cls"] = "2A19380F277D1E6E082F3EABC69D2E61F0E56158C9DE4200DDAD80BB8C12787A",
             ["EmbeddedForm.frm"] = "EF8E1C42D1B299412783590210B2154CFEA35F62DD7750DA05A6B01EB1C4AD68",
             ["EmbeddedForm.frx"] = "72568A6AEE7D62C2EED3B2BF32F83887895B098FD20279440902387F891B4FDE",

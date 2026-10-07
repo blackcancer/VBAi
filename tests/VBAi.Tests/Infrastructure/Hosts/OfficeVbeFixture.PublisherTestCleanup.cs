@@ -1,10 +1,10 @@
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Threading;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace VBAi.Tests.Integration
 {
@@ -27,8 +27,16 @@ namespace VBAi.Tests.Integration
             publisherTestCleanupSources = new Dictionary<string, string>(expectedSources, StringComparer.OrdinalIgnoreCase);
             publisherTestCleanupProject = Project;
             publisherTestCleanupPath = DocumentPath;
-            steps.Add(new { PublisherTestCleanup = "ReviewedDiscardAuthorized", ProcessId, DocumentPath, Project,
-                Modules = publisherTestCleanupSources.Keys.ToArray(), SaveInvoked = false, PersistenceQualification = false });
+            steps.Add(new
+            {
+                PublisherTestCleanup = "ReviewedDiscardAuthorized",
+                ProcessId,
+                DocumentPath,
+                Project,
+                Modules = publisherTestCleanupSources.Keys.ToArray(),
+                SaveInvoked = false,
+                PersistenceQualification = false
+            });
             FlushAdapterEvidence();
         }
 
@@ -86,10 +94,21 @@ namespace VBAi.Tests.Integration
             var finalState = Data("debug_state", "Project", publisherTestCleanupProject);
             Assert.AreEqual(2, Convert.ToInt32(finalState["Mode"]));
             RequirePublisherTestCleanupDocument();
-            steps.Add(new { PublisherTestCleanup = "VerifiedBeforeSingleQuit", ProcessId, DocumentPath, Project,
-                DiscardReviewedSyntheticTestSources = true, SaveInvoked = false, SavedSetterInvoked = false,
-                PersistenceQualification = false, Persistence = persistence, NativeExecutionUnsettled = false,
-                BridgePending = false, BridgeUncertain = false });
+            steps.Add(new
+            {
+                PublisherTestCleanup = "VerifiedBeforeSingleQuit",
+                ProcessId,
+                DocumentPath,
+                Project,
+                DiscardReviewedSyntheticTestSources = true,
+                SaveInvoked = false,
+                SavedSetterInvoked = false,
+                PersistenceQualification = false,
+                Persistence = persistence,
+                NativeExecutionUnsettled = false,
+                BridgePending = false,
+                BridgeUncertain = false
+            });
             FlushAdapterEvidence();
             RequirePublisherTestCleanupProcess();
         }

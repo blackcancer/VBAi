@@ -54,19 +54,36 @@ namespace VBAi
                         d.Scope.Equals(procedure, StringComparison.OrdinalIgnoreCase)).ToArray();
                     bool macro = statement[first].Text.Equals("Sub", StringComparison.OrdinalIgnoreCase) && parameters.Length == 0 && !optionPrivate && conditional == 0;
                     if (!string.IsNullOrEmpty(request.Query) && (name + "." + procedure).IndexOf(request.Query, StringComparison.OrdinalIgnoreCase) < 0) continue;
-                    entries.Add(new { Module = name, Procedure = procedure, Kind = statement[first].Text, Line = statement[0].Line,
-                        Sha256 = sha, Parameters = parameters.Select(p => new { p.Name, p.TypeName }).ToArray(),
-                        NativeMacroCandidate = macro, Conditional = conditional > 0, OptionPrivateModule = optionPrivate,
-                        NativeVisibilityVerified = false, ExecutionTool = conditional == 0 ? "run_procedure" : null });
+                    entries.Add(new
+                    {
+                        Module = name,
+                        Procedure = procedure,
+                        Kind = statement[first].Text,
+                        statement[0].Line,
+                        Sha256 = sha,
+                        Parameters = parameters.Select(p => new { p.Name, p.TypeName }).ToArray(),
+                        NativeMacroCandidate = macro,
+                        Conditional = conditional > 0,
+                        OptionPrivateModule = optionPrivate,
+                        NativeVisibilityVerified = false,
+                        ExecutionTool = conditional == 0 ? "run_procedure" : null
+                    });
                     if (entries.Count > 10000) throw new InvalidOperationException("The macro catalogue exceeds 10000 procedures.");
                 }
             }
             int limit = request.Limit == 0 ? 100 : request.Limit;
-            return new { Project = request.Project, Mode = (int)project.Mode,
+            return new
+            {
+                request.Project,
+                Mode = (int)project.Mode,
                 CatalogVersion = Hash(new JavaScriptSerializer().Serialize(identities)),
-                Macros = entries.Skip(request.Offset).Take(limit).ToArray(), Total = entries.Count, request.Offset, Limit = limit,
+                Macros = entries.Skip(request.Offset).Take(limit).ToArray(),
+                Total = entries.Count,
+                request.Offset,
+                Limit = limit,
                 HasMore = request.Offset + limit < entries.Count,
-                Coverage = "Public standard-module Sub/Function declarations. NativeMacroCandidate is syntactic, not host chooser qualification." };
+                Coverage = "Public standard-module Sub/Function declarations. NativeMacroCandidate is syntactic, not host chooser qualification."
+            };
         }
     }
 }

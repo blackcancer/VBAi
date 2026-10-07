@@ -1,13 +1,12 @@
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Diagnostics;
 using System.Drawing;
 using System.Drawing.Imaging;
-using System.Runtime.InteropServices;
 using System.Runtime.ExceptionServices;
+using System.Runtime.InteropServices;
 using System.Threading;
 using System.Windows.Forms;
-using VBAi;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace VBAi.Tests.Unit
 {
@@ -17,7 +16,8 @@ namespace VBAi.Tests.Unit
         [StructLayout(LayoutKind.Sequential)] private struct Controls { internal uint Size, Classes; }
         [StructLayout(LayoutKind.Sequential)] private struct Rect { internal int Left, Top, Right, Bottom; }
         [StructLayout(LayoutKind.Sequential)] private struct Point { internal int X, Y; }
-        [StructLayout(LayoutKind.Sequential)] private struct TabItem
+        [StructLayout(LayoutKind.Sequential)]
+        private struct TabItem
         {
             internal uint Mask, State, StateMask;
             internal IntPtr Text;

@@ -17,9 +17,14 @@ namespace VBAi.Tests.Integration
             report["DiagnosticTraceRequested"] = true;
             report["Stage"] = "WAITING_FOR_DIAGNOSTIC_TRACE_BEFORE_ANY_EXPORT";
             using (var process = Process.GetProcessById(ownedPid))
-                File.WriteAllText(Path.Combine(output, "trace.pending.json"), new JavaScriptSerializer().Serialize(new {
-                    ProcessId = ownedPid, ProcessStartedUtc = process.StartTime.ToUniversalTime().ToString("o"),
-                    Destination = destination, AssemblyMvid = loaded["AssemblyModuleVersionId"], AssemblyPath = loaded["AssemblyPath"] }));
+                File.WriteAllText(Path.Combine(output, "trace.pending.json"), new JavaScriptSerializer().Serialize(new
+                {
+                    ProcessId = ownedPid,
+                    ProcessStartedUtc = process.StartTime.ToUniversalTime().ToString("o"),
+                    Destination = destination,
+                    AssemblyMvid = loaded["AssemblyModuleVersionId"],
+                    AssemblyPath = loaded["AssemblyPath"]
+                }));
             Wait(Path.Combine(output, "trace.armed"), ownedPid, Convert.ToString(loaded["AssemblyModuleVersionId"]),
                 "Diagnostic trace did not arm before any export; this is a diagnostic setup timeout, not native export failure.");
         }

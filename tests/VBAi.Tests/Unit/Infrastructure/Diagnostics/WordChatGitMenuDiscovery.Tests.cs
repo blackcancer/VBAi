@@ -1,6 +1,6 @@
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Linq;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 using VBAi.Tests.Integration;
 
 namespace VBAi.Tests.Unit
@@ -99,10 +99,19 @@ namespace VBAi.Tests.Unit
         }
 
         private static WordChatGitMenuDiscovery.OwnerShape OptionsButtonOwner()
-            => new WordChatGitMenuDiscovery.OwnerShape {
-                Handle = 21108174, Parent = 106566272, Root = Owner, Owner = 0,
-                ProcessId = ProcessId, ThreadId = ThreadId, Live = true, Visible = true,
-                ClassName = "WindowsForms10.BUTTON.app.0.23dba96_r133_ad1", Style = 1442906123, ExStyle = 0
+            => new WordChatGitMenuDiscovery.OwnerShape
+            {
+                Handle = 21108174,
+                Parent = 106566272,
+                Root = Owner,
+                Owner = 0,
+                ProcessId = ProcessId,
+                ThreadId = ThreadId,
+                Live = true,
+                Visible = true,
+                ClassName = "WindowsForms10.BUTTON.app.0.23dba96_r133_ad1",
+                Style = 1442906123,
+                ExStyle = 0
             };
 
         [TestMethod]
@@ -139,10 +148,19 @@ namespace VBAi.Tests.Unit
         }
 
         private static WordChatGitMenuDiscovery.OwnerShape ScopePickerOwner()
-            => new WordChatGitMenuDiscovery.OwnerShape {
-                Handle = 53155074, Parent = Owner, Root = Owner, Owner = 0,
-                ProcessId = ProcessId, ThreadId = ThreadId, Live = true, Visible = true,
-                ClassName = "WindowsForms10.COMBOBOX.app.0.123_r6_ad1", Style = 0x40000000, ExStyle = 0
+            => new WordChatGitMenuDiscovery.OwnerShape
+            {
+                Handle = 53155074,
+                Parent = Owner,
+                Root = Owner,
+                Owner = 0,
+                ProcessId = ProcessId,
+                ThreadId = ThreadId,
+                Live = true,
+                Visible = true,
+                ClassName = "WindowsForms10.COMBOBOX.app.0.123_r6_ad1",
+                Style = 0x40000000,
+                ExStyle = 0
             };
 
         [TestMethod]
@@ -282,14 +300,29 @@ namespace VBAi.Tests.Unit
                 WordChatGitMenuDiscovery.RequireUnique(null, ProcessId, ThreadId, Owner));
         }
 
-        private static WordChatGitMenuDiscovery.Candidate Exact() => new WordChatGitMenuDiscovery.Candidate {
-            PopupHandle = 50729498, OwnerHandle = Owner, GitItemNativeAncestor = 50729498,
+        private static WordChatGitMenuDiscovery.Candidate Exact() => new WordChatGitMenuDiscovery.Candidate
+        {
+            PopupHandle = 50729498,
+            OwnerHandle = Owner,
+            GitItemNativeAncestor = 50729498,
             NativeProcessId = ProcessId,
-            UiProcessId = ProcessId, GitItemProcessId = ProcessId, NativeThreadId = ThreadId,
-            Visible = true, NewlyVisible = true, NativeClass = "WindowsForms10.Window.20808",
-            UiType = "ControlType.Menu", MenuItemCount = 17, GitLabelMatches = 1, EnabledGitMatches = 1,
-            OwnerShape = new WordChatGitMenuDiscovery.OwnerShape {
-                Handle = Owner, Live = true, ProcessId = ProcessId, ThreadId = ThreadId, Root = Owner
+            UiProcessId = ProcessId,
+            GitItemProcessId = ProcessId,
+            NativeThreadId = ThreadId,
+            Visible = true,
+            NewlyVisible = true,
+            NativeClass = "WindowsForms10.Window.20808",
+            UiType = "ControlType.Menu",
+            MenuItemCount = 17,
+            GitLabelMatches = 1,
+            EnabledGitMatches = 1,
+            OwnerShape = new WordChatGitMenuDiscovery.OwnerShape
+            {
+                Handle = Owner,
+                Live = true,
+                ProcessId = ProcessId,
+                ThreadId = ThreadId,
+                Root = Owner
             }
         };
 
@@ -298,21 +331,37 @@ namespace VBAi.Tests.Unit
             var popup = Exact();
             popup.OwnerHandle = 115086426;
             popup.NativeClass = "WindowsForms10.Window.20808.app.0.3475548_r8_ad1";
-            popup.OwnerShape = new WordChatGitMenuDiscovery.OwnerShape {
-                Handle = popup.OwnerHandle, Live = true, ProcessId = ProcessId, ThreadId = ThreadId,
-                ClassName = "WindowsForms10.Window.0.app.0.3475548_r8_ad1", Visible = false,
-                Parent = 0, Root = popup.OwnerHandle, Owner = 0,
-                Style = 79691776, ExStyle = 384
+            popup.OwnerShape = new WordChatGitMenuDiscovery.OwnerShape
+            {
+                Handle = popup.OwnerHandle,
+                Live = true,
+                ProcessId = ProcessId,
+                ThreadId = ThreadId,
+                ClassName = "WindowsForms10.Window.0.app.0.3475548_r8_ad1",
+                Visible = false,
+                Parent = 0,
+                Root = popup.OwnerHandle,
+                Owner = 0,
+                Style = 79691776,
+                ExStyle = 384
             };
             return popup;
         }
 
         private static WordChatGitMenuDiscovery.OwnerShape Copy(WordChatGitMenuDiscovery.OwnerShape value)
-            => new WordChatGitMenuDiscovery.OwnerShape {
-                Handle = value.Handle, Live = value.Live, ProcessId = value.ProcessId,
-                ThreadId = value.ThreadId, ClassName = value.ClassName, Visible = value.Visible,
-                Parent = value.Parent, Root = value.Root, Owner = value.Owner,
-                Style = value.Style, ExStyle = value.ExStyle
+            => new WordChatGitMenuDiscovery.OwnerShape
+            {
+                Handle = value.Handle,
+                Live = value.Live,
+                ProcessId = value.ProcessId,
+                ThreadId = value.ThreadId,
+                ClassName = value.ClassName,
+                Visible = value.Visible,
+                Parent = value.Parent,
+                Root = value.Root,
+                Owner = value.Owner,
+                Style = value.Style,
+                ExStyle = value.ExStyle
             };
     }
 }

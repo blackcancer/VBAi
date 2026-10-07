@@ -1,15 +1,12 @@
 namespace VBAi.Tests.Unit
 {
     using System;
-    using System.Collections;
     using System.Collections.Generic;
     using System.Linq;
-    using System.Reflection;
     using System.Security.Cryptography;
     using System.Text;
     using System.Threading;
     using VBAi;
-    using Microsoft.VisualStudio.TestTools.UnitTesting;
 
     public sealed partial class VbeDebugTests
     {

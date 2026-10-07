@@ -75,8 +75,12 @@ namespace VBAi
             int index = 0;
             foreach (dynamic addIn in vbe.AddIns)
                 addIns.Add(AddInSnapshot(addIn, ++index));
-            return new { AddIns = addIns, Count = addIns.Count,
-                Scope = "VBE.AddIns contains VBE-registered add-ins, not the host application's COMAddIns." };
+            return new
+            {
+                AddIns = addIns,
+                addIns.Count,
+                Scope = "VBE.AddIns contains VBE-registered add-ins, not the host application's COMAddIns."
+            };
         }
 
         /// <summary>Active une fenêtre exacte déjà visible et rapporte le résultat de vérification.</summary>
@@ -93,9 +97,14 @@ namespace VBAi
             bool verified = active != null &&
                 string.Equals((string)active.Caption, caption, StringComparison.Ordinal) &&
                 (int)active.Type == type;
-            return new { WindowCaption = caption, WindowType = type, SetFocusInvoked = true,
+            return new
+            {
+                WindowCaption = caption,
+                WindowType = type,
+                SetFocusInvoked = true,
                 Verification = verified ? "ActiveWindowReadback" : "Unverified",
-                ActiveWindow = active == null ? null : WindowSnapshot(active, null) };
+                ActiveWindow = active == null ? null : WindowSnapshot(active, null)
+            };
         }
 
         /// <summary>Rend visible puis active une fenêtre VBE exacte.</summary>
@@ -115,9 +124,15 @@ namespace VBAi
             bool activeVerified = active != null &&
                 string.Equals((string)active.Caption, caption, StringComparison.Ordinal) &&
                 (int)active.Type == type;
-            return new { WindowCaption = caption, WindowType = type, WasVisible = wasVisible,
-                Visible = nowVisible, FocusVerified = activeVerified,
-                ActiveWindow = active == null ? null : WindowSnapshot(active, null) };
+            return new
+            {
+                WindowCaption = caption,
+                WindowType = type,
+                WasVisible = wasVisible,
+                Visible = nowVisible,
+                FocusVerified = activeVerified,
+                ActiveWindow = active == null ? null : WindowSnapshot(active, null)
+            };
         }
 
         /// <summary>Retourne l’état de visibilité et les fenêtres liées au cadre de la cible.</summary>
@@ -144,8 +159,13 @@ namespace VBAi
                 }
             }
             catch (Exception ex) { errors["LinkedWindowFrame"] = ex.Message; }
-            return new { WindowCaption = caption, WindowType = type,
-                Properties = fields, Errors = errors };
+            return new
+            {
+                WindowCaption = caption,
+                WindowType = type,
+                Properties = fields,
+                Errors = errors
+            };
         }
 
         /// <summary>Ferme une fenêtre VBE exacte et vérifie si elle a disparu ou est cachée.</summary>
@@ -166,10 +186,16 @@ namespace VBAi
                 if (string.Equals((string)window.Caption, caption, StringComparison.Ordinal) &&
                     (int)window.Type == type)
                 { matches++; visible |= (bool)window.Visible; }
-            return new { WindowCaption = caption, WindowType = type, CloseInvoked = true,
+            return new
+            {
+                WindowCaption = caption,
+                WindowType = type,
+                CloseInvoked = true,
                 Verification = matches == 0 ? "RemovedFromWindows" :
                     matches == 1 && !visible ? "HiddenInWindows" : "Unverified",
-                RemainingMatches = matches, RemainingVisible = visible };
+                RemainingMatches = matches,
+                RemainingVisible = visible
+            };
         }
 
         /// <summary>Résout une fenêtre selon sa légende et son type, en refusant les doublons.</summary>
@@ -231,8 +257,13 @@ namespace VBAi
             {
                 int startLine = 0, startColumn = 0, endLine = 0, endColumn = 0;
                 pane.GetSelection(ref startLine, ref startColumn, ref endLine, ref endColumn);
-                fields["Selection"] = new { StartLine = startLine, StartColumn = startColumn,
-                    EndLine = endLine, EndColumn = endColumn };
+                fields["Selection"] = new
+                {
+                    StartLine = startLine,
+                    StartColumn = startColumn,
+                    EndLine = endLine,
+                    EndColumn = endColumn
+                };
             }
             catch (Exception ex) { errors["Selection"] = ex.Message; }
             return new { Index = index, Properties = fields, Errors = errors };

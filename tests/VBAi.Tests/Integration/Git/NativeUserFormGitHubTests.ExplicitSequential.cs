@@ -1,3 +1,4 @@
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -5,7 +6,6 @@ using System.Linq;
 using System.Runtime.ExceptionServices;
 using System.Threading;
 using System.Windows.Forms;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace VBAi.Tests.Integration
 {
@@ -34,10 +34,14 @@ namespace VBAi.Tests.Integration
             string output = Path.Combine(root, "explicit-sequential-" + Guid.NewGuid().ToString("N"));
             Directory.CreateDirectory(output);
             string branch = "qualification-userform-" + DateTime.UtcNow.ToString("yyyyMMddHHmmss") + "-" + Guid.NewGuid().ToString("N").Substring(0, 8);
-            var report = new Dictionary<string, object> {
-                ["Stage"] = "preflight", ["Branch"] = branch, ["Remote"] = remote,
+            var report = new Dictionary<string, object>
+            {
+                ["Stage"] = "preflight",
+                ["Branch"] = branch,
+                ["Remote"] = remote,
                 ["AssemblyMvid"] = typeof(VbeSession).Module.ModuleVersionId.ToString("D"),
-                ["PublishedMain"] = false, ["ProductionMacroExecuted"] = false,
+                ["PublishedMain"] = false,
+                ["ProductionMacroExecuted"] = false,
                 ["Scope"] = "Sequential explicit fresh owned Excel; production capture, exact synthetic GitHub transfer, guarded import/backup, helper save/reopen and normal exit. No embedded Git UI claim.",
                 ["StartedUtc"] = DateTime.UtcNow.ToString("o")
             };
@@ -64,14 +68,16 @@ namespace VBAi.Tests.Integration
                         IDictionary<string, object> sourceLayout = null;
                         string savedTarget = Path.Combine(output, "saved-reopened.xlsm");
                         report["Stage"] = "source-native-capture"; WriteReport(output, report);
-                        SequentialHost(source => {
+                        SequentialHost(source =>
+                        {
                             report["SourcePid"] = source.ProcessId;
                             report["SourceFixtureRoot"] = source.Root;
                             string sourcePath = source.File("explicit-userform-source.xlsm");
                             if (UserFormQualificationFonts.Enabled) source.PrepareGitLayout(form, "LabelButton", sourcePath, persistedBaseline: true);
                             else source.PrepareGitForm(form, "Synthetic remote form", "USERFORM_" + Guid.NewGuid().ToString("N"), sourcePath);
                             File.Copy(sourcePath, Path.Combine(output, "source-before-import.xlsm"));
-                            source.WithGitProject(sourcePath, project => {
+                            source.WithGitProject(sourcePath, project =>
+                            {
                                 captured = project.Capture();
                                 Assert.IsTrue(captured.Manifest.Components.Single(item => item.Name == form).HasResources);
                                 Assert.IsTrue(captured.SameAs(project.Capture()), "Unchanged source revision must be stable before transport.");
@@ -109,7 +115,8 @@ namespace VBAi.Tests.Integration
                         Assert.IsTrue(captured.SameAs(fetched));
                         SaveSnapshot(output, "fetched", fetched); report["RemoteFiles"] = Describe(fetched);
                         report["Stage"] = "target-native-import"; WriteReport(output, report);
-                        SequentialHost(target => {
+                        SequentialHost(target =>
+                        {
                             report["TargetPid"] = target.ProcessId;
                             report["TargetFixtureRoot"] = target.Root;
                             Assert.AreNotEqual(report["SourceFixtureRoot"], target.Root, "Distinct owned bootstrap identities are required, independently of PID reuse.");
@@ -124,7 +131,8 @@ namespace VBAi.Tests.Integration
                             }
                             else target.PrepareGitForm(form, "Existing target sentinel", "SENTINEL", targetPath);
                             File.Copy(targetPath, Path.Combine(output, "target-before-import.xlsm"));
-                            target.WithGitProject(targetPath, project => {
+                            target.WithGitProject(targetPath, project =>
+                            {
                                 int ownerThread = Thread.CurrentThread.ManagedThreadId;
                                 var before = project.Capture(); SaveSnapshot(output, "target-backup", before);
                                 Assert.IsFalse(captured.SameAs(before), "The target must be a distinct native sentinel before remote import.");
@@ -152,7 +160,8 @@ namespace VBAi.Tests.Integration
                             target.SaveAndReopenGitLayout(targetPath);
                             AssertExactNativeForm(sourceView, target.ReadGitForm(form));
                             AssertExactNativeForm(sourceLayout, target.ReadGitLayout(form, "LabelButton"));
-                            target.WithGitProject(targetPath, project => {
+                            target.WithGitProject(targetPath, project =>
+                            {
                                 var reopened = project.Capture(); Assert.IsTrue(reopened.SameAs(captured));
                                 SaveSnapshot(output, "reopened", reopened);
                             });
@@ -164,7 +173,8 @@ namespace VBAi.Tests.Integration
                         string savedHash = ExcelVbeFixture.EmbeddedRawHash(savedTarget);
                         report["SavedWorkbookSha256"] = savedHash;
                         report["Stage"] = "fresh-process-read-only-reopen"; WriteReport(output, report);
-                        SequentialHost(fresh => {
+                        SequentialHost(fresh =>
+                        {
                             Assert.AreNotEqual(report["TargetFixtureRoot"], fresh.Root, "A distinct fresh bootstrap is required after target exit.");
                             report["FreshPid"] = fresh.ProcessId;
                             report["FreshFixtureRoot"] = fresh.Root;
@@ -181,7 +191,8 @@ namespace VBAi.Tests.Integration
                                 Assert.AreEqual(savedHash, ExcelVbeFixture.EmbeddedRawHash(savedTarget));
                                 AssertExactNativeForm(sourceView, fresh.ReadGitForm(form));
                                 AssertExactNativeForm(sourceLayout, fresh.ReadGitLayout(form, "LabelButton"));
-                                fresh.WithGitProject(savedTarget, project => {
+                                fresh.WithGitProject(savedTarget, project =>
+                                {
                                     var reopened = project.Capture();
                                     SaveSnapshot(output, "fresh-process-reopened", reopened);
                                     UserFormQualificationFonts.RequireSnapshot(reopened,
@@ -293,7 +304,8 @@ namespace VBAi.Tests.Integration
         {
             var errors = new List<Exception>();
             if (primary != null) errors.Add(primary);
-            try { persist(); } catch (Exception recording) { errors.Add(recording); }
+            try { persist(); }
+            catch (Exception recording) { errors.Add(recording); }
             finally { try { restoreContext(); } catch (Exception contextFailure) { errors.Add(contextFailure); } }
             if (errors.Count > 1) throw new AggregateException("Scenario, final evidence and context restoration errors remain separate.", errors);
             if (errors.Count == 1) ExceptionDispatchInfo.Capture(errors[0]).Throw();

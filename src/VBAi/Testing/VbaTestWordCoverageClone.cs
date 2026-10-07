@@ -1,6 +1,6 @@
 using System;
-using System.IO;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Security.Cryptography;
 
@@ -53,7 +53,8 @@ namespace VBAi
                 if (VbaTestWordValuesHost.SamePath(copyPath, sourcePath) || File.Exists(copyPath))
                     throw new InvalidOperationException("The owned Word copy path is already occupied.");
                 if (Directory.Exists(folder)) throw new InvalidOperationException("Word coverage requires a new unique output directory.");
-                InspectDocuments(source.Application, false, document => {
+                InspectDocuments(source.Application, false, document =>
+                {
                     if (VbaTestWordValuesHost.SamePath((string)((dynamic)document).FullName, copyPath))
                         throw new InvalidOperationException("The Word copy path already belongs to an open document.");
                 });
@@ -114,7 +115,8 @@ namespace VBAi
                         try
                         {
                             if (!Host.SameIdentity(application.Application, current.Application)) throw new InvalidOperationException("The Word application identity changed during close.");
-                            InspectDocuments(application.Application, true, document => {
+                            InspectDocuments(application.Application, true, document =>
+                            {
                                 if (Host.SameIdentity(document, current.Document))
                                     throw new InvalidOperationException("The owned Word copy remains open; close may have been cancelled.");
                             });

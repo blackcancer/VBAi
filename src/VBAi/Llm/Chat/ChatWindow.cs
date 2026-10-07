@@ -1,9 +1,8 @@
-﻿using System;
-using System.Linq;
+using System;
 using System.Collections.Generic;
-using System.ComponentModel;
 using System.Drawing;
 using System.IO;
+using System.Linq;
 using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
@@ -88,9 +87,11 @@ namespace VBAi
             try { settings = ReadSettings(); }
             catch (Exception ex) { LoadLog.Write("LLM settings load failed: " + ex.Message); settings = new LlmSettings(); }
             RefreshApprovalSelection();
-            tools = new LlmVbeTools(session, this, settings);
-            tools.ValidateScope = EnsureCurrentScope;
-            tools.ValidateCachedScope = () => { EnsureCachedScope(); };
+            tools = new LlmVbeTools(session, this, settings)
+            {
+                ValidateScope = EnsureCurrentScope,
+                ValidateCachedScope = () => { EnsureCachedScope(); }
+            };
             tools.FormCut += change => AddEntry(new ChatEntry { Speaker = "Designer", FormCut = change });
             tools.CodeEdited += change =>
             {
@@ -105,8 +106,7 @@ namespace VBAi
             providerPicker.SelectedIndexChanged += (sender, args) =>
             {
                 if (loadingSession || busy) return;
-                var provider = providerPicker.SelectedItem as LlmProvider;
-                if (provider == null) return;
+                if (!(providerPicker.SelectedItem is LlmProvider provider)) return;
                 settings.ProviderName = provider.Name;
                 try { WriteSettings(settings); } catch (Exception ex) { LoadLog.Write("Provider selection save failed: " + ex.Message); }
                 if (scopePicker.SelectedItem == null)
@@ -122,9 +122,7 @@ namespace VBAi
             refreshModels.Click += async (sender, args) => await LoadModelsAsync();
             modelPicker.SelectedIndexChanged += (sender, args) =>
             {
-                var selectedModel = modelPicker.SelectedItem as LlmModelOption;
-                var selectedProvider = providerPicker.SelectedItem as LlmProvider;
-                if (selectedModel == null || selectedProvider == null) return;
+                if (!(modelPicker.SelectedItem is LlmModelOption selectedModel) || !(providerPicker.SelectedItem is LlmProvider selectedProvider)) return;
                 if (currentSession != null)
                 {
                     if (!restoringSelection && currentSession.Model != selectedModel.Id) currentSession.Effort = null;
@@ -139,10 +137,7 @@ namespace VBAi
             };
             effortPicker.SelectedIndexChanged += (sender, args) =>
             {
-                var selectedProvider = providerPicker.SelectedItem as LlmProvider;
-                var selectedModel = modelPicker.SelectedItem as LlmModelOption;
-                var selectedEffort = effortPicker.SelectedItem as LlmEffortOption;
-                if (selectedProvider == null || selectedModel == null || selectedEffort == null) return;
+                if (!(providerPicker.SelectedItem is LlmProvider selectedProvider) || !(modelPicker.SelectedItem is LlmModelOption selectedModel) || !(effortPicker.SelectedItem is LlmEffortOption selectedEffort)) return;
                 if (currentSession != null) currentSession.Effort = selectedEffort.Id;
                 RefreshModelSummary();
                 if (!restoringSelection) settings.SetReasoningEffort(selectedProvider, selectedModel.Id, selectedEffort.Id);
@@ -192,14 +187,13 @@ namespace VBAi
         private async Task LoadModelsAsync()
         {
             int version = ++catalogueVersion;
-            var provider = providerPicker.SelectedItem as LlmProvider;
             modelPicker.Items.Clear();
             modelPicker.Enabled = false;
             effortPicker.Items.Clear();
             effortPicker.Enabled = false;
             refreshModels.Enabled = false;
             RefreshModelSummary();
-            if (provider == null || !provider.Available) { refreshModels.Enabled = true; return; }
+            if (!(providerPicker.SelectedItem is LlmProvider provider) || !provider.Available) { refreshModels.Enabled = true; return; }
             try
             {
                 LlmModelOption[] models;
@@ -344,8 +338,10 @@ namespace VBAi
             client.ThreadReady += id =>
             {
                 if (currentSession == ownerSession && currentSession != null && !IsDisposed)
-                { currentSession.CodexThreadId = id; currentSession.CodexThreadHome = ProviderSessionStorage.CodexHome;
-                    currentSession.CodexDeveloperInstructionsHash = client.AppliedInstructionsHash; SaveCurrentSession(); }
+                {
+                    currentSession.CodexThreadId = id; currentSession.CodexThreadHome = ProviderSessionStorage.CodexHome;
+                    currentSession.CodexDeveloperInstructionsHash = client.AppliedInstructionsHash; SaveCurrentSession();
+                }
             };
             return client;
         }
@@ -408,8 +404,7 @@ namespace VBAi
             string question = (queued?.Text ?? prompt.Text).Trim();
             if (!busy && question.Length == 0 && currentSession?.BudgetPaused == true) { await ResumeBudgetAsync(); return; }
             if (busy || question.Length == 0) return;
-            var selectedModel = modelPicker.SelectedItem as LlmModelOption;
-            if (selectedModel == null) { SetStatus(UiText.Get("Choose an available model before sending.")); return; }
+            if (!(modelPicker.SelectedItem is LlmModelOption selectedModel)) { SetStatus(UiText.Get("Choose an available model before sending.")); return; }
             string requestText;
             ChatAttachment[] attachments;
             try
@@ -419,8 +414,7 @@ namespace VBAi
                 foreach (var attachment in attachments) requestText += "\n\n<context label=\"" + attachment.Label + "\">\n" + attachment.Text + "\n</context>";
             }
             catch (Exception ex) { SetStatus(UiText.Get("Context: ") + ex.Message); return; }
-            var scope = scopePicker.SelectedItem as MacroScope;
-            if (scope != null) requestText = UiText.Get("VBA project for this conversation: ") + scope.Label +
+            if (scopePicker.SelectedItem is MacroScope scope) requestText = UiText.Get("VBA project for this conversation: ") + scope.Label +
                 UiText.Get("\nProject identifier to use in tools: ") + scope.Project + "\n\n" + requestText;
             string attachedMemory = queued != null ? queued.Memory : (attachMemory.Checked == true ? queuedDraftMemory ?? projectMemory : null);
             if (!string.IsNullOrWhiteSpace(attachedMemory))
@@ -474,8 +468,8 @@ namespace VBAi
                         codex = CreateCodexClient();
                     SetStatus(UiText.Get("Codex — working"));
                     string answer = await (CodexTurnOverride != null
-                        ? CodexTurnOverride(requestText, selectedModel.Id, selectedEffort == null ? null : selectedEffort.Id)
-                        : codex.TurnAsync(requestText, selectedModel.Id, selectedEffort == null ? null : selectedEffort.Id));
+                        ? CodexTurnOverride(requestText, selectedModel.Id, selectedEffort?.Id)
+                        : codex.TurnAsync(requestText, selectedModel.Id, selectedEffort?.Id));
                     if (stopRequested) throw new OperationCanceledException();
                     CompleteAssistantResponse(answer);
                     currentSession.ResumeContext = null;

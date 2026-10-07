@@ -10,7 +10,8 @@ namespace VBAi.Tests.Unit
         [TestMethod]
         public void LabelsDefaultsAndEffortsPreserveModelIdentity()
         {
-            foreach (var label in new[] { null, "", " ", "id" }) {
+            foreach (var label in new[] { null, "", " ", "id" })
+            {
                 var model = new LlmModelOption("id", label);
                 Assert.AreEqual("id", model.Id);
                 Assert.AreEqual("id", model.Label);

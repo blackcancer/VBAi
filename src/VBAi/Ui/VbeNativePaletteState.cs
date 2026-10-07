@@ -58,7 +58,10 @@ namespace VBAi
             int[] background = { 1, 2, 1, 15, 5, 1, 1, 1, 1, 15 };
             return original.Select((row, index) => new ColorRow
             {
-                Name = row.Name, Foreground = foreground[index], Background = background[index], Indicator = row.Indicator
+                Name = row.Name,
+                Foreground = foreground[index],
+                Background = background[index],
+                Indicator = row.Indicator
             }).ToArray();
         }
 
@@ -115,7 +118,8 @@ namespace VBAi
             ValidateRows(current);
             if (!Original.Select(row => row.Name).SequenceEqual(current.Select(row => row.Name)))
                 throw new InvalidOperationException("The native color categories changed; the saved palette cannot be reconciled.");
-            var baseline = current.Select((row, index) => new ColorRow {
+            var baseline = current.Select((row, index) => new ColorRow
+            {
                 Name = row.Name,
                 Foreground = row.Foreground == Applied[index].Foreground ? Original[index].Foreground : row.Foreground,
                 Background = row.Background == Applied[index].Background ? Original[index].Background : row.Background,
@@ -155,8 +159,7 @@ namespace VBAi
         {
             if (!File.Exists(path)) return null;
             if (new FileInfo(path).Length > 32768) throw new InvalidDataException("The saved native palette is too large.");
-            var state = new JavaScriptSerializer().Deserialize<VbeNativePaletteState>(File.ReadAllText(path));
-            if (state == null) throw new InvalidDataException("The saved native palette is empty.");
+            var state = new JavaScriptSerializer().Deserialize<VbeNativePaletteState>(File.ReadAllText(path)) ?? throw new InvalidDataException("The saved native palette is empty.");
             state.Validate(version);
             return state;
         }

@@ -1,9 +1,9 @@
+using Microsoft.VisualStudio.TestTools.UnitTesting;
+using Microsoft.Win32;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
-using Microsoft.Win32;
 
 namespace VBAi.Tests.Integration
 {
@@ -37,48 +37,63 @@ namespace VBAi.Tests.Integration
             string installedPath = RequireInstalledScripting();
             IDictionary<string, object> baseline = null, expected = null;
             OfficeAdapterOnlyProjectQualification.Run(host, remove ? "References.RemoveScripting" :
-                fromFile ? "References.AddScriptingFile" : "References.AddScriptingGuid", fixture => {
-                fixture.RecordAdapterStage("InstalledReferencePreflight", new { Guid = ScriptingGuid, Major = 1, Minor = 0,
-                    RegisteredWin64Path = installedPath, LibraryObjectInstantiationAllowed = false });
-                var original = fixture.Data("list_references");
-                Assert.IsFalse(References(original).Any(IsScripting), "Fresh disposable baseline must not already contain Scripting.");
-                if (remove) AddScripting(fixture, original);
-            }, fixture => {
-                baseline = fixture.Data("list_references");
-                if (remove)
+                fromFile ? "References.AddScriptingFile" : "References.AddScriptingGuid", fixture =>
                 {
-                    var added = References(baseline).Single(IsScripting);
-                    Assert.AreEqual(false, added["BuiltIn"]); Assert.AreEqual(false, added["IsBroken"]);
-                    fixture.RecordAdapterStage("OptionalReferenceRemovalStarting", added);
-                    fixture.Data("remove_reference", "Guid", ScriptingGuid, "Major", 1, "Minor", 0,
-                        "ExpectedReferencesVersion", baseline["Version"]);
-                }
-                else AddScripting(fixture, baseline, fromFile ? installedPath : null);
-                expected = fixture.Data("list_references");
-                CollectionAssert.AreEqual(UnrelatedIdentities(baseline), UnrelatedIdentities(expected), "All unrelated native reference identities/order must remain unchanged.");
-                Assert.AreNotEqual(baseline["Version"], expected["Version"]);
-                fixture.RecordAdapterStage("ReferenceExpectedReadback", new { Removed = remove, Baseline = baseline, Expected = expected });
-            }, fixture => {
-                var actual = fixture.Data("list_references");
-                OfficeAdapterOnlyProjectQualification.AssertReferencesEqual(expected, actual);
-                Assert.AreEqual(remove ? 0 : 1, References(actual).Count(IsScripting), "Optional reference presence differs after persistence.");
-                if (!remove)
+                    fixture.RecordAdapterStage("InstalledReferencePreflight", new
+                    {
+                        Guid = ScriptingGuid,
+                        Major = 1,
+                        Minor = 0,
+                        RegisteredWin64Path = installedPath,
+                        LibraryObjectInstantiationAllowed = false
+                    });
+                    var original = fixture.Data("list_references");
+                    Assert.IsFalse(References(original).Any(IsScripting), "Fresh disposable baseline must not already contain Scripting.");
+                    if (remove) AddScripting(fixture, original);
+                }, fixture =>
                 {
-                    var scripting = References(actual).Single(IsScripting);
-                    Assert.AreEqual(false, scripting["BuiltIn"]); Assert.AreEqual(false, scripting["IsBroken"]);
-                    Assert.AreEqual("Scripting", scripting["Name"]);
-                    Assert.IsTrue(File.Exists(Convert.ToString(scripting["FullPath"])), "The referenced installed library must still exist.");
-                    Assert.IsTrue(string.Equals(installedPath, Path.GetFullPath(Convert.ToString(scripting["FullPath"])),
-                        StringComparison.OrdinalIgnoreCase), "The live reference must identify the exact registered installed library.");
-                }
-            }, TestContext, serializedPublisherSeed);
+                    baseline = fixture.Data("list_references");
+                    if (remove)
+                    {
+                        var added = References(baseline).Single(IsScripting);
+                        Assert.AreEqual(false, added["BuiltIn"]); Assert.AreEqual(false, added["IsBroken"]);
+                        fixture.RecordAdapterStage("OptionalReferenceRemovalStarting", added);
+                        fixture.Data("remove_reference", "Guid", ScriptingGuid, "Major", 1, "Minor", 0,
+                            "ExpectedReferencesVersion", baseline["Version"]);
+                    }
+                    else AddScripting(fixture, baseline, fromFile ? installedPath : null);
+                    expected = fixture.Data("list_references");
+                    CollectionAssert.AreEqual(UnrelatedIdentities(baseline), UnrelatedIdentities(expected), "All unrelated native reference identities/order must remain unchanged.");
+                    Assert.AreNotEqual(baseline["Version"], expected["Version"]);
+                    fixture.RecordAdapterStage("ReferenceExpectedReadback", new { Removed = remove, Baseline = baseline, Expected = expected });
+                }, fixture =>
+                {
+                    var actual = fixture.Data("list_references");
+                    OfficeAdapterOnlyProjectQualification.AssertReferencesEqual(expected, actual);
+                    Assert.AreEqual(remove ? 0 : 1, References(actual).Count(IsScripting), "Optional reference presence differs after persistence.");
+                    if (!remove)
+                    {
+                        var scripting = References(actual).Single(IsScripting);
+                        Assert.AreEqual(false, scripting["BuiltIn"]); Assert.AreEqual(false, scripting["IsBroken"]);
+                        Assert.AreEqual("Scripting", scripting["Name"]);
+                        Assert.IsTrue(File.Exists(Convert.ToString(scripting["FullPath"])), "The referenced installed library must still exist.");
+                        Assert.IsTrue(string.Equals(installedPath, Path.GetFullPath(Convert.ToString(scripting["FullPath"])),
+                            StringComparison.OrdinalIgnoreCase), "The live reference must identify the exact registered installed library.");
+                    }
+                }, TestContext, serializedPublisherSeed);
         }
 
         private static void AddScripting(OfficeVbeFixture fixture, IDictionary<string, object> before, string installedPath = null)
         {
             Assert.IsFalse(References(before).Any(IsScripting));
-            fixture.RecordAdapterStage("OptionalReferenceAdditionStarting", new { Guid = ScriptingGuid, Major = 1, Minor = 0,
-                NativeCommand = installedPath == null ? "add_reference_guid" : "add_reference_file", InstalledPath = installedPath });
+            fixture.RecordAdapterStage("OptionalReferenceAdditionStarting", new
+            {
+                Guid = ScriptingGuid,
+                Major = 1,
+                Minor = 0,
+                NativeCommand = installedPath == null ? "add_reference_guid" : "add_reference_file",
+                InstalledPath = installedPath
+            });
             if (installedPath == null)
                 fixture.Data("add_reference_guid", "Guid", ScriptingGuid, "Major", 1, "Minor", 0, "ExpectedReferencesVersion", before["Version"]);
             else
