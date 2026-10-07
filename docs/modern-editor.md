@@ -43,6 +43,13 @@ project. Resolve host prompts and check the reported result. This native route i
 not the same as the `save_host_document` application adapter. See
 [compatibility](compatibility.md) for adapter-specific results.
 
+After that single command, the editor observes the original project's file and
+saved flags on its owning STA for up to five seconds between reads. It does not
+repeat Save. Each observation rechecks project/component identity, mode,
+protection, source, document revision and path before retiring a recovery draft.
+A previously unsaved project may acquire one Save As path; an existing path must
+remain unchanged. An unknown host status remains explicitly unverified and keeps
+the draft. This observation interval does not interrupt a blocked native call.
 For important work, save in the host and reopen a disposable copy to verify
 persistence. Git source commits are another separate operation.
 
@@ -107,6 +114,11 @@ belongs to the host document. Ambiguous attribute associations, unsupported
 third-party controls and unverifiable Designer properties block replacement.
 Original `.frx` resources are retained where required.
 
+Synchronized edits keep their private recovery draft until the editor verifies
+both the native file/project save and the host document's saved state. A failed,
+cancelled or unverified save retains the draft; edits received during Save are
+not retired with the older saved revision. Saving directly in the host may leave
+an older recovery file, which is not offered when it matches the reopened code.
 Drafts are DPAPI-protected under `%LOCALAPPDATA%\VBAi\EditorDrafts`. Cleanup can remove
 older versions after 30 days but retains the latest draft per module and files
 belonging to a live process; reparse directories are ignored. An unsaved project's

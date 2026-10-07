@@ -1990,7 +1990,7 @@ Git Credential Manager でサインインします。コミットの作成者情
     <value>失敗</value>
   </data>
   <data name="Cancelled" xml:space="preserve">
-    <value>中断</value>
+    <value>キャンセル済み</value>
   </data>
   <data name="Declined" xml:space="preserve">
     <value>拒否</value>
@@ -2807,5 +2807,68 @@ Git Credential Manager でサインインします。コミットの作成者情
   </data>
   <data name="Back to conversation" xml:space="preserve">
     <value>会話に戻る</value>
+  </data>
+  <data name="Reading VBA code" xml:space="preserve">
+    <value>VBA コードを読み取り中</value>
+  </data>
+  <data name="Updating VBA code" xml:space="preserve">
+    <value>VBA コードを変更中</value>
+  </data>
+  <data name="Working in the editor" xml:space="preserve">
+    <value>エディターで作業中</value>
+  </data>
+  <data name="Inspecting VBA project" xml:space="preserve">
+    <value>VBA プロジェクトを確認中</value>
+  </data>
+  <data name="Using a tool" xml:space="preserve">
+    <value>ツールを使用中</value>
+  </data>
+  <data name="Searching the web" xml:space="preserve">
+    <value>ウェブを検索中</value>
+  </data>
+  <data name="Viewing an image" xml:space="preserve">
+    <value>画像を表示中</value>
+  </data>
+  <data name="Running a command" xml:space="preserve">
+    <value>コマンドを実行中</value>
+  </data>
+  <data name="Coordinating agents" xml:space="preserve">
+    <value>エージェントを調整中</value>
+  </data>
+  <data name="Appearance recovery failed" xml:space="preserve">
+    <value>外観の復元に失敗しました</value>
+  </data>
+  <data name="The host does not expose the native Compile command. Compilation was not verified." xml:space="preserve">
+    <value>ホストはネイティブのコンパイル コマンドを提供していません。コンパイルは検証されていません。</value>
+  </data>
+  <data name="The native Compile command is disabled. The project may already be compiled or the host may restrict it; compilation was not verified." xml:space="preserve">
+    <value>ネイティブのコンパイル コマンドは無効です。プロジェクトが既にコンパイル済みか、ホストがアクセスを制限している可能性があります。コンパイルは検証されていません。</value>
+  </data>
+  <data name="The LLM endpoint must use HTTPS (or HTTP on localhost), without embedded credentials or a fragment." xml:space="preserve">
+    <value>LLM エンドポイントは HTTPS（または localhost の HTTP）を使用し、認証情報やフラグメントを含めないでください。</value>
+  </data>
+  <data name="The configured chat endpoint has no recognized model catalog path." xml:space="preserve">
+    <value>設定されたチャット エンドポイントには、認識できるモデル カタログのパスがありません。</value>
+  </data>
+  <data name="The request does not belong to its model connection." xml:space="preserve">
+    <value>このリクエストは対象のモデル接続に属していません。</value>
+  </data>
+  <data name="Tool calling" xml:space="preserve">
+    <value>ツール呼び出し</value>
+  </data>
+  <data name="Vision" xml:space="preserve">
+    <value>画像認識</value>
+  </data>
+  <data name="Supported" xml:space="preserve">
+    <value>対応</value>
+  </data>
+  <data name="Not supported" xml:space="preserve">
+    <value>非対応</value>
+  </data>
+  <data name="Text only" xml:space="preserve">
+    <value>テキストのみ</value>
+  </data>
+  <data name="This model does not support tool calling." xml:space="preserve">
+    <value>このモデルはツール呼び出しに対応していません。</value>
   </data>
 </root>

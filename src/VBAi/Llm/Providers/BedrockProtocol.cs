@@ -72,32 +72,45 @@ namespace VBAi
 
         /// <summary>Convertit le message Converse de Bedrock en message assistant au format interne.</summary>
         /// <param name="root">Réponse Bedrock décodée.</param>
+        /// <param name="activity">Optional observer for public reasoning text only.</param>
+        /// <param name="activityPrefix">Local request identity for stable reasoning section IDs.</param>
         /// <returns>Message assistant avec le contenu Bedrock d’origine conservé et les appels d’outils normalisés.</returns>
-        public static IDictionary<string, object> Response(IDictionary<string, object> root)
+        public static IDictionary<string, object> Response(IDictionary<string, object> root, Action<CodexAgentActivity> activity = null, string activityPrefix = null)
         {
-            string stop = ClaudeProtocol.Text(root, "stopReason");
-            if (stop != "end_turn" && stop != "tool_use" && stop != "stop_sequence")
-                throw new InvalidOperationException(UiText.Get("Incomplete or filtered Bedrock response: ") + stop);
-            var message = ClaudeProtocol.Object(ClaudeProtocol.Object(root["output"])["message"]);
-            var blocks = ClaudeProtocol.Array(message, "content"); var text = new List<string>(); var calls = new List<object>();
-            foreach (var raw in blocks)
+            var reasoning = new ProviderReasoning(activity, activityPrefix);
+            try
             {
-                var block = ClaudeProtocol.Object(raw);
-                if (block.ContainsKey("text")) text.Add(ClaudeProtocol.Text(block, "text"));
-                if (block.ContainsKey("toolUse"))
+                reasoning.BedrockResponse(root);
+                string stop = ClaudeProtocol.Text(root, "stopReason");
+                if (stop != "end_turn" && stop != "tool_use" && stop != "stop_sequence")
+                    throw new InvalidOperationException(UiText.Get("Incomplete or filtered Bedrock response: ") + stop);
+                var message = ClaudeProtocol.Object(ClaudeProtocol.Object(root["output"])["message"]);
+                var blocks = ClaudeProtocol.Array(message, "content"); var text = new List<string>(); var calls = new List<object>();
+                foreach (var raw in blocks)
                 {
-                    var tool = ClaudeProtocol.Object(block["toolUse"]);
-                    calls.Add(new Dictionary<string, object>
+                    var block = ClaudeProtocol.Object(raw);
+                    if (block.ContainsKey("text")) text.Add(ClaudeProtocol.Text(block, "text"));
+                    if (block.ContainsKey("toolUse"))
                     {
-                        ["id"] = tool["toolUseId"],
-                        ["type"] = "function",
-                        ["function"] = new Dictionary<string, object> { ["name"] = tool["name"], ["arguments"] = new JavaScriptSerializer().Serialize(tool["input"]) }
-                    });
+                        var tool = ClaudeProtocol.Object(block["toolUse"]);
+                        calls.Add(new Dictionary<string, object>
+                        {
+                            ["id"] = tool["toolUseId"],
+                            ["type"] = "function",
+                            ["function"] = new Dictionary<string, object> { ["name"] = tool["name"], ["arguments"] = new JavaScriptSerializer().Serialize(tool["input"]) }
+                        });
+                    }
                 }
+                var result = new Dictionary<string, object> { ["role"] = "assistant", ["content"] = string.Join("\n", text), ["_bedrock_content"] = blocks };
+                if (calls.Count > 0) result["tool_calls"] = calls.ToArray();
+                reasoning.Finish("completed");
+                return result;
             }
-            var result = new Dictionary<string, object> { ["role"] = "assistant", ["content"] = string.Join("\n", text), ["_bedrock_content"] = blocks };
-            if (calls.Count > 0) result["tool_calls"] = calls.ToArray();
-            return result;
+            catch
+            {
+                reasoning.Finish("failed");
+                throw;
+            }
         }
     }
 }

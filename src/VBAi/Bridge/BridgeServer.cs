@@ -138,7 +138,9 @@ namespace VBAi
         internal Func<Request, bool, Task<object>> ProjectGeneralNative;
 
         /// <summary>Demande la sauvegarde de signature au document hôte.</summary>
-        internal Func<string, object> PersistSignature;
+        internal Func<string, Action, object> PersistSignature;
+        /// <summary>Captures owner-thread project identity/content before deferred certificate selection.</summary>
+        internal Func<string, Action> CaptureSignaturePersistence;
 
         /// <summary>Crée le canal local avec la sécurité de l’utilisateur courant.</summary>
         internal Func<PipeSecurity, NamedPipeServerStream> OpenPipe;
@@ -180,7 +182,8 @@ namespace VBAi
             SaveHostDocumentNative = request => session.SaveHostDocumentAsync(request);
             SolidWorksMacroNative = request => session.SolidWorksMacroAsync(request);
             ProjectGeneralNative = (request, write) => session.ProjectGeneralAsync(request, write);
-            PersistSignature = project => session.PersistProjectSignature(project);
+            PersistSignature = (project, authorize) => session.PersistProjectSignature(project, authorize);
+            CaptureSignaturePersistence = project => session.CaptureSignaturePersistence(project);
             pipeName = "VBAi." + processId;
             OpenPipe = security => new NamedPipeServerStream(pipeName, PipeDirection.InOut, 1,
                 PipeTransmissionMode.Byte, PipeOptions.Asynchronous, 4096, 4096, security);
@@ -224,12 +227,15 @@ namespace VBAi
                                 else if (request != null && request.Command == OwnerGitQualificationManifest.CommandName)
                                 {
                                     OwnerGitQualificationManifest.RequireExactRequest(line);
+                                    var trace = VbeInspectionTrace.Begin();
+                                    trace?.Record(VbeInspectionTrace.Phase.Enqueue);
                                     var completion = new TaskCompletionSource<Response>(TaskCreationOptions.RunContinuationsAsynchronously);
                                     dispatcher.BeginInvoke(new Action(async () =>
                                     {
                                         try
                                         {
-                                            var result = await VbeUiTask.Run(() => ownerGitQualification.ExecuteAsync(request, line));
+                                            var result = await OwnerGitQualification.RunOnOwnerAsync(
+                                                () => ownerGitQualification.ExecuteAsync(request, line), trace);
                                             completion.TrySetResult(Response.Success(result));
                                         }
                                         catch (Exception ex) { completion.TrySetResult(Response.Failure(ex.ToString())); }
@@ -374,29 +380,25 @@ namespace VBAi
                                     Native.EnsureNoCompileDialog();
                                     Response compileResponse = null;
                                     var completed = new ManualResetEventSlim(false);
-                                    // Keep the event alive if a timeout occurs while the UI
-                                    // callback is still pending; its finally block will signal it.
+                                    var admission = new VbeCompilationAdmission();
+                                    // Retain the event until its callback returns, including cancellation.
                                     dispatcher.BeginInvoke(new Action(() =>
                                     {
-                                        try { compileResponse = Execute(request); }
+                                        try
+                                        {
+                                            if (admission.TryBegin()) compileResponse = Execute(request);
+                                        }
                                         catch (Exception ex) { compileResponse = Response.Failure(ex.Message); }
                                         finally { completed.Set(); }
                                     }));
-                                    string diagnostic = Native.AwaitCompileDialog(completed);
+                                    string diagnostic;
+                                    try { diagnostic = Native.AwaitCompileDialog(completed); }
+                                    finally { admission.CancelPending(); }
                                     if (compileResponse == null)
                                         response = Response.Failure("The native Compile command did not return a result.");
                                     else if (!compileResponse.Ok)
                                         response = compileResponse;
-                                    else response = Response.Success(new
-                                    {
-                                        request.Project,
-                                        Compiled = diagnostic == null,
-                                        Diagnostic = diagnostic,
-                                        Verification = diagnostic == null ? "NoNativeDiagnosticObserved" : "NativeDiagnosticCaptured",
-                                        Command = compileResponse.Data,
-                                        NextRead = diagnostic == null ? null :
-                                            "Read debug_state and the active code pane in a separate request to locate the failed statement."
-                                    });
+                                    else response = Response.Success(VbeCompilationResult.Create(request.Project, compileResponse.Data, diagnostic));
                                 }
                                 else if (request != null && request.Command == "add_watch")
                                 {
@@ -444,7 +446,12 @@ namespace VBAi
                                 else if (request != null && request.Command == "sign_project")
                                 {
                                     Native.EnsureNoSignatureDialog();
-                                    response = (Response)dispatcher.Invoke(new Func<Response>(() => Execute(request)));
+                                    Action revalidatePersistence = null;
+                                    response = (Response)dispatcher.Invoke(new Func<Response>(() =>
+                                    {
+                                        revalidatePersistence = CaptureSignaturePersistence(request.Project);
+                                        return Execute(request);
+                                    }));
                                     if (response.Ok)
                                     {
                                         string certificateName = (string)((dynamic)response.Data).CertificateName;
@@ -453,25 +460,30 @@ namespace VBAi
                                             request.CertificateThumbprint, certificateName, unsignedVerified);
                                         object persistence = null;
                                         string persistenceError = null;
-                                        for (int attempt = 0; attempt < 12; attempt++)
+                                        bool persistenceAuthorized = false;
+                                        try
                                         {
-                                            try
+                                            persistence = dispatcher.Invoke(new Func<object>(() =>
                                             {
-                                                persistence = dispatcher.Invoke(new Func<object>(() =>
-                                                    PersistSignature(request.Project)));
-                                                persistenceError = null;
-                                                break;
-                                            }
-                                            catch (Exception ex)
-                                            {
-                                                persistenceError = ex.Message;
-                                                if (attempt == 11 || ex.ToString().IndexOf("0x800AC472",
-                                                    StringComparison.OrdinalIgnoreCase) < 0) break;
-                                                System.Threading.Thread.Sleep(250);
-                                            }
+                                                // A failed observation may follow a completed Save. Never replay it.
+                                                return PersistSignature(request.Project, () =>
+                                                {
+                                                    revalidatePersistence();
+                                                    persistenceAuthorized = true;
+                                                });
+                                            }));
                                         }
-                                        Response status = (Response)dispatcher.Invoke(new Func<Response>(() =>
-                                            Execute(new Request { Command = "project_signature_status", Project = request.Project })));
+                                        catch (Exception ex) { persistenceError = ex.Message; }
+                                        Response status;
+                                        try
+                                        {
+                                            status = !persistenceAuthorized ? Response.Failure(persistenceError) : (Response)dispatcher.Invoke(new Func<Response>(() =>
+                                            {
+                                                revalidatePersistence();
+                                                return Execute(new Request { Command = "project_signature_status", Project = request.Project });
+                                            }));
+                                        }
+                                        catch (Exception ex) { status = Response.Failure(ex.Message); }
                                         response = Response.Success(new
                                         {
                                             Signature = signed,

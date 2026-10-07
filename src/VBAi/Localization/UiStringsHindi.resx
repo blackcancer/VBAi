@@ -2808,4 +2808,67 @@ Git Credential Manager से साइन-इन करें; कमिट ल
   <data name="Back to conversation" xml:space="preserve">
     <value>संवाद में लौटें</value>
   </data>
+  <data name="Reading VBA code" xml:space="preserve">
+    <value>VBA कोड पढ़ा जा रहा है</value>
+  </data>
+  <data name="Updating VBA code" xml:space="preserve">
+    <value>VBA कोड बदला जा रहा है</value>
+  </data>
+  <data name="Working in the editor" xml:space="preserve">
+    <value>संपादक में काम किया जा रहा है</value>
+  </data>
+  <data name="Inspecting VBA project" xml:space="preserve">
+    <value>VBA प्रोजेक्ट की जाँच की जा रही है</value>
+  </data>
+  <data name="Using a tool" xml:space="preserve">
+    <value>टूल का उपयोग किया जा रहा है</value>
+  </data>
+  <data name="Searching the web" xml:space="preserve">
+    <value>वेब पर खोज की जा रही है</value>
+  </data>
+  <data name="Viewing an image" xml:space="preserve">
+    <value>छवि देखी जा रही है</value>
+  </data>
+  <data name="Running a command" xml:space="preserve">
+    <value>कमांड चलाया जा रहा है</value>
+  </data>
+  <data name="Coordinating agents" xml:space="preserve">
+    <value>एजेंटों का समन्वय किया जा रहा है</value>
+  </data>
+  <data name="Appearance recovery failed" xml:space="preserve">
+    <value>दिखावट पुनर्स्थापित नहीं हुई</value>
+  </data>
+  <data name="The host does not expose the native Compile command. Compilation was not verified." xml:space="preserve">
+    <value>होस्ट मूल संकलन कमांड उपलब्ध नहीं कराता है। संकलन सत्यापित नहीं किया गया है।</value>
+  </data>
+  <data name="The native Compile command is disabled. The project may already be compiled or the host may restrict it; compilation was not verified." xml:space="preserve">
+    <value>मूल संकलन कमांड अक्षम है। प्रोजेक्ट पहले से संकलित हो सकता है या होस्ट पहुँच सीमित कर सकता है; संकलन सत्यापित नहीं किया गया है।</value>
+  </data>
+  <data name="The LLM endpoint must use HTTPS (or HTTP on localhost), without embedded credentials or a fragment." xml:space="preserve">
+    <value>LLM एंडपॉइंट को HTTPS (या localhost पर HTTP) का उपयोग करना चाहिए, बिना अंतर्निहित क्रेडेंशियल या फ़्रैगमेंट के।</value>
+  </data>
+  <data name="The configured chat endpoint has no recognized model catalog path." xml:space="preserve">
+    <value>कॉन्फ़िगर किए गए चैट एंडपॉइंट का कोई पहचाना गया मॉडल कैटलॉग पथ नहीं है।</value>
+  </data>
+  <data name="The request does not belong to its model connection." xml:space="preserve">
+    <value>यह अनुरोध अपने मॉडल कनेक्शन से संबंधित नहीं है।</value>
+  </data>
+  <data name="Tool calling" xml:space="preserve">
+    <value>टूल कॉलिंग</value>
+  </data>
+  <data name="Vision" xml:space="preserve">
+    <value>दृष्टि</value>
+  </data>
+  <data name="Supported" xml:space="preserve">
+    <value>समर्थित</value>
+  </data>
+  <data name="Not supported" xml:space="preserve">
+    <value>समर्थित नहीं</value>
+  </data>
+  <data name="Text only" xml:space="preserve">
+    <value>केवल पाठ</value>
+  </data>
+  <data name="This model does not support tool calling." xml:space="preserve">
+    <value>यह मॉडल टूल कॉलिंग का समर्थन नहीं करता है।</value>
+  </data>
 </root>

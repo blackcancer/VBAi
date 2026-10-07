@@ -26,6 +26,44 @@ namespace VBAi.Tests.Integration
             return result;
         }
 
+        /// <summary>Reads each declared container font only after a settled terminal refusal, without assignments or designer focus.</summary>
+        internal IDictionary<string, object> ReadGitLayoutContainerFonts(string form, string layout, FormStreamPadding.FormFontBinding[] bindings)
+        {
+            var result = new SortedDictionary<string, object>(StringComparer.Ordinal);
+            WithGitLayoutDesigner(form, (component, designer) =>
+            {
+                ReadGitFont(designer, "Form.Font", result);
+                if (layout != "FrameMultiPage") return;
+                object controls = null, frame = null, nested = null, multi = null, pages = null;
+                try
+                {
+                    controls = ((dynamic)designer).Controls;
+                    frame = ((dynamic)controls).Item("QualificationExtra");
+                    ReadGitFont(frame, "Frame.Font", result);
+                    nested = ((dynamic)frame).Controls;
+                    multi = ((dynamic)nested).Item("QualificationMultiPage");
+                    ReadGitFont(multi, "MultiPage.Font", result);
+                    pages = ((dynamic)multi).Pages;
+                    int count = Convert.ToInt32(((dynamic)pages).Count);
+                    if (count < 0 || count > 128) throw new InvalidOperationException("The declared page font observation exceeds its bound.");
+                    for (int i = 0; i < count; i++)
+                    {
+                        object page = null;
+                        try
+                        {
+                            page = ((dynamic)pages).Item(i);
+                            string name = Convert.ToString(((dynamic)page).Name);
+                            if (bindings != null && bindings.Any(binding => binding.OwnerPath.EndsWith("/Pages/" + name, StringComparison.Ordinal)))
+                                ReadGitFont(page, "Page." + i + ".Font", result);
+                        }
+                        finally { Release(page); }
+                    }
+                }
+                finally { Release(pages); Release(multi); Release(nested); Release(frame); Release(controls); }
+            });
+            return result;
+        }
+
         /// <summary>Restores observed font values once on the owned synthetic form after a terminal import diagnostic.</summary>
         internal void RestoreGitLayoutFonts(string form, string layout, IDictionary<string, object> expected, bool assignOwner = false)
         {

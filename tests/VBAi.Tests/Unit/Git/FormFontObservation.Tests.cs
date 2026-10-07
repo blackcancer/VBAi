@@ -8,7 +8,7 @@ using System.Security.Cryptography;
 namespace VBAi.Tests.Unit
 {
     [TestClass, TestCategory("Unit")]
-    public sealed class FormFontObservationTests
+    public sealed partial class FormFontObservationTests
     {
         [TestMethod]
         public void NoManifestReturnsBeforeProjectOrNativeAccess()

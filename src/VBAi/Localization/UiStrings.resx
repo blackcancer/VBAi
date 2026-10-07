@@ -2374,4 +2374,67 @@ Sign in through Git Credential Manager; commit identity is configured in Git.</v
   </data>
   <data name="Open the local VBAi user guide in the interface language" xml:space="preserve"><value>Open the local VBAi user guide in the interface language</value></data>
   <data name="Local help is not included in this build. Place the VBAi help files in the Help folder beside the application." xml:space="preserve"><value>Local help is not included in this build. Place the VBAi help files in the Help folder beside the application.</value></data>
+  <data name="Reading VBA code" xml:space="preserve">
+    <value>Reading VBA code</value>
+  </data>
+  <data name="Updating VBA code" xml:space="preserve">
+    <value>Updating VBA code</value>
+  </data>
+  <data name="Working in the editor" xml:space="preserve">
+    <value>Working in the editor</value>
+  </data>
+  <data name="Inspecting VBA project" xml:space="preserve">
+    <value>Inspecting VBA project</value>
+  </data>
+  <data name="Using a tool" xml:space="preserve">
+    <value>Using a tool</value>
+  </data>
+  <data name="Searching the web" xml:space="preserve">
+    <value>Searching the web</value>
+  </data>
+  <data name="Viewing an image" xml:space="preserve">
+    <value>Viewing an image</value>
+  </data>
+  <data name="Running a command" xml:space="preserve">
+    <value>Running a command</value>
+  </data>
+  <data name="Coordinating agents" xml:space="preserve">
+    <value>Coordinating agents</value>
+  </data>
+  <data name="Appearance recovery failed" xml:space="preserve">
+    <value>Appearance recovery failed</value>
+  </data>
+  <data name="The host does not expose the native Compile command. Compilation was not verified." xml:space="preserve">
+    <value>The host does not expose the native Compile command. Compilation was not verified.</value>
+  </data>
+  <data name="The native Compile command is disabled. The project may already be compiled or the host may restrict it; compilation was not verified." xml:space="preserve">
+    <value>The native Compile command is disabled. The project may already be compiled or the host may restrict it; compilation was not verified.</value>
+  </data>
+  <data name="The LLM endpoint must use HTTPS (or HTTP on localhost), without embedded credentials or a fragment." xml:space="preserve">
+    <value>The LLM endpoint must use HTTPS (or HTTP on localhost), without embedded credentials or a fragment.</value>
+  </data>
+  <data name="The configured chat endpoint has no recognized model catalog path." xml:space="preserve">
+    <value>The configured chat endpoint has no recognized model catalog path.</value>
+  </data>
+  <data name="The request does not belong to its model connection." xml:space="preserve">
+    <value>The request does not belong to its model connection.</value>
+  </data>
+  <data name="Tool calling" xml:space="preserve">
+    <value>Tool calling</value>
+  </data>
+  <data name="Vision" xml:space="preserve">
+    <value>Vision</value>
+  </data>
+  <data name="Supported" xml:space="preserve">
+    <value>Supported</value>
+  </data>
+  <data name="Not supported" xml:space="preserve">
+    <value>Not supported</value>
+  </data>
+  <data name="Text only" xml:space="preserve">
+    <value>Text only</value>
+  </data>
+  <data name="This model does not support tool calling." xml:space="preserve">
+    <value>This model does not support tool calling.</value>
+  </data>
 </root>

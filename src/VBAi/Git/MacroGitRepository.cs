@@ -80,6 +80,27 @@ namespace VBAi
             if (attributes.HasValue) RequireRegularRecoveryMarker(attributes.Value);
         }
 
+        /// <summary>Reads the exact bounded regular recovery marker for an opaque concurrency identity.</summary>
+        internal string RecoveryMarkerIdentity()
+        {
+            var attributes = ObserveRecoveryMarker();
+            if (!attributes.HasValue) return null;
+            RequireRegularRecoveryMarker(attributes.Value);
+            using (var stream = new FileStream(RecoveryFile, FileMode.Open, FileAccess.Read, FileShare.Read))
+            {
+                if (stream.Length > 256) throw new IOException("The recovery marker exceeds its supported identity bound.");
+                var bytes = new byte[checked((int)stream.Length)];
+                int offset = 0;
+                while (offset < bytes.Length)
+                {
+                    int count = stream.Read(bytes, offset, bytes.Length - offset);
+                    if (count == 0) throw new EndOfStreamException("The recovery marker changed while its identity was read.");
+                    offset += count;
+                }
+                return Convert.ToBase64String(bytes);
+            }
+        }
+
         /// <summary>Rejects invalid marker types before any native import or marker deletion.</summary>
         /// <param name="attributes">Attributes read from the recovery marker before rollback or deletion.</param>
         private static void RequireRegularRecoveryMarker(FileAttributes attributes)
@@ -277,9 +298,11 @@ namespace VBAi
 
         /// <summary>Enregistre l’état obtenu après import dans une référence privée.</summary>
         /// <param name="state">État VBA à enregistrer après import.</param>
-        internal void RecordImportedState(VbaGitSnapshot state)
+        internal string RecordImportedState(VbaGitSnapshot state)
         {
-            SetRef(AfterImport, Commit(state, null, UiText.Get("VBA state after import")));
+            string commit = Commit(state, null, UiText.Get("VBA state after import"));
+            SetRef(AfterImport, commit);
+            return commit;
         }
 
         /// <summary>Supprime le marqueur après une récupération terminée.</summary>

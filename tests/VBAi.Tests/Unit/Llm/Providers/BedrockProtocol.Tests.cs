@@ -117,3 +117,31 @@ namespace VBAi.Tests.Unit
         }
     }
 }
+
+namespace VBAi.Tests.Unit
+{
+    using Microsoft.VisualStudio.TestTools.UnitTesting;
+    using System;
+    using System.Collections.Generic;
+    using System.Linq;
+    using VBAi;
+
+    public sealed partial class ProviderProtocolTests
+    {
+        [TestMethod]
+        public void BedrockJsonPublishesPublicTextAndPreservesOpaqueContinuation()
+        {
+            var seen = new List<CodexAgentActivity>();
+            var response = Obj(new { stopReason = "end_turn", output = new { message = new { content = new object[] {
+                new { reasoningContent = new { reasoningText = new { text = "Public summary", signature = "SECRET_SIGNATURE" } } },
+                new { reasoningContent = new { redactedContent = "SECRET_REDACTED" } }, new { text = "Answer" } } } } });
+            var result = BedrockProtocol.Response(response, seen.Add, "req");
+            Assert.AreEqual("Answer", result["content"]); Assert.AreEqual(3, ((object[])result["_bedrock_content"]).Length);
+            Assert.AreEqual("Public summary", seen.Last().Detail); Assert.AreEqual("completed", seen.Last().Status);
+            Assert.IsFalse(seen.Any(a => a.Detail.Contains("SECRET")));
+            seen.Clear(); response["stopReason"] = "max_tokens";
+            Assert.ThrowsException<InvalidOperationException>(() => BedrockProtocol.Response(response, seen.Add));
+            Assert.AreEqual("failed", seen.Last().Status); Assert.IsFalse(seen.Any(a => a.Status == "completed"));
+        }
+    }
+}

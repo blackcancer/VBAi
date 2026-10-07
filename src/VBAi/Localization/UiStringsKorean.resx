@@ -1990,7 +1990,7 @@ Git Credential Manager로 로그인하며 커밋 작성자 정보는 Git에서 �
     <value>실패</value>
   </data>
   <data name="Cancelled" xml:space="preserve">
-    <value>중단</value>
+    <value>취소됨</value>
   </data>
   <data name="Declined" xml:space="preserve">
     <value>거부</value>
@@ -2807,5 +2807,68 @@ Git Credential Manager로 로그인하며 커밋 작성자 정보는 Git에서 �
   </data>
   <data name="Back to conversation" xml:space="preserve">
     <value>대화로 돌아가기</value>
+  </data>
+  <data name="Reading VBA code" xml:space="preserve">
+    <value>VBA 코드 읽는 중</value>
+  </data>
+  <data name="Updating VBA code" xml:space="preserve">
+    <value>VBA 코드 수정 중</value>
+  </data>
+  <data name="Working in the editor" xml:space="preserve">
+    <value>편집기에서 작업 중</value>
+  </data>
+  <data name="Inspecting VBA project" xml:space="preserve">
+    <value>VBA 프로젝트 검사 중</value>
+  </data>
+  <data name="Using a tool" xml:space="preserve">
+    <value>도구 사용 중</value>
+  </data>
+  <data name="Searching the web" xml:space="preserve">
+    <value>웹 검색 중</value>
+  </data>
+  <data name="Viewing an image" xml:space="preserve">
+    <value>이미지 보는 중</value>
+  </data>
+  <data name="Running a command" xml:space="preserve">
+    <value>명령 실행 중</value>
+  </data>
+  <data name="Coordinating agents" xml:space="preserve">
+    <value>에이전트 조정 중</value>
+  </data>
+  <data name="Appearance recovery failed" xml:space="preserve">
+    <value>모양 복원 실패</value>
+  </data>
+  <data name="The host does not expose the native Compile command. Compilation was not verified." xml:space="preserve">
+    <value>호스트에서 기본 컴파일 명령을 제공하지 않습니다. 컴파일이 확인되지 않았습니다.</value>
+  </data>
+  <data name="The native Compile command is disabled. The project may already be compiled or the host may restrict it; compilation was not verified." xml:space="preserve">
+    <value>기본 컴파일 명령이 비활성화되어 있습니다. 프로젝트가 이미 컴파일되었거나 호스트에서 접근을 제한했을 수 있습니다. 컴파일이 확인되지 않았습니다.</value>
+  </data>
+  <data name="The LLM endpoint must use HTTPS (or HTTP on localhost), without embedded credentials or a fragment." xml:space="preserve">
+    <value>LLM 엔드포인트는 HTTPS(또는 localhost의 HTTP)를 사용해야 하며 인증 정보나 프래그먼트를 포함해서는 안 됩니다.</value>
+  </data>
+  <data name="The configured chat endpoint has no recognized model catalog path." xml:space="preserve">
+    <value>설정된 채팅 엔드포인트에 인식할 수 있는 모델 카탈로그 경로가 없습니다.</value>
+  </data>
+  <data name="The request does not belong to its model connection." xml:space="preserve">
+    <value>요청이 해당 모델 연결에 속하지 않습니다.</value>
+  </data>
+  <data name="Tool calling" xml:space="preserve">
+    <value>도구 호출</value>
+  </data>
+  <data name="Vision" xml:space="preserve">
+    <value>이미지 인식</value>
+  </data>
+  <data name="Supported" xml:space="preserve">
+    <value>지원됨</value>
+  </data>
+  <data name="Not supported" xml:space="preserve">
+    <value>지원되지 않음</value>
+  </data>
+  <data name="Text only" xml:space="preserve">
+    <value>텍스트만</value>
+  </data>
+  <data name="This model does not support tool calling." xml:space="preserve">
+    <value>이 모델은 도구 호출을 지원하지 않습니다.</value>
   </data>
 </root>

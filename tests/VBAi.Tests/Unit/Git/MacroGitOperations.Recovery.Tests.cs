@@ -1,6 +1,8 @@
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.IO;
+using System.Diagnostics;
+using System.Linq;
 using System.Threading.Tasks;
 
 namespace VBAi.Tests.Unit
@@ -164,8 +166,16 @@ namespace VBAi.Tests.Unit
                 var before = f.Project.Capture(); var files = f.Snapshot("2");
                 var target = new VbaGitSnapshot(new VbaGitManifest { Components = files.Manifest.Components, References = "different references" }, files.Files);
                 Exception cleanup = phase == "access" ? (Exception)new UnauthorizedAccessException("synthetic completion access failure") :
-                    new IOException("synthetic completion failure"); int observations = 0, deletions = 0;
-                f.Repository.RecoveryAttributes = path => { if (++observations == 2 && (phase == "metadata" || phase == "access")) throw cleanup; return File.GetAttributes(path); };
+                    new IOException("synthetic completion failure"); int completionObservations = 0, deletions = 0;
+                f.Repository.RecoveryAttributes = path =>
+                {
+                    if (InsideMarkerCompletion())
+                    {
+                        completionObservations++;
+                        if (phase == "metadata" || phase == "access") throw cleanup;
+                    }
+                    return File.GetAttributes(path);
+                };
                 f.Repository.DeleteRecoveryMarker = path =>
                 {
                     deletions++;
@@ -177,6 +187,7 @@ namespace VBAi.Tests.Unit
                 Assert.AreEqual(UiText.Get("VBA references differ. Align them in Tools > References before importing."), error.InnerExceptions[0].Message);
                 if (phase != "concurrent") Assert.AreSame(cleanup, error.InnerExceptions[1]);
                 else StringAssert.Contains(error.InnerExceptions[1].Message, "single deletion request");
+                Assert.AreEqual(phase == "concurrent" ? 2 : 1, completionObservations);
                 Assert.AreEqual(phase == "metadata" || phase == "access" ? 0 : 1, deletions); Assert.AreEqual(0, f.Host.VBComponents.ImportAttempts);
                 Assert.IsTrue(f.Project.Capture().SameAs(before)); Assert.IsTrue(f.Repository.Read(f.Repository.Resolve(MacroGitRepository.Backup)).SameAs(before));
                 Assert.IsNull(f.Repository.Resolve(MacroGitRepository.AfterImport));
@@ -193,7 +204,7 @@ namespace VBAi.Tests.Unit
                 string checkpoint = f.Repository.Checkpoint(f.Snapshot("2"), "exact primary failure target").Id;
                 var primary = new IOException("synthetic exact pre-mutation project observation failure");
                 var completion = new UnauthorizedAccessException("synthetic exact completion failure");
-                int projectObservations = 0, markerObservations = 0, deletions = 0;
+                int projectObservations = 0, completionObservations = 0, deletions = 0;
                 var project = new VbaGitProject(() => f.Host, f.Host.FileName, value =>
                 {
                     if (++projectObservations == 3) throw primary; // Execute, import preflight, then Apply preflight.
@@ -201,7 +212,11 @@ namespace VBAi.Tests.Unit
                 });
                 f.Repository.RecoveryAttributes = path =>
                 {
-                    if (++markerObservations == 3 && !deletionFails) throw completion;
+                    if (InsideMarkerCompletion())
+                    {
+                        completionObservations++;
+                        if (!deletionFails) throw completion;
+                    }
                     return File.GetAttributes(path);
                 };
                 f.Repository.DeleteRecoveryMarker = path => { deletions++; throw completion; };
@@ -211,7 +226,7 @@ namespace VBAi.Tests.Unit
                     Assert.AreEqual(2, error.InnerExceptions.Count); Assert.AreSame(primary, error.InnerExceptions[0]);
                     Assert.AreSame(completion, error.InnerExceptions[1]);
                 }
-                Assert.AreEqual(3, projectObservations); Assert.AreEqual(3, markerObservations); Assert.AreEqual(deletionFails ? 1 : 0, deletions);
+                Assert.AreEqual(3, projectObservations); Assert.AreEqual(1, completionObservations); Assert.AreEqual(deletionFails ? 1 : 0, deletions);
                 Assert.AreEqual(0, f.Host.VBComponents.ImportAttempts); Assert.IsTrue(f.Project.Capture().SameAs(before));
                 Assert.AreEqual(initial, f.Repository.Resolve(f.Repository.Head)); Assert.AreEqual(initial, f.Repository.Resolve(MacroGitRepository.Baseline));
                 Assert.IsTrue(f.Repository.Read(f.Repository.Resolve(MacroGitRepository.Backup)).SameAs(before));
@@ -224,7 +239,7 @@ namespace VBAi.Tests.Unit
         {
             using (var f = new Fixture())
             {
-                var before = f.Project.Capture(); var target = f.Snapshot("2"); int observations = 0, deletions = 0;
+                var before = f.Project.Capture(); var target = f.Snapshot("2"); int completionObservations = 0, authorityObservations = 0, deletions = 0;
                 var captureFailure = new IOException("synthetic post-import observation failure");
                 var project = new VbaGitProject(() => f.Host, f.Host.FileName, value =>
                 {
@@ -236,10 +251,16 @@ namespace VBAi.Tests.Unit
                 using (var operations = new MacroGitOperations(project, f.Repository))
                 {
                     string checkpoint = f.Repository.Checkpoint(target, "uncertain native target").Id;
-                    // Ready observes definite absence, then PrepareRecovery independently observes it again.
                     f.Repository.RecoveryAttributes = path =>
                     {
-                        if (++observations > 2) throw new IOException("Unexpected completion metadata read after uncertain native mutation");
+                        // Authority observations are permitted after a returned or
+                        // uncertain import; marker completion is never permitted.
+                        if (InsideMarkerCompletion())
+                        {
+                            completionObservations++;
+                            throw new IOException("Unexpected completion metadata read after uncertain native mutation");
+                        }
+                        if (InsideRecoveryIdentity()) authorityObservations++;
                         return File.GetAttributes(path);
                     };
                     var error = ObserveOperationFailure(() => operations.ExecuteAsync("checkpoint_restore", name: checkpoint)).GetAwaiter().GetResult();
@@ -249,7 +270,8 @@ namespace VBAi.Tests.Unit
                         Assert.AreEqual("Simulated failure after applied import", aggregate.InnerExceptions[0].Message); Assert.AreSame(captureFailure, aggregate.InnerExceptions[1]);
                     }
                     else Assert.AreEqual("Simulated failure after applied import", error.Message);
-                    Assert.AreEqual(2, observations, "Only Ready/Prepare may inspect metadata; no completion after the mutation boundary was entered.");
+                    Assert.AreEqual(0, completionObservations, "An uncertain native mutation must never request marker completion.");
+                    Assert.AreEqual(readbackFails ? 3 : 4, authorityObservations, "Freeze/admission guards and only the readable resulting state may validate recovery authority.");
                     Assert.AreEqual(0, deletions); Assert.AreEqual(1, f.Host.VBComponents.ImportAttempts); Assert.IsTrue(File.Exists(f.Repository.RecoveryFile));
                     Assert.IsTrue(f.Repository.Read(f.Repository.Resolve(MacroGitRepository.Backup)).SameAs(before));
                     if (readbackFails) Assert.IsNull(f.Repository.Resolve(MacroGitRepository.AfterImport));
@@ -264,11 +286,14 @@ namespace VBAi.Tests.Unit
             using (var f = new Fixture())
             {
                 var before = f.Project.Capture(); var target = f.Snapshot("2"); var original = new IOException("synthetic successful-apply completion failure");
-                int observations = 0, deletions = 0;
+                int completionObservations = 0, deletions = 0;
                 f.Repository.RecoveryAttributes = path =>
                 {
-                    observations++;
-                    if ((phase == "metadata" && observations == 2) || (phase == "postobserve" && observations == 3)) throw original;
+                    if (InsideMarkerCompletion())
+                    {
+                        completionObservations++;
+                        if (phase == "metadata" || (phase == "postobserve" && deletions == 1)) throw original;
+                    }
                     return File.GetAttributes(path);
                 };
                 f.Repository.DeleteRecoveryMarker = path =>
@@ -278,6 +303,7 @@ namespace VBAi.Tests.Unit
                 };
                 var failure = ObserveSourceFailure(() => f.Import(target, before));
                 if (phase != "concurrent") Assert.AreSame(original, failure); else StringAssert.Contains(failure.Message, "single deletion request");
+                Assert.AreEqual(phase == "postobserve" || phase == "concurrent" ? 2 : 1, completionObservations);
                 Assert.AreEqual(phase == "metadata" ? 0 : 1, deletions); Assert.AreEqual(1, f.Host.VBComponents.ImportAttempts);
                 Assert.IsTrue(f.Project.Capture().SameAs(target)); Assert.IsTrue(f.Repository.Read(f.Repository.Resolve(MacroGitRepository.Backup)).SameAs(before));
                 Assert.IsTrue(f.Repository.Read(f.Repository.Resolve(MacroGitRepository.AfterImport)).SameAs(target));
@@ -285,6 +311,15 @@ namespace VBAi.Tests.Unit
                 else Assert.AreEqual(phase != "postobserve", File.Exists(f.Repository.RecoveryFile));
             }
         }
+
+        /// <summary>Injects metadata faults at the actual completion boundary, independently of preceding authority reads.</summary>
+        private static bool InsideMarkerCompletion() => InsideRecoveryMethod("CompleteRecovery");
+
+        /// <summary>Counts authority checks separately from marker deletion and definite-absence observations.</summary>
+        private static bool InsideRecoveryIdentity() => InsideRecoveryMethod("RecoveryMarkerIdentity");
+
+        private static bool InsideRecoveryMethod(string name) => new StackTrace().GetFrames().Any(frame =>
+            frame.GetMethod().DeclaringType == typeof(MacroGitRepository) && frame.GetMethod().Name == name);
 
         private static string SeedRecoveryRefs(Fixture fixture)
         {

@@ -2808,4 +2808,67 @@
   <data name="Back to conversation" xml:space="preserve">
     <value>العودة إلى المحادثة</value>
   </data>
+  <data name="Reading VBA code" xml:space="preserve">
+    <value>قراءة كود VBA</value>
+  </data>
+  <data name="Updating VBA code" xml:space="preserve">
+    <value>تعديل كود VBA</value>
+  </data>
+  <data name="Working in the editor" xml:space="preserve">
+    <value>العمل في المحرر</value>
+  </data>
+  <data name="Inspecting VBA project" xml:space="preserve">
+    <value>فحص مشروع VBA</value>
+  </data>
+  <data name="Using a tool" xml:space="preserve">
+    <value>استخدام أداة</value>
+  </data>
+  <data name="Searching the web" xml:space="preserve">
+    <value>البحث على الويب</value>
+  </data>
+  <data name="Viewing an image" xml:space="preserve">
+    <value>عرض صورة</value>
+  </data>
+  <data name="Running a command" xml:space="preserve">
+    <value>تنفيذ أمر</value>
+  </data>
+  <data name="Coordinating agents" xml:space="preserve">
+    <value>تنسيق الوكلاء</value>
+  </data>
+  <data name="Appearance recovery failed" xml:space="preserve">
+    <value>فشل استعادة المظهر</value>
+  </data>
+  <data name="The host does not expose the native Compile command. Compilation was not verified." xml:space="preserve">
+    <value>لا يتيح التطبيق المضيف أمر الترجمة الأصلي. لم يتم التحقق من الترجمة.</value>
+  </data>
+  <data name="The native Compile command is disabled. The project may already be compiled or the host may restrict it; compilation was not verified." xml:space="preserve">
+    <value>أمر الترجمة الأصلي معطل. قد يكون المشروع مترجماً بالفعل أو قد يقيد التطبيق المضيف الوصول؛ لم يتم التحقق من الترجمة.</value>
+  </data>
+  <data name="The LLM endpoint must use HTTPS (or HTTP on localhost), without embedded credentials or a fragment." xml:space="preserve">
+    <value>يجب أن تستخدم نقطة نهاية LLM بروتوكول HTTPS (أو HTTP على localhost)، دون بيانات اعتماد مضمنة أو جزء في العنوان.</value>
+  </data>
+  <data name="The configured chat endpoint has no recognized model catalog path." xml:space="preserve">
+    <value>لا تحتوي نقطة نهاية المحادثة المُكوَّنة على مسار معروف لفهرس النماذج.</value>
+  </data>
+  <data name="The request does not belong to its model connection." xml:space="preserve">
+    <value>الطلب لا ينتمي إلى اتصال النموذج الخاص به.</value>
+  </data>
+  <data name="Tool calling" xml:space="preserve">
+    <value>استدعاء الأدوات</value>
+  </data>
+  <data name="Vision" xml:space="preserve">
+    <value>الرؤية</value>
+  </data>
+  <data name="Supported" xml:space="preserve">
+    <value>مدعوم</value>
+  </data>
+  <data name="Not supported" xml:space="preserve">
+    <value>غير مدعوم</value>
+  </data>
+  <data name="Text only" xml:space="preserve">
+    <value>نص فقط</value>
+  </data>
+  <data name="This model does not support tool calling." xml:space="preserve">
+    <value>هذا النموذج لا يدعم استدعاء الأدوات.</value>
+  </data>
 </root>

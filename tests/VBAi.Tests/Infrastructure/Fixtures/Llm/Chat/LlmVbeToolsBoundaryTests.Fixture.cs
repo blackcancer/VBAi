@@ -32,7 +32,8 @@ namespace VBAi.Tests.Unit
                 Tools.ImmediateOwnerDispatch = action => action();
                 VbeToolBoundaryFixture.Configure(Tools.Native);
                 Tools.Execute = VbeToolBoundaryFixture.Execute;
-                Tools.PersistSignature = p => new VBAi.Tests.Infrastructure.VbeToolPersistence { Saved = true };
+                Tools.CaptureSignaturePersistence = p => () => { };
+                Tools.PersistSignature = (p, authorize) => { authorize(); return new VBAi.Tests.Infrastructure.VbeToolPersistence { Saved = true }; };
             }
         }
         // Each tool retains its real orchestrator; only its host/native boundaries are replaced.
@@ -55,7 +56,7 @@ namespace VBAi.Tests.Unit
             internal Func<Request, Response> Execute { set { fixture.Tools.Execute = value; } }
             /// <summary>Définit le délégué de persistance de signature.</summary>
             /// <value>Fonction appelée pour persister une signature.</value>
-            internal Func<string, object> PersistSignature { set { fixture.Tools.PersistSignature = value; } }
+            internal Func<string, Action, object> PersistSignature { set { fixture.Tools.PersistSignature = value; } }
             /// <summary>Définit le nom du fournisseur courant.</summary>
             /// <value>Nom du fournisseur défini sur l’orchestrateur.</value>
             internal string CurrentProviderName { set { fixture.Tools.CurrentProviderName = value; } }
@@ -139,10 +140,16 @@ namespace VBAi.Tests.Unit
         {
             /// <summary>Nombre de callbacks soumis au contexte.</summary>
             private int posts;
+            private Action pending;
+            internal void ReleasePending() { pending?.Invoke(); pending = null; }
             /// <summary>Ignore le premier callback puis programme les suivants sur le pool de threads.</summary>
             /// <param name="callback">Délégué à exécuter.</param>
             /// <param name="state">État transmis au callback.</param>
-            public override void Post(SendOrPostCallback callback, object state) { if (Interlocked.Increment(ref posts) > 1) ThreadPool.QueueUserWorkItem(_ => callback(state)); }
+            public override void Post(SendOrPostCallback callback, object state)
+            {
+                if (Interlocked.Increment(ref posts) == 1) pending = () => callback(state);
+                else ThreadPool.QueueUserWorkItem(_ => callback(state));
+            }
         }
     }
 }

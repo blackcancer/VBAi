@@ -1990,7 +1990,7 @@
     <value>Ошибка</value>
   </data>
   <data name="Cancelled" xml:space="preserve">
-    <value>Прервано</value>
+    <value>Отменено</value>
   </data>
   <data name="Declined" xml:space="preserve">
     <value>Отклонено</value>
@@ -2807,5 +2807,68 @@
   </data>
   <data name="Back to conversation" xml:space="preserve">
     <value>Вернуться в разговор</value>
+  </data>
+  <data name="Reading VBA code" xml:space="preserve">
+    <value>Чтение кода VBA</value>
+  </data>
+  <data name="Updating VBA code" xml:space="preserve">
+    <value>Изменение кода VBA</value>
+  </data>
+  <data name="Working in the editor" xml:space="preserve">
+    <value>Работа в редакторе</value>
+  </data>
+  <data name="Inspecting VBA project" xml:space="preserve">
+    <value>Проверка проекта VBA</value>
+  </data>
+  <data name="Using a tool" xml:space="preserve">
+    <value>Использование инструмента</value>
+  </data>
+  <data name="Searching the web" xml:space="preserve">
+    <value>Поиск в интернете</value>
+  </data>
+  <data name="Viewing an image" xml:space="preserve">
+    <value>Просмотр изображения</value>
+  </data>
+  <data name="Running a command" xml:space="preserve">
+    <value>Выполнение команды</value>
+  </data>
+  <data name="Coordinating agents" xml:space="preserve">
+    <value>Координация агентов</value>
+  </data>
+  <data name="Appearance recovery failed" xml:space="preserve">
+    <value>Не удалось восстановить оформление</value>
+  </data>
+  <data name="The host does not expose the native Compile command. Compilation was not verified." xml:space="preserve">
+    <value>Приложение не предоставляет встроенную команду компиляции. Компиляция не проверена.</value>
+  </data>
+  <data name="The native Compile command is disabled. The project may already be compiled or the host may restrict it; compilation was not verified." xml:space="preserve">
+    <value>Встроенная команда компиляции отключена. Возможно, проект уже скомпилирован или приложение ограничивает доступ; компиляция не проверена.</value>
+  </data>
+  <data name="The LLM endpoint must use HTTPS (or HTTP on localhost), without embedded credentials or a fragment." xml:space="preserve">
+    <value>Адрес LLM должен использовать HTTPS (или HTTP на localhost), без встроенных учётных данных и фрагмента.</value>
+  </data>
+  <data name="The configured chat endpoint has no recognized model catalog path." xml:space="preserve">
+    <value>Настроенный адрес чата не содержит распознанного пути к каталогу моделей.</value>
+  </data>
+  <data name="The request does not belong to its model connection." xml:space="preserve">
+    <value>Запрос не относится к своему подключению модели.</value>
+  </data>
+  <data name="Tool calling" xml:space="preserve">
+    <value>Вызов инструментов</value>
+  </data>
+  <data name="Vision" xml:space="preserve">
+    <value>Распознавание изображений</value>
+  </data>
+  <data name="Supported" xml:space="preserve">
+    <value>Поддерживается</value>
+  </data>
+  <data name="Not supported" xml:space="preserve">
+    <value>Не поддерживается</value>
+  </data>
+  <data name="Text only" xml:space="preserve">
+    <value>Только текст</value>
+  </data>
+  <data name="This model does not support tool calling." xml:space="preserve">
+    <value>Эта модель не поддерживает вызов инструментов.</value>
   </data>
 </root>

@@ -819,12 +819,18 @@ namespace VBAi
             return Path.GetFullPath(path);
         }
 
-        /// <summary>Demande la persistance de la signature Excel du projet.</summary>
-        /// <param name="projectName">Nom du projet VBE ciblé.</param>
-        /// <returns>Résultat de la persistance de la signature Excel.</returns>
-        internal object PersistProjectSignature(string projectName)
+        /// <summary>Captures the owning-thread identity/content guard before deferred signing.</summary>
+        /// <param name="projectName">Original project selector.</param>
+        /// <returns>Guard to run immediately before native Save.</returns>
+        internal Action CaptureSignaturePersistence(string projectName)
         {
-            return components.PersistExcelSignature(projectName);
+            return components.CaptureSignaturePersistence(projectName);
+        }
+
+        /// <summary>Persists a signature once after final originating authority revalidation.</summary>
+        internal object PersistProjectSignature(string projectName, Action revalidateAuthorization = null)
+        {
+            return components.PersistExcelSignature(projectName, revalidateAuthorization);
         }
 
         /// <summary>Énumère les projets VBE et leurs noms de fichier accessibles.</summary>

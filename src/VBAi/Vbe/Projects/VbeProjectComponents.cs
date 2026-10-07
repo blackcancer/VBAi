@@ -480,9 +480,10 @@ namespace VBAi
 
         /// <summary>Enregistre le classeur associé à un projet signé et vérifie que la signature reste signalée par Excel.</summary>
         /// <param name="projectName">Nom du projet VBE.</param>
+        /// <param name="revalidateAuthorization">Checks the originating scope, project and policy immediately before the single native Save invocation.</param>
         /// <returns>Disponibilité, état de signature après sauvegarde et limites de vérification.</returns>
         /// <exception cref="InvalidOperationException">Le projet n’a pas de classeur enregistré correspondant, est en lecture seule ou perd son état signé.</exception>
-        public object PersistExcelSignature(string projectName)
+        public object PersistExcelSignature(string projectName, Action revalidateAuthorization = null)
         {
             if (!host.IsExcel)
                 return new
@@ -513,6 +514,7 @@ namespace VBAi
             int fileFormat = (int)match.FileFormat;
             if (!CanPreserveExcelVba(fileFormat))
                 throw new InvalidOperationException("Excel workbook format " + fileFormat + " cannot be verified to preserve VBA.");
+            revalidateAuthorization?.Invoke();
             match.Save();
             if (!(bool)match.Saved || !(bool)project.Saved)
                 throw new InvalidOperationException("Excel did not mark the signed workbook and VBA project as saved. Inspect the result; do not retry automatically.");

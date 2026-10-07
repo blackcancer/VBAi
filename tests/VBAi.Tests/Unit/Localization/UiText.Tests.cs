@@ -10,6 +10,49 @@ namespace VBAi.Tests.Unit
     public sealed partial class UiLocalizationTests
     {
         [TestMethod]
+        public void ModelCapabilityLabelsAndExplicitUnknownStatesExistInEveryCatalogue()
+        {
+            using (var scope = new VBAi.Tests.Infrastructure.LocalizationScope())
+                foreach (var language in UiLanguages.All)
+                {
+                    VBAi.Tests.Infrastructure.LocalizationScope.Set(language.CultureName);
+                    var catalogue = new System.Resources.ResourceManager("VBAi.Localization.UiStrings" + language.ResourceSuffix, typeof(UiText).Assembly);
+                    foreach (var key in new[] { "Tool calling", "Reasoning", "Vision", "Supported", "Not supported", "Unknown", "Text only", "This model does not support tool calling." })
+                    {
+                        string translated = catalogue.GetString(key, CultureInfo.InvariantCulture);
+                        Assert.IsFalse(string.IsNullOrWhiteSpace(translated), language.CultureName + " " + key);
+                        Assert.AreEqual(translated, UiText.Get(key));
+                    }
+                    Assert.AreNotEqual(UiText.Get("Supported"), UiText.Get("Not supported"));
+                    Assert.AreNotEqual(UiText.Get("Unknown"), UiText.Get("Not supported"));
+                }
+        }
+
+        [TestMethod]
+        public void ActivityCaptionsHaveTranslationsAndCancellationRemainsDistinctFromInterruption()
+        {
+            string[] keys = { "The LLM endpoint must use HTTPS (or HTTP on localhost), without embedded credentials or a fragment.",
+                "The configured chat endpoint has no recognized model catalog path.", "The request does not belong to its model connection.",
+                "Reading VBA code", "Updating VBA code", "Working in the editor", "Inspecting VBA project", "Using a tool", "Searching the web", "Viewing an image", "Running a command", "Coordinating agents", "Appearance recovery failed",
+                "The host does not expose the native Compile command. Compilation was not verified.",
+                "The native Compile command is disabled. The project may already be compiled or the host may restrict it; compilation was not verified." };
+            using (var scope = new VBAi.Tests.Infrastructure.LocalizationScope())
+                foreach (var language in UiLanguages.All)
+                {
+                    VBAi.Tests.Infrastructure.LocalizationScope.Set(language.CultureName);
+                    var catalogue = new System.Resources.ResourceManager("VBAi.Localization.UiStrings" + language.ResourceSuffix, typeof(UiText).Assembly);
+                    foreach (string key in keys)
+                    {
+                        string translated = catalogue.GetString(key, CultureInfo.InvariantCulture);
+                        Assert.IsFalse(string.IsNullOrWhiteSpace(translated), language.CultureName);
+                        Assert.AreEqual(translated, UiText.Get(key));
+                        if (language.CultureName != "en-US") Assert.AreNotEqual(key, translated, language.CultureName);
+                    }
+                    Assert.AreNotEqual(UiText.Get("Cancelled"), UiText.Get("Interrupted"), language.CultureName);
+                }
+        }
+
+        [TestMethod]
         public void ConversationDeletionHasLocalizedConfirmationAndPreservesItsTitlePlaceholder()
         {
             string[] keys = {

@@ -195,6 +195,7 @@ namespace VBAi
                                 });
                                 await AdmitImport(request);
                                 operations.ImportOwnerPreflight = () => modalSession.RequireImportOwner(request);
+                                operations.ImportOwnerReadback = () => modalSession.RequireImportOwner(request);
                             }
                         }
                         object result = await operations.ExecuteAsync(action, expectedState, name: name, text: text, choice: choice, path: path,

@@ -21,6 +21,9 @@ namespace VBAi
         /// <summary>Prevents reentrant measurement while text height or native scrollbar state changes.</summary>
         private bool resizingText;
 
+        /// <summary>Coalesces one UI remeasurement after native creation or hosting layout settles.</summary>
+        private bool textMeasurementQueued;
+
         /// <summary>Maps rendered character ranges to navigation, link, and code copy actions.</summary>
         internal readonly List<TextAction> actions = new List<TextAction>();
 
@@ -42,9 +45,12 @@ namespace VBAi
         public ChatTextContentView()
         {
             InitializeComponent(); UiText.Apply(this, components); UiTheme.Apply(this);
-            content.ContentsResized += (s, e) => { if (contentUpdateDepth == 0 && !resizingText) content.Height = content.TextLength == 0 ? 24 : Math.Max(24, Math.Min(1200, e.NewRectangle.Height + 8)); };
-            content.TextChanged += (s, e) => ResizeText();
-            content.HandleCreated += (s, e) => ResizeText();
+            // Native resize rectangles can retain a previous viewport height during disclosure/WPF layout.
+            // Measure the actual last rendered character through the guarded text measurement path.
+            content.ContentsResized += (s, e) => { ResizeText(); QueueTextMeasurement(); };
+            content.TextChanged += (s, e) => { ResizeText(); QueueTextMeasurement(); };
+            content.HandleCreated += (s, e) => { ResizeText(); QueueTextMeasurement(); };
+            content.VisibleChanged += (s, e) => { if (content.Visible) QueueTextMeasurement(); };
             content.MouseUp += (s, e) => { if (e.Button != MouseButtons.Left || content.SelectionLength != 0) return; ActivateAt(content.GetCharIndexFromPosition(e.Location)); };
             content.KeyDown += (s, e) => { if (e.KeyCode == Keys.Enter) { ActivateAt(content.SelectionStart); e.Handled = true; } };
             copySelection.Click += (s, e) => Copy(content.SelectionLength > 0 ? content.SelectedText : content.Text);
@@ -127,7 +133,19 @@ namespace VBAi
 
         /// <summary>Reflows the native rich text on width changes.</summary>
         /// <param name="e">Resize event.</param>
-        protected override void OnSizeChanged(EventArgs e) { base.OnSizeChanged(e); ResizeText(); }
+        protected override void OnSizeChanged(EventArgs e) { base.OnSizeChanged(e); ResizeText(); QueueTextMeasurement(); }
+
+        /// <summary>Remeasures after RichEdit and its WPF host have completed the current arrangement.</summary>
+        private void QueueTextMeasurement()
+        {
+            if (textMeasurementQueued || resizingText || contentUpdateDepth != 0 || content == null || content.IsDisposed || !content.IsHandleCreated || !IsHandleCreated) return;
+            textMeasurementQueued = true;
+            BeginInvoke((Action)(() =>
+            {
+                textMeasurementQueued = false;
+                if (!IsDisposed) ResizeText();
+            }));
+        }
 
         /// <summary>Measures the rendered text and updates the rich text control height and scroll bars.</summary>
         private void ResizeText()

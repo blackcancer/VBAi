@@ -4,7 +4,7 @@
 
 VBAi is tested through managed regressions, editor/UI checks, provider checks and
 operation-specific qualifications in real host applications. This page summarizes
-all Q001–Q030 findings, including earlier qualifications, rather than only the
+all Q001â€“Q030 findings, including earlier qualifications, rather than only the
 latest campaigns.
 
 ## Qualification register
@@ -86,6 +86,93 @@ Native qualifications and focused passing tests are not coverage measurements.
 That run recorded 2,324 passed tests, 0 failures and 90 conditional skips. It
 measured instrumented managed code, excluding external hosts, JavaScript and
 native C++; its percentages are not current release statistics.
+
+## Excel audit correction candidate
+
+The tested working-tree snapshot was based on
+`a67873a75ccf678eedd3072aeadd1a859dd1841f`, on `codex/excel-audit-fixes`.
+Its frozen build19 product has MVID `99a4a849-b2bb-4555-b92b-5d9aeccd2588`
+and SHA-256
+`EDFC2B63922DD43C344DF4F8E8B58A00D9A252C6DCD1F9536C319881F929BD96`.
+The test MVID is `4397b2fc-e287-452a-8f8d-645cf073d326`; the source snapshot
+manifest SHA-256 is
+`05D63EDDFEB35CDE051F5FB38D1D0F5BD9C5F06DB1BE672C19B6B04AB8F35571`.
+This identifies the actual working-tree candidate without presenting its base
+commit as the complete corrected source. Evidence is retained under
+`artifacts/excel-audit-fixes-20261007`.
+
+Compilation completed without warnings or errors. The build19 focused gate passed
+**177 tests, no failures or skips**; its TRX SHA-256 is
+`BEC82CE539C455D235E2EB272AE3B8506411DA2A1BF8257E076AEC0984B6A5D4`.
+It targets chat state/activity layout contracts and the selected Git diagnostic
+case. The 124 source inputs, 229 frozen files and 180 TEMP files remained
+unchanged. Its broader gate passed **5,899 tests, no failures or skips**; its TRX
+SHA-256 is
+`53232AEEA9EC3CDF71C55C896A085BE77150046FEE95FF71D9DD2DFD7E7AF595`.
+The same inventories remained unchanged. The C12 native chat scenario also passed
+on this exact build, including the visible collapsed failure status. Build19 differs
+from build18 only in the activity-group title and its matching tests: terminal
+outcomes now precede a long contextual caption, so end ellipsis cannot hide the
+failure badge in a collapsed group. The change was prompted by the actual C11
+native capture; C11 is not promoted to full UI acceptance.
+
+The preceding build18 managed gate passed **494 focused tests** and **5,897
+broader Unit tests**, with no failures or skips. Its product MVID was
+`3821c6c8-741a-4483-91f5-8839d74fd805`; its focused and broader TRX SHA-256 values
+were respectively
+`8BA6D6BFF5B70F519AA11A72F6DDD0D5A257497BEA4348FBA8DDCDBFE01830AD`
+and `5093AC7CF654C06339A39C12E9310D5F2AA19E4842749C8CE63376CCF54072B3`.
+The 124 source inputs, 229 frozen files and 180 TEMP files remained unchanged.
+Both selected Git-case journals were complete and closed. Live Ollama is
+explicitly excluded; managed provider transports are synthetic. No current
+line or branch coverage percentage was measured.
+
+The preceding broader gate failed one simulated Git branch-creation case,
+reporting changed state immediately after status. Its failed TRX remains retained
+with SHA-256
+`CA8A427EFE9ECA56A4AC09828CD45F0BDE8230F2817A08AE37D0CF1A10B7EFD2`.
+Its cause is not established. Build18 adds an optional, hash-only revision
+observer and a test-only command journal to capture the operands of that case.
+The observer is null by default and does not change the production admission
+verdict. The focused case produced a complete journal: all status/admission
+operand pairs matched, and only expected absent recovery/remote references
+returned nonzero. Instrumentation adds scheduling overhead, so this passing
+observation does not establish a fix for the earlier failure.
+
+The shared correction gates exercise provider/profile capture, settings publication,
+public reasoning summaries, contextual tool activities, late callback isolation,
+owner-STA save confirmation, Git recovery, native-font transfer, compilation
+capability and VBE dispatch guards. Detached controls were also inspected in
+light and dark themes. The preceding passive Codex trace correction attributes
+the schema-canonical `Project` and `Module` arguments; dispatch and target checks
+remain unchanged. C12 accepted the declared build19 chat workflow and its narrow
+collapsed failure presentation; it does not qualify every layout or provider.
+
+Native evidence remains candidate-specific:
+
+| Scope | Observed evidence and limit |
+| --- | --- |
+| N16 Frame/MultiPage, build16 MVID `b267bac7-2c7b-49a3-b918-468925192919` | One native qualification passed with no failures/skips: checkpoint restoration, controlled interruption, explicit rollback and save/reopen. Loaded identity was attested; root font 8.25 points, fractional Frame font 8.27 points, hierarchy, code and pictures were preserved. The original Excel handle exited normally with code zero and registration was restored exactly. The comparator checks complete logical FRX resources; existing recognized serialization padding may differ, so raw FRX hashes are not asserted identical. This covers one synthetic layout. |
+| E09 Monaco, build16 | Single integrated Save, exact source, host Saved flag and exact owned-draft retirement passed. The original bootstrap failed its closure deadline; its failed verdict and unobserved Excel exit code remain. After the worker exited and Excel disappeared, registration was restored exactly. A separate reopen under restored installed registration confirmed persisted code, without Save or macro execution, and observed normal original-handle exit. This does not qualify a build16 reopen dispatch. |
+| C12 native Codex chat, build19 | Loaded MVID/path/PID attested; visible streaming while busy, one Stop, interruption acknowledgement and exact resumed response passed. Exactly two native reads returned the expected success and missing-module failure, with closed correlated receipts. Root inspected four real captures: contextual action headings were readable and the collapsed failure symbol/status preceded the clipped module context. All three source hashes and the final sole-owned-workbook identity were preserved. The original Excel handle exited normally with code zero; registration was restored exactly and installed files/settings stayed unchanged. No image was taken before Stop and no provider-supplied public reasoning summary was established. Evidence: `nativechat12/root-native-review.json`, summary SHA-256 `BC40E271FF8EF9A498A53E230901BBACBD42C140E1FF28128D13E787210B6949`. |
+| C11 native Codex chat, build18 | Loaded identity attested; visible streaming was observed without an image before Stop, followed by one Stop, visible interruption acknowledgement and exact resumed response. Exactly two native module reads returned the expected success and missing-module failure, with correlated closed receipts. All source hashes stayed unchanged; the final sole-workbook check passed, the original Excel handle exited normally with code zero and registration was restored. Root-reviewed captures nevertheless showed the failed activity suffix clipped after a long collapsed caption: core execution passed, UI presentation acceptance failed. An ordinary assistant planning comment was visible; no public reasoning summary is inferred. |
+| C08 native Codex chat, build16 | Visible streaming, one Stop, visible interruption acknowledgement and resumed response passed. One actual read returned an unprompted module marker, but the old passive trace misclassified its canonical arguments as `Other`; the case failed before the missing-module action. Separate normal owned cleanup observed exit code zero and exact registration restoration. No failed-activity or public-summary acceptance is inferred from that partial run. |
+| Image restoration, build06 MVID `f3371378-4be6-4f62-9e7c-46247d36e736` | Native restoration, explicit rollback, exact resource/font readback and save/reopen passed on the declared synthetic fixture. |
+| Test explorer, build08b MVID `e97e90cd-a20a-40f6-9963-cdd03b3d2742` | In-process assembly/path/PID/bitness attestation, support installation, bridge batch, one native UI batch, stale-revision refusal, source preservation and human/LLM reports passed. A real capture showed green success marks and red failures; reopening reused the HWND. One of three production procedures was entered on a coverage copy; no VBA line/branch coverage is claimed. |
+| Compilation and signature, build09 | Compilation availability/execution observations were positive, but the original encoding-sensitive oracle failed. Signature dialog read/Cancel preserved unsigned status and exited normally; certificate application and persistence remain unqualified. |
+
+The earlier timeout, strict font refusals, chat harness failures and Monaco Save
+failure receipts remain unchanged. Unknown native mutations were not replayed.
+An additional workbook of unknown origin was preserved and Excel was closed by
+the user. Harness-only failures do not establish product defects; later passing
+scopes do not erase original failed verdicts.
+
+These rows do not qualify all Excel behavior or every provider, UserForm,
+keyboard/DPI configuration or trust-policy path. Native settings-policy refusal,
+Save failure/cancellation and signing persistence remain open. Provider-supplied
+public reasoning summaries were not observed in the native chat scenario. The installed payload and personal
+settings remain unchanged; candidate registration is temporary and restored
+between trials.
 
 ## Recent interface and documentation checks
 

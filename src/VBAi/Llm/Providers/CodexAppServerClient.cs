@@ -119,6 +119,8 @@ namespace VBAi
 
         /// <summary>Outils VBE exécutés à la demande du processus Codex.</summary>
         private readonly LlmVbeTools tools;
+        internal CodexToolQualificationTrace QualificationTrace;
+        private bool qualificationTraceAttempted;
 
         /// <summary>Exécute un outil VBE appelé par le serveur Codex avec son nom et ses arguments JSON.</summary>
         internal Func<string, string, Task<string>> InvokeTool;
@@ -141,6 +143,8 @@ namespace VBAi
 
         /// <summary>Indique si le transport a été démarré.</summary>
         private bool transportStarted;
+        private TaskCompletionSource<bool> transportReady;
+        private bool conversationReady;
 
         /// <summary>Dernier identifiant JSON-RPC attribué aux requêtes.</summary>
         private int nextId;
@@ -156,6 +160,10 @@ namespace VBAi
 
         /// <summary>Achèvement de la réponse du tour actif.</summary>
         private TaskCompletionSource<string> turnDone;
+        private TaskCompletionSource<string> turnIdentityReady;
+        private Queue<Action> earlyNotifications;
+        private bool turnIdentityBound;
+        private bool turnTerminalReceived;
 
         /// <summary>Dernier texte final reçu pour le tour actif.</summary>
         private string finalText;
@@ -248,7 +256,7 @@ namespace VBAi
         /// <returns>Modèles exposés par le compte Codex.</returns>
         public async Task<LlmModelOption[]> ListModelsAsync()
         {
-            if (!transportStarted) await StartAsync();
+            await EnsureTransportAndAccountAsync();
             var result = new List<LlmModelOption>();
             string cursor = null;
             do
@@ -276,7 +284,7 @@ namespace VBAi
                                 options.Add(new LlmEffortOption(effort, GetString(option, "description")));
                         }
                         result.Add(new LlmModelOption(id, GetString(item, "displayName"),
-                            GetString(item, "isDefault") == "True", GetString(item, "defaultReasoningEffort"), options.ToArray()));
+                            GetString(item, "isDefault") == "True", GetString(item, "defaultReasoningEffort"), options.ToArray(), LlmModelCapabilities.FromCodex(item)));
                     }
                 }
                 cursor = GetString(body, "nextCursor");
@@ -295,12 +303,26 @@ namespace VBAi
         {
             if (string.IsNullOrWhiteSpace(prompt)) throw new ArgumentException("A prompt is required.");
             if (turnDone != null) throw new InvalidOperationException("A Codex turn is already running.");
+            // Arm only when a real turn starts, after the chat has bound its cached project.
+            if (!qualificationTraceAttempted)
+            {
+                qualificationTraceAttempted = true;
+                if (QualificationTrace == null) QualificationTrace = CodexToolQualificationTrace.TryCreate(tools.BoundProject);
+            }
             finalText = null;
             interruptRequested = false;
-            turnDone = new TaskCompletionSource<string>(TaskCreationOptions.RunContinuationsAsynchronously);
+            var generation = new TaskCompletionSource<string>(TaskCreationOptions.RunContinuationsAsynchronously);
+            var identityReady = new TaskCompletionSource<string>(TaskCreationOptions.RunContinuationsAsynchronously);
+            lock (gate)
+            {
+                turnDone = generation; turnIdentityReady = identityReady;
+                earlyNotifications = new Queue<Action>(); turnIdentityBound = false; turnTerminalReceived = false;
+                summarySections.Clear(); runningActivities.Clear();
+            }
             try
             {
-                if (!transportStarted) await StartAsync();
+                await EnsureTransportAndAccountAsync();
+                if (!conversationReady) await EnsureConversationAsync();
                 else await RefreshDeveloperInstructionsAsync();
                 if (interruptRequested) throw new OperationCanceledException();
                 var started = await RequestAsync("turn/start", new
@@ -311,11 +333,24 @@ namespace VBAi
                     summary = "auto",
                     input = new[] { new { type = "text", text = prompt } }
                 });
-                activeTurnId = GetString(GetObject(GetObject(started, "result"), "turn"), "id") ?? activeTurnId;
+                string identity = GetString(GetObject(GetObject(started, "result"), "turn"), "id");
+                if (string.IsNullOrWhiteSpace(identity)) throw new InvalidOperationException("Codex did not identify the started turn.");
+                lock (gate)
+                {
+                    activeTurnId = identity;
+                    while (earlyNotifications.Count > 0) earlyNotifications.Dequeue()();
+                    turnIdentityBound = true;
+                }
+                identityReady.TrySetResult(identity);
                 if (interruptRequested) await InterruptAsync();
-                return await turnDone.Task;
+                return await generation.Task;
             }
-            finally { turnDone = null; activeTurnId = null; }
+            finally
+            {
+                identityReady.TrySetResult(null);
+                lock (gate)
+                    if (ReferenceEquals(turnDone, generation)) { turnDone = null; turnIdentityReady = null; activeTurnId = null; earlyNotifications = null; turnIdentityBound = false; }
+            }
         }
 
         /// <summary>Demande l’interruption du tour actif ; mémorise la demande si son identifiant n’est pas encore disponible.</summary>
@@ -323,13 +358,28 @@ namespace VBAi
         public async Task InterruptAsync()
         {
             interruptRequested = true;
+            turnIdentityReady?.TrySetResult(null);
             if (turnDone != null && activeTurnId != null)
                 await RequestAsync("turn/interrupt", new { threadId, turnId = activeTurnId });
         }
 
-        /// <summary>Démarre le transport, initialise le protocole, vérifie le compte ChatGPT et crée ou reprend le fil.</summary>
-        /// <returns>Tâche terminée lorsque le transport, le compte et le fil sont prêts.</returns>
-        private async Task StartAsync()
+        // Model discovery requires authenticated transport, never a conversation or VBE catalog.
+        private Task EnsureTransportAndAccountAsync()
+        {
+            TaskCompletionSource<bool> ready;
+            bool initialize;
+            lock (gate)
+            {
+                if (disposed) throw new ObjectDisposedException(nameof(CodexAppServerClient));
+                initialize = transportReady == null;
+                if (initialize) transportReady = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+                ready = transportReady;
+            }
+            if (initialize) _ = InitializeTransportAndAccountAsync(ready);
+            return ready.Task;
+        }
+
+        private async Task InitializeTransportAndAccountAsync(TaskCompletionSource<bool> ready)
         {
             try
             {
@@ -347,7 +397,17 @@ namespace VBAi
                 var accountInfo = GetObject(GetObject(account, "result"), "account");
                 if (GetString(accountInfo, "type") != "chatgpt")
                     throw new InvalidOperationException(UiText.Get("Codex must be signed in through ChatGPT. No API key is used here."));
+                ready.TrySetResult(true);
+            }
+            catch (Exception error)
+            {
+                ready.TrySetException(error);
+                Dispose();
+            }
+        }
 
+        private async Task EnsureConversationAsync()
+        {
                 var definitions = tools.CatalogForProvider(true).Select(raw =>
                 {
                     dynamic function = ((dynamic)raw).function;
@@ -384,14 +444,9 @@ namespace VBAi
                     throw new InvalidOperationException("Codex did not resume the expected thread.");
                 threadId = returnedThreadId;
                 appliedInstructionsHash = instructionsHash;
+                conversationReady = true;
                 ThreadReady?.Invoke(threadId);
                 progress(UiText.Get("Codex connected through ChatGPT"));
-            }
-            catch
-            {
-                Dispose();
-                throw;
-            }
         }
 
         /// <summary>Actualise un fil chargé seulement si ses consignes diffèrent des consignes courantes.</summary>
@@ -472,13 +527,39 @@ namespace VBAi
                     return;
                 }
                 var parameters = GetObject(message, "params");
-                if (GetString(parameters, "threadId") != threadId || turnDone == null) return;
+                var generation = turnDone; var identityReady = turnIdentityReady;
+                if (GetString(parameters, "threadId") != threadId || generation == null || identityReady == null) return;
+                lock (gate)
+                {
+                    if (!ReferenceEquals(turnDone, generation)) return;
+                    if (!turnIdentityBound)
+                    {
+                        if (earlyNotifications.Count >= 32) throw new InvalidOperationException("Too many notifications before turn/start identified the turn.");
+                        earlyNotifications.Enqueue(() => HandleNotification(message, parameters, generation));
+                        return;
+                    }
+                }
+                HandleNotification(message, parameters, generation);
+            }
+            catch (Exception ex) { FailPending(ex); }
+        }
+
+        // Notifications are admitted only against the RPC-authoritative identity of their original generation.
+        private void HandleNotification(IDictionary<string, object> message, IDictionary<string, object> parameters, TaskCompletionSource<string> generation)
+        {
+            lock (gate)
+            {
+            try
+            {
+                if (disposed || generation == null || generation.Task.IsCompleted || turnTerminalReceived || !ReferenceEquals(turnDone, generation) || activeTurnId == null || GetString(parameters, "threadId") != threadId) return;
+                string method = GetString(message, "method");
+                string notificationTurn = method == "turn/started" || method == "turn/completed"
+                    ? GetString(GetObject(parameters, "turn"), "id") : GetString(parameters, "turnId");
+                if (string.IsNullOrWhiteSpace(notificationTurn) || notificationTurn != activeTurnId) return;
                 switch (GetString(message, "method"))
                 {
                     case "turn/started":
-                        summarySections.Clear();
-                        lock (gate) runningActivities.Clear();
-                        activeTurnId = GetString(GetObject(parameters, "turn"), "id");
+                        // Only the turn/start RPC response binds the native turn identity.
                         break;
                     case "item/started":
                         PublishActivity(CodexAgentActivity.FromItem(GetObject(parameters, "item"), false));
@@ -494,7 +575,7 @@ namespace VBAi
                         string summaryId = GetString(parameters, "itemId");
                         int section = parameters.TryGetValue("summaryIndex", out var indexValue) ? Convert.ToInt32(indexValue) :
                             (summaryId != null && summarySections.TryGetValue(summaryId, out var savedIndex) ? savedIndex : 0);
-                        PublishActivity(new CodexAgentActivity { Id = summaryId == null ? null : summaryId + ":summary:" + section, Kind = "reasoning", Title = UiText.Get("Reasoning · summary"), Detail = GetString(parameters, "delta"), Status = "inProgress", Append = true });
+                        PublishActivity(new CodexAgentActivity { Id = summaryId == null ? null : summaryId + ":summary:" + section, Kind = "reasoning", Title = UiText.Get("Reasoning"), Detail = GetString(parameters, "delta"), Status = "inProgress", Append = true });
                         break;
                     case "item/reasoning/summaryPartAdded":
                         string reasoningId = GetString(parameters, "itemId");
@@ -522,7 +603,7 @@ namespace VBAi
                                 foreach (var part in (object[])summary)
                                 {
                                     string partText = part is IDictionary<string, object> partObject ? GetString(partObject, "text") : part as string;
-                                    if (!string.IsNullOrEmpty(GetString(item, "id")) && !string.IsNullOrWhiteSpace(partText)) PublishActivity(new CodexAgentActivity { Id = GetString(item, "id") + ":summary:" + partNumber, Kind = "reasoning", Title = UiText.Get("Reasoning · summary"), Detail = partText, Status = "completed" });
+                                    if (!string.IsNullOrEmpty(GetString(item, "id")) && !string.IsNullOrWhiteSpace(partText)) PublishActivity(new CodexAgentActivity { Id = GetString(item, "id") + ":summary:" + partNumber, Kind = "reasoning", Title = UiText.Get("Reasoning"), Detail = partText, Status = "completed" });
                                     partNumber++;
                                 }
                                 var parts = ((object[])summary).Select(part =>
@@ -537,6 +618,7 @@ namespace VBAi
                         }
                         break;
                     case "turn/completed":
+                        turnTerminalReceived = true;
                         var turn = GetObject(parameters, "turn");
                         string status = GetString(turn, "status");
                         EndActivities(status);
@@ -552,7 +634,8 @@ namespace VBAi
                         break;
                 }
             }
-            catch (Exception ex) { FailPending(ex); }
+            catch (Exception error) { if (ReferenceEquals(turnDone, generation)) FailPending(error); }
+            }
         }
 
         /// <summary>Transmet une étape native sur le contexte UI, en ignorant les identités absentes.</summary>
@@ -565,7 +648,8 @@ namespace VBAi
                 if (activity.Status == "inProgress") runningActivities[activity.Id] = activity;
                 else runningActivities.Remove(activity.Id);
             }
-            ui.Post(_ => { if (!disposed) ActivityUpdate?.Invoke(activity); }, null);
+            var owningTurn = turnDone;
+            ui.Post(_ => { if (!disposed && ReferenceEquals(turnDone, owningTurn)) ActivityUpdate?.Invoke(activity); }, null);
         }
 
         /// <summary>Termine les états encore actifs lorsque le tour s'arrête, sans inventer un résultat d'action manquant.</summary>
@@ -591,7 +675,8 @@ namespace VBAi
         private void PublishUpdate(string kind, string id, string text, bool complete)
         {
             if (string.IsNullOrEmpty(id)) return;
-            ui.Post(_ => { if (!disposed) ChatUpdate?.Invoke(kind, id, text, complete); }, null);
+            var owningTurn = turnDone;
+            ui.Post(_ => { if (!disposed && ReferenceEquals(turnDone, owningTurn)) ChatUpdate?.Invoke(kind, id, text, complete); }, null);
         }
 
         /// <summary>Exécute un outil VBE demandé par le serveur puis lui renvoie son résultat.</summary>
@@ -599,11 +684,20 @@ namespace VBAi
         /// <param name="parameters">Paramètres de l’appel d’outil.</param>
         private void HandleToolCall(object requestId, IDictionary<string, object> parameters)
         {
+            var requestedTurn = turnDone;
+            var requestedIdentity = turnIdentityReady;
+            string requestedThreadId = GetString(parameters, "threadId"), requestedTurnId = GetString(parameters, "turnId");
+            string requestedProject = tools.BoundProject;
+            Func<bool> sameTurn = () => requestedTurn != null && !turnTerminalReceived && !requestedTurn.Task.IsCompleted && ReferenceEquals(turnDone, requestedTurn) &&
+                requestedThreadId == threadId && !string.IsNullOrWhiteSpace(requestedTurnId) && requestedTurnId == activeTurnId &&
+                string.Equals(requestedProject, tools.BoundProject, StringComparison.Ordinal);
+            var observedCall = QualificationTrace?.Received(requestId, parameters, tools.BoundProject);
             ui.Post(async state =>
             {
                 try
                 {
-                    if (GetString(parameters, "threadId") != threadId || turnDone == null)
+                    string identity = requestedIdentity == null ? null : await requestedIdentity.Task;
+                    if (identity == null || !sameTurn())
                         throw new InvalidOperationException("Tool call does not belong to the active VBE conversation.");
                     if (interruptRequested || disposed) throw new OperationCanceledException("Conversation interrompue.");
                     string name = GetString(parameters, "tool");
@@ -612,10 +706,19 @@ namespace VBAi
                     PublishActivity(CodexAgentActivity.FromItem(new Dictionary<string, object> { ["type"] = "dynamicToolCall", ["id"] = activityId, ["tool"] = name, ["arguments"] = parameters["arguments"] }, false));
                     ChatUpdate?.Invoke("tool", activityId, name + " · en cours", false);
                     string arguments = NewJson().Serialize(parameters["arguments"]);
+                    // UI callbacks above can synchronously stop/dispose or rebind the conversation.
+                    if (!sameTurn()) throw new InvalidOperationException("Tool call no longer belongs to the active VBE turn and project.");
+                    if (interruptRequested || disposed) throw new OperationCanceledException("Conversation interrompue.");
+                    QualificationTrace?.Admitted(observedCall, tools.BoundProject);
                     string output = await InvokeTool(name, arguments);
                     var response = NewJson().Deserialize<Response>(output);
+                    QualificationTrace?.Returned(observedCall, response != null && response.Ok);
+                    // The result belongs to the original request; a late completion must not update a newer turn.
+                    if (sameTurn() && !disposed && !interruptRequested)
+                    {
                     PublishActivity(CodexAgentActivity.FromItem(new Dictionary<string, object> { ["type"] = "dynamicToolCall", ["id"] = activityId, ["tool"] = name, ["arguments"] = parameters["arguments"], ["success"] = response != null && response.Ok }, true));
                     ChatUpdate?.Invoke("tool", activityId, name + (response != null && response.Ok ? UiText.Get(" · complete") : UiText.Get(" · failed")), true);
+                    }
                     Send(new
                     {
                         id = requestId,
@@ -628,13 +731,14 @@ namespace VBAi
                 }
                 catch (Exception ex)
                 {
-                    if (GetString(parameters, "threadId") == threadId && turnDone != null)
+                    QualificationTrace?.Rejected(observedCall);
+                    if (sameTurn() && !disposed)
                         PublishActivity(new CodexAgentActivity
                         {
                             Id = GetString(parameters, "callId") ?? GetString(parameters, "itemId") ?? "tool-" + Convert.ToString(requestId),
                             Kind = "dynamicToolCall",
-                            Title = GetString(parameters, "tool"),
-                            Detail = ex.Message,
+                            Title = CodexAgentActivity.ToolTitle(GetString(parameters, "tool")),
+                            Detail = GetString(parameters, "tool") + "\n" + ex.Message,
                             Status = ex is OperationCanceledException ? "interrupted" : "failed"
                         });
                     try
@@ -649,7 +753,7 @@ namespace VBAi
                             }
                         });
                     }
-                    catch { FailPending(ex); }
+                    catch { if (sameTurn() && !disposed) FailPending(ex); }
                 }
             }, null);
         }
@@ -658,6 +762,7 @@ namespace VBAi
         /// <param name="error">Erreur transmise aux opérations en attente.</param>
         private void FailPending(Exception error)
         {
+            turnIdentityReady?.TrySetResult(null);
             EndActivities(error is OperationCanceledException ? "interrupted" : "failed");
             lock (gate)
             {
@@ -696,7 +801,9 @@ namespace VBAi
         {
             if (disposed) return;
             disposed = true;
+            transportReady?.TrySetException(new ObjectDisposedException(nameof(CodexAppServerClient)));
             FailPending(new ObjectDisposedException(nameof(CodexAppServerClient)));
+            QualificationTrace?.Close();
             transport.Dispose();
         }
     }

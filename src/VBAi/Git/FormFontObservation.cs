@@ -14,7 +14,7 @@ namespace VBAi
 {
 
     /// <summary>One explicitly armed, disposable root-font import observation on the native VBE owner.</summary>
-    internal sealed class FormFontObservation
+    internal sealed partial class FormFontObservation
     {
 
         /// <summary>Environment-variable name that opts one disposable import into root-font observation.</summary>

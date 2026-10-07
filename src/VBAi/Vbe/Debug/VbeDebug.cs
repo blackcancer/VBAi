@@ -421,14 +421,26 @@ namespace VBAi
             dynamic project = GetProject(request.Project);
             if ((int)project.Mode != 2 || request.ExpectedMode != 2)
                 throw new InvalidOperationException("Compilation requires the selected project in design mode.");
-            var command = EnumerateCommands().FirstOrDefault(entry => entry.Id == 578 && entry.Enabled &&
-                (((entry.Caption ?? "").Replace("&", "").IndexOf("Compiler ", StringComparison.OrdinalIgnoreCase) >= 0) ||
-                 ((entry.Caption ?? "").Replace("&", "").IndexOf("Compile ", StringComparison.OrdinalIgnoreCase) >= 0))) ?? throw new InvalidOperationException("The native Compile command is absent or disabled.");
-            string caption = command.Caption.Replace("&", "");
-            if (caption.IndexOf((string)project.Name, StringComparison.OrdinalIgnoreCase) < 0)
-                throw new InvalidOperationException("The native Compile command targets a different project: " + caption);
+            object active = vbe.ActiveVBProject;
+            if (active == null || !SameComObject(active, (object)project))
+                throw new InvalidOperationException("Select the exact project in VBE before compiling it.");
+            var candidates = EnumerateCommands().Where(entry => entry.Id == 578).ToArray();
+            if (candidates.Length == 0)
+                return new { Executed = false, Available = false, request.Project, Capability = "Absent",
+                    Reason = "The host does not expose the native Compile command. Compilation was not verified." };
+            string projectName = (string)project.Name;
+            // The native command ID is language-independent. The caption still has
+            // to name the exact active project; a substring of another name is unsafe.
+            var targets = candidates.Where(entry => Regex.IsMatch((entry.Caption ?? "").Replace("&", ""),
+                @"(?<![\p{L}\p{N}_])" + Regex.Escape(projectName) + @"(?![\p{L}\p{N}_])", RegexOptions.IgnoreCase)).ToArray();
+            if (targets.Length == 0)
+                throw new InvalidOperationException("The native Compile command does not identify the selected project.");
+            var command = targets.FirstOrDefault(entry => entry.Enabled);
+            if (command == null)
+                return new { Executed = false, Available = false, request.Project, Capability = "Disabled",
+                    Reason = "The native Compile command is disabled. The project may already be compiled or the host may restrict it; compilation was not verified." };
             ((dynamic)command.Control).Execute();
-            return new { Executed = true, request.Project, ControlId = command.Id, Control = command.Path };
+            return new { Executed = true, Available = true, request.Project, ControlId = command.Id, Control = command.Path };
         }
 
         /// <summary>Reconnaît une légende localisée de l’Explorateur d’objets.</summary>

@@ -256,7 +256,7 @@ namespace VBAi.Tests.Unit
             using (var window = ReadyHttpWindow(new ChatSessionState { Scope = "temporary:test", Provider = "Ollama" }))
             {
                 int actions = 0; var json = new JavaScriptSerializer();
-                var replies = Enumerable.Range(0, 10).Select(i => json.Serialize(new { choices = new[] { new { message = new { role = "assistant", tool_calls = new[] { new { id = "step-" + i, type = "function", function = new { name = "status", arguments = "{}" } } } } } } })).Concat(new[] { "{\"choices\":[{\"message\":{\"role\":\"assistant\",\"content\":\"finished\"}}]}" }).ToArray();
+                var replies = Enumerable.Range(0, 10).Select(i => json.Serialize(new { choices = new[] { new { finish_reason = "tool_calls", message = new { role = "assistant", tool_calls = new[] { new { id = "step-" + i, type = "function", function = new { name = "status", arguments = "{}" } } } } } } })).Concat(new[] { "{\"choices\":[{\"message\":{\"role\":\"assistant\",\"content\":\"finished\"}}]}" }).ToArray();
                 window.HttpHandlerOverride = () => new ChatResponseHandler(replies);
                 ChatWindow.InvokeTool = (t, n, a) => Task.FromResult(json.Serialize(Response.Success(new { Step = ++actions })));
                 Question(window, "long work"); CompleteOnSta((Task)Call(window, "SendAsync"));
@@ -289,7 +289,7 @@ namespace VBAi.Tests.Unit
             using (var window = ReadyHttpWindow(new ChatSessionState { Scope = "temporary:test", Provider = "Ollama" }))
             {
                 int actions = 0; var json = new JavaScriptSerializer();
-                var replies = Enumerable.Range(0, 64).Select(i => json.Serialize(new { choices = new[] { new { message = new { role = "assistant", tool_calls = new[] { new { id = "bounded-" + i, type = "function", function = new { name = "status", arguments = "{}" } } } } } } })).ToArray();
+                var replies = Enumerable.Range(0, 64).Select(i => json.Serialize(new { choices = new[] { new { finish_reason = "tool_calls", message = new { role = "assistant", tool_calls = new[] { new { id = "bounded-" + i, type = "function", function = new { name = "status", arguments = "{}" } } } } } } })).ToArray();
                 var handler = new ChatResponseHandler(replies); window.HttpHandlerOverride = () => handler;
                 ChatWindow.InvokeTool = (t, n, a) => Task.FromResult(json.Serialize(Response.Success(new { Step = ++actions })));
                 Question(window, "bounded work"); CompleteOnSta((Task)Call(window, "SendAsync"));

@@ -1182,7 +1182,7 @@ namespace VBAi.Tests.Unit
         /// <summary>Vérifie la persistance de signature sans certificat et les nouvelles tentatives de sauvegarde.</summary>
         /// <returns>Tâche terminée lorsque les différentes réponses de signature sont vérifiées.</returns>
         [TestMethod]
-        public async Task SignaturePersistenceMatrixHandlesMissingCertificateAndSaveRetries()
+        public async Task SignaturePersistenceMatrixHandlesMissingCertificateAndNeverReplaysSave()
         {
             var tools = Create(); string args = Json.Serialize(Arguments("sign_project"));
             tools.Execute = r => Response.Success(new { Missing = true });
@@ -1192,20 +1192,20 @@ namespace VBAi.Tests.Unit
             tools.Execute = VbeToolBoundaryFixture.Execute;
             foreach (bool saved in new[] { false, true })
             {
-                tools.PersistSignature = p => new VBAi.Tests.Infrastructure.VbeToolPersistence { Saved = saved };
+                tools.PersistSignature = (p, authorize) => { authorize(); return new VBAi.Tests.Infrastructure.VbeToolPersistence { Saved = saved }; };
                 Assert.AreEqual(!saved, Data(await tools.InvokeAsync("sign_project", args))["SaveRequired"]);
             }
-            tools.PersistSignature = p => null;
+            tools.PersistSignature = (p, authorize) => { authorize(); return null; };
             Assert.AreEqual(true, Data(await tools.InvokeAsync("sign_project", args))["SaveRequired"]);
-            tools.PersistSignature = p => { throw new InvalidOperationException("save declined"); };
+            tools.PersistSignature = (p, authorize) => { authorize(); throw new InvalidOperationException("save declined"); };
             tools.Execute = r => r.Command == "project_signature_status" ? Response.Failure("status declined") : VbeToolBoundaryFixture.Execute(r);
             var data = Data(await tools.InvokeAsync("sign_project", args));
             Assert.AreEqual("save declined", data["PersistenceError"]); Assert.AreEqual("status declined", data["HostStatusError"]);
             int attempts = 0;
-            tools.PersistSignature = p => { if (++attempts == 2) return new VBAi.Tests.Infrastructure.VbeToolPersistence { Saved = true }; throw new InvalidOperationException("0x800AC472 busy"); };
-            Assert.AreEqual(false, Data(await tools.InvokeAsync("sign_project", args))["SaveRequired"]); Assert.AreEqual(2, attempts);
-            attempts = 0; tools.PersistSignature = p => { attempts++; throw new InvalidOperationException("0x800AC472 busy"); };
-            data = Data(await tools.InvokeAsync("sign_project", args)); Assert.AreEqual(12, attempts);
+            tools.PersistSignature = (p, authorize) => { authorize(); if (++attempts == 2) return new VBAi.Tests.Infrastructure.VbeToolPersistence { Saved = true }; throw new InvalidOperationException("0x800AC472 busy"); };
+            Assert.AreEqual(true, Data(await tools.InvokeAsync("sign_project", args))["SaveRequired"]); Assert.AreEqual(1, attempts);
+            attempts = 0; tools.PersistSignature = (p, authorize) => { authorize(); attempts++; throw new InvalidOperationException("0x800AC472 busy"); };
+            data = Data(await tools.InvokeAsync("sign_project", args)); Assert.AreEqual(1, attempts);
             StringAssert.Contains((string)data["PersistenceError"], "busy");
         }
 
@@ -1224,12 +1224,20 @@ namespace VBAi.Tests.Unit
                 tools.Native.AwaitCompileDialog = completed => { Assert.IsTrue(completed.Wait(5000)); return "compile diagnostic"; };
                 var data = Data(tools.InvokeAsync("compile_project", args).GetAwaiter().GetResult());
                 Assert.AreEqual(false, data["Compiled"]); Assert.AreEqual("NativeDiagnosticCaptured", data["Verification"]);
+                tools.Execute = r => Response.Success(new { Executed = false, Available = false, Capability = "Absent", Reason = "not available" });
+                data = Data(tools.InvokeAsync("compile_project", args).GetAwaiter().GetResult());
+                Assert.AreEqual(false, data["Compiled"]); Assert.AreEqual("NativeCompileAbsent", data["Verification"]);
                 tools.Execute = r => Response.Failure("compile failure"); Failed(tools.InvokeAsync("compile_project", args).GetAwaiter().GetResult(), "compile failure");
                 tools.Execute = r => { throw new InvalidOperationException("compile exception"); };
                 Failed(tools.InvokeAsync("compile_project", args).GetAwaiter().GetResult(), "compile exception");
-                SynchronizationContext.SetSynchronizationContext(new DeferredContext());
+                var deferred = new DeferredContext();
+                SynchronizationContext.SetSynchronizationContext(deferred);
+                int lateExecutions = 0;
+                tools.Execute = r => { lateExecutions++; return VbeToolBoundaryFixture.Execute(r); };
                 tools.Native.AwaitCompileDialog = completed => null;
                 Failed(tools.InvokeAsync("compile_project", args).GetAwaiter().GetResult(), "timeout");
+                deferred.ReleasePending();
+                Assert.AreEqual(0, lateExecutions, "A cancelled queued callback must never compile later.");
                 SynchronizationContext.SetSynchronizationContext(new ImmediateContext());
                 foreach (string invalid in new[] { "[]", "{}", "{\"ExpectedMode\":2}", "{\"Project\":\"P\"}", "{\"Project\":1,\"ExpectedMode\":2}", "{\"Project\":\" \",\"ExpectedMode\":2}", "{\"Project\":\"P\",\"ExpectedMode\":\"2\"}", "{\"Project\":\"P\",\"ExpectedMode\":1}" })
                     Failed(tools.InvokeAsync("compile_project", invalid).GetAwaiter().GetResult(), invalid);
@@ -1432,6 +1440,46 @@ namespace VBAi.Tests.Unit
             tools.Execute = request => { requests++; throw new Microsoft.VisualStudio.TestTools.UnitTesting.AssertFailedException("Catalogue requires async dispatch"); };
             foreach (string name in new[] { "discover_tools", "invoke_tool" }) Failed(tools.Invoke(name, "{}"), "InvokeAsync");
             Microsoft.VisualStudio.TestTools.UnitTesting.Assert.AreEqual(0, requests);
+        }
+    }
+}
+
+namespace VBAi.Tests.Unit
+{
+    using Microsoft.VisualStudio.TestTools.UnitTesting;
+    using System;
+    using System.Threading.Tasks;
+    using VBAi;
+
+    public sealed partial class LlmVbeToolsBoundaryTests
+    {
+        [DataTestMethod]
+        [DataRow("policy")]
+        [DataRow("binding")]
+        [DataRow("mode")]
+        [DataRow("scope")]
+        [DataRow("identity")]
+        public async Task DeferredSignatureRevalidatesAuthorityBeforePersisting(string changed)
+        {
+            var fixture = new ToolFixture(); var tools = fixture.Tools;
+            tools.BoundProject = "P"; int saves = 0, statusReads = 0; bool identityCurrent = true;
+            tools.CaptureSignaturePersistence = p => () => { if (!identityCurrent) throw new InvalidOperationException("identity changed"); };
+            tools.PersistSignature = (p, authorize) => { authorize(); saves++; return new VBAi.Tests.Infrastructure.VbeToolPersistence { Saved = true }; };
+            tools.Execute = r => { if (r.Command == "project_signature_status") statusReads++; return VBAi.Tests.Infrastructure.VbeToolBoundaryFixture.Execute(r); };
+            tools.Native.CompleteProjectSignature = (p, thumbprint, name, unsigned) =>
+            {
+                if (changed == "policy") fixture.Settings.VbeEditApproval = "ReadOnly";
+                if (changed == "binding") tools.BoundProject = "Other";
+                if (changed == "mode") tools.Mode = ChatMode.Discussion;
+                if (changed == "scope") tools.ValidateScope = () => { throw new InvalidOperationException("scope changed"); };
+                if (changed == "identity") identityCurrent = false;
+                return new { SignatureAssigned = true };
+            };
+            var result = Data(await tools.InvokeAsync("sign_project", Json.Serialize(Arguments("sign_project"))));
+            Assert.AreEqual(0, saves); Assert.AreEqual(0, statusReads);
+            Assert.AreEqual(true, result["SaveRequired"]);
+            Assert.IsFalse(string.IsNullOrEmpty((string)result["PersistenceError"]));
+            Assert.IsNotNull(result["Signature"]);
         }
     }
 }

@@ -988,22 +988,32 @@ namespace VBAi.Tests.Unit
         }
 
         [TestMethod]
-        public void CompileRefusesMissingDisabledOrWrongCaptionBeforeExecuting()
+        public void CompileDistinguishesAbsentDisabledAndForeignTargetsBeforeExecuting()
         {
             var f = Create(); var request = new Request { Project = f.Project.Name, ExpectedMode = 2 };
             Assert.ThrowsException<ArgumentException>(() => f.Service.CompileProject(null));
             Assert.ThrowsException<ArgumentException>(() => f.Service.CompileProject(new Request { Project = " " }));
-            Assert.ThrowsException<InvalidOperationException>(() => f.Service.CompileProject(request));
+            dynamic absent = f.Service.CompileProject(request);
+            Assert.IsFalse((bool)absent.Executed); Assert.AreEqual("Absent", (string)absent.Capability);
             f.Project.Mode = 1;
             Assert.ThrowsException<InvalidOperationException>(() => f.Service.CompileProject(request));
             f.Project.Mode = 2;
-            foreach (var candidate in new[] { new FakeControl { Id = -1, Caption = "Compile VBAProject" },
-                new FakeControl { Id = 578, Enabled = false, Caption = "Compile VBAProject" },
-                new FakeControl { Id = 578, Caption = null }, new FakeControl { Id = 578, Caption = "Unrelated" } })
-                f.Bar.Controls.Add(candidate);
+            var compile = new FakeControl { Id = 578, Enabled = false, Caption = "VBAProject kompilieren" };
+            f.Bar.Controls.Add(compile);
+            dynamic disabled = f.Service.CompileProject(request);
+            Assert.IsFalse((bool)disabled.Executed); Assert.AreEqual("Disabled", (string)disabled.Capability);
+            Assert.AreEqual(0, compile.ExecuteCount);
+            compile.Enabled = true;
+            foreach (string foreign in new[] { null, "Unrelated", "Compile OtherVBAProject" })
+            {
+                compile.Caption = foreign;
+                Assert.ThrowsException<InvalidOperationException>(() => f.Service.CompileProject(request));
+            }
+            compile.Caption = "VBAProject kompilieren";
+            f.Service.CompileProject(request); Assert.AreEqual(1, compile.ExecuteCount);
+            f.Vbe.ActiveVBProject = null;
             Assert.ThrowsException<InvalidOperationException>(() => f.Service.CompileProject(request));
-            f.Bar.Controls.Add(new FakeControl { Id = 578, Caption = "Compile VBAProject" });
-            f.Service.CompileProject(request); Assert.AreEqual(1, f.Bar.Controls.Last().ExecuteCount);
+            Assert.AreEqual(1, compile.ExecuteCount);
         }
 
         [TestMethod]

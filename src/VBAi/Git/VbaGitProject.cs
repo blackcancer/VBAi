@@ -4,6 +4,8 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace VBAi
 {
@@ -23,6 +25,12 @@ namespace VBAi
 
         /// <summary>Reads the current persisted document path on the VBE thread.</summary>
         private readonly Func<object, string> readHostPath;
+
+        /// <summary>Optional frozen owner-qualification observer; consumes existing captures without another Export or live Font read.</summary>
+        internal Action<string, VbaGitComponent, VbaGitSnapshot, FormStreamPadding.FormFontBinding[]> ImportMaterializationObservation;
+
+        /// <summary>Optional synthetic font observation receives only the original borrowed imported component and its identity guard.</summary>
+        internal Action<object, Action> ImportAttachedFontObservation;
 
         /// <summary>Retourne la page de codes ANSI du système Windows.</summary>
         /// <returns>Identifiant numérique de la page de codes ANSI active.</returns>
@@ -81,9 +89,15 @@ namespace VBAi
 
         /// <summary>Exporte les composants et références en snapshot validé sans envoyer d’objets COM au worker Git.</summary>
         /// <returns>Snapshot validé des composants, ressources et références.</returns>
-        internal VbaGitSnapshot Capture()
+        internal VbaGitSnapshot Capture() { return CaptureCore(false); }
+
+        /// <summary>Captures the same native snapshot with optional readback-only phase evidence.</summary>
+        /// <param name="traceReadback">Records fixed phases only for the one settled readback capture.</param>
+        private VbaGitSnapshot CaptureCore(bool traceReadback)
         {
+            TraceReadback(traceReadback, VbeInspectionTrace.Phase.ImportReadbackProjectBefore);
             dynamic project = CheckedProject();
+            TraceReadback(traceReadback, VbeInspectionTrace.Phase.ImportReadbackProjectReturned);
             var components = new List<VbaGitComponent>();
             var files = new Dictionary<string, byte[]>(StringComparer.Ordinal);
             using (var scratch = new Scratch())
@@ -98,7 +112,9 @@ namespace VBAi
                         files.Add(component.FileName, VbaGitSnapshot.Utf8.GetBytes(Code(item.CodeModule)));
                     else
                     {
+                        TraceReadback(traceReadback, VbeInspectionTrace.Phase.ImportReadbackExportBefore);
                         item.Export(file);
+                        TraceReadback(traceReadback, VbeInspectionTrace.Phase.ImportReadbackExportReturned);
                         files.Add(component.FileName, VbaGitSnapshot.Utf8.GetBytes(Normalize(File.ReadAllText(file, NativeEncoding))));
                         string frx = Path.Combine(scratch.Path, component.Name + ".frx");
                         component.HasResources = component.Type == 3 && File.Exists(frx);
@@ -120,12 +136,33 @@ namespace VBAi
             }, files);
         }
 
+        /// <summary>Records a fixed phase only for a traced settled readback; failures remain passive.</summary>
+        private static void TraceReadback(bool enabled, VbeInspectionTrace.Phase phase)
+        {
+            if (enabled) VbeInspectionTrace.Current?.Record(phase);
+        }
+
         /// <summary>Applique le snapshot si l’état avant mutation correspond à expected.</summary>
         /// <param name="target">Snapshot à importer.</param>
         /// <param name="expected">Snapshot attendu avant mutation.</param>
         /// <param name="beforeMutation">Action facultative exécutée après validation et avant la première modification.</param>
         internal void Apply(VbaGitSnapshot target, VbaGitSnapshot expected, Action beforeMutation = null)
+        { ApplyCoreAsync(target, expected, beforeMutation, null, false).GetAwaiter().GetResult(); }
+
+        /// <summary>Imports once and permits one owner continuation for native form persistence before strict readback.</summary>
+        /// <param name="target">Frozen complete target snapshot.</param>
+        /// <param name="expected">Frozen complete state reviewed before mutation.</param>
+        /// <param name="beforeMutation">Original one-shot mutation admission.</param>
+        /// <param name="beforeReadback">Read-only owner and recovery guard after a persistence continuation.</param>
+        /// <returns>Completion after exact verification, without replaying any native mutation.</returns>
+        internal Task ApplyAsync(VbaGitSnapshot target, VbaGitSnapshot expected, Action beforeMutation = null, Action beforeReadback = null)
+        { return ApplyCoreAsync(target, expected, beforeMutation, beforeReadback, true); }
+
+        /// <summary>Shares the single native import sequence between synchronous contracts and owner-dispatched production operations.</summary>
+        private async Task ApplyCoreAsync(VbaGitSnapshot target, VbaGitSnapshot expected, Action beforeMutation, Action beforeReadback, bool settleForms)
         {
+            int ownerThread = Thread.CurrentThread.ManagedThreadId;
+            var importedForms = new List<Tuple<string, object>>();
             if (!Capture().SameAs(expected)) throw new InvalidOperationException(UiText.Get("VBA changed during synchronization. No import performed."));
             if (target.Manifest.References != expected.Manifest.References)
                 throw new InvalidOperationException(UiText.Get("VBA references differ. Align them in Tools > References before importing."));
@@ -163,7 +200,11 @@ namespace VBAi
                     }
                     if (System.Runtime.InteropServices.Marshal.IsComObject((object)project) && formFonts.Any(pair =>
                         pair.Value != null && pair.Value.Length != 0 && (changed.Contains(pair.Key) || !expected.Manifest.Components.Any(old => old.Name == pair.Key))))
+                    {
                         FormFontRestoration.RequireOwner((object)project);
+                        if (settleForms && SynchronizationContext.Current == null)
+                            throw new InvalidOperationException("Asynchronous native form import requires an owning STA synchronization context.");
+                    }
                     observation = FormFontObservation.TryBegin(hostPath, target, changed, (object)project);
                     try
                     {
@@ -213,10 +254,17 @@ namespace VBAi
                                                 () => CaptureImportedForm(next.Name, (object)imported),
                                                 probe => ImportedFormMaterialization.Materialize(CheckedProject(), (object)imported, probe,
                                                     () => RequireImportedForm(next.Name, (object)imported)),
-                                                () => RequireImportedForm(next.Name, (object)imported));
+                                                () => RequireImportedForm(next.Name, (object)imported),
+                                                ImportMaterializationObservation == null ? null : new Action<string, VbaGitSnapshot, FormStreamPadding.FormFontBinding[]>(
+                                                    (phase, snapshot, plan) => ImportMaterializationObservation(phase, next, snapshot, plan)));
                                         FormFontRestoration.Restore((object)imported, bindings,
                                             () => RequireImportedForm(next.Name, (object)imported),
                                             observation != null && observation.FormName == next.Name ? observation : null);
+                                        ObserveAttachedImport(ImportAttachedFontObservation, (object)imported,
+                                            () => RequireImportedForm(next.Name, (object)imported));
+                                        ImportMaterializationObservation?.Invoke("font-delivery-returned", next, null, bindings);
+                                        if (observation == null && formFonts[next.Name] != null && formFonts[next.Name].Length != 0)
+                                            importedForms.Add(Tuple.Create(next.Name, (object)imported));
                                     }
                                 }
                             }
@@ -253,7 +301,41 @@ namespace VBAi
                     }
                 }
                 bool exact;
-                try { exact = Capture().SameAs(target); observation?.Complete(exact); }
+                try
+                {
+                    var actual = Capture();
+                    if (ImportMaterializationObservation != null)
+                        foreach (var form in target.Manifest.Components.Where(item => item.Type == 3))
+                            ImportMaterializationObservation("final-import-capture", form, actual, null);
+                    exact = await ImportedFormReadback.VerifyAsync(target, actual,
+                        settleForms && importedForms.Count != 0,
+                        () =>
+                        {
+                            // A continuation never admits another import or font setter.
+                            // Check thread identity before touching any COM object.
+                            if (Thread.CurrentThread.ManagedThreadId != ownerThread)
+                                throw new InvalidOperationException("Native form readback left its owning STA thread.");
+                            beforeReadback?.Invoke();
+                            VbeInspectionTrace.Current?.Record(VbeInspectionTrace.Phase.ImportReadbackOwnerBefore);
+                            FormFontRestoration.RequireOwner(CheckedProject());
+                            VbeInspectionTrace.Current?.Record(VbeInspectionTrace.Phase.ImportReadbackOwnerReturned);
+                            foreach (var form in importedForms)
+                            {
+                                VbeInspectionTrace.Current?.Record(VbeInspectionTrace.Phase.ImportReadbackIdentityBefore);
+                                RequireImportedForm(form.Item1, form.Item2);
+                                VbeInspectionTrace.Current?.Record(VbeInspectionTrace.Phase.ImportReadbackIdentityReturned);
+                            }
+                        },
+                        () =>
+                        {
+                            var settled = CaptureCore(true);
+                            if (ImportMaterializationObservation != null)
+                                foreach (var form in target.Manifest.Components.Where(item => item.Type == 3))
+                                    ImportMaterializationObservation("settled-import-capture", form, settled, null);
+                            return settled;
+                        });
+                    observation?.Complete(exact);
+                }
                 catch (Exception error)
                 {
                     try { observation?.Failure(error); }
@@ -331,6 +413,13 @@ namespace VBAi
                 if (component.HasResources) files.Add(name + ".frx", File.ReadAllBytes(resource));
                 return new VbaGitSnapshot(new VbaGitManifest { Components = new[] { component }, References = "" }, files);
             }
+        }
+
+        /// <summary>Disabled diagnostics add no COM reads; enabled diagnostics validate the original import before one borrowed callback.</summary>
+        internal static void ObserveAttachedImport(Action<object, Action> observation, object imported, Action guard)
+        {
+            if (observation == null) return;
+            guard(); observation(imported, guard);
         }
 
         /// <summary>Balances fresh identity readback references without releasing the imported component lease.</summary>

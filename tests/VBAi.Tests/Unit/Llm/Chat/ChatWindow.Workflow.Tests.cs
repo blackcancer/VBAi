@@ -294,3 +294,36 @@ namespace VBAi.Tests.Unit
         }
     }
 }
+
+namespace VBAi.Tests.Unit
+{
+    using Microsoft.VisualStudio.TestTools.UnitTesting;
+    using System.Collections.Generic;
+    using System.Linq;
+    using System.Threading.Tasks;
+    using System.Web.Script.Serialization;
+    using VBAi;
+
+    public sealed partial class ChatWindowStateTests
+    {
+        [STATestMethod, TestCategory("Unit")]
+        public void UnavailableCompilationDoesNotReadDiagnosticLocationsOrBlockTheWindow()
+        {
+            using (var runtime = new RuntimeScope())
+            using (var window = LoadedWindow(runtime.Session))
+            {
+                var json = new JavaScriptSerializer(); int locationReads = 0;
+                var original = runtime.Host;
+                runtime.Host = r => { if (r.Command == "debug_state") locationReads++; return original(r); };
+                ChatWindow.InvokeTool = (t, n, a) => Task.FromResult(json.Serialize(Response.Success(new
+                    { Available = false, Compiled = false, Diagnostic = "The native command is disabled.", Verification = "NativeCompileDisabled" })));
+                CompleteOnSta((Task)Call(window, "VerifyProjectAsync"));
+                Assert.AreEqual(0, locationReads);
+                var entry = Get<List<ChatEntry>>(window, "transcriptEntries").Last();
+                StringAssert.Contains(entry.Text, "disabled"); Assert.IsNull(entry.Attachments);
+                Assert.AreEqual(UiText.Get("Compilation not verified"), Get<System.Windows.Forms.Label>(window, "status").Text);
+                Assert.IsFalse(Get<bool>(window, "busy"));
+            }
+        }
+    }
+}

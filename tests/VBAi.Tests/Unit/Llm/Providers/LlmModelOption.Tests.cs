@@ -6,6 +6,15 @@ namespace VBAi.Tests.Unit
     [TestCategory("Unit")]
     public sealed class LlmModelOptionTests
     {
+        [TestMethod]
+        public void ExplicitCapabilitiesRemainBoundToTheSameModelOption()
+        {
+            var declarations = new LlmModelCapabilities(false, true, null);
+            var model = new LlmModelOption("id", "Model", capabilities: declarations);
+            Assert.AreSame(declarations, model.Capabilities); Assert.AreEqual("id", model.Id);
+            Assert.AreEqual("Model (id)", model.ToString());
+        }
+
         /// <summary>Préserve l’identité du modèle dans les libellés, valeurs par défaut et efforts.</summary>
         [TestMethod]
         public void LabelsDefaultsAndEffortsPreserveModelIdentity()
@@ -19,6 +28,7 @@ namespace VBAi.Tests.Unit
                 Assert.IsFalse(model.IsDefault);
                 Assert.IsNull(model.DefaultEffort);
                 Assert.AreEqual(0, model.Efforts.Length);
+                Assert.AreSame(LlmModelCapabilities.Unknown, model.Capabilities);
             }
             var effort = new LlmEffortOption("high", "thorough");
             var efforts = new[] { effort };

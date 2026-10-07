@@ -415,7 +415,7 @@ namespace VBAi.Tests.Unit
             using (var runtime = new RuntimeScope())
             using (var window = ReadyHttpWindow(new ChatSessionState { Scope = "temporary:test", Provider = "Ollama" }))
             {
-                var response = "{\"choices\":[{\"message\":{\"role\":\"assistant\",\"content\":null,\"tool_calls\":[{\"id\":\"call\",\"function\":{\"name\":\"status\",\"arguments\":\"{}\"}}]}}]}";
+                var response = "{\"choices\":[{\"finish_reason\":\"tool_calls\",\"message\":{\"role\":\"assistant\",\"content\":null,\"tool_calls\":[{\"id\":\"call\",\"function\":{\"name\":\"status\",\"arguments\":\"{}\"}}]}}]}";
                 var handler = new ChatResponseHandler(Enumerable.Range(0, 9).Select(i => response.Replace("\"call\"", "\"call-" + i + "\"")).ToArray()); window.HttpHandlerOverride = () => handler; Question(window, "limit"); CompleteOnSta((Task)Call(window, "SendAsync")); Assert.AreEqual(9, handler.Requests.Count); Assert.IsTrue(Get<ChatSessionState>(window, "currentSession").BudgetPaused); Assert.AreEqual(9, Get<ChatSessionState>(window, "currentSession").CompletedToolActions.Count); Set(window, "currentSession", null);
             }
         }
@@ -498,7 +498,7 @@ namespace VBAi.Tests.Unit
             using (var window = ReadyHttpWindow(new ChatSessionState { Scope = "temporary:test", Provider = "Ollama" }))
             {
                 window.HttpHandlerOverride = () => new RuntimeHttpHandler { Streaming = true, Body = "data: {\"choices\":[{\"delta\":{\"content\":\"partial\"}}]}\n\ndata: {\"error\":{\"message\":\"failed\"}}\n\n" }; Question(window, "request"); CompleteOnSta((Task)Call(window, "SendAsync")); var live = Get<Dictionary<string, ChatEntry>>(window, "liveEntries"); Assert.AreEqual(1, live.Count); Assert.IsTrue(Get<HashSet<string>>(window, "completedStreams").Contains(live.Keys.Single())); Assert.AreEqual("partial", live.Values.Single().Text);
-                string call = "{\"id\":\"one\",\"function\":{\"name\":\"status\",\"arguments\":\"{}\"}}"; window.CodexInterruptOverride = () => Task.CompletedTask; window.HttpHandlerOverride = () => new RuntimeHttpHandler { Body = "{\"choices\":[{\"message\":{\"role\":\"assistant\",\"tool_calls\":[" + call + "," + call.Replace("one", "two") + "]}}]}" }; ChatWindow.InvokeTool = (t, n, a) => { CompleteOnSta((Task)Call(window, "StopTurnAsync")); return Task.FromResult("stopped after first tool"); }; Question(window, "tools"); CompleteOnSta((Task)Call(window, "SendAsync")); Assert.IsTrue(Get<bool>(window, "stopRequested"));
+                string call = "{\"id\":\"one\",\"function\":{\"name\":\"status\",\"arguments\":\"{}\"}}"; window.CodexInterruptOverride = () => Task.CompletedTask; window.HttpHandlerOverride = () => new RuntimeHttpHandler { Body = "{\"choices\":[{\"finish_reason\":\"tool_calls\",\"message\":{\"role\":\"assistant\",\"tool_calls\":[" + call + "," + call.Replace("one", "two") + "]}}]}" }; ChatWindow.InvokeTool = (t, n, a) => { CompleteOnSta((Task)Call(window, "StopTurnAsync")); return Task.FromResult("stopped after first tool"); }; Question(window, "tools"); CompleteOnSta((Task)Call(window, "SendAsync")); Assert.IsTrue(Get<bool>(window, "stopRequested"));
                 window.HttpHandlerOverride = () => { CompleteOnSta((Task)Call(window, "StopTurnAsync")); return new RuntimeHttpHandler(); }; Question(window, "stop before HTTP loop"); CompleteOnSta((Task)Call(window, "SendAsync")); Assert.IsFalse(Get<bool>(window, "busy")); Set(window, "currentSession", null);
             }
         }
@@ -682,6 +682,31 @@ namespace VBAi.Tests.Unit
                     else { Assert.AreSame(session, Get<ChatSessionState>(window, "currentSession")); Assert.AreEqual(state == "paused", session.BudgetPaused); }
                     Set(window, "currentSession", null);
                 }
+        }
+
+        [STATestMethod, TestCategory("Unit")]
+        public void ModelSummaryShowsDeclaredCapabilitiesAndKeepsUndeclaredMetadataUnknown()
+        {
+            using (var runtime = new RuntimeScope())
+            using (var window = ReadyHttpWindow(new ChatSessionState { Scope = "temporary:test", Provider = "Ollama" }))
+            {
+                var models = Get<ComboBox>(window, "modelPicker");
+                var summary = Get<Button>(window, "modelSummary"); var tips = Get<ToolTip>(window, "toolTips");
+                models.Items.Add(new LlmModelOption("text-only", "Declared", capabilities: new LlmModelCapabilities(false, false, true)));
+                models.SelectedIndex = models.Items.Count - 1; Call(window, "RefreshModelSummary");
+                StringAssert.Contains(summary.Text, UiText.Get("Text only"));
+                string declared = tips.GetToolTip(summary);
+                StringAssert.Contains(declared, UiText.Get("Tool calling") + ": " + UiText.Get("Not supported"));
+                StringAssert.Contains(declared, UiText.Get("Reasoning") + ": " + UiText.Get("Not supported"));
+                StringAssert.Contains(declared, UiText.Get("Vision") + ": " + UiText.Get("Supported"));
+                models.Items.Add(new LlmModelOption("name-does-not-declare-tool-vision-reasoning", "Undeclared"));
+                models.SelectedIndex = models.Items.Count - 1; Call(window, "RefreshModelSummary");
+                Assert.IsFalse(summary.Text.Contains(UiText.Get("Text only")));
+                string unknown = tips.GetToolTip(summary);
+                foreach (string label in new[] { "Tool calling", "Reasoning", "Vision" })
+                    StringAssert.Contains(unknown, UiText.Get(label) + ": " + UiText.Get("Unknown"));
+                Set(window, "currentSession", null);
+            }
         }
     }
 }

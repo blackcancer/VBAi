@@ -2808,4 +2808,67 @@ QQ 附加記憶體
   <data name="Back to conversation" xml:space="preserve">
     <value>返回對話</value>
   </data>
+  <data name="Reading VBA code" xml:space="preserve">
+    <value>正在讀取 VBA 程式碼</value>
+  </data>
+  <data name="Updating VBA code" xml:space="preserve">
+    <value>正在修改 VBA 程式碼</value>
+  </data>
+  <data name="Working in the editor" xml:space="preserve">
+    <value>正在編輯器中工作</value>
+  </data>
+  <data name="Inspecting VBA project" xml:space="preserve">
+    <value>正在檢查 VBA 專案</value>
+  </data>
+  <data name="Using a tool" xml:space="preserve">
+    <value>正在使用工具</value>
+  </data>
+  <data name="Searching the web" xml:space="preserve">
+    <value>正在搜尋網頁</value>
+  </data>
+  <data name="Viewing an image" xml:space="preserve">
+    <value>正在檢視影像</value>
+  </data>
+  <data name="Running a command" xml:space="preserve">
+    <value>正在執行命令</value>
+  </data>
+  <data name="Coordinating agents" xml:space="preserve">
+    <value>正在協調代理程式</value>
+  </data>
+  <data name="Appearance recovery failed" xml:space="preserve">
+    <value>還原外觀失敗</value>
+  </data>
+  <data name="The host does not expose the native Compile command. Compilation was not verified." xml:space="preserve">
+    <value>宿主未提供原生編譯命令。編譯尚未驗證。</value>
+  </data>
+  <data name="The native Compile command is disabled. The project may already be compiled or the host may restrict it; compilation was not verified." xml:space="preserve">
+    <value>原生編譯命令已停用。專案可能已編譯，或宿主限制了存取；編譯尚未驗證。</value>
+  </data>
+  <data name="The LLM endpoint must use HTTPS (or HTTP on localhost), without embedded credentials or a fragment." xml:space="preserve">
+    <value>LLM 端點必須使用 HTTPS（或 localhost 上的 HTTP），且不能包含嵌入的認證資訊或片段。</value>
+  </data>
+  <data name="The configured chat endpoint has no recognized model catalog path." xml:space="preserve">
+    <value>設定的聊天端點沒有可識別的模型目錄路徑。</value>
+  </data>
+  <data name="The request does not belong to its model connection." xml:space="preserve">
+    <value>該請求不屬於其模型連線。</value>
+  </data>
+  <data name="Tool calling" xml:space="preserve">
+    <value>工具呼叫</value>
+  </data>
+  <data name="Vision" xml:space="preserve">
+    <value>視覺</value>
+  </data>
+  <data name="Supported" xml:space="preserve">
+    <value>支援</value>
+  </data>
+  <data name="Not supported" xml:space="preserve">
+    <value>不支援</value>
+  </data>
+  <data name="Text only" xml:space="preserve">
+    <value>僅文字</value>
+  </data>
+  <data name="This model does not support tool calling." xml:space="preserve">
+    <value>此模型不支援工具呼叫。</value>
+  </data>
 </root>

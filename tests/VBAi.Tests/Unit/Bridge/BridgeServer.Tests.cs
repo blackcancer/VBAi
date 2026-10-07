@@ -460,8 +460,9 @@ namespace VBAi.Tests.Unit
                 using (var server = new BridgeServer(dispatcher, null, id))
                 {
                     Infrastructure.VbeToolBoundaryFixture.Configure(server.Native);
+                    server.CaptureSignaturePersistence = p => () => { };
                     server.Execute = Infrastructure.VbeToolBoundaryFixture.Execute;
-                    server.PersistSignature = project => new VBAi.Tests.Infrastructure.VbeToolPersistence { Saved = true };
+                    server.PersistSignature = (project, authorize) => { authorize(); return new VBAi.Tests.Infrastructure.VbeToolPersistence { Saved = true }; };
                     server.Start();
                     var json = new JavaScriptSerializer();
                     foreach (string command in new[] { "debug_windows", "debug_dialog", "debug_item", "respond_debug_dialog",
@@ -504,6 +505,7 @@ namespace VBAi.Tests.Unit
                 using (var server = new BridgeServer(dispatcher, null, id))
                 {
                     Infrastructure.VbeToolBoundaryFixture.Configure(server.Native);
+                    server.CaptureSignaturePersistence = p => () => { };
                     server.Execute = Infrastructure.VbeToolBoundaryFixture.Execute;
                     server.Start();
                     const string request = "{\"Command\":\"compile_project\",\"Project\":\"P\"}";
@@ -514,15 +516,21 @@ namespace VBAi.Tests.Unit
                     Assert.AreEqual(false, diagnostic["Compiled"]);
                     Assert.AreEqual("NativeDiagnosticCaptured", diagnostic["Verification"]);
                     Assert.IsNotNull(diagnostic["NextRead"]);
+                    server.Execute = r => Response.Success(new { Executed = false, Available = false, Capability = "Disabled", Reason = "unavailable" });
+                    var unavailable = (IDictionary<string, object>)SendWithMessagePump(id, request)["Data"];
+                    Assert.AreEqual(false, unavailable["Compiled"]); Assert.AreEqual("NativeCompileDisabled", unavailable["Verification"]);
                     server.Execute = r => Response.Failure("compile declined");
                     Assert.AreEqual("compile declined", SendWithMessagePump(id, request)["Error"]);
                     server.Execute = r => { throw new InvalidOperationException("compile threw"); };
                     Assert.AreEqual("compile threw", SendWithMessagePump(id, request)["Error"]);
                     server.Native.AwaitCompileDialog = completed => null;
                     // Holding the UI callback in the message queue models the native timeout.
+                    int lateExecutions = 0;
+                    server.Execute = r => { lateExecutions++; return Infrastructure.VbeToolBoundaryFixture.Execute(r); };
                     var delayed = SendWithoutMessagePump(id, request);
                     StringAssert.Contains((string)delayed["Error"], "did not return");
                     Application.DoEvents();
+                    Assert.AreEqual(0, lateExecutions, "A cancelled queued callback must never compile later.");
                 }
             }
         }
@@ -530,7 +538,7 @@ namespace VBAi.Tests.Unit
         [TestMethod]
         /// <summary>Vérifie le statut de sauvegarde de signature et les nouvelles tentatives bornées en cas d’occupation.</summary>
         [STATestMethod]
-        public void SignatureMatrixRetainsSaveStatusAndBoundedBusyRetries()
+        public void SignatureMatrixRetainsSaveStatusAndNeverReplaysAnAdmittedSave()
         {
             using (var dispatcher = new Control())
             {
@@ -539,34 +547,43 @@ namespace VBAi.Tests.Unit
                 using (var server = new BridgeServer(dispatcher, null, id))
                 {
                     Infrastructure.VbeToolBoundaryFixture.Configure(server.Native);
+                    server.CaptureSignaturePersistence = p => () => { };
                     server.Execute = Infrastructure.VbeToolBoundaryFixture.Execute;
                     server.Start();
                     const string request = "{\"Command\":\"sign_project\",\"Project\":\"P\",\"CertificateThumbprint\":\"fixture\"}";
                     foreach (bool saved in new[] { true, false })
                     {
-                        server.PersistSignature = p => new VBAi.Tests.Infrastructure.VbeToolPersistence { Saved = saved };
+                        server.PersistSignature = (p, authorize) => { authorize(); return new VBAi.Tests.Infrastructure.VbeToolPersistence { Saved = saved }; };
                         var result = (IDictionary<string, object>)SendWithMessagePump(id, request)["Data"];
                         Assert.AreEqual(!saved, result["SaveRequired"]);
                         Assert.IsNull(result["PersistenceError"]);
                         Assert.IsNotNull(result["HostStatus"]);
                     }
-                    server.PersistSignature = p => null;
+                    server.PersistSignature = (p, authorize) => { authorize(); return null; };
                     Assert.AreEqual(true, ((IDictionary<string, object>)SendWithMessagePump(id, request)["Data"])["SaveRequired"]);
-                    server.PersistSignature = p => { throw new InvalidOperationException("save refused"); };
+                    server.PersistSignature = (p, authorize) => { authorize(); throw new InvalidOperationException("save refused"); };
                     server.Execute = r => r.Command == "project_signature_status" ? Response.Failure("status refused") : Infrastructure.VbeToolBoundaryFixture.Execute(r);
                     var failure = (IDictionary<string, object>)SendWithMessagePump(id, request)["Data"];
                     Assert.AreEqual("save refused", failure["PersistenceError"]);
                     Assert.AreEqual("status refused", failure["HostStatusError"]);
                     Assert.IsNull(failure["HostStatus"]);
                     int attempts = 0;
-                    server.PersistSignature = p => { if (++attempts == 2) return new VBAi.Tests.Infrastructure.VbeToolPersistence { Saved = true }; throw new InvalidOperationException("0x800AC472 busy"); };
-                    Assert.AreEqual(false, ((IDictionary<string, object>)SendWithMessagePump(id, request)["Data"])["SaveRequired"]);
-                    Assert.AreEqual(2, attempts);
+                    server.PersistSignature = (p, authorize) => { authorize(); if (++attempts == 2) return new VBAi.Tests.Infrastructure.VbeToolPersistence { Saved = true }; throw new InvalidOperationException("0x800AC472 busy"); };
+                    Assert.AreEqual(true, ((IDictionary<string, object>)SendWithMessagePump(id, request)["Data"])["SaveRequired"]);
+                    Assert.AreEqual(1, attempts);
                     attempts = 0;
-                    server.PersistSignature = p => { attempts++; throw new InvalidOperationException("0x800AC472 busy"); };
+                    server.PersistSignature = (p, authorize) => { authorize(); attempts++; throw new InvalidOperationException("0x800AC472 busy"); };
                     failure = (IDictionary<string, object>)SendWithMessagePump(id, request)["Data"];
-                    Assert.AreEqual(12, attempts);
+                    Assert.AreEqual(1, attempts);
                     StringAssert.Contains((string)failure["PersistenceError"], "busy");
+                    int refusedSaves = 0, refusedStatusReads = 0;
+                    server.CaptureSignaturePersistence = p => () => { throw new InvalidOperationException("original identity changed"); };
+                    server.PersistSignature = (p, authorize) => { authorize(); refusedSaves++; return new VBAi.Tests.Infrastructure.VbeToolPersistence { Saved = true }; };
+                    server.Execute = r => { if (r.Command == "project_signature_status") refusedStatusReads++; return Infrastructure.VbeToolBoundaryFixture.Execute(r); };
+                    failure = (IDictionary<string, object>)SendWithMessagePump(id, request)["Data"];
+                    Assert.AreEqual(0, refusedSaves); Assert.AreEqual(0, refusedStatusReads);
+                    Assert.AreEqual(true, failure["SaveRequired"]);
+                    StringAssert.Contains((string)failure["PersistenceError"], "identity changed");
                 }
             }
         }
@@ -638,6 +655,7 @@ namespace VBAi.Tests.Unit
                 using (var server = new BridgeServer(dispatcher, null, id))
                 {
                     Infrastructure.VbeToolBoundaryFixture.Configure(server.Native);
+                    server.CaptureSignaturePersistence = p => () => { };
                     server.Execute = Infrastructure.VbeToolBoundaryFixture.Execute;
                     int calls = 0;
                     server.Native.SetVbeOption = request => { calls++; Assert.AreEqual("editor", request.Pane); return new { Changed = true }; };

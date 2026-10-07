@@ -228,8 +228,18 @@ bytes. When native UserForm import adds exactly one leading empty code line,
 VBAi removes it only after complete visible-code matching and project/component
 identity revalidation. Intentional whitespace and hidden export attributes remain
 protected by the final exact FRM readback. Unexpected code is not rewritten and
-an uncertain COM mutation is not retried. Complete native form roundtrips remain tracked in
-[qualification](release-qualification.md).
+an uncertain COM mutation is not retried. If a returned native UserForm import
+initially exports different resources, the owner-dispatched workflow permits one
+one-shot WinForms timer pulse and one complete readback after revalidating its
+owner and imported component identities. This returns to the native message loop
+before resuming; a `Task.Yield` continuation posted through `Control.BeginInvoke`
+can otherwise be drained within the same window-message callback. The timer is
+stopped and disposed before the continuation and performs no COM inspection.
+This scheduling step does not guarantee native persistence or weaken comparison.
+Success still requires the exact complete target snapshot;
+a persistent mismatch or a readback error retains recovery without another native
+import, font assignment, or designer activation. Complete native form roundtrips
+remain tracked in [qualification](release-qualification.md).
 
 Before mutation, the workflow records a backup and recovery marker. Incoming sources
 are validated and read back. A COM error after partial application does not trigger
@@ -251,6 +261,16 @@ absence. Failed deletion, unreadable metadata or a replacement entry prevents a
 success report without another deletion or import attempt. If an import is refused
 before mutation and marker cleanup also fails, both errors are retained. A
 legitimate rollback of a completed import can still start with no pending marker.
+
+The reviewed revision includes the exact backup and post-import commit identities
+and the bounded recovery-marker contents. Restore freezes those commit IDs and
+checks recovery authority again after preview and before native admission. A new
+import freezes its recovery authority immediately after preparing its backup and
+marker. Both workflows recheck that authority around owner readback and before
+recording or completing recovery; only their own measured-after commit replaces
+the frozen after-state. A concurrent change refuses restoration or preserves
+pending recovery after an already admitted import; it never substitutes a newly
+resolved backup or clears a changed recovery marker.
 
 Private refs under `refs/codex/*`, including checkpoints and backup state, are not
 published by normal pushes. Their legacy spelling is a storage contract, not a

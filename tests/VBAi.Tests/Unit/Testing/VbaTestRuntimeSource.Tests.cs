@@ -9,6 +9,17 @@ namespace VBAi.Tests.Unit
     [TestClass, TestCategory("Unit")]
     public sealed class VbaTestRuntimeSourceTests
     {
+        /// <summary>Reviewed dispatch source must be unchanged by the VBE's trailing-space normalization.</summary>
+        [TestMethod]
+        public void GeneratedSupportSurvivesNativeTrailingWhitespaceNormalization()
+        {
+            string source = VbaTestRuntimeSource.Generate(Catalog(Descriptor("TestsMath", "Good")));
+            string observed = string.Join("\r\n", source.Split(new[] { "\r\n" }, StringSplitOptions.None)
+                .Select(line => line.TrimEnd(' ', '\t')));
+            Assert.AreEqual(source, observed);
+            StringAssert.Contains(source, "\r\n'\r\n");
+            StringAssert.Contains(source, "THE SOFTWARE IS PROVIDED");
+        }
         /// <summary>Checks the MIT grant travels with dispatch source while legacy ownership headers remain recognized.</summary>
         [TestMethod]
         public void GeneratedUserProjectRuntimeCarriesMitNoticeWithoutChangingOwnershipProtocol()

@@ -105,7 +105,73 @@ namespace VBAi
             ContinuationPostReturned,
 
             /// <summary>Identifies the continuation post failed case of phase.</summary>
-            ContinuationPostFailed
+            ContinuationPostFailed,
+
+            /// <summary>Records owner persistence continuation entry without inspected values.</summary>
+            ImportReadbackYieldBefore,
+
+            /// <summary>Records owner persistence continuation return without inspected values.</summary>
+            ImportReadbackYieldReturned,
+
+            /// <summary>Records read-only guard entry without inspected values.</summary>
+            ImportReadbackGuardBefore,
+
+            /// <summary>Records read-only guard return without inspected values.</summary>
+            ImportReadbackGuardReturned,
+
+            /// <summary>Records COM owner check entry without inspected values.</summary>
+            ImportReadbackOwnerBefore,
+
+            /// <summary>Records COM owner check return without inspected values.</summary>
+            ImportReadbackOwnerReturned,
+
+            /// <summary>Records imported component identity check entry without inspected values.</summary>
+            ImportReadbackIdentityBefore,
+
+            /// <summary>Records imported component identity check return without inspected values.</summary>
+            ImportReadbackIdentityReturned,
+
+            /// <summary>Records complete native snapshot capture entry without inspected values.</summary>
+            ImportReadbackCaptureBefore,
+
+            /// <summary>Records complete native snapshot capture return without inspected values.</summary>
+            ImportReadbackCaptureReturned,
+
+            /// <summary>Records snapshot project check entry without inspected values.</summary>
+            ImportReadbackProjectBefore,
+
+            /// <summary>Records snapshot project check return without inspected values.</summary>
+            ImportReadbackProjectReturned,
+
+            /// <summary>Records native component export entry without inspected values.</summary>
+            ImportReadbackExportBefore,
+
+            /// <summary>Records native component export return without inspected values.</summary>
+            ImportReadbackExportReturned,
+
+            /// <summary>Records qualification owner handle read entry without inspected values.</summary>
+            ImportReadbackContextOwnerBefore,
+
+            /// <summary>Records qualification owner handle read return without inspected values.</summary>
+            ImportReadbackContextOwnerReturned,
+
+            /// <summary>Records qualification active-project read entry without inspected values.</summary>
+            ImportReadbackContextActiveBefore,
+
+            /// <summary>Records qualification active-project read return without inspected values.</summary>
+            ImportReadbackContextActiveReturned,
+
+            /// <summary>Records qualification document scope read entry without inspected values.</summary>
+            ImportReadbackContextScopeBefore,
+
+            /// <summary>Records qualification document scope read return without inspected values.</summary>
+            ImportReadbackContextScopeReturned,
+
+            /// <summary>Records qualification policy check entry without inspected values.</summary>
+            ImportReadbackContextPolicyBefore,
+
+            /// <summary>Records qualification policy check return without inspected values.</summary>
+            ImportReadbackContextPolicyReturned
         }
 
         /// <summary>Lists the supported options reader values.</summary>

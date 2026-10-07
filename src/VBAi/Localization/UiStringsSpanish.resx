@@ -2808,4 +2808,67 @@ Inicio de sesión mediante Git Credential Manager; la identidad de los commits s
   <data name="Back to conversation" xml:space="preserve">
     <value>Volver a la conversación</value>
   </data>
+  <data name="Reading VBA code" xml:space="preserve">
+    <value>Lectura del código VBA</value>
+  </data>
+  <data name="Updating VBA code" xml:space="preserve">
+    <value>Modificación del código VBA</value>
+  </data>
+  <data name="Working in the editor" xml:space="preserve">
+    <value>Trabajo en el editor</value>
+  </data>
+  <data name="Inspecting VBA project" xml:space="preserve">
+    <value>Inspección del proyecto VBA</value>
+  </data>
+  <data name="Using a tool" xml:space="preserve">
+    <value>Uso de una herramienta</value>
+  </data>
+  <data name="Searching the web" xml:space="preserve">
+    <value>Búsqueda en la web</value>
+  </data>
+  <data name="Viewing an image" xml:space="preserve">
+    <value>Visualización de una imagen</value>
+  </data>
+  <data name="Running a command" xml:space="preserve">
+    <value>Ejecución de un comando</value>
+  </data>
+  <data name="Coordinating agents" xml:space="preserve">
+    <value>Coordinación de agentes</value>
+  </data>
+  <data name="Appearance recovery failed" xml:space="preserve">
+    <value>Error al restaurar la apariencia</value>
+  </data>
+  <data name="The host does not expose the native Compile command. Compilation was not verified." xml:space="preserve">
+    <value>El host no ofrece el comando nativo Compilar. La compilación no se ha verificado.</value>
+  </data>
+  <data name="The native Compile command is disabled. The project may already be compiled or the host may restrict it; compilation was not verified." xml:space="preserve">
+    <value>El comando nativo Compilar está deshabilitado. Es posible que el proyecto ya esté compilado o que el host restrinja el acceso; la compilación no se ha verificado.</value>
+  </data>
+  <data name="The LLM endpoint must use HTTPS (or HTTP on localhost), without embedded credentials or a fragment." xml:space="preserve">
+    <value>El punto de conexión LLM debe usar HTTPS (o HTTP en localhost), sin credenciales incrustadas ni fragmentos.</value>
+  </data>
+  <data name="The configured chat endpoint has no recognized model catalog path." xml:space="preserve">
+    <value>El punto de conexión de chat configurado no tiene una ruta de catálogo de modelos reconocida.</value>
+  </data>
+  <data name="The request does not belong to its model connection." xml:space="preserve">
+    <value>La solicitud no pertenece a su conexión de modelo.</value>
+  </data>
+  <data name="Tool calling" xml:space="preserve">
+    <value>Llamadas a herramientas</value>
+  </data>
+  <data name="Vision" xml:space="preserve">
+    <value>Visión</value>
+  </data>
+  <data name="Supported" xml:space="preserve">
+    <value>Compatible</value>
+  </data>
+  <data name="Not supported" xml:space="preserve">
+    <value>No compatible</value>
+  </data>
+  <data name="Text only" xml:space="preserve">
+    <value>Solo texto</value>
+  </data>
+  <data name="This model does not support tool calling." xml:space="preserve">
+    <value>Este modelo no admite llamadas a herramientas.</value>
+  </data>
 </root>

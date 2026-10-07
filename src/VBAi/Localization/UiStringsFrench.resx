@@ -1992,7 +1992,7 @@ Connexion via Git Credential Manager ; identité de commit configurée dans Git.
     <value>Échec</value>
   </data>
   <data name="Cancelled" xml:space="preserve">
-    <value>Interrompue</value>
+    <value>Annulée</value>
   </data>
   <data name="Declined" xml:space="preserve">
     <value>Refusée</value>
@@ -2374,4 +2374,67 @@ Connexion via Git Credential Manager ; identité de commit configurée dans Git.
   </data>
   <data name="Open the local VBAi user guide in the interface language" xml:space="preserve"><value>Ouvrir le guide VBAi local dans la langue de l’interface</value></data>
   <data name="Local help is not included in this build. Place the VBAi help files in the Help folder beside the application." xml:space="preserve"><value>L’aide locale n’est pas incluse dans cette version. Placez les fichiers d’aide VBAi dans le dossier Help à côté de l’application.</value></data>
+  <data name="Reading VBA code" xml:space="preserve">
+    <value>Lecture du code VBA</value>
+  </data>
+  <data name="Updating VBA code" xml:space="preserve">
+    <value>Modification du code VBA</value>
+  </data>
+  <data name="Working in the editor" xml:space="preserve">
+    <value>Travail dans l’éditeur</value>
+  </data>
+  <data name="Inspecting VBA project" xml:space="preserve">
+    <value>Inspection du projet VBA</value>
+  </data>
+  <data name="Using a tool" xml:space="preserve">
+    <value>Utilisation d’un outil</value>
+  </data>
+  <data name="Searching the web" xml:space="preserve">
+    <value>Recherche sur le Web</value>
+  </data>
+  <data name="Viewing an image" xml:space="preserve">
+    <value>Consultation d’une image</value>
+  </data>
+  <data name="Running a command" xml:space="preserve">
+    <value>Exécution d’une commande</value>
+  </data>
+  <data name="Coordinating agents" xml:space="preserve">
+    <value>Coordination des agents</value>
+  </data>
+  <data name="Appearance recovery failed" xml:space="preserve">
+    <value>Échec de la restauration de l’apparence</value>
+  </data>
+  <data name="The host does not expose the native Compile command. Compilation was not verified." xml:space="preserve">
+    <value>L’hôte ne propose pas la commande native Compiler. La compilation n’a pas été vérifiée.</value>
+  </data>
+  <data name="The native Compile command is disabled. The project may already be compiled or the host may restrict it; compilation was not verified." xml:space="preserve">
+    <value>La commande native Compiler est désactivée. Le projet est peut-être déjà compilé ou l’hôte en limite l’accès ; la compilation n’a pas été vérifiée.</value>
+  </data>
+  <data name="The LLM endpoint must use HTTPS (or HTTP on localhost), without embedded credentials or a fragment." xml:space="preserve">
+    <value>Le point de terminaison LLM doit utiliser HTTPS (ou HTTP sur localhost), sans identifiants intégrés ni fragment.</value>
+  </data>
+  <data name="The configured chat endpoint has no recognized model catalog path." xml:space="preserve">
+    <value>Le point de terminaison de conversation configuré ne correspond à aucun chemin de catalogue de modèles reconnu.</value>
+  </data>
+  <data name="The request does not belong to its model connection." xml:space="preserve">
+    <value>La requête ne correspond pas à sa connexion de modèle.</value>
+  </data>
+  <data name="Tool calling" xml:space="preserve">
+    <value>Appels d’outils</value>
+  </data>
+  <data name="Vision" xml:space="preserve">
+    <value>Vision</value>
+  </data>
+  <data name="Supported" xml:space="preserve">
+    <value>Pris en charge</value>
+  </data>
+  <data name="Not supported" xml:space="preserve">
+    <value>Non pris en charge</value>
+  </data>
+  <data name="Text only" xml:space="preserve">
+    <value>Texte uniquement</value>
+  </data>
+  <data name="This model does not support tool calling." xml:space="preserve">
+    <value>Ce modèle ne prend pas en charge les appels d’outils.</value>
+  </data>
 </root>

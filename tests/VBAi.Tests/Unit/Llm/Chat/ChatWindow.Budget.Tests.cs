@@ -16,7 +16,7 @@ namespace VBAi.Tests.Unit
                 using (var window = ReadyHttpWindow(new ChatSessionState { Scope = "temporary:test", Provider = "Ollama" }))
                 {
                     int count = result.Contains("same") ? 9 : 8; int calls = 0; var json = new JavaScriptSerializer();
-                    var replies = Enumerable.Range(0, count).Select(i => json.Serialize(new { choices = new[] { new { message = new { role = "assistant", tool_calls = new[] { new { id = "stall-" + i, type = "function", function = new { name = "status", arguments = "{}" } } } } } } })).ToArray();
+                    var replies = Enumerable.Range(0, count).Select(i => json.Serialize(new { choices = new[] { new { finish_reason = "tool_calls", message = new { role = "assistant", tool_calls = new[] { new { id = "stall-" + i, type = "function", function = new { name = "status", arguments = "{}" } } } } } } })).ToArray();
                     var handler = new ChatResponseHandler(replies); window.HttpHandlerOverride = () => handler;
                     ChatWindow.InvokeTool = (tools, name, args) => { calls++; return Task.FromResult(result); };
                     Question(window, "bounded repeated work"); CompleteOnSta((Task)Call(window, "SendAsync"));
@@ -34,7 +34,7 @@ namespace VBAi.Tests.Unit
             using (var window = ReadyHttpWindow(new ChatSessionState { Scope = "temporary:test", Provider = "Ollama" }))
             {
                 int actions = 0; var json = new JavaScriptSerializer();
-                var replies = Enumerable.Range(0, 8).Select(i => json.Serialize(new { choices = new[] { new { message = new { role = "assistant", tool_calls = new[] { new { id = "action-" + i, type = "function", function = new { name = "status", arguments = "{}" } } } } } } })).ToArray();
+                var replies = Enumerable.Range(0, 8).Select(i => json.Serialize(new { choices = new[] { new { finish_reason = "tool_calls", message = new { role = "assistant", tool_calls = new[] { new { id = "action-" + i, type = "function", function = new { name = "status", arguments = "{}" } } } } } } })).ToArray();
                 var first = new ChatResponseHandler(replies);
                 window.HttpHandlerOverride = () => first;
                 ChatWindow.InvokeTool = (t, n, a) => { actions++; return Task.FromResult(json.Serialize(Response.Failure("No progress"))); };
@@ -245,7 +245,7 @@ namespace VBAi.Tests.Unit
                 {
                     using (var window = ReadyHttpWindow(new ChatSessionState()))
                     {
-                        var handler = new RuntimeHttpHandler { Body = new JavaScriptSerializer().Serialize(new { choices = new[] { new { message = new { role = "assistant", tool_calls = calls } } } }) };
+                        var handler = new RuntimeHttpHandler { Body = new JavaScriptSerializer().Serialize(new { choices = new[] { new { finish_reason = "tool_calls", message = new { role = "assistant", tool_calls = calls } } } }) };
                         window.HttpHandlerOverride = () => handler;
                         var task = (Task<bool>)Call(window, "RunHttpBudgetAsync", LlmProvider.All[2], "local-test");
                         Assert.ThrowsException<InvalidOperationException>(() => CompleteOnSta(task));
@@ -257,7 +257,7 @@ namespace VBAi.Tests.Unit
                     var handler = new RuntimeHttpHandler();
                     if (stopAt == 0) Set(window, "stopRequested", true);
                     if (stopAt == 1) handler.BeforeResponse = () => Set(window, "stopRequested", true);
-                    if (stopAt == 2) { handler.Body = "{\"choices\":[{\"message\":{\"tool_calls\":[{\"id\":\"action\",\"function\":{\"name\":\"status\",\"arguments\":\"{}\"}}]}}]}"; ChatWindow.InvokeTool = (t, n, a) => { Set(window, "stopRequested", true); return Task.FromResult("{\"Ok\":true}"); }; }
+                    if (stopAt == 2) { handler.Body = "{\"choices\":[{\"finish_reason\":\"tool_calls\",\"message\":{\"tool_calls\":[{\"id\":\"action\",\"function\":{\"name\":\"status\",\"arguments\":\"{}\"}}]}}]}"; ChatWindow.InvokeTool = (t, n, a) => { Set(window, "stopRequested", true); return Task.FromResult("{\"Ok\":true}"); }; }
                     if (stopAt == 3) handler.BeforeResponse = () => { Set(window, "stopRequested", true); Get<LlmChatClient>(window, "activeHttpClient").ToolHandler("status", "{}").GetAwaiter().GetResult(); };
                     window.HttpHandlerOverride = () => handler;
                     var task = (Task<bool>)Call(window, "RunHttpBudgetAsync", LlmProvider.All[2], "local-test");
@@ -432,6 +432,79 @@ namespace VBAi.Tests.Unit
                 Assert.IsTrue(task.IsFaulted); Assert.IsTrue(window.IsDisposed);
                 Assert.IsNull(Get<LlmChatClient>(window, "activeHttpClient"));
                 Assert.AreEqual(3, messages.Count);
+                Set(window, "currentSession", null);
+            }
+        }
+
+        [STATestMethod, TestCategory("Unit")]
+        public void UniversalToolTimelineUsesReceiptsAndPreservesHistoryAndCancellation()
+        {
+            using (var runtime = new RuntimeScope())
+            using (var window = ReadyHttpWindow(new ChatSessionState()))
+            {
+                Set(window, "activeTurnId", "turn");
+                var state = Get<ChatSessionState>(window, "currentSession");
+                int index = 0;
+                foreach (var receipt in new[] { "{\"Ok\":true}", "{\"Ok\":false,\"Error\":\"Refused\"}", "{\"Ok\":false,\"Data\":{\"Uncertain\":true,\"Reason\":\"Inspect state\"}}" })
+                {
+                    string id = "call:" + index++;
+                    ChatWindow.InvokeTool = (t, n, a) => Task.FromResult(receipt);
+                    var task = (Task<string>)Call(window, "ExecuteProjectedBudgetTool", "read_module", "{\"Project\":\"Book\",\"Module\":\"Module1\"}", id);
+                    CompleteOnSta(task); Assert.AreEqual(receipt, task.Result);
+                    var entry = Get<List<ChatEntry>>(window, "transcriptEntries").Single(e => e.Activity?.Id == id);
+                    Assert.AreEqual(ProviderActivityProjection.ToolOutcome(receipt), entry.Activity.Status);
+                    StringAssert.Contains(entry.Activity.Title, UiText.Get("Reading VBA code")); StringAssert.Contains(entry.Activity.Title, "Book · Module1");
+                    Assert.AreEqual("turn", entry.TurnId);
+                }
+                ChatWindow.InvokeTool = (t, n, a) => Task.FromException<string>(new OperationCanceledException("Stopped"));
+                var cancelled = (Task<string>)Call(window, "ExecuteProjectedBudgetTool", "read_module", "{}", "cancelled");
+                Assert.ThrowsException<OperationCanceledException>(() => CompleteOnSta(cancelled));
+                Assert.AreEqual("interrupted", Get<List<ChatEntry>>(window, "transcriptEntries").Single(e => e.Activity?.Id == "cancelled").Activity.Status);
+                Assert.AreEqual(4, state.CompletedToolActions.Count);
+                Set(window, "currentSession", null);
+            }
+        }
+
+        [STATestMethod, TestCategory("Unit")]
+        public void UniversalHttpActivitiesAreBoundToSessionTurnAndRequestLifetimeAndDuplicateCallsKeepActualReceipts()
+        {
+            using (var runtime = new RuntimeScope())
+            using (var window = ReadyHttpWindow(new ChatSessionState { Scope = "temporary:test", Provider = "Ollama" }))
+            {
+                var json = new System.Web.Script.Serialization.JavaScriptSerializer();
+                string call = json.Serialize(new { choices = new[] { new { finish_reason = "tool_calls", message = new { role = "assistant", tool_calls = new[] { new { id = "once", type = "function", function = new { name = "read_module", arguments = "{}" } } } } } } });
+                window.HttpHandlerOverride = () => new ChatResponseHandler(call, call, "{\"choices\":[{\"message\":{\"role\":\"assistant\",\"content\":\"done\"}}]}");
+                Action<CodexAgentActivity> callback = null; Action<string> textCallback = null; int calls = 0;
+                ChatWindow.InvokeTool = (t, n, a) =>
+                {
+                    calls++;
+                    callback = Get<LlmChatClient>(window, "activeHttpClient").ActivityUpdate;
+                    textCallback = Get<LlmChatClient>(window, "activeHttpClient").TextDelta;
+                    var owner = Get<ChatSessionState>(window, "currentSession"); string turn = Get<string>(window, "activeTurnId");
+                    callback(new CodexAgentActivity { Id = "published", Kind = "reasoning", Detail = "Public summary", Status = "completed" });
+                    Set(window, "currentSession", new ChatSessionState());
+                    callback(new CodexAgentActivity { Id = "foreign-session", Kind = "reasoning", Detail = "Foreign", Status = "completed" });
+                    Set(window, "currentSession", owner); Set(window, "activeTurnId", "foreign-turn");
+                    callback(new CodexAgentActivity { Id = "foreign-turn", Kind = "reasoning", Detail = "Foreign", Status = "completed" });
+                    Set(window, "activeTurnId", turn);
+                    return Task.FromResult("{\"Ok\":true}");
+                };
+                Question(window, "fixture timeline"); CompleteOnSta((Task)Call(window, "SendAsync"));
+                Assert.AreEqual(1, calls);
+                callback(new CodexAgentActivity { Id = "late", Kind = "reasoning", Detail = "Late", Status = "completed" });
+                var originalSession = Get<ChatSessionState>(window, "currentSession");
+                Set(window, "currentSession", new ChatSessionState());
+                textCallback("Late text from an old request");
+                Assert.IsFalse(Get<List<ChatEntry>>(window, "transcriptEntries").Any(e => e.Text.Contains("Late text from an old request")));
+                Set(window, "currentSession", originalSession);
+                var activities = Get<List<ChatEntry>>(window, "transcriptEntries").Where(e => e.Activity != null).Select(e => e.Activity).ToArray();
+                Assert.AreEqual(3, activities.Length);
+                Assert.AreEqual(1, activities.Count(a => a.Kind == "reasoning"));
+                Assert.AreEqual("Public summary", activities.Single(a => a.Kind == "reasoning").Detail);
+                Assert.IsTrue(activities.Single(a => a.Kind == "reasoning").Id.StartsWith("provider:"));
+                Assert.AreEqual(1, activities.Count(a => a.Kind == "dynamicToolCall" && a.Status == "completed"));
+                Assert.AreEqual(1, activities.Count(a => a.Status == "declined"));
+                Assert.AreEqual(1, Get<ChatSessionState>(window, "currentSession").CompletedToolActions.Count);
                 Set(window, "currentSession", null);
             }
         }

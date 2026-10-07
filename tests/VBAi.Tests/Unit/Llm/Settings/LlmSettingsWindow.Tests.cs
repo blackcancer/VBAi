@@ -52,7 +52,9 @@ namespace VBAi.Tests.Unit
                 "  ",
                 "https://api.example/v1",
                 "http://localhost:11434",
-                "http://127.0.0.1:1234"
+                "http://127.0.0.1:1234",
+                "http://[::1]:1234",
+                "https://api.example/v1/chat/completions?api-version=2026-01-01"
             }
 
             )
@@ -61,13 +63,19 @@ namespace VBAi.Tests.Unit
             {
                 "not a url",
                 "http://api.example/v1",
-                "ftp://localhost/data"
+                "ftp://localhost/data",
+                "https://user:secret@api.example/v1",
+                "http://user:secret@localhost:11434/v1",
+                "https://api.example/v1#fragment",
+                "http://localhost:11434/v1#fragment"
             }
 
             )
             {
                 var thrown = Assert.ThrowsException<TargetInvocationException>(() => method.Invoke(null, new object[] { invalid }));
                 Assert.IsInstanceOfType(thrown.InnerException, typeof(ArgumentException));
+                Assert.IsInstanceOfType(thrown.InnerException.InnerException, typeof(InvalidOperationException));
+                Assert.IsFalse(thrown.InnerException.Message.Contains("secret"));
             }
         }
     }
@@ -118,8 +126,9 @@ namespace VBAi.Tests.Unit
             {
                 var settings = new LlmSettings { ProviderName = "Ollama", OllamaTemperature = 0.7, OllamaTopP = 0.9 };
                 var original = new InvalidOperationException("Synthetic sampling theme failure.");
+                var recovery = new InvalidOperationException("Synthetic sampling theme rollback failure.");
                 int selections = 0, writes = 0;
-                LlmSettingsWindow.SelectNativeVbeTheme = enabled => { selections++; throw original; };
+                LlmSettingsWindow.SelectNativeVbeTheme = enabled => { throw ++selections == 1 ? original : recovery; };
                 LlmSettingsWindow.WriteSettings = value => { writes++; };
                 using (var window = scope.Window(settings))
                 {
@@ -133,7 +142,8 @@ namespace VBAi.Tests.Unit
                     Assert.AreEqual(DialogResult.None, window.DialogResult);
                     Assert.IsFalse(window.IsDisposed);
                     Assert.AreEqual(1, scope.Notices.Count);
-                    Assert.AreEqual(original.Message, scope.Notices[0]);
+                    StringAssert.StartsWith(scope.Notices[0], original.Message);
+                    StringAssert.Contains(scope.Notices[0], UiText.Get("Appearance recovery failed"));
                 }
             }
         }
@@ -334,7 +344,9 @@ namespace VBAi.Tests.Unit
             {
                 "relative/path",
                 "http://example.com/v1",
-                "ftp://localhost/file"
+                "ftp://localhost/file",
+                "https://user:secret@example.com/v1",
+                "https://example.com/v1#fragment"
             }
 
             )
@@ -394,7 +406,7 @@ namespace VBAi.Tests.Unit
             {
                 foreach (bool configured in new[] { false, true }) using (var window = configured ? scope.Window(new LlmSettings { ProviderName = "OpenAI API" }) : new LlmSettingsWindow())
                 {
-                    var themes = Get<ComboBox>(window, "themePicker"); themes.SelectedIndex = -1; themes.SelectedIndex = 1; LlmSettingsWindow.SelectTheme = c => { throw new IOException("theme fixture failure"); }; themes.SelectedIndex = 2; Assert.IsTrue(scope.Notices.Contains("theme fixture failure")); LlmSettingsWindow.SelectTheme = UiTheme.Select;
+                    var themes = Get<ComboBox>(window, "themePicker"); themes.SelectedIndex = -1; themes.SelectedIndex = 1; LlmSettingsWindow.SelectTheme = c => { throw new IOException("theme fixture failure"); }; themes.SelectedIndex = 2; Assert.AreEqual(0, scope.Notices.Count, "Unsaved appearance changes must not call persistence or theme boundaries."); LlmSettingsWindow.SelectTheme = UiTheme.Select;
                     LayoutEventHandler reenter = (s, e) => Call(window, "FitContentHeight"); window.Layout += reenter; try { window.Show(); Call(window, "FitContentHeight"); Call(window, "OnShown", EventArgs.Empty); Assert.IsTrue(window.ClientSize.Height > 0); } finally { window.Layout -= reenter; }
                     if (!configured) { Call(window, "UpdateRows"); LlmBoundaryScope.Pump(Refresh(window, "RefreshGitHubAsync", false)); }
                     Call(window, "Dispose", false); window.Dispose(); window.Dispose(); Call(window, "FitContentHeight");
@@ -490,6 +502,104 @@ namespace VBAi.Tests.Unit
                         LlmBoundaryScope.Pump(refresh); if (lifetime == "current") { Assert.AreEqual(failure ? "late fixture failure" : "late fixture connected", Get<Label>(window, "codexStatus").Text); if (provider == "Codex") Assert.IsTrue(Get<Button>(window, "codexLogin").Enabled); } else Assert.AreNotEqual(failure ? "late fixture failure" : "late fixture connected", Get<Label>(window, "codexStatus").Text);
                         LlmSettingsWindow.ReadCopilotStatus = () => Task.FromResult("Copilot fixture connected"); LlmSettingsWindow.ReadCodexStatus = () => Task.FromResult(new CodexAccountStatus(true, "ChatGPT fixture connected"));
                     }
+            }
+        }
+    }
+}
+
+namespace VBAi.Tests.Unit
+{
+    using Microsoft.VisualStudio.TestTools.UnitTesting;
+    using System;
+    using System.Collections.Generic;
+    using System.IO;
+    using System.Web.Script.Serialization;
+    using System.Windows.Forms;
+    using VBAi.Tests.Infrastructure;
+
+    [TestClass, TestCategory("Unit")]
+    public sealed class SettingsDraftTransactionTests
+    {
+        [STATestMethod]
+        public void FailedSaveAndCancelPreserveEverySharedSettingAndDictionary()
+        {
+            using (var scope = new LlmBoundaryScope())
+            {
+                var settings = new LlmSettings { ProviderName = "OpenAI API", VbeEditApproval = "ReadOnly", CustomProviderName = "Original", OpenAiEndpoint = "https://original.invalid/v1", CodexModel = "original-model" };
+                settings.ManualModelLists["Personnalisé (OpenAI)"] = "original-manual";
+                settings.SetKey(LlmBoundaryScope.Provider("OpenAI API"), "original-key");
+                var models = settings.ManualModelLists;
+                var json = new JavaScriptSerializer();
+                string original = json.Serialize(settings);
+                LlmSettingsWindow.SelectNativeVbeTheme = enabled => { };
+                LlmSettingsWindow.WriteSettings = draft =>
+                {
+                    Assert.AreNotSame(settings, draft);
+                    Assert.AreNotSame(models, draft.ManualModelLists);
+                    Assert.AreEqual("ReadOnly", settings.VbeEditApproval, "The authority used by dispatch must remain unchanged during persistence.");
+                    Assert.AreEqual("Automatic", draft.VbeEditApproval);
+                    throw new IOException("Synthetic write failure");
+                };
+                using (var window = scope.Window(settings))
+                {
+                    LlmBoundaryScope.Get<TextBox>(window, "openAiEndpoint").Text = "https://changed.invalid/v1";
+                    LlmBoundaryScope.Get<CheckBox>(window, "clearKey").Checked = true;
+                    LlmBoundaryScope.Get<TextBox>(window, "openAiKey").Text = "replacement-key";
+                    LlmBoundaryScope.Get<ComboBox>(window, "provider").SelectedItem = LlmBoundaryScope.Provider("Personnalisé (OpenAI)");
+                    LlmBoundaryScope.Get<TextBox>(window, "manualModels").Text = "changed-manual";
+                    LlmBoundaryScope.Get<TextBox>(window, "customName").Text = "Changed";
+                    LlmBoundaryScope.Get<CheckBox>(window, "azureEntra").Checked = true;
+                    LlmBoundaryScope.Get<ComboBox>(window, "approvalPicker").SelectedIndex = 0;
+                    LlmBoundaryScope.Call(window, "Save");
+                    Assert.AreEqual(DialogResult.None, window.DialogResult);
+                    Assert.AreEqual(original, json.Serialize(settings));
+                    Assert.AreSame(models, settings.ManualModelLists);
+                    window.DialogResult = DialogResult.Cancel;
+                    window.Close();
+                }
+                Assert.AreEqual(original, json.Serialize(settings));
+                Assert.AreEqual("Synthetic write failure", scope.Notices[0]);
+            }
+        }
+
+        [STATestMethod]
+        public void ThemeSelectionWaitsForSaveAndStorageFailureRestoresItsOriginalChoice()
+        {
+            using (var scope = new LlmBoundaryScope())
+            {
+                var selected = new List<ThemeChoice>();
+                var settings = new LlmSettings { ProviderName = "OpenAI API" };
+                ThemeChoice original = UiTheme.Choice;
+                ThemeChoice changed = original == ThemeChoice.Dark ? ThemeChoice.Light : ThemeChoice.Dark;
+                LlmSettingsWindow.SelectNativeVbeTheme = enabled => { };
+                LlmSettingsWindow.SelectTheme = choice => { selected.Add(choice); ThemeScope.SetChoice(choice); };
+                using (var window = scope.Window(settings))
+                {
+                    LlmBoundaryScope.Get<ComboBox>(window, "themePicker").SelectedIndex = (int)changed;
+                    window.DialogResult = DialogResult.Cancel;
+                    window.Close();
+                }
+                Assert.AreEqual(0, selected.Count);
+                Assert.AreEqual(original, UiTheme.Choice);
+                LlmSettingsWindow.WriteSettings = draft => { throw new IOException("Synthetic write failure"); };
+                using (var window = scope.Window(settings))
+                {
+                    LlmBoundaryScope.Get<ComboBox>(window, "themePicker").SelectedIndex = (int)changed;
+                    LlmBoundaryScope.Call(window, "Save");
+                    Assert.AreEqual(DialogResult.None, window.DialogResult);
+                }
+                CollectionAssert.AreEqual(new[] { changed, original }, selected);
+                Assert.AreEqual(original, UiTheme.Choice);
+                selected.Clear();
+                LlmSettingsWindow.WriteSettings = draft => { };
+                using (var window = scope.Window(settings))
+                {
+                    LlmBoundaryScope.Get<ComboBox>(window, "themePicker").SelectedIndex = (int)changed;
+                    LlmBoundaryScope.Call(window, "Save");
+                    Assert.AreEqual(DialogResult.OK, window.DialogResult);
+                }
+                CollectionAssert.AreEqual(new[] { changed }, selected);
+                Assert.AreEqual(changed, UiTheme.Choice);
             }
         }
     }

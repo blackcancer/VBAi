@@ -154,7 +154,7 @@ namespace VBAi
                 // COM can pump UI messages: never replace text against a newer received revision.
                 if (int.TryParse(await Script("apply", doc.Id, applied, synchronized), out int reconciled) && reconciled > 0)
                 { doc.Acknowledge(synchronized, captured); versions[doc.Id] = Math.Max(versions[doc.Id], reconciled); }
-                await CaptureDocuments(); if (doc.Dirty) await PrepareSynchronization(doc); else Drafts.ClearOwn(doc); SetStatus();
+                await CaptureDocuments(); if (doc.Dirty) await PrepareSynchronization(doc); SetStatus();
                 return new
                 {
                     AppliedToDraft = true,
@@ -199,7 +199,7 @@ namespace VBAi
                 if (int.TryParse(await Script("apply", doc.Id, version, actual), out int applied) && applied > 0)
                 { doc.Acknowledge(actual, captured); versions[doc.Id] = Math.Max(versions[doc.Id], applied); }
                 await CaptureDocuments();
-                if (doc.Dirty) await PrepareSynchronization(doc); else Drafts.ClearOwn(doc);
+                if (doc.Dirty) await PrepareSynchronization(doc);
                 SetStatus();
                 return new
                 {

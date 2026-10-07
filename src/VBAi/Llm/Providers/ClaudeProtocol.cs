@@ -91,29 +91,45 @@ namespace VBAi
 
         /// <summary>Convertit les blocs Claude en message assistant et en appels d’outils au format interne.</summary>
         /// <param name="response">Réponse Claude décodée.</param>
+        /// <param name="activity">Optional observer for public reasoning text only.</param>
+        /// <param name="activityPrefix">Local request identity for stable reasoning section IDs.</param>
         /// <returns>Message assistant au format Chat Completions, avec le contenu Claude d’origine conservé.</returns>
-        public static IDictionary<string, object> Response(IDictionary<string, object> response)
+        public static IDictionary<string, object> Response(IDictionary<string, object> response, Action<CodexAgentActivity> activity = null, string activityPrefix = null)
         {
-            var text = new List<string>(); var calls = new List<object>();
-            foreach (var raw in Array(response, "content"))
+            var reasoning = new ProviderReasoning(activity, activityPrefix);
+            try
             {
-                var block = Object(raw);
-                if (Text(block, "type") == "text") text.Add(Text(block, "text"));
-                if (Text(block, "type") == "tool_use") calls.Add(new Dictionary<string, object>
+                reasoning.ClaudeResponse(response);
+                string stop = Text(response, "stop_reason");
+                if (stop == "max_tokens") throw new InvalidOperationException(UiText.Get("Claude reached its response limit. Narrow the scope of your request."));
+                if (stop != "end_turn" && stop != "tool_use" && stop != "stop_sequence")
+                    throw new InvalidOperationException(UiText.Get("Response interrupted, truncated or filtered; no partial tool call was executed."));
+                var text = new List<string>(); var calls = new List<object>();
+                foreach (var raw in Array(response, "content"))
                 {
-                    ["id"] = Text(block, "id"),
-                    ["type"] = "function",
-                    ["function"] = new Dictionary<string, object>
+                    var block = Object(raw);
+                    if (Text(block, "type") == "text") text.Add(Text(block, "text"));
+                    if (Text(block, "type") == "tool_use") calls.Add(new Dictionary<string, object>
                     {
-                        ["name"] = Text(block, "name"),
-                        ["arguments"] = new JavaScriptSerializer().Serialize(block["input"])
-                    }
-                });
+                        ["id"] = Text(block, "id"),
+                        ["type"] = "function",
+                        ["function"] = new Dictionary<string, object>
+                        {
+                            ["name"] = Text(block, "name"),
+                            ["arguments"] = new JavaScriptSerializer().Serialize(block["input"])
+                        }
+                    });
+                }
+                var result = new Dictionary<string, object> { ["role"] = "assistant", ["content"] = string.Join("\n", text), ["_claude_content"] = Array(response, "content") };
+                if (calls.Count > 0) result["tool_calls"] = calls.ToArray();
+                reasoning.Finish("completed");
+                return result;
             }
-            if (Text(response, "stop_reason") == "max_tokens") throw new InvalidOperationException(UiText.Get("Claude reached its response limit. Narrow the scope of your request."));
-            var result = new Dictionary<string, object> { ["role"] = "assistant", ["content"] = string.Join("\n", text), ["_claude_content"] = Array(response, "content") };
-            if (calls.Count > 0) result["tool_calls"] = calls.ToArray();
-            return result;
+            catch
+            {
+                reasoning.Finish("failed");
+                throw;
+            }
         }
     }
 }

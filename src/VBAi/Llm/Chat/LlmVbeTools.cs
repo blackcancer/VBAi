@@ -95,7 +95,9 @@ namespace VBAi
         internal Func<Request, bool> CanRecoverDesignerCut;
 
         /// <summary>Demande la sauvegarde de signature au document hôte.</summary>
-        internal Func<string, object> PersistSignature;
+        internal Func<string, Action, object> PersistSignature;
+        /// <summary>Captures the original project identity and content on its owning thread before the certificate dialog.</summary>
+        internal Func<string, Action> CaptureSignaturePersistence;
 
         /// <summary>Écrit les erreurs de lecture de diff dans le journal de chargement.</summary>
         internal Action<string> WriteLog = LoadLog.Write;
@@ -148,7 +150,8 @@ namespace VBAi
             SolidWorksMacroNative = request => session.SolidWorksMacroAsync(request);
             ProjectGeneralNative = (request, write) => session.ProjectGeneralAsync(request, write);
             CanRecoverDesignerCut = request => session.CanRecoverFormCut(request);
-            PersistSignature = project => session.PersistProjectSignature(project);
+            PersistSignature = (project, authorize) => session.PersistProjectSignature(project, authorize);
+            CaptureSignaturePersistence = project => session.CaptureSignaturePersistence(project);
             this.owner = owner;
             ImmediateOwnerDispatch = action =>
             {
@@ -240,7 +243,7 @@ namespace VBAi
             Definition("set_vbe_option", "Set one recognized native Editor or General preference from read_vbe_options using its exact Pane tab, Property control label and ExpectedOptionsVersion. Boolean Value for supported checkboxes, true for error-trapping radios, integer 1-32 for tab width. Native French/English labels are currently supported. Recognized Editor/General/Docking checkboxes and Editor Format controls are supported. Font/size/code colors require one exact observed Choices entry. NativeIndex:n identifies an unlabeled native palette choice, never an inferred RGB value. Query optionally selects one exact Code Colors category for the same palette mutation; read_vbe_options versions all categories together. An empty size catalogue refuses writes. Grid width/height are 2-60. Theme, security and arbitrary controls are excluded. InvokeAsync is required; normal VBE edit approval applies. Reopen read_vbe_options to verify persistence.", new[] { "Pane", "Property", "Value", "ExpectedOptionsVersion" }, "Pane", "Property", "Value", "ExpectedOptionsVersion", "Query"),
             Definition("read_vbe_options", "Read visible controls and values on every tab of the native VBE Tools > Options dialog, then close with Cancel. Returns native labels and read errors; no preference is changed, no shortcut or coordinates are used. This is a UI observation, not proof of persistence or of unavailable controls.",
                 new string[0]),
-            Definition("compile_project", "Compile the named VBA project using the native VBE command in design mode. Captures and dismisses a native compile error dialog; on failure read debug_state to locate the selected token. A successful response means no native diagnostic was observed. ExpectedMode must be 2.",
+            Definition("compile_project", "Compile the named VBA project using the native VBE command in design mode. Captures and dismisses a native compile error dialog; on failure read debug_state to locate the selected token. Inspect Available and Compiled: an absent or disabled native command reports Compiled=false and does not prevent other tools from running. Compiled=true means the command executed without an observed native diagnostic. ExpectedMode must be 2.",
                 new[] { "Project", "ExpectedMode" }, "Project", "ExpectedMode"),
             Definition("run_procedure", "Schedule one public Sub or Function in a standard module with up to 30 scalar JSON Arguments (string, finite number, boolean or null for VBA Null). Optional ArgumentNames pairs every value with a distinct parameter in the inspected signature, permitting omission of optional parameters and reordered named arguments; conditional/ParamArray named calls are refused. Requires current SHA and ExpectedMode=2. Uses a fully qualified native Immediate call, without generating source code. Functions print their result to Immediate. Poll procedure_run_status using Project and returned Query; delivery is not proof of runtime success. Do not retry automatically.",
                 new[] { "Project", "Module", "Procedure", "ExpectedSha256", "ExpectedMode", "Arguments" },
@@ -462,8 +465,9 @@ namespace VBAi
         /// <param name="name">Exact registered tool name requested by the provider or UI.</param>
         /// <param name="arguments">JSON object validated against the tool schema and retained for repeated scope checks.</param>
         /// <param name="asyncSave">True only when entered through the asynchronous UI pipeline required by native save and debugger routes.</param>
+        /// <param name="captureSignatureAuthorization">Receives the originating authority and project guard before deferred certificate selection.</param>
         /// <returns>Serialized success or failure response; host mutations retain their own uncertainty and recovery evidence.</returns>
-        private async Task<string> InvokeCoreAsync(string name, string arguments, bool asyncSave)
+        private async Task<string> InvokeCoreAsync(string name, string arguments, bool asyncSave, Action<Action> captureSignatureAuthorization = null)
         {
             if (name == "read_immediate" || name == "inspect_local_scalars")
                 return json.Serialize(Response.Failure(name + " requires InvokeAsync."));
@@ -639,6 +643,31 @@ namespace VBAi
                         };
                         try { result = Execute(request); }
                         finally { request.RevalidateProjectPropertyAuthorization = null; }
+                    }
+                    else if (name == "sign_project" && captureSignatureAuthorization != null)
+                    {
+                        string signatureBoundProject = BoundProject;
+                        Action validateProject = CaptureSignaturePersistence(request.Project);
+                        captureSignatureAuthorization(() =>
+                        {
+                            GuardMode(name);
+                            if (!string.Equals(signatureBoundProject, BoundProject, StringComparison.OrdinalIgnoreCase))
+                                throw new InvalidOperationException("The conversation project binding changed during signing.");
+                            GuardProject(name, arguments);
+                            GuardLegacyEditorMutation(name);
+                            if (settings.VbeEditApproval != "Automatic" && !(settings.VbeEditApproval == "AskEachTime" && editApproved))
+                                throw new InvalidOperationException("VBE edit policy changed while signing was pending.");
+                            validateProject();
+                            // Native reads can pump messages. Finish with cached authority
+                            // checks so no further host read can reopen this policy gap.
+                            ValidateCachedScope?.Invoke();
+                            GuardModeLocal(name);
+                            if (!string.Equals(signatureBoundProject, BoundProject, StringComparison.OrdinalIgnoreCase))
+                                throw new InvalidOperationException("The conversation project binding changed during signing.");
+                            if (settings.VbeEditApproval != "Automatic" && !(settings.VbeEditApproval == "AskEachTime" && editApproved))
+                                throw new InvalidOperationException("VBE edit policy changed while signing was pending.");
+                        });
+                        result = Execute(request);
                     }
                     else result = name == "status"
                         ? Response.Success(ScopedLiveSnapshot())
@@ -848,7 +877,8 @@ namespace VBAi
                 try
                 {
                     await Task.Run(() => Native.EnsureNoSignatureDialog());
-                    string scheduled = Invoke(name, arguments);
+                    Action revalidatePersistence = null;
+                    string scheduled = await InvokeCoreAsync(name, arguments, false, guard => revalidatePersistence = guard);
                     Response initial = ReadToolResponse(scheduled);
                     if (!initial.Ok) return scheduled;
                     var values = json.DeserializeObject(arguments) as IDictionary<string, object>;
@@ -861,27 +891,30 @@ namespace VBAi
                         unsignedVerified));
                     object persistence = null;
                     string persistenceError = null;
-                    for (int attempt = 0; attempt < 12; attempt++)
+                    bool persistenceAuthorized = false;
+                    try
                     {
-                        try
+                        if (revalidatePersistence == null) throw new InvalidOperationException("Signature persistence authorization was not captured.");
+                        // Revalidate inside native persistence after its preparatory reads,
+                        // immediately before the only admitted Save invocation.
+                        persistence = PersistSignature((string)values["Project"], () =>
                         {
-                            persistence = PersistSignature((string)values["Project"]);
-                            persistenceError = null;
-                            break;
-                        }
-                        catch (Exception ex)
+                            revalidatePersistence();
+                            persistenceAuthorized = true;
+                        });
+                    }
+                    catch (Exception ex) { persistenceError = ex.Message; }
+                    Response status;
+                    try
+                    {
+                        if (!persistenceAuthorized) status = Response.Failure(persistenceError);
+                        else
                         {
-                            persistenceError = ex.Message;
-                            if (attempt == 11 || ex.ToString().IndexOf("0x800AC472",
-                                StringComparison.OrdinalIgnoreCase) < 0) break;
-                            await Task.Delay(250);
+                            revalidatePersistence();
+                            status = Execute(new Request { Command = "project_signature_status", Project = (string)values["Project"] });
                         }
                     }
-                    Response status = Execute(new Request
-                    {
-                        Command = "project_signature_status",
-                        Project = (string)values["Project"]
-                    });
+                    catch (Exception ex) { status = Response.Failure(ex.Message); }
                     return json.Serialize(Response.Success(new
                     {
                         Signature = signed,
@@ -1124,24 +1157,22 @@ namespace VBAi
                     Native.EnsureNoCompileDialog();
                     Response compileResponse = null;
                     var completed = new System.Threading.ManualResetEventSlim(false);
+                    var admission = new VbeCompilationAdmission();
                     context.Post(_ =>
                     {
-                        try { compileResponse = Execute(request); }
+                        try
+                        {
+                            if (admission.TryBegin()) compileResponse = Execute(request);
+                        }
                         catch (Exception ex) { compileResponse = Response.Failure(ex.Message); }
                         finally { completed.Set(); }
                     }, null);
-                    string diagnostic = await Task.Run(() => Native.AwaitCompileDialog(completed));
+                    string diagnostic;
+                    try { diagnostic = await Task.Run(() => Native.AwaitCompileDialog(completed)); }
+                    finally { admission.CancelPending(); }
                     if (compileResponse == null) return json.Serialize(Response.Failure("The native Compile command did not return a result."));
                     if (!compileResponse.Ok) return json.Serialize(compileResponse);
-                    return json.Serialize(Response.Success(new
-                    {
-                        request.Project,
-                        Compiled = diagnostic == null,
-                        Diagnostic = diagnostic,
-                        Verification = diagnostic == null ? "NoNativeDiagnosticObserved" : "NativeDiagnosticCaptured",
-                        Command = compileResponse.Data,
-                        NextRead = diagnostic == null ? null : "Read debug_state to locate the selected token."
-                    }));
+                    return json.Serialize(Response.Success(VbeCompilationResult.Create(request.Project, compileResponse.Data, diagnostic)));
                 }
                 catch (Exception ex) { return json.Serialize(Response.Failure(ex.Message)); }
             }

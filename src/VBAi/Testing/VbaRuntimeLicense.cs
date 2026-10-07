@@ -22,7 +22,16 @@ namespace VBAi
                 using (var reader = new StreamReader(stream, Encoding.UTF8, true))
                 {
                     string text = reader.ReadToEnd().Replace("\r\n", "\n").TrimEnd('\n');
-                    return "' SPDX-License-Identifier: MIT\r\n' " + text.Replace("\n", "\r\n' ") + "\r\n";
+                    var comments = new StringBuilder("' SPDX-License-Identifier: MIT\r\n");
+                    foreach (string line in text.Split('\n'))
+                    {
+                        // The VBE removes trailing whitespace from an empty comment.
+                        // Emit its stable representation without changing the license text.
+                        comments.Append('\'');
+                        if (line.Length > 0) comments.Append(' ').Append(line);
+                        comments.Append("\r\n");
+                    }
+                    return comments.ToString();
                 }
             }
         }

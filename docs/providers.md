@@ -15,8 +15,32 @@ option to clear it. Saved settings take precedence over environment fallbacks.
 Restart the host after changing environment variables inherited by its process.
 
 Keys are stored with Windows DPAPI for the current user. Remote HTTP-provider
-endpoints require HTTPS; HTTP is accepted only on loopback addresses. Automatic
-HTTP redirects are disabled. Do not paste credentials into a conversation or issue.
+endpoints require HTTPS; HTTP is accepted only on loopback addresses. Embedded
+URL credentials and fragments are rejected by both settings and transport
+validation. Automatic HTTP redirects are disabled. Do not paste credentials into a conversation or issue.
+
+## Connection identity
+
+Each client captures an internal connection profile that binds the selected
+provider, model, protocol, authentication mode and endpoint. Request headers use
+that credential snapshot and may only target the captured origin: scheme, host
+and port must match. This prevents a catalogue request or a later settings change
+from reusing credentials for a different connection. DPAPI storage, environment
+fallbacks and the existing CLI sign-in flows remain the credential sources.
+
+The separation follows the provider/model approach reviewed in
+[OpenClaw’s AI transport sources](https://github.com/openclaw/openclaw/tree/28c5d198851330906aa6feafc3effc3682021a15/packages/ai/src).
+VBAi routes Codex through app-server, Copilot through its SDK protocol, compatible
+HTTP providers through Chat Completions, Claude through Messages and Bedrock
+through Converse. The profile records those implemented choices; it does not
+convert account OAuth credentials into API keys or add a gateway.
+
+HTTP model discovery derives `/models` only from a recognized `/chat/completions`
+or `/messages` path. It retains the configured origin, any path prefix and the
+query string. Claude catalogue pagination replaces only the `after_id` cursor
+while keeping other query fields. Ollama uses its existing `/api/tags` endpoint
+on the configured origin with the configured query. Connections with an explicit model list retain
+that workflow; an unrecognized catalogue path reports an error.
 
 ## CLI-backed providers
 
@@ -32,6 +56,17 @@ VBAi sets the child process's `CODEX_HOME` to
 in to another CLI data directory does not establish this connection. Existing
 personal CLI authentication files are not copied implicitly.
 
+Model discovery initializes the transport and account without opening or resuming
+a conversation. A missing historical thread therefore does not block the model
+catalogue. Sending a turn still requires that thread to resume successfully; a
+failed resume does not silently create a replacement conversation.
+
+Dynamic tool requests require the native turn identifier. The accepted identity
+comes from the turn-start response; notifications arriving earlier wait for that
+response and cannot establish their own authority. Tools and activities are
+bound to their original turn generation and project, including callbacks queued
+before Stop or completion. Terminal receipt closes tool admission immediately.
+Late results cannot update a later turn or reopen a completed one.
 VBAi records a local fingerprint of the developer instructions accepted for each
 Codex thread. A resumed thread receives updated instructions only when that
 fingerprint differs; unchanged turns do not send the full text again. Threads
@@ -58,6 +93,12 @@ The implemented transport accepts protocol versions 2 and 3 and rejects other
 versions with a diagnostic. Native shell/file/network/MCP permission requests are
 refused in this transport; registered VBA tools still pass through VBAi's guards.
 GitHub source-control authentication remains separate.
+
+Permission and tool-result RPC errors settle their captured active turn before
+a later idle event can publish success. Duplicate errors after an accepted RPC
+result are ignored. Deferred error and activity callbacks cannot fault a
+replacement turn; a failed activity receipt retains its terminal status through
+client disposal. Activity publication errors preserve the primary RPC failure.
 
 ## HTTP and local providers
 
@@ -93,9 +134,40 @@ available in the selected region. Custom connections currently have one profile.
 
 ## Model capabilities and transport limits
 
-A model listed by a provider may not support tool calling. Test a harmless
-explanation and an inspection operation before enabling agent changes. Local
-model quality, latency and tool support depend on the selected server/model.
+The model tooltip reports explicit catalogue declarations for tool calling,
+reasoning and vision as supported, not supported or unknown. Missing or malformed
+metadata remains unknown; model names do not determine these states. A declared
+absence of tool calling uses text-only requests. Unknown support retains the
+existing guarded tool workflow. The declared capabilities describe the model;
+commands and request fields follow the implemented provider transport.
+
+These declarations are immutable connection metadata. Manual model identifiers
+retain unknown capabilities. They do not add persisted settings or establish live
+qualification.
+
+| Catalog | Explicit declarations read by VBAi |
+| --- | --- |
+| OpenRouter | `supported_parameters` lists tool and reasoning parameters; `architecture.input_modalities` lists image input. |
+| Mistral | Native booleans `capabilities.function_calling` and `capabilities.vision`; reasoning remains unknown. |
+| GitHub Copilot SDK | Native booleans `capabilities.supports.reasoningEffort` and `.vision`; tool support remains unknown. |
+| Codex app-server | `supportedReasoningEfforts` and explicitly returned `inputModalities`; tool support remains unknown. |
+| Other catalogs and manual lists | Unknown unless their supported declaration schema is implemented. |
+
+An explicit complete list without a capability reports unsupported; an absent
+list is unknown. Codex efforts consisting only of `none` do not declare reasoning
+support. Reasoning metadata describes the provider's declared reasoning controls,
+not a guarantee that a public reasoning block will be returned. Vision metadata
+does not add an image-input workflow. VBAi does not enable new HTTP reasoning
+parameters or derive effort levels from model names.
+
+The declarations follow the current primary schemas for
+[OpenRouter models](https://openrouter.ai/docs/guides/overview/models),
+[Mistral models](https://docs.mistral.ai/api/endpoint/models),
+[Copilot SDK model types](https://github.com/github/copilot-sdk/blob/main/nodejs/src/types.ts)
+and [Codex model-list schema](https://github.com/openai/codex/blob/main/codex-rs/app-server-protocol/schema/json/v2/ModelListResponse.json).
+A listed model may still fail to produce correct tool arguments or observe a
+request. Test a harmless explanation and an inspection operation before enabling
+agent changes. Local model quality and latency depend on the selected server/model.
 
 Compatible providers and Claude stream text when supported; fragmented tool
 arguments are assembled before execution. Truncated or incomplete responses must

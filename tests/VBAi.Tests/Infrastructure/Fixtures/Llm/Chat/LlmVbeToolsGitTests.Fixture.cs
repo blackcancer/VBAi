@@ -56,7 +56,8 @@ namespace VBAi.Tests.Unit
             /// <summary>Commit initial du dépôt de fixture.</summary>
             internal readonly string Initial;
             /// <summary>Initialise le dépôt temporaire avec un module VBA de base.</summary>
-            internal Fixture()
+            private readonly GitRevisionFixtureTrace revisionTrace;
+            internal Fixture(bool observeRevision = false)
             {
                 Directory.CreateDirectory(Root);
                 string remote = Path.Combine(Root, "origin.git");
@@ -70,7 +71,17 @@ namespace VBAi.Tests.Unit
                 Project = new VbaGitProject(() => Host, Host.FileName);
                 Initial = Repository.Commit(Project.Capture(), null, "Initial fixture");
                 Repository.SetRef(Repository.Head, Initial); Repository.SetRef(MacroGitRepository.Baseline, Initial);
-                Tools = new LlmVbeTools(null, null, Settings) { BoundProject = "P", GitOperationsFactory = p => new MacroGitOperations(Project, Repository) };
+                if (observeRevision) revisionTrace = GitRevisionFixtureTrace.TryBegin(Repository);
+                Tools = new LlmVbeTools(null, null, Settings)
+                {
+                    BoundProject = "P",
+                    GitOperationsFactory = p =>
+                    {
+                        var operations = new MacroGitOperations(Project, Repository);
+                        revisionTrace?.Observe(operations);
+                        return operations;
+                    }
+                };
             }
             /// <summary>Exécute git.exe dans la racine temporaire et renvoie sa sortie standard.</summary>
             /// <param name="arguments">Arguments transmis à Git.</param>
@@ -94,6 +105,8 @@ namespace VBAi.Tests.Unit
             /// <summary>Vérifie que la racine reste sous le préfixe temporaire avant de supprimer le dépôt.</summary>
             public void Dispose()
             {
+                // Retain already captured opt-in evidence before deleting the disposable cache.
+                revisionTrace?.Dispose();
                 if (!Path.GetFullPath(Root).StartsWith(Path.GetFullPath(Path.GetTempPath()) + "CodexToolGit-", StringComparison.OrdinalIgnoreCase))
                     throw new InvalidOperationException("Cleanup escaped fixture root");
                 foreach (string file in Directory.GetFiles(Root, "*", SearchOption.AllDirectories)) File.SetAttributes(file, FileAttributes.Normal);

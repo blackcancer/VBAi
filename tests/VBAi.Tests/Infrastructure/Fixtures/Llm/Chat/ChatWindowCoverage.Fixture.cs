@@ -114,6 +114,7 @@ namespace VBAi.Tests.Unit
             internal Action BeforeComplete;
             internal string NextThreadId = "thread";
             internal readonly List<string> Requests = new List<string>();
+            internal int CountRequests(string method) { return Requests.Count(line => { object value; return ((IDictionary<string, object>)json.DeserializeObject(line)).TryGetValue("method", out value) && Convert.ToString(value) == method; }); }
             /// <summary>Modèles renvoyés par la requête de liste.</summary>
             internal object[] Models = { new { model = "model", displayName = "Model", isDefault = true, defaultReasoningEffort = "medium", supportedReasoningEfforts = new[] { new { reasoningEffort = "medium", description = "Medium" } } } };
             /// <summary>Marque le transport comme actif.</summary>
@@ -135,10 +136,19 @@ namespace VBAi.Tests.Unit
                 var id = msg["id"]; var method = Convert.ToString(msg["method"]);
                 if (method == "model/list" && FailModels) { Emit(new { id, error = new { message = "models failed" } }); return; }
                 object result = method == "account/read" ? (object)new { account = new { type = "chatgpt" } } : method == "model/list" ? new { data = Models, nextCursor = (string)null } : method == "thread/start" || method == "thread/resume" ? (object)new { thread = new { id = NextThreadId } } : method == "turn/start" ? (object)new { turn = new { id = "turn" } } : new { };
-                if (method == "turn/start") Emit(new { method = "turn/started", @params = new { threadId = "thread", turn = new { id = "turn" } } });
+                var parameters = (IDictionary<string, object>)msg["params"];
+                string requestThread = parameters.ContainsKey("threadId") ? Convert.ToString(parameters["threadId"]) : null;
+                const string startedTurn = "turn";
+                if (method == "turn/start") Emit(new { method = "turn/started", @params = new { threadId = requestThread, turn = new { id = startedTurn } } });
                 Emit(new { id, result });
-                if (method == "turn/start" && Complete) { BeforeComplete?.Invoke(); Emit(new { method = "item/agentMessage/delta", @params = new { threadId = "thread", itemId = "answer", delta = "answer" } }); Emit(new { method = "item/completed", @params = new { threadId = "thread", item = new { type = "agentMessage", phase = "final", id = "answer", text = "answer" } } }); Emit(new { method = "turn/completed", @params = new { threadId = "thread", turn = new { status = FailTurn ? "failed" : "completed", error = FailTurn ? new { message = "turn failed" } : null } } }); }
-                if (method == "turn/interrupt") Emit(new { method = "turn/completed", @params = new { threadId = "thread", turn = new { status = "interrupted", error = (object)null } } });
+                if (method == "turn/start" && Complete)
+                {
+                    BeforeComplete?.Invoke();
+                    Emit(new { method = "item/agentMessage/delta", @params = new { threadId = requestThread, turnId = startedTurn, itemId = "answer", delta = "answer" } });
+                    Emit(new { method = "item/completed", @params = new { threadId = requestThread, turnId = startedTurn, item = new { type = "agentMessage", phase = "final", id = "answer", text = "answer" } } });
+                    Emit(new { method = "turn/completed", @params = new { threadId = requestThread, turn = new { id = startedTurn, status = FailTurn ? "failed" : "completed", error = FailTurn ? new { message = "turn failed" } : null } } });
+                }
+                if (method == "turn/interrupt") Emit(new { method = "turn/completed", @params = new { threadId = requestThread, turn = new { id = Convert.ToString(parameters["turnId"]), status = "interrupted", error = (object)null } } });
             }
         }
         /// <summary>Recherche récursivement le premier élément WPF du type demandé.</summary>

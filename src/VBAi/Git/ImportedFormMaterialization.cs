@@ -33,34 +33,51 @@ namespace VBAi
         /// <param name="capture">Reads the current project snapshot at each guarded observation point.</param>
         /// <param name="materialize">Performs one guarded designer initialization and reports whether bytes were exact before focus or rendered.</param>
         /// <param name="revalidate">Rechecks project/revision/owner admission around every snapshot and native boundary.</param>
+        /// <param name="observe">Optional frozen diagnostic that consumes captures already performed by this plan, without another export or live Font getter.</param>
         /// <returns>Only font owners still missing or changed after a rendered initialization; empty when exact bytes remain, or the input when no plan exists.</returns>
         internal static FormStreamPadding.FormFontBinding[] Prepare(VbaGitSnapshot target, VbaGitComponent component,
-            FormStreamPadding.FormFontBinding[] bindings, Func<VbaGitSnapshot> capture, Func<Func<bool>, MaterializationOutcome> materialize, Action revalidate)
+            FormStreamPadding.FormFontBinding[] bindings, Func<VbaGitSnapshot> capture, Func<Func<bool>, MaterializationOutcome> materialize, Action revalidate,
+            Action<string, VbaGitSnapshot, FormStreamPadding.FormFontBinding[]> observe = null)
         {
             if (bindings == null || bindings.Length == 0) return bindings;
             revalidate();
             VbaGitSnapshot actual = capture();
             string resource = component.Name + ".frx";
-            if (target.SameFile(actual, resource)) return new FormStreamPadding.FormFontBinding[0];
+            observe?.Invoke("initial-import-export", actual, bindings);
+            if (target.SameFile(actual, resource))
+            {
+                var retained = new FormStreamPadding.FormFontBinding[0];
+                observe?.Invoke("resources-exact-before-designer", actual, retained);
+                return retained;
+            }
             revalidate();
             MaterializationOutcome outcome = materialize(() =>
             {
                 revalidate();
                 VbaGitSnapshot probe = capture();
                 revalidate();
+                observe?.Invoke("designer-visible-export", probe, bindings);
                 return target.SameFile(probe, resource);
             });
             if (outcome != MaterializationOutcome.ResourcesExactBeforeFocus && outcome != MaterializationOutcome.Rendered)
                 throw new InvalidOperationException("The imported designer initialization outcome is unrecognized.");
             revalidate();
             actual = capture();
-            if (target.SameFile(actual, resource)) return new FormStreamPadding.FormFontBinding[0];
+            observe?.Invoke("post-materialization-export", actual, bindings);
+            if (target.SameFile(actual, resource))
+            {
+                var retained = new FormStreamPadding.FormFontBinding[0];
+                observe?.Invoke("resources-exact-after-materialization", actual, retained);
+                return retained;
+            }
             if (outcome == MaterializationOutcome.ResourcesExactBeforeFocus)
                 throw new InvalidOperationException("The imported form resources changed after restoring its prior view; font delivery is refused.");
             VbaGitComponent observedComponent = actual.Manifest.Components.Single(item => item.Name == component.Name && item.Type == 3);
             var observed = actual.FormFonts(observedComponent) ?? throw new InvalidOperationException("The imported form resource graph cannot be verified after designer initialization.");
-            return bindings.Where(expected => !observed.Any(value => value.Type == expected.Type &&
+            var selected = bindings.Where(expected => !observed.Any(value => value.Type == expected.Type &&
                 value.OwnerPath == expected.OwnerPath && value.Descriptor.SequenceEqual(expected.Descriptor))).ToArray();
+            observe?.Invoke("font-delivery-plan", actual, selected);
+            return selected;
         }
 
         /// <summary>Synchronously initializes only the verified designer on its actual owning VBE STA.</summary>

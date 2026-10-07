@@ -1,6 +1,7 @@
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Runtime.ExceptionServices;
 using System.Threading;
@@ -439,6 +440,57 @@ namespace VBAi.Tests.Unit
                 ["Form1.frm"] = VbaGitSnapshot.Utf8.GetBytes("VERSION 5.00\nBegin SyntheticForm\n OleObjectBlob = \"Form1.frx\":0000\nEnd\nAttribute VB_Name = \"Form1\"\n"),
                 ["Form1.frx"] = (byte[])resource.Clone()
             });
+        }
+
+        [TestMethod]
+        public void ReadOnlyReceiptsExposeEarlyExactBranchWithoutAddingAnExportOrInitialization()
+        {
+            var target = Snapshot(FormStreamPaddingTests.ContainerResourceBefore());
+            int captures = 0; var phases = new List<string>();
+            var selected = ImportedFormMaterialization.Prepare(target, target.Manifest.Components[0], Bindings(target),
+                () => { captures++; return target; }, _ => throw new AssertFailedException("No designer initialization"), () => { },
+                (phase, snapshot, bindings) =>
+                {
+                    phases.Add(phase); Assert.AreSame(target, snapshot);
+                    if (phase == "resources-exact-before-designer") Assert.AreEqual(0, bindings.Length);
+                });
+            Assert.AreEqual(1, captures); Assert.AreEqual(0, selected.Length);
+            CollectionAssert.AreEqual(new[] { "initial-import-export", "resources-exact-before-designer" }, phases.ToArray());
+        }
+
+        [TestMethod]
+        public void ReadOnlyReceiptsKeepTheOrdinaryExportOrderAndExactNestedDeliveryPlan()
+        {
+            var target = Snapshot(FormStreamPaddingTests.ContainerResourceBefore()); var actual = ChangedFrame(target);
+            int captures = 0; var phases = new List<string>();
+            var selected = ImportedFormMaterialization.Prepare(target, target.Manifest.Components[0], Bindings(target),
+                () => { captures++; return actual; }, probe =>
+                {
+                    Assert.IsFalse(probe()); return ImportedFormMaterialization.MaterializationOutcome.Rendered;
+                }, () => { }, (phase, snapshot, bindings) =>
+                {
+                    phases.Add(phase); Assert.AreSame(actual, snapshot);
+                    if (phase == "font-delivery-plan")
+                    {
+                        Assert.AreEqual(1, bindings.Length); Assert.AreEqual("Controls/QualificationExtra", bindings[0].OwnerPath);
+                        Assert.AreEqual(82700u, BitConverter.ToUInt32(bindings[0].Descriptor, 6));
+                    }
+                });
+            Assert.AreEqual(3, captures); Assert.AreEqual(1, selected.Length);
+            CollectionAssert.AreEqual(new[] { "initial-import-export", "designer-visible-export", "post-materialization-export", "font-delivery-plan" }, phases.ToArray());
+            Assert.IsFalse(target.SameFile(actual, "Form1.frx"));
+        }
+
+        [TestMethod]
+        public void FailedReadOnlyReceiptRetainsFailureWithoutAnotherExportOrNativeInitialization()
+        {
+            var target = Snapshot(FormStreamPaddingTests.ContainerResourceBefore());
+            var failure = new IOException("Immutable receipt could not be written"); int captures = 0;
+            var thrown = Assert.ThrowsException<IOException>(() => ImportedFormMaterialization.Prepare(target,
+                target.Manifest.Components[0], Bindings(target), () => { captures++; return target; },
+                _ => throw new AssertFailedException("No initialization after receipt failure"), () => { },
+                (phase, snapshot, plan) => { throw failure; }));
+            Assert.AreSame(failure, thrown); Assert.AreEqual(1, captures);
         }
 
         /// <summary>Returns the exact parsed root and Frame descriptor plan.</summary>

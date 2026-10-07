@@ -205,6 +205,14 @@ namespace VBAi
                 var response = json.Deserialize<Response>(await InvokeTool(tools, "compile_project", json.Serialize(new { scope.Project, ExpectedMode = 2 })));
                 if (response == null || !response.Ok) throw new InvalidOperationException(response?.Error ?? UiText.Get("Empty response."));
                 var data = json.DeserializeObject(json.Serialize(response.Data)) as IDictionary<string, object>;
+                bool unavailable = data != null && data.TryGetValue("Available", out var available) && available is bool canCompile && !canCompile;
+                if (unavailable)
+                {
+                    string reason = data.TryGetValue("Diagnostic", out var unavailableReason) ? Convert.ToString(unavailableReason) : UiText.Get("Compilation not verified");
+                    AddEntry(new ChatEntry { Speaker = "Vérification", Text = UiText.Get("Compilation not verified: ") + UiText.Get(reason) });
+                    SetStatus(UiText.Get("Compilation not verified"));
+                    return;
+                }
                 bool compiled = data != null && data.ContainsKey("Compiled") && Convert.ToBoolean(data["Compiled"]);
                 string diagnostic = compiled ? UiText.Get("Compilation finished: no native diagnostics observed. Macros were not executed.") : Convert.ToString(data?["Diagnostic"]);
                 ChatAttachment[] location = null;

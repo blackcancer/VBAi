@@ -22,6 +22,12 @@ namespace VBAi
         /// <summary>Requêtes JSON-RPC en attente, indexées par identifiant.</summary>
         private readonly Dictionary<int, TaskCompletionSource<IDictionary<string, object>>> pending = new Dictionary<int, TaskCompletionSource<IDictionary<string, object>>>();
 
+        /// <summary>Associates turn-bound permission/tool RPCs with their captured session and completion.</summary>
+        private readonly Dictionary<int, Tuple<string, TaskCompletionSource<string>>> pendingOwners = new Dictionary<int, Tuple<string, TaskCompletionSource<string>>>();
+
+        /// <summary>Reserves failed activity receipts before fault continuations can dispose their turn.</summary>
+        private readonly Dictionary<TaskCompletionSource<string>, CodexAgentActivity[]> failedTurnActivities = new Dictionary<TaskCompletionSource<string>, CodexAgentActivity[]>();
+
         /// <summary>Identifiants des appels d’outils déjà traités afin d’éviter les exécutions répétées.</summary>
         private readonly HashSet<string> handledTools = new HashSet<string>();
 
@@ -55,6 +61,22 @@ namespace VBAi
         /// <summary>Callback facultatif pour les fragments de texte reçus en streaming.</summary>
         /// <value>Fonction appelée pour chaque fragment, ou null si le streaming est désactivé.</value>
         public Action<string> TextDelta { get; set; }
+
+        /// <summary>Receives public reasoning and actual VBAi tool lifecycle events.</summary>
+        /// <value>Callback receiving public lifecycle events, or null when the timeline is not subscribed.</value>
+        public Action<CodexAgentActivity> ActivityUpdate { get; set; }
+
+        /// <summary>Live activities and public snapshots are isolated by native session/block identity.</summary>
+        private readonly Dictionary<string, CodexAgentActivity> pendingActivities = new Dictionary<string, CodexAgentActivity>();
+
+        /// <summary>Retains bounded public snapshots to ignore late deltas and deduplicate message-side reasoning.</summary>
+        private readonly Dictionary<string, CodexAgentActivity> activitySnapshots = new Dictionary<string, CodexAgentActivity>();
+
+        /// <summary>Last public reasoning block for each native agent in the current native turn.</summary>
+        private readonly Dictionary<string, string> latestReasoning = new Dictionary<string, string>();
+
+        /// <summary>Monotonic native turn scope prevents reused provider block identifiers from colliding.</summary>
+        private long nativeTurnSequence;
 
         /// <summary>Attend le délai natif des requêtes et réponses Copilot.</summary>
         internal Func<TimeSpan, Task> Delay = Task.Delay;
@@ -140,7 +162,7 @@ namespace VBAi
             var result = await RequestAsync("models.list", new { });
             return ClaudeProtocol.Array(result, "models").Select(x => ClaudeProtocol.Object(x))
                 .Where(x => !string.IsNullOrWhiteSpace(Text(x, "id")))
-                .Select(x => new LlmModelOption(Text(x, "id"), Text(x, "name") ?? Text(x, "id"))).ToArray();
+                .Select(x => new LlmModelOption(Text(x, "id"), Text(x, "name") ?? Text(x, "id"), capabilities: LlmModelCapabilities.FromCopilot(x))).ToArray();
         }
 
         /// <summary>Crée une session, envoie l’historique et attend une réponse ou un délai maximal de cinq minutes.</summary>
@@ -157,6 +179,8 @@ namespace VBAi
             await StartAsync();
             var definitions = tools.Select(x => ClaudeProtocol.Object(ClaudeProtocol.Object(x)["function"])).ToArray();
             allowedTools = new HashSet<string>(definitions.Select(x => Text(x, "name")), StringComparer.Ordinal);
+            EndActivities("interrupted");
+            lock (gate) { pendingActivities.Clear(); activitySnapshots.Clear(); latestReasoning.Clear(); nativeTurnSequence = 0; }
             sessionId = Guid.NewGuid().ToString();
             completion = new TaskCompletionSource<string>(TaskCreationOptions.RunContinuationsAsynchronously);
             var created = await RequestAsync("session.create", new
@@ -167,7 +191,7 @@ namespace VBAi
                 tools = definitions,
                 availableTools = allowedTools.ToArray(),
                 requestPermission = true,
-                streaming = TextDelta != null,
+                streaming = TextDelta != null || ActivityUpdate != null,
                 systemMessage = new
                 {
                     mode = "replace",
@@ -194,11 +218,14 @@ namespace VBAi
         /// <param name="method">Méthode du CLI appelée.</param>
         /// <param name="parameters">Paramètres de la méthode.</param>
         /// <returns>Résultat de la requête.</returns>
-        private async Task<IDictionary<string, object>> RequestAsync(string method, object parameters)
+        private Task<IDictionary<string, object>> RequestAsync(string method, object parameters) => RequestCoreAsync(method, parameters, null, null);
+
+        /// <summary>Registers an optional captured turn owner before sending its RPC.</summary>
+        private async Task<IDictionary<string, object>> RequestCoreAsync(string method, object parameters, string ownerSession, TaskCompletionSource<string> ownerCompletion)
         {
             var source = new TaskCompletionSource<IDictionary<string, object>>(TaskCreationOptions.RunContinuationsAsynchronously);
             int id;
-            lock (gate) { if (disposed) throw new ObjectDisposedException(nameof(CopilotClient)); id = ++nextId; pending.Add(id, source); }
+            lock (gate) { if (disposed) throw new ObjectDisposedException(nameof(CopilotClient)); id = ++nextId; pending.Add(id, source); if (ownerCompletion != null) pendingOwners.Add(id, Tuple.Create(ownerSession, ownerCompletion)); }
             try
             {
                 Send(new { jsonrpc = "2.0", id, method, @params = parameters });
@@ -206,7 +233,7 @@ namespace VBAi
                     throw new TimeoutException(UiText.Get("Copilot is not responding to ") + method + UiText.Get(". Check the CLI connection."));
                 return await source.Task;
             }
-            finally { lock (gate) pending.Remove(id); }
+            finally { lock (gate) { pending.Remove(id); pendingOwners.Remove(id); } }
         }
 
         /// <summary>Encode puis écrit un message avec son en-tête Content-Length sur l’entrée standard.</summary>
@@ -257,18 +284,35 @@ namespace VBAi
             if (method == null)
             {
                 int id; TaskCompletionSource<IDictionary<string, object>> source;
+                Tuple<string, TaskCompletionSource<string>> owner = null;
+                Exception error = null; bool turnFaulted = false;
                 if (int.TryParse(Text(message, "id"), out id)) lock (gate) if (pending.TryGetValue(id, out source))
                 {
-                    if (message.ContainsKey("error")) source.TrySetException(new InvalidOperationException(UiText.Get("Copilot refused the request. Check sign-in, subscription and model in the CLI.")));
+                    if (message.ContainsKey("error"))
+                    {
+                        error = new InvalidOperationException(UiText.Get("Copilot refused the request. Check sign-in, subscription and model in the CLI."));
+                        bool requestFaulted = source.TrySetException(error);
+                        // Settle the captured active turn before the reader can admit a following idle event.
+                        if (requestFaulted && pendingOwners.TryGetValue(id, out owner)) turnFaulted = TryFaultTurn(owner.Item1, owner.Item2, error);
+                    }
                     else source.TrySetResult(Object(message, "result") ?? new Dictionary<string, object>());
                 }
+                if (turnFaulted) EndTurnActivities(owner.Item1, owner.Item2, error);
                 return;
             }
             var parameters = Object(message, "params");
             if (method == "session.event" && Text(parameters, "sessionId") == sessionId && completion != null && !completion.Task.IsCompleted)
             {
                 var evt = Object(parameters, "event"); var data = Object(evt, "data"); string type = Text(evt, "type");
-                if (type == "assistant.message") answer = Text(data, "content");
+                if (type == "assistant.turn_start") { EndActivities("interrupted", true); lock (gate) { latestReasoning.Clear(); nativeTurnSequence++; } }
+                else if (type == "assistant.turn_end") EndActivities("interrupted", true);
+                else if (type == "assistant.reasoning_delta" || type == "assistant.reasoning")
+                    ReceiveReasoning(evt, data, type == "assistant.reasoning");
+                else if (type == "assistant.message")
+                {
+                    answer = Text(data, "content");
+                    ReceiveMessageReasoning(evt, data);
+                }
                 else if (type == "assistant.message_delta")
                 {
                     string fragment = Text(data, "deltaContent");
@@ -278,8 +322,8 @@ namespace VBAi
                         else TextDelta?.Invoke(fragment);
                     }
                 }
-                else if (type == "session.idle") completion.TrySetResult(answer ?? "");
-                else if (type == "session.error") completion.TrySetException(new InvalidOperationException(UiText.Get("The Copilot session failed. Check its status in the CLI.")));
+                else if (type == "session.idle") { EndActivities("interrupted"); completion.TrySetResult(answer ?? ""); }
+                else if (type == "session.error") Fail(new InvalidOperationException(UiText.Get("The Copilot session failed. Check its status in the CLI.")));
                 else if (type == "external_tool.requested") RunTool(data, null);
                 else if (type == "permission.requested") _ = DenyAsync(data);
                 return;
@@ -298,8 +342,9 @@ namespace VBAi
         /// <param name="data">Données de la demande de permission.</param>
         private async Task DenyAsync(IDictionary<string, object> data)
         {
-            try { await RequestAsync("session.permissions.handlePendingPermissionRequest", new { sessionId, requestId = Text(data, "requestId"), result = new { kind = PermissionDecision(Object(data, "permissionRequest")) } }); }
-            catch (Exception ex) { Fail(ex); }
+            string ownerSession = sessionId; var ownerCompletion = completion;
+            try { await RequestCoreAsync("session.permissions.handlePendingPermissionRequest", new { sessionId = ownerSession, requestId = Text(data, "requestId"), result = new { kind = PermissionDecision(Object(data, "permissionRequest")) } }, ownerSession, ownerCompletion); }
+            catch (Exception ex) { if (TryFaultTurn(ownerSession, ownerCompletion, ex)) EndTurnActivities(ownerSession, ownerCompletion, ex); }
         }
 
         /// <summary>Déduplique et exécute une demande d’outil, puis renvoie son résultat au format du protocole négocié.</summary>
@@ -307,34 +352,174 @@ namespace VBAi
         /// <param name="legacyId">Identifiant JSON-RPC pour l’ancien protocole, ou null.</param>
         private void RunTool(IDictionary<string, object> data, object legacyId)
         {
+            string ownerSession = sessionId;
+            var ownerCompletion = completion;
             string requestId = Text(data, "requestId") ?? Convert.ToString(legacyId);
-            lock (gate) if (!handledTools.Add(requestId)) return;
+            lock (gate) if (!handledTools.Add(ownerSession + ":" + requestId)) return;
             Func<Task> run = async () =>
             {
+                string name = Text(data, "toolName");
+                string arguments = null;
+                string callId = Text(data, "toolCallId") ?? requestId;
+                string activityId = sessionId + ":tool:" + callId;
+                bool settled = false;
                 try
                 {
-                    if (disposed || completion == null || completion.Task.IsCompleted) return;
-                    string name = Text(data, "toolName");
-                    string arguments = Json().Serialize(data.ContainsKey("arguments") ? data["arguments"] : new { });
-                    string output = allowedTools != null && allowedTools.Contains(name) && invoke != null
-                        ? await invoke(name, arguments)
+                    if (disposed || ownerSession != sessionId || ownerCompletion != completion || ownerCompletion == null || ownerCompletion.Task.IsCompleted) return;
+                    arguments = Json().Serialize(data.ContainsKey("arguments") ? data["arguments"] : new { });
+                    PublishTurnActivity(ProviderActivityProjection.Tool(activityId, name, arguments, "inProgress"), ownerSession, ownerCompletion);
+                    // A synchronous progress subscriber may dispose, settle or replace the native turn.
+                    if (disposed || ownerSession != sessionId || ownerCompletion != completion || ownerCompletion.Task.IsCompleted) return;
+                    var ownerTools = allowedTools; var ownerInvoke = invoke; var ownerHistory = history;
+                    string output = ownerTools != null && ownerTools.Contains(name) && ownerInvoke != null
+                        ? await ownerInvoke(name, arguments)
                         : "Tool not available.";
-                    string callId = Text(data, "toolCallId") ?? requestId;
-                    history.Add(new { role = "assistant", content = (string)null, tool_calls = new[] { new { id = callId, type = "function", function = new { name, arguments } } } });
-                    history.Add(new { role = "tool", tool_call_id = callId, content = output });
+                    if (ownerSession != sessionId || ownerCompletion != completion) return;
+                    PublishTurnActivity(ProviderActivityProjection.Tool(activityId, name, arguments,
+                        ProviderActivityProjection.ToolOutcome(output), ProviderActivityProjection.ToolDiagnostic(output)), ownerSession, ownerCompletion);
+                    settled = true;
+                    ownerHistory.Add(new { role = "assistant", content = (string)null, tool_calls = new[] { new { id = callId, type = "function", function = new { name, arguments } } } });
+                    ownerHistory.Add(new { role = "tool", tool_call_id = callId, content = output });
                     var result = new { textResultForLlm = output, resultType = "success" };
                     if (legacyId != null) Send(new { jsonrpc = "2.0", id = legacyId, result = new { result } });
-                    else await RequestAsync("session.tools.handlePendingToolCall", new { sessionId, requestId, result });
+                    else await RequestCoreAsync("session.tools.handlePendingToolCall", new { sessionId = ownerSession, requestId, result }, ownerSession, ownerCompletion);
                 }
-                catch (Exception ex) { Fail(ex); }
+                catch (Exception ex)
+                {
+                    if (!TryFaultTurn(ownerSession, ownerCompletion, ex)) return;
+                    if (!settled) PublishTurnActivity(ProviderActivityProjection.Tool(activityId, name, arguments, ex is OperationCanceledException ? "interrupted" : "failed", ex.Message), ownerSession, ownerCompletion, true);
+                    EndTurnActivities(ownerSession, ownerCompletion, ex);
+                }
             };
             if (ui != null) ui.Post(async _ => await run(), null); else _ = run();
         }
 
+        /// <summary>Projects documented Copilot reasoning events; opaque fields are never read.</summary>
+        /// <param name="evt">Native event envelope.</param>
+        /// <param name="data">Event data with reasoningId and content/deltaContent strings.</param>
+        /// <param name="complete">Whether the content is an authoritative final snapshot.</param>
+        private void ReceiveReasoning(IDictionary<string, object> evt, IDictionary<string, object> data, bool complete)
+        {
+            if (data == null || !data.TryGetValue("reasoningId", out var rawId) || !(rawId is string id) || string.IsNullOrWhiteSpace(id) ||
+                !data.TryGetValue(complete ? "content" : "deltaContent", out var rawText) || !(rawText is string text)) return;
+            string agent = Text(evt, "agentId") ?? "main";
+            string activityId = sessionId + ":turn:" + nativeTurnSequence + ":reasoning:" + agent + ":" + id;
+            lock (gate) latestReasoning[agent] = activityId;
+            PublishActivity(new CodexAgentActivity { Id = activityId, Kind = "reasoning", Title = UiText.Get("Reasoning"), Detail = text, Append = !complete, Status = complete ? "completed" : "inProgress" });
+        }
+
+        /// <summary>Projects the documented readable message-side fallback without repeating a completed reasoning block.</summary>
+        /// <param name="evt">Native event envelope.</param>
+        /// <param name="data">Message data; reasoningOpaque and encryptedContent remain untouched.</param>
+        private void ReceiveMessageReasoning(IDictionary<string, object> evt, IDictionary<string, object> data)
+        {
+            if (data == null || !data.TryGetValue("reasoningText", out var rawText) || !(rawText is string text) || string.IsNullOrWhiteSpace(text)) return;
+            string agent = Text(evt, "agentId") ?? "main", id = null;
+            lock (gate)
+            {
+                if (latestReasoning.TryGetValue(agent, out var previousId) && activitySnapshots.TryGetValue(previousId, out var previous))
+                {
+                    if (previous.Status == "inProgress") id = previousId;
+                    else if (previous.Detail == CodexAgentActivity.Limit(text)) return;
+                }
+            }
+            if (id == null)
+            {
+                if (!data.TryGetValue("messageId", out var rawId) || !(rawId is string messageId) || string.IsNullOrWhiteSpace(messageId)) return;
+                id = sessionId + ":turn:" + nativeTurnSequence + ":reasoning:" + agent + ":message:" + messageId;
+            }
+            lock (gate) latestReasoning[agent] = id;
+            PublishActivity(new CodexAgentActivity { Id = id, Kind = "reasoning", Title = UiText.Get("Reasoning"), Detail = text, Status = "completed" });
+        }
+
+        /// <summary>Publishes bounded public state on the captured UI context, preserving terminal snapshots against late deltas.</summary>
+        /// <param name="activity">Actual provider/tool event.</param>
+        private void PublishActivity(CodexAgentActivity activity) => PublishTurnActivity(activity, sessionId, completion);
+
+        /// <summary>Publishes activity only within the captured native turn, including queued callbacks.</summary>
+        private void PublishTurnActivity(CodexAgentActivity activity, string ownerSession, TaskCompletionSource<string> ownerCompletion, bool isolatePublicationErrors = false)
+        {
+            var callback = ActivityUpdate;
+            activity.Detail = CodexAgentActivity.Limit(activity.Detail);
+            lock (gate)
+            {
+                if (ownerSession != sessionId || ownerCompletion != completion) return;
+                activitySnapshots.TryGetValue(activity.Id, out var previous);
+                if (activity.Append && activity.Status == "inProgress" && previous != null && previous.Status != "inProgress") return;
+                var snapshot = new CodexAgentActivity
+                {
+                    Id = activity.Id, Kind = activity.Kind, Title = activity.Title ?? previous?.Title,
+                    Detail = CodexAgentActivity.Limit(activity.Append ? (previous?.Detail ?? "") + activity.Detail : activity.Detail),
+                    Status = activity.Status, DurationMs = activity.DurationMs ?? previous?.DurationMs
+                };
+                activitySnapshots[activity.Id] = snapshot;
+                if (activity.Status == "inProgress") pendingActivities[activity.Id] = snapshot; else pendingActivities.Remove(activity.Id);
+            }
+            Action deliver = () =>
+            {
+                if (ownerSession != sessionId || ownerCompletion != completion || (disposed && activity.Status == "inProgress")) return;
+                try { callback?.Invoke(activity); }
+                catch (Exception error) when (isolatePublicationErrors) { LogActivityPublicationFailure(error); }
+            };
+            try { if (ui != null) ui.Post(_ => deliver(), null); else deliver(); }
+            catch (Exception error) when (isolatePublicationErrors) { LogActivityPublicationFailure(error); }
+        }
+
+        /// <summary>Reports publication failures without replacing the primary owned operation failure.</summary>
+        private static void LogActivityPublicationFailure(Exception error)
+        {
+            try { LoadLog.Write("Copilot activity publication failed: " + error.GetType().Name); }
+            catch { /* Logging must not escape into the reader's global transport failure path. */ }
+        }
+        /// <summary>Settles visible partial work when the native turn ends without its own final receipt.</summary>
+        /// <param name="status">Failed or interrupted terminal state.</param>
+        /// <param name="reasoningOnly">Whether only native thinking blocks should settle, leaving admitted tools untouched.</param>
+        private void EndActivities(string status, bool reasoningOnly = false)
+        {
+            CodexAgentActivity[] pending;
+            lock (gate)
+            {
+                pending = pendingActivities.Values.Where(activity => !reasoningOnly || activity.Kind == "reasoning").ToArray();
+                foreach (var activity in pending) pendingActivities.Remove(activity.Id);
+            }
+            foreach (var activity in pending) PublishActivity(new CodexAgentActivity { Id = activity.Id, Kind = activity.Kind, Status = status, Append = true });
+        }
+
+        /// <summary>Closes only the still-active captured turn under the RPC admission lock.</summary>
+        private bool TryFaultTurn(string ownerSession, TaskCompletionSource<string> ownerCompletion, Exception error)
+        {
+            lock (gate)
+            {
+                if (disposed || ownerCompletion == null || ownerSession != sessionId || ownerCompletion != completion || ownerCompletion.Task.IsCompleted) return false;
+                string status = error is OperationCanceledException ? "interrupted" : "failed";
+                var activities = pendingActivities.Values.Select(activity => new CodexAgentActivity { Id = activity.Id, Kind = activity.Kind, Status = status, Append = true }).ToArray();
+                pendingActivities.Clear();
+                foreach (var activity in activities)
+                    if (activitySnapshots.TryGetValue(activity.Id, out var snapshot)) snapshot.Status = status;
+                failedTurnActivities[ownerCompletion] = activities;
+                return ownerCompletion.TrySetException(error);
+            }
+        }
+
+        /// <summary>Settles activities outside the admission lock without publishing into a replacement turn.</summary>
+        private void EndTurnActivities(string ownerSession, TaskCompletionSource<string> ownerCompletion, Exception error)
+        {
+            CodexAgentActivity[] activities;
+            lock (gate)
+            {
+                if (!failedTurnActivities.TryGetValue(ownerCompletion, out activities)) return;
+                failedTurnActivities.Remove(ownerCompletion);
+                if (ownerSession != sessionId || ownerCompletion != completion) return;
+            }
+            foreach (var activity in activities)
+                try { PublishTurnActivity(activity, ownerSession, ownerCompletion, true); }
+                catch (Exception publicationError) { LogActivityPublicationFailure(publicationError); }
+        }
         /// <summary>Termine en erreur les requêtes et la réponse qui sont encore en attente.</summary>
         /// <param name="error">Erreur transmise aux opérations en attente.</param>
         private void Fail(Exception error)
         {
+            EndActivities(error is OperationCanceledException ? "interrupted" : "failed");
             lock (gate) foreach (var request in pending.Values) request.TrySetException(error);
             completion?.TrySetException(error);
         }
@@ -354,7 +539,7 @@ namespace VBAi
         /// <summary>Annule les opérations en attente et arrête le processus Copilot CLI.</summary>
         public void Dispose()
         {
-            lock (gate) { if (disposed) return; disposed = true; }
+            lock (gate) { if (disposed) return; disposed = true; pendingOwners.Clear(); }
             Fail(new OperationCanceledException());
             if (process != null) { try { if (!process.HasExited) process.Kill(); } catch (InvalidOperationException) { } finally { process.Dispose(); } }
         }

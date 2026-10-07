@@ -166,37 +166,46 @@ namespace VBAi.Tests.Integration
                                 using (var operations = new MacroGitOperations(project, repository))
                                 {
                                     Phase(output, report, "production-checkpoint-restore");
-                                    try { owner.Execute(host, restoreStep, operations.Revision(changed)); }
-                                    catch (InvalidOperationException error) when (error.Message.Contains(UiText.Get("The VBE did not preserve the imported sources exactly. Use Restore or check the project.")))
+                                    void executeSettled(OwnerGitQualificationStep step, string state)
                                     {
-                                        // This specific terminal production refusal already retains
-                                        // Backup/AfterImport. Observe the actual designer once; do not
-                                        // retry Apply, Save, rollback or recovery to obtain a pass.
-                                        report["TerminalImportRefusal"] = error.ToString();
-                                        report["RecoveryPendingAfterRefusal"] = repository.RecoveryPending;
-                                        WriteReport(output, report);
-                                        try
+                                        try { owner.Execute(host, step, state); }
+                                        catch (InvalidOperationException error) when (error.Message.Contains(UiText.Get("The VBE did not preserve the imported sources exactly. Use Restore or check the project.")))
                                         {
-                                            var observed = host.ReadGitLayout(form, layout);
-                                            report["NativeAfterRefusedImport"] = observed;
-                                            report["NativeAfterRefusedImportDifferences"] = nativeBefore.Keys.Union(observed.Keys)
-                                                .Where(key => !nativeBefore.ContainsKey(key) || !observed.ContainsKey(key) || !Equals(nativeBefore[key], observed[key]))
-                                                .Select(key => new
-                                                {
-                                                    Property = key,
-                                                    Expected = nativeBefore.ContainsKey(key) ? nativeBefore[key] : null,
-                                                    Actual = observed.ContainsKey(key) ? observed[key] : null
-                                                }).ToArray();
+                                            // Execute returned a matching durable terminal classification.
+                                            // Capture before any live Font getter, then observe once. No
+                                            // Apply, Save, rollback, font setter or recovery replay follows.
+                                            report["TerminalImportRefusal"] = error.ToString();
+                                            report["TerminalImportRefusalVerb"] = step.Verb;
+                                            report["RecoveryPendingAfterRefusal"] = repository.RecoveryPending;
                                             WriteReport(output, report);
+                                            try
+                                            {
+                                                SaveSnapshot(output, "refused-" + step.Verb + "-before-live-read", project.Capture());
+                                                var observed = host.ReadGitLayout(form, layout);
+                                                report["NativeAfterRefusedImport"] = observed;
+                                                report["NativeContainerFontsAfterRefusedImport"] = host.ReadGitLayoutContainerFonts(form, layout,
+                                                    before.FormFonts(before.Manifest.Components.Single(item => item.Name == form)));
+                                                report["NativeAfterRefusedImportDifferences"] = nativeBefore.Keys.Union(observed.Keys)
+                                                    .Where(key => !nativeBefore.ContainsKey(key) || !observed.ContainsKey(key) || !Equals(nativeBefore[key], observed[key]))
+                                                    .Select(key => new
+                                                    {
+                                                        Property = key,
+                                                        Expected = nativeBefore.ContainsKey(key) ? nativeBefore[key] : null,
+                                                        Actual = observed.ContainsKey(key) ? observed[key] : null
+                                                    }).ToArray();
+                                                SaveSnapshot(output, "refused-" + step.Verb + "-after-live-read", project.Capture());
+                                                WriteReport(output, report);
+                                            }
+                                            catch (Exception observationError)
+                                            {
+                                                report["PostRefusalObservationError"] = observationError.ToString();
+                                                WriteReport(output, report);
+                                                throw new AggregateException("Terminal strict import refusal and its read-only observation both failed.", error, observationError);
+                                            }
+                                            throw;
                                         }
-                                        catch (Exception observationError)
-                                        {
-                                            report["PostRefusalObservationError"] = observationError.ToString();
-                                            WriteReport(output, report);
-                                            throw new AggregateException("Terminal strict import refusal and its read-only observation both failed.", error, observationError);
-                                        }
-                                        throw;
                                     }
+                                    executeSettled(restoreStep, operations.Revision(changed));
                                     var restored = Capture(project, host, layout, output, "checkpoint-restored");
                                     Assert.IsTrue(restored.SameAs(before));
                                     AssertNativeState(nativeBefore, host.ReadGitLayout(form, layout), "checkpoint restore");
@@ -208,7 +217,7 @@ namespace VBAi.Tests.Integration
                                     // Prepare a real backup, apply once, and record the ACTUAL
                                     // measured after-state. This deliberately stops before recovery
                                     // completion; it is not a simulated COM error or fabricated state.
-                                    owner.Execute(host, interruptionStep, operations.Revision(restored));
+                                    executeSettled(interruptionStep, operations.Revision(restored));
                                     var after = Capture(project, host, layout, output, "measured-interrupted-state");
                                     Assert.IsTrue(after.SameAs(changed));
                                     AssertNativeState(nativeChanged, host.ReadGitLayout(form, layout), "native apply before rollback");
@@ -218,7 +227,7 @@ namespace VBAi.Tests.Integration
                                     report["Interruption"] = "Explicitly prepared via production backup/apply/measured-after APIs; no uncertain mutation or failure injection";
 
                                     Phase(output, report, "production-explicit-rollback");
-                                    owner.Execute(host, rollbackStep, operations.Revision(after));
+                                    executeSettled(rollbackStep, operations.Revision(after));
                                     Assert.IsTrue(Capture(project, host, layout, output, "rollback-restored").SameAs(before));
                                     AssertNativeState(nativeBefore, host.ReadGitLayout(form, layout), "explicit rollback");
                                     Assert.IsFalse(repository.RecoveryPending);

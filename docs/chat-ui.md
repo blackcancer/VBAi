@@ -38,6 +38,8 @@ an explicit policy uses Ask each time. Choose deliberately before the first agen
 request. Some native evaluation/execution tools require Automatic and are not
 available merely because the mode is Agent.
 
+Settings changes remain in a detached draft until Save succeeds. Cancel and a failed save do not publish provider, approval or endpoint changes. Appearance follows the same Save/Cancel boundary; a failed settings write attempts to restore the previous appearance and reports any recovery failure.
+
 Inspection is not synonymous with no local UI effect: navigation can select a
 pane and compilation can open a diagnostic dialog. The permission categories
 concern the tool contract, not an operating-system sandbox.
@@ -82,6 +84,19 @@ universal provider limit.
 ## Review, recovery and verification
 
 The transcript groups agent activity without discarding individual outcomes.
+Tool headings describe the action and declared public target; technical
+identifiers remain in selectable details. Reasoning headings use an excerpt of
+the public summary actually received. Failed, declined, interrupted and cancelled
+outcomes remain visible when the group is collapsed, including an earlier failed
+action followed by a successful sibling.
+
+Codex, Copilot and HTTP adapters use this same activity presentation. Compatible
+HTTP fields, Claude thinking blocks and Bedrock Converse reasoning text are
+projected only when the provider publishes them. Encrypted, redacted and signature
+fields remain protocol data. Events are scoped to their request, session and turn;
+late callbacks cannot populate another conversation or admit an old tool action.
+No reasoning text is invented when the provider returns none.
+
 Code changes provide diffs and supported undo actions for a hunk, a change or a
 whole intervention. Current code is read before recovery; ambiguous or conflicting
 changes are refused rather than overwritten.
@@ -92,7 +107,13 @@ effects caused by running VBA. UserForm designer recovery has its own boundaries
 
 Compilation can be requested manually or after an intervention. The result and
 available source location are shown in the conversation. A suggested correction
-is still a message to send; compilation does not run all macros or tests.
+is still a message to send; compilation does not run all macros or tests. An
+absent or disabled native Compile command reports unavailable verification,
+releases the interface and permits subsequent work. It never counts as a
+successful compilation. A disabled command may indicate an already compiled
+project or a host restriction, without proving either. If diagnostic observation
+ends before a queued compile callback starts, that callback is cancelled; already
+admitted native work is never replayed.
 
 ## Sessions and local history
 

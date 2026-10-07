@@ -242,10 +242,61 @@ namespace VBAi.Tests.Unit
             }
         }
         [TestMethod]
-        public void AuthenticationHelperPreservesRequiredHeadersAndOptionalKeyContracts()
+        public async Task HttpCataloguePreservesExplicitProviderCapabilitiesAndManualUnknowns()
         {
-            var authenticate = typeof(LlmChatClient).GetMethod("Authenticate", BindingFlags.NonPublic | BindingFlags.Static);
-            foreach (var provider in new[] { LlmBoundaryScope.Provider("Azure OpenAI"), LlmBoundaryScope.Provider("Claude"), LlmBoundaryScope.Provider("Mistral") }) foreach (bool entra in new[] { false, true }) foreach (var key in new[] { null, "", "fixture-key" }) using (var request = new HttpRequestMessage(HttpMethod.Post, "https://fixture.invalid")) { authenticate.Invoke(null, new object[] { request, provider, key, entra }); Assert.AreEqual(provider.IsAzure && !entra && !string.IsNullOrWhiteSpace(key), request.Headers.Contains("api-key")); Assert.AreEqual(provider.IsClaude, request.Headers.Contains("anthropic-version")); Assert.AreEqual(provider.IsClaude && !string.IsNullOrWhiteSpace(key), request.Headers.Contains("x-api-key")); Assert.AreEqual(!provider.IsClaude && !(provider.IsAzure && !entra) && !string.IsNullOrWhiteSpace(key), request.Headers.Authorization != null); }
+            using (var scope = new LlmBoundaryScope())
+            {
+                foreach (string name in new[] { "OpenRouter", "Mistral", "Gemini" })
+                {
+                    var provider = LlmBoundaryScope.Provider(name);
+                    string body = new JavaScriptSerializer().Serialize(new { data = new[] { new { id = "arbitrary-model", name = "Shown",
+                        supported_parameters = new[] { "tools", "reasoning" }, architecture = new { input_modalities = new[] { "image" } },
+                        capabilities = new { function_calling = false, vision = true } } } });
+                    var handler = new LlmHttpFixture(body);
+                    var option = (await LlmChatClient.ListModelsAsync(provider, Settings(provider), handler)).Single();
+                    Assert.AreEqual("arbitrary-model", option.Id); Assert.AreEqual("Shown", option.Label);
+                    Assert.AreEqual(1, handler.Uris.Count);
+                    Assert.AreEqual(name == "OpenRouter" ? (bool?)true : name == "Mistral" ? (bool?)false : null, option.Capabilities.ToolCalling);
+                    Assert.AreEqual(name == "OpenRouter" ? (bool?)true : null, option.Capabilities.Reasoning);
+                    Assert.AreEqual(name == "Gemini" ? (bool?)null : true, option.Capabilities.Vision);
+                }
+                foreach (var provider in LlmProvider.All.Where(p => p.ManualModels))
+                {
+                    var settings = new LlmSettings(); settings.ManualModelLists[provider.Name] = "vision-reasoning-tool-model";
+                    var option = (await LlmChatClient.ListModelsAsync(provider, settings)).Single();
+                    Assert.AreSame(LlmModelCapabilities.Unknown, option.Capabilities);
+                }
+            }
+        }
+
+        [TestMethod]
+        public void ConnectionProfilesPreserveRequiredHeadersAndOptionalKeyContracts()
+        {
+            using (var scope = new LlmBoundaryScope())
+            {
+                foreach (var provider in new[] { LlmBoundaryScope.Provider("Azure OpenAI"), LlmBoundaryScope.Provider("Claude"), LlmBoundaryScope.Provider("Mistral"), LlmBoundaryScope.Provider("LM Studio") })
+                    foreach (bool entra in new[] { false, true })
+                        foreach (var key in new[] { null, "", "fixture-key" })
+                        {
+                            var settings = new LlmSettings { AzureUseEntraToken = entra };
+                            settings.SetEndpoint(provider, "https://fixture.invalid/v1/chat/completions");
+                            settings.SetKey(provider, key);
+                            if (provider.RequiresKey && string.IsNullOrWhiteSpace(key))
+                            {
+                                Assert.ThrowsException<InvalidOperationException>(() => LlmConnectionProfile.ForModel(provider, settings, "model"));
+                                continue;
+                            }
+                            var connection = LlmConnectionProfile.ForModel(provider, settings, "model");
+                            using (var request = new HttpRequestMessage(HttpMethod.Post, connection.Endpoint))
+                            {
+                                connection.Authenticate(request);
+                                Assert.AreEqual(provider.IsAzure && !entra && !string.IsNullOrWhiteSpace(key), request.Headers.Contains("api-key"));
+                                Assert.AreEqual(provider.IsClaude, request.Headers.Contains("anthropic-version"));
+                                Assert.AreEqual(provider.IsClaude && !string.IsNullOrWhiteSpace(key), request.Headers.Contains("x-api-key"));
+                                Assert.AreEqual(!provider.IsClaude && !(provider.IsAzure && !entra) && !string.IsNullOrWhiteSpace(key), request.Headers.Authorization != null);
+                            }
+                        }
+            }
         }
         [TestMethod]
         public async Task DisposalAtTheHttpBoundaryClosesTheBodyBeforeReturningProviderData()
@@ -343,6 +394,176 @@ namespace VBAi.Tests.Unit
             public override long Seek(long offset, System.IO.SeekOrigin origin) => throw new NotSupportedException();
             public override void SetLength(long value) => throw new NotSupportedException();
             public override void Write(byte[] buffer, int offset, int count) => throw new NotSupportedException();
+        }
+        [TestMethod]
+        public async Task HttpJsonPublicReasoningFlowsThroughCallbackWithoutChangingReturnedMessages()
+        {
+            using (var scope = new LlmBoundaryScope())
+            foreach (var provider in new[] { LlmBoundaryScope.Provider("Mistral"), LlmBoundaryScope.Provider("Claude"), LlmBoundaryScope.Provider("Amazon Bedrock") })
+            {
+                string response = provider.IsClaude ? "{\"content\":[{\"type\":\"thinking\",\"thinking\":\"Public summary\",\"signature\":\"SECRET\"},{\"type\":\"text\",\"text\":\"answer\"}],\"stop_reason\":\"end_turn\"}" :
+                    provider.IsBedrock ? "{\"output\":{\"message\":{\"content\":[{\"reasoningContent\":{\"reasoningText\":{\"text\":\"Public summary\",\"signature\":\"SECRET\"}}},{\"text\":\"answer\"}]}},\"stopReason\":\"end_turn\"}" :
+                    "{\"choices\":[{\"finish_reason\":\"stop\",\"message\":{\"role\":\"assistant\",\"content\":\"answer\",\"reasoning_content\":\"Public summary\"}}]}";
+                var seen = new List<CodexAgentActivity>();
+                using (var client = new LlmChatClient(provider, Settings(provider), "model", new LlmHttpFixture(response, response)))
+                {
+                    client.ActivityUpdate = seen.Add;
+                    Assert.AreEqual("answer", (await client.CompleteAsync(History(), Tools()))["content"]);
+                    Assert.AreEqual("Public summary", seen.Last().Detail); Assert.AreEqual("completed", seen.Last().Status);
+                    string firstId = seen.Last().Id; seen.Clear();
+                    await client.CompleteAsync(History(), Tools());
+                    Assert.AreNotEqual(firstId, seen.Last().Id); Assert.IsFalse(seen.Any(item => item.Detail.Contains("SECRET")));
+                }
+            }
+        }
+
+        [DataTestMethod]
+        [DataRow(null), DataRow("unknown"), DataRow("refusal"), DataRow("length"), DataRow("content_filter")]
+        public async Task JsonOpenAiToolsRequireValidFinishReasonAndFailPublishedReasoningWithoutReplay(string finish)
+        {
+            using (var scope = new LlmBoundaryScope())
+            {
+                var provider = LlmBoundaryScope.Provider("Mistral");
+                var choice = new Dictionary<string, object> { ["message"] = new { role = "assistant", content = "", reasoning_content = "Public partial", tool_calls = new[] {
+                    new { id = "call-1", type = "function", function = new { name = "read_module", arguments = "{}" } } } } };
+                if (finish != null) choice["finish_reason"] = finish;
+                var handler = new LlmHttpFixture(new JavaScriptSerializer().Serialize(new { choices = new[] { choice } }));
+                var seen = new List<CodexAgentActivity>(); int dispatched = 0;
+                using (var client = new LlmChatClient(provider, Settings(provider), "model", handler))
+                {
+                    client.ActivityUpdate = seen.Add; client.ToolHandler = (name, args) => { dispatched++; return Task.FromResult("unreachable"); };
+                    await Assert.ThrowsExceptionAsync<InvalidOperationException>(() => client.CompleteAsync(History(), Tools()));
+                    Assert.AreEqual(0, dispatched); Assert.AreEqual(1, handler.Bodies.Count);
+                    Assert.AreEqual("Public partial", seen.First().Detail); Assert.AreEqual("failed", seen.Last().Status);
+                    Assert.IsTrue(seen.Last().Append); Assert.IsFalse(seen.Any(a => a.Status == "completed"));
+                }
+            }
+        }
+
+        [DataTestMethod]
+        [DataRow("stop"), DataRow("tool_calls")]
+        public async Task JsonOpenAiValidToolsAreReturnedAfterPublicReasoningCompletes(string finish)
+        {
+            using (var scope = new LlmBoundaryScope())
+            {
+                var provider = LlmBoundaryScope.Provider("Mistral");
+                string body = new JavaScriptSerializer().Serialize(new { choices = new[] { new { finish_reason = finish,
+                    message = new { role = "assistant", content = "", reasoning_content = "Public summary", tool_calls = new[] {
+                        new { id = "call-1", type = "function", function = new { name = "read_module", arguments = "{}" } } } } } } });
+                var handler = new LlmHttpFixture(body); var seen = new List<CodexAgentActivity>(); int dispatched = 0;
+                using (var client = new LlmChatClient(provider, Settings(provider), "model", handler))
+                {
+                    client.ActivityUpdate = seen.Add; client.ToolHandler = (name, args) => { dispatched++; return Task.FromResult("unreachable"); };
+                    var result = await client.CompleteAsync(History(), Tools());
+                    Assert.AreEqual("call-1", ClaudeProtocol.Text(ClaudeProtocol.Object(((object[])result["tool_calls"])[0]), "id"));
+                    Assert.AreEqual(0, dispatched, "HTTP completion returns complete calls to the approved caller dispatch path.");
+                    Assert.AreEqual(1, handler.Bodies.Count); Assert.AreEqual("completed", seen.Last().Status);
+                    Assert.AreEqual("Public summary", seen.Last().Detail); Assert.IsFalse(seen.Last().Append);
+                }
+            }
+        }
+
+        [TestMethod]
+        public async Task ReasoningOnlySubscriptionEnablesSseAndTruncationKeepsFailedReceipt()
+        {
+            using (var scope = new LlmBoundaryScope())
+            {
+                var provider = LlmBoundaryScope.Provider("Mistral");
+                var handler = new LlmHttpFixture();
+                handler.Replies.Enqueue(new LlmHttpFixture.Reply("data: {\"choices\":[{\"delta\":{\"reasoning_content\":\"Public partial\"},\"finish_reason\":\"length\"}]}\n\ndata: [DONE]\n\n") { MediaType = "text/event-stream" });
+                var seen = new List<CodexAgentActivity>();
+                using (var client = new LlmChatClient(provider, Settings(provider), "model", handler))
+                {
+                    client.ActivityUpdate = seen.Add;
+                    await Assert.ThrowsExceptionAsync<System.IO.InvalidDataException>(() => client.CompleteAsync(History(), Tools()));
+                    Assert.AreEqual("failed", seen.Last().Status); Assert.IsFalse(seen.Any(a => a.Status == "completed"));
+                    Assert.AreEqual(true, LlmBoundaryScope.Object(new JavaScriptSerializer().DeserializeObject(handler.Bodies.Single()))["stream"]);
+                }
+            }
+        }
+
+    }
+}
+
+namespace VBAi.Tests.Unit
+{
+    [TestClass, TestCategory("Unit")]
+    public sealed class LlmChatClientCapabilityTests
+    {
+        private static readonly object[] ToolSchemas = { new { type = "function", function = new { name = "read_module", parameters = new { type = "object", properties = new { } } } } };
+        private static IList<object> History() => new List<object> { new { role = "user", content = "Explain the module." } };
+        private static LlmSettings Settings(LlmProvider provider)
+        {
+            var settings = new LlmSettings();
+            settings.SetEndpoint(provider, provider.IsClaude ? "https://fixture.invalid/v1/messages" : provider.IsBedrock ? "https://fixture.invalid" : "http://localhost:11434/v1/chat/completions");
+            if (provider.RequiresKey) settings.SetKey(provider, "fixture-only");
+            return settings;
+        }
+
+        [TestMethod]
+        public async Task StreamedToolCallsFromTextOnlyModelsNeverReachNativeDispatch()
+        {
+            using (var scope = new LlmBoundaryScope())
+            {
+                var handler = new LlmHttpFixture();
+                handler.Replies.Enqueue(new LlmHttpFixture.Reply("data: {\"choices\":[{\"delta\":{\"tool_calls\":[{\"index\":0,\"id\":\"call\",\"function\":{\"name\":\"read_module\",\"arguments\":\"{}\"}}]},\"finish_reason\":\"tool_calls\"}]}\n\ndata: [DONE]\n\n") { MediaType = "text/event-stream" });
+                var provider = LlmBoundaryScope.Provider("Ollama");
+                using (var client = new LlmChatClient(provider, Settings(provider), "model", handler, new LlmModelCapabilities(false)))
+                {
+                    int executions = 0;
+                    client.TextDelta = _ => { };
+                    client.ToolHandler = (tool, args) => { executions++; return Task.FromResult("{}"); };
+                    await Assert.ThrowsExceptionAsync<InvalidOperationException>(() => client.CompleteAsync(History(), ToolSchemas));
+                    Assert.AreEqual(0, executions);
+                    Assert.AreEqual(1, handler.Bodies.Count);
+                }
+            }
+        }
+
+        [TestMethod]
+        public async Task ExplicitTextOnlyModelsOmitToolSchemasAcrossImplementedHttpProtocols()
+        {
+            using (var scope = new LlmBoundaryScope())
+                foreach (string name in new[] { "Ollama", "Claude", "Amazon Bedrock" })
+                    foreach (bool? tools in new bool?[] { false, true, null })
+                    {
+                        var provider = LlmBoundaryScope.Provider(name);
+                        string answer = provider.IsClaude ? "{\"stop_reason\":\"end_turn\",\"content\":[{\"type\":\"text\",\"text\":\"answer\"}]}" :
+                            provider.IsBedrock ? "{\"stopReason\":\"end_turn\",\"output\":{\"message\":{\"content\":[{\"text\":\"answer\"}]}}}" :
+                            "{\"choices\":[{\"message\":{\"role\":\"assistant\",\"content\":\"answer\"}}]}";
+                        var handler = new LlmHttpFixture(answer);
+                        using (var client = new LlmChatClient(provider, Settings(provider), "model", handler, new LlmModelCapabilities(tools)))
+                        {
+                            var result = await client.CompleteAsync(History(), ToolSchemas);
+                            Assert.AreEqual("answer", result["content"]);
+                            var payload = new JavaScriptSerializer().DeserializeObject(handler.Bodies.Single()) as IDictionary<string, object>;
+                            Assert.AreEqual(tools != false, payload.ContainsKey(provider.IsBedrock ? "toolConfig" : "tools"));
+                            if (tools == false) Assert.IsFalse(payload.ContainsKey("tool_choice"));
+                            Assert.AreEqual(1, ToolSchemas.Length, "The caller's catalog is not mutated by the text-only connection.");
+                        }
+                    }
+        }
+
+        [TestMethod]
+        public async Task ToolCallsContradictingExplicitModelCapabilitiesAreRefusedBeforeDispatch()
+        {
+            using (var scope = new LlmBoundaryScope())
+                foreach (string name in new[] { "Ollama", "Claude", "Amazon Bedrock" })
+                {
+                    var provider = LlmBoundaryScope.Provider(name);
+                    string response = provider.IsClaude ? "{\"stop_reason\":\"tool_use\",\"content\":[{\"type\":\"tool_use\",\"id\":\"call\",\"name\":\"read_module\",\"input\":{}}]}" :
+                        provider.IsBedrock ? "{\"stopReason\":\"tool_use\",\"output\":{\"message\":{\"content\":[{\"toolUse\":{\"toolUseId\":\"call\",\"name\":\"read_module\",\"input\":{}}}]}}}" :
+                        "{\"choices\":[{\"finish_reason\":\"tool_calls\",\"message\":{\"role\":\"assistant\",\"tool_calls\":[{\"id\":\"call\",\"function\":{\"name\":\"read_module\",\"arguments\":\"{}\"}}]}}]}";
+                    var handler = new LlmHttpFixture(response);
+                    using (var client = new LlmChatClient(provider, Settings(provider), "model", handler, new LlmModelCapabilities(false)))
+                    {
+                        int executions = 0;
+                        client.ToolHandler = (tool, args) => { executions++; return Task.FromResult("{}"); };
+                        await Assert.ThrowsExceptionAsync<InvalidOperationException>(() => client.CompleteAsync(History(), ToolSchemas));
+                        Assert.AreEqual(0, executions);
+                        Assert.AreEqual(1, handler.Bodies.Count);
+                    }
+                }
         }
     }
 }

@@ -40,6 +40,25 @@ namespace VBAi.Tests.Unit
         }
 
         [TestMethod]
+        public void PassiveNestedSetupReceiptsKeepOriginalControlOrderAndNoFontAccess()
+        {
+            var lines = new List<string>(); var frame = new FrameProbe();
+            using (NativeFixtureProgressTrace.Begin(lines.Add))
+                typeof(ExcelVbeFixture).GetMethod("PrepareNestedGitLayout", BindingFlags.NonPublic | BindingFlags.Static)
+                    .Invoke(null, new object[] { frame });
+            Assert.AreEqual(0, frame.FontGets); Assert.AreEqual(0, frame.FontSets);
+            var entered = lines.Select(line => new JavaScriptSerializer().Deserialize<Dictionary<string, object>>(line))
+                .Where(row => (string)row["Boundary"] == "Entered").Select(row => (string)row["Phase"]).ToArray();
+            CollectionAssert.AreEqual(new[] { "Scope", "FrameCaption", "FrameControls", "MultiPageAdd", "MultiPageGeometry",
+                "GeometryLeft", "GeometryTop", "GeometryWidth", "GeometryHeight", "MultiPagePages", "FirstPage",
+                "PageCaption", "PageControls", "LeafAdd", "LeafGeometry", "GeometryLeft", "GeometryTop", "GeometryWidth",
+                "GeometryHeight", "LeafText", "ReleaseLeaf", "ReleasePageControls", "ReleasePage", "ReleasePages",
+                "ReleaseMultiPage", "ReleaseNestedControls" }, entered);
+            Assert.AreEqual(1, frame.Controls.Added.Count);
+            Assert.AreEqual(1, ((MultiPageProbe)frame.Controls.Added.Single()).Pages.Value.Controls.Added.Count);
+        }
+
+        [TestMethod]
         public void SerializedFontEvidenceKeepsEveryOwnerTypeAndExactDescriptor()
         {
             var snapshot = Snapshot();

@@ -101,30 +101,33 @@ namespace VBAi.Tests.Unit
                             Reply(id, new { data = PaginateModels ? new object[] { new { model = "gpt-beta", displayName = "Beta" } } : new object[0], nextCursor = (string)null });
                         break;
                     case "turn/start":
-                        Emit(new { method = "turn/started", @params = new { threadId = "thread-1", turn = new { id = "turn-1" } } });
+                        activeThreadId = Convert.ToString(Object(message["params"])["threadId"]);
+                        Emit(new { method = "turn/started", @params = new { threadId = activeThreadId, turn = new { id = "turn-1" } } });
                         Reply(id, new { turn = new { id = "turn-1" } });
                         TurnStarted.TrySetResult(true);
                         if (CompleteTurn)
                         {
-                            Emit(new { method = "item/agentMessage/delta", @params = new { threadId = "thread-1", itemId = "msg-1", delta = "partial" } });
-                            Emit(new { method = "item/reasoning/summaryTextDelta", @params = new { threadId = "thread-1", itemId = "reason-1", delta = "thinking" } });
-                            Emit(new { method = "item/reasoning/summaryPartAdded", @params = new { threadId = "thread-1", itemId = "reason-1", summaryIndex = 1 } });
-                            Emit(new { method = "item/completed", @params = new { threadId = "thread-1", item = new { type = "reasoning", id = "reason-1", summary = new object[] { new { text = "summary complete" } } } } });
-                            Emit(new { method = "item/completed", @params = new { threadId = "thread-1", item = new { type = "agentMessage", phase = "final", id = "msg-1", text = "Final answer" } } });
+                            Emit(new { method = "item/agentMessage/delta", @params = new { threadId = activeThreadId, turnId = "turn-1", itemId = "msg-1", delta = "partial" } });
+                            Emit(new { method = "item/reasoning/summaryTextDelta", @params = new { threadId = activeThreadId, turnId = "turn-1", itemId = "reason-1", delta = "thinking" } });
+                            Emit(new { method = "item/reasoning/summaryPartAdded", @params = new { threadId = activeThreadId, turnId = "turn-1", itemId = "reason-1", summaryIndex = 1 } });
+                            Emit(new { method = "item/completed", @params = new { threadId = activeThreadId, turnId = "turn-1", item = new { type = "reasoning", id = "reason-1", summary = new object[] { new { text = "summary complete" } } } } });
+                            Emit(new { method = "item/completed", @params = new { threadId = activeThreadId, turnId = "turn-1", item = new { type = "agentMessage", phase = "final", id = "msg-1", text = "Final answer" } } });
                             EmitTurnCompleted("completed", null);
                         }
 
                         break;
                     case "turn/interrupt":
                         Reply(id, new { });
-                        EmitTurnCompleted("interrupted", null);
+                        var interrupted = Object(message["params"]);
+                        Emit(new { method = "turn/completed", @params = new { threadId = Convert.ToString(interrupted["threadId"]), turn = new { id = Convert.ToString(interrupted["turnId"]), status = "interrupted" } } });
                         break;
                 }
             }
 
+            private string activeThreadId = "thread-1";
             public void EmitTurnCompleted(string status, string error)
             {
-                Emit(new { method = "turn/completed", @params = new { threadId = "thread-1", turn = new { status, error = error == null ? null : new { message = error } } } });
+                Emit(new { method = "turn/completed", @params = new { threadId = activeThreadId, turn = new { id = "turn-1", status, error = error == null ? null : new { message = error } } } });
             }
 
             public void Emit(object value)

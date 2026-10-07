@@ -481,7 +481,13 @@ namespace VBAi
                 PublishStreamText(pair.Key, pair.Key.Text);
             }
             pendingStreamText.Clear();
-            foreach (var entry in pendingActivityText) PublishStreamText(entry, entry.Activity?.Detail ?? "");
+            foreach (var entry in pendingActivityText)
+            {
+                PublishStreamText(entry, entry.Activity?.DisplayDetail() ?? "");
+                // Refresh public-summary headings once per frame without recycling realized controls.
+                if (entry.Activity?.Kind == "reasoning" && activityOwners.TryGetValue(entry, out var owner) && entryViews.ContainsKey(owner))
+                    RefreshVisibleActivity(entry);
+            }
             pendingActivityText.Clear();
             FollowLatest();
         }

@@ -43,6 +43,32 @@ namespace VBAi
             return (IDictionary<string, object>)serializer.DeserializeObject(serializer.Serialize(this));
         }
 
+        /// <summary>Creates an editable copy without sharing dictionaries or publishing provider labels.</summary>
+        /// <returns>Detached settings with the same optimistic persistence baseline.</returns>
+        internal LlmSettings CreateDraft()
+        {
+            var serializer = new JavaScriptSerializer();
+            var draft = serializer.Deserialize<LlmSettings>(serializer.Serialize(this));
+            draft.baseline = baseline == null ? null :
+                (IDictionary<string, object>)serializer.DeserializeObject(serializer.Serialize(baseline));
+            draft.baselinePath = baselinePath;
+            draft.baselineExisted = baselineExisted;
+            return draft;
+        }
+
+        /// <summary>Publishes a successfully saved draft while retaining the long-lived settings identity.</summary>
+        /// <param name="draft">Draft whose persistence operation completed successfully.</param>
+        internal void PublishDraft(LlmSettings draft)
+        {
+            var saved = draft.CreateDraft();
+            foreach (var property in typeof(LlmSettings).GetProperties(BindingFlags.Instance | BindingFlags.Public))
+                if (property.CanRead && property.CanWrite) property.SetValue(this, property.GetValue(saved, null), null);
+            baseline = saved.baseline;
+            baselinePath = saved.baselinePath;
+            baselineExisted = saved.baselineExisted;
+            ApplyProviderLabels();
+        }
+
         /// <summary>Replaces the merge base after a successful load or atomic save.</summary>
         /// <param name="path">Canonical file path associated with this baseline.</param>
         /// <param name="exists">Whether that file existed at the time the baseline was captured.</param>

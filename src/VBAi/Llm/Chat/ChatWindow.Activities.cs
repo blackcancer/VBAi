@@ -197,9 +197,19 @@ namespace VBAi
                         liveTexts[entry.StreamId] = row is ChatActivityStepView activity ? activity.detail.content : ((ChatTextContentView)row).content;
                 }
                 var latest = entries.LastOrDefault(entry => entry.Activity?.Status == "inProgress") ?? entries.Last();
-                string preview = string.IsNullOrWhiteSpace(latest.Activity?.Title) ? "" : " · " + CodexAgentActivity.Limit(latest.Activity.Title);
+                string groupKind = UiText.Get(entries.All(e => e.Speaker == "Réflexion") ? "Reasoning" : "Agent activity");
+                string caption = latest.Activity == null || (string.IsNullOrWhiteSpace(latest.Activity.Title) && latest.Activity.Kind != "reasoning") ? null : latest.Activity.DisplayTitle();
+                string preview = string.IsNullOrWhiteSpace(caption) || caption == groupKind ? "" : " · " + CodexAgentActivity.Limit(caption);
                 if (preview.Length > 90) preview = preview.Substring(0, 87) + "…";
-                string title = UiText.Get(entries.All(e => e.Speaker == "Réflexion") ? "Reasoning" : "Agent activity") + " · " + entries.Count + preview;
+                // A later successful sibling must not conceal an earlier failure when the group is collapsed.
+                string terminal = entries.Any(e => e.Activity?.Status == "failed") ? "Failed" :
+                    entries.Any(e => e.Activity?.Status == "declined") ? "Declined" :
+                    entries.Any(e => e.Activity?.Status == "interrupted") ? "Interrupted" :
+                    entries.Any(e => e.Activity?.Status == "cancelled") ? "Cancelled" : null;
+                // The shared disclosure button ellipsizes the end of its caption.
+                // Keep the terminal outcome ahead of the count and long action target.
+                string title = (terminal == null ? "" : (terminal == "Failed" ? "✗ " : "") + UiText.Get(terminal) + " · ") +
+                    groupKind + " · " + entries.Count + preview;
                 if (card.section.Title != title) card.section.Title = title;
                 bool running = entries.Any(e => e.Activity?.Status == "inProgress" || (busy && e.Activity == null && e.StreamId != null && !completedStreams.Contains(e.StreamId)));
                 card.section.Expanded = expandedActivityGroups.Contains(owner) || running && !collapsedActivityGroups.Contains(owner);
@@ -248,16 +258,17 @@ namespace VBAi
                 string status = UiText.Get(running ? "In progress" : failed ? "Failed" : activity.Status == "declined" ? "Declined" : activity.Status == "completed" ? "Completed" : activity.Status == "interrupted" ? "Interrupted" : "Cancelled");
                 if (activity.DurationMs.HasValue) status += " · " + (activity.DurationMs.Value / 1000d).ToString("0.0", UiText.Culture) + " s";
                 if (card.state.Text != status) card.state.Text = status;
-                string title = string.IsNullOrWhiteSpace(activity.Title) ? UiText.Get(activity.Kind == "reasoning" ? "Reasoning" : "Tool") : activity.Title;
+                string title = activity.DisplayTitle();
+                string detail = activity.DisplayDetail();
                 if (card.section.Title != title) card.section.Title = title;
                 if (!state.Initialized || state.Kind != activity.Kind)
                 {
                     int start = card.detail.content.SelectionStart, length = card.detail.content.SelectionLength;
-                    card.detail.ShowPlain(activity.Detail, activity.Kind == "commandExecution");
+                    card.detail.ShowPlain(detail, activity.Kind == "commandExecution");
                     card.detail.content.Select(System.Math.Min(start, card.detail.content.TextLength), System.Math.Min(length, System.Math.Max(0, card.detail.content.TextLength - start)));
                     state.Kind = activity.Kind; state.Initialized = true;
                 }
-                else SetTranscriptText(card.detail.content, activity.Detail);
+                else SetTranscriptText(card.detail.content, detail);
                 if (!string.IsNullOrEmpty(entry.StreamId)) liveTexts[entry.StreamId] = card.detail.content;
                 card.section.Expanded = expandedActivitySteps.Contains(entry) || running && activity.Kind == "reasoning" && !collapsedActivitySteps.Contains(entry);
             }

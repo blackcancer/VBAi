@@ -83,6 +83,7 @@ namespace VBAi.Tests.Infrastructure
         internal static Response Execute(Request request)
         {
             if (request == null) return Response.Failure("request is null");
+            if (request.Command == "compile_project") return Response.Success(new { Executed = true, Available = true });
             if (request.Command == "debug_state") return Response.Success(new VbeToolMode { Mode = 2 });
             if (request.Command == "sign_project") return Response.Success(new VbeToolSignature { CertificateName = "Disposable", UnsignedVerified = true });
             if (request.Command == "read_module" || request.Command == "native_code_history") return Response.Success(new VbeToolCodeResult());

@@ -154,17 +154,7 @@ namespace VBAi
         private void InitializeTheme()
         {
             themePicker.SelectedIndex = (int)UiTheme.Choice;
-            if (System.ComponentModel.LicenseManager.UsageMode != System.ComponentModel.LicenseUsageMode.Designtime)
-                themePicker.SelectedIndexChanged += ThemePicker_SelectedIndexChanged;
-        }
-
-        /// <summary>Applique le thème choisi et affiche les erreurs de sélection.</summary>
-        /// <param name="sender">Sélecteur de thème.</param>
-        /// <param name="e">Événement de sélection.</param>
-        private void ThemePicker_SelectedIndexChanged(object sender, EventArgs e)
-        {
-            try { if (themePicker.SelectedIndex >= 0) SelectTheme((ThemeChoice)themePicker.SelectedIndex); }
-            catch (Exception ex) { ShowNotice(this, ex.Message, "", MessageBoxButtons.OK, MessageBoxIcon.None); }
+            // Appearance is a draft like the provider and approval fields; Cancel never writes it.
         }
 
         /// <summary>Met à jour valeurs, libellés et visibilité selon le fournisseur sélectionné.</summary>
@@ -320,54 +310,60 @@ namespace VBAi
         /// <summary>Valide puis enregistre les réglages et ferme la fenêtre en cas de succès.</summary>
         private void Save()
         {
-            double? previousOllamaTemperature = settings?.OllamaTemperature;
-            double? previousOllamaTopP = settings?.OllamaTopP;
             try
             {
                 CaptureDraft();
                 foreach (var endpoint in endpointDrafts.Values) ValidateEndpoint(endpoint);
                 double? temperature = ParseOllamaSampling(ollamaTemperatureDraft, true);
                 double? topP = ParseOllamaSampling(ollamaTopPDraft, false);
-                settings.OllamaTemperature = temperature;
-                settings.OllamaTopP = topP;
-                settings.ProviderName = ((LlmProvider)provider.SelectedItem).Name;
-                settings.GitHubAccount = githubAccount.SelectedIndex > 0 ? Convert.ToString(githubAccount.SelectedItem) : null;
-                settings.CustomProviderName = customName.Text.Trim();
-                settings.AzureUseEntraToken = azureEntra.Checked;
-                if (settings.ManualModelLists == null) settings.ManualModelLists = new System.Collections.Generic.Dictionary<string, string>();
-                foreach (var pair in modelDrafts) settings.ManualModelLists[pair.Key] = pair.Value;
-                settings.VbeEditApproval = approvalPicker.SelectedIndex == 2 ? "ReadOnly" :
+                var draft = settings.CreateDraft();
+                draft.OllamaTemperature = temperature;
+                draft.OllamaTopP = topP;
+                draft.ProviderName = ((LlmProvider)provider.SelectedItem).Name;
+                draft.GitHubAccount = githubAccount.SelectedIndex > 0 ? Convert.ToString(githubAccount.SelectedItem) : null;
+                draft.CustomProviderName = customName.Text.Trim();
+                draft.AzureUseEntraToken = azureEntra.Checked;
+                if (draft.ManualModelLists == null) draft.ManualModelLists = new System.Collections.Generic.Dictionary<string, string>();
+                foreach (var pair in modelDrafts) draft.ManualModelLists[pair.Key] = pair.Value;
+                draft.VbeEditApproval = approvalPicker.SelectedIndex == 2 ? "ReadOnly" :
                     approvalPicker.SelectedIndex == 1 ? "AskEachTime" : "Automatic";
                 bool previousNativeTheme = settings.NativeVbeDarkTheme;
-                settings.NativeVbeDarkTheme = nativeVbeDark.Checked;
+                draft.NativeVbeDarkTheme = nativeVbeDark.Checked;
+                ThemeChoice previousTheme = UiTheme.Choice;
+                bool themeChanged = themePicker.SelectedIndex >= 0 && themePicker.SelectedIndex != (int)previousTheme;
                 foreach (var item in LlmProvider.All)
                 {
                     string value;
-                    if (endpointDrafts.TryGetValue(item.Name, out value)) settings.SetEndpoint(item, value);
-                    if (clearedKeys.Contains(item.Name)) settings.SetKey(item, null);
-                    if (keyDrafts.TryGetValue(item.Name, out value) && !string.IsNullOrWhiteSpace(value)) settings.SetKey(item, value);
+                    if (endpointDrafts.TryGetValue(item.Name, out value)) draft.SetEndpoint(item, value);
+                    if (clearedKeys.Contains(item.Name)) draft.SetKey(item, null);
+                    if (keyDrafts.TryGetValue(item.Name, out value) && !string.IsNullOrWhiteSpace(value)) draft.SetKey(item, value);
                 }
                 try
                 {
-                    SelectNativeVbeTheme(settings.NativeVbeDarkTheme);
-                    WriteSettings(settings);
+                    SelectNativeVbeTheme(draft.NativeVbeDarkTheme);
+                    if (themeChanged) SelectTheme((ThemeChoice)themePicker.SelectedIndex);
+                    WriteSettings(draft);
                 }
-                catch
+                catch (Exception failure)
                 {
-                    settings.NativeVbeDarkTheme = previousNativeTheme;
-                    try { SelectNativeVbeTheme(previousNativeTheme); } catch { }
+                    var recoveryErrors = new System.Collections.Generic.List<Exception>();
+                    try { SelectNativeVbeTheme(previousNativeTheme); } catch (Exception recovery) { recoveryErrors.Add(recovery); }
+                    if (themeChanged) { try { SelectTheme(previousTheme); } catch (Exception recovery) { recoveryErrors.Add(recovery); } }
+                    if (recoveryErrors.Count > 0)
+                    {
+                        // .NET Framework does not include inner messages in AggregateException.Message.
+                        string message = failure.Message + Environment.NewLine + UiText.Get("Appearance recovery failed");
+                        recoveryErrors.Insert(0, failure);
+                        throw new AggregateException(message, recoveryErrors);
+                    }
                     throw;
                 }
+                settings.PublishDraft(draft);
                 DialogResult = DialogResult.OK;
                 Close();
             }
             catch (Exception ex)
             {
-                if (settings != null)
-                {
-                    settings.OllamaTemperature = previousOllamaTemperature;
-                    settings.OllamaTopP = previousOllamaTopP;
-                }
                 ShowNotice(this, ex.Message, UiText.Get("VBAi settings"), MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
@@ -394,10 +390,8 @@ namespace VBAi
         private static void ValidateEndpoint(string raw)
         {
             if (string.IsNullOrWhiteSpace(raw)) return;
-            Uri endpoint;
-            if (!Uri.TryCreate(raw, UriKind.Absolute, out endpoint) ||
-                (endpoint.Scheme != Uri.UriSchemeHttps && !(endpoint.Scheme == Uri.UriSchemeHttp && endpoint.IsLoopback)))
-                throw new ArgumentException(UiText.Get("The URL must use HTTPS, or HTTP on localhost."));
+            try { LlmConnectionProfile.RequireHttpEndpoint(raw); }
+            catch (InvalidOperationException error) { throw new ArgumentException(UiText.Get(error.Message), error); }
         }
     }
 }

@@ -401,3 +401,74 @@ namespace VBAi.Tests.Unit
         }
     }
 }
+
+namespace VBAi.Tests.Unit
+{
+    using Microsoft.VisualStudio.TestTools.UnitTesting;
+    using System;
+    using System.Collections.Generic;
+    using System.IO;
+    using System.Linq;
+    using System.Threading;
+    using System.Threading.Tasks;
+    using VBAi;
+
+    public sealed partial class StreamTests
+    {
+        [TestMethod]
+        public async Task OpenAiReasoningStreamsSeparatelyAndAuthoritativeSnapshotDoesNotDuplicate()
+        {
+            var seen = new List<CodexAgentActivity>(); var text = new List<string>();
+            using (var stream = Events(new { choices = new[] { new { delta = new { reasoning_content = "Looking ", content = "Answer" } } } },
+                new { choices = new[] { new { delta = new { reasoning_content = "at module" } } } },
+                new { choices = new[] { new { message = new { reasoning_content = "Reviewed module" }, finish_reason = "stop" } } }, "[DONE]"))
+            {
+                var result = await ChatStreamReader.ReadAsync(stream, false, text.Add, CancellationToken.None, activity: seen.Add, activityPrefix: "req");
+                Assert.AreEqual("Answer", result["content"]); CollectionAssert.AreEqual(new[] { "Answer" }, text);
+                Assert.AreEqual(1, seen.Select(a => a.Id).Distinct().Count());
+                Assert.AreEqual("Reviewed module", seen.Last().Detail); Assert.AreEqual("completed", seen.Last().Status); Assert.IsFalse(seen.Last().Append);
+            }
+        }
+
+        [TestMethod]
+        public async Task ClaudeReasoningKeepsBlockOrderAndNeverDisplaysSignatureOrRedaction()
+        {
+            var seen = new List<CodexAgentActivity>();
+            using (var stream = Events(new { type = "content_block_start", index = 0, content_block = new { type = "thinking", thinking = "Initial ", signature = "SECRET_SIG" } },
+                new { type = "content_block_delta", index = 0, delta = new { type = "thinking_delta", thinking = "reason" } },
+                new { type = "content_block_delta", index = 0, delta = new { type = "signature_delta", signature = "SECRET_SIG_MORE" } },
+                new { type = "content_block_start", index = 1, content_block = new { type = "redacted_thinking", data = "SECRET_REDACTED" } },
+                new { type = "content_block_start", index = 2, content_block = new { type = "thinking", thinking = "Second" } },
+                new { type = "message_delta", delta = new { stop_reason = "end_turn" } }, new { type = "message_stop" }))
+            {
+                await ChatStreamReader.ReadAsync(stream, true, null, CancellationToken.None, activity: seen.Add);
+                var complete = seen.Where(a => a.Status == "completed").ToArray();
+                CollectionAssert.AreEqual(new[] { "Initial reason", "Second" }, complete.Select(a => a.Detail).ToArray());
+                Assert.IsFalse(seen.Any(a => a.Detail.Contains("SECRET")));
+            }
+        }
+
+        [TestMethod]
+        public async Task IncompleteReasoningTurnFailsAndReturnsNoPartialToolCall()
+        {
+            var seen = new List<CodexAgentActivity>();
+            using (var stream = Events(new { choices = new[] { new { delta = new { reasoning_content = "Public partial", tool_calls = new[] { new { index = 0, id = "unsafe", function = new { name = "write", arguments = "{" } } } } } } }))
+                await Assert.ThrowsExceptionAsync<InvalidDataException>(() => ChatStreamReader.ReadAsync(stream, false, null, CancellationToken.None, activity: seen.Add));
+            Assert.AreEqual("failed", seen.Last().Status); Assert.AreEqual("", seen.Last().Detail); Assert.IsTrue(seen.Last().Append);
+            Assert.IsFalse(seen.Any(a => a.Kind != "reasoning" || a.Status == "completed"));
+        }
+
+        [TestMethod]
+        public async Task CancellationAfterAReasoningFragmentMarksItInterrupted()
+        {
+            var seen = new List<CodexAgentActivity>();
+            using (var cancellation = new CancellationTokenSource())
+            using (var stream = Events(new { choices = new[] { new { delta = new { reasoning_content = "Public partial" } } } }, new { choices = new[] { new { finish_reason = "stop" } } }, "[DONE]"))
+            {
+                await Assert.ThrowsExceptionAsync<OperationCanceledException>(() => ChatStreamReader.ReadAsync(stream, false, null, cancellation.Token,
+                    activity: item => { seen.Add(item); if (item.Status == "inProgress") cancellation.Cancel(); }));
+                Assert.AreEqual("interrupted", seen.Last().Status); Assert.IsFalse(seen.Any(a => a.Status == "completed"));
+            }
+        }
+    }
+}

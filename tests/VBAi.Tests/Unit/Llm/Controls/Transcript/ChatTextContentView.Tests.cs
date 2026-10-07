@@ -79,6 +79,24 @@ namespace VBAi.Tests.Unit
         }
 
         [STATestMethod]
+        public void NativeViewportResizeCannotInflateOnePublishedLineIntoLargeBlankSpace()
+        {
+            using (var form = new Form { Left = -10000, Top = -10000, ShowInTaskbar = false, ClientSize = new Size(660, 300) })
+            using (var view = new ChatTextContentView { Dock = DockStyle.Top })
+            {
+                form.Controls.Add(view); view.ShowPlain("Published public summary");
+                form.Show(); Application.DoEvents(); view.PerformLayout();
+                int naturalHeight = view.content.Height;
+                Assert.IsTrue(naturalHeight >= 24 && naturalHeight < 60);
+                TranscriptFixture.Event(view.content, "OnContentsResized", new ContentsResizedEventArgs(new Rectangle(0, 0, 456, 1024)));
+                Application.DoEvents();
+                Assert.AreEqual(naturalHeight, view.content.Height, "A previous native viewport height must not displace later tool rows.");
+                Assert.AreEqual("Published public summary", view.content.Text);
+                Assert.AreEqual(RichTextBoxScrollBars.None, view.content.ScrollBars);
+            }
+        }
+
+        [STATestMethod]
         public void RichTextReflowBoundsHeightAndSupportsEmptyDisposedOrInitializingContent()
         {
             using (var theme = new ThemeScope())
@@ -88,7 +106,7 @@ namespace VBAi.Tests.Unit
                 UiInvoke.Call(typeof(ChatTextContentView), "ResizeText", view); view.ShowPlain("without handle");
                 view.ShowPlain("small"); var handle = view.content.Handle; view.Width = 200; Assert.IsTrue(view.content.Height >= 24); Assert.AreEqual(RichTextBoxScrollBars.None, view.content.ScrollBars);
                 view.ShowPlain(string.Join("\n", new string[300]).Replace("\n", "line\n")); Assert.AreEqual(1200, view.content.Height); Assert.AreEqual(RichTextBoxScrollBars.Vertical, view.content.ScrollBars);
-                TranscriptFixture.Event(view.content, "OnContentsResized", new ContentsResizedEventArgs(new Rectangle(0, 0, 10, 1))); Assert.AreEqual(24, view.content.Height);
+                TranscriptFixture.Event(view.content, "OnContentsResized", new ContentsResizedEventArgs(new Rectangle(0, 0, 10, 1))); Assert.AreEqual(1200, view.content.Height, "A stale native viewport rectangle must not collapse actual long content.");
                 TranscriptFixture.Event(view.content, "OnContentsResized", new ContentsResizedEventArgs(new Rectangle(0, 0, 10, 2000))); Assert.AreEqual(1200, view.content.Height);
                 view.ShowPlain(""); Assert.AreEqual("", view.content.Text); LocalizationScope.Set("ar-SA"); view.ShowPlain("rtl"); Assert.AreEqual(RightToLeft.Yes, view.content.RightToLeft);
                 view.ShowPlain("code", true); Assert.AreEqual(RightToLeft.No, view.content.RightToLeft); Assert.AreEqual("Consolas", view.content.Font.FontFamily.Name);

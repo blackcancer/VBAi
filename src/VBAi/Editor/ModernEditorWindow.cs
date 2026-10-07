@@ -558,7 +558,8 @@ namespace VBAi
                         if (int.TryParse(await Script("apply", doc.Id, capturedVersion, native), out applied) && applied > 0)
                         { doc.Acknowledge(native, captured); versions[doc.Id] = Math.Max(versions[doc.Id], applied); }
                     }
-                    if (!doc.Dirty) Drafts.ClearOwn(doc);
+                    // Native synchronization is not durable document persistence.
+                    // Keep the recovery snapshot until a verified host save completes.
                     documentSynchronizationErrors.Remove(doc.Id);
                 }
                 catch (Exception error)

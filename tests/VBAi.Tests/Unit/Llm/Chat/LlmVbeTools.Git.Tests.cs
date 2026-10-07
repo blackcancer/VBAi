@@ -68,7 +68,7 @@ namespace VBAi.Tests.Unit
         [TestMethod]
         public async Task GitStatusHistoryCommitReadMutationAndSelectiveCommitUseDisposableBareRepository()
         {
-            using (var fixture = new Fixture())
+            using (var fixture = new Fixture(observeRevision: true))
             {
                 var tools = fixture.Tools;
                 foreach (string name in new[] { "git_status", "git_history", "git_branches", "git_checkpoints", "git_conflicts" })

@@ -22,6 +22,14 @@ filter. Even local tests can create actual controls, WebView2 instances, synthet
 CLI processes and temporary Git repositories; use a suitable Windows desktop.
 An isolated build does not replace the registered add-in.
 
+Packaged PowerShell controller tests run local scripts in child processes. A
+restricted default execution policy can reject them before their guard assertions
+run. Use an approved process-only policy for that test session when necessary;
+no machine or current-user policy change is required. For example, set and restore
+`PSExecutionPolicyPreference` around the selected test command in a dedicated
+PowerShell process. Recorded gates state the effective scope and retain original
+policy failures separately. See Microsoft's
+[execution-policy scopes](https://learn.microsoft.com/en-us/powershell/module/microsoft.powershell.core/about/about_execution_policies?view=powershell-5.1).
 ## Choose the check
 
 | Change | Applicable checks |

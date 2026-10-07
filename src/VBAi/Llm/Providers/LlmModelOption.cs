@@ -25,20 +25,26 @@ namespace VBAi
         /// <value>Options de niveau, ou tableau vide si aucune option est fournie.</value>
         public LlmEffortOption[] Efforts { get; private set; }
 
+        /// <summary>Explicit provider capability declarations for this catalog entry.</summary>
+        /// <value>Immutable declarations; unknown fields are represented by null.</value>
+        public LlmModelCapabilities Capabilities { get; }
+
         /// <summary>Crée une option de modèle et normalise son libellé et sa liste de niveaux.</summary>
         /// <param name="id">Identifiant du modèle côté fournisseur.</param>
         /// <param name="label">Libellé affiché ; si vide, identifiant utilisé.</param>
         /// <param name="isDefault">Indique si le modèle est proposé par défaut.</param>
         /// <param name="defaultEffort">Identifiant du niveau par défaut, éventuellement null.</param>
         /// <param name="efforts">Niveaux pris en charge, éventuellement null.</param>
+        /// <param name="capabilities">Explicit catalog capabilities, or null when no declaration is available.</param>
         public LlmModelOption(string id, string label, bool isDefault = false,
-            string defaultEffort = null, LlmEffortOption[] efforts = null)
+            string defaultEffort = null, LlmEffortOption[] efforts = null, LlmModelCapabilities capabilities = null)
         {
             Id = id;
             Label = string.IsNullOrWhiteSpace(label) ? id : label;
             IsDefault = isDefault;
             DefaultEffort = defaultEffort;
             Efforts = efforts ?? new LlmEffortOption[0];
+            Capabilities = capabilities ?? LlmModelCapabilities.Unknown;
         }
 
         /// <summary>Formate le libellé et l’identifiant pour l’affichage d’une option.</summary>

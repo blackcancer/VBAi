@@ -9,6 +9,188 @@ namespace VBAi.Tests.Unit
 
     public sealed partial class ChatWindowStateTests
     {
+        [STATestMethod, TestCategory("Unit")]
+        public void PreExpandedPublishedSummaryStaysCompactThroughActualWpfHostingAndNativeCreation()
+        {
+            using (var window = Surfaces())
+            {
+                window.Left = -10000; window.Top = -10000; window.ShowInTaskbar = false;
+                window.Size = new System.Drawing.Size(660, 800);
+                foreach (var activity in new[] {
+                    new CodexAgentActivity { Id = "summary", Kind = "reasoning", Title = "Reasoning", Detail = "Je vérifie les bornes de la boucle et le traitement des cellules vides.", Status = "completed" },
+                    new CodexAgentActivity { Id = "read", Kind = "dynamicToolCall", Title = "Read module", Detail = "read_module", Status = "completed" },
+                    new CodexAgentActivity { Id = "failed", Kind = "dynamicToolCall", Title = "Compile project", Detail = "compile_project", Status = "failed" } })
+                    Call(window, "ReceiveAgentActivity", activity);
+                var owner = Get<List<ChatEntry>>(window, "transcriptEntries")[0];
+                Get<HashSet<ChatEntry>>(window, "expandedActivityGroups").Add(owner);
+                Get<HashSet<ChatEntry>>(window, "expandedActivitySteps").Add(owner);
+                Call(window, "RefreshVisibleActivity", owner);
+                window.Show();
+                var items = Get<System.Windows.Controls.ItemsControl>(window, "conversationItems");
+                for (int frame = 0; frame < 6; frame++) { System.Windows.Forms.Application.DoEvents(); items.UpdateLayout(); }
+                var host = (ChatDesignerHost)Get<Dictionary<ChatEntry, FrameworkElement>>(window, "entryViews")[owner];
+                var group = (ChatActivityGroupView)host.View;
+                Assert.IsTrue(group.section.Expanded); Assert.AreEqual(3, group.section.body.Controls.Count);
+                var summary = (ChatActivityStepView)group.section.body.Controls[0];
+                Assert.IsTrue(summary.section.Expanded);
+                Assert.IsTrue(summary.detail.content.Height < 60, "RichEdit must settle to one rendered line after native/WPF hosting, rather than retaining its initial viewport height.");
+                Assert.IsTrue(summary.Height < 200);
+                Assert.IsTrue(group.section.body.Controls[2].Bottom < 300, "Both tool rows must remain visible immediately beneath the short public summary.");
+                VBAi.Tests.Infrastructure.TranscriptFixture.Event(group.section.toggle, "OnClick", System.EventArgs.Empty);
+                Assert.IsFalse(group.section.Expanded);
+                VBAi.Tests.Infrastructure.TranscriptFixture.Event(group.section.toggle, "OnClick", System.EventArgs.Empty);
+                for (int frame = 0; frame < 3; frame++) { System.Windows.Forms.Application.DoEvents(); items.UpdateLayout(); }
+                Assert.IsTrue(group.section.Expanded); Assert.IsTrue(summary.detail.content.Height < 60);
+            }
+        }
+
+        [STATestMethod, TestCategory("Unit")]
+        public void ActualDisclosureClicksKeepPublishedSummaryAndFollowingToolRowsCompact()
+        {
+            using (var window = Surfaces())
+            using (var form = new System.Windows.Forms.Form { Left = -10000, Top = -10000, ShowInTaskbar = false, ClientSize = new System.Drawing.Size(660, 400) })
+            {
+                foreach (var activity in new[] {
+                    new CodexAgentActivity { Id = "summary", Kind = "reasoning", Title = "Reasoning", Detail = "Published public summary", Status = "completed" },
+                    new CodexAgentActivity { Id = "read", Kind = "dynamicToolCall", Title = "read_module", Detail = "read_module", Status = "completed" },
+                    new CodexAgentActivity { Id = "failed", Kind = "dynamicToolCall", Title = "compile_project", Detail = "compile_project", Status = "failed" } })
+                    Call(window, "ReceiveAgentActivity", activity);
+                var owner = Get<List<ChatEntry>>(window, "transcriptEntries")[0];
+                using (var host = (ChatDesignerHost)Call(window, "RenderEntry", owner))
+                {
+                    var group = (ChatActivityGroupView)host.View; host.Child = null;
+                    group.AutoSize = true; group.Dock = System.Windows.Forms.DockStyle.Top; form.Controls.Add(group);
+                    Assert.IsFalse(group.section.Expanded);
+                    VBAi.Tests.Infrastructure.TranscriptFixture.Event(group.section.toggle, "OnClick", System.EventArgs.Empty);
+                    Assert.IsTrue(group.section.Expanded);
+                    var first = (ChatActivityStepView)group.section.body.Controls[0];
+                    VBAi.Tests.Infrastructure.TranscriptFixture.Event(first.section.toggle, "OnClick", System.EventArgs.Empty);
+                    form.Show(); System.Windows.Forms.Application.DoEvents(); group.PerformLayout();
+                    VBAi.Tests.Infrastructure.TranscriptFixture.Event(first.detail.content, "OnContentsResized", new System.Windows.Forms.ContentsResizedEventArgs(new System.Drawing.Rectangle(0, 0, 456, 1024)));
+                    System.Windows.Forms.Application.DoEvents(); group.PerformLayout();
+                    Assert.AreEqual(3, group.section.body.Controls.Count);
+                    int bottom = 0;
+                    foreach (System.Windows.Forms.Control row in group.section.body.Controls)
+                    {
+                        Assert.IsTrue(row.Visible); Assert.IsTrue(row.Height < 200, "A short published summary must not displace tools below the viewport.");
+                        Assert.IsTrue(row.Top >= bottom, "Activity rows must retain their original order without overlap.");
+                        Assert.IsTrue(group.section.body.ClientRectangle.Contains(row.Bounds)); bottom = row.Bottom;
+                    }
+                    Assert.IsTrue(bottom < 300, "All three short activity rows must fit the expanded card.");
+                    StringAssert.Contains(group.section.Title, "✗ " + UiText.Get("Failed"));
+                }
+            }
+        }
+
+        [STATestMethod, TestCategory("Unit")]
+        public void CollapsedGroupRetainsFailureEvenAfterALaterSuccessfulSibling()
+        {
+            using (var window = Surfaces())
+            {
+                Call(window, "ReceiveAgentActivity", new CodexAgentActivity { Id = "failed", Kind = "dynamicToolCall", Title = "read_module", Detail = "Book · Module1", Status = "inProgress" });
+                var owner = Get<List<ChatEntry>>(window, "transcriptEntries")[0];
+                using (var host = (ChatDesignerHost)Call(window, "RenderEntry", owner))
+                {
+                    Get<Dictionary<ChatEntry, FrameworkElement>>(window, "entryViews")[owner] = host;
+                    var group = (ChatActivityGroupView)host.View;
+                    group.section.Expanded = false;
+                    Call(window, "ReceiveAgentActivity", new CodexAgentActivity { Id = "failed", Kind = "dynamicToolCall", Title = "read_module", Detail = "Read failed", Status = "failed" });
+                    Call(window, "ReceiveAgentActivity", new CodexAgentActivity { Id = "success", Kind = "commandExecution", Title = "Check", Detail = "Passed", Status = "completed" });
+                    Assert.IsFalse(group.section.Expanded, "Explicit disclosure must not be overridden by failure handling.");
+                    StringAssert.StartsWith(group.section.Title, "✗ " + UiText.Get("Failed") + " · ");
+                    var step = (ChatActivityStepView)group.section.body.Controls[0];
+                    Assert.AreEqual(UiText.Get("Reading VBA code"), step.section.Title);
+                    StringAssert.Contains(step.detail.content.Text, "read_module");
+                    Get<Dictionary<ChatEntry, FrameworkElement>>(window, "entryViews").Remove(owner);
+                }
+            }
+        }
+
+        [STATestMethod, TestCategory("Unit")]
+        public void LongCollapsedActivityCaptionKeepsEveryImportantTerminalOutcomeFirst()
+        {
+            using (var culture = new VBAi.Tests.Infrastructure.LocalizationScope("fr-FR"))
+            using (var window = Surfaces())
+            {
+                string module = "CodexAuditMissingModuleWithALongName" + new string('x', 100);
+                string caption = CodexAgentActivity.ToolTitle("read_module", "VBAProject · " + module);
+                string preview = " · " + CodexAgentActivity.Limit(caption);
+                if (preview.Length > 90) preview = preview.Substring(0, 87) + "…";
+                foreach (string terminal in new[] { "failed", "declined", "interrupted", "cancelled" })
+                {
+                    string outcome = terminal == "failed" ? "✗ " + UiText.Get("Failed") :
+                        UiText.Get(terminal == "declined" ? "Declined" : terminal == "interrupted" ? "Interrupted" : "Cancelled");
+                    var entry = new ChatEntry { Speaker = "Outil", Activity = new CodexAgentActivity {
+                        Kind = "dynamicToolCall", Title = caption, Detail = "read_module\nVBAProject · " + module, Status = terminal } };
+                    using (var host = (ChatDesignerHost)Call(window, "RenderActivityGroup", entry, new List<ChatEntry> { entry }))
+                    {
+                        var group = (ChatActivityGroupView)host.View;
+                        Assert.IsFalse(group.section.Expanded);
+                        Assert.AreEqual(outcome + " · " + UiText.Get("Agent activity") + " · 1" + preview, group.section.Title);
+                        StringAssert.StartsWith(group.section.toggle.Text, "▸ " + outcome);
+                        var step = (ChatActivityStepView)group.section.body.Controls[0];
+                        Assert.AreEqual(caption, step.section.Title, "The complete contextual caption remains available in the activity row.");
+                        StringAssert.Contains(step.detail.content.Text, module);
+                    }
+                }
+            }
+        }
+
+        [STATestMethod, TestCategory("Unit")]
+        public void NarrowCollapsedDisclosureReservesVisibleFailureBeforeEllipsizedContext()
+        {
+            using (var culture = new VBAi.Tests.Infrastructure.LocalizationScope("fr-FR"))
+            using (var window = Surfaces())
+            using (var form = new System.Windows.Forms.Form { Left = -10000, Top = -10000, ShowInTaskbar = false, ClientSize = new System.Drawing.Size(400, 200) })
+            {
+                string module = "CodexAuditMissingModuleWithALongName" + new string('x', 100);
+                string caption = CodexAgentActivity.ToolTitle("read_module", "VBAProject · " + module);
+                var entry = new ChatEntry { Speaker = "Outil", Activity = new CodexAgentActivity {
+                    Kind = "dynamicToolCall", Title = caption, Detail = "read_module\n" + module, Status = "failed" } };
+                using (var host = (ChatDesignerHost)Call(window, "RenderActivityGroup", entry, new List<ChatEntry> { entry }))
+                {
+                    var group = (ChatActivityGroupView)host.View; host.Child = null;
+                    group.Dock = System.Windows.Forms.DockStyle.Top;
+                    group.MaximumSize = new System.Drawing.Size(form.ClientSize.Width, 0);
+                    form.Controls.Add(group); form.Show();
+                    System.Windows.Forms.Application.DoEvents(); group.PerformLayout(); group.section.PerformLayout();
+                    var toggle = group.section.toggle;
+                    string outcome = "✗ " + UiText.Get("Failed");
+                    Assert.IsFalse(group.section.Expanded); Assert.IsFalse(group.section.body.Visible);
+                    StringAssert.StartsWith(toggle.Text, "▸ " + outcome + " · ");
+                    StringAssert.Contains(group.section.Title, " · 1 · " + UiText.Get("Reading VBA code") + " · VBAProject");
+                    Assert.AreEqual(UiSymbol.None, toggle.Symbol, "The shared button paints the caption in its full client rectangle.");
+                    Assert.IsFalse(toggle.IconOnly);
+                    int available = System.Math.Min(toggle.ClientSize.Width, group.section.ClientSize.Width - toggle.Left);
+                    Assert.IsTrue(available > 0 && available <= form.ClientSize.Width, "Measure the actual constrained disclosure header.");
+                    Assert.IsTrue(toggle.Right <= group.section.ClientSize.Width, "The painted text rectangle must fit the disclosure instead of being clipped by its parent.");
+                    var full = System.Windows.Forms.TextRenderer.MeasureText(toggle.Text, toggle.Font);
+                    var prefix = System.Windows.Forms.TextRenderer.MeasureText("▸ " + outcome + " · …", toggle.Font);
+                    Assert.IsTrue(full.Width > available, "The long contextual caption must exercise end ellipsis.");
+                    Assert.IsTrue(prefix.Width < available, "Failure and its symbol must fit before the shared renderer ellipsizes the trailing context.");
+                    Assert.AreEqual(caption, ((ChatActivityStepView)group.section.body.Controls[0]).section.Title);
+                }
+            }
+        }
+
+        [STATestMethod, TestCategory("Unit")]
+        public void ReasoningHeaderAvoidsDuplicateSummaryLabelsAndShowsOnlyPublishedText()
+        {
+            using (var window = Surfaces())
+            {
+                Call(window, "ReceiveAgentActivity", new CodexAgentActivity { Id = "summary", Kind = "reasoning", Title = UiText.Get("Reasoning · summary"), Detail = "Published summary", Status = "completed" });
+                var owner = Get<List<ChatEntry>>(window, "transcriptEntries")[0];
+                using (var host = (ChatDesignerHost)Call(window, "RenderEntry", owner))
+                {
+                    var group = (ChatActivityGroupView)host.View;
+                    Assert.AreEqual(UiText.Get("Reasoning") + " · 1 · Published summary", group.section.Title);
+                    var step = (ChatActivityStepView)group.section.body.Controls[0];
+                    Assert.AreEqual("Published summary", step.section.Title);
+                    Assert.AreEqual("Published summary", step.detail.content.Text);
+                }
+            }
+        }
+
         /// <summary>Realized activity metadata and new siblings keep existing native controls and explicit disclosure choices.</summary>
         [STATestMethod, TestCategory("Unit")]
         public void RealizedActivityMetadataKeepsControlsSelectionAndDisclosureChoices()
@@ -197,7 +379,7 @@ namespace VBAi.Tests.Unit
                 Call(window, "ReceiveAgentActivity", new CodexAgentActivity { Id = "t", Kind = "dynamicToolCall", Title = "read_module", Detail = "Changed result", Status = "failed" });
                 group = ((ChatActivityGroupView)((ChatDesignerHost)Call(window, "RenderEntry", entries[0])).View).section;
                 steps = group.body.Controls.OfType<ChatActivityStepView>().ToArray();
-                Assert.IsTrue(steps[1].section.Expanded); Assert.AreEqual("Changed result", steps[1].detail.content.Text);
+                Assert.IsTrue(steps[1].section.Expanded); Assert.AreEqual("read_module\nChanged result", steps[1].detail.content.Text);
                 StringAssert.Contains(steps[1].state.Text, UiText.Get("Failed"));
                 Call(window, "ReceiveAgentActivity", new CodexAgentActivity { Id = "c", Kind = "commandExecution", Detail = "\nnext", Append = true, Status = "inProgress" });
                 Assert.AreEqual("dotnet test", entries[2].Activity.Title); Assert.AreEqual("passed\nnext", entries[2].Activity.Detail);

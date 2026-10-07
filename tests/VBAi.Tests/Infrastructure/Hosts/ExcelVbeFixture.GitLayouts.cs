@@ -17,22 +17,22 @@ namespace VBAi.Tests.Integration
         {
             // Suppress host events and all document macros before saving/reopening
             // this owned fixture. No user application or trust setting is changed.
-            ((dynamic)application).EnableEvents = false;
-            ((dynamic)application).AutomationSecurity = 3;
-            PrepareGitForm(form, "Local Git " + layout, "LOCAL_GIT_LAYOUT_" + layout, path, rootFontSeedProfile);
+            NativeFixtureProgressTrace.Run(NativeFixtureProgressTrace.Phase.EventsDisable, () => ((dynamic)application).EnableEvents = false);
+            NativeFixtureProgressTrace.Run(NativeFixtureProgressTrace.Phase.MacrosDisable, () => ((dynamic)application).AutomationSecurity = 3);
+            NativeFixtureProgressTrace.Run(NativeFixtureProgressTrace.Phase.PrepareForm, () => PrepareGitForm(form, "Local Git " + layout, "LOCAL_GIT_LAYOUT_" + layout, path, rootFontSeedProfile));
             if (layout != "LabelButton")
                 WithGitLayoutDesigner(form, (component, designer) =>
                 {
-                    SetGitFormProperty(component, "Width", 350d);
-                    SetGitFormProperty(component, "Height", 350d);
+                    NativeFixtureProgressTrace.Run(NativeFixtureProgressTrace.Phase.LayoutWidth, () => SetGitFormProperty(component, "Width", 350d));
+                    NativeFixtureProgressTrace.Run(NativeFixtureProgressTrace.Phase.LayoutHeight, () => SetGitFormProperty(component, "Height", 350d));
                     object controls = null, control = null;
                     try
                     {
-                        controls = ((dynamic)designer).Controls;
+                        controls = NativeFixtureProgressTrace.Read<object>(NativeFixtureProgressTrace.Phase.LayoutControls, () => ((dynamic)designer).Controls);
                         string kind = layout == "FrameMultiPage" ? "Frame" : layout;
-                        control = ((dynamic)controls).Add("Forms." + kind + ".1", "QualificationExtra", true);
-                        SetGitLayoutGeometry(control, 12d, 108d, 240d, layout == "FrameMultiPage" ? 170d : 44d);
-                        ((dynamic)control).Tag = "Original " + layout;
+                        control = NativeFixtureProgressTrace.Read<object>(NativeFixtureProgressTrace.Phase.LayoutAdd, () => ((dynamic)controls).Add("Forms." + kind + ".1", "QualificationExtra", true));
+                        NativeFixtureProgressTrace.Run(NativeFixtureProgressTrace.Phase.LayoutGeometry, () => SetGitLayoutGeometry(control, 12d, 108d, 240d, layout == "FrameMultiPage" ? 170d : 44d));
+                        NativeFixtureProgressTrace.Run(NativeFixtureProgressTrace.Phase.LayoutTag, () => ((dynamic)control).Tag = "Original " + layout);
                         switch (layout)
                         {
                             case "TextBox": ((dynamic)control).Text = "Original text"; break;
@@ -57,11 +57,11 @@ namespace VBAi.Tests.Integration
                                 ((dynamic)control).Value = 10; break;
                             case "TabStrip": SetGitLayoutTabCaption(control, "First synthetic tab"); break;
                             case "Image": break; // The owning host loads its own OLE picture below.
-                            case "FrameMultiPage": PrepareNestedGitLayout(control); break;
+                            case "FrameMultiPage": NativeFixtureProgressTrace.Run(NativeFixtureProgressTrace.Phase.NestedLayout, () => PrepareNestedGitLayout(control)); break;
                             default: throw new ArgumentException("Unknown local Git form layout: " + layout);
                         }
                     }
-                    finally { Release(control); Release(controls); }
+                    finally { NativeFixtureProgressTrace.Run(NativeFixtureProgressTrace.Phase.ReleaseLayoutControl, () => Release(control)); NativeFixtureProgressTrace.Run(NativeFixtureProgressTrace.Phase.ReleaseControls, () => Release(controls)); }
                 });
             if (layout == "Image") InstallGitLayoutPicture(form);
             // Qualification on the exact saved designer must begin after native
@@ -87,14 +87,14 @@ namespace VBAi.Tests.Integration
             // Controlled native probes establish that displaying the initial designer
             // creates the exact inherited Frame 8.27 resource. Font reads and export
             // alone leave it at 8.25. Persist that real UI baseline without a setter.
-            if (qualifyFonts) renderDesigner();
-            if (frameEvidence) captureFontSeed("before-save");
-            save();
-            if (frameEvidence) captureFontSeed("after-save");
+            if (qualifyFonts) NativeFixtureProgressTrace.Run(NativeFixtureProgressTrace.Phase.RenderDesigner, () => renderDesigner());
+            if (frameEvidence) NativeFixtureProgressTrace.Run(NativeFixtureProgressTrace.Phase.SeedBeforeSave, () => captureFontSeed("before-save"));
+            NativeFixtureProgressTrace.Run(NativeFixtureProgressTrace.Phase.PersistSave, () => save());
+            if (frameEvidence) NativeFixtureProgressTrace.Run(NativeFixtureProgressTrace.Phase.SeedAfterSave, () => captureFontSeed("after-save"));
             if (persistedBaseline)
             {
-                reopen();
-                if (frameEvidence) captureFontSeed("after-reopen");
+                NativeFixtureProgressTrace.Run(NativeFixtureProgressTrace.Phase.PersistReopen, () => reopen());
+                if (frameEvidence) NativeFixtureProgressTrace.Run(NativeFixtureProgressTrace.Phase.SeedAfterReopen, () => captureFontSeed("after-reopen"));
             }
         }
 
@@ -383,13 +383,13 @@ namespace VBAi.Tests.Integration
             object project = null, components = null, component = null, designer = null;
             try
             {
-                project = ((dynamic)workbook).VBProject;
-                components = ((dynamic)project).VBComponents;
-                component = ((dynamic)components).Item(form);
-                designer = ((dynamic)component).Designer;
-                action(component, designer);
+                project = NativeFixtureProgressTrace.Read<object>(NativeFixtureProgressTrace.Phase.LayoutProject, () => ((dynamic)workbook).VBProject);
+                components = NativeFixtureProgressTrace.Read<object>(NativeFixtureProgressTrace.Phase.LayoutComponents, () => ((dynamic)project).VBComponents);
+                component = NativeFixtureProgressTrace.Read<object>(NativeFixtureProgressTrace.Phase.LayoutComponent, () => ((dynamic)components).Item(form));
+                designer = NativeFixtureProgressTrace.Read<object>(NativeFixtureProgressTrace.Phase.LayoutDesigner, () => ((dynamic)component).Designer);
+                NativeFixtureProgressTrace.Run(NativeFixtureProgressTrace.Phase.LayoutAction, () => action(component, designer));
             }
-            finally { Release(designer); Release(component); Release(components); Release(project); }
+            finally { NativeFixtureProgressTrace.Run(NativeFixtureProgressTrace.Phase.ReleaseDesigner, () => Release(designer)); NativeFixtureProgressTrace.Run(NativeFixtureProgressTrace.Phase.ReleaseComponent, () => Release(component)); NativeFixtureProgressTrace.Run(NativeFixtureProgressTrace.Phase.ReleaseComponents, () => Release(components)); NativeFixtureProgressTrace.Run(NativeFixtureProgressTrace.Phase.ReleaseProject, () => Release(project)); }
         }
 
         private void WithGitLayoutControl(string form, string layout, Action<object> action)
@@ -415,8 +415,8 @@ namespace VBAi.Tests.Integration
 
         private static void SetGitLayoutGeometry(object control, double left, double top, double width, double height)
         {
-            ((dynamic)control).Left = left; ((dynamic)control).Top = top;
-            ((dynamic)control).Width = width; ((dynamic)control).Height = height;
+            NativeFixtureProgressTrace.Run(NativeFixtureProgressTrace.Phase.GeometryLeft, () => ((dynamic)control).Left = left); NativeFixtureProgressTrace.Run(NativeFixtureProgressTrace.Phase.GeometryTop, () => ((dynamic)control).Top = top);
+            NativeFixtureProgressTrace.Run(NativeFixtureProgressTrace.Phase.GeometryWidth, () => ((dynamic)control).Width = width); NativeFixtureProgressTrace.Run(NativeFixtureProgressTrace.Phase.GeometryHeight, () => ((dynamic)control).Height = height);
         }
 
         private static void ReadGitLayoutGeometry(object control, string prefix, IDictionary<string, object> result)
@@ -440,22 +440,22 @@ namespace VBAi.Tests.Integration
             object controls = null, multi = null, pages = null, page = null, pageControls = null, text = null;
             try
             {
-                ((dynamic)frame).Caption = "Synthetic frame";
+                NativeFixtureProgressTrace.Run(NativeFixtureProgressTrace.Phase.FrameCaption, () => ((dynamic)frame).Caption = "Synthetic frame");
                 // The native source's inherited Frame font is already fractional.
                 // Replacing it with an external StdFont changes the source before
                 // import. Qualification reads and asserts the native default; it
                 // never seeds or repairs it through an owner Font assignment.
-                controls = ((dynamic)frame).Controls;
-                multi = ((dynamic)controls).Add("Forms.MultiPage.1", "QualificationMultiPage", true);
-                SetGitLayoutGeometry(multi, 6d, 18d, 220d, 140d);
-                pages = ((dynamic)multi).Pages; page = ((dynamic)pages).Item(0);
-                ((dynamic)page).Caption = "Synthetic page";
-                pageControls = ((dynamic)page).Controls;
-                text = ((dynamic)pageControls).Add("Forms.TextBox.1", "QualificationNestedText", true);
-                SetGitLayoutGeometry(text, 8d, 10d, 170d, 24d);
-                ((dynamic)text).Text = "Original nested text";
+                controls = NativeFixtureProgressTrace.Read<object>(NativeFixtureProgressTrace.Phase.FrameControls, () => ((dynamic)frame).Controls);
+                multi = NativeFixtureProgressTrace.Read<object>(NativeFixtureProgressTrace.Phase.MultiPageAdd, () => ((dynamic)controls).Add("Forms.MultiPage.1", "QualificationMultiPage", true));
+                NativeFixtureProgressTrace.Run(NativeFixtureProgressTrace.Phase.MultiPageGeometry, () => SetGitLayoutGeometry(multi, 6d, 18d, 220d, 140d));
+                pages = NativeFixtureProgressTrace.Read<object>(NativeFixtureProgressTrace.Phase.MultiPagePages, () => ((dynamic)multi).Pages); page = NativeFixtureProgressTrace.Read<object>(NativeFixtureProgressTrace.Phase.FirstPage, () => ((dynamic)pages).Item(0));
+                NativeFixtureProgressTrace.Run(NativeFixtureProgressTrace.Phase.PageCaption, () => ((dynamic)page).Caption = "Synthetic page");
+                pageControls = NativeFixtureProgressTrace.Read<object>(NativeFixtureProgressTrace.Phase.PageControls, () => ((dynamic)page).Controls);
+                text = NativeFixtureProgressTrace.Read<object>(NativeFixtureProgressTrace.Phase.LeafAdd, () => ((dynamic)pageControls).Add("Forms.TextBox.1", "QualificationNestedText", true));
+                NativeFixtureProgressTrace.Run(NativeFixtureProgressTrace.Phase.LeafGeometry, () => SetGitLayoutGeometry(text, 8d, 10d, 170d, 24d));
+                NativeFixtureProgressTrace.Run(NativeFixtureProgressTrace.Phase.LeafText, () => ((dynamic)text).Text = "Original nested text");
             }
-            finally { Release(text); Release(pageControls); Release(page); Release(pages); Release(multi); Release(controls); }
+            finally { NativeFixtureProgressTrace.Run(NativeFixtureProgressTrace.Phase.ReleaseLeaf, () => Release(text)); NativeFixtureProgressTrace.Run(NativeFixtureProgressTrace.Phase.ReleasePageControls, () => Release(pageControls)); NativeFixtureProgressTrace.Run(NativeFixtureProgressTrace.Phase.ReleasePage, () => Release(page)); NativeFixtureProgressTrace.Run(NativeFixtureProgressTrace.Phase.ReleasePages, () => Release(pages)); NativeFixtureProgressTrace.Run(NativeFixtureProgressTrace.Phase.ReleaseMultiPage, () => Release(multi)); NativeFixtureProgressTrace.Run(NativeFixtureProgressTrace.Phase.ReleaseNestedControls, () => Release(controls)); }
         }
 
         private static void ReadNestedGitLayout(object designer, string form, IDictionary<string, object> result)

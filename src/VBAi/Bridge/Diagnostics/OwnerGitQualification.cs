@@ -46,6 +46,22 @@ namespace VBAi
             manifestPath = Environment.GetEnvironmentVariable(OwnerGitQualificationManifest.EnvironmentName);
         }
 
+        /// <summary>Enters one optional trace before creating the owner dispatcher for this command.</summary>
+        /// <param name="execute">Original owner operation, invoked once without changing its order.</param>
+        /// <param name="trace">Distinct opt-in bounded trace for this bridge command.</param>
+        /// <returns>The original operation result or its unchanged exception.</returns>
+        internal static async Task<object> RunOnOwnerAsync(Func<Task<object>> execute, VbeInspectionTrace trace)
+        {
+            using (trace?.Enter())
+            {
+                trace?.Record(VbeInspectionTrace.Phase.CallbackEntered);
+                Exception failure = null;
+                try { return await VbeUiTask.Run(execute); }
+                catch (Exception error) { failure = error; throw; }
+                finally { trace?.Record(VbeInspectionTrace.Phase.Terminal, failure); }
+            }
+        }
+
         /// <summary>Executes the next frozen Git step after revalidating the owner, project, revision, and snapshot hashes.
         /// It records intent before dispatch, admits at most one native mutation, and writes a terminal receipt. An uncertain
         /// or post-mutation failure quarantines the plan instead of retrying the native operation.</summary>
@@ -105,11 +121,66 @@ namespace VBAi
                     StartedUtc = DateTime.UtcNow.ToString("o")
                 };
                 WriteNew(prefix + ".intent.json", intent);
+                var attached = FormFontObservation.Attached.TryBegin(
+                    Environment.GetEnvironmentVariable(FormFontObservation.AttachedManifestVariable),
+                    manifest.WorkbookPath, expected, target, manifest.EvidenceRoot);
+                if (attached != null && attached.Stage == "font-delivery-returned")
+                    project.ImportAttachedFontObservation = (component, identity) =>
+                    {
+                        if (!string.Equals(Convert.ToString(((dynamic)component).Name), attached.FormName, StringComparison.Ordinal))
+                            throw new InvalidOperationException("Attached observation imported component differs from its frozen form.");
+                        attached.Observe(component, () => { RequireContext(); identity(); });
+                    };
+                int formObservation = 0;
+                project.ImportMaterializationObservation = (phase, form, snapshot, bindings) =>
+                {
+                    RequireContext();
+                    if (++formObservation > 64) throw new InvalidOperationException("Frozen form materialization receipt budget exceeded.");
+                    string folder = prefix + ".form-" + formObservation.ToString("D3", System.Globalization.CultureInfo.InvariantCulture);
+                    OwnerGitQualificationManifest.RequireChild(manifest.EvidenceRoot, folder, false);
+                    if (Directory.Exists(folder) || File.Exists(folder)) throw new IOException("The frozen form observation already exists.");
+                    Directory.CreateDirectory(folder);
+                    OwnerGitQualificationManifest.RequireNoReparse(folder);
+                    if (snapshot != null)
+                        foreach (string name in new[] { form.FileName, form.Name + ".frx" })
+                            if (snapshot.Files.TryGetValue(name, out byte[] bytes))
+                            {
+                                if (bytes.Length > 32 * 1024 * 1024) throw new IOException("Frozen form observation exceeds its resource bound.");
+                                string destination = Path.Combine(folder, name);
+                                OwnerGitQualificationManifest.RequireChild(manifest.EvidenceRoot, destination, false);
+                                using (var file = new FileStream(destination, FileMode.CreateNew, FileAccess.Write, FileShare.None))
+                                { file.Write(bytes, 0, bytes.Length); file.Flush(true); }
+                            }
+                    WriteNew(Path.Combine(folder, "observation.json"), new
+                    {
+                        StepId = step.Id,
+                        Phase = phase,
+                        form.Name,
+                        manifest.AssemblyMvid,
+                        manifest.AssemblySha256,
+                        manifest.OwnerPid,
+                        manifest.OwnerBirthUtcTicks,
+                        manifest.OwnerNativeTid,
+                        manifest.VbeHandle,
+                        SnapshotAvailable = snapshot != null,
+                        ResourceExact = snapshot == null ? (bool?)null : target.SameFile(snapshot, form.Name + ".frx"),
+                        FormSha256 = snapshot != null && snapshot.Files.TryGetValue(form.FileName, out byte[] source) ? OwnerGitQualificationManifest.Hash(source) : null,
+                        ResourceSha256 = snapshot != null && snapshot.Files.TryGetValue(form.Name + ".frx", out byte[] resource) ? OwnerGitQualificationManifest.Hash(resource) : null,
+                        ObservedFonts = snapshot == null || !snapshot.Files.ContainsKey(form.FileName) || !snapshot.Files.ContainsKey(form.Name + ".frx") ? null : DescribeFormFonts(snapshot.FormFonts(form)),
+                        DeliveryPlan = DescribeFormFonts(bindings),
+                        ObservedUtc = DateTime.UtcNow.ToString("o")
+                    });
+                };
                 bool mutationStarted = false;
                 Exception primary = null;
                 object result = null;
                 try
                 {
+                    if (attached != null && attached.Stage == "baseline-only")
+                    {
+                        ObserveAttachedBaseline(attached);
+                        throw new InvalidOperationException(FormFontObservation.AttachedBaselineStop);
+                    }
                     if (step.Verb == "checkpoint_restore" && step.ExpectedErrorSubstring == null)
                     {
                         var checkpoint = repository.Read(repository.CheckpointCommit(step.CheckpointId));
@@ -135,7 +206,7 @@ namespace VBAi
                     if (step.Verb == "controlled_interruption")
                     {
                         repository.PrepareRecovery(expected);
-                        project.Apply(target, expected, boundary);
+                        await project.ApplyAsync(target, expected, boundary, RequireReadbackContext);
                         var measured = project.Capture();
                         // Record the real state even if it differs from the target. Never retry Apply.
                         repository.RecordImportedState(measured);
@@ -145,6 +216,7 @@ namespace VBAi
                     else
                     {
                         operations.ImportOwnerPreflight = boundary;
+                        operations.ImportOwnerReadback = RequireReadbackContext;
                         await operations.ExecuteAsync(step.Verb, request.ExpectedSha256, name: step.CheckpointId);
                     }
                     if (step.ExpectedErrorSubstring != null)
@@ -216,6 +288,38 @@ namespace VBAi
             }
         }
 
+        /// <summary>Owns the fresh resolver component/project references; the session VBE reference remains borrowed.</summary>
+        private void ObserveAttachedBaseline(FormFontObservation.Attached attached)
+        {
+            RequireContext();
+            var module = (EditorVbeModule)session.ResolveEditorModule(manifest.Project, attached.FormName);
+            Exception primary = null;
+            try
+            {
+                void guard()
+                {
+                    RequireContext(); FormFontRestoration.RequireOwner(module.Project);
+                    object components = null, current = null; Exception failure = null;
+                    try
+                    {
+                        components = ((dynamic)module.Project).VBComponents;
+                        current = ((dynamic)components).Item(attached.FormName);
+                        if (!VbeProjectHostPath.SameProject(current, module.Component) ||
+                            Convert.ToInt32(((dynamic)current).Type) != 3)
+                            throw new InvalidOperationException("Attached baseline component identity changed.");
+                    }
+                    catch (Exception error) { failure = error; throw; }
+                    finally { FormFontRestoration.ReleaseOwnedReferences(new[] { components, current }, ReleaseDiagnosticReference, failure); }
+                }
+                attached.Observe(module.Component, guard);
+            }
+            catch (Exception error) { primary = error; throw; }
+            finally { FormFontRestoration.ReleaseOwnedReferences(new[] { module.Component, module.Project }, ReleaseDiagnosticReference, primary); }
+        }
+
+        private static void ReleaseDiagnosticReference(object value)
+        { if (value != null && Marshal.IsComObject(value)) Marshal.ReleaseComObject(value); }
+
         /// <summary>Loads the GUID-named manifest once, pins its hash, and verifies it belongs to the connected host.</summary>
         private void LoadOnce()
         {
@@ -236,28 +340,65 @@ namespace VBAi
         }
 
         /// <summary>Rechecks the manifest hash, original process and VBE STA identity, active project, scope, and loaded assembly candidate.</summary>
-        private void RequireContext()
+        private void RequireContext() { RequireContextCore(false); }
+
+        /// <summary>Reuses the same context checks with fixed phase evidence during settled readback only.</summary>
+        private void RequireReadbackContext() { RequireContextCore(true); }
+
+        /// <summary>Preserves context read order and short-circuiting while optionally identifying a blocked read.</summary>
+        private void RequireContextCore(bool traceReadback)
         {
             if (manifest == null || OwnerGitQualificationManifest.HashFile(manifestPath) != manifestHash)
                 throw new InvalidOperationException("Pinned owner Git manifest changed.");
             int pid; long birth;
             using (var process = Process.GetCurrentProcess()) { pid = process.Id; birth = process.StartTime.ToUniversalTime().Ticks; }
             uint windowTid = OwnerGitQualificationManifest.GetWindowThreadProcessId(new IntPtr(manifest.VbeHandle), out uint windowPid);
+            uint currentTid = OwnerGitQualificationManifest.GetCurrentThreadId();
+            TraceReadback(traceReadback, VbeInspectionTrace.Phase.ImportReadbackContextOwnerBefore);
+            long ownerHandle = session.GitOwnerHandle(manifest.Project);
+            TraceReadback(traceReadback, VbeInspectionTrace.Phase.ImportReadbackContextOwnerReturned);
+            TraceReadback(traceReadback, VbeInspectionTrace.Phase.ImportReadbackContextActiveBefore);
+            bool activeMatches = session.GitActiveProjectMatches(manifest.Project, manifest.WorkbookPath);
+            TraceReadback(traceReadback, VbeInspectionTrace.Phase.ImportReadbackContextActiveReturned);
+            bool scopeMatches = activeMatches;
+            if (activeMatches)
+            {
+                TraceReadback(traceReadback, VbeInspectionTrace.Phase.ImportReadbackContextScopeBefore);
+                scopeMatches = string.Equals(session.GitScope(manifest.Project), manifest.WorkbookPath, StringComparison.OrdinalIgnoreCase);
+                TraceReadback(traceReadback, VbeInspectionTrace.Phase.ImportReadbackContextScopeReturned);
+            }
             OwnerGitQualificationManifest.RequireOwnerIdentity(manifest, pid, birth, windowPid, windowTid,
-                OwnerGitQualificationManifest.GetCurrentThreadId(), session.GitOwnerHandle(manifest.Project),
-                session.GitActiveProjectMatches(manifest.Project, manifest.WorkbookPath) &&
-                    string.Equals(session.GitScope(manifest.Project), manifest.WorkbookPath, StringComparison.OrdinalIgnoreCase),
-                Thread.CurrentThread.GetApartmentState());
+                currentTid, ownerHandle, scopeMatches, Thread.CurrentThread.GetApartmentState());
             if (typeof(VbeSession).Module.ModuleVersionId.ToString("D") != manifest.AssemblyMvid ||
                 !string.Equals(OwnerGitQualificationManifest.HashFile(typeof(VbeSession).Assembly.Location),
                     manifest.AssemblySha256, StringComparison.OrdinalIgnoreCase))
                 throw new InvalidOperationException("Installed product candidate changed.");
+            TraceReadback(traceReadback, VbeInspectionTrace.Phase.ImportReadbackContextPolicyBefore);
             OwnerGitQualificationManifest.RequirePolicy(LlmSettings.Load().VbeEditApproval);
+            TraceReadback(traceReadback, VbeInspectionTrace.Phase.ImportReadbackContextPolicyReturned);
             OwnerGitQualificationManifest.RequireNoReparse(manifest.FixtureRoot);
             OwnerGitQualificationManifest.RequireNoReparse(manifest.EvidenceRoot);
             OwnerGitQualificationManifest.RequireNoReparse(manifest.WorkbookPath);
             if (!File.Exists(manifest.WorkbookPath) || !Directory.Exists(manifest.EvidenceRoot))
                 throw new InvalidOperationException("Disposable workbook or evidence root disappeared.");
+        }
+
+        /// <summary>Records only fixed readback boundaries without reading another native property.</summary>
+        private static void TraceReadback(bool enabled, VbeInspectionTrace.Phase phase)
+        {
+            if (enabled) VbeInspectionTrace.Current?.Record(phase);
+        }
+
+        /// <summary>Describes exact preflighted root and nested font bytes without acquiring any live Font object.</summary>
+        private static object DescribeFormFonts(FormStreamPadding.FormFontBinding[] bindings)
+        {
+            return bindings?.Select(binding => new
+            {
+                binding.OwnerPath,
+                binding.Type,
+                Descriptor = Convert.ToBase64String(binding.Descriptor),
+                SizeUnits = BitConverter.ToUInt32(binding.Descriptor, 6)
+            }).ToArray();
         }
 
         /// <summary>Creates a new durable receipt without replacing an existing intent or terminal record.</summary>

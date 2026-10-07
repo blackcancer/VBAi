@@ -150,10 +150,68 @@ namespace VBAi.Tests.Unit
             var tool = Obj(((object[])request["tools"])[0]);
             Microsoft.VisualStudio.TestTools.UnitTesting.Assert.AreEqual("read", tool["name"]);
             Microsoft.VisualStudio.TestTools.UnitTesting.Assert.AreEqual("object", Obj(tool["input_schema"])["type"]);
-            var response = ClaudeProtocol.Response(Obj(new { content = new object[] { new { type = "thinking" }, new { type = "text", text = "a" }, new { type = "text", text = "b" } } }));
+            var response = ClaudeProtocol.Response(Obj(new { stop_reason = "end_turn", content = new object[] { new { type = "thinking" }, new { type = "text", text = "a" }, new { type = "text", text = "b" } } }));
             Microsoft.VisualStudio.TestTools.UnitTesting.Assert.AreEqual("a\nb", response["content"]);
             Microsoft.VisualStudio.TestTools.UnitTesting.Assert.IsFalse(response.ContainsKey("tool_calls"));
-            Microsoft.VisualStudio.TestTools.UnitTesting.Assert.AreEqual("", ClaudeProtocol.Response(Obj(new { }))["content"]);
+            Microsoft.VisualStudio.TestTools.UnitTesting.Assert.AreEqual("", ClaudeProtocol.Response(Obj(new { stop_reason = "end_turn" }))["content"]);
+        }
+    }
+}
+
+namespace VBAi.Tests.Unit
+{
+    using Microsoft.VisualStudio.TestTools.UnitTesting;
+    using System;
+    using System.Collections.Generic;
+    using System.Linq;
+    using VBAi;
+
+    public sealed partial class ProviderProtocolTests
+    {
+        [TestMethod]
+        public void ClaudeJsonPublishesOnlyThinkingAndKeepsOriginalContinuationBlocks()
+        {
+            var seen = new List<CodexAgentActivity>();
+            var response = Obj(new { stop_reason = "end_turn", content = new object[] {
+                new { type = "thinking", thinking = "Public summary", signature = "SECRET_SIGNATURE" },
+                new { type = "redacted_thinking", data = "SECRET_REDACTED" }, new { type = "text", text = "Answer" } } });
+            var result = ClaudeProtocol.Response(response, seen.Add, "req");
+            Assert.AreEqual("Answer", result["content"]); Assert.AreEqual(3, ((object[])result["_claude_content"]).Length);
+            Assert.AreEqual(1, seen.Select(a => a.Id).Distinct().Count()); Assert.AreEqual("Public summary", seen.Last().Detail);
+            Assert.AreEqual("completed", seen.Last().Status); Assert.IsFalse(seen.Any(a => a.Detail.Contains("SECRET")));
+        }
+
+        [TestMethod]
+        public void TruncatedClaudeJsonNeverCompletesItsPublishedReasoningOrReturnsTools()
+        {
+            var seen = new List<CodexAgentActivity>();
+            var response = Obj(new { stop_reason = "max_tokens", content = new object[] { new { type = "thinking", thinking = "Public partial" }, new { type = "tool_use", id = "partial", name = "write", input = new { } } } });
+            Assert.ThrowsException<InvalidOperationException>(() => ClaudeProtocol.Response(response, seen.Add));
+            Assert.AreEqual("failed", seen.Last().Status); Assert.IsFalse(seen.Any(a => a.Status == "completed"));
+        }
+    }
+}
+
+namespace VBAi.Tests.Unit
+{
+    using Microsoft.VisualStudio.TestTools.UnitTesting;
+    using System;
+    using System.Collections.Generic;
+    using System.Linq;
+    using VBAi;
+    public sealed partial class ProviderProtocolTests
+    {
+        [DataTestMethod]
+        [DataRow(null)]
+        [DataRow("unknown")]
+        [DataRow("refusal")]
+        [DataRow("pause_turn")]
+        public void ClaudeJsonRejectsNonterminalOrRefusedReasonsBeforeReturningTools(string stop)
+        {
+            var seen = new List<CodexAgentActivity>();
+            var response = Obj(new { stop_reason = stop, content = new object[] { new { type = "thinking", thinking = "Public partial" }, new { type = "tool_use", id = "partial", name = "write", input = new { } } } });
+            Assert.ThrowsException<InvalidOperationException>(() => ClaudeProtocol.Response(response, seen.Add));
+            Assert.AreEqual("failed", seen.Last().Status); Assert.IsFalse(seen.Any(a => a.Status == "completed"));
         }
     }
 }

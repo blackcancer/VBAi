@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net.Http;
-using System.Net.Http.Headers;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -27,17 +26,17 @@ namespace VBAi
         /// <summary>Identifiant du modèle sélectionné.</summary>
         private readonly string model;
 
-        /// <summary>Clé fournisseur en mémoire pour cette session.</summary>
-        private readonly string key;
+        /// <summary>Immutable provider connection for this client lifetime.</summary>
+        private readonly LlmConnectionProfile connection;
+
+        /// <summary>Explicit catalog capabilities captured with this model connection.</summary>
+        private readonly LlmModelCapabilities modelCapabilities;
 
         /// <summary>Fournisseur et protocole associés au client.</summary>
         private readonly LlmProvider provider;
 
         /// <summary>Client Copilot utilisé lorsque ce fournisseur est sélectionné.</summary>
         private readonly CopilotClient copilot;
-
-        /// <summary>Indique si l’authentification Azure Entra est activée.</summary>
-        private readonly bool azureEntra;
 
         /// <summary>Validated Ollama-only sampling snapshot for this client's lifetime.</summary>
         private readonly double? ollamaTemperature, ollamaTopP;
@@ -51,6 +50,9 @@ namespace VBAi
         /// <summary>Reçoit les fragments de texte émis pendant une réponse en flux.</summary>
         /// <value>Action appelée pour chaque fragment de texte reçu en flux, ou null si le flux est désactivé.</value>
         public Action<string> TextDelta { get; set; }
+
+        /// <summary>Observes request-scoped public reasoning and tool activity without changing provider messages.</summary>
+        public Action<CodexAgentActivity> ActivityUpdate { get; set; }
 
         /// <summary>Last streamed response metadata; contains no request or response content.</summary>
         /// <value>Current last stream diagnostics exposed by llm chat client.</value>
@@ -79,11 +81,16 @@ namespace VBAi
         /// <param name="selectedModel">Identifiant du modèle demandé.</param>
         /// <param name="handler">Gestionnaire HTTP facultatif fourni pour le transport.</param>
         internal LlmChatClient(LlmProvider provider, LlmSettings settings, string selectedModel, HttpMessageHandler handler)
+            : this(provider, settings, selectedModel, handler, null) { }
+
+        /// <summary>Creates one immutable transport/model capability snapshot.</summary>
+        internal LlmChatClient(LlmProvider provider, LlmSettings settings, string selectedModel, HttpMessageHandler handler,
+            LlmModelCapabilities capabilities)
         {
             if (provider == null || !provider.Available || provider.IsCodex || settings == null)
                 throw new InvalidOperationException(UiText.Get("This provider is not implemented yet."));
             this.provider = provider;
-            azureEntra = settings.AzureUseEntraToken;
+            modelCapabilities = capabilities ?? LlmModelCapabilities.Unknown;
             model = selectedModel;
             if (string.IsNullOrWhiteSpace(model)) throw new InvalidOperationException(UiText.Get("Select a model in the conversation."));
             if (provider.IsOllama)
@@ -94,16 +101,8 @@ namespace VBAi
                 RequireOllamaSampling(ollamaTopP, 0, 1, true, nameof(LlmSettings.OllamaTopP));
             }
             if (provider.IsCopilot) { copilot = new CopilotClient(); return; }
-            string raw = settings.ResolveEndpoint(provider);
-            if (string.IsNullOrWhiteSpace(raw)) throw new InvalidOperationException("Configurez l’URL de " + provider.Name + UiText.Get(" in settings."));
-            if (provider.IsBedrock) raw = raw.TrimEnd('/') + "/model/" + Uri.EscapeDataString(model) + "/converse";
-            endpoint = new Uri(raw, UriKind.Absolute);
-            if (endpoint.Scheme != Uri.UriSchemeHttps &&
-                !(endpoint.Scheme == Uri.UriSchemeHttp && endpoint.IsLoopback))
-                throw new InvalidOperationException("The LLM endpoint must use HTTPS (or HTTP on localhost).");
-            key = settings.GetKey(provider);
-            if (string.IsNullOrWhiteSpace(key) && provider.RequiresKey)
-                throw new InvalidOperationException(UiText.Get("Configure the API key for ") + provider.Name + UiText.Get(" in VBAi settings."));
+            connection = LlmConnectionProfile.ForModel(provider, settings, model, modelCapabilities);
+            endpoint = connection.Endpoint;
             http = handler == null ? new HttpClient(HttpHandlerFactory()) : new HttpClient(handler);
             http.Timeout = TimeSpan.FromSeconds(120);
         }
@@ -149,14 +148,9 @@ namespace VBAi
                 if (ids.Length == 0) throw new InvalidOperationException(UiText.Get("Enter the ") + (provider.IsAzure ? UiText.Get("Azure deployments") : UiText.Get("model identifiers")) + UiText.Get(" in provider settings."));
                 return ids.Select(id => new LlmModelOption(id, id)).ToArray();
             }
-            var chatEndpoint = new Uri(settings.ResolveEndpoint(provider), UriKind.Absolute);
-            if (chatEndpoint.Scheme != Uri.UriSchemeHttps &&
-                !(chatEndpoint.Scheme == Uri.UriSchemeHttp && chatEndpoint.IsLoopback))
-                throw new InvalidOperationException("L'URL doit utiliser HTTPS, ou HTTP sur localhost.");
-            // OpenAI-compatible chat endpoints expose /models next to /chat/completions.
-            Uri catalogue = provider.IsOllama
-                ? new Uri(chatEndpoint.GetLeftPart(UriPartial.Authority) + "/api/tags")
-                : new Uri(chatEndpoint.AbsoluteUri.Replace(provider.IsClaude ? "/messages" : "/chat/completions", "/models"));
+            var connection = LlmConnectionProfile.ForCatalogue(provider, settings);
+            Uri catalogue = connection.CatalogueEndpoint();
+            Uri catalogueBase = catalogue;
             var models = new List<LlmModelOption>();
             var cursors = new HashSet<string>();
             using (var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(20)))
@@ -165,10 +159,7 @@ namespace VBAi
                 {
                     using (var request = new HttpRequestMessage(HttpMethod.Get, catalogue))
                     {
-                        string key = settings.GetKey(provider);
-                        if (string.IsNullOrWhiteSpace(key) && provider.RequiresKey)
-                            throw new InvalidOperationException(UiText.Get("Configure the API key for ") + provider.Name + UiText.Get(" to load models."));
-                        Authenticate(request, provider, key, settings.AzureUseEntraToken);
+                        connection.Authenticate(request);
                         using (var response = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, timeout.Token).ConfigureAwait(false))
                         {
                             if (!response.IsSuccessStatusCode)
@@ -183,14 +174,14 @@ namespace VBAi
                                 if (!(entry is IDictionary<string, object> item)) continue;
                                 string field = provider.IsOllama ? "name" : "id";
                                 string id = item.ContainsKey(field) ? Convert.ToString(item[field]) : null;
-                                if (!string.IsNullOrWhiteSpace(id)) models.Add(new LlmModelOption(id, ClaudeProtocol.Text(item, "display_name") ?? ClaudeProtocol.Text(item, "name") ?? id));
+                                if (!string.IsNullOrWhiteSpace(id)) models.Add(new LlmModelOption(id, ClaudeProtocol.Text(item, "display_name") ?? ClaudeProtocol.Text(item, "name") ?? id, capabilities: LlmModelCapabilities.FromCatalogue(provider, item)));
                             }
                             if (!provider.IsClaude || !root.ContainsKey("has_more") || !Equals(root["has_more"], true)) return models.ToArray();
                             string cursor = ClaudeProtocol.Text(root, "last_id");
                             if (string.IsNullOrWhiteSpace(cursor) || !cursors.Add(cursor)) throw new InvalidOperationException(UiText.Get("Invalid Claude model list pagination."));
-                            var next = new UriBuilder(catalogue)
+                            var next = new UriBuilder(catalogueBase)
                             {
-                                Query = "after_id=" + Uri.EscapeDataString(cursor)
+                                Query = connection.CatalogueQuery(cursor)
                             }; catalogue = next.Uri;
                         }
                     }
@@ -204,10 +195,12 @@ namespace VBAi
         /// <returns>Message JSON normalisé produit par le fournisseur, avec les appels d’outil éventuels.</returns>
         public async Task<IDictionary<string, object>> CompleteAsync(IList<object> messages, object[] tools)
         {
+            if (modelCapabilities.ToolCalling == false) tools = new object[0];
             LastStreamDiagnostics = null;
-            if (copilot != null) { copilot.TextDelta = TextDelta; return await copilot.CompleteAsync(model, messages, tools, ToolHandler); }
+            if (copilot != null) { copilot.TextDelta = TextDelta; copilot.ActivityUpdate = ActivityUpdate; return RequireModelTools(await copilot.CompleteAsync(model, messages, tools, modelCapabilities.ToolCalling == false ? null : ToolHandler)); }
             object payload;
-            bool streaming = TextDelta != null && !provider.IsBedrock;
+            bool streaming = (TextDelta != null || ActivityUpdate != null) && !provider.IsBedrock;
+            string activityPrefix = Guid.NewGuid().ToString("N");
             if (provider.IsBedrock) payload = BedrockProtocol.Request(messages, tools);
             else if (provider.IsClaude) { var data = ClaudeProtocol.Object(ClaudeProtocol.Request(model, messages, tools)); if (streaming) data["stream"] = true; payload = data; }
             else
@@ -223,12 +216,20 @@ namespace VBAi
                 }
                 payload = data;
             }
+            if (modelCapabilities.ToolCalling == false)
+            {
+                var textOnlyPayload = ClaudeProtocol.Object(payload);
+                textOnlyPayload.Remove("tools");
+                textOnlyPayload.Remove("tool_choice");
+                textOnlyPayload.Remove("toolConfig");
+                payload = textOnlyPayload;
+            }
             using (var request = new HttpRequestMessage(HttpMethod.Post, endpoint))
             using (var timeout = CancellationTokenSource.CreateLinkedTokenSource(lifetime.Token))
             {
                 timeout.CancelAfter(TimeSpan.FromSeconds(120));
                 request.Content = new StringContent(json.Serialize(payload), Encoding.UTF8, "application/json");
-                Authenticate(request, provider, key, azureEntra);
+                connection.Authenticate(request);
                 using (var response = await http.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, timeout.Token).ConfigureAwait(true))
                 {
                     if (!response.IsSuccessStatusCode)
@@ -236,45 +237,54 @@ namespace VBAi
                     if (streaming && response.Content.Headers.ContentType?.MediaType == "text/event-stream")
                     {
                         LastStreamDiagnostics = new StreamDiagnostics();
-                        return await ChatStreamReader.ReadAsync(await response.Content.ReadAsStreamAsync(), provider.IsClaude, TextDelta, timeout.Token, LastStreamDiagnostics);
+                        return RequireModelTools(await ChatStreamReader.ReadAsync(await response.Content.ReadAsStreamAsync(), provider.IsClaude, TextDelta, timeout.Token, LastStreamDiagnostics, ActivityUpdate, activityPrefix));
                     }
                     string body = await ChatStreamReader.ReadBodyAsync(await response.Content.ReadAsStreamAsync(), timeout.Token);
 
                     var root = json.DeserializeObject(body) as IDictionary<string, object>;
-                    if (provider.IsBedrock) return BedrockProtocol.Response(root);
-                    if (provider.IsClaude) return ClaudeProtocol.Response(root);
+                    if (provider.IsBedrock) return RequireModelTools(BedrockProtocol.Response(root, ActivityUpdate, activityPrefix));
+                    if (provider.IsClaude) return RequireModelTools(ClaudeProtocol.Response(root, ActivityUpdate, activityPrefix));
                     // JavaScriptSerializer uses object[] for JSON arrays.
                     var array = root != null && root.ContainsKey("choices") ? root["choices"] as object[] : null;
                     if (array == null || array.Length == 0)
                         throw new InvalidOperationException("The LLM returned no choice.");
                     var choice = array[0] as IDictionary<string, object>;
-                    string finish = ClaudeProtocol.Text(choice, "finish_reason");
-                    if (finish == "length" || finish == "content_filter") throw new InvalidOperationException(UiText.Get("Response truncated or filtered; tool calls were not executed."));
-                    if (choice == null || !choice.ContainsKey("message"))
-                        throw new InvalidOperationException("The LLM response has no message.");
-                    if (!(choice["message"] is IDictionary<string, object> message)) throw new InvalidOperationException("Invalid LLM message.");
-                    return message;
+                    var reasoning = new ProviderReasoning(ActivityUpdate, activityPrefix);
+                    reasoning.OpenAi(choice != null && choice.TryGetValue("message", out var rawReasoningMessage) ? rawReasoningMessage as IDictionary<string, object> : null, true);
+                    try
+                    {
+                        string finish = ClaudeProtocol.Text(choice, "finish_reason");
+                        if (finish == "length" || finish == "content_filter") throw new InvalidOperationException(UiText.Get("Response truncated or filtered; tool calls were not executed."));
+                        if (choice == null || !choice.ContainsKey("message"))
+                            throw new InvalidOperationException("The LLM response has no message.");
+                        if (!(choice["message"] is IDictionary<string, object> message)) throw new InvalidOperationException("Invalid LLM message.");
+                        if (message.TryGetValue("tool_calls", out var proposedCalls) && proposedCalls is object[] calls && calls.Length > 0 &&
+                            finish != "tool_calls" && finish != "stop")
+                            throw new InvalidOperationException(UiText.Get("Response truncated or filtered; tool calls were not executed."));
+                        RequireModelTools(message);
+                        reasoning.Finish("completed");
+                        return message;
+                    }
+                    catch
+                    {
+                        reasoning.Finish(timeout.IsCancellationRequested ? "interrupted" : "failed");
+                        throw;
+                    }
                 }
             }
+        }
+
+        /// <summary>Rejects tool calls contradicting an explicit model declaration before any native dispatch.</summary>
+        private IDictionary<string, object> RequireModelTools(IDictionary<string, object> message)
+        {
+            if (modelCapabilities.ToolCalling == false && message != null &&
+                message.TryGetValue("tool_calls", out var raw) && raw is object[] calls && calls.Length != 0)
+                throw new InvalidOperationException(UiText.Get("This model does not support tool calling."));
+            return message;
         }
 
         /// <summary>Annule la requête active et libère les clients détenus.</summary>
         public void Dispose() { if (disposed) return; disposed = true; lifetime.Cancel(); http?.Dispose(); copilot?.Dispose(); lifetime.Dispose(); }
 
-        /// <summary>Ajoute l’en-tête d’authentification adapté au fournisseur.</summary>
-        /// <param name="request">Requête HTTP à authentifier.</param>
-        /// <param name="provider">Fournisseur LLM sélectionné.</param>
-        /// <param name="key">Clé API, si le fournisseur en utilise une.</param>
-        /// <param name="azureEntra">Indique si un jeton Azure Entra doit être utilisé.</param>
-        private static void Authenticate(HttpRequestMessage request, LlmProvider provider, string key, bool azureEntra)
-        {
-            if (provider.IsAzure && !azureEntra) { if (!string.IsNullOrWhiteSpace(key)) request.Headers.Add("api-key", key); }
-            else if (provider.IsClaude)
-            {
-                request.Headers.Add("anthropic-version", "2023-06-01");
-                if (!string.IsNullOrWhiteSpace(key)) request.Headers.Add("x-api-key", key);
-            }
-            else if (!string.IsNullOrWhiteSpace(key)) request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", key);
-        }
     }
 }

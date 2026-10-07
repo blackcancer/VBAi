@@ -2,6 +2,8 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
+using System.Web.Script.Serialization;
 using VBAi.Tests.Integration;
 
 namespace VBAi.Tests.Unit
@@ -26,6 +28,32 @@ namespace VBAi.Tests.Unit
                 () => events.Add("render"), phase => events.Add(phase),
                 () => events.Add("save"), () => events.Add("reopen"));
             CollectionAssert.AreEqual(expected.Split('|'), events.ToArray());
+        }
+
+        [TestMethod]
+        public void PassiveReceiptsBracketEachOriginalPersistenceActionOnceAndKeepFailureBoundary()
+        {
+            var lines = new List<string>(); var actions = new List<string>();
+            var failure = new IOException("Synthetic save failure");
+            Action<string> visit = phase =>
+            {
+                var entered = new JavaScriptSerializer().Deserialize<Dictionary<string, object>>(lines.Last());
+                Assert.AreEqual("Entered", entered["Boundary"], "The durable phase precedes its original action.");
+                actions.Add(phase);
+                if (phase == "save") throw failure;
+            };
+            using (NativeFixtureProgressTrace.Begin(lines.Add))
+            {
+                var actual = Assert.ThrowsException<IOException>(() =>
+                    ExcelVbeFixture.PersistGitLayoutWithEvidence(true, true, "FrameMultiPage",
+                        () => visit("render"), visit, () => visit("save"), () => visit("reopen")));
+                Assert.AreSame(failure, actual);
+            }
+            CollectionAssert.AreEqual(new[] { "render", "before-save", "save" }, actions.ToArray());
+            var boundaries = lines.Select(line => new JavaScriptSerializer().Deserialize<Dictionary<string, object>>(line))
+                .Select(row => row["Phase"] + ":" + row["Boundary"]).ToArray();
+            CollectionAssert.AreEqual(new[] { "Scope:Entered", "RenderDesigner:Entered", "RenderDesigner:Returned",
+                "SeedBeforeSave:Entered", "SeedBeforeSave:Returned", "PersistSave:Entered", "PersistSave:Faulted", "Scope:Returned" }, boundaries);
         }
 
         [DataTestMethod]

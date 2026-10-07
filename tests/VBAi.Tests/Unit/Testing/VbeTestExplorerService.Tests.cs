@@ -14,6 +14,24 @@ namespace VBAi.Tests.Unit
     [TestClass, TestCategory("Unit"), DoNotParallelize]
     public sealed partial class VbeTestExplorerServiceTests
     {
+        /// <summary>Native trailing-space removal must not invalidate newly reviewed generated support.</summary>
+        [STATestMethod]
+        public void ReviewedSupportInstallsAndRemainsCurrentWhenVbeTrimsCommentWhitespace()
+        {
+            using (var fixture = new Fixture())
+            {
+                fixture.Project.VBComponents.NormalizeAddedTrailingWhitespace = true;
+                var catalog = fixture.Catalog();
+                string reviewed = VbaTestRuntimeSource.Generate(catalog);
+                fixture.Service.ApplySupport(catalog, reviewed);
+                var support = fixture.Project.VBComponents.Single(component => component.Name == VbaTestRuntimeSource.ModuleName);
+                Assert.AreEqual(reviewed.TrimEnd('\r', '\n'), support.CodeModule.Source.TrimEnd('\r', '\n'));
+                Assert.IsNull(fixture.Service.ExecutionUnavailableReason(fixture.Catalog()));
+                support.CodeModule.Source = support.CodeModule.Source.Replace("Public Sub VBAiExecutePendingTest()", "Public Sub UnexpectedPending()");
+                // The exact generated-source guard still rejects meaningful source changes.
+                Assert.IsNotNull(fixture.Service.ExecutionUnavailableReason(fixture.Catalog()));
+            }
+        }
         [STATestMethod]
         public void ReturnedWordValidationAndDispatchBalanceKnownLeasesAndRetainUnknown()
         {
@@ -1148,10 +1166,11 @@ namespace VBAi.Tests.Unit
         public sealed class FakeComponents : List<FakeComponent>
         {
             public int Additions { get; private set; }
+            public bool NormalizeAddedTrailingWhitespace { get; set; }
             public FakeComponent Add(int type)
             {
                 Additions++;
-                var component = new FakeComponent { Name = "Module" + Additions, Type = type, CodeModule = new FakeCode() };
+                var component = new FakeComponent { Name = "Module" + Additions, Type = type, CodeModule = new FakeCode { NormalizeAddedTrailingWhitespace = NormalizeAddedTrailingWhitespace } };
                 Add(component);
                 return component;
             }
@@ -1177,6 +1196,7 @@ namespace VBAi.Tests.Unit
             public FakeLines Lines => new FakeLines(this);
             public FakePane CodePane { get; } = new FakePane();
             public bool ThrowOnAdd { get; set; }
+            public bool NormalizeAddedTrailingWhitespace { get; set; }
             public Action OnAdd { get; set; }
             public Action AfterAdd { get; set; }
             public Action BeforeReadLines { get; set; }
@@ -1195,6 +1215,8 @@ namespace VBAi.Tests.Unit
                 OnAdd?.Invoke();
                 if (ThrowOnAdd) throw new InvalidOperationException("Simulated write failure");
                 Source = string.IsNullOrEmpty(Source) ? source : Source + "\r\n" + source;
+                if (NormalizeAddedTrailingWhitespace)
+                    Source = string.Join("\r\n", Source.Replace("\r\n", "\n").Split('\n').Select(line => line.TrimEnd(' ', '\t')));
                 AfterAdd?.Invoke();
             }
             public void InsertLines(int line, string source)

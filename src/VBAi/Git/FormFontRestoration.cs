@@ -12,7 +12,7 @@ namespace VBAi
 {
 
     /// <summary>Restores only preflighted, declared standard fonts on the actual native VBE owner thread.</summary>
-    internal static class FormFontRestoration
+    internal static partial class FormFontRestoration
     {
 
         /// <summary>Refuses external-STA font transfer before any project mutation is started.</summary>
@@ -114,7 +114,7 @@ namespace VBAi
                     if (rootProperties[i] == null)
                     {
                         revalidate();
-                        AssignNested(owners[i], bindings[i].Descriptor);
+                        AssignNestedClone(owners[i], bindings[i].Descriptor, revalidate);
                     }
                     else
                     {

@@ -147,8 +147,14 @@ namespace VBAi.Tests.Unit
                     Get<TextBox>(window, "memoryEditor").Text = "retained note"; Call(window, "SaveProjectMemory");
                     Call(window, "NewSession", (object)null);
                     var current = Get<ChatSessionState>(window, "currentSession"); current.ReadProjectGrants = new[] { "Foreign" };
+                    Question(window, "Establish the original synthetic conversation authority.");
+                    CompleteOnSta((Task)Call(window, "SendAsync"));
                     string originalThread = Get<CodexAppServerClient>(window, "codex").ThreadId;
-                    current.CodexThreadId = originalThread; current.CodexThreadHome = ProviderSessionStorage.CodexHome; current.ResumeContext = "owned fixture context";
+                    Assert.IsFalse(string.IsNullOrWhiteSpace(originalThread));
+                    Assert.AreEqual(originalThread, current.CodexThreadId);
+                    Assert.AreEqual(1, runtime.Transport.CountRequests("thread/start"));
+                    current.ReadProjectGrants = new[] { "Foreign" }; current.ResumeContext = "owned fixture context";
+                    Assert.AreEqual(ProviderSessionStorage.CodexHome, current.CodexThreadHome);
                     Get<System.Windows.Controls.TextBox>(window, "prompt").Text = "latest draft";
                     project.FileName = @"C:\Owned\FirstSave.xlsm";
                     Call(window, "RefreshAvailableScopes", runtime.Session);
@@ -156,6 +162,7 @@ namespace VBAi.Tests.Unit
                     Assert.AreEqual(project.FileName.ToUpperInvariant(), first.Scope); Assert.AreEqual(first.Scope, current.Scope);
                     Assert.AreEqual(originalThread, current.CodexThreadId); Assert.AreEqual(ProviderSessionStorage.CodexHome, current.CodexThreadHome);
                     Assert.AreEqual("owned fixture context", current.ResumeContext);
+                    CollectionAssert.AreEqual(new[] { "Foreign" }, current.ReadProjectGrants);
                     Assert.IsTrue(Get<ChatPersistenceWorker>(window, "persistenceWorker").Flush(5000));
                     var store = Get<ChatSessionStore>(window, "sessionStore"); var persisted = store.List(first.Scope);
                     Assert.AreEqual(2, persisted.Count); Assert.IsTrue(persisted.Exists(item => item.Id == first.Id && item.Draft == "first draft"));
@@ -169,7 +176,13 @@ namespace VBAi.Tests.Unit
                     picker.SelectedIndex = 0; CompleteScopeLoad(window);
                     var fresh = Get<ChatSessionState>(window, "currentSession");
                     Assert.AreNotEqual(current.Id, fresh.Id); Assert.AreEqual(0, fresh.ReadProjectGrants.Length);
+                    Assert.IsNull(fresh.CodexThreadId); Assert.IsNull(fresh.ResumeContext);
+                    Assert.AreEqual(0, runtime.Transport.CountRequests("thread/start")); Assert.AreEqual(0, runtime.Transport.CountRequests("thread/resume"));
+                    Question(window, "Establish the fresh synthetic SaveAs conversation."); CompleteOnSta((Task)Call(window, "SendAsync"));
                     Assert.AreEqual("fresh SaveAs thread", fresh.CodexThreadId); Assert.AreNotEqual(originalThread, fresh.CodexThreadId); Assert.IsNull(fresh.ResumeContext);
+                    Assert.AreEqual(originalThread, current.CodexThreadId); Assert.AreEqual("owned fixture context", current.ResumeContext);
+                    Assert.AreEqual(0, fresh.ReadProjectGrants.Length);
+                    Assert.AreEqual(1, runtime.Transport.CountRequests("thread/start"));
                     Assert.IsTrue(runtime.Transport.Requests.Exists(line => line.Contains("thread/start")));
                     Assert.IsFalse(runtime.Transport.Requests.Exists(line => line.Contains("thread/resume")));
                     Assert.AreEqual("", Get<TextBox>(window, "memoryEditor").Text);
@@ -262,7 +275,11 @@ namespace VBAi.Tests.Unit
                 using (var window = LoadedWindow(runtime.Session))
                 {
                     var temporary = Get<ChatSessionState>(window, "currentSession");
-                    temporary.CodexThreadId = "private original thread"; temporary.ReadProjectGrants = new[] { "Foreign" };
+                    runtime.Transport.NextThreadId = "private original thread";
+                    Question(window, "Establish the original synthetic notes-only authority."); CompleteOnSta((Task)Call(window, "SendAsync"));
+                    Assert.AreEqual("private original thread", temporary.CodexThreadId);
+                    Assert.AreEqual(temporary.CodexThreadId, Get<CodexAppServerClient>(window, "codex").ThreadId);
+                    temporary.ReadProjectGrants = new[] { "Foreign" };
                     Get<TextBox>(window, "memoryEditor").Text = "temporary notes"; Call(window, "SaveProjectMemory");
                     var store = Get<ChatSessionStore>(window, "sessionStore"); string destination = @"C:\OWNED\NOTESONLY.XLSM";
                     store.SaveMemory(destination, "existing separate notes"); Assert.IsFalse(store.HasSessions(destination)); Assert.IsTrue(store.HasScopeData(destination));
@@ -271,7 +288,14 @@ namespace VBAi.Tests.Unit
                     runtime.Transport.Requests.Clear(); runtime.Transport.NextThreadId = "fresh notes-only thread";
                     Get<ComboBox>(window, "scopePicker").SelectedIndex = 0; CompleteScopeLoad(window);
                     var fresh = Get<ChatSessionState>(window, "currentSession");
-                    Assert.AreNotEqual(temporary.Id, fresh.Id); Assert.AreEqual("fresh notes-only thread", fresh.CodexThreadId); Assert.AreEqual(0, fresh.ReadProjectGrants.Length);
+                    Assert.AreNotEqual(temporary.Id, fresh.Id); Assert.IsNull(fresh.CodexThreadId); Assert.AreEqual(0, fresh.ReadProjectGrants.Length);
+                    Assert.IsNull(fresh.ResumeContext);
+                    Assert.AreEqual(0, runtime.Transport.CountRequests("thread/start")); Assert.AreEqual(0, runtime.Transport.CountRequests("thread/resume"));
+                    Question(window, "Establish the fresh synthetic notes-only conversation."); CompleteOnSta((Task)Call(window, "SendAsync"));
+                    Assert.AreEqual("fresh notes-only thread", fresh.CodexThreadId); Assert.AreNotEqual(temporary.CodexThreadId, fresh.CodexThreadId);
+                    Assert.AreEqual("private original thread", temporary.CodexThreadId);
+                    CollectionAssert.AreEqual(new[] { "Foreign" }, temporary.ReadProjectGrants);
+                    Assert.AreEqual(0, fresh.ReadProjectGrants.Length); Assert.AreEqual(1, runtime.Transport.CountRequests("thread/start"));
                     Assert.IsNull(fresh.ResumeContext);
                     Assert.IsTrue(runtime.Transport.Requests.Exists(line => line.Contains("thread/start")));
                     Assert.IsFalse(runtime.Transport.Requests.Exists(line => line.Contains("thread/resume")));
@@ -526,22 +550,16 @@ namespace VBAi.Tests.Unit
             {
                 dispatcher.VerifyAccess();
                 if (!observing) return;
-                if (refresh.Enabled && models.Enabled && models.Items.Count != 0 &&
-                    !string.IsNullOrEmpty(client.ThreadId) && session.CodexThreadId == client.ThreadId)
+                if (refresh.Enabled && models.Enabled && models.Items.Count != 0)
                     ready.TrySetResult(true);
             };
             EventHandler catalogueChanged = (sender, args) => observe();
-            Action<string> threadReady = id =>
-            {
-                if (!dispatcher.HasShutdownStarted) dispatcher.BeginInvoke(observe);
-            };
             refresh.EnabledChanged += catalogueChanged;
-            client.ThreadReady += threadReady;
             try { observe(); CompleteOnSta(ready.Task); }
             finally
             {
                 observing = false;
-                refresh.EnabledChanged -= catalogueChanged; client.ThreadReady -= threadReady;
+                refresh.EnabledChanged -= catalogueChanged;
             }
 
             Call(window, "SaveCurrentSession");

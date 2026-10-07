@@ -51,7 +51,7 @@ namespace VBAi.Tests.Unit
                 var transport = new FakeTransport(); object pendingId = null; transport.Intercept = m => { if (Method(m) != (initializing ? "initialize" : "turn/start")) return false; pendingId = m["id"]; return true; };
                 using (var client = Client(transport)) { var turn = client.TurnAsync("request", null, null); Assert.IsNotNull(pendingId); await client.InterruptAsync(); transport.Emit(new { id = pendingId, result = initializing ? (object)new { } : new { turn = new { id = "turn-1" } } }); await Assert.ThrowsExceptionAsync<OperationCanceledException>(() => turn); Assert.AreEqual(!initializing, transport.Methods.Contains("turn/interrupt")); }
             }
-            var alternate = new FakeTransport(); alternate.Intercept = m => { if (Method(m) != "turn/start") return false; alternate.Emit(new { method = "turn/started", @params = new { threadId = "thread-1", turn = new { id = "event-turn" } } }); alternate.Emit(new { id = m["id"], result = new { } }); alternate.EmitTurnCompleted("completed", null); return true; }; using (var client = Client(alternate)) Assert.IsFalse(string.IsNullOrWhiteSpace(await client.TurnAsync("request", null, null)));
+            var alternate = new FakeTransport(); alternate.Intercept = m => { if (Method(m) != "turn/start") return false; alternate.Emit(new { method = "turn/started", @params = new { threadId = "thread-1", turn = new { id = "event-turn" } } }); alternate.Emit(new { id = m["id"], result = new { } }); alternate.EmitTurnCompleted("completed", null); return true; }; using (var client = Client(alternate)) await Assert.ThrowsExceptionAsync<InvalidOperationException>(() => client.TurnAsync("request", null, null));
         }
 
         /// <summary>Traite les notifications et ignore les mises à jour en attente après libération.</summary>
@@ -62,15 +62,15 @@ namespace VBAi.Tests.Unit
             var transport = new FakeTransport(); using (var client = Client(transport))
             {
                 var updates = new List<string>(); client.ChatUpdate += (kind, id, text, complete) => updates.Add(kind + ":" + text); var turn = client.TurnAsync("request", null, null); await transport.TurnStarted.Task;
-                foreach (var index in new object[] { null, 0, 1 }) transport.Emit(new { method = "item/reasoning/summaryPartAdded", @params = index == null ? (object)new { threadId = "thread-1", itemId = "r" } : new { threadId = "thread-1", itemId = "r", summaryIndex = index } });
-                transport.Emit(new { method = "item/agentMessage/delta", @params = new { threadId = "thread-1", delta = "no item" } });
-                foreach (var summary in new object[] { null, "invalid", new object[0], new object[] { "text", new { text = "more" }, null, 5, new { text = " " } } }) transport.Emit(new { method = "item/completed", @params = new { threadId = "thread-1", item = new { type = "reasoning", id = "r", summary } } });
-                transport.Emit(new { method = "item/completed", @params = new { threadId = "thread-1", item = new { type = "reasoning", id = "r" } } });
-                transport.Emit(new { method = "item/completed", @params = new { threadId = "thread-1", item = new { type = "agentMessage", phase = "commentary", id = "m", text = "intermediate" } } });
-                transport.Emit(new { method = "item/completed", @params = new { threadId = "thread-1", item = new { type = "other" } } }); transport.Emit(new { method = "unknown", @params = new { threadId = "thread-1" } }); transport.EmitTurnCompleted("failed", null); var error = await Assert.ThrowsExceptionAsync<InvalidOperationException>(() => turn); Assert.AreEqual("Codex turn: failed", error.Message); Assert.IsTrue(updates.Contains("message:intermediate")); Assert.IsTrue(updates.Contains("summary:text\n\nmore"));
+                foreach (var index in new object[] { null, 0, 1 }) transport.Emit(new { method = "item/reasoning/summaryPartAdded", @params = index == null ? (object)new { threadId = "thread-1", turnId = "turn-1", itemId = "r" } : new { threadId = "thread-1", turnId = "turn-1", itemId = "r", summaryIndex = index } });
+                transport.Emit(new { method = "item/agentMessage/delta", @params = new { threadId = "thread-1", turnId = "turn-1", delta = "no item" } });
+                foreach (var summary in new object[] { null, "invalid", new object[0], new object[] { "text", new { text = "more" }, null, 5, new { text = " " } } }) transport.Emit(new { method = "item/completed", @params = new { threadId = "thread-1", turnId = "turn-1", item = new { type = "reasoning", id = "r", summary } } });
+                transport.Emit(new { method = "item/completed", @params = new { threadId = "thread-1", turnId = "turn-1", item = new { type = "reasoning", id = "r" } } });
+                transport.Emit(new { method = "item/completed", @params = new { threadId = "thread-1", turnId = "turn-1", item = new { type = "agentMessage", phase = "commentary", id = "m", text = "intermediate" } } });
+                transport.Emit(new { method = "item/completed", @params = new { threadId = "thread-1", turnId = "turn-1", item = new { type = "other" } } }); transport.Emit(new { method = "unknown", @params = new { threadId = "thread-1" } }); transport.EmitTurnCompleted("failed", null); var error = await Assert.ThrowsExceptionAsync<InvalidOperationException>(() => turn); Assert.AreEqual("Codex turn: failed", error.Message); Assert.IsTrue(updates.Contains("message:intermediate")); Assert.IsTrue(updates.Contains("summary:text\n\nmore"));
             }
-            foreach (bool dispose in new[] { false, true }) { transport = new FakeTransport(); var queue = new LlmQueuedContext(); var settings = new LlmSettings(); using (var client = new CodexAppServerClient(queue, new LlmVbeTools(null, null, settings), null, settings, null, transport)) { var turn = client.TurnAsync("request", null, null); await transport.TurnStarted.Task; transport.Emit(new { method = "item/agentMessage/delta", @params = new { threadId = "thread-1", itemId = "m", delta = "queued" } }); if (dispose) client.Dispose(); queue.Drain(); if (dispose) await Assert.ThrowsExceptionAsync<ObjectDisposedException>(() => turn); else { transport.EmitTurnCompleted("completed", null); queue.Drain(); await turn; } } }
-            transport = new FakeTransport(); using (var client = Client(transport)) { var turn = client.TurnAsync("request", null, null); await transport.TurnStarted.Task; transport.Emit(new { method = "item/reasoning/summaryPartAdded", @params = new { threadId = "thread-1", summaryIndex = "invalid" } }); await Assert.ThrowsExceptionAsync<FormatException>(() => turn); }
+            foreach (bool dispose in new[] { false, true }) { transport = new FakeTransport(); var queue = new LlmQueuedContext(); var settings = new LlmSettings(); using (var client = new CodexAppServerClient(queue, new LlmVbeTools(null, null, settings), null, settings, null, transport)) { var turn = client.TurnAsync("request", null, null); await transport.TurnStarted.Task; transport.Emit(new { method = "item/agentMessage/delta", @params = new { threadId = "thread-1", turnId = "turn-1", itemId = "m", delta = "queued" } }); if (dispose) client.Dispose(); queue.Drain(); if (dispose) await Assert.ThrowsExceptionAsync<ObjectDisposedException>(() => turn); else { transport.EmitTurnCompleted("completed", null); queue.Drain(); await turn; } } }
+            transport = new FakeTransport(); using (var client = Client(transport)) { var turn = client.TurnAsync("request", null, null); await transport.TurnStarted.Task; transport.Emit(new { method = "item/reasoning/summaryPartAdded", @params = new { threadId = "thread-1", turnId = "turn-1", summaryIndex = "invalid" } }); await Assert.ThrowsExceptionAsync<FormatException>(() => turn); }
         }
 
         /// <summary>Transforme les résultats ou exceptions d’outils sans appeler un véritable hôte VBE.</summary>
@@ -80,10 +80,10 @@ namespace VBAi.Tests.Unit
         {
             foreach (var output in new[] { "null", "{\"Ok\":true}", "{\"Ok\":false}", "not-json", "throw" }) foreach (bool observe in new[] { false, true })
             {
-                var transport = new FakeTransport(); using (var client = Client(transport)) { int calls = 0; var updates = new List<string>(); if (observe) client.ChatUpdate += (k, i, t, c) => updates.Add(t); client.InvokeTool = (n, a) => { calls++; Assert.AreEqual("fixture", n); Assert.AreEqual("{}", a); return output == "throw" ? Task.FromException<string>(new IOException("tool boundary")) : Task.FromResult(output); }; var turn = client.TurnAsync("request", null, null); await transport.TurnStarted.Task; transport.Emit(new { id = "tool", method = "item/tool/call", @params = new { threadId = "thread-1", tool = "fixture", arguments = new { } } }); var reply = transport.Sent.Last(); Assert.AreEqual("tool", reply["id"]); Assert.AreEqual(output.Contains("true"), FakeTransport.Object(reply["result"])["success"]); Assert.AreEqual(1, calls); if (observe) Assert.IsTrue(updates.Count >= 1); transport.EmitTurnCompleted("completed", null); await turn; }
+                var transport = new FakeTransport(); using (var client = Client(transport)) { int calls = 0; var updates = new List<string>(); if (observe) client.ChatUpdate += (k, i, t, c) => updates.Add(t); client.InvokeTool = (n, a) => { calls++; Assert.AreEqual("fixture", n); Assert.AreEqual("{}", a); return output == "throw" ? Task.FromException<string>(new IOException("tool boundary")) : Task.FromResult(output); }; var turn = client.TurnAsync("request", null, null); await transport.TurnStarted.Task; transport.Emit(new { id = "tool", method = "item/tool/call", @params = new { threadId = "thread-1", turnId = "turn-1", tool = "fixture", arguments = new { } } }); var reply = transport.Sent.Last(); Assert.AreEqual("tool", reply["id"]); Assert.AreEqual(output.Contains("true"), FakeTransport.Object(reply["result"])["success"]); Assert.AreEqual(1, calls); if (observe) Assert.IsTrue(updates.Count >= 1); transport.EmitTurnCompleted("completed", null); await turn; }
             }
             var idle = new FakeTransport(); using (var client = Client(idle)) { await client.ListModelsAsync(); idle.Emit(new { id = "idle-tool", method = "item/tool/call", @params = new { threadId = "thread-1" } }); Assert.AreEqual(false, FakeTransport.Object(idle.Sent.Last()["result"])["success"]); }
-            foreach (bool dispose in new[] { false, true }) { var transport = new FakeTransport(); var queue = new LlmQueuedContext(); var settings = new LlmSettings(); using (var client = new CodexAppServerClient(queue, new LlmVbeTools(null, null, settings), null, settings, null, transport)) { int calls = 0; client.InvokeTool = (n, a) => { calls++; return Task.FromResult("null"); }; var turn = client.TurnAsync("request", null, null); await transport.TurnStarted.Task; transport.Emit(new { id = "late", method = "item/tool/call", @params = new { threadId = "thread-1", tool = "fixture", arguments = new { } } }); if (dispose) client.Dispose(); else await client.InterruptAsync(); queue.Drain(); Assert.AreEqual(0, calls); if (dispose) await Assert.ThrowsExceptionAsync<ObjectDisposedException>(() => turn); else await Assert.ThrowsExceptionAsync<OperationCanceledException>(() => turn); } }
+            foreach (bool dispose in new[] { false, true }) { var transport = new FakeTransport(); var queue = new LlmQueuedContext(); var settings = new LlmSettings(); using (var client = new CodexAppServerClient(queue, new LlmVbeTools(null, null, settings), null, settings, null, transport)) { int calls = 0; client.InvokeTool = (n, a) => { calls++; return Task.FromResult("null"); }; var turn = client.TurnAsync("request", null, null); await transport.TurnStarted.Task; transport.Emit(new { id = "late", method = "item/tool/call", @params = new { threadId = "thread-1", turnId = "turn-1", tool = "fixture", arguments = new { } } }); if (dispose) client.Dispose(); else await client.InterruptAsync(); queue.Drain(); Assert.AreEqual(0, calls); if (dispose) await Assert.ThrowsExceptionAsync<ObjectDisposedException>(() => turn); else await Assert.ThrowsExceptionAsync<OperationCanceledException>(() => turn); } }
             var pending = new FakeTransport(); using (var client = Client(pending)) { await client.ListModelsAsync(); pending.Intercept = m => Method(m) == "model/list"; var request = client.ListModelsAsync(); client.Dispose(); await Assert.ThrowsExceptionAsync<ObjectDisposedException>(() => request); }
         }
 
@@ -113,15 +113,17 @@ namespace VBAi.Tests.Unit
         [TestMethod]
         public async Task InitializeChecksChatGptAndStartsReadOnlyThread()
         {
-            var transport = new FakeTransport();
+            var transport = new FakeTransport { CompleteTurn = true };
             using (var client = Client(transport))
             {
                 string ready = null;
                 client.ThreadReady += id => ready = id;
                 await client.ListModelsAsync();
+                Assert.IsNull(ready); Assert.IsNull(client.ThreadId);
+                await client.TurnAsync("first request", null, null);
                 Assert.AreEqual("thread-1", client.ThreadId);
                 Assert.AreEqual("thread-1", ready);
-                CollectionAssert.AreEqual(new[] { "initialize", "initialized", "account/read", "thread/start", "model/list" }, transport.Methods.ToArray());
+                CollectionAssert.AreEqual(new[] { "initialize", "initialized", "account/read", "model/list", "thread/start", "turn/start" }, transport.Methods.ToArray());
                 var thread = transport.Request("thread/start");
                 var arguments = FakeTransport.Object(thread["params"]);
                 Assert.AreEqual("read-only", arguments["sandbox"]);
@@ -143,6 +145,7 @@ namespace VBAi.Tests.Unit
             using (var client = Client(transport, "saved-thread"))
             {
                 await client.ListModelsAsync();
+                await (Task)LlmBoundaryScope.Call(client, "EnsureConversationAsync");
                 Assert.AreEqual("saved-thread", client.ThreadId);
                 Assert.IsTrue(transport.Methods.Contains("thread/resume"));
                 Assert.IsFalse(transport.Methods.Contains("thread/start"));
@@ -163,6 +166,7 @@ namespace VBAi.Tests.Unit
             using (var client = Client(unchanged, "thread-1", knownHash))
             {
                 await client.ListModelsAsync();
+                await (Task)LlmBoundaryScope.Call(client, "EnsureConversationAsync");
                 var resume = FakeTransport.Object(unchanged.Request("thread/resume")["params"]);
                 Assert.IsFalse(resume.ContainsKey("developerInstructions"));
                 Assert.AreEqual(knownHash, client.AppliedInstructionsHash);
@@ -176,6 +180,7 @@ namespace VBAi.Tests.Unit
                 var readyHashes = new List<string>();
                 client.ThreadReady += _ => readyHashes.Add(client.AppliedInstructionsHash);
                 await client.ListModelsAsync();
+                await (Task)LlmBoundaryScope.Call(client, "EnsureConversationAsync");
                 Assert.AreEqual(instructions, FakeTransport.Object(changed.Request("thread/resume")["params"])["developerInstructions"]);
                 Assert.AreEqual(CodexAppServerClient.InstructionsHash(instructions), readyHashes.Single());
 
@@ -204,6 +209,7 @@ namespace VBAi.Tests.Unit
             {
                 client.DeveloperInstructionSource = () => "first";
                 await client.ListModelsAsync();
+                await (Task)LlmBoundaryScope.Call(client, "EnsureConversationAsync");
                 string acceptedHash = client.AppliedInstructionsHash;
                 client.DeveloperInstructionSource = () => "second";
                 transport.Intercept = message =>
@@ -233,10 +239,11 @@ namespace VBAi.Tests.Unit
             };
             using (var client = Client(transport, "thread-1", "old-hash"))
             {
-                var error = await Assert.ThrowsExceptionAsync<InvalidOperationException>(() => client.ListModelsAsync());
+                await client.ListModelsAsync();
+                var error = await Assert.ThrowsExceptionAsync<InvalidOperationException>(() => client.TurnAsync("request", null, null));
                 StringAssert.Contains(error.Message, "expected thread");
                 Assert.AreEqual("old-hash", client.AppliedInstructionsHash);
-                Assert.IsFalse(transport.Methods.Contains("model/list"));
+                Assert.IsTrue(transport.Methods.Contains("model/list"));
             }
             Assert.AreEqual(CodexAppServerClient.InstructionsHash(""), CodexAppServerClient.InstructionsHash(null));
         }
@@ -270,9 +277,9 @@ namespace VBAi.Tests.Unit
             };
             using (var client = Client(transport))
             {
-                var error = await Assert.ThrowsExceptionAsync<InvalidOperationException>(() => client.ListModelsAsync());
+                var error = await Assert.ThrowsExceptionAsync<InvalidOperationException>(() => client.TurnAsync("request", null, null));
                 StringAssert.Contains(error.Message, "did not create a thread");
-                Assert.IsTrue(transport.Disposed);
+                Assert.IsFalse(transport.Disposed);
             }
         }
 
@@ -330,7 +337,7 @@ namespace VBAi.Tests.Unit
             {
                 var error = await Assert.ThrowsExceptionAsync<InvalidOperationException>(() => client.ListModelsAsync());
                 Assert.AreEqual("model unavailable", error.Message);
-                Assert.AreEqual("thread-1", client.ThreadId);
+                Assert.IsNull(client.ThreadId);
                 Assert.IsFalse(transport.Disposed);
             }
         }
@@ -389,12 +396,12 @@ namespace VBAi.Tests.Unit
                 var events = new List<CodexAgentActivity>(); client.ActivityUpdate += events.Add;
                 client.InvokeTool = (n, a) => Task.FromException<string>(new System.IO.IOException("tool failure"));
                 var turn = client.TurnAsync("request", null, null); await transport.TurnStarted.Task;
-                transport.Emit(new { method = "item/started", @params = new { threadId = "thread-1", item = new { id = "call-1", type = "dynamicToolCall", tool = "read_module" } } });
-                transport.Emit(new { id = "request", method = "item/tool/call", @params = new { threadId = "thread-1", callId = "call-1", tool = "read_module", arguments = new { Project = "Book", Module = "Module1" } } });
+                transport.Emit(new { method = "item/started", @params = new { threadId = "thread-1", turnId = "turn-1", item = new { id = "call-1", type = "dynamicToolCall", tool = "read_module" } } });
+                transport.Emit(new { id = "request", method = "item/tool/call", @params = new { threadId = "thread-1", turnId = "turn-1", callId = "call-1", tool = "read_module", arguments = new { Project = "Book", Module = "Module1" } } });
                 Assert.AreEqual(1, events.Select(e => e.Id).Distinct().Count());
-                Assert.AreEqual("failed", events.Last().Status); Assert.AreEqual("tool failure", events.Last().Detail);
-                transport.Emit(new { method = "item/started", @params = new { threadId = "thread-1", item = new { id = "command", type = "commandExecution", command = "dotnet test" } } });
-                transport.Emit(new { method = "item/reasoning/summaryTextDelta", @params = new { threadId = "thread-1", itemId = "r", delta = "Still checking" } });
+                Assert.AreEqual("failed", events.Last().Status); Assert.AreEqual(UiText.Get("Reading VBA code"), events.Last().Title); Assert.AreEqual("read_module\ntool failure", events.Last().Detail);
+                transport.Emit(new { method = "item/started", @params = new { threadId = "thread-1", turnId = "turn-1", item = new { id = "command", type = "commandExecution", command = "dotnet test" } } });
+                transport.Emit(new { method = "item/reasoning/summaryTextDelta", @params = new { threadId = "thread-1", turnId = "turn-1", itemId = "r", delta = "Still checking" } });
                 transport.EmitTurnCompleted("interrupted", null); await Assert.ThrowsExceptionAsync<OperationCanceledException>(() => turn);
                 Assert.IsTrue(events.Any(e => e.Id == "command" && e.Status == "interrupted"));
                 Assert.IsTrue(events.Any(e => e.Id == "r:summary:0" && e.Status == "interrupted"));
@@ -409,15 +416,15 @@ namespace VBAi.Tests.Unit
             {
                 var events = new List<CodexAgentActivity>(); client.ActivityUpdate += events.Add;
                 var turn = client.TurnAsync("request", null, null); await transport.TurnStarted.Task;
-                transport.Emit(new { method = "item/reasoning/summaryTextDelta", @params = new { threadId = "thread-1", itemId = "r", summaryIndex = 0, delta = "Read code" } });
-                transport.Emit(new { method = "item/started", @params = new { threadId = "thread-1", item = new { id = "c", type = "commandExecution", command = "dotnet test", cwd = "C:/test" } } });
-                transport.Emit(new { method = "item/commandExecution/outputDelta", @params = new { threadId = "thread-1", itemId = "c", delta = "pass" } });
-                transport.Emit(new { method = "item/reasoning/summaryPartAdded", @params = new { threadId = "thread-1", itemId = "r", summaryIndex = 1 } });
-                transport.Emit(new { method = "item/reasoning/summaryTextDelta", @params = new { threadId = "thread-1", itemId = "r", delta = "Check result" } });
-                transport.Emit(new { method = "item/reasoning/textDelta", @params = new { threadId = "thread-1", itemId = "r", delta = "PRIVATE" } });
-                transport.Emit(new { method = "item/completed", @params = new { threadId = "thread-1", item = new { id = "c", type = "commandExecution", command = "dotnet test", aggregatedOutput = "passed", exitCode = 0, status = "completed", durationMs = 250 } } });
-                transport.Emit(new { method = "item/completed", @params = new { threadId = "thread-1", item = new { id = "r", type = "reasoning", summary = new object[] { "Read code", new { text = "Check result" } }, content = "PRIVATE" } } });
-                transport.Emit(new { method = "item/started", @params = new { threadId = "other", item = new { id = "foreign", type = "webSearch", query = "ignored" } } });
+                transport.Emit(new { method = "item/reasoning/summaryTextDelta", @params = new { threadId = "thread-1", turnId = "turn-1", itemId = "r", summaryIndex = 0, delta = "Read code" } });
+                transport.Emit(new { method = "item/started", @params = new { threadId = "thread-1", turnId = "turn-1", item = new { id = "c", type = "commandExecution", command = "dotnet test", cwd = "C:/test" } } });
+                transport.Emit(new { method = "item/commandExecution/outputDelta", @params = new { threadId = "thread-1", turnId = "turn-1", itemId = "c", delta = "pass" } });
+                transport.Emit(new { method = "item/reasoning/summaryPartAdded", @params = new { threadId = "thread-1", turnId = "turn-1", itemId = "r", summaryIndex = 1 } });
+                transport.Emit(new { method = "item/reasoning/summaryTextDelta", @params = new { threadId = "thread-1", turnId = "turn-1", itemId = "r", delta = "Check result" } });
+                transport.Emit(new { method = "item/reasoning/textDelta", @params = new { threadId = "thread-1", turnId = "turn-1", itemId = "r", delta = "PRIVATE" } });
+                transport.Emit(new { method = "item/completed", @params = new { threadId = "thread-1", turnId = "turn-1", item = new { id = "c", type = "commandExecution", command = "dotnet test", aggregatedOutput = "passed", exitCode = 0, status = "completed", durationMs = 250 } } });
+                transport.Emit(new { method = "item/completed", @params = new { threadId = "thread-1", turnId = "turn-1", item = new { id = "r", type = "reasoning", summary = new object[] { "Read code", new { text = "Check result" } }, content = "PRIVATE" } } });
+                transport.Emit(new { method = "item/started", @params = new { threadId = "other", turnId = "turn-1", item = new { id = "foreign", type = "webSearch", query = "ignored" } } });
                 Assert.AreEqual("r:summary:0", events[0].Id); Assert.AreEqual("c", events[1].Id);
                 Assert.AreEqual("r:summary:1", events[3].Id); Assert.AreEqual("completed", events.Single(e => e.Id == "c" && e.Status == "completed").Status);
                 Assert.AreEqual(250L, events.Single(e => e.Id == "c" && e.Status == "completed").DurationMs);
@@ -459,10 +466,10 @@ namespace VBAi.Tests.Unit
                 int updates = 0;
                 client.ChatUpdate += (kind, id, text, complete) => updates++;
                 await client.ListModelsAsync();
-                transport.Emit(new { method = "item/agentMessage/delta", @params = new { threadId = "thread-1", itemId = "ignored", delta = "before turn" } });
+                transport.Emit(new { method = "item/agentMessage/delta", @params = new { threadId = "thread-1", turnId = "turn-1", itemId = "ignored", delta = "before turn" } });
                 var turn = client.TurnAsync("first", null, null);
                 await transport.TurnStarted.Task;
-                transport.Emit(new { method = "item/agentMessage/delta", @params = new { threadId = "other", itemId = "ignored", delta = "foreign" } });
+                transport.Emit(new { method = "item/agentMessage/delta", @params = new { threadId = "other", turnId = "turn-1", itemId = "ignored", delta = "foreign" } });
                 transport.EmitTurnCompleted("completed", null);
                 await turn;
                 Assert.AreEqual(0, updates);
@@ -561,7 +568,7 @@ namespace VBAi.Tests.Unit
                 var reply = transport.Sent.Last();
                 Assert.AreEqual("foreign-request", reply["id"]);
                 Assert.AreEqual(-32601, Convert.ToInt32(FakeTransport.Object(reply["error"])["code"]));
-                Assert.AreEqual("thread-1", client.ThreadId);
+                Assert.IsNull(client.ThreadId);
             }
         }
 
@@ -575,7 +582,7 @@ namespace VBAi.Tests.Unit
             {
                 var turn = client.TurnAsync("Do work", null, null);
                 await transport.TurnStarted.Task;
-                transport.Emit(new { id = "tool-call", method = "item/tool/call", @params = new { threadId = "another-thread", tool = "status", arguments = new { } } });
+                transport.Emit(new { id = "tool-call", method = "item/tool/call", @params = new { threadId = "another-thread", turnId = "turn-1", tool = "status", arguments = new { } } });
                 var reply = transport.Sent.Last();
                 Assert.AreEqual("tool-call", reply["id"]);
                 Assert.AreEqual(false, FakeTransport.Object(reply["result"])["success"]);
@@ -619,11 +626,11 @@ namespace VBAi.Tests.Unit
                     client.ActivityUpdate += activities.Add;
                     var turn = client.TurnAsync("inspect", null, null);
                     await transport.TurnStarted.Task;
-                    transport.Emit(new { method = "item/reasoning/summaryTextDelta", @params = new { threadId = "thread-1", delta = "anonymous" } });
-                    transport.Emit(new { method = "item/completed", @params = new { threadId = "thread-1", item = new { id = "", type = "reasoning", summary = new object[] { "anonymous" } } } });
+                    transport.Emit(new { method = "item/reasoning/summaryTextDelta", @params = new { threadId = "thread-1", turnId = "turn-1", delta = "anonymous" } });
+                    transport.Emit(new { method = "item/completed", @params = new { threadId = "thread-1", turnId = "turn-1", item = new { id = "", type = "reasoning", summary = new object[] { "anonymous" } } } });
                     Microsoft.VisualStudio.TestTools.UnitTesting.Assert.AreEqual(0, activities.Count);
-                    transport.Emit(new { method = "item/reasoning/summaryTextDelta", @params = new { threadId = "thread-1", itemId = "reason", delta = "checking" } });
-                    transport.Emit(new { method = "item/started", @params = new { threadId = "thread-1", item = new { id = "command", type = "commandExecution", command = "verify" } } });
+                    transport.Emit(new { method = "item/reasoning/summaryTextDelta", @params = new { threadId = "thread-1", turnId = "turn-1", itemId = "reason", delta = "checking" } });
+                    transport.Emit(new { method = "item/started", @params = new { threadId = "thread-1", turnId = "turn-1", item = new { id = "command", type = "commandExecution", command = "verify" } } });
                     transport.EmitTurnCompleted(terminal, terminal == "failed" ? "native failure" : null);
                     if (terminal == "failed") await Microsoft.VisualStudio.TestTools.UnitTesting.Assert.ThrowsExceptionAsync<System.InvalidOperationException>(() => turn);
                     else await turn;
@@ -632,6 +639,43 @@ namespace VBAi.Tests.Unit
                     Microsoft.VisualStudio.TestTools.UnitTesting.Assert.AreEqual(terminal == "failed" ? "failed" : "interrupted", activities.FindLast(a => a.Id == "command").Status);
                     Microsoft.VisualStudio.TestTools.UnitTesting.Assert.IsTrue(activities[2].Append);
                     Microsoft.VisualStudio.TestTools.UnitTesting.Assert.IsTrue(activities[3].Append);
+                }
+            }
+        }
+    }
+}
+
+namespace VBAi.Tests.Unit
+{
+    public sealed partial class CodexAppServerClientTests
+    {
+        [Microsoft.VisualStudio.TestTools.UnitTesting.TestMethod]
+        public async System.Threading.Tasks.Task ModelCataloguePreservesDeclaredCodexCapabilitiesWithoutDefaultInference()
+        {
+            using (var scope = new VBAi.Tests.Infrastructure.LlmBoundaryScope())
+            {
+                var transport = new FakeTransport();
+                transport.Intercept = request =>
+                {
+                    if (Method(request) != "model/list") return false;
+                    transport.Emit(new { id = request["id"], result = new { data = new object[] {
+                        new { model = "arbitrary", supportedReasoningEfforts = new[] { new { reasoningEffort = "high", description = "High" } }, inputModalities = new[] { "text", "image" } },
+                        new { model = "vision-tool-reasoning-name-only" },
+                        new { model = "text-only", supportedReasoningEfforts = new object[0], inputModalities = new[] { "text" } } } } });
+                    return true;
+                };
+                using (var client = Client(transport))
+                {
+                    var models = await client.ListModelsAsync();
+                    Microsoft.VisualStudio.TestTools.UnitTesting.Assert.AreEqual(3, models.Length);
+                    Microsoft.VisualStudio.TestTools.UnitTesting.Assert.AreEqual((bool?)true, models[0].Capabilities.Reasoning);
+                    Microsoft.VisualStudio.TestTools.UnitTesting.Assert.AreEqual((bool?)true, models[0].Capabilities.Vision);
+                    Microsoft.VisualStudio.TestTools.UnitTesting.Assert.IsNull(models[0].Capabilities.ToolCalling);
+                    Microsoft.VisualStudio.TestTools.UnitTesting.Assert.IsNull(models[1].Capabilities.ToolCalling);
+                    Microsoft.VisualStudio.TestTools.UnitTesting.Assert.IsNull(models[1].Capabilities.Reasoning);
+                    Microsoft.VisualStudio.TestTools.UnitTesting.Assert.IsNull(models[1].Capabilities.Vision);
+                    Microsoft.VisualStudio.TestTools.UnitTesting.Assert.AreEqual((bool?)false, models[2].Capabilities.Reasoning);
+                    Microsoft.VisualStudio.TestTools.UnitTesting.Assert.AreEqual((bool?)false, models[2].Capabilities.Vision);
                 }
             }
         }

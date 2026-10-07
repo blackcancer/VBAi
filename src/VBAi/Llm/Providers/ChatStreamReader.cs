@@ -94,13 +94,17 @@ namespace VBAi
         /// <param name="progress">Callback appelé pour chaque fragment textuel reçu, éventuellement null.</param>
         /// <param name="token">Jeton qui annule la lecture et ferme le flux.</param>
         /// <param name="diagnostics">Optional bounded metadata receiver, excluding provider content.</param>
+        /// <param name="activity">Optional observer for explicitly published reasoning text, never tool argument fragments.</param>
+        /// <param name="activityPrefix">Local request identity used to keep section IDs distinct across responses.</param>
         /// <returns>Message assistant assemblé avec ses appels d’outils complets.</returns>
-        public static async Task<IDictionary<string, object>> ReadAsync(Stream stream, bool claude, Action<string> progress, CancellationToken token, StreamDiagnostics diagnostics = null)
+        public static async Task<IDictionary<string, object>> ReadAsync(Stream stream, bool claude, Action<string> progress, CancellationToken token, StreamDiagnostics diagnostics = null, Action<CodexAgentActivity> activity = null, string activityPrefix = null)
         {
             diagnostics = diagnostics ?? new StreamDiagnostics();
+            var reasoning = new ProviderReasoning(activity, activityPrefix);
             try
             {
-                var result = await ReadCoreAsync(stream, claude, progress, token, diagnostics);
+                var result = await ReadCoreAsync(stream, claude, progress, token, diagnostics, reasoning);
+                reasoning.Finish("completed");
                 diagnostics.Outcome = diagnostics.ToolCallChunks > 0 ? "complete-tools" :
                     string.IsNullOrWhiteSpace(Convert.ToString(result["content"])) ? "complete-empty" : "complete-text";
                 return result;
@@ -109,6 +113,7 @@ namespace VBAi
             {
                 diagnostics.Outcome = token.IsCancellationRequested ? "cancelled" :
                     error is IOException && !(error is InvalidDataException) ? "transport-error" : "protocol-error";
+                reasoning.Finish(token.IsCancellationRequested ? "interrupted" : "failed");
                 throw;
             }
         }
@@ -120,7 +125,8 @@ namespace VBAi
         /// <param name="token">Cancellation token; cancellation disposes the stream and prevents partial tool execution.</param>
         /// <param name="diagnostics">Scalar-only counters updated as events are parsed.</param>
         /// <returns>Complete assistant message with assembled tool calls only after a valid terminal marker/reason.</returns>
-        private static async Task<IDictionary<string, object>> ReadCoreAsync(Stream stream, bool claude, Action<string> progress, CancellationToken token, StreamDiagnostics diagnostics)
+        /// <param name="reasoning">Request-scoped projection of explicitly published reasoning blocks.</param>
+        private static async Task<IDictionary<string, object>> ReadCoreAsync(Stream stream, bool claude, Action<string> progress, CancellationToken token, StreamDiagnostics diagnostics, ProviderReasoning reasoning)
         {
             token.ThrowIfCancellationRequested();
             var json = new JavaScriptSerializer { MaxJsonLength = 10 * 1024 * 1024 };
@@ -148,9 +154,11 @@ namespace VBAi
                     {
                         var choices = ClaudeProtocol.Array(root, "choices"); if (choices.Length == 0) { diagnostics.EmptyChoiceChunks++; if (root.ContainsKey("usage")) diagnostics.UsageChunks++; continue; }
                         var choice = Obj(choices[0]);
+                        if (choice.TryGetValue("message", out var snapshot)) reasoning.OpenAi(Obj(snapshot), true);
                         if (Text(choice, "finish_reason") != null) { stop = Text(choice, "finish_reason"); diagnostics.SetTerminalReason(stop); }
                         if (!choice.ContainsKey("delta")) { diagnostics.MissingDeltaChunks++; continue; }
                         var delta = Obj(choice["delta"]);
+                        reasoning.OpenAi(delta);
                         if (ClaudeProtocol.Array(delta, "tool_calls").Length > 0) diagnostics.ToolCallChunks++;
                         foreach (var rawCall in ClaudeProtocol.Array(delta, "tool_calls"))
                         {
@@ -168,17 +176,21 @@ namespace VBAi
                         if (type == "content_block_start")
                         {
                             int index = Convert.ToInt32(root["index"]); blocks[index] = Obj(root["content_block"]);
+                            reasoning.ClaudeBlock(index, blocks[index], true);
                             if (Text(blocks[index], "type") == "tool_use") diagnostics.ToolCallChunks++;
                             if (Text(blocks[index], "type") == "text") { string initial = Text(blocks[index], "text"); if (!string.IsNullOrEmpty(initial)) { diagnostics.TextChunks++; progress?.Invoke(initial); } }
                         }
                         if (type == "content_block_delta")
                         {
                             int index = Convert.ToInt32(root["index"]); var block = blocks[index]; var delta = Obj(root["delta"]); string kind = Text(delta, "type");
+                            reasoning.ClaudeDelta(index, block, delta);
                             if (kind == "input_json_delta") { if (!inputs.TryGetValue(index, out var input)) inputs[index] = input = new StringBuilder(); input.Append(Text(delta, "partial_json")); }
                             else if (kind == "text_delta") { string text = Text(delta, "text"); Append(block, "text", text); if (!string.IsNullOrEmpty(text)) diagnostics.TextChunks++; progress?.Invoke(text); }
                             else if (kind == "thinking_delta") Append(block, "thinking", Text(delta, "thinking"));
                             else if (kind == "signature_delta") Append(block, "signature", Text(delta, "signature"));
                         }
+                        if (type == "content_block_stop" && root.TryGetValue("content_block", out var finalBlock))
+                            reasoning.ClaudeBlock(Convert.ToInt32(root["index"]), Obj(finalBlock), true);
                         if (type == "message_delta") { stop = Text(Obj(root["delta"]), "stop_reason"); diagnostics.SetTerminalReason(stop); }
                         if (type == "message_stop") { ended = true; diagnostics.EndMarker = true; }
                     }

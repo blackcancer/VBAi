@@ -42,7 +42,8 @@ namespace VBAi
             this.state = new System.Windows.Forms.Label();
             this.state.Name = "state";
             this.state.AutoSize = true;
-            this.state.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.state.Anchor = System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right;
+            this.state.UseCompatibleTextRendering = false;
             this.state.Text = "In progress";
             this.SuspendLayout(); this.layout.SuspendLayout();
             this.layout.AutoSize = true;
@@ -51,7 +52,7 @@ namespace VBAi
             this.layout.ColumnCount = 2;
             this.layout.RowCount = 1;
             this.layout.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 100F));
-            this.layout.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Absolute, 78F));
+            this.layout.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.AutoSize));
             this.state.TextAlign = System.Drawing.ContentAlignment.TopRight;
             this.state.Margin = new System.Windows.Forms.Padding(3, 10, 3, 0);
             this.layout.Controls.Add(this.state, 1, 0);

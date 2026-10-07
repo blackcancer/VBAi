@@ -690,12 +690,25 @@ namespace VBAi
         /// <summary>Shows the selected model succinctly while retaining its full identity in the tooltip.</summary>
         private void RefreshModelSummary()
         {
-            string model = (modelPicker.SelectedItem as LlmModelOption)?.Label ?? modelPicker.Text;
+            var selectedModel = modelPicker.SelectedItem as LlmModelOption;
+            string model = selectedModel?.Label ?? modelPicker.Text;
             string effort = effortPicker.Items.Count > 0 ? effortPicker.Text : "";
             modelSummary.Text = (string.IsNullOrWhiteSpace(model) ? UiText.Get("Model") : model) +
-                (string.IsNullOrWhiteSpace(effort) ? "" : " · " + effort) + (rootLayout.RowStyles[6].Height > 0 ? " ▴" : " ▾");
+                (string.IsNullOrWhiteSpace(effort) ? "" : " · " + effort) +
+                (selectedModel?.Capabilities.ToolCalling == false ? " · " + UiText.Get("Text only") : "") +
+                (rootLayout.RowStyles[6].Height > 0 ? " ▴" : " ▾");
             toolTips.SetToolTip(modelSummary, providerPicker.Text + " · " + modelPicker.Text +
-                (string.IsNullOrWhiteSpace(effort) ? "" : " · " + effort));
+                (string.IsNullOrWhiteSpace(effort) ? "" : " · " + effort) + "\n" +
+                ModelCapabilitySummary(selectedModel?.Capabilities ?? LlmModelCapabilities.Unknown));
+        }
+
+        /// <summary>Shows catalog declarations without converting unknown capability into a promise.</summary>
+        private static string ModelCapabilitySummary(LlmModelCapabilities capabilities)
+        {
+            Func<bool?, string> state = value => UiText.Get(value.HasValue ? (value.Value ? "Supported" : "Not supported") : "Unknown");
+            return UiText.Get("Tool calling") + ": " + state(capabilities.ToolCalling) + " · " +
+                UiText.Get("Reasoning") + ": " + state(capabilities.Reasoning) + " · " +
+                UiText.Get("Vision") + ": " + state(capabilities.Vision);
         }
     }
 }
