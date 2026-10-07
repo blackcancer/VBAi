@@ -1,7 +1,7 @@
 # Public website
 
 The bilingual product website is published at
-[blackcancer.github.io/VBAi](https://blackcancer.github.io/VBAi/).
+[vbai.app](https://vbai.app/), hosted on GitHub Pages.
 French pages live under `/fr/`; the root is English. Each page has a distinct
 title and description, a canonical URL and reciprocal language alternatives.
 The generated sitemap contains the eight localized product pages.
@@ -21,11 +21,11 @@ The builder uses Python 3.10 or newer and no third-party dependencies:
 
 ```sh
 python tools/docs/build_site.py --output artifacts/site-preview/VBAi
-python -m http.server 8765 --directory artifacts/site-preview
+python -m http.server 8765 --directory artifacts/site-preview/VBAi
 ```
 
-Open `http://localhost:8765/VBAi/` or `/VBAi/fr/`. Serve the parent output folder
-so the project-relative URLs behave exactly as they do on GitHub Pages.
+Open `http://localhost:8765/` or `/fr/`. Serve the generated output folder
+so the root-relative URLs behave exactly as they do on the custom domain.
 Generated files are ignored and must not be committed.
 
 ## Screenshots and publication
@@ -58,5 +58,18 @@ include content hashes so an update does not keep an older asset in browser cach
 Its documentation links point to the authoritative repository guides rather
 than maintaining a second copy. Submit the published `sitemap.xml` through a
 verified Google Search Console URL-prefix property to monitor indexing.
-Search Console verification remains a maintainer account operation. A project
-site cannot control `robots.txt` at the `blackcancer.github.io` domain root.
+Search Console verification remains a maintainer account operation. The generated
+`robots.txt` advertises the sitemap at the custom-domain root.
+
+## Domain configuration
+
+`vbai.app` is the custom domain configured in the repository's GitHub Pages
+settings. The OVH DNS zone must point the apex to GitHub Pages with these four
+`A` records: `185.199.108.153`, `185.199.109.153`, `185.199.110.153` and
+`185.199.111.153`. `www` uses a `CNAME` to `blackcancer.github.io.`.
+Preserve mail and other unrelated records; replace conflicting web records only.
+The main domain is `vbai.app`; GitHub Pages redirects the configured `www` variant.
+HTTPS enforcement is enabled once GitHub has issued the domain certificate.
+This deployment uses Actions, so Pages stores the domain in its settings;
+a source `CNAME` file is not required. Changing the domain also requires updating
+`config.json` and rebuilding canonical URLs, language alternatives and the sitemap.

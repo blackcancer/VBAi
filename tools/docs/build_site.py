@@ -273,7 +273,7 @@ def build(output: Path) -> None:
         if hashlib.sha256(source.read_bytes()).hexdigest() != item['sha256']:
             raise ValueError(f'Screenshot no longer matches its reviewed manifest: {file}')
         shutil.copyfile(source, assets / file)
-    expected = {'assets/styles.css', 'assets/main.js', 'assets/assistant.png', '.nojekyll', 'sitemap.xml', '404.html'}
+    expected = {'assets/styles.css', 'assets/main.js', 'assets/assistant.png', '.nojekyll', 'sitemap.xml', 'robots.txt', '404.html'}
     expected.update('assets/' + file for file in website.config['screenshots'])
     for lang in website.languages:
         for page in PAGES:
@@ -287,6 +287,7 @@ def build(output: Path) -> None:
     (output / 'sitemap.xml').write_text('<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n' +
                                       ''.join(f'  <url><loc>{escape(url)}</loc></url>\n' for url in urls) + '</urlset>\n', encoding='utf-8')
     (output / '.nojekyll').write_text('', encoding='utf-8')
+    (output / 'robots.txt').write_text('User-agent: *\nAllow: /\nSitemap: ' + website.config['url'] + 'sitemap.xml\n', encoding='utf-8')
     unexpected = {path.relative_to(output).as_posix() for path in output.rglob('*') if path.is_file()} - expected
     if unexpected:
         raise ValueError(f'Unreviewed files in publication output: {sorted(unexpected)}')

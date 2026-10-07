@@ -4,7 +4,7 @@ Use these guides to set up VBAi, complete a workflow or contribute to the code.
 The product targets the shared VBE environment; host qualification is documented
 per operation and tested candidate.
 
-The [public website](https://blackcancer.github.io/VBAi/) presents installation,
+The [public website](https://vbai.app/) presents installation,
 AI connections and a real illustrated workflow in English and French. Its
 [maintenance guide](../site/README.md) explains sources and publication.
 

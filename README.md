@@ -9,7 +9,7 @@ Git workflows into applications that host the Visual Basic Editor. Work directly
 with the open VBA project: understand code, review changes, design UserForms and
 investigate native execution behavior.
 
-[Website](https://blackcancer.github.io/VBAi/) · [Getting started](docs/getting-started.md) · [Documentation](docs/README.md) ·
+[Website](https://vbai.app/) · [Getting started](docs/getting-started.md) · [Documentation](docs/README.md) ·
 [Compatibility](docs/compatibility.md) · [Contributing](CONTRIBUTING.md)
 
 > **1.0.0 distribution:** the Windows x64 installer and uninstaller are unsigned.
