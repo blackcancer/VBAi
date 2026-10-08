@@ -541,12 +541,20 @@ namespace VBAi.Tests.Integration
                     Math.Min(bounds.Bottom, viewport.Bottom) <= Math.Max(bounds.Top, viewport.Top)) continue;
                 IntPtr length;
                 if (SendMessageTimeout(handle, 0x000E, IntPtr.Zero, null, 3, 1000, out length) == IntPtr.Zero)
-                    throw new InvalidOperationException("Bounded native transcript length read failed.");
+                {
+                    int error = Marshal.GetLastWin32Error();
+                    if (!IsWindow(handle)) continue;
+                    throw new InvalidOperationException("Bounded native transcript length read failed on a live child (Win32 " + error + ").");
+                }
                 if (length.ToInt64() < 0 || length.ToInt64() > 65536) throw new InvalidOperationException("Bounded native transcript text.");
                 // Leave room for a fragment appended between the two independent reads.
                 var text = new StringBuilder(65537); IntPtr copied;
                 if (ReadTextTimeout(handle, 0x000D, new IntPtr(text.Capacity), text, 3, 1000, out copied) == IntPtr.Zero)
-                    throw new InvalidOperationException("Bounded native transcript text read failed.");
+                {
+                    int error = Marshal.GetLastWin32Error();
+                    if (!IsWindow(handle)) continue;
+                    throw new InvalidOperationException("Bounded native transcript text read failed on a live child (Win32 " + error + ").");
+                }
                 if (copied.ToInt64() < 0 || copied.ToInt64() > 65536) throw new InvalidOperationException("Invalid native transcript length.");
                 if (!IsWindow(handle)) continue;
                 if (GetWindowThreadProcessId(handle, out childPid) != nativeThread || childPid != processId || !IsChild(panel, handle))

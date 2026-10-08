@@ -160,13 +160,18 @@ namespace VBAi
             if (active.ExitCode == 0) { string name = Encoding.UTF8.GetString(active.Bytes).Trim(); ValidateBranch(name); Branch = name; }
         }
 
-        /// <summary>Résout une référence Git ou retourne null si elle est absente.</summary>
-        /// <param name="reference">Référence Git à résoudre ou mettre à jour.</param>
-        /// <returns>Identifiant résolu ou null.</returns>
+        /// <summary>Resolves a Git reference; only a silent missing revision returns null.</summary>
+        /// <param name="reference">Reference or revision expression to resolve in the bound bare repository.</param>
+        /// <returns>The resolved object identity, or null when Git quietly reports a missing revision.</returns>
+        /// <exception cref="InvalidOperationException">Git cannot inspect the repository or reports a reference diagnostic.</exception>
         internal string Resolve(string reference)
         {
             var result = Run(new[] { "rev-parse", "--verify", "--quiet", reference }, null, true, true);
-            return result.ExitCode == 0 ? Encoding.UTF8.GetString(result.Bytes).Trim() : null;
+            if (result.ExitCode == 0) return Encoding.UTF8.GetString(result.Bytes).Trim();
+            if (result.ExitCode == 1 && string.IsNullOrWhiteSpace(result.Error)) return null;
+            throw new InvalidOperationException("Git rev-parse" + UiText.Get(" failed. ") +
+                "(" + result.ExitCode.ToString(System.Globalization.CultureInfo.InvariantCulture) + ") " +
+                (result.Error ?? "").Trim());
         }
 
         /// <summary>Récupère la branche active distante dans la référence de suivi privée.</summary>
@@ -346,6 +351,9 @@ namespace VBAi
 
             /// <summary>Code de sortie du processus Git.</summary>
             internal int ExitCode;
+
+            /// <summary>Standard error retained for callers that allow an expected nonzero exit.</summary>
+            internal string Error;
         }
 
         // Windows argv quoting. No shell, no command interpolation, no interactive terminal prompts.
@@ -408,7 +416,7 @@ namespace VBAi
                 Cancellation.ThrowIfCancellationRequested();
                 if (process.ExitCode != 0 && !allowFailure)
                     throw new InvalidOperationException("Git " + args[0] + UiText.Get(" failed. ") + error.Result.Trim());
-                return new Result { Bytes = output.ToArray(), ExitCode = process.ExitCode };
+                return new Result { Bytes = output.ToArray(), ExitCode = process.ExitCode, Error = error.Result };
             }
         }
     }

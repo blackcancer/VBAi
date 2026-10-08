@@ -174,6 +174,61 @@ public reasoning summaries were not observed in the native chat scenario. The in
 settings remain unchanged; candidate registration is temporary and restored
 between trials.
 
+## Git and transcript follow-up
+
+The 2026-10-08 follow-up uses source base
+`5eb46e9c0a5542a64b946825cc9133a4ae19e7bb` plus the Git reference-error and
+incremental transcript changes. Its measured product has MVID
+`cc95b84d-ee20-4624-a861-b1f64aa7271b` and SHA-256
+`F7BAB60DFF1700D58EDCEF461F6679C43391A3F9700C6479ACA2EE62F6B6D55F`.
+
+The combined Git/chat gate recorded **353 passed, no failures and one conditional
+skip**. The skip requires the separate real-provider opt-in. After improving the
+native transcript observer's failure diagnostics, its focused guards/profile/
+oracle gate recorded **47 passed, no failures or skips**. A sandboxed attempt
+failed to connect VSTest to its test host before producing test results; the
+subsequent gate is a separate run. No new complete line/branch measurement was
+collected. An earlier chat run had three fixture failures, corrected by registering
+the realized history views; its original failed report is retained.
+
+Performance workloads use actual native RichEdit controls outside Office. They
+cover growing and rewritten text, selection/format preservation, viewport
+changes, retained history and expanded/collapsed activity groups. Timings are
+machine-specific observations, not acceptance thresholds:
+
+| Workload | Observed cost | Remaining limit |
+| --- | --- | --- |
+| 131,072 characters, 64 updates, 340-pixel width | Incremental publication: 146 ms total, 4.0 ms p95; complete replacement: 611 ms total, 16.8 ms p95 | A control benchmark does not measure provider latency or hosted WPF composition. |
+| 100 completed activity siblings, expanded, 32 updates | 6,723 ms total, 758 ms p95, 881 ms maximum | Large expanded groups still incur costly layout; this change does not establish smooth rendering for every transcript. |
+
+The retained local evidence includes `final-managed.trx`,
+`native-observer-gate.trx` and `final-workload-results.json` under
+`artifacts/excel-audit-followup-20261008/`. Git tests now distinguish a silent
+missing revision from repository/reference read errors and prove that errors
+stop admission before mutation. They do not establish the cause of the earlier
+intermittent stale-revision result.
+
+The real-desktop Ollama bank with `qwen2.5:3b` failed in both hosts. Excel observed
+streaming, one Stop, cancellation and a completed next Send, then failed on a
+bounded native transcript read. Word did not satisfy the visible-streaming
+oracle. Excel's original-handle shutdown was verified. Word's cleanup did not
+observe exit within its deadline; the process was absent at a later observation.
+Scoped registration and preferences were restored. These partial results do not qualify the candidate's complete
+provider workflow, and neither failure is attributed to model quality alone.
+
+The independent `qwen3.5:9b` bank used the same product and the updated observer.
+Excel lost the fixed Send-control identity after its first Send; the observer
+retained that uncertain host without replaying an action. Word timed out while
+waiting for the model catalogue, before sending a prompt. Both tests failed;
+they do not provide a valid comparison of the two models' response quality.
+Scoped registration and preferences were restored. Word's fixture issued Quit
+but did not observe exit within its deadline. Separate recovery of Excel verified the original process and sole
+disposable workbook before issuing one Close and one Quit; normal process exit
+was not observed within the recovery deadline. This is cleanup evidence, not
+successful native qualification. Later observation found neither owned process
+running; this does not reconstruct their original-handle exit receipts or turn
+either failed cleanup deadline into a pass.
+
 ## Recent interface and documentation checks
 
 Licensing changes from source `f64c1a12` passed 115 focused runtime, support-module

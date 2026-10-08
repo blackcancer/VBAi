@@ -74,6 +74,58 @@ namespace VBAi
             finally { contentUpdateDepth--; ResizeText(); }
         }
 
+        /// <summary>Publishes a streamed plain-text snapshot with one final height measurement.</summary>
+        /// <param name="text">Complete current text, or null to clear the stream.</param>
+        internal void UpdatePlainText(string text)
+        {
+            if (content.IsDisposed || string.Equals(content.Text, text ?? "", StringComparison.Ordinal)) return;
+            bool changed = false;
+            var layoutOwners = new List<Control>();
+            // AutoSize disclosure rows otherwise propagate each intermediate text/height
+            // change through every sibling in their outer activity group.
+            for (Control owner = content.Parent; owner != null && !(owner is Form); owner = owner.Parent)
+            {
+                layoutOwners.Add(owner);
+                owner.SuspendLayout();
+                if (owner is ChatActivityGroupView || owner is ChatMessageView) break;
+            }
+            contentUpdateDepth++;
+            try
+            {
+                try { changed = UpdatePlainTextControl(content, text); }
+                finally { contentUpdateDepth--; }
+                if (changed) ResizeText();
+            }
+            finally
+            {
+                // Settle inner layouts while their parents are still suspended, then
+                // perform the outer group layout once with the final child sizes.
+                foreach (var owner in layoutOwners)
+                    if (!owner.IsDisposed) owner.ResumeLayout(changed);
+            }
+        }
+
+        /// <summary>Appends only new characters when a stream grows, retaining selection and existing formatting.</summary>
+        /// <param name="live">Native control owned by the calling UI thread.</param>
+        /// <param name="text">Complete snapshot; rewrites and truncations replace the previous value.</param>
+        /// <returns>Whether the native text changed.</returns>
+        internal static bool UpdatePlainTextControl(RichTextBox live, string text)
+        {
+            if (live.IsDisposed) return false;
+            text = text ?? "";
+            string previous = live.Text;
+            if (string.Equals(previous, text, StringComparison.Ordinal)) return false;
+            int start = live.SelectionStart, length = live.SelectionLength;
+            if (text.StartsWith(previous, StringComparison.Ordinal))
+            {
+                live.Select(live.TextLength, 0);
+                live.SelectedText = text.Substring(previous.Length);
+            }
+            else live.Text = text;
+            live.Select(Math.Min(start, live.TextLength), Math.Min(length, Math.Max(0, live.TextLength - start)));
+            return true;
+        }
+
         /// <summary>Renders Markdown into the transcript and installs the callbacks for references and errors.</summary>
         /// <param name="text">Markdown source to render in the transcript.</param>
         /// <param name="references">VBA references that should become interactive transcript links.</param>

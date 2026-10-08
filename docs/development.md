@@ -40,6 +40,28 @@ The chat mixes WinForms views with WPF-hosted transcript/input surfaces; Monaco
 uses WebView2. Preserve each component's ownership, threading and disposal rules.
 Do not dispose or mutate a native parent reentrantly from a WebView callback.
 
+### Transcript updates and performance
+
+Streaming fragments are coalesced on the chat's owning UI thread at a 50 ms
+interval. Plain-text snapshots append only their new suffix when the previous
+text is an unchanged prefix. Authoritative rewrites and truncations replace the
+text, while the existing selection is retained within the new bounds. Completed
+messages then use the Markdown renderer and its reference/code actions.
+
+Unchanged snapshots perform no native write or layout. For changed snapshots,
+native text measurement and nested AutoSize layouts settle after publication;
+inner layouts resume before the outer message/activity card. Keep these guards
+when modifying the transcript to avoid repeated reflow of unrelated activity rows.
+
+The transcript workload scenarios exercise both narrow and wide controls,
+growing multiline responses, paged histories and expanded/collapsed activity
+groups. Their TRX output records median, p95 and maximum update costs, alongside
+selection, content and control-identity assertions. Timings are observations,
+not machine-independent pass thresholds. These tests use actual RichEdit controls
+outside Office; they do not measure provider latency or qualify native VBE hosting.
+Run the affected source mirrors together with the workload scenarios, then select
+the relevant owned-host checks from [the test guide](../tests/README.md).
+
 Keep About/support metadata free of project contents. Runtime resource-reader
 compatibility is handled locally; do not modify another application's configuration
 to make a Designer or image resource load.

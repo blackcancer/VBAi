@@ -16,6 +16,48 @@ namespace VBAi.Tests.Unit
         private static string Sha(byte[] value)
         { using (var hash = SHA256.Create()) return BitConverter.ToString(hash.ComputeHash(value)).Replace("-", "").ToLowerInvariant(); }
         private static string Sha(string value) => Sha(Encoding.UTF8.GetBytes(value));
+
+        /// <summary>Any unreadable authority operand stops admission without a stale-state verdict or a Git mutation.</summary>
+        [TestMethod]
+        [DataRow("refs/codex/backup")]
+        [DataRow("refs/codex/after-import")]
+        [DataRow("refs/heads/main")]
+        [DataRow("refs/codex/baseline")]
+        public async Task RevisionReadFailureStopsBranchCreationWithoutReplacingTheError(string failedReference)
+        {
+            var calls = new List<string>();
+            MacroGitRepository repository; VbaGitProject project; global::FakeProject host;
+            using (var operations = Create(out repository, out project, out host, calls))
+            {
+                var snapshot = project.Capture();
+                string expected = operations.Revision(snapshot);
+                var original = repository.CommandOverride;
+                calls.Clear();
+                int failures = 0;
+                repository.CommandOverride = (arguments, input, use, allow) =>
+                {
+                    if (arguments[0] == "rev-parse" && arguments[3] == failedReference)
+                    {
+                        failures++;
+                        calls.Add(string.Join(" ", arguments));
+                        return new MacroGitRepository.Result
+                        {
+                            Bytes = new byte[0], ExitCode = 128, Error = "fatal: fixture reference read failed"
+                        };
+                    }
+                    return original(arguments, input, use, allow);
+                };
+                var failure = await Assert.ThrowsExceptionAsync<InvalidOperationException>(() =>
+                    operations.ExecuteAsync("branch_create", expectedState: expected, name: "must-not-exist"));
+                StringAssert.Contains(failure.Message, "fatal: fixture reference read failed");
+                Assert.IsFalse(failure.Message.Contains(UiText.Get("The Git/VBA state changed. Read git_status again before making changes.")));
+                Assert.AreEqual(1, failures, "An uncertain failed reference read is not retried.");
+                Assert.IsTrue(calls.All(call => call.StartsWith("rev-parse ", StringComparison.Ordinal)));
+                Assert.IsTrue(snapshot.SameAs(project.Capture()), "The source is unchanged after rejected admission.");
+                Assert.AreEqual("main", repository.Branch);
+            }
+        }
+
         private static MacroGitOperations Create(out MacroGitRepository repository, out VbaGitProject project,
             out global::FakeProject host, List<string> calls)
         {

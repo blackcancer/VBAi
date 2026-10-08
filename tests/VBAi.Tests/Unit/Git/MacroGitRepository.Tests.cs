@@ -14,6 +14,59 @@ namespace VBAi.Tests.Unit
     [DoNotParallelize]
     public sealed partial class MacroGitRepositoryTests
     {
+        /// <summary>Distinguishes missing references from process failures without repeating the read.</summary>
+        [TestMethod]
+        [DataRow(0, null, "fixture-object", false)]
+        [DataRow(0, "warning: fixture", "fixture-object", false)]
+        [DataRow(1, null, null, false)]
+        [DataRow(1, "", null, false)]
+        [DataRow(1, " \r\n", null, false)]
+        [DataRow(1, "warning: broken reference", null, true)]
+        [DataRow(2, null, null, true)]
+        [DataRow(128, "fatal: unable to read repository", null, true)]
+        [DataRow(-1, null, null, true)]
+        public void ResolveDoesNotConvertGitFailuresIntoMissingReferences(int exitCode, string error, string expected, bool fails)
+        {
+            int calls = 0;
+            var repository = new MacroGitRepository(Path.GetTempPath(), "main");
+            repository.CommandOverride = (arguments, input, useRepository, allowFailure) =>
+            {
+                calls++;
+                CollectionAssert.AreEqual(new[] { "rev-parse", "--verify", "--quiet", repository.Head }, arguments);
+                Assert.IsNull(input); Assert.IsTrue(useRepository); Assert.IsTrue(allowFailure);
+                return new MacroGitRepository.Result
+                {
+                    Bytes = Encoding.UTF8.GetBytes((expected ?? "") + "\n"), ExitCode = exitCode, Error = error
+                };
+            };
+            if (fails)
+            {
+                var failure = Assert.ThrowsException<InvalidOperationException>(() => repository.Resolve(repository.Head));
+                StringAssert.Contains(failure.Message, "Git rev-parse");
+                StringAssert.Contains(failure.Message, "(" + exitCode.ToString(System.Globalization.CultureInfo.InvariantCulture) + ")");
+                if (!string.IsNullOrWhiteSpace(error)) StringAssert.Contains(failure.Message, error.Trim());
+            }
+            else Assert.AreEqual(expected, repository.Resolve(repository.Head));
+            Assert.AreEqual(1, calls);
+        }
+
+        /// <summary>A real Git repository error must retain stderr and must not be reported as an absent HEAD.</summary>
+        [TestMethod]
+        public void ResolveRetainsNativeGitFailureOutsideARepository()
+        {
+            using (var fixture = new MacroGitOperationsTests.Fixture())
+            {
+                var invalid = new MacroGitRepository(fixture.Root, "main");
+                var failure = Assert.ThrowsException<InvalidOperationException>(() => invalid.Resolve(invalid.Head));
+                StringAssert.Contains(failure.Message, "Git rev-parse");
+                StringAssert.Contains(failure.Message, "(128)");
+                StringAssert.Contains(failure.Message, "fatal:");
+                string initial = fixture.Seed();
+                Assert.AreEqual(initial, fixture.Repository.Resolve(fixture.Repository.Head));
+                Assert.IsNull(fixture.Repository.Resolve("refs/heads/missing-fixture"));
+            }
+        }
+
         /// <summary>Vérifie les noms de branche, comptes, URL distantes et chemins de scope acceptés ou refusés.</summary>
         [TestMethod]
         public void BranchAccountRemoteAndScopeValidationMatrix()

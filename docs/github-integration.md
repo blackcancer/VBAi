@@ -299,3 +299,11 @@ Agent tools use the existing project binding and a current `ExpectedState`. They
 cannot substitute an arbitrary repository/cache/shell command. Review the editing
 policy and request remote publication explicitly. See [privacy](privacy.md) and
 [recorded validation](test-coverage.md) for boundaries and test scope.
+
+An unreadable Git reference is not an absent reference. Only Git's silent
+missing-revision result is treated as absence; repository/process errors retain
+their exit code and diagnostic. If reading a HEAD, baseline or recovery reference
+fails, the operation stops before mutation without substituting a new state or
+retrying the failed read. Resolve the reported repository problem before reviewing
+status again. This distinction does not establish the cause of earlier
+intermittent state-change failures.

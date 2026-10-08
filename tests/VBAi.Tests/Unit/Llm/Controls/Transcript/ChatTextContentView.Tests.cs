@@ -9,6 +9,84 @@ namespace VBAi.Tests.Unit
     [TestClass, TestCategory("Unit")]
     public sealed class ChatTextContentViewContractTests
     {
+        /// <summary>Checks append, rewrite, truncation, empty and unchanged snapshots with a retained selection.</summary>
+        [STATestMethod]
+        [DataRow("prefix tail", 1, 3)]
+        [DataRow("replacement", 1, 3)]
+        [DataRow("pr", 1, 1)]
+        [DataRow("", 0, 0)]
+        [DataRow(null, 0, 0)]
+        [DataRow("prefix", 1, 3)]
+        public void StreamSnapshotPreservesValidSelectionAndPublishesOnce(string snapshot, int start, int length)
+        {
+            using (var view = new ChatTextContentView())
+            {
+                view.Width = 400;
+                var handle = view.content.Handle;
+                view.ShowPlain("prefix");
+                view.content.Select(1, 3);
+                int changes = 0, initialHeight = view.content.Height;
+                view.content.TextChanged += (s, e) =>
+                {
+                    changes++;
+                    Assert.AreEqual(initialHeight, view.content.Height, "Height must settle after publication.");
+                };
+                view.UpdatePlainText(snapshot);
+                Assert.AreEqual(snapshot ?? "", view.content.Text);
+                Assert.AreEqual(start, view.content.SelectionStart);
+                Assert.AreEqual(length, view.content.SelectionLength);
+                Assert.AreEqual(snapshot == "prefix" ? 0 : 1, changes);
+                Assert.AreEqual(handle, view.content.Handle);
+            }
+        }
+
+        /// <summary>Proves that growing snapshots retain native prefix formatting instead of replacing the whole document.</summary>
+        [STATestMethod]
+        public void StreamAppendRetainsTheNativePrefixAndDisposalIsIgnored()
+        {
+            using (var control = new RichTextBox())
+            using (var font = new Font("Consolas", 11, FontStyle.Bold))
+            {
+                var handle = control.Handle;
+                control.Text = "été\nUnicode 😃";
+                control.Select(0, 3);
+                control.SelectionFont = font;
+                Assert.IsTrue(ChatTextContentView.UpdatePlainTextControl(control, "été\nUnicode 😃\n追加"));
+                Assert.AreEqual("été", control.SelectedText);
+                Assert.IsTrue(control.SelectionFont.Bold, "Appending must not replace the formatted prefix.");
+                Assert.IsFalse(ChatTextContentView.UpdatePlainTextControl(control, control.Text));
+                control.Dispose();
+                Assert.IsFalse(ChatTextContentView.UpdatePlainTextControl(control, "ignored"));
+            }
+        }
+
+        /// <summary>Checks final native text and layout in a nested activity hierarchy, including no-op snapshots.</summary>
+        [STATestMethod]
+        public void StreamedActivityTextSettlesItsNestedLayoutAndSkipsUnchangedSnapshots()
+        {
+            using (var group = new ChatActivityGroupView())
+            using (var step = new ChatActivityStepView())
+            {
+                group.section.body.Controls.Add(step);
+                group.section.Expanded = step.section.Expanded = true;
+                var handle = step.detail.content.Handle;
+                step.detail.ShowPlain("Seed");
+                int layouts = 0;
+                group.Layout += (s, e) => layouts++;
+                string text = string.Concat(System.Linq.Enumerable.Repeat("A growing streamed activity line.\n", 100));
+                step.detail.UpdatePlainText(text);
+                Assert.AreEqual(text, step.detail.content.Text);
+                Assert.AreEqual(1200, step.detail.content.Height);
+                Assert.IsTrue(layouts > 0, "The settled layout must be published to the outer group.");
+                int afterGrowth = layouts;
+                step.detail.UpdatePlainText(text);
+                Assert.AreEqual(afterGrowth, layouts, "An unchanged stream must not reflow the outer activity group.");
+                step.detail.UpdatePlainText("Short result");
+                Assert.IsTrue(step.detail.content.Height < 80);
+                Assert.IsFalse(group.IsDisposed);
+            }
+        }
+
         [STATestMethod]
         public void ConstructorCreatesNamedThemedControls() { using (var theme = new ThemeScope()) using (var view = new ChatTextContentView()) { Assert.AreEqual("ChatTextContentView", view.Name); Assert.IsTrue(view.Controls.Count > 0); Assert.AreEqual(UiTheme.Background, view.BackColor); Assert.AreEqual(UiTheme.Foreground, view.ForeColor); } }
         [STATestMethod]

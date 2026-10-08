@@ -458,16 +458,21 @@ namespace VBAi
             SetTranscriptText(live, text);
         }
 
-        /// <summary>Replaces a realized RichTextBox value while preserving its current selection range.</summary>
+        /// <summary>Publishes a realized plain-text snapshot without rewriting an unchanged prefix or resizing intermediate content.</summary>
         /// <param name="live">Live transcript control to update; disposed controls are ignored.</param>
         /// <param name="text">Complete replacement text; null becomes an empty string.</param>
         private static void SetTranscriptText(System.Windows.Forms.RichTextBox live, string text)
         {
-            text = text ?? "";
-            if (live.IsDisposed || live.Text == text) return;
-            int start = live.SelectionStart, length = live.SelectionLength;
-            live.Text = text;
-            live.Select(Math.Min(start, live.TextLength), Math.Min(length, Math.Max(0, live.TextLength - start)));
+            if (live.IsDisposed) return;
+            for (var parent = live.Parent; parent != null; parent = parent.Parent)
+            {
+                if (parent is ChatTextContentView view && ReferenceEquals(view.content, live))
+                {
+                    view.UpdatePlainText(text);
+                    return;
+                }
+            }
+            ChatTextContentView.UpdatePlainTextControl(live, text);
         }
 
         /// <summary>Publishes buffered fragments once per UI frame and before persistence or finalization.</summary>
