@@ -205,6 +205,10 @@ namespace VBAi
         /// <value>Valeur à lire ou à attribuer à la propriété.</value>
         public object Value { get; set; }
 
+        /// <summary>Stages all native Options edits before one OK; mutually exclusive with the single-option fields.</summary>
+        /// <value>Null for a legacy single edit; otherwise one to sixty-four unique native targets.</value>
+        public VbeOptionChange[] OptionChanges { get; set; }
+
         /// <summary>Chemin associé à la commande, au fichier ou au composant.</summary>
         /// <value>Chemin associé à la commande, au fichier ou au composant.</value>
         public string Path { get; set; }

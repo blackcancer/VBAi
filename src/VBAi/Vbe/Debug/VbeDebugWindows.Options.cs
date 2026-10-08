@@ -724,6 +724,7 @@ namespace VBAi
         /// <returns>Résultat de l’écriture et de la relecture du contrôle avant validation.</returns>
         internal static object SetVbeOption(Request request, IWritableOptionsProbe native)
         {
+            if (request?.OptionChanges != null) return SetVbeOptionBatch(request, native);
             if (request == null || string.IsNullOrWhiteSpace(request.Pane) || string.IsNullOrWhiteSpace(request.Property) || string.IsNullOrWhiteSpace(request.ExpectedOptionsVersion))
                 throw new ArgumentException("Pane, Property, Value and ExpectedOptionsVersion from read_vbe_options are required.");
             IntPtr dialog = IntPtr.Zero;

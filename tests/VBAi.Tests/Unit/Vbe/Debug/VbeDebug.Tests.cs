@@ -207,6 +207,36 @@ namespace VBAi.Tests.Unit
             StringAssert.Contains((string)result.VerificationLimit, "no breakpoint inventory");
         }
 
+        /// <summary>Navigation activates the requested pane once and refuses ignored activation before claiming a selection.</summary>
+        [DataTestMethod]
+        [DataRow(false, false)]
+        [DataRow(true, false)]
+        [DataRow(false, true)]
+        [DataRow(true, true)]
+        public void CodeNavigationTargetsTheExactInactivePaneAndRejectsIgnoredActivation(bool range, bool ignore)
+        {
+            var f = Create();
+            f.Vbe.ActiveCodePane = new FakePane();
+            f.Vbe.IgnoreActiveCodePaneAssignment = ignore;
+            var request = Location(f);
+            request.StartColumn = 1; request.EndColumn = 2;
+            request.EndLine = range ? 2 : 1;
+            Action navigate = () => { if (range) f.Service.SelectCodeRange(request); else f.Service.SelectCode(request); };
+            if (ignore)
+            {
+                Assert.ThrowsException<InvalidOperationException>(navigate);
+                Assert.AreEqual(1, f.Module.CodePane.EndColumn, "Refused activation must precede selection writes.");
+            }
+            else
+            {
+                navigate();
+                Assert.AreSame(f.Module.CodePane, f.Vbe.ActiveCodePane);
+                Assert.AreEqual(2, f.Module.CodePane.EndColumn);
+                Assert.AreEqual(request.EndLine, f.Module.CodePane.EndLine);
+            }
+            Assert.AreEqual(1, f.Module.CodePane.Window.FocusCount);
+        }
+
         [TestMethod]
         public void SelectCodeRejectsStaleHashAndExpressionBeforeChangingSelection()
         {
@@ -1252,7 +1282,12 @@ namespace VBAi.Tests.Unit
             {
                 Id = 186,
                 Caption = "Run Sub",
-                OnEnabledRead = () => Assert.AreSame(f.Module.CodePane, f.Vbe.ActiveCodePane)
+                OnEnabledRead = () =>
+                {
+                    Assert.AreSame(f.Module.CodePane, f.Vbe.ActiveCodePane);
+                    Assert.IsTrue(f.Module.CodePane.Window.FocusCount > 0,
+                        "Cold Run availability must be read after focusing the validated pane.");
+                }
             };
             f.Bar.Controls.Add(command);
             int assignmentsBefore = f.Vbe.ActiveCodePaneSetCount;

@@ -9,7 +9,7 @@ using System.Text.RegularExpressions;
 namespace VBAi.Tests.Integration
 {
     /// <summary>Test-local full Format matrix. Unknown native outcomes suspend all dispatch and cleanup.</summary>
-    internal sealed class ExcelFormatOptionsQualification
+    internal sealed partial class ExcelFormatOptionsQualification
     {
         internal static readonly string[] Scenarios = { "exact font", "size catalogue or honest refusal", "foreground", "background", "indicator",
             "nondefault category foreground", "margin indicator", "stale version refuses", "full options version restored" };
@@ -22,6 +22,7 @@ namespace VBAi.Tests.Integration
         private readonly List<Tuple<string, string, object, string>> ledger = new List<Tuple<string, string, object, string>>();
         private IDictionary<string, object> baseline;
         private readonly Action verifyExclusiveHost;
+        private readonly bool batchChanges;
         internal bool HostRetained { get; private set; }
 
         /// <summary>Compile the unchanged native guard through one known refusal, before attaching its exact IL breakpoint.</summary>
@@ -42,12 +43,15 @@ namespace VBAi.Tests.Integration
         internal ExcelFormatOptionsQualification(int processId, Func<object, IDictionary<string, object>> dispatch,
             Func<IDictionary<string, object>> observeClosure, Action preserve, Action cleanup, Action<string, object> evidence,
             bool verifyReadStability = false, bool marginOnly = false, bool historicalPalettePrefix = false,
-            Action verifyExclusiveHost = null, bool fontSizeOnly = false, bool historicalFullMatrix = false)
+            Action verifyExclusiveHost = null, bool fontSizeOnly = false, bool historicalFullMatrix = false, bool batchChanges = false)
         {
             this.processId = processId; this.dispatch = dispatch; this.observeClosure = observeClosure;
             this.preserve = preserve; this.cleanup = cleanup; this.evidence = evidence; this.verifyReadStability = verifyReadStability; this.marginOnly = marginOnly;
             this.historicalPalettePrefix = historicalPalettePrefix; this.verifyExclusiveHost = verifyExclusiveHost;
             this.fontSizeOnly = fontSizeOnly; this.historicalFullMatrix = historicalFullMatrix;
+            this.batchChanges = batchChanges;
+            if (batchChanges && (historicalPalettePrefix || marginOnly || fontSizeOnly || historicalFullMatrix))
+                throw new ArgumentException("Grouped Format qualification requires the complete current matrix.");
             if (historicalFullMatrix && (!historicalPalettePrefix || marginOnly || fontSizeOnly))
                 throw new ArgumentException("Historical full matrix requires historical mutation order and the complete scope.");
         }
@@ -113,6 +117,7 @@ namespace VBAi.Tests.Integration
                     "Hash equality must not hide a different recorded options snapshot.");
                 evidence("BaselineStabilityVerified", new { Before = baseline, After = stable, PreferenceWrites = 0 });
             }
+            if (batchChanges) { MatrixBatch(); return; }
             var format = Format(baseline); string tab = (string)format["Tab"];
             if (marginOnly) { Margin(tab); return; }
             var font = Find(format, "Font", "Police :");
@@ -188,6 +193,7 @@ namespace VBAi.Tests.Integration
 
         private void Restore()
         {
+            if (batchChanges) { RestoreBatch(); return; }
             // Only positively committed, closed replies entered this ledger. Stop on the first unsafe restoration.
             foreach (var entry in ledger.AsEnumerable().Reverse())
             {

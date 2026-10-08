@@ -490,8 +490,7 @@ namespace VBAi
             {
                 PublishStreamText(entry, entry.Activity?.DisplayDetail() ?? "");
                 // Refresh public-summary headings once per frame without recycling realized controls.
-                if (entry.Activity?.Kind == "reasoning" && activityOwners.TryGetValue(entry, out var owner) && entryViews.ContainsKey(owner))
-                    RefreshVisibleActivity(entry);
+                if (entry.Activity?.Kind == "reasoning") RefreshStreamedActivityHeading(entry);
             }
             pendingActivityText.Clear();
             FollowLatest();

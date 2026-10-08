@@ -5,6 +5,7 @@ using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Globalization;
 using System.Linq;
+using System.IO;
 using System.Text;
 using System.Windows;
 using VBAi.Tests.Infrastructure;
@@ -136,11 +137,15 @@ namespace VBAi.Tests.Unit
 
         /// <summary>Measures a live activity among retained completed siblings without rebuilding their controls.</summary>
         [STATestMethod, TestCategory("Performance")]
-        [DataRow(20, false)]
-        [DataRow(20, true)]
-        [DataRow(100, false)]
-        [DataRow(100, true)]
-        public void ActivityWorkloadKeepsSiblingControlsAndOnePublicationPerFrame(int siblings, bool expanded)
+        [DataRow(20, false, 340)]
+        [DataRow(20, true, 340)]
+        [DataRow(100, false, 340)]
+        [DataRow(100, true, 340)]
+        [DataRow(20, false, 780)]
+        [DataRow(20, true, 780)]
+        [DataRow(100, false, 780)]
+        [DataRow(100, true, 780)]
+        public void ActivityWorkloadKeepsSiblingControlsAndOnePublicationPerFrame(int siblings, bool expanded, int width)
         {
             using (var window = Surfaces())
             {
@@ -154,6 +159,10 @@ namespace VBAi.Tests.Unit
                 {
                     var group = (ChatActivityGroupView)host.View;
                     group.section.Expanded = expanded;
+                    host.Measure(new Size(width, double.PositiveInfinity));
+                    host.Arrange(new Rect(0, 0, width, host.DesiredSize.Height));
+                    host.UpdateLayout();
+                    System.Windows.Forms.Application.DoEvents();
                     var controls = group.section.body.Controls.OfType<ChatActivityStepView>().ToArray();
                     Assert.AreEqual(siblings + 1, controls.Length);
                     var text = Get<Dictionary<string, System.Windows.Forms.RichTextBox>>(window, "liveTexts")["live"];
@@ -178,7 +187,85 @@ namespace VBAi.Tests.Unit
                         Assert.AreSame(controls[i], group.section.body.Controls[i]);
                         Assert.IsFalse(controls[i].IsDisposed);
                     }
-                    ReportTranscriptTimings("activity-" + (expanded ? "expanded" : "collapsed"), siblings, 0, times.ToArray());
+                    ReportTranscriptTimings("activity-" + (expanded ? "expanded" : "collapsed"), siblings, width, times.ToArray());
+                }
+            }
+        }
+
+        /// <summary>Measures complete SQLite save/reopen of large histories without touching personal session storage.</summary>
+        [STATestMethod, TestCategory("Performance")]
+        [DataRow(80)]
+        [DataRow(500)]
+        [DataRow(2000)]
+        public void LargeHistorySaveAndRestoreRetainsEveryUnicodeEntry(int entries)
+        {
+            string root = Path.Combine(Path.GetTempPath(), "VBAi-VSTest", Guid.NewGuid().ToString("N"));
+            string path = Path.Combine(root, "performance.sqlite");
+            var state = new ChatSessionState { Scope = "Synthetic performance scope", Title = "History performance" };
+            for (int i = 0; i < entries; i++)
+                state.Entries.Add(new ChatEntry { Speaker = i % 2 == 0 ? "Utilisateur" : "Assistant",
+                    Text = "Entry " + i + " — Été 中文 " + new string('x', 500), TurnId = "turn-" + i });
+            try
+            {
+                var timer = Stopwatch.StartNew();
+                using (var store = new ChatSessionStore(path)) store.Save(state);
+                double saveMs = timer.Elapsed.TotalMilliseconds;
+                timer.Restart();
+                using (var store = new ChatSessionStore(path))
+                {
+                    var restored = store.List(state.Scope).Single();
+                    double restoreMs = timer.Elapsed.TotalMilliseconds;
+                    Assert.AreEqual(entries, restored.Entries.Count);
+                    for (int i = 0; i < entries; i++)
+                    {
+                        Assert.AreEqual(state.Entries[i].Text, restored.Entries[i].Text);
+                        Assert.AreEqual(state.Entries[i].TurnId, restored.Entries[i].TurnId);
+                    }
+                    Console.WriteLine("TRANSCRIPT persisted_history={0} save_ms={1:F3} reopen_ms={2:F3}", entries, saveMs, restoreMs);
+                }
+            }
+            finally { if (Directory.Exists(root)) Directory.Delete(root, true); }
+        }
+
+        /// <summary>Checks that hosted activity layout reaches a stable size after simulated scale and width changes.</summary>
+        [STATestMethod, TestCategory("Performance")]
+        [DataRow(340, 1.0f)]
+        [DataRow(340, 1.5f)]
+        [DataRow(340, 2.0f)]
+        [DataRow(780, 1.0f)]
+        [DataRow(780, 1.5f)]
+        [DataRow(780, 2.0f)]
+        public void HostedTranscriptLayoutSettlesWithoutIdleSizeOscillation(int width, float scale)
+        {
+            using (var window = Surfaces())
+            {
+                Call(window, "ReceiveAgentActivity", new CodexAgentActivity { Id = "stable", Kind = "reasoning",
+                    Detail = "## Public summary\nA completed synthetic activity.", Status = "completed" });
+                var entry = Get<List<ChatEntry>>(window, "transcriptEntries")[0];
+                var item = new TranscriptItem { DataContext = entry };
+                Call(window, "RealizeEntry", item);
+                using (var host = (ChatDesignerHost)item.Content)
+                {
+                    var group = (ChatActivityGroupView)host.View;
+                    group.section.Expanded = true;
+                    group.Scale(new System.Drawing.SizeF(scale, scale));
+                    for (int i = 0; i < 5; i++)
+                    {
+                        host.Measure(new Size(width, double.PositiveInfinity));
+                        host.Arrange(new Rect(new Point(), host.DesiredSize));
+                        host.UpdateLayout(); System.Windows.Forms.Application.DoEvents();
+                    }
+                    var settled = group.Size;
+                    int changes = 0;
+                    group.SizeChanged += (s, e) => changes++;
+                    var timer = Stopwatch.StartNew();
+                    for (int i = 0; i < 20; i++)
+                    {
+                        host.UpdateLayout(); System.Windows.Forms.Application.DoEvents();
+                    }
+                    Assert.AreEqual(settled, group.Size);
+                    Assert.AreEqual(0, changes, "Idle layout must not keep resizing the hosted transcript.");
+                    Console.WriteLine("TRANSCRIPT idle_layout width={0} simulated_scale={1} passes=20 elapsed_ms={2:F3}", width, scale, timer.Elapsed.TotalMilliseconds);
                 }
             }
         }

@@ -7,6 +7,29 @@ namespace VBAi.Tests.Unit
     [TestClass, TestCategory("Unit")]
     public sealed class ChatDesignerViewContractTests
     {
+        /// <summary>One width transition must settle all retained rows without a complete sibling layout after every constraint change.</summary>
+        [STATestMethod]
+        public void LargeRetainedRowResizePublishesABoundedNumberOfParentLayouts()
+        {
+            using (var view = new ChatDesignerView())
+            using (var flow = new FlowLayoutPanel { FlowDirection = FlowDirection.TopDown, WrapContents = false, Width = 600, Height = 300 })
+            {
+                for (int i = 0; i < 100; i++)
+                    flow.Controls.Add(new Panel { Width = 50, MinimumSize = new Size(0, 17), Margin = new Padding(3) });
+                view.Controls.Add(flow);
+                int layouts = 0;
+                flow.Layout += (sender, args) => layouts++;
+                flow.Width = 340;
+                foreach (Control row in flow.Controls)
+                {
+                    Assert.AreEqual(334, row.Width);
+                    Assert.AreEqual(17, row.MinimumSize.Height);
+                    Assert.AreEqual(334, row.MaximumSize.Width);
+                }
+                Assert.IsTrue(layouts <= 5, "A width transition must not reflow the parent once for each retained row: " + layouts);
+            }
+        }
+
         [STATestMethod]
         public void VerticalRowsTrackWidthOnceAndPreserveMinimumHeight()
         {

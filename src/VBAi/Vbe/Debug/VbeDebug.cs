@@ -489,6 +489,10 @@ namespace VBAi
                 throw new InvalidOperationException("The selected source text does not match Expression.");
             dynamic pane = module.CodePane;
             pane.Show();
+            vbe.ActiveCodePane = pane;
+            pane.Window.SetFocus();
+            if (!SameComObject(pane, (object)vbe.ActiveCodePane))
+                throw new InvalidOperationException("The requested code pane is not active in the VBE.");
             pane.SetSelection(request.StartLine, startColumn, request.StartLine, endColumn);
             int actualStartLine = 0, actualStartColumn = 0, actualEndLine = 0, actualEndColumn = 0;
             pane.GetSelection(ref actualStartLine, ref actualStartColumn, ref actualEndLine, ref actualEndColumn);
@@ -598,6 +602,10 @@ namespace VBAi
                 throw new ArgumentOutOfRangeException("The selected columns are outside their code lines.");
             dynamic pane = module.CodePane;
             pane.Show();
+            vbe.ActiveCodePane = pane;
+            pane.Window.SetFocus();
+            if (!SameComObject(pane, (object)vbe.ActiveCodePane))
+                throw new InvalidOperationException("The requested code pane is not active in the VBE.");
             pane.SetSelection(request.StartLine, request.StartColumn, request.EndLine, request.EndColumn);
             int actualStartLine = 0, actualStartColumn = 0, actualEndLine = 0, actualEndColumn = 0;
             pane.GetSelection(ref actualStartLine, ref actualStartColumn, ref actualEndLine, ref actualEndColumn);
@@ -713,6 +721,11 @@ namespace VBAi
             pane.Show();
             vbe.ActiveCodePane = pane;
             pane.SetSelection(body, 1, body, 1);
+            // Native Run availability follows keyboard focus, not just the VBIDE
+            // pane property. Focus the validated target before the first listing.
+            pane.Window.SetFocus();
+            if (!SameComObject(pane, (object)vbe.ActiveCodePane))
+                throw new InvalidOperationException("The requested code pane is not active in the VBE.");
             var command = EnumerateCommands().FirstOrDefault(entry => entry.Id == 186 &&
                 entry.Enabled && IsAllowed("run", entry.Caption, 2)) ?? throw new InvalidOperationException("The native Run Sub command is absent or disabled.");
             request.StartLine = body;

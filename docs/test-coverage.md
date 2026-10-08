@@ -89,6 +89,75 @@ native C++; its percentages are not current release statistics.
 
 ## Excel audit correction candidate
 
+### Audit continuation on 9 October 2026
+
+The continuation is based on `5eb46e9c0a5542a64b946825cc9133a4ae19e7bb`,
+with the first correction commit `6c359286` and additional working-tree fixes.
+The first completion candidate, product MVID
+`939d7fe6-64f5-483a-8808-191ac3fd3f7b`, passed 5,616 Unit tests with no failures
+and one live-provider opt-in skip. Its original native bank passed two cases
+and failed five; two Options cases were not selected because their declared
+namespace differed from the filter. The original failures remain retained.
+
+The second completion candidate has product MVID
+`cf4c973b-041e-455d-a436-deaf1dcd2ea2` and SHA-256
+`018FABB93479CFB133A41AE1EA0A30DA5B0EC37AAA651BA44CC1AF2019582F42`.
+Its affected managed gate passed 596 tests without failures or skips. Its real
+desktop native bank executed nine cases: seven passed and two failed. Passed
+cases cover cold RunSub targeting, native BeforeSave cancellation and acceptance,
+module/class/form save and fresh-process reopen, embedded Monaco live scope after
+another project closes, read-only Options inspection and complete Format
+round-trip/restoration. Cancellation preserved the exact disk baseline;
+acceptance counted one event and persisted the requested changes. The root-reviewed
+Monaco capture contains the actual retained tabs, selected live module and native
+synchronization status. Owned Excel and Word fixtures shut down normally; scoped
+COM registration and unchanged test-owned preferences were restored and verified.
+
+Both Ollama assistant cases failed before visible streaming while busy; Stop,
+next Send and the subsequent native read were therefore not accepted. A later
+local endpoint probe found no listener on port 11434. This observation does not
+establish the sole cause of the earlier failures or compare model quality.
+Evidence is retained under
+`artifacts/excel-audit-followup-20261008/completion-native2`, including
+`native-completion.trx`, original-handle lifecycle receipts, registration readback
+and `root-monaco-review.json`.
+
+Expanded detached activity groups remain a measured performance problem on the
+second candidate. With 100 completed siblings and 32 streamed frames, the
+340-pixel viewport recorded 10.599 seconds total and an 884-millisecond 95th
+percentile. These are detached WPF/WinForms timings, not real-host frame rates.
+The subsequent constrained-size cache and grouped Format batch were built as
+product MVID `bd0395fb-8e8c-4c1f-862a-2b5f6ffede91`, SHA-256
+`672AD1968AB528341478BF1F842F990291E0EEB1928903367C644ACD89F96F64`.
+Their affected gate passed 864 tests with no failures and one unactivated live
+provider skip. It includes complete batch/restoration fault matrices, legacy
+message compatibility, nested tool validation, edit-policy guards and cache
+invalidation against independently constructed controls. On the same detached
+100-sibling, 32-frame workload, the 340-pixel viewport recorded 197.906 ms total
+and a 21.950 ms 95th percentile; the 780-pixel viewport recorded 99.522 ms total
+and a 14.874 ms 95th percentile. These observations retain content, selection
+and control-identity checks but are not native rendering acceptance.
+The intermediate failed gates and abnormal compiler exit remain retained;
+the successful gate is `completion-managed5/managed5.trx` under the continuation
+artifact root. The prepared real-desktop bank then passed all three selected
+native workflows with no failures or skips: Excel assistant, Word assistant and
+complete grouped Format. The Format case staged 33 edits before one OK, verified
+them independently, rejected the stale revision, restored the confirmed edits
+with one OK and recovered the exact complete baseline. Both assistant cases
+observed visible streaming while busy, one Stop, cancellation acknowledgement,
+successful next Send and the hidden marker from the disposable module. Sources
+and references remained unchanged. All owned hosts and the original worker
+exited normally; registration and test-owned settings were restored. Frozen
+inputs remained unchanged. Evidence is retained in `completion-native3`, including
+`root-terminal-review.json` and the original native TRX. This is the declared
+workflow scope, not a complete Office qualification or native frame-time claim.
+Physical DPI/docking, current SOLIDWORKS behavior and signature application remain
+outside this acceptance. Native signature verification is blocked by the missing
+Microsoft VBA SIP provider. No current complete line or branch coverage was
+measured.
+
+### Earlier frozen audit candidates
+
 The tested working-tree snapshot was based on
 `a67873a75ccf678eedd3072aeadd1a859dd1841f`, on `codex/excel-audit-fixes`.
 Its frozen build19 product has MVID `99a4a849-b2bb-4555-b92b-5d9aeccd2588`

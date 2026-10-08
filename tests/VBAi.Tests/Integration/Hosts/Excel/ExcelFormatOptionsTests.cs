@@ -89,7 +89,8 @@ namespace VBAi.Tests.Integration.Hosts.Excel
                 () => { trace?.Dispose(); host.Dispose(); AttachEvidence(host, startUtc, "ShutdownVerified", host.ShutdownDiagnostics); },
                 (phase, data) => AttachEvidence(host, startUtc, phase, data), verifyReadStability: !historicalPalettePrefix, marginOnly: marginOnly,
                 historicalPalettePrefix: historicalPalettePrefix, verifyExclusiveHost: () => VerifyExclusiveHost(host, startUtc), fontSizeOnly: fontSizeOnly,
-                historicalFullMatrix: historicalFullMatrix);
+                historicalFullMatrix: historicalFullMatrix,
+                batchChanges: !historicalPalettePrefix && !marginOnly && !fontSizeOnly && !historicalFullMatrix);
             Exception primary = null, detach = null;
             bool runStarted = false;
             try

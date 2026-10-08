@@ -1020,6 +1020,8 @@ namespace VBAi.Tests.Unit
                 Success(invoke(Json.Serialize(values)), name);
                 foreach (string field in fields.Keys)
                 {
+                    // The mutually exclusive nested batch has its own complete contract matrix.
+                    if (field == "OptionChanges") continue;
                     object original = values[field];
                     values[field] = null;
                     Failed(invoke(Json.Serialize(values)), field);

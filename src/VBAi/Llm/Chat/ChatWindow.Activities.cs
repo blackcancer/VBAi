@@ -155,6 +155,27 @@ namespace VBAi
             return new ChatDesignerHost(card) { Margin = new Thickness(0, 4, 0, 14) };
         }
 
+        /// <summary>Updates streamed summary captions without laying out every completed sibling again.</summary>
+        /// <param name="entry">Reasoning entry whose detail was already published for this frame.</param>
+        private void RefreshStreamedActivityHeading(ChatEntry entry)
+        {
+            if (!activityOwners.TryGetValue(entry, out var owner) || !entryViews.ContainsKey(owner)) return;
+            if (entryViews[owner] is ChatDesignerHost host && host.View is ChatActivityGroupView group &&
+                !group.IsDisposed && group.Tag is ActivityGroupViewState state &&
+                activityGroups.TryGetValue(owner, out var entries) && state.Rows.TryGetValue(entry, out var row) &&
+                row is ChatActivityStepView step && !step.IsDisposed)
+            {
+                string title = entry.Activity.DisplayTitle();
+                if (step.section.Title != title) step.section.Title = title;
+                bool updating = state.Updating;
+                state.Updating = true;
+                try { UpdateActivityGroupHeading(group, owner, entries); }
+                finally { state.Updating = updating; }
+                return;
+            }
+            RefreshVisibleActivity(entry);
+        }
+
         /// <summary>Updates a realized group's rows in place when their types and controls remain valid.</summary>
         /// <param name="card">Visible group card whose realized rows may be refreshed.</param>
         /// <param name="owner">Stable first entry that owns the group and its expansion state.</param>
@@ -196,23 +217,7 @@ namespace VBAi
                     if (!string.IsNullOrEmpty(entry.StreamId))
                         liveTexts[entry.StreamId] = row is ChatActivityStepView activity ? activity.detail.content : ((ChatTextContentView)row).content;
                 }
-                var latest = entries.LastOrDefault(entry => entry.Activity?.Status == "inProgress") ?? entries.Last();
-                string groupKind = UiText.Get(entries.All(e => e.Speaker == "Réflexion") ? "Reasoning" : "Agent activity");
-                string caption = latest.Activity == null || (string.IsNullOrWhiteSpace(latest.Activity.Title) && latest.Activity.Kind != "reasoning") ? null : latest.Activity.DisplayTitle();
-                string preview = string.IsNullOrWhiteSpace(caption) || caption == groupKind ? "" : " · " + CodexAgentActivity.Limit(caption);
-                if (preview.Length > 90) preview = preview.Substring(0, 87) + "…";
-                // A later successful sibling must not conceal an earlier failure when the group is collapsed.
-                string terminal = entries.Any(e => e.Activity?.Status == "failed") ? "Failed" :
-                    entries.Any(e => e.Activity?.Status == "declined") ? "Declined" :
-                    entries.Any(e => e.Activity?.Status == "interrupted") ? "Interrupted" :
-                    entries.Any(e => e.Activity?.Status == "cancelled") ? "Cancelled" : null;
-                // The shared disclosure button ellipsizes the end of its caption.
-                // Keep the terminal outcome ahead of the count and long action target.
-                string title = (terminal == null ? "" : (terminal == "Failed" ? "✗ " : "") + UiText.Get(terminal) + " · ") +
-                    groupKind + " · " + entries.Count + preview;
-                if (card.section.Title != title) card.section.Title = title;
-                bool running = entries.Any(e => e.Activity?.Status == "inProgress" || (busy && e.Activity == null && e.StreamId != null && !completedStreams.Contains(e.StreamId)));
-                card.section.Expanded = expandedActivityGroups.Contains(owner) || running && !collapsedActivityGroups.Contains(owner);
+                UpdateActivityGroupHeading(card, owner, entries);
             }
             finally
             {
@@ -221,6 +226,31 @@ namespace VBAi
                 state.Updating = false;
             }
             return true;
+        }
+
+        /// <summary>Refreshes the group caption and disclosure state without touching its existing rows.</summary>
+        /// <param name="card">Realized group with retained child controls.</param>
+        /// <param name="owner">Stable transcript owner used for explicit expansion choices.</param>
+        /// <param name="entries">Adjacent activities used for progress and terminal status.</param>
+        private void UpdateActivityGroupHeading(ChatActivityGroupView card, ChatEntry owner, List<ChatEntry> entries)
+        {
+            var latest = entries.LastOrDefault(entry => entry.Activity?.Status == "inProgress") ?? entries.Last();
+            string groupKind = UiText.Get(entries.All(e => e.Speaker == "Réflexion") ? "Reasoning" : "Agent activity");
+            string caption = latest.Activity == null || (string.IsNullOrWhiteSpace(latest.Activity.Title) && latest.Activity.Kind != "reasoning") ? null : latest.Activity.DisplayTitle();
+            string preview = string.IsNullOrWhiteSpace(caption) || caption == groupKind ? "" : " · " + CodexAgentActivity.Limit(caption);
+            if (preview.Length > 90) preview = preview.Substring(0, 87) + "…";
+            // A later successful sibling must not conceal an earlier failure when the group is collapsed.
+            string terminal = entries.Any(e => e.Activity?.Status == "failed") ? "Failed" :
+                entries.Any(e => e.Activity?.Status == "declined") ? "Declined" :
+                entries.Any(e => e.Activity?.Status == "interrupted") ? "Interrupted" :
+                entries.Any(e => e.Activity?.Status == "cancelled") ? "Cancelled" : null;
+            // The shared disclosure button ellipsizes the end of its caption.
+            // Keep the terminal outcome ahead of the count and long action target.
+            string title = (terminal == null ? "" : (terminal == "Failed" ? "✗ " : "") + UiText.Get(terminal) + " · ") +
+                groupKind + " · " + entries.Count + preview;
+            if (card.section.Title != title) card.section.Title = title;
+            bool running = entries.Any(e => e.Activity?.Status == "inProgress" || (busy && e.Activity == null && e.StreamId != null && !completedStreams.Contains(e.StreamId)));
+            card.section.Expanded = expandedActivityGroups.Contains(owner) || running && !collapsedActivityGroups.Contains(owner);
         }
 
         /// <summary>Dessine une étape compacte avec résultat, durée native et détail dépliable.</summary>

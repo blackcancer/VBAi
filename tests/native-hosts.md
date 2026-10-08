@@ -106,3 +106,32 @@ Signature trials use only the exact disposable certificate/key and workbook,
 record selected certificate/dialog ownership and signed-file readback, then
 remove only owned test material after terminal cleanup. Certificate dialogs and
 trust prerequisites can block acceptance; preparation is not a signing pass.
+
+### Excel audit completion
+
+`ExcelAuditCompletionTests` requires both the basic Excel opt-in and
+`VBAi_RUN_EXCEL_AUDIT_COMPLETION=1`. Its prepared bank runs a newly generated
+procedure once from an inactive target pane, then checks its cell marker and
+unchanged source. Separate workbooks contain a generated `Workbook_BeforeSave`
+handler that counts and accepts or cancels the single product Save. Cancellation
+must preserve the exact disk baseline; acceptance must persist the code and
+marker through a fresh, read-only process. Reopening disables macros and events.
+These scenarios execute synthetic fixture VBA; they never execute a supplied
+user macro or change host trust settings.
+
+Combine the selected persistence, options, signature and embedded Monaco cases
+into the prepared bank before dispatch. The Monaco receipt records elapsed
+bridge/native command time as an observation, not a renderer frame-time threshold.
+A signature case additionally requires its owned certificate manifest and
+`VBAi_RUN_EXCEL_SIGNATURE_TESTS=1`. An untrusted synthetic certificate tests
+signature persistence without granting it trust or signing the installer.
+
+The current complete Format matrix prepares font, size, every editable palette
+category and the margin indicator together. `set_vbe_option` accepts a bounded
+`OptionChanges` array with one `ExpectedOptionsVersion`; it validates the complete
+batch before preference writes and requests OK once after final readback. A
+separate complete inspection verifies the committed values. Restoration uses
+one guarded batch and then checks the entire original revision. Read-only
+inspections and the stale-revision refusal still open Options independently;
+they do not apply a preference per window. Historical partial diagnostic
+sequences remain explicit options and cannot be combined with grouped mode.

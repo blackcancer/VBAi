@@ -52,11 +52,22 @@ Unchanged snapshots perform no native write or layout. For changed snapshots,
 native text measurement and nested AutoSize layouts settle after publication;
 inner layouts resume before the outer message/activity card. Keep these guards
 when modifying the transcript to avoid repeated reflow of unrelated activity rows.
+A streamed reasoning fragment updates its existing detail and captions directly;
+completed sibling rows are refreshed only when activity metadata changes. User
+disclosure choices and terminal failure captions must survive this path.
+Completed activity steps keep a bounded cache of constrained preferred sizes.
+Changes to descendant text, fonts, visibility, geometry or membership invalidate
+it, including changes made while layout is suspended. Keep these invalidations
+when adding content to a step; a cached measurement must never freeze new text
+or preserve dimensions after a disclosure or viewport change.
 
 The transcript workload scenarios exercise both narrow and wide controls,
 growing multiline responses, paged histories and expanded/collapsed activity
 groups. Their TRX output records median, p95 and maximum update costs, alongside
-selection, content and control-identity assertions. Timings are observations,
+selection, content and control-identity assertions. Additional workloads save and
+reopen the actual SQLite history and check that hosted controls settle without
+idle size changes at several simulated scale factors. Simulated scaling does not
+qualify physical monitor transitions or native VBE docking. Timings are observations,
 not machine-independent pass thresholds. These tests use actual RichEdit controls
 outside Office; they do not measure provider latency or qualify native VBE hosting.
 Run the affected source mirrors together with the workload scenarios, then select

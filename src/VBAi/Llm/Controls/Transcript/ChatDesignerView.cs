@@ -40,16 +40,28 @@ namespace VBAi
         private static void ResizeRows(FlowLayoutPanel flow)
         {
             if (flow.ClientSize.Width <= 0) return;
-            foreach (Control child in flow.Controls)
+            // Publish one settled row layout after all width constraints change.
+            // Intermediate minimum/maximum sizes otherwise reflow every sibling.
+            flow.SuspendLayout();
+            try
             {
-                int width = Math.Max(20, flow.ClientSize.Width - flow.Padding.Horizontal - child.Margin.Horizontal);
-                if (child.Width == width) continue;
-                int minimumHeight = child.MinimumSize.Height;
-                child.MinimumSize = System.Drawing.Size.Empty;
-                child.MaximumSize = new System.Drawing.Size(width, 0);
-                child.MinimumSize = new System.Drawing.Size(width, minimumHeight);
-                child.Width = width;
+                foreach (Control child in flow.Controls)
+                {
+                    int width = Math.Max(20, flow.ClientSize.Width - flow.Padding.Horizontal - child.Margin.Horizontal);
+                    if (child.Width == width) continue;
+                    int minimumHeight = child.MinimumSize.Height;
+                    child.SuspendLayout();
+                    try
+                    {
+                        child.MinimumSize = System.Drawing.Size.Empty;
+                        child.MaximumSize = new System.Drawing.Size(width, 0);
+                        child.MinimumSize = new System.Drawing.Size(width, minimumHeight);
+                        child.Width = width;
+                    }
+                    finally { child.ResumeLayout(true); }
+                }
             }
+            finally { flow.ResumeLayout(true); }
         }
     }
 }

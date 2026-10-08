@@ -44,6 +44,7 @@ namespace VBAi.Tests.Integration
         private AutomationElement root;
         private IntPtr transcriptPanel;
         private readonly Dictionary<string, AutomationElement> fixedControls = new Dictionary<string, AutomationElement>();
+        private readonly Dictionary<string, IntPtr> fixedHandles = new Dictionary<string, IntPtr>();
         private readonly HashSet<IntPtr> recordedAncestors = new HashSet<IntPtr>();
         internal bool SentUnsettled { get; private set; }
         internal bool StopEmitted { get; private set; }
@@ -309,24 +310,44 @@ namespace VBAi.Tests.Integration
             OllamaOfficeDesktop.RequireWindow(Environment.GetEnvironmentVariable("VBAi_TEST_DESKTOP_NAME"), (uint)pid, true, chat);
         }
 
+        /// <summary>Requires the original native control, not a replacement peer with the same automation ID.</summary>
+        internal static bool FixedControlIdentityMatches(long originalHandle, long currentHandle, string id,
+            string observedId, int expectedPid, uint expectedThread, int uiPid, int nativePid,
+            uint nativeThread, bool child, bool visible)
+            => originalHandle != 0 && originalHandle == currentHandle && id == observedId && expectedPid > 0 &&
+                expectedThread != 0 && uiPid == expectedPid && nativePid == expectedPid &&
+                nativeThread == expectedThread && child && visible;
+
         internal AutomationElement Leaf(string id)
         {
             Guard();
             AutomationElement cached;
-            if (fixedControls.TryGetValue(id, out cached))
+            bool bound = fixedControls.TryGetValue(id, out cached);
+            if (!bound)
             {
-                var handle = new IntPtr(cached.Current.NativeWindowHandle);
-                uint process; uint thread = GetWindowThreadProcessId(handle, out process);
-                if (cached.Current.AutomationId != id || cached.Current.ProcessId != pid || process != pid ||
-                    thread != ownerThread || !IsChild(chat, handle) || !IsWindowVisible(handle))
-                    throw new InvalidOperationException("Fixed assistant control ownership changed: " + id);
-                return cached;
+                var found = root.FindAll(TreeScope.Descendants, new PropertyCondition(AutomationElement.AutomationIdProperty, id));
+                if (found.Count != 1) throw new InvalidOperationException("Expected one owned assistant control: " + id);
+                cached = found[0];
             }
-            var found = root.FindAll(TreeScope.Descendants, new PropertyCondition(AutomationElement.AutomationIdProperty, id));
-            if (found.Count != 1 || found[0].Current.ProcessId != pid)
-                throw new InvalidOperationException("Expected one owned assistant control: " + id);
-            fixedControls.Add(id, found[0]);
-            return found[0];
+            var current = cached.Current;
+            var handle = new IntPtr(current.NativeWindowHandle);
+            IntPtr original = bound ? fixedHandles[id] : handle;
+            string automationId = current.AutomationId;
+            int uiPid = current.ProcessId;
+            uint process; uint thread = GetWindowThreadProcessId(handle, out process);
+            bool child = IsChild(chat, handle), visible = IsWindowVisible(handle);
+            if (!FixedControlIdentityMatches(original.ToInt64(), handle.ToInt64(), id, automationId,
+                pid, ownerThread, uiPid, (int)process, thread, child, visible))
+            {
+                record(new { Phase = "FixedControlIdentityRefused", Id = id, OriginalHandle = original.ToInt64(),
+                    ObservedHandle = handle.ToInt64(), AutomationIdMatches = automationId == id,
+                    ExpectedPid = pid, UiPid = uiPid, NativePid = process, ExpectedThread = ownerThread,
+                    NativeThread = thread, OriginalParentMatches = child, NativeVisible = visible,
+                    NativeWindowExists = IsWindow(handle), SentUnsettled, Rebound = false, ActionEmitted = false });
+                throw new InvalidOperationException("Fixed assistant control ownership changed: " + id);
+            }
+            if (!bound) { fixedControls.Add(id, cached); fixedHandles.Add(id, handle); }
+            return cached;
         }
 
         internal void BindTranscript()
@@ -482,6 +503,7 @@ namespace VBAi.Tests.Integration
         {
             RequireReferenceRelease(observerThread, Thread.CurrentThread.ManagedThreadId, SentUnsettled);
             fixedControls.Clear();
+            fixedHandles.Clear();
             root = null;
             record(new
             {

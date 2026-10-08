@@ -59,8 +59,11 @@ namespace VBAi.Tests.Integration
             Action<string, object> phase = (name, value) => { records.Add(new { Phase = name, Utc = DateTime.UtcNow.ToString("O"), Data = value }); persist(); };
             Func<string, object, IDictionary<string, object>> send = (command, request) =>
             {
+                var elapsed = Stopwatch.StartNew();
                 var response = containment.Send(command, request, records.Add, persist,
                     () => VbeBridgeClient.Read("VBAi." + host.ProcessId, request, 20000), host.PreserveMonacoNativeOutcome);
+                phase("NativeCommandLatency", new { Command = command, ElapsedMilliseconds = elapsed.Elapsed.TotalMilliseconds,
+                    IncludesBridgeAndNativeDispatch = true, IsHardPerformanceThreshold = false });
                 Assert.AreEqual(true, response["Ok"], json.Serialize(response));
                 return response;
             };

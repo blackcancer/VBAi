@@ -177,6 +177,7 @@ namespace VBAi
                     anyOf = new object[] {
                     new { type = "string" }, new { type = "number" }, new { type = "boolean" } }
                 } :
+                    field == "OptionChanges" ? VbeOptionChangesSchema() :
                     field == "Arguments" && name == "run_procedure_values" ? ProcedureValuesArgumentSchema() :
                     field == "Arguments" ? (object)new { type = "array", maxItems = 30, items = new { anyOf = new object[] { new { type = "string" }, new { type = "number" }, new { type = "boolean" }, new { type = "null" } } } } :
                     field == "PathSegments" ? (object)new { type = "array", items = new { type = "string" }, minItems = 1, maxItems = 16 } :
@@ -240,7 +241,7 @@ namespace VBAi
             Definition("read_debug_options", "Read the VBE-wide error trapping setting from Tools > Options > General through the native dialog, then close with Cancel. No preference is changed. Returns the exact selected radio label and available choices; no shortcuts or coordinates.",
                 new string[0]),
             Definition("certificate_trust", "Inspect the exact CertificateThumbprint in CurrentUser/My using Windows code-signing chain and Authenticode policy, cached URLs and cached revocation only. No downloads, private-key access or trust-store changes. Missing cached revocation produces an indeterminate result, not trust. This does not verify any VBA signature, digest, signer binding or timestamp.", new[] { "CertificateThumbprint" }, "CertificateThumbprint"),
-            Definition("set_vbe_option", "Set one recognized native Editor or General preference from read_vbe_options using its exact Pane tab, Property control label and ExpectedOptionsVersion. Boolean Value for supported checkboxes, true for error-trapping radios, integer 1-32 for tab width. Native French/English labels are currently supported. Recognized Editor/General/Docking checkboxes and Editor Format controls are supported. Font/size/code colors require one exact observed Choices entry. NativeIndex:n identifies an unlabeled native palette choice, never an inferred RGB value. Query optionally selects one exact Code Colors category for the same palette mutation; read_vbe_options versions all categories together. An empty size catalogue refuses writes. Grid width/height are 2-60. Theme, security and arbitrary controls are excluded. InvokeAsync is required; normal VBE edit approval applies. Reopen read_vbe_options to verify persistence.", new[] { "Pane", "Property", "Value", "ExpectedOptionsVersion" }, "Pane", "Property", "Value", "ExpectedOptionsVersion", "Query"),
+            Definition("set_vbe_option", "Stage recognized native preferences from read_vbe_options and apply once. Prefer OptionChanges, an array of 1-64 distinct {Pane, Property, Value, Query?} targets, together with ExpectedOptionsVersion and without top-level Pane/Property/Value/Query. The entire batch is validated before any preference write; all final values are checked before one OK, and the original viewed color category is restored. The legacy single Pane/Property/Value form remains available. Boolean Value for checkboxes, true for error-trapping radios, integer 1-32 for tab width. Native French/English labels are supported. Editor/General/Docking checkboxes and Editor Format controls are supported. Font/size/code colors require exact observed Choices entries; NativeIndex:n is a native palette index, never inferred RGB. Query binds a palette edit to an exact Code Colors category; versions cover all categories. Empty size catalogues refuse writes. Grid width/height are 2-60. Theme, security and arbitrary controls are excluded. InvokeAsync and normal VBE edit approval apply. Reopen read_vbe_options once to verify the complete committed state; never replay an uncertain result.", new[] { "ExpectedOptionsVersion" }, "Pane", "Property", "Value", "ExpectedOptionsVersion", "Query", "OptionChanges"),
             Definition("read_vbe_options", "Read visible controls and values on every tab of the native VBE Tools > Options dialog, then close with Cancel. Returns native labels and read errors; no preference is changed, no shortcut or coordinates are used. This is a UI observation, not proof of persistence or of unavailable controls.",
                 new string[0]),
             Definition("compile_project", "Compile the named VBA project using the native VBE command in design mode. Captures and dismisses a native compile error dialog; on failure read debug_state to locate the selected token. Inspect Available and Compiled: an absent or disabled native command reports Compiled=false and does not prevent other tools from running. Compiled=true means the command executed without an observed native diagnostic. ExpectedMode must be 2.",
@@ -494,6 +495,11 @@ namespace VBAi
                 {
                     if (!fields.ContainsKey(field)) throw new ArgumentException("Unexpected argument: " + field);
                     object value = values[field];
+                    if (field == "OptionChanges")
+                    {
+                        ValidateVbeOptionChanges(value);
+                        continue;
+                    }
                     if (field == "Value")
                     {
                         if (!(value is string) && !(value is bool) && !(value is int) &&
@@ -543,6 +549,7 @@ namespace VBAi
                         (type == "number" && !(value is int) && !(value is long) && !(value is double) && !(value is decimal)))
                         throw new ArgumentException(field + " must be a " + type + ".");
                 }
+                if (name == "set_vbe_option") ValidateVbeOptionArguments(values);
                 if (name == "read_user_file")
                     return json.Serialize(ReadUserFile((string)values["Path"]));
                 if ((name == "set_form_picture" || name == "set_form_node_picture" ||

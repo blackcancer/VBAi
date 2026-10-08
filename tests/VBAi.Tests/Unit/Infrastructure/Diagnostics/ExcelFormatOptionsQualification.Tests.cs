@@ -11,7 +11,7 @@ using VBAi.Tests.Integration;
 namespace VBAi.Tests.Unit
 {
     [TestClass, TestCategory("Unit")]
-    public sealed class ExcelFormatOptionsQualificationTests
+    public sealed partial class ExcelFormatOptionsQualificationTests
     {
         [TestMethod]
         public void GuardWarmupVerifiesOneRefusalWithoutPreferenceMutationOrCleanup()
@@ -202,7 +202,7 @@ namespace VBAi.Tests.Unit
                 ["Keyword Text.Indicator"] = "Blue"
             };
             internal string Category = "Normal Text", BaselineVersion;
-            internal ExcelFormatOptionsQualification Create(bool verifyReadStability = false, bool marginOnly = false, bool historicalPalettePrefix = false, bool fontSizeOnly = false, bool historicalFullMatrix = false)
+            internal ExcelFormatOptionsQualification Create(bool verifyReadStability = false, bool marginOnly = false, bool historicalPalettePrefix = false, bool fontSizeOnly = false, bool historicalFullMatrix = false, bool batchChanges = false)
             {
                 BaselineVersion = Version();
                 return new ExcelFormatOptionsQualification(42, Dispatch, ObserveClosure,
@@ -216,7 +216,7 @@ namespace VBAi.Tests.Unit
                     {
                         if (++ExclusiveGuardCalls == ExclusiveGuardFaultAt)
                             throw new InvalidOperationException("Another VBE host appeared during the campaign.");
-                    }, fontSizeOnly, historicalFullMatrix);
+                    }, fontSizeOnly, historicalFullMatrix, batchChanges);
             }
             private IDictionary<string, object> Dispatch(object raw)
             {
@@ -247,7 +247,18 @@ namespace VBAi.Tests.Unit
                     else
                     {
                         Assert.AreEqual(Version(), request["ExpectedOptionsVersion"], "Each real write must guard the exact fresh complete revision.");
-                        if (EmptySizes && Equals(request["Property"], "Size"))
+                        if (request.TryGetValue("OptionChanges", out var batch))
+                        {
+                            foreach (var change in ((System.Collections.IEnumerable)batch).Cast<IDictionary<string, object>>())
+                            {
+                                string property = (string)change["Property"];
+                                string category = change.TryGetValue("Query", out var query) ? query as string : null;
+                                string key = new[] { "Foreground", "Background", "Indicator" }.Contains(property) ? (category ?? Category) + "." + property : property;
+                                Values[key] = change["Value"] is bool check ? (object)(check ? "On" : "Off") : change["Value"];
+                            }
+                            response = Reply(new Dictionary<string, object> { ["CommitRequested"] = true, ["ControlValueVerified"] = true, ["DialogClosed"] = true });
+                        }
+                        else if (EmptySizes && Equals(request["Property"], "Size"))
                             response = Refused("The exact native choice is absent, ambiguous or unreadable.");
                         else
                         {

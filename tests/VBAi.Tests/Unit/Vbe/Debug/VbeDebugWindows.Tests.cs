@@ -820,6 +820,23 @@ namespace VBAi.Tests.Unit
             StringAssert.Contains((string)result.Error, "not visible");
         }
 
+        /// <summary>Missing protected-picker labels remain unconfirmed; a different named certificate is still refused.</summary>
+        [DataTestMethod]
+        [DataRow(null, 0)]
+        [DataRow("", 0)]
+        [DataRow(" ", 0)]
+        [DataRow("[Aucun certificat]", 0)]
+        [DataRow("[No certificate]", 0)]
+        [DataRow("[None]", 0)]
+        [DataRow("Owned certificate", 1)]
+        [DataRow("owned CERTIFICATE", 1)]
+        [DataRow("Different certificate", -1)]
+        public void ProtectedPickerReadbackDoesNotInventADifferentCertificate(string selected, int verdict)
+        {
+            bool? matches = VbeDebugWindows.SignatureSelectionMatches(selected, "Owned certificate");
+            Assert.AreEqual(verdict == 0 ? (bool?)null : verdict > 0, matches);
+        }
+
         [TestMethod]
         public void CertificatePlaceholderRecognitionIsLocalizedAndExact()
         {

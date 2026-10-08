@@ -94,7 +94,7 @@ namespace VBAi.Tests.Unit
             var definition = LlmVbeTools.Definitions.Select(d => Dict(Dict(Json.DeserializeObject(Json.Serialize(d)))["function"]))
                 .Single(d => (string)d["name"] == name);
             var fields = Dict(Dict(definition["parameters"])["properties"]);
-            return fields.ToDictionary(f => f.Key, f => f.Key == "Value" ? (object)"value" :
+            return fields.Where(f => f.Key != "OptionChanges").ToDictionary(f => f.Key, f => f.Key == "Value" ? (object)"value" :
                 f.Key == "Arguments" ? new object[0] : f.Key == "ArgumentNames" ? new string[0] : f.Key == "Items" ? new string[0] : f.Key == "Rows" ? (object)new string[0][] : f.Key == "PathSegments" ? new[] { "item" } :
                 (string)Dict(f.Value)["type"] == "integer" ? (object)2 :
                 (string)Dict(f.Value)["type"] == "number" ? (object)1.5 :

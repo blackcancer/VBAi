@@ -1303,9 +1303,10 @@ namespace VBAi
                         throw new InvalidOperationException("The native VBE signature dialog closed during certificate selection.");
                     if (attempt % 4 != 0) continue;
                     string selected = CertificateBeforeHeading(SignatureLabels(root), "Signer en tant que", "Sign as");
-                    if (string.Equals(selected, certificateName, StringComparison.OrdinalIgnoreCase))
+                    bool? matches = SignatureSelectionMatches(selected, certificateName);
+                    if (matches == true)
                     { chosen = true; break; }
-                    if (!IsNoCertificate(selected))
+                    if (matches == false)
                         throw new InvalidOperationException("A different certificate was selected; the signature was cancelled.");
                 }
                 if (!chosen)
@@ -1369,6 +1370,14 @@ namespace VBAi
             }
             return labels;
         }
+
+        /// <summary>Distinguishes a confirmed named certificate from a pending or temporarily unavailable picker readback.</summary>
+        /// <param name="selected">Native certificate label, possibly absent while the protected picker is open.</param>
+        /// <param name="expected">Unique certificate name already bound to the requested local thumbprint.</param>
+        /// <returns>True for the exact certificate, false for a different named certificate, or null until a choice can be verified.</returns>
+        internal static bool? SignatureSelectionMatches(string selected, string expected)
+            => string.IsNullOrWhiteSpace(selected) || IsNoCertificate(selected) ? (bool?)null :
+                string.Equals(selected, expected, StringComparison.OrdinalIgnoreCase);
 
         /// <summary>Reconnaît les libellés indiquant l’absence de certificat utilisable.</summary>
         /// <param name="name">Libellé accessible à vérifier.</param>

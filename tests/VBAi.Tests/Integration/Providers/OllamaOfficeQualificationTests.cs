@@ -114,13 +114,27 @@ namespace VBAi.Tests.Integration
                         ui.SendOnce(request); ui.WaitIdle(125);
                         ui.Wait(() => ui.VisibleTranscript().Any(text => text.Contains(marker)), 15, "visible unprompted native marker");
                         report["NativeMarkerVisible"] = true; flush();
-                        ui.ReleaseSettledReferences();
                     }
                     catch (Exception error)
                     {
                         failure = ExceptionDispatchInfo.Capture(error);
                         try { if (ui != null) record(new { Phase = "FailureTerminalObservation", AlreadyIdle = ui.ObserveAlreadyIdle() }); }
                         catch (Exception observation) { record(new { Phase = "TerminalObservationFailed", Error = observation.ToString() }); }
+                    }
+                    finally
+                    {
+                        // A failed catalogue/oracle observation may still have a
+                        // settled (or never-sent) turn. Drop its UIA references on
+                        // their owning observer thread before the STA closes Word.
+                        if (ui != null && !ui.SentUnsettled)
+                        {
+                            try { ui.ReleaseSettledReferences(); }
+                            catch (Exception cleanup)
+                            {
+                                record(new { Phase = "ObserverCleanupFailed", Error = cleanup.ToString() });
+                                if (failure == null) failure = ExceptionDispatchInfo.Capture(cleanup);
+                            }
+                        }
                     }
                 });
                 worker.SetApartmentState(ApartmentState.MTA); worker.Start();

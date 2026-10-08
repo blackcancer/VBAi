@@ -8,6 +8,29 @@ namespace VBAi.Tests.Unit
     [TestClass, TestCategory("Unit")]
     public sealed class OllamaOfficeUiTests
     {
+        /// <summary>A peer with a familiar ID must still retain the exact original native ownership and visibility.</summary>
+        [DataTestMethod]
+        [DataRow("original")]
+        [DataRow("handle")]
+        [DataRow("id")]
+        [DataRow("expectedPid")]
+        [DataRow("expectedThread")]
+        [DataRow("uiPid")]
+        [DataRow("nativePid")]
+        [DataRow("thread")]
+        [DataRow("parent")]
+        [DataRow("hidden")]
+        [DataRow("none")]
+        public void FixedAssistantControlsPreserveEveryOriginalIdentityGuard(string change)
+        {
+            Assert.AreEqual(change == "none", OllamaOfficeUi.FixedControlIdentityMatches(
+                change == "original" ? 0 : 101, change == "handle" ? 102 : 101, "send",
+                change == "id" ? "other" : "send", change == "expectedPid" ? 0 : 42,
+                change == "expectedThread" ? 0u : 7u, change == "uiPid" ? 43 : 42,
+                change == "nativePid" ? 43 : 42, change == "thread" ? 8u : 7u,
+                change != "parent", change != "hidden"));
+        }
+
         [DataTestMethod]
         [DataRow(0, 11, false)]
         [DataRow(11, 12, false)]
