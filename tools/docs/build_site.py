@@ -48,6 +48,11 @@ def icon(name: str) -> str:
 class Website:
     def __init__(self) -> None:
         self.config = json.loads((SITE / 'config.json').read_text(encoding='utf-8'))
+        verification = self.config.get('google_site_verification', '')
+        if not isinstance(verification, str) or any(character.isspace() for character in verification):
+            raise ValueError('google_site_verification must be an empty string or the exact Google verification token.')
+        self.search_console_verification = (
+            f'<meta name="google-site-verification" content="{escape(verification)}">' if verification else '')
         self.languages = {lang: json.loads((SITE / 'content' / f'{lang}.json').read_text(encoding='utf-8')) for lang in ('en', 'fr')}
         self.base = urlsplit(self.config['url']).path
         if not self.base.startswith('/') or not self.base.endswith('/'):
@@ -187,6 +192,7 @@ class Website:
             {**{key: escape(value) for key, value in language['common'].items()}, **self.asset_versions,
              'lang': lang, 'base': self.base, 'title': escape(data['title']),
              'description': escape(data.get('description', data.get('text', ''))),
+             'search_console_verification': self.search_console_verification,
              'canonical': self.url(lang, page if page in PAGES else 'home'),
              'english': self.url('en', page if page in PAGES else 'home'),
              'french': self.url('fr', page if page in PAGES else 'home'),

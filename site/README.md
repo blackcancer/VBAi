@@ -56,10 +56,39 @@ all these effects, including when that preference changes while the page is open
 Navigation/content remain available without JavaScript. CSS and JavaScript URLs
 include content hashes so an update does not keep an older asset in browser cache.
 Its documentation links point to the authoritative repository guides rather
-than maintaining a second copy. Submit the published `sitemap.xml` through a
-verified Google Search Console URL-prefix property to monitor indexing.
-Search Console verification remains a maintainer account operation. The generated
-`robots.txt` advertises the sitemap at the custom-domain root.
+than maintaining a second copy. The generated `robots.txt` advertises the sitemap
+at the custom-domain root.
+
+## Google Search Console
+
+To monitor indexing and traffic from Google Search:
+
+1. Sign in to [Google Search Console](https://search.google.com/search-console/)
+   with the maintainer's Google account. Add the URL-prefix property
+   `https://vbai.app/`, or select it if it already exists.
+2. If ownership is not already verified, select **HTML tag** and copy the exact
+   `content` value from Google's `google-site-verification` meta tag into
+   `google_site_verification` in `config.json`. Leave the setting empty when no
+   token has been supplied; the builder then emits no verification tag.
+3. Build the website and deploy the reviewed change through the Pages workflow.
+   Check that the published homepage contains the exact tag in its HTML `head`,
+   then click **Verify** in Search Console. Keep the token in the configuration:
+   Google periodically checks that it remains present. The token is public HTML
+   metadata; do not put Google credentials or OAuth access tokens in this setting.
+4. Submit `https://vbai.app/sitemap.xml` in **Sitemaps**. It contains the eight
+   localized product pages; successful submission does not prove indexing.
+5. Inspect `https://vbai.app/` and `https://vbai.app/fr/` with **URL inspection**.
+   Check the live URL and request indexing if needed. Use **Page indexing** to
+   track Google's actual indexing status and exclusion reasons.
+6. Use **Performance** to review impressions, clicks, queries and landing pages.
+   These reports cover Google Search, not all visits to the website, and new
+   properties can take a few days to accumulate data.
+
+Google account sign-in and ownership verification require access to the
+maintainer's account. A local build or successful public HTTP check does not
+establish that the property is verified, the sitemap is submitted or a URL is
+indexed. See Google's [ownership verification guidance](https://support.google.com/webmasters/answer/9008080)
+and [recrawl guidance](https://developers.google.com/search/docs/crawling-indexing/ask-google-to-recrawl).
 
 ## Domain configuration
 
