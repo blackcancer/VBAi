@@ -119,6 +119,10 @@ class Website:
         chat_frame = self.framing_style('chat-first-implementation.png')
         form_frame = self.framing_style('form-runtime.png')
         git = self.figure('git-changes.png', data['git_alt'], data['git_caption'], lang)
+        search_questions = ''.join(
+            f'<article class="feature-card"><h3>{escape(item["question"])}</h3>'
+            f'<p>{escape(item["answer"])}</p>{self.link(item["link"], item["target"], lang)}</article>'
+            for item in data['search_questions'])
         github = f'''<section class="workflow-band github-stage" id="github" aria-labelledby="github-heading"><div class="container section story-grid"><div class="story-text"><p class="eyebrow">{icon('git')} {escape(data['story_eyebrow'])}</p><h2 id="github-heading">{heading(data['story_heading'])}</h2><p>{escape(data['story_text'])}</p><ol class="steps">{steps}</ol><div class="github-links">{self.link(data['story_link'], '{local}workflows/#git', lang)}{self.link(data['github_guide'], '{docs}github-integration.md', lang)}</div><div class="macro-map" aria-hidden="true"><span>.xlsm / .swp</span>{icon('arrow')}<span>.bas · .cls<br>.frm + .frx · .vba</span>{icon('arrow')}<span class="macro-github">{icon('git')} GitHub</span></div><p class="github-note">{escape(data['github_note'])}</p></div><div class="github-example"><p class="eyebrow">{escape(data['git_caption_title'])}</p>{git}<p class="provider-note" style="margin-top:16px">{escape(common['capture_note'])}</p></div></div></section>'''
         return f'''
 <section class="hero-stage"><div class="container hero">
@@ -133,6 +137,7 @@ class Website:
 {github}
 <section class="container section" id="features"><div class="section-heading"><div><p class="eyebrow">{escape(data['features_eyebrow'])}</p><h2>{heading(data['features_heading'])}</h2></div><p>{escape(data['features_text'])}</p></div><div class="feature-grid">{features}</div></section>
 <section class="container section"><div class="section-heading"><div><p class="eyebrow">{escape(data['providers_eyebrow'])}</p><h2>{heading(data['providers_heading'])}</h2></div><p>{escape(data['providers_text'])}</p></div><div class="provider-list">{provider_chips}</div><p class="provider-note">{escape(data['provider_note'])}</p>{self.link(data['provider_link'], '{local}providers/', lang)}</section>
+<section class="container section" id="questions" aria-labelledby="questions-heading"><div class="section-heading"><h2 id="questions-heading">{escape(data["search_heading"])}</h2></div><div class="feature-grid">{search_questions}</div></section>
 <section class="download-stage"><div class="container getting-started"><img class="download-logo" src="{self.base}assets/assistant.png" width="180" height="180" alt="" loading="lazy"><div><h2>{escape(data['start_heading'])}</h2><p>{escape(data['start_text'])}</p></div><div class="actions">{self.link(common['download'], '{download}', lang, 'button')}{self.link(common['guide'], '{local}installation/', lang, 'button secondary')}</div></div></section>'''
 
     def render_article(self, lang: str, page: str) -> str:

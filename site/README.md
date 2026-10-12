@@ -13,6 +13,14 @@ The internal "GitHub for VBA" navigation is separate from the external source-co
 link. Keep the explanation aligned with `docs/github-integration.md`: document
 saving, local commits, remote pushes and reviewed source imports are separate actions.
 
+Search-facing titles and visible copy identify VBAi as an AI assistant for
+Visual Basic for Applications, with Excel macros as the worked example. The
+homepage questions link AI-assisted development, provider connections, Git/GitHub
+source control and host compatibility to the existing authoritative pages.
+Keep this coverage in useful visible content rather than keyword lists or hidden
+text. Google ignores the `meta keywords` tag. Naming a provider or host must not
+imply bundled subscriptions or qualification beyond the compatibility guide.
+
 ## Sources and build
 
 Manual English and French text lives in `content/en.json` and `content/fr.json`.
